@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Hier können Sie später eigene globale Styles hinzufügen */
+body {
+    @apply antialiased; /* Macht die Schrift auf Macs/iPhones schöner */
+}

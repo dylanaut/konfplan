@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8"/>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+
+    <!-- Extrem wichtig für Smartphones: Verhindert automatisches Zoomen und setzt die Breite -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+
+    <title>Vortragsmanager | Event Organisation</title>
+
+    <!-- Einbinden einer modernen Schriftart (Inter) für den professionellen Look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Ein kleiner Fix, um "Pull-to-Refresh" auf Mobilgeräten zu unterbinden,
+           wenn man in der App scrollt (optional) */
+        body {
+            overscroll-behavior-y: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-900">
+<!-- Hier wird die Vue.js Anwendung eingehängt -->
+<div id="app"></div>
+
+<!-- Der Einstiegspunkt für das JavaScript (Vite-Standard) -->
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

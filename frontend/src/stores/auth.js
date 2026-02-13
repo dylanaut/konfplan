@@ -1,0 +1,28 @@
+import { defineStore } from 'pinia';
+import jwtDecode from 'jwt-decode';
+
+export const useAuthStore = defineStore('auth', {
+    state: () => ({
+        token: localStorage.getItem('token') || null,
+        userRole: localStorage.getItem('role') || null,
+    }),
+    getters: {
+        isAuthenticated: (state) => !!state.token,
+        isAdmin: (state) => state.userRole === 'ADMIN',
+        isSpeaker: (state) => state.userRole === 'SPEAKER',
+        isParticipant: (state) => state.userRole === 'PARTICIPANT',
+    },
+    actions: {
+        setToken(token, role) {
+            this.token = token;
+            this.userRole = role;
+            localStorage.setItem('token', token);
+            localStorage.setItem('role', role);
+        },
+        logout() {
+            this.token = null;
+            this.userRole = null;
+            localStorage.clear();
+        }
+    }
+});
