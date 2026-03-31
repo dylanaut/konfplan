@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS User
     first_name         VARCHAR(100),
     last_name          VARCHAR(100),
     organization       VARCHAR(255),
-    job_position       VARCHAR(100),
+    job_role           VARCHAR(100),
     version            BIGINT              NOT NULL DEFAULT 1,
     is_active          BOOLEAN                      DEFAULT 1,
     reset_token        VARCHAR(255),
@@ -78,17 +78,37 @@ CREATE TABLE IF NOT EXISTS SpeakerAvailability
 );
 
 -- Sequenz-Tabellen für Hibernate Panache (BIGINT für Hibernate-Check)
-CREATE TABLE IF NOT EXISTS EventSlot_SEQ (next_val BIGINT);
-CREATE TABLE IF NOT EXISTS Priority_SEQ (next_val BIGINT);
-CREATE TABLE IF NOT EXISTS SpeakerAvailability_SEQ (next_val BIGINT);
-CREATE TABLE IF NOT EXISTS Talk_SEQ (next_val BIGINT);
-CREATE TABLE IF NOT EXISTS User_SEQ (next_val BIGINT);
+CREATE TABLE IF NOT EXISTS EventSlot_SEQ
+(
+    next_val BIGINT
+);
+CREATE TABLE IF NOT EXISTS Priority_SEQ
+(
+    next_val BIGINT
+);
+CREATE TABLE IF NOT EXISTS SpeakerAvailability_SEQ
+(
+    next_val BIGINT
+);
+CREATE TABLE IF NOT EXISTS Talk_SEQ
+(
+    next_val BIGINT
+);
+CREATE TABLE IF NOT EXISTS User_SEQ
+(
+    next_val BIGINT
+);
 
-INSERT INTO EventSlot_SEQ (next_val) VALUES (1);
-INSERT INTO Priority_SEQ (next_val) VALUES (1);
-INSERT INTO SpeakerAvailability_SEQ (next_val) VALUES (1);
-INSERT INTO Talk_SEQ (next_val) VALUES (1);
-INSERT INTO User_SEQ (next_val) VALUES (1);
+INSERT INTO EventSlot_SEQ (next_val)
+VALUES (1);
+INSERT INTO Priority_SEQ (next_val)
+VALUES (1);
+INSERT INTO SpeakerAvailability_SEQ (next_val)
+VALUES (1);
+INSERT INTO Talk_SEQ (next_val)
+VALUES (1);
+INSERT INTO User_SEQ (next_val)
+VALUES (1);
 
 -- STAMMDATEN
 INSERT INTO User (id, email, password_hash, role, first_name, last_name, is_active, version) -- admin1..3
@@ -104,7 +124,8 @@ VALUES (3, 'speaker@rks-linz.de', '$2a$10$1GwWucNOnG9sePgSnEhLOeaBEVZuib1OLhWlHw
         'Riewa', 1, 1);
 
 INSERT INTO User (id, email, password_hash, role, first_name, last_name, is_active, version) -- schueler1..3
-VALUES (4, 'schueler@rks-linz.de', '$2a$10$dCM9aDr8FRJRQKXI9o4IE.SWgxmGsMRSbtFtTJKrOBd51OWJfSUdi', 'USER', 'Peter',
+VALUES (4, 'schueler@rks-linz.de', '$2a$10$dCM9aDr8FRJRQKXI9o4IE.SWgxmGsMRSbtFtTJKrOBd51OWJfSUdi', 'PARTICIPANT', 'Peter',
         'Schmitz', 1, 1);
 
-INSERT INTO User_SEQ (next_val) VALUES (5);
+INSERT INTO User_SEQ (next_val)
+VALUES (5);

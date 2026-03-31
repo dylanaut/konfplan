@@ -16,6 +16,67 @@ import java.util.UUID;
 public class ParticipantService {
 
     @Transactional
+    public List<User> findAll() {
+        return User.list("role", "PARTICIPANT");
+    }
+
+    @Transactional
+    public User findById(Long id) {
+        return User.findById(id);
+    }
+
+
+    @Transactional
+    public User createParticipant(User user) {
+        if (user == null || user.email == null) {
+            return null;
+        }
+
+        User existing = User.findByEmail(user.email.trim().toLowerCase());
+        if (existing != null) {
+            return null;
+        }
+
+        User newUser = new User();
+        newUser.firstName = user.firstName;
+        newUser.lastName = user.lastName;
+        newUser.email = user.email.trim().toLowerCase();
+        newUser.organization = user.organization;
+        newUser.jobRole = user.jobRole;
+        newUser.role = "PARTICIPANT";
+        newUser.isActive = user.isActive;
+
+        String tempPassword = UUID.randomUUID().toString();
+        newUser.passwordHash = BcryptUtil.bcryptHash(tempPassword);
+
+        newUser.persist();
+        return newUser;
+    }
+
+    @Transactional
+    public User updateParticipant(Long id, User user) {
+        User existing = User.findById(id);
+        if (existing == null || user == null) {
+            return null;
+        }
+
+        existing.firstName = user.firstName;
+        existing.lastName = user.lastName;
+        existing.email = user.email == null ? existing.email : user.email.trim().toLowerCase();
+        existing.organization = user.organization;
+        existing.jobRole = user.jobRole;
+        existing.isActive = user.isActive;
+        existing.persist();
+
+        return existing;
+    }
+
+    @Transactional
+    public void deleteUser(User user) {
+        user.delete();
+    }
+
+    @Transactional
     public int importFromCsv(Path csvFilePath) throws Exception {
         int count = 0;
 
@@ -36,7 +97,7 @@ public class ParticipantService {
                     newUser.firstName = dto.firstName;
                     newUser.lastName = dto.lastName;
                     newUser.organization = dto.organization;
-                    newUser.jobPosition = dto.jobRole;
+                    newUser.jobRole = dto.jobRole;
                     newUser.role = "PARTICIPANT";
                     newUser.isActive = true;
 
@@ -51,5 +112,11 @@ public class ParticipantService {
             }
         }
         return count;
+    }
+
+    @Transactional
+    public void toggleActive(User user) {
+        user.isActive = !user.isActive;
+        user.persist();
     }
 }

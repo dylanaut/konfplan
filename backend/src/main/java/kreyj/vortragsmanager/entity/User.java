@@ -39,9 +39,9 @@ public class User extends SqliteEntity {
     @CsvBindByName(column = "organisation")
     public String organization;
 
-    @Column(name = "job_position")
-    @CsvBindByName(column = "job_position")
-    public String jobPosition;
+    @Column(name = "job_role")
+    @CsvBindByName(column = "job_role")
+    public String jobRole;
 
     @Version
     public Long version;

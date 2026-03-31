@@ -1,5 +1,6 @@
 package kreyj.vortragsmanager.service;
 
+import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
@@ -17,6 +18,49 @@ import java.util.List;
 
 @ApplicationScoped
 public class AdminService {
+
+    public List<User> getAllUsers() {
+        return User.listAll();
+    }
+
+    @Transactional
+    public User createUser(User user) {
+        if (user.passwordHash == null || user.passwordHash.isEmpty()) {
+            // Standardpasswort für neue Benutzer (sollten sie später ändern)
+            user.passwordHash = BcryptUtil.bcryptHash("start123");
+        }
+        user.persist();
+        return user;
+    }
+
+    @Transactional
+    public User updateUser(Long id, User updated) {
+        User entity = User.findById(id);
+        if (entity == null) return null;
+
+        entity.firstName = updated.firstName;
+        entity.lastName = updated.lastName;
+        entity.email = updated.email;
+        entity.role = updated.role;
+        entity.organization = updated.organization;
+        entity.jobRole = updated.jobRole;
+        entity.isActive = updated.isActive;
+
+        return entity;
+    }
+
+    @Transactional
+    public boolean deleteUser(Long id) {
+        return User.deleteById(id);
+    }
+
+    @Transactional
+    public void toggleUserStatus(Long id) {
+        User entity = User.findById(id);
+        if (entity != null) {
+            entity.isActive = !entity.isActive;
+        }
+    }
 
     public List<Talk> getAllTalks() {
         return Talk.listAll();
@@ -38,7 +82,6 @@ public class AdminService {
         entity.targetAudience = updated.targetAudience;
         entity.maxRepetitions = updated.maxRepetitions;
         entity.readyToRepeat = updated.readyToRepeat;
-        entity.maxRepetitions = updated.maxRepetitions;
 
         return entity;
     }

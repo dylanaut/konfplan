@@ -19,7 +19,7 @@ public class SpeakerService {
     public void updateProfile(String email, SpeakerProfileDto dto) {
         User speaker = User.findByEmail(email);
         speaker.organization = dto.organization;
-        speaker.jobPosition = dto.jobRole;
+        speaker.jobRole = dto.jobRole;
         // Email-Änderung ist kritisch wegen Login, hier ggf. Validierung einbauen
         speaker.email = dto.email; 
     }

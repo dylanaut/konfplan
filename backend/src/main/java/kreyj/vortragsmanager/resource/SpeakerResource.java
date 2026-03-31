@@ -14,7 +14,7 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import java.time.LocalDate;
 
 @Path("/api/speaker")
-@RolesAllowed("SPEAKER")
+@RolesAllowed({"ADMIN","SPEAKER"})
 public class SpeakerResource {
 
     @Inject
