@@ -1,13 +1,10 @@
 package kreyj.vortragsmanager.entity;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Version;
+import jakarta.persistence.*;
 
 @Entity
-public class Talk extends PanacheEntity {
+public class Talk extends SqliteEntity {
     @Version  // opt. locking
     public Long version;
 
@@ -20,7 +17,5 @@ public class Talk extends PanacheEntity {
     @ManyToOne
     public User speaker;
 
-    // In Talk.java ergänzen:
     public boolean readyToRepeat; // Grundsätzliche Bereitschaft
-    public int maxPossibleRepetitions; // Wie oft maximal?
 }

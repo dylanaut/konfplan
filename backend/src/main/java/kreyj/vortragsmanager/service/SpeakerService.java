@@ -19,7 +19,7 @@ public class SpeakerService {
     public void updateProfile(String email, SpeakerProfileDto dto) {
         User speaker = User.findByEmail(email);
         speaker.organization = dto.organization;
-        speaker.jobRole = dto.jobRole;
+        speaker.jobPosition = dto.jobRole;
         // Email-Änderung ist kritisch wegen Login, hier ggf. Validierung einbauen
         speaker.email = dto.email; 
     }
@@ -33,7 +33,7 @@ public class SpeakerService {
             talk.abstractText = dto.abstractText;
             talk.targetAudience = dto.targetAudience;
             talk.readyToRepeat = dto.readyToRepeat;
-            talk.maxPossibleRepetitions = dto.maxPossibleRepetitions;
+            talk.maxRepetitions = dto.maxRepetitions;
         }
     }
 

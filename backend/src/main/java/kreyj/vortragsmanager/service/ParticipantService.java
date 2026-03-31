@@ -36,7 +36,7 @@ public class ParticipantService {
                     newUser.firstName = dto.firstName;
                     newUser.lastName = dto.lastName;
                     newUser.organization = dto.organization;
-                    newUser.jobRole = dto.jobRole;
+                    newUser.jobPosition = dto.jobRole;
                     newUser.role = "PARTICIPANT";
                     newUser.isActive = true;
 

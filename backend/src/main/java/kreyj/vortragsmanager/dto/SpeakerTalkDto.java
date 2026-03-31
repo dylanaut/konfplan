@@ -5,5 +5,5 @@ public class SpeakerTalkDto {
     public String abstractText;
     public String targetAudience;
     public boolean readyToRepeat;
-    public int maxPossibleRepetitions;
+    public int maxRepetitions;
 }

@@ -19,12 +19,13 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Path("/api/auth")
 public class AuthResource {
     @Inject
-    @Location("passwordReset.html")
+    @Location("passwordReset")
     MailTemplate passwordResetTemplate;
 
 
@@ -41,6 +42,7 @@ public class AuthResource {
         if (user != null) {
             // 1. Token generieren
             String token = UUID.randomUUID().toString();
+            user.passwordHash = BcryptUtil.bcryptHash("no_pwd");
             user.resetToken = token;
             user.resetTokenExpiry = LocalDateTime.now().plusHours(2);
             user.persist();
@@ -82,17 +84,40 @@ public class AuthResource {
     @POST
     @Path("/login")
     @PermitAll
+    @Transactional
     public Response login(LoginRequest loginRequest) {
         User user = User.findByEmail(loginRequest.email);
 
         if (user != null && BcryptUtil.matches(loginRequest.password, user.passwordHash) && user.isActive) {
-            String token = Jwt.issuer("https://event-planner.kreyj")
+            String token = Jwt.issuer("https://vortragsmanager.kreyj")
                     .upn(user.email)
                     .groups(user.role)
                     .expiresIn(Duration.ofHours(8))
-                    .sign();
+                    .signWithSecret("replace-this-with-a-strong-secret-at-least-32-characters-long");
             return Response.ok(new TokenResponse(token, user.role)).build();
         }
         return Response.status(Response.Status.UNAUTHORIZED).build();
+    }
+
+
+    @Transactional
+    public void createTestUser(String email) {
+        var u = new User();
+        String newEmail = "newuser@home.de";
+        u.email = newEmail;
+        u.passwordHash = BcryptUtil.bcryptHash("password");
+        u.role = "USER";
+        u.isActive = true;
+        u.firstName = "Test";
+        u.lastName = "User";
+        u.persist();
+
+        System.out.println("num users " + User.count());
+
+        User newUser = User.findByEmail(newEmail);
+        System.out.println(newUser);
+
+        User byEmail = User.findByEmail(email);
+        System.out.println(byEmail);
     }
 }
