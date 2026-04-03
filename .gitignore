@@ -2307,3 +2307,4 @@ build/
 /frontend/node/npm.cmd
 /frontend/node/npx
 /frontend/node/npx.cmd
+/.idea/dataSources/

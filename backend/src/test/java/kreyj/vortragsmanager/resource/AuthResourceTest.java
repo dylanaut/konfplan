@@ -10,6 +10,8 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
 import kreyj.vortragsmanager.dto.LoginRequest;
 import kreyj.vortragsmanager.dto.ResetRequest;
+import kreyj.vortragsmanager.entity.Admin;
+import kreyj.vortragsmanager.entity.Teilnehmer;
 import kreyj.vortragsmanager.entity.User;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +40,7 @@ class AuthResourceTest {
 
     @Test
     void testForgotPassword_UserExists() {
-        User user = new User();
+        User user = new Admin();
         user.email = "test@example.com";
         user.firstName = "Test";
         user.role = "USER";
@@ -70,10 +72,9 @@ class AuthResourceTest {
 
     @Test
     void testResetPassword_Success() {
-        User user = new User();
+        User user = new Teilnehmer();
         user.resetToken = "valid-token";
         user.resetTokenExpiry = LocalDateTime.now().plusHours(1);
-        user.role = "USER";
         user.passwordHash = BcryptUtil.bcryptHash("oldSecretPassword");
 
 
@@ -93,7 +94,7 @@ class AuthResourceTest {
 
     @Test
     void testLogin_Success() {
-        User user = new User();
+        User user = new Teilnehmer();
         user.email = "user@example.com";
         user.passwordHash = BcryptUtil.bcryptHash("correctPassword");
         user.role = "USER";

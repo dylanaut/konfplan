@@ -1,6 +1,6 @@
 package kreyj.vortragsmanager.dto;
 
-public class SpeakerTalkDto {
+public class RefVortragDto {
     public String title;
     public String abstractText;
     public String targetAudience;

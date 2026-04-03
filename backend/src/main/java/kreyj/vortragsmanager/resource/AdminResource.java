@@ -6,9 +6,9 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import kreyj.vortragsmanager.dto.TalkStatDto;
-import kreyj.vortragsmanager.entity.Priority;
-import kreyj.vortragsmanager.entity.Talk;
+import kreyj.vortragsmanager.dto.VortragStatDto;
+import kreyj.vortragsmanager.entity.Prioritaet;
+import kreyj.vortragsmanager.entity.Vortrag;
 import kreyj.vortragsmanager.entity.User;
 import kreyj.vortragsmanager.service.AdminService;
 
@@ -68,22 +68,22 @@ public class AdminResource {
     // --- VORTRAGS VERWALTUNG ---
 
     @GET
-    @Path("/talks")
-    public List<Talk> getAllTalks() {
-        return adminService.getAllTalks();
+    @Path("/vortraege")
+    public List<Vortrag> getAllVortraege() {
+        return adminService.getAllVortraege();
     }
 
     @GET
-    @Path("/speakers")
-    public List<User> getAllSpeakers() {
-        return adminService.getAllSpeakers();
+    @Path("/referenten")
+    public List<User> getAllReferenten() {
+        return adminService.getAllReferenten();
     }
 
     @PUT
-    @Path("/talks/{id}")
+    @Path("/vortraege/{id}")
     @Transactional
-    public Response updateTalk(@PathParam("id") Long id, Talk updatedTalk) {
-        Talk saved = adminService.updateTalk(id, updatedTalk);
+    public Response updateVortrag(@PathParam("id") Long id, Vortrag updatedVortrag) {
+        Vortrag saved = adminService.updateVortrag(id, updatedVortrag);
         if (saved == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
@@ -91,10 +91,10 @@ public class AdminResource {
     }
 
     @PUT
-    @Path("/participants/{userId}/priority")
+    @Path("/teilnehmer/{userId}/prioritaet")
     @Transactional
-    public Response forceUpdatePriority(@PathParam("userId") Long userId, Priority newPrio) {
-        boolean updated = adminService.forceUpdatePriority(userId, newPrio);
+    public Response forceUpdatePrioritaet(@PathParam("userId") Long userId, Prioritaet newPrio) {
+        boolean updated = adminService.forceUpdatePrioritaet(userId, newPrio);
         if (!updated) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
@@ -103,7 +103,7 @@ public class AdminResource {
 
     @GET
     @Path("/stats")
-    public List<TalkStatDto> getStats() {
+    public List<VortragStatDto> getStats() {
         return adminService.getStats();
     }
 

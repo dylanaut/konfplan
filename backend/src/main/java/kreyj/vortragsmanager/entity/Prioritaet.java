@@ -1,22 +1,22 @@
 package kreyj.vortragsmanager.entity;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 
 @Entity
-public class Priority extends SqliteEntity {
-    @Version  // opt. locking
+public class Prioritaet extends SqliteEntity {
+    @Version
     public Long version;
 
     @ManyToOne
-    public User participant;
+    public Teilnehmer teilnehmer;
 
     @ManyToOne
-    public Talk talk;
+    public Vortrag vortrag;
 
     public int priorityValue; // 1 = Hoch, 2 = Mittel, 3 = Niedrig
 
     public LocalDateTime lastUpdated;
+
+    public Prioritaet() {}
 }

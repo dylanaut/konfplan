@@ -5,9 +5,10 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import kreyj.vortragsmanager.dto.TalkStatDto;
-import kreyj.vortragsmanager.entity.Talk;
+import kreyj.vortragsmanager.dto.VortragStatDto;
+import kreyj.vortragsmanager.entity.Referent;
 import kreyj.vortragsmanager.entity.User;
+import kreyj.vortragsmanager.entity.Vortrag;
 import kreyj.vortragsmanager.service.AdminService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,34 +33,34 @@ class AdminResourceTest {
     }
 
     @Test
-    void testGetAllTalks() {
-        Talk talk1 = new Talk();
-        talk1.id = 1L;
-        talk1.title = "Test Talk 1";
+    void testGetAllVortrags() {
+        Vortrag vortrag1 = new Vortrag();
+        vortrag1.id = 1L;
+        vortrag1.title = "Test Vortrag 1";
 
-        Talk talk2 = new Talk();
-        talk2.id = 2L;
-        talk2.title = "Test Talk 2";
+        Vortrag vortrag2 = new Vortrag();
+        vortrag2.id = 2L;
+        vortrag2.title = "Test Vortrag 2";
 
-        Mockito.when(adminService.getAllTalks()).thenReturn(List.of(talk1, talk2));
+        Mockito.when(adminService.getAllVortraege()).thenReturn(List.of(vortrag1, vortrag2));
 
         given()
-                .when().get("/api/admin/talks")
+                .when().get("/api/admin/vortrags")
                 .then()
                 .statusCode(200)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body("size()", is(2),
-                        "[0].title", is("Test Talk 1"),
-                        "[1].title", is("Test Talk 2"));
+                        "[0].title", is("Test Vortrag 1"),
+                        "[1].title", is("Test Vortrag 2"));
     }
 
     @Test
     void testGetAllSpeakers() {
-        User speaker1 = new User();
+        User speaker1 = new Referent();
         speaker1.email = "speaker1@example.com";
         speaker1.role = "SPEAKER";
 
-        Mockito.when(adminService.getAllSpeakers()).thenReturn(List.of(speaker1));
+        Mockito.when(adminService.getAllReferenten()).thenReturn(List.of(speaker1));
 
         given()
                 .when().get("/api/admin/speakers")
@@ -71,18 +72,18 @@ class AdminResourceTest {
     }
 
     @Test
-    void testUpdateTalk_Success() {
-        Talk updated = new Talk();
+    void testUpdateVortrag_Success() {
+        Vortrag updated = new Vortrag();
         updated.id = 1L;
         updated.title = "New Title";
 
-        Mockito.when(adminService.updateTalk(Mockito.eq(1L), Mockito.any(Talk.class)))
+        Mockito.when(adminService.updateVortrag(Mockito.eq(1L), Mockito.any(Vortrag.class)))
                 .thenReturn(updated);
 
         given()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(updated)
-                .when().put("/api/admin/talks/{id}", 1L)
+                .when().put("/api/admin/vortrags/{id}", 1L)
                 .then()
                 .statusCode(200)
                 .body("title", is("New Title"));
@@ -90,25 +91,25 @@ class AdminResourceTest {
 
     @Test
     @TestSecurity(user = "user@example.com", roles = "USER")
-    void testGetAllTalks_Forbidden() {
+    void testGetAllVortrags_Forbidden() {
         given()
-                .when().get("/api/admin/talks")
+                .when().get("/api/admin/vortrags")
                 .then()
                 .statusCode(403);
     }
 
     @Test
     @TestSecurity
-    void testGetAllTalks_Unauthorized() {
+    void testGetAllVortrags_Unauthorized() {
         given()
-                .when().get("/api/admin/talks")
+                .when().get("/api/admin/vortrags")
                 .then()
                 .statusCode(401);
     }
 
     @Test
     void testGetStats() {
-        TalkStatDto stats = new TalkStatDto("Talk A", 5, 2, 8);
+        VortragStatDto stats = new VortragStatDto("Vortrag A", 5, 2, 8);
         Mockito.when(adminService.getStats()).thenReturn(List.of(stats));
 
         given()
@@ -117,7 +118,7 @@ class AdminResourceTest {
                 .statusCode(200)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body("size()", is(1),
-                        "[0].title", is("Talk A"),
+                        "[0].title", is("Vortrag A"),
                         "[0].countPrio1", is(5),
                         "[0].countTop3", is(2),
                         "[0].totalVotes", is(8));

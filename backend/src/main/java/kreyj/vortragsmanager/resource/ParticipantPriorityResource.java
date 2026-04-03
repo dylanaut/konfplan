@@ -6,9 +6,9 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
-import kreyj.vortragsmanager.dto.PriorityRequest;
-import kreyj.vortragsmanager.entity.Priority;
-import kreyj.vortragsmanager.service.PriorityService;
+import kreyj.vortragsmanager.dto.PrioritaetRequest;
+import kreyj.vortragsmanager.entity.Prioritaet;
+import kreyj.vortragsmanager.service.PrioritaetService;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.util.List;
@@ -21,18 +21,18 @@ public class ParticipantPriorityResource {
     JsonWebToken jwt;
 
     @Inject
-    PriorityService priorityService;
+    PrioritaetService prioService;
 
     @GET
-    public List<Priority> getMyPriorities() {
+    public List<Prioritaet> getMyPriorities() {
         String email = jwt.getSubject(); // Die Email aus dem JWT Token
-        return priorityService.getPrioritiesForUser(email);
+        return prioService.getPrioritaetenForUser(email);
     }
 
     @POST
-    public Response updateMyPriorities(List<PriorityRequest> requests) {
+    public Response updateMyPriorities(List<PrioritaetRequest> requests) {
         String email = jwt.getSubject();
-        priorityService.savePriorities(email, requests);
+        prioService.savePrioritaeten(email, requests);
         return Response.ok().build();
     }
 }
