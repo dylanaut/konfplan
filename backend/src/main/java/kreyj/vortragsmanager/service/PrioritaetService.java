@@ -23,12 +23,12 @@ public class PrioritaetService {
 
         // 1. Validierung: Nur Werte 1-10 erlaubt
         boolean invalidRange = requests.stream()
-                .anyMatch(r -> r.prioWert < 1 || r.prioWert > 10);
+                .anyMatch(r -> r.prioWert < 1 || r.prioWert > 10); // Hier umbenannt
         if (invalidRange) throw new WebApplicationException("Priorität muss zwischen 1 und 10 liegen", 400);
 
         // 2. Validierung: Keine doppelten Prioritäten (Ranking-Check)
         long uniquePriorities = requests.stream()
-                .map(r -> r.prioWert)
+                .map(r -> r.prioWert) // Hier umbenannt
                 .distinct()
                 .count();
         if (uniquePriorities < requests.size()) {
@@ -45,7 +45,7 @@ public class PrioritaetService {
                 Prioritaet entity = new Prioritaet();
                 entity.teilnehmer = teilnehmer;
                 entity.vortrag = vortrag;
-                entity.priorityValue = req.prioWert;
+                entity.prioWert = req.prioWert; // Hier umbenannt
                 entity.lastUpdated = LocalDateTime.now();
                 entity.persist();
             }

@@ -14,7 +14,7 @@ public class Prioritaet extends SqliteEntity {
     @ManyToOne
     public Vortrag vortrag;
 
-    public int priorityValue; // 1 = Hoch, 2 = Mittel, 3 = Niedrig
+    public int prioWert; // 1 = Hoch, 2 = Mittel, 3 = Niedrig
 
     public LocalDateTime lastUpdated;
 

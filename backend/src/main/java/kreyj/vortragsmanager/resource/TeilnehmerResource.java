@@ -6,7 +6,7 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import kreyj.vortragsmanager.dto.ParticipantImportDto;
+import kreyj.vortragsmanager.dto.FileUploadDto;
 import kreyj.vortragsmanager.entity.Teilnehmer;
 import kreyj.vortragsmanager.entity.User;
 import kreyj.vortragsmanager.service.TeilnehmerService;
@@ -70,7 +70,7 @@ public class TeilnehmerResource {
     @POST
     @Path("/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response uploadCsv(ParticipantImportDto data) {
+    public Response uploadCsv(FileUploadDto data) {
         try {
             teilnehmerService.importFromCsv(data.file.uploadedFile().toFile().toPath());
             return Response.ok("Import erfolgreich").build();

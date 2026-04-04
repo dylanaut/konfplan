@@ -3,6 +3,7 @@ package kreyj.vortragsmanager.resource;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.RefProfilDto;
 import kreyj.vortragsmanager.dto.RefVortragDto;
@@ -15,6 +16,8 @@ import java.time.LocalDate;
 
 @Path("/api/referent")
 @RolesAllowed({"ADMIN","REFERENT"})
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class ReferentResource {
 
     @Inject
@@ -26,7 +29,7 @@ public class ReferentResource {
     @GET
     @Path("/profile")
     public User getProfile() {
-        return User.findByEmail(jwt.getSubject());
+        return referentService.getProfile(jwt.getSubject());
     }
 
     @PUT
@@ -39,8 +42,7 @@ public class ReferentResource {
     @GET
     @Path("/vortrag")
     public Vortrag getVortrag() {
-        User referent = User.findByEmail(jwt.getSubject());
-        return Vortrag.find("referent", referent).firstResult();
+        return referentService.getVortrag(jwt.getSubject());
     }
 
     @PUT

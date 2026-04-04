@@ -2,5 +2,5 @@ package kreyj.vortragsmanager.dto;
 
 public class PrioritaetRequest {
     public Long vortragId;
-    public int prioWert; // 1 bis 10
+    public int prioWert; // Umbenannt von priorityValue
 }

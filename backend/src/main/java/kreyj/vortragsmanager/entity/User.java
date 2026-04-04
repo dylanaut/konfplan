@@ -8,6 +8,7 @@ import io.quarkus.security.jpa.Roles;
 import io.quarkus.security.jpa.UserDefinition;
 import io.quarkus.security.jpa.Username;
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -18,15 +19,15 @@ import java.time.LocalDateTime;
 // Jackson Magic: Erlaubt automatische Umwandlung von JSON in die richtige Unterklasse basierend auf "role"
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "role", visible = true)
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = Admin.class, name = "ADMIN"),
-    @JsonSubTypes.Type(value = Referent.class, name = "REFERENT"),
-    @JsonSubTypes.Type(value = Teilnehmer.class, name = "TEILNEHMER")
+        @JsonSubTypes.Type(value = Admin.class, name = "ADMIN"),
+        @JsonSubTypes.Type(value = Referent.class, name = "REFERENT"),
+        @JsonSubTypes.Type(value = Teilnehmer.class, name = "TEILNEHMER")
 })
 public abstract class User extends SqliteEntity {
 
     @Column(unique = true)
     @Username
-    @CsvBindByName(column = "email")
+    @CsvBindByName(column = "Email")
     public String email;
 
     @Password
@@ -38,15 +39,12 @@ public abstract class User extends SqliteEntity {
     public String role;
 
     @Column(name = "first_name")
-    @CsvBindByName(column = "vorname")
+    @CsvBindByName(column = "Vorname")
     public String firstName;
 
     @Column(name = "last_name")
-    @CsvBindByName(column = "nachname")
+    @CsvBindByName(column = "Nachname")
     public String lastName;
-
-    @Version
-    public Long version;
 
     @Column(name = "is_active")
     public boolean isActive = true;
@@ -57,7 +55,15 @@ public abstract class User extends SqliteEntity {
     @Column(name = "reset_token_expiry")
     public LocalDateTime resetTokenExpiry;
 
-    public User() {}
+    @ManyToOne
+    @JoinColumn(name = "veranstaltung_id", columnDefinition = "INTEGER")
+    public Veranstaltung veranstaltung; // Relation zur Veranstaltung (Optional für Admins)
+
+    @Version
+    public Long version;
+
+    public User() {
+    }
 
     public static User findByEmail(String e) {
         return find("email", e).firstResult();

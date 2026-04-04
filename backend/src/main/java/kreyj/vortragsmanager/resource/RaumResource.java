@@ -5,6 +5,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import kreyj.vortragsmanager.dto.FileUploadDto;
 import kreyj.vortragsmanager.entity.Raum;
 import kreyj.vortragsmanager.service.RaumService;
 import java.util.List;
@@ -21,6 +22,18 @@ public class RaumResource {
     @GET
     public List<Raum> getAll() {
         return raumService.listAll();
+    }
+
+    @POST
+    @Path("/import")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response importRaeume(FileUploadDto data) {
+        try {
+            int count = raumService.importFromCsv(data.file.uploadedFile().toFile().toPath());
+            return Response.ok("Import erfolgreich: " + count + " Räume angelegt.").build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
+        }
     }
 
     @GET

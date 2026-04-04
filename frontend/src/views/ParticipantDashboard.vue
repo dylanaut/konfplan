@@ -77,7 +77,7 @@ import api from '../api/axios';
 import { User as UserIcon, Save as SaveIcon } from 'lucide-vue-next';
 
 const talks = ref([]);
-const myPriorities = ref([]); // Format: [{ talkId: 1, priorityValue: 1 }, ...]
+const myPriorities = ref([]); // Format: [{ talkId: 1, prioWert: 1 }, ...]
 
 // Daten laden
 onMounted(async () => {
@@ -86,15 +86,15 @@ onMounted(async () => {
     api.get('/api/participant/priorities')
   ]);
   talks.value = talksRes.data;
-  myPriorities.value = prioRes.data.map(p => ({ talkId: p.talk.id, priorityValue: p.priorityValue }));
+  myPriorities.value = prioRes.data.map(p => ({ talkId: p.talk.id, prioWert: p.prioWert }));
 });
 
 const getCurrentPriority = (talkId) => {
-  return myPriorities.value.find(p => p.talkId === talkId)?.priorityValue;
+  return myPriorities.value.find(p => p.talkId === talkId)?.prioWert;
 };
 
 const isRankTaken = (rank) => {
-  return myPriorities.value.some(p => p.priorityValue == rank);
+  return myPriorities.value.some(p => p.prioWert == rank);
 };
 
 const updatePriority = (talkId, value) => {
@@ -103,8 +103,8 @@ const updatePriority = (talkId, value) => {
 
   if (value !== "") {
     // Falls der Rang von einem anderen Talk belegt war, dort entfernen (Swap-Logik optional)
-    myPriorities.value = myPriorities.value.filter(p => p.priorityValue != value);
-    myPriorities.value.push({ talkId, priorityValue: parseInt(value) });
+    myPriorities.value = myPriorities.value.filter(p => p.prioWert != value);
+    myPriorities.value.push({ talkId, prioWert: parseInt(value) });
   }
 };
 

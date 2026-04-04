@@ -1,16 +1,15 @@
 package kreyj.vortragsmanager.entity;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import jakarta.persistence.AttributeOverride;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-
 public class EventSlot extends SqliteEntity {
     public LocalDateTime startTime;
     public LocalDateTime endTime;
-    public String description; // z.B. "Slot A"
+    public String description;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "veranstaltung_id", columnDefinition = "INTEGER")
+    public Veranstaltung veranstaltung;
 }

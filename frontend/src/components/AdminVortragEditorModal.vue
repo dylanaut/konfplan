@@ -1,6 +1,6 @@
 <template>
   <div v-if="isVisible" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-    <div class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-2xl">
+    <div class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-bold text-gray-900">
           {{ vortrag?.id ? 'Vortrag bearbeiten' : 'Neuen Vortrag anlegen' }}
@@ -9,20 +9,28 @@
       </div>
 
       <form class="space-y-4" @submit.prevent="save">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Titel</label>
-          <input v-model="form.title" type="text" class="input-field" required />
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Typ</label>
+          <select v-model="form.vortrag_typ" class="input-field" :disabled="!!vortrag?.id" required>
+            <option value="WAHL">Wahlvortrag</option>
+            <option value="PFLICHT">Pflichtvortrag</option>
+          </select>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Abstract / Beschreibung</label>
-          <textarea v-model="form.abstractText" rows="4" class="input-field"></textarea>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Titel</label>
+          <input v-model="form.titel" type="text" class="input-field" required />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Inhalt / Beschreibung</label>
+          <textarea v-model="form.inhalt" rows="3" class="input-field"></textarea>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Zielgruppe</label>
-            <input v-model="form.targetAudience" type="text" class="input-field" />
+            <input v-model="form.zielgruppe" type="text" class="input-field" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Referent</label>
@@ -35,14 +43,46 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100">
-          <div class="flex items-center gap-2">
-            <input id="istPflicht" v-model="form.istPflicht" type="checkbox" class="h-5 w-5 text-indigo-600 rounded" />
-            <label for="istPflicht" class="text-sm font-bold text-gray-900">Pflichtvortrag</label>
+        <!-- SPEZIFISCH: PFLICHTVORTRAG -->
+        <div v-if="form.vortrag_typ === 'PFLICHT'" class="bg-red-50 p-4 rounded-lg space-y-4 border border-red-100">
+          <h3 class="text-xs font-bold text-red-700 uppercase tracking-wider">Pflicht-Zuweisung</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Pflicht-Raum</label>
+              <select v-model="form.pflichtraum.id" class="input-field" required>
+                <option v-for="r in raeume" :key="r.id" :value="r.id">{{ r.name }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Pflicht-Slot</label>
+              <select v-model="form.pflichtslot.id" class="input-field" required>
+                <option v-for="s in slots" :key="s.id" :value="s.id">{{ s.description }}</option>
+              </select>
+            </div>
           </div>
-          <div class="flex items-center gap-2">
-            <input id="readyToRepeat" v-model="form.readyToRepeat" type="checkbox" class="h-5 w-5 text-indigo-600 rounded" />
-            <label for="readyToRepeat" class="text-sm text-gray-700">Wiederholbar</label>
+        </div>
+
+        <!-- SPEZIFISCH: WAHLVORTRAG -->
+        <div v-if="form.vortrag_typ === 'WAHL'" class="bg-indigo-50 p-4 rounded-lg space-y-4 border border-indigo-100">
+          <h3 class="text-xs font-bold text-indigo-700 uppercase tracking-wider">Wahl-Einstellungen</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex items-center gap-2">
+              <input id="wiederholbar" v-model="form.wiederholbar" type="checkbox" class="h-5 w-5" />
+              <label for="wiederholbar" class="text-sm font-medium">Wiederholbar</label>
+            </div>
+            <div v-if="form.wiederholbar">
+              <label class="block text-xs text-gray-500 uppercase">Max. Wiederholungen</label>
+              <input v-model.number="form.maxWiederholungen" type="number" min="1" class="input-field" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Verfügbare Wahl-Slots</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-32 overflow-y-auto p-2 bg-white border rounded-lg">
+              <div v-for="s in slots" :key="s.id" class="flex items-center gap-2 text-xs">
+                <input type="checkbox" :value="s.id" v-model="selectedWahlslotIds" class="h-4 w-4 rounded" />
+                <span>{{ s.description }}</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -56,53 +96,66 @@
 </template>
 
 <script setup>
-import { reactive, watch } from 'vue';
+import { reactive, watch, ref } from 'vue';
 
 const props = defineProps({
   isVisible: { type: Boolean, required: true },
   vortrag: { type: Object, default: null },
-  referenten: { type: Array, default: () => [] }
+  referenten: { type: Array, default: () => [] },
+  raeume: { type: Array, default: () => [] },
+  slots: { type: Array, default: () => [] }
 });
 
 const emit = defineEmits(['close', 'save']);
+const selectedWahlslotIds = ref([]);
 
 const form = reactive({
   id: null,
-  title: '',
-  abstractText: '',
-  targetAudience: '',
+  vortrag_typ: 'WAHL',
+  titel: '',
+  inhalt: '',
+  zielgruppe: '',
   referent: { id: null },
-  maxRepetitions: 1,
-  readyToRepeat: false,
-  istPflicht: false,
-  version: 0
+  pflichtraum: { id: null },
+  pflichtslot: { id: null },
+  wiederholbar: false,
+  maxWiederholungen: 1,
 });
 
 watch(
     () => props.vortrag,
     (val) => {
       form.id = val?.id ?? null;
-      form.title = val?.title ?? '';
-      form.abstractText = val?.abstractText ?? '';
-      form.targetAudience = val?.targetAudience ?? '';
+      form.vortrag_typ = val?.vortrag_typ ?? 'WAHL';
+      form.titel = val?.titel ?? '';
+      form.inhalt = val?.inhalt ?? '';
+      form.zielgruppe = val?.zielgruppe ?? '';
       form.referent.id = val?.referent?.id ?? null;
-      form.maxRepetitions = val?.maxRepetitions ?? 1;
-      form.readyToRepeat = val?.readyToRepeat ?? false;
-      form.istPflicht = val?.istPflicht ?? false;
-      form.version = val?.version ?? 0;
+      form.pflichtraum.id = val?.pflichtraum?.id ?? null;
+      form.pflichtslot.id = val?.pflichtslot?.id ?? null;
+      form.wiederholbar = val?.wiederholbar ?? false;
+      form.maxWiederholungen = val?.maxWiederholungen ?? 1;
+      selectedWahlslotIds.value = val?.wahlslots?.map(s => s.id) ?? [];
     },
     { immediate: true }
 );
 
 const save = () => {
-  emit('save', { ...form });
+  const payload = { ...form };
+  if (form.vortrag_typ === 'WAHL') {
+    payload.wahlslots = props.slots.filter(s => selectedWahlslotIds.value.includes(s.id));
+    payload.pflichtraum = null;
+    payload.pflichtslot = null;
+  } else {
+    payload.wahlslots = [];
+    payload.wiederholbar = false;
+  }
+  emit('save', payload);
 };
 </script>
 
 <style scoped>
-.input-field {
-  @apply w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white;
-}
-.btn-primary { @apply rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700; }
-.btn-secondary { @apply rounded-lg bg-gray-100 px-4 py-2 text-gray-700 hover:bg-gray-200; }
+.input-field { @apply w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:ring-2 focus:ring-indigo-500 bg-white text-sm; }
+.btn-primary { @apply rounded-lg bg-indigo-600 px-4 py-2 text-white font-bold hover:bg-indigo-700 transition; }
+.btn-secondary { @apply rounded-lg bg-gray-100 px-4 py-2 text-gray-700 font-medium hover:bg-gray-200 transition; }
 </style>

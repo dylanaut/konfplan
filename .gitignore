@@ -2308,3 +2308,4 @@ build/
 /frontend/node/npx
 /frontend/node/npx.cmd
 /.idea/dataSources/
+/frontend/dist/

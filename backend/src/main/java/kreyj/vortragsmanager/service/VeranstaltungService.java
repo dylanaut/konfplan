@@ -1,13 +1,23 @@
 package kreyj.vortragsmanager.service;
 
+import com.opencsv.bean.CsvToBeanBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
-import kreyj.vortragsmanager.entity.Veranstaltung;
+import kreyj.vortragsmanager.dto.VeranstaltungCsvDto;
+import kreyj.vortragsmanager.entity.Admin;
 import kreyj.vortragsmanager.entity.User;
+import kreyj.vortragsmanager.entity.Veranstaltung;
+
+import java.io.FileReader;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @ApplicationScoped
 public class VeranstaltungService {
+
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     public List<Veranstaltung> listAll() {
         return Veranstaltung.listAll();
@@ -19,18 +29,15 @@ public class VeranstaltungService {
 
     @Transactional
     public Veranstaltung save(Veranstaltung v) {
-        // Validierung: Organisator muss ADMIN sein
         if (v.organisator == null || !"ADMIN".equals(v.organisator.role)) {
             throw new IllegalArgumentException("Der Organisator muss ein Benutzer mit der Rolle ADMIN sein.");
         }
-        
         if (v.id == null) {
             v.persist();
             return v;
         } else {
             Veranstaltung entity = Veranstaltung.findById(v.id);
             if (entity == null) return null;
-            
             entity.name = v.name;
             entity.beginntAm = v.beginntAm;
             entity.endetAm = v.endetAm;
@@ -38,9 +45,38 @@ public class VeranstaltungService {
             entity.logo = v.logo;
             entity.logo_link = v.logo_link;
             entity.organisator = v.organisator;
-            
             return entity;
         }
+    }
+
+    @Transactional
+    public int importFromCsv(Path csvFilePath) throws Exception {
+        int count = 0;
+        try (FileReader reader = new FileReader(csvFilePath.toFile())) {
+            List<VeranstaltungCsvDto> beans = new CsvToBeanBuilder<VeranstaltungCsvDto>(reader)
+                    .withType(VeranstaltungCsvDto.class)
+                    .withSeparator(';')
+                    .withIgnoreLeadingWhiteSpace(true)
+                    .build()
+                    .parse();
+
+            for (VeranstaltungCsvDto dto : beans) {
+                User admin = User.findByEmail(dto.organisatorEmail);
+                if (admin instanceof Admin) {
+                    Veranstaltung v = new Veranstaltung();
+                    v.name = dto.name;
+                    v.beginntAm = LocalDateTime.parse(dto.beginntAm, DATE_FORMAT);
+                    if (dto.endetAm != null && !dto.endetAm.isEmpty()) {
+                        v.endetAm = LocalDateTime.parse(dto.endetAm, DATE_FORMAT);
+                    }
+                    v.ort = dto.ort;
+                    v.organisator = admin;
+                    v.persist();
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 
     @Transactional

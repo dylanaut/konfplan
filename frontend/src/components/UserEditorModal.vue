@@ -32,28 +32,27 @@
             <option value="REFERENT">Referent</option>
             <option value="ADMIN">Administrator</option>
           </select>
-          <p v-if="user?.id" class="text-[10px] text-gray-400 mt-1 italic">Rolle kann bei bestehenden Benutzern nicht geändert werden.</p>
         </div>
 
         <!-- Rollenspezifische Felder: REFERENT -->
-        <div v-if="form.role === 'REFERENT'" class="md:col-span-2 bg-blue-50 p-4 rounded-lg space-y-3">
-          <h3 class="text-xs font-bold text-blue-700 uppercase tracking-wider">Referenten-Profil</h3>
-          <div>
+        <div v-if="form.role === 'REFERENT'" class="md:col-span-2 bg-blue-50 p-4 rounded-lg grid grid-cols-1 md:grid-cols-2 gap-4">
+          <h3 class="md:col-span-2 text-xs font-bold text-blue-700 uppercase tracking-wider">Referenten-Profil</h3>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Job-Rolle / Position</label>
+            <input v-model="form.jobRole" type="text" class="input-field" placeholder="z.B. Softwareentwickler, Manager..." />
+          </div>
+          <div class="md:col-span-2">
             <label class="block text-sm font-medium text-gray-700 mb-1">Biografie / Kurzvita</label>
             <textarea v-model="form.biography" rows="3" class="input-field" placeholder="Erzählen Sie etwas über den Referenten..."></textarea>
           </div>
         </div>
 
         <!-- Rollenspezifische Felder: TEILNEHMER -->
-        <div v-if="form.role === 'TEILNEHMER'" class="md:col-span-2 bg-green-50 p-4 rounded-lg grid grid-cols-1 md:grid-cols-2 gap-4">
-          <h3 class="md:col-span-2 text-xs font-bold text-green-700 uppercase tracking-wider">Teilnehmer-Details</h3>
+        <div v-if="form.role === 'TEILNEHMER'" class="md:col-span-2 bg-green-50 p-4 rounded-lg">
+          <h3 class="text-xs font-bold text-green-700 uppercase tracking-wider mb-3">Teilnehmer-Details</h3>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Organisation</label>
-            <input v-model="form.organization" type="text" class="input-field" placeholder="Firma / Schule" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Position / Klasse</label>
-            <input v-model="form.jobRole" type="text" class="input-field" />
+            <label class="block text-sm font-medium text-gray-700 mb-1">Organisation / Schule</label>
+            <input v-model="form.organization" type="text" class="input-field" placeholder="Firma / Bildungseinrichtung" />
           </div>
         </div>
 
@@ -90,7 +89,6 @@ const form = reactive({
   email: '',
   role: 'TEILNEHMER',
   isActive: true,
-  // Spezialfelder
   biography: '',
   organization: '',
   jobRole: '',
@@ -105,7 +103,6 @@ watch(
       form.email = val?.email ?? '';
       form.role = val?.role ?? 'TEILNEHMER';
       form.isActive = val?.isActive ?? true;
-      // Daten aus den Unterklassen mappen
       form.biography = val?.biography ?? '';
       form.organization = val?.organization ?? '';
       form.jobRole = val?.jobRole ?? '';
@@ -114,7 +111,6 @@ watch(
 );
 
 const save = () => {
-  // Wir senden das flache Objekt, das Backend mappt es dank Jackson in die richtige Klasse
   emit('save', { ...form });
 };
 </script>

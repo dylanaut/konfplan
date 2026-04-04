@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Set;
 
 @Entity
-public class Raum extends PanacheEntity {
+public class Raum extends SqliteEntity {
 
     @Column(nullable = false)
     public String name;
@@ -25,8 +25,8 @@ public class Raum extends PanacheEntity {
     @ManyToMany
     @JoinTable(
         name = "Raum_EventSlot",
-        joinColumns = @JoinColumn(name = "raum_id"),
-        inverseJoinColumns = @JoinColumn(name = "eventslot_id")
+        joinColumns = @JoinColumn(name = "raum_id", columnDefinition = "INTEGER"),
+        inverseJoinColumns = @JoinColumn(name = "eventslot_id", columnDefinition = "INTEGER")
     )
     public Set<EventSlot> verfuegbareSlots = new HashSet<>();
 }

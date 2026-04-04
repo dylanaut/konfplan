@@ -4,11 +4,9 @@ import com.opencsv.bean.CsvToBeanBuilder;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
-import kreyj.vortragsmanager.dto.ParticipantCsvDto;
+import kreyj.vortragsmanager.dto.TeilnehmerCsvDto;
 import kreyj.vortragsmanager.entity.Teilnehmer;
 import kreyj.vortragsmanager.entity.User;
-import kreyj.vortragsmanager.resource.TeilnehmerResource;
-import org.hibernate.dialect.FunctionalDependencyAnalysisSupport;
 
 import java.io.FileReader;
 import java.nio.file.Path;
@@ -37,8 +35,7 @@ public class TeilnehmerService {
 
         String tempPassword = UUID.randomUUID().toString();
         user.passwordHash = BcryptUtil.bcryptHash(tempPassword);
-        // role wird über @DiscriminatorValue automatisch gesetzt
-
+        
         user.persist();
         return (Teilnehmer) user;
     }
@@ -47,21 +44,20 @@ public class TeilnehmerService {
     public int importFromCsv(Path csvFilePath) throws Exception {
         int count = 0;
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
-            List<ParticipantCsvDto> beans = new CsvToBeanBuilder<ParticipantCsvDto>(reader)
-                    .withType(ParticipantCsvDto.class)
+            List<TeilnehmerCsvDto> beans = new CsvToBeanBuilder<TeilnehmerCsvDto>(reader)
+                    .withType(TeilnehmerCsvDto.class)
                     .withIgnoreLeadingWhiteSpace(true)
                     .withSeparator(';')
                     .build()
                     .parse();
 
-            for (ParticipantCsvDto dto : beans) {
+            for (TeilnehmerCsvDto dto : beans) {
                 if (User.findByEmail(dto.email) == null) {
                     Teilnehmer nt = new Teilnehmer();
                     nt.email = dto.email.trim().toLowerCase();
                     nt.firstName = dto.firstName;
                     nt.lastName = dto.lastName;
-                    nt.organization = dto.organization;
-                    nt.jobRole = dto.jobRole;
+                    nt.gruppe = dto.gruppe;
 
                     String tempPassword = UUID.randomUUID().toString();
                     nt.passwordHash = BcryptUtil.bcryptHash(tempPassword);
@@ -85,6 +81,7 @@ public class TeilnehmerService {
         user.persist();
     }
 
+    @Transactional
     public Teilnehmer updateTeilnehmer(Long id, Teilnehmer teilnehmer) {
         User existing = User.findById(id);
         if (existing == null || teilnehmer == null) return null;
@@ -93,10 +90,8 @@ public class TeilnehmerService {
         tn.firstName = teilnehmer.firstName;
         tn.lastName = teilnehmer.lastName;
         tn.email = teilnehmer.email == null ? existing.email : teilnehmer.email.trim().toLowerCase();
-        tn.organization = teilnehmer.organization;
-        tn.jobRole = teilnehmer.jobRole;
+        tn.gruppe = teilnehmer.gruppe;
         tn.isActive = teilnehmer.isActive;
-        tn.persist();
         return tn;
     }
 }

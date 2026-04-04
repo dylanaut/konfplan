@@ -2,8 +2,7 @@ package kreyj.vortragsmanager.dto;
 
 import com.opencsv.bean.CsvBindByName;
 
-public class ParticipantCsvDto {
-
+public class ReferentCsvDto {
     @CsvBindByName(column = "Vorname", required = true)
     public String firstName;
 
@@ -13,9 +12,15 @@ public class ParticipantCsvDto {
     @CsvBindByName(column = "Email", required = true)
     public String email;
 
-    @CsvBindByName(column = "Organisation")
-    public String organization;
-
     @CsvBindByName(column = "Position")
     public String jobRole;
+
+    @CsvBindByName(column = "Organisation")
+    public String organisation;
+
+    @CsvBindByName(column = "Slogan")
+    public String slogan;
+
+    @CsvBindByName(column = "Biografie")
+    public String biography;
 }
