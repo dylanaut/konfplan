@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
@@ -25,16 +26,22 @@ class UserPersistenceTest {
         Prioritaet.deleteAll();
         Verfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
-        Raum.deleteAll();
+        Gebaeude.deleteAll();
         EventSlot.deleteAll();
         User.deleteAll();
         Veranstaltung.deleteAll();
+
+        // Gebäude für die Tests anlegen
+
+        Gebaeude g = new Gebaeude();
+        g.name = "Test Ort";
+        g.typ = Gebaeude.Gebaeudetyp.SCHULE;
 
         // Basis-Veranstaltung für die Tests anlegen
         Veranstaltung v = new Veranstaltung();
         v.name = "Test Event";
         v.beginntAm = LocalDateTime.now();
-        v.ort = "Test Ort";
+        v.gebaeude = List.of(g);
         
         // Admin für die Veranstaltung (organisator)
         Admin admin = new Admin();

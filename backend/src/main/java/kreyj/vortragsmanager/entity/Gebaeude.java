@@ -1,0 +1,40 @@
+package kreyj.vortragsmanager.entity;
+
+import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+public class Gebaeude extends SqliteEntity {
+
+    @Column(nullable = false, unique = true)
+    public String name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    public Gebaeudetyp typ;
+
+    @Column(nullable = false)
+    public String strasse;
+
+    public String hausnummer;
+
+    @Column(nullable = false)
+    public String postleitzahl;
+
+    @Column(nullable = false)
+    public String ort;
+
+    @OneToMany(mappedBy = "gebaeude", cascade = CascadeType.ALL)
+    public List<Raum> raeume = new ArrayList<>();
+
+    @ManyToMany(mappedBy = "gebaeude")
+    public List<Veranstaltung> veranstaltungen = new ArrayList<>();
+
+    @Version // Optimistic Locking
+    public Long version;
+
+    public enum Gebaeudetyp {
+        SCHULE, KINO, SPORTHALLE, SAAL, EXTERN
+    }
+}

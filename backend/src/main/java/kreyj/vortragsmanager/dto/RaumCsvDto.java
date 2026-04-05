@@ -11,4 +11,7 @@ public class RaumCsvDto {
 
     @CsvBindByName(column = "Etage")
     public String etage;
+
+    @CsvBindByName(column = "Gebaeude_Name", required = true)
+    public String gebaeudeName;
 }

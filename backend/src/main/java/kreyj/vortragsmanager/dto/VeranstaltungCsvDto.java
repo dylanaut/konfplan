@@ -12,9 +12,11 @@ public class VeranstaltungCsvDto {
     @CsvBindByName(column = "Ende")
     public String endetAm;
 
-    @CsvBindByName(column = "Ort", required = true)
-    public String ort;
+    // 'ort' wurde entfernt
 
     @CsvBindByName(column = "Organisator_Email", required = true)
     public String organisatorEmail;
+
+    @CsvBindByName(column = "Gebaeude_Namen") // Pipe-getrennte Liste von Gebaeude-Namen
+    public String gebaeudeNamen;
 }

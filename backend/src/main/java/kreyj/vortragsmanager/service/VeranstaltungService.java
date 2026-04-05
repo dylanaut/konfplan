@@ -5,6 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.dto.VeranstaltungCsvDto;
 import kreyj.vortragsmanager.entity.Admin;
+import kreyj.vortragsmanager.entity.Gebaeude;
 import kreyj.vortragsmanager.entity.User;
 import kreyj.vortragsmanager.entity.Veranstaltung;
 
@@ -12,7 +13,9 @@ import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class VeranstaltungService {
@@ -41,10 +44,21 @@ public class VeranstaltungService {
             entity.name = v.name;
             entity.beginntAm = v.beginntAm;
             entity.endetAm = v.endetAm;
-            entity.ort = v.ort;
+            // 'ort' wurde entfernt
             entity.logo = v.logo;
             entity.logo_link = v.logo_link;
             entity.organisator = v.organisator;
+            
+            // Gebaeude aktualisieren
+            entity.gebaeude.clear();
+            if (v.gebaeude != null) {
+                v.gebaeude.forEach(g -> {
+                    Gebaeude attachedGebaeude = Gebaeude.findById(g.id);
+                    if (attachedGebaeude != null) {
+                        entity.gebaeude.add(attachedGebaeude);
+                    }
+                });
+            }
             return entity;
         }
     }
@@ -69,8 +83,20 @@ public class VeranstaltungService {
                     if (dto.endetAm != null && !dto.endetAm.isEmpty()) {
                         v.endetAm = LocalDateTime.parse(dto.endetAm, DATE_FORMAT);
                     }
-                    v.ort = dto.ort;
+                    // 'ort' wurde entfernt
                     v.organisator = admin;
+
+                    // Gebaeude aus Namen zuweisen
+                    if (dto.gebaeudeNamen != null && !dto.gebaeudeNamen.isEmpty()) {
+                        Arrays.stream(dto.gebaeudeNamen.split("\\|"))
+                              .map(String::trim)
+                              .forEach(gebaeudeName -> {
+                                  Gebaeude g = Gebaeude.find("name", gebaeudeName).firstResult();
+                                  if (g != null) {
+                                      v.gebaeude.add(g);
+                                  }
+                              });
+                    }
                     v.persist();
                     count++;
                 }

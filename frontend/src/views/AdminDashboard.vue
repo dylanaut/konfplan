@@ -23,7 +23,7 @@
     <!-- Tab-Navigation -->
     <div v-if="selectedVid" class="border-b border-gray-200">
       <nav class="-mb-px flex space-x-8 overflow-x-auto">
-        <button v-for="tab in ['benutzer', 'vorträge', 'slots', 'räume', 'planung', 'stats']" :key="tab"
+        <button v-for="tab in ['veranstaltungen', 'gebäude', 'räume', 'benutzer', 'vorträge', 'slots', 'planung', 'stats']" :key="tab"
                 @click="activeTab = tab"
                 :class="[activeTab === tab ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm capitalize']">
           {{ tab === 'planung' ? 'Vortragsplanung' : tab }}
@@ -40,96 +40,214 @@
 
     <!-- TABS -->
     <template v-if="selectedVid">
-
-      <!-- ... (Andere Tabs wie bisher) ... -->
-
-      <!-- TAB: VORTRAGSPLANUNG -->
-      <section v-if="activeTab === 'planung'" class="space-y-6 animate-fade-in">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-          <!-- Konfiguration & Aktion -->
-          <div class="md:col-span-3 bg-indigo-900 text-white p-8 rounded-2xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-            <div class="space-y-4 flex-1">
-              <div>
-                <h2 class="text-3xl font-black">Planung & Optimierung</h2>
-                <p class="text-indigo-200">Konfigurieren Sie den Solver und starten Sie die Berechnung.</p>
-              </div>
-
-              <!-- Solver Konfiguration -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl bg-white/10 p-4 rounded-xl border border-white/10">
-                <div>
-                  <label class="block text-[10px] uppercase font-bold text-indigo-300 mb-1">MiniZinc Solver</label>
-                  <select v-model="solverConfig.solver" class="w-full bg-indigo-800 border-none rounded text-sm text-white focus:ring-2 focus:ring-green-400">
-                    <option value="OR-tools">Google OR-Tools</option>
-                    <option value="Gecode">Gecode</option>
-                    <option value="COIN-BC">COIN-BC</option>
-                    <option value="Chuffed">Chuffed</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-[10px] uppercase font-bold text-indigo-300 mb-1">Timeout (Sekunden)</label>
-                  <input v-model.number="solverConfig.timeout" type="number" min="10" max="600" class="w-full bg-indigo-800 border-none rounded text-sm text-white focus:ring-2 focus:ring-green-400" />
-                </div>
-              </div>
-
-              <div class="flex gap-4">
-                <div class="bg-white/10 px-4 py-2 rounded-lg border border-white/20">
-                  <div class="text-xs uppercase font-bold text-indigo-300">Teilnehmer</div>
-                  <div class="text-2xl font-black">{{ participantsCount }}</div>
-                </div>
-                <!-- ... -->
-              </div>
-            </div>
-
-            <button @click="startOptimization" :disabled="isOptimizing"
-                    class="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-2xl transition-all transform hover:scale-105 flex items-center gap-3">
-              <span v-if="isOptimizing" class="animate-spin"><LoaderIcon /></span>
-              <ZapIcon v-else />
-              {{ isOptimizing ? 'Optimierung läuft...' : 'Jetzt Optimieren' }}
-            </button>
+      <!-- TAB: VERANSTALTUNGEN -->
+      <section v-if="activeTab === 'veranstaltungen'" class="space-y-4 animate-fade-in">
+        <div class="flex justify-between items-center">
+          <h2 class="text-xl font-bold text-gray-800">Veranstaltungs-Management</h2>
+          <div class="flex flex-wrap gap-2">
+            <button @click="triggerUpload('/api/veranstaltungen/import')" class="btn-secondary">CSV Import</button>
+            <button @click="openVeranstaltungEditor(null)" class="btn-primary">+ Neu</button>
           </div>
-
-          <!-- ... (Listen für Referenten, Vorträge, Slots wie bisher) ... -->
+        </div>
+        <div class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50 text-xs uppercase font-medium text-gray-500">
+            <tr>
+              <th class="px-6 py-3 text-left">Veranstaltung</th>
+              <th class="px-6 py-3 text-left">Zeitraum</th>
+              <th class="px-6 py-3 text-left">Gebäude</th>
+              <th class="px-6 py-3 text-right">Aktionen</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 text-sm">
+            <tr v-for="v in veranstaltungen" :key="v.id" class="hover:bg-gray-50 transition">
+              <td class="px-6 py-4 flex items-center gap-3">
+                <img v-if="v.logo" :src="v.logo" class="w-8 h-8 rounded object-contain border" />
+                <div class="font-bold text-gray-900">{{ v.name }}</div>
+              </td>
+              <td class="px-6 py-4 text-gray-600">{{ formatDate(v.beginntAm) }}</td>
+              <td class="px-6 py-4 text-gray-600 text-xs">
+                <div class="flex flex-wrap gap-1">
+                  <span v-for="g in v.gebaeude" :key="g.id" class="bg-gray-100 px-2 py-0.5 rounded">{{ g.name }}</span>
+                </div>
+              </td>
+              <td class="px-6 py-4 text-right space-x-3">
+                <button @click="openVeranstaltungEditor(v)" class="text-indigo-600 hover:underline">Bearbeiten</button>
+                <button @click="deleteVeranstaltung(v.id)" class="text-red-600 hover:text-red-900"><Trash2Icon class="w-4 h-4 inline"/></button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
+      <!-- TAB: RÄUME -->
+      <section v-if="activeTab === 'räume'" class="space-y-4 animate-fade-in">
+        <div class="flex justify-between items-center">
+          <h2 class="text-xl font-bold text-gray-800">Raum-Management</h2>
+          <button @click="openRaumEditor(null)" class="btn-primary">+ Neuer Raum</button>
+        </div>
+        <div class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50 text-xs uppercase font-medium text-gray-500">
+            <tr>
+              <th class="px-6 py-3 text-left">Raum (Gebäude)</th>
+              <th class="px-6 py-3 text-center">Kapazität</th>
+              <th class="px-6 py-3 text-right">Aktionen</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 text-sm">
+            <tr v-for="r in raeume" :key="r.id" class="hover:bg-gray-50 transition">
+              <td class="px-6 py-4">
+                <div class="font-bold text-gray-900">{{ r.name }}</div>
+                <div class="text-gray-400 text-xs">{{ r.gebaeude?.name }} | {{ r.etage || 'k.A.' }}</div>
+              </td>
+              <td class="px-6 py-4 text-center">{{ r.kapazitaet }}</td>
+              <td class="px-6 py-4 text-right space-x-3">
+                <button @click="openRaumEditor(r)" class="text-indigo-600">Bearbeiten</button>
+                <button @click="deleteRaum(r)" class="text-red-600"><Trash2Icon class="w-4 h-4 inline"/></button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ... (andere Tabs wie bisher) ... -->
+
     </template>
 
-    <!-- Modals & Global File Input ... -->
+    <!-- Modals -->
+    <VeranstaltungEditorModal :isVisible="showVeranstaltungModal" :veranstaltung="selectedVeranstaltung" :admins="admins" :allGebaeude="gebaeude" @close="showVeranstaltungModal = false" @save="handleSaveVeranstaltung" />
+    <RaumEditorModal :isVisible="showRaumModal" :raum="selectedRaum" :slots="eventSlots" :gebaeude="gebaeude" @close="showRaumModal = false" @save="handleSaveRaum" />
+    <!-- ... -->
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref, reactive } from 'vue';
+/* ... (Imports und State wie bisher) ... */
+import { computed, onMounted, ref } from 'vue';
 import api from '../api/axios';
-import {
-  Download as DownloadIcon, Trash2 as Trash2Icon, Upload as UploadIcon, Calendar as CalendarIcon,
-  Zap as ZapIcon, Loader as LoaderIcon, Users as UsersIcon, Clock as ClockIcon, FileText as FileTextIcon
-} from 'lucide-vue-next';
+import { Download as DownloadIcon, Trash2 as Trash2Icon, Upload as UploadIcon, Calendar as CalendarIcon } from 'lucide-vue-next';
+import AdminVortragEditorModal from '../components/AdminVortragEditorModal.vue';
+import UserEditorModal from '../components/UserEditorModal.vue';
+import VeranstaltungEditorModal from '../components/VeranstaltungEditorModal.vue';
+import RaumEditorModal from '../components/RaumEditorModal.vue';
+import EventSlotEditorModal from '../components/EventSlotEditorModal.vue';
+import GebaeudeEditorModal from '../components/GebaeudeEditorModal.vue';
 
-// ... (Andere State Variablen)
+// State
+const activeTab = ref('benutzer');
+const selectedVid = ref(null);
+const veranstaltungen = ref([]);
+const gebaeude = ref([]);
+const raeume = ref([]);
+const users = ref([]);
+const vortraege = ref([]);
+const referenten = ref([]);
+const eventSlots = ref([]);
+const stats = ref([]);
 
-const solverConfig = reactive({
-  solver: 'OR-tools',
-  timeout: 120
+const showVeranstaltungModal = ref(false);
+const selectedVeranstaltung = ref(null);
+const showGebaeudeModal = ref(false);
+const selectedGebaeude = ref(null);
+const showRaumModal = ref(false);
+const selectedRaum = ref(null);
+const showUserModal = ref(false);
+const selectedUser = ref(null);
+const showVortragModal = ref(false);
+const selectedVortrag = ref(null);
+const showSlotModal = ref(false);
+const selectedSlot = ref(null);
+
+const fileInput = ref(null);
+const currentUploadEndpoint = ref('');
+
+const admins = computed(() => users.value.filter(u => u.role === 'ADMIN'));
+
+onMounted(async () => {
+  try {
+    const [vRes, gRes] = await Promise.all([
+      api.get('/api/veranstaltungen'),
+      api.get('/api/gebaeude')
+    ]);
+    veranstaltungen.value = vRes.data;
+    gebaeude.value = gRes.data;
+    updateRaeumeList();
+  } catch (err) { console.error(err); }
 });
 
-const isOptimizing = ref(false);
+const updateRaeumeList = () => {
+  raeume.value = gebaeude.value.flatMap(g => g.raeume.map(r => ({ ...r, gebaeude: { id: g.id, name: g.name } })));
+};
 
-const startOptimization = async () => {
-  if (!confirm(`Die Optimierung mit ${solverConfig.solver} wird gestartet. Fortfahren?`)) return;
-
-  isOptimizing.value = true;
+const loadData = async () => {
+  if (!selectedVid.value) return;
   try {
-    const res = await api.post(`/api/veranstaltungen/${selectedVid.value}/optimierung/start`, solverConfig);
-    alert("Optimierung erfolgreich abgeschlossen!");
+    const base = `/api/veranstaltungen/${selectedVid.value}`;
+    const [uRes, vRes, rRes, sRes, stRes, gRes] = await Promise.all([
+      api.get(`${base}/benutzer`),
+      api.get(`${base}/vortraege`),
+      api.get(`${base}/referenten`),
+      api.get(`${base}/slots`),
+      api.get(`${base}/stats`),
+      api.get('/api/gebaeude')
+    ]);
+    users.value = uRes.data;
+    vortraege.value = vRes.data;
+    referenten.value = rRes.data;
+    eventSlots.value = sRes.data;
+    stats.value = stRes.data;
+    gebaeude.value = gRes.data;
+    updateRaeumeList();
+  } catch (err) { console.error(err); }
+};
+
+const openRaumEditor = (r) => {
+  selectedRaum.value = r || { name: '', kapazitaet: 10, etage: '', gebaeude: { id: gebaeude.value[0]?.id }, verfuegbareSlots: [] };
+  showRaumModal.value = true;
+};
+
+const handleSaveRaum = async (r) => {
+  const gid = r.gebaeude.id;
+  const url = r.id ? `/api/gebaeude/${gid}/raeume/${r.id}` : `/api/gebaeude/${gid}/raeume`;
+  try {
+    if (r.id) await api.put(url, r);
+    else await api.post(url, r);
+    showRaumModal.value = false;
     loadData();
-  } catch (err) {
-    alert("Fehler bei der Optimierung: " + (err.response?.data || err.message));
-  } finally {
-    isOptimizing.value = false;
+  } catch (e) { alert("Fehler beim Speichern des Raums!"); }
+};
+
+const deleteRaum = async (r) => {
+  if (confirm(`Raum ${r.name} löschen?`)) {
+    try {
+      await api.delete(`/api/gebaeude/${r.gebaeude.id}/raeume/${r.id}`);
+      loadData();
+    } catch (e) { alert("Fehler beim Löschen!"); }
   }
 };
 
-// ... (Restliche Methoden)
+const openVeranstaltungEditor = (v) => {
+  selectedVeranstaltung.value = v || { name: '', beginntAm: '', endetAm: '', gebaeude: [], organisator: { id: admins.value[0]?.id } };
+  showVeranstaltungModal.value = true;
+};
+
+const handleSaveVeranstaltung = async (v) => {
+  try {
+    if (v.id) await api.put(`/api/veranstaltungen/${v.id}`, v);
+    else await api.post('/api/veranstaltungen', v);
+    showVeranstaltungModal.value = false;
+    const res = await api.get('/api/veranstaltungen');
+    veranstaltungen.value = res.data;
+  } catch (e) { alert("Fehler beim Speichern der Veranstaltung!"); }
+};
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleString('de-DE', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+};
 </script>

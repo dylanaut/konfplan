@@ -4,6 +4,7 @@ import com.opencsv.bean.CsvToBeanBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.dto.RaumCsvDto;
+import kreyj.vortragsmanager.entity.Gebaeude;
 import kreyj.vortragsmanager.entity.Raum;
 import kreyj.vortragsmanager.entity.EventSlot;
 
@@ -18,29 +19,48 @@ public class RaumService {
         return Raum.listAll();
     }
 
+    public List<Raum> listByGebaeude(Long gebaeudeId) {
+        return Raum.list("gebaeude.id", gebaeudeId);
+    }
+
     public Raum findById(Long id) {
         return Raum.findById(id);
     }
 
     @Transactional
-    public Raum save(Raum r) {
+    public Raum save(Raum r, Long gebaeudeId) {
+        Gebaeude gebaeude = Gebaeude.findById(gebaeudeId);
+        if (gebaeude == null) {
+            throw new IllegalArgumentException("Gebäude mit ID " + gebaeudeId + " nicht gefunden.");
+        }
+
         if (r.id == null) {
             r.persist();
+            gebaeude.raeume.add(r);
+            gebaeude.persist();
             return r;
         } else {
-            Raum entity = Raum.findById(r.id);
-            if (entity == null) return null;
-            entity.name = r.name;
-            entity.kapazitaet = r.kapazitaet;
-            entity.etage = r.etage;
-            entity.verfuegbareSlots = r.verfuegbareSlots;
-            return entity;
+            Raum raum = Raum.findById(r.id);
+            if (raum == null) return null;
+            
+            raum.name = r.name;
+            raum.kapazitaet = r.kapazitaet;
+            raum.etage = r.etage;
+
+            raum.persist();
+
+            return raum;
         }
     }
 
     @Transactional
-    public int importFromCsv(Path csvFilePath) throws Exception {
+    public int importFromCsv(Path csvFilePath, Long gebaeudeId) throws Exception {
         int count = 0;
+        Gebaeude gebaeude = Gebaeude.findById(gebaeudeId);
+        if (gebaeude == null) {
+            throw new IllegalArgumentException("Gebäude mit ID " + gebaeudeId + " nicht gefunden.");
+        }
+
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             List<RaumCsvDto> beans = new CsvToBeanBuilder<RaumCsvDto>(reader)
                     .withType(RaumCsvDto.class)
@@ -55,8 +75,13 @@ public class RaumService {
                 r.kapazitaet = dto.kapazitaet;
                 r.etage = dto.etage;
                 r.persist();
+
+                gebaeude.raeume.add(r);
+
                 count++;
             }
+
+            gebaeude.persist();
         }
         return count;
     }
