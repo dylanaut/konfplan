@@ -17,7 +17,7 @@ public class VeranstaltungDto {
     public String logo_link;
     public Long organisatorId;
     public String organisatorName;
-    public List<Gebaeude> gebaeude; // Liste der zugehörigen Gebäude
+    public List<GebaeudeSimpleDto> gebaeude;
     public Long version;
 
     public VeranstaltungDto() {}

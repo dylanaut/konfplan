@@ -3,6 +3,7 @@ package kreyj.vortragsmanager.service;
 import com.opencsv.bean.CsvToBeanBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import kreyj.vortragsmanager.dto.GebaeudeSimpleDto;
 import kreyj.vortragsmanager.dto.VeranstaltungCsvDto;
 import kreyj.vortragsmanager.dto.VeranstaltungDto;
 import kreyj.vortragsmanager.entity.Admin;
@@ -64,7 +65,7 @@ public class VeranstaltungService {
         // Gebaeude-Relation (ManyToMany) aktualisieren
         entity.gebaeude.clear();
         if (dto.gebaeude != null) {
-            for (Gebaeude gDto : dto.gebaeude) {
+            for (GebaeudeSimpleDto gDto : dto.gebaeude) {
                 Gebaeude attached = Gebaeude.findById(gDto.id);
                 if (attached != null) {
                     entity.gebaeude.add(attached);
@@ -75,7 +76,7 @@ public class VeranstaltungService {
         if (entity.id == null) {
             entity.persist();
         }
-        
+
         return mapToDto(entity);
     }
 
@@ -125,8 +126,17 @@ public class VeranstaltungService {
         dto.logo_link = v.logo_link;
         dto.organisatorId = v.organisator != null ? v.organisator.id : null;
         dto.organisatorName = v.organisator != null ? v.organisator.lastName : "";
-        dto.gebaeude = v.gebaeude;
+        dto.gebaeude = v.gebaeude.stream().map(this::mapGebaeudeToDto).toList();
         dto.version = v.version;
+        return dto;
+    }
+
+    private GebaeudeSimpleDto mapGebaeudeToDto(Gebaeude g) {
+        GebaeudeSimpleDto dto = new GebaeudeSimpleDto();
+        dto.id = g.id;
+        dto.name = g.name;
+        dto.typ = g.typ;
+        dto.ort = g.ort;
         return dto;
     }
 }

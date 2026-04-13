@@ -2,13 +2,16 @@ package kreyj.vortragsmanager.resource;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.*;
-import kreyj.vortragsmanager.entity.*;
-import kreyj.vortragsmanager.service.*;
+import kreyj.vortragsmanager.entity.EventSlot;
+import kreyj.vortragsmanager.entity.Vortrag;
+import kreyj.vortragsmanager.service.AdminService;
+import kreyj.vortragsmanager.service.OptimierungService;
+import kreyj.vortragsmanager.service.PlanService;
+import kreyj.vortragsmanager.service.VeranstaltungService;
 
 import java.util.List;
 
@@ -40,9 +43,9 @@ public class VeranstaltungResource {
     @GET
     @Path("/{vid}")
     public Response getOne(@PathParam("vid") Long vid) {
-        VeranstaltungDto v = veranstaltungService.findById(vid);
-        if (v == null) return Response.status(Response.Status.NOT_FOUND).build();
-        return Response.ok(v).build();
+        VeranstaltungDto vDto = veranstaltungService.findById(vid);
+        if (vDto == null) return Response.status(Response.Status.NOT_FOUND).build();
+        return Response.ok(vDto).build();
     }
 
     @POST

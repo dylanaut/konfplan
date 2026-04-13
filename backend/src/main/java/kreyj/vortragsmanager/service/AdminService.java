@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -38,8 +39,6 @@ public class AdminService {
 
     @Transactional
     public UserDto createUser(UserDto dto, Long veranstaltungId) {
-        var vs = Veranstaltung.listAll();
-
         User user;
         if ("REFERENT".equals(dto.role)) user = new Referent();
         else if ("TEILNEHMER".equals(dto.role)) user = new Teilnehmer();
@@ -66,7 +65,11 @@ public class AdminService {
         }
 
         user.persist();
-        return mapToDto(user);
+
+        UserDto userDto = mapToDto(user);
+        userDto.role = dto.role;
+
+        return userDto;
     }
 
     @Transactional

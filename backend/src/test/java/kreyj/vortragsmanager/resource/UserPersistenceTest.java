@@ -14,6 +14,7 @@ import java.util.List;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.matchesPattern;
 
 @QuarkusTest
 class UserPersistenceTest {
@@ -34,7 +35,7 @@ class UserPersistenceTest {
 
         // 2. Zyklus User <-> Veranstaltung aufbrechen
         User.update("veranstaltung = null");
-        Veranstaltung.update("organisator = null");
+//        Veranstaltung.update("organisator = null");
 
         // 3. Jetzt können wir alles löschen
         Veranstaltung.deleteAll();
@@ -71,8 +72,8 @@ class UserPersistenceTest {
                 .when().get("/api/veranstaltungen/{vid}", testVid)
                 .then()
                 .statusCode(200)
-                .body("name", is(TEST_VERANSTALTUNG.startsWith("Test") ? is(TEST_VERANSTALTUNG).matches(".*") : is(TEST_VERANSTALTUNG)));
-        // Da wir einen Timestamp anhängen, prüfen wir nur den Start
+                .body("name", matchesPattern(TEST_VERANSTALTUNG + "_\\d+"))
+                .log().all();
     }
 
     @Test

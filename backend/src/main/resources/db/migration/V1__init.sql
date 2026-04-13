@@ -175,10 +175,10 @@ CREATE TABLE IF NOT EXISTS Verfuegbarkeit
 INSERT INTO User (id, email, password_hash, role, first_name, last_name, is_active, version)
 VALUES (1, 'juergenkrey@yahoo.de', '$2a$10$8920ztppz0N29GNOOw1FCuZJqMUIJhybpqw9tKwkS0rR3BmELJIlC', 'ADMIN', 'Jürgen', 'Krey', 1, 1);
 
-INSERT INTO Gebaeude (id, name, typ, strasse, hausnummer, postleitzahl, ort, version)
-VALUES (1, 'RKS Ober/Mittel', 'SCHULE', 'Schulstraße', '2', '53545', 'Linz am Rhein', 1);
-
-INSERT INTO Veranstaltung (id, name, beginntAm, endetAm, organisator_id, version)
-VALUES (1, 'Berufsorientierungstag 2026', '2026-09-01 09:00', '2026-09-01 17:00', 1, 1);
-
-INSERT INTO Veranstaltung_Gebaeude (veranstaltung_id, gebaeude_id) VALUES (1, 1);
+-- INSERT INTO Gebaeude (id, name, typ, strasse, hausnummer, postleitzahl, ort, version)
+-- VALUES (1, 'RKS Ober/Mittel', 'SCHULE', 'Schulstraße', '2', '53545', 'Linz am Rhein', 1);
+--
+-- INSERT INTO Veranstaltung (id, name, beginntAm, endetAm, organisator_id, version)
+-- VALUES (1, 'Berufsorientierungstag 2026', '2026-09-01 09:00', '2026-09-01 17:00', 1, 1);
+--
+-- INSERT INTO Veranstaltung_Gebaeude (veranstaltung_id, gebaeude_id) VALUES (1, 1);
