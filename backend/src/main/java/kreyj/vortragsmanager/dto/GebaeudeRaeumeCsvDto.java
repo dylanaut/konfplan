@@ -21,6 +21,6 @@ public class GebaeudeRaeumeCsvDto {
     @CsvBindByName(column = "Ort", required = true)
     public String ort;
 
-    @CsvBindByName(column = "Raeume")
+    @CsvBindByName(column = "Räume")
     public String raeumeRaw; // Format: "Name:Kap:Etage|Name:Kap:Etage"
 }

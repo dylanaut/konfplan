@@ -7,12 +7,15 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.RefProfilDto;
 import kreyj.vortragsmanager.dto.RefVortragDto;
+import kreyj.vortragsmanager.dto.ZuweisungDto;
 import kreyj.vortragsmanager.entity.Vortrag;
 import kreyj.vortragsmanager.entity.User;
+import kreyj.vortragsmanager.service.PlanService;
 import kreyj.vortragsmanager.service.ReferentService;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Path("/api/referent")
 @RolesAllowed({"ADMIN","REFERENT"})
@@ -25,6 +28,9 @@ public class ReferentResource {
 
     @Inject
     ReferentService referentService;
+
+    @Inject
+    PlanService planService;
 
     @GET
     @Path("/profile")
@@ -50,6 +56,12 @@ public class ReferentResource {
     public Response updateVortrag(RefVortragDto dto) {
         referentService.updateVortrag(jwt.getSubject(), dto);
         return Response.ok().build();
+    }
+
+    @GET
+    @Path("/my-plan")
+    public List<ZuweisungDto> getMyPlan() {
+        return planService.getPlanFuerReferent(jwt.getSubject());
     }
 
     @POST

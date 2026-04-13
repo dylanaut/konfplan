@@ -1,14 +1,8 @@
 package kreyj.vortragsmanager.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-import jakarta.persistence.Version;
+import jakarta.persistence.*;
+import kreyj.vortragsmanager.entity.converter.LocalDateTimeConverter;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,8 +17,10 @@ public class Veranstaltung extends SqliteEntity {
     public String name;
 
     @Column(nullable = false)
+    @Convert(converter = LocalDateTimeConverter.class)
     public LocalDateTime beginntAm;
 
+    @Convert(converter = LocalDateTimeConverter.class)
     public LocalDateTime endetAm;
 
     // Das Attribut 'ort' wird entfernt, da es durch die Relation zu Gebaeude ersetzt wird.

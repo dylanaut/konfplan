@@ -13,7 +13,6 @@ import kreyj.vortragsmanager.dto.ResetRequest;
 import kreyj.vortragsmanager.entity.Admin;
 import kreyj.vortragsmanager.entity.Teilnehmer;
 import kreyj.vortragsmanager.entity.User;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -29,7 +28,6 @@ import static org.hamcrest.Matchers.notNullValue;
 @QuarkusTest
 class AuthResourceTest {
 
-    // Entferne @Location hier, da @InjectMock ein generisches Mock-Objekt erstellt
     @Inject
     MockMailbox mailbox;
 
@@ -43,9 +41,12 @@ class AuthResourceTest {
         User user = new Admin();
         user.email = "test@example.com";
         user.firstName = "Test";
-        user.role = "USER";
+        user.role = "ADMIN";
+        user.passwordHash = "some-dummy-hash"; // Passwort setzen, um NOT NULL constraint zu erfüllen
 
         Mockito.when(User.findByEmail("test@example.com")).thenReturn(user);
+        // Wir müssen sicherstellen, dass persist() auf dem Mock-User nichts tut
+        Mockito.doNothing().when(Mockito.mock(User.class)).persist();
 
         given()
                 .queryParam("email", "test@example.com")
@@ -56,7 +57,7 @@ class AuthResourceTest {
         List<Mail> mails = mailbox.getMailsSentTo("test@example.com");
 
         assertThat(mails.size(), is(1));
-        assertThat(mails.get(0).getSubject(), is("Passwort zurücksetzen - Vortragsmanager"));
+        assertThat(mails.getFirst().getSubject(), is("Passwort zurücksetzen - Vortragsmanager"));
     }
 
     @Test
@@ -77,7 +78,6 @@ class AuthResourceTest {
         user.resetTokenExpiry = LocalDateTime.now().plusHours(1);
         user.passwordHash = BcryptUtil.bcryptHash("oldSecretPassword");
 
-
         PanacheQuery query = Mockito.mock(PanacheQuery.class);
         Mockito.when(User.find("resetToken", "valid-token")).thenReturn(query);
         Mockito.when(query.firstResult()).thenReturn(user);
@@ -97,7 +97,7 @@ class AuthResourceTest {
         User user = new Teilnehmer();
         user.email = "user@example.com";
         user.passwordHash = BcryptUtil.bcryptHash("correctPassword");
-        user.role = "USER";
+        user.role = "TEILNEHMER";
         user.isActive = true;
 
         Mockito.when(User.findByEmail("user@example.com")).thenReturn(user);
@@ -111,6 +111,6 @@ class AuthResourceTest {
                 .then()
                 .statusCode(200)
                 .body("token", notNullValue())
-                .body("role", is("USER"));
+                .body("role", is("TEILNEHMER"));
     }
 }

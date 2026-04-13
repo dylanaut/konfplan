@@ -1,102 +1,107 @@
 package kreyj.vortragsmanager.resource;
 
-import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
-import kreyj.vortragsmanager.entity.Admin;
-import kreyj.vortragsmanager.entity.Referent;
-import kreyj.vortragsmanager.entity.Teilnehmer;
-import kreyj.vortragsmanager.entity.User;
+import jakarta.transaction.Transactional;
+import kreyj.vortragsmanager.entity.*;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
+
 import static io.restassured.RestAssured.given;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @QuarkusTest
 public class UserInheritanceTest {
 
-    @Test
-    @TestSecurity(user = "admin@test.de", roles = "ADMIN")
-    @TestTransaction
-    public void testPersistAdminViaJson() {
-        String json = """
-        {
-            "email": "new-admin@vortragsmanager.de",
-            "firstName": "Super",
-            "lastName": "Admin",
-            "role": "ADMIN"
-        }
-        """;
+    Long testVid;
 
-        given()
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when().post("/api/admin/users")
-          .then()
-          .statusCode(201);
+    @BeforeEach
+    @Transactional
+    void setup() {
+        Zuweisung.deleteAll();
+        Prioritaet.deleteAll();
+        Verfuegbarkeit.deleteAll();
+        Vortrag.deleteAll();
+        EventSlot.deleteAll();
 
-        User user = User.findByEmail("new-admin@vortragsmanager.de");
-        assertNotNull(user);
-        assertTrue(user instanceof Admin, "User sollte eine Instanz von Admin sein");
-        assertEquals("ADMIN", user.role);
+        User.update("veranstaltung = null");
+        Veranstaltung.deleteAll();
+        User.deleteAll();
+
+        Raum.deleteAll();
+        Gebaeude.deleteAll();
+
+        Admin admin = new Admin();
+        admin.email = "org@test.de";
+        admin.passwordHash = "hash";
+        admin.persist();
+
+        Veranstaltung v = new Veranstaltung();
+        v.name = "Inheritance Test Event " + System.currentTimeMillis();
+        v.beginntAm = LocalDateTime.now();
+        v.organisator = admin;
+        v.persist();
+        testVid = v.id;
     }
 
     @Test
     @TestSecurity(user = "admin@test.de", roles = "ADMIN")
-    @TestTransaction
     public void testPersistReferentViaJson() {
         String json = """
-        {
-            "email": "expert@vortragsmanager.de",
-            "firstName": "Max",
-            "lastName": "Mustermann",
-            "role": "REFERENT",
-            "jobRole": "Software Architekt",
-            "biography": "Langjährige Erfahrung in Java."
-        }
-        """;
+                {
+                    "role": "REFERENT",
+                    "email": "expert@vortragsmanager.de",
+                    "firstName": "Max",
+                    "lastName": "Mustermann",
+                    "jobRole": "Software Architekt",
+                    "biography": "Langjährige Erfahrung in Java.",
+                    "isActive": true
+                }""";
 
         given()
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when().post("/api/admin/users")
-          .then()
-          .statusCode(201);
+                .contentType(ContentType.JSON)
+                .body(json)
+                .when().post("/api/veranstaltungen/{vid}/benutzer", testVid)
+                .then()
+                .statusCode(201);
 
-        User user = User.findByEmail("expert@vortragsmanager.de");
-        assertNotNull(user);
-        assertTrue(user instanceof Referent, "User sollte eine Instanz von Referent sein");
-        Referent ref = (Referent) user;
-        assertEquals("Software Architekt", ref.jobRole);
-        assertEquals("Langjährige Erfahrung in Java.", ref.biography);
+        Referent ref = (Referent) User.findByEmail("expert@vortragsmanager.de");
+        assertNotNull(ref, "Referent sollte in der DB existieren");
+        assertNotNull(ref.veranstaltung, "Veranstaltung des Referenten sollte nicht null sein");
+        assertEquals(testVid, ref.veranstaltung.id);
     }
 
     @Test
     @TestSecurity(user = "admin@test.de", roles = "ADMIN")
-    @TestTransaction
     public void testPersistTeilnehmerViaJson() {
         String json = """
-        {
-            "email": "student@vortragsmanager.de",
-            "firstName": "Lukas",
-            "lastName": "Lernbereit",
-            "role": "TEILNEHMER",
-            "gruppe": "10.3"
-        }
-        """;
+                {
+                    "role": "TEILNEHMER",
+                    "email": "student@vortragsmanager.de",
+                    "firstName": "Lukas",
+                    "lastName": "Lernbereit",
+                    "role": "TEILNEHMER",
+                    "gruppe": "10.3",
+                    "isActive": true
+                }""";
 
         given()
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when().post("/api/admin/users")
-          .then()
-          .statusCode(201);
+                .contentType(ContentType.JSON)
+                .body(json)
+                .when().post("/api/veranstaltungen/{vid}/benutzer", testVid)
+                .then()
+                .log().ifStatusCodeIsEqualTo(201)
+                .statusCode(201);
 
-        User user = User.findByEmail("student@vortragsmanager.de");
-        assertNotNull(user);
-        assertTrue(user instanceof Teilnehmer, "User sollte eine Instanz von Teilnehmer sein");
-        Teilnehmer t = (Teilnehmer) user;
-        assertEquals("10.3", t.gruppe);
+        Teilnehmer tn = (Teilnehmer) User.findByEmail("student@vortragsmanager.de");
+        assertNotNull(tn, "Teilnehmer sollte in der DB existieren");
+        assertNotNull(Veranstaltung.findById(testVid), "Veranstaltung %d sollte in der DB existieren".formatted(testVid));
+        assertNotNull(tn.getVeranstaltung(), "Veranstaltung des Teilnehmers sollte nicht null sein");
+        assertEquals(testVid, tn.veranstaltung.id);
+        assertEquals("10.3", tn.gruppe);
     }
 }

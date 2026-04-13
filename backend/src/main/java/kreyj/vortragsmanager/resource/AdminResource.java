@@ -2,11 +2,12 @@ package kreyj.vortragsmanager.resource;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.FileUploadDto;
-import kreyj.vortragsmanager.entity.User;
+import kreyj.vortragsmanager.dto.UserDto;
 import kreyj.vortragsmanager.service.AdminService;
 
 import java.util.List;
@@ -23,9 +24,17 @@ public class AdminResource {
     // --- GLOBALE ADMIN FUNKTIONEN ---
 
     @GET
-    @Path("/users") // Globale Suche nach allen Usern (nicht veranstaltungsbezogen)
-    public List<User> getAllUsers() {
+    @Path("/benutzer") // Globale Suche nach allen Usern (nicht veranstaltungsbezogen)
+    public List<UserDto> getAllUsers() {
         return adminService.getAllUsers();
+    }
+
+    @POST
+    @Transactional
+    @Path("/benutzer") // Alle Arten von User anlegen, basierend auf 'role'
+    public Response createUser(UserDto userDto) {
+        var created = adminService.createUser(userDto, userDto.veranstaltungId);
+        return Response.status(Response.Status.CREATED).entity(created).build();
     }
 
     @POST

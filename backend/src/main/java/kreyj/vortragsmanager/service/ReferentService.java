@@ -7,12 +7,7 @@ import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.dto.RefProfilDto;
 import kreyj.vortragsmanager.dto.RefVortragDto;
 import kreyj.vortragsmanager.dto.ReferentCsvDto;
-import kreyj.vortragsmanager.entity.EventSlot;
-import kreyj.vortragsmanager.entity.Verfuegbarkeit;
-import kreyj.vortragsmanager.entity.Vortrag;
-import kreyj.vortragsmanager.entity.User;
-import kreyj.vortragsmanager.entity.Referent;
-import kreyj.vortragsmanager.entity.Wahlvortrag; // Import für Wahlvortrag
+import kreyj.vortragsmanager.entity.*;
 
 import java.io.FileReader;
 import java.nio.file.Path;
@@ -28,7 +23,7 @@ public class ReferentService {
         if (user instanceof Referent) {
             return (Referent) user;
         }
-        return null; // Oder eine Exception werfen
+        return null;
     }
 
     @Transactional
@@ -40,9 +35,9 @@ public class ReferentService {
             referent.jobRole = dto.jobRole;
             referent.organisation = dto.organisation;
             referent.slogan = dto.slogan;
-            referent.firstName = dto.firstName; // Auch diese Felder können aktualisiert werden
+            referent.firstName = dto.firstName;
             referent.lastName = dto.lastName;
-            referent.email = dto.email; // Email-Änderung ist kritisch, ggf. weitere Validierung
+            referent.email = dto.email;
         }
     }
 
@@ -63,7 +58,6 @@ public class ReferentService {
             vortrag.inhalt = dto.inhalt;
             vortrag.zielgruppe = dto.zielgruppe;
 
-            // Nur Wahlvorträge haben diese Felder
             if (vortrag instanceof Wahlvortrag wahlvortrag) {
                 wahlvortrag.wiederholbar = dto.wiederholbar;
                 wahlvortrag.maxWiederholungen = dto.maxWiederholungen;
@@ -72,8 +66,11 @@ public class ReferentService {
     }
 
     @Transactional
-    public int importFromCsv(Path csvFilePath) throws Exception {
+    public int importFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception {
         int count = 0;
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
+        if (veranstaltung == null) throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
+
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             List<ReferentCsvDto> beans = new CsvToBeanBuilder<ReferentCsvDto>(reader)
                     .withType(ReferentCsvDto.class)
@@ -92,6 +89,7 @@ public class ReferentService {
                     nr.organisation = dto.organisation;
                     nr.slogan = dto.slogan;
                     nr.biography = dto.biography;
+                    nr.veranstaltung = veranstaltung; // Zuweisung
                     
                     String tempPassword = UUID.randomUUID().toString();
                     nr.passwordHash = BcryptUtil.bcryptHash(tempPassword);

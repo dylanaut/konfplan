@@ -179,6 +179,6 @@ INSERT INTO Gebaeude (id, name, typ, strasse, hausnummer, postleitzahl, ort, ver
 VALUES (1, 'RKS Ober/Mittel', 'SCHULE', 'Schulstraße', '2', '53545', 'Linz am Rhein', 1);
 
 INSERT INTO Veranstaltung (id, name, beginntAm, endetAm, organisator_id, version)
-VALUES (1, 'Berufsorientierungstag 2026', '2024-09-01 09:00', '2024-09-01 17:00', 1, 1);
+VALUES (1, 'Berufsorientierungstag 2026', '2026-09-01 09:00', '2026-09-01 17:00', 1, 1);
 
 INSERT INTO Veranstaltung_Gebaeude (veranstaltung_id, gebaeude_id) VALUES (1, 1);

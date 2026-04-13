@@ -13,14 +13,16 @@ import kreyj.vortragsmanager.service.TeilnehmerService;
 
 @Path("/api/admin/teilnehmer")
 @RolesAllowed("ADMIN")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class TeilnehmerResource {
 
     @Inject
     TeilnehmerService teilnehmerService;
 
     @GET
-    public Response getTeilnehmer() {
-        return Response.ok(teilnehmerService.findAll()).build();
+    public Response getAlleVeranstaltungsteilnehmer(@QueryParam("vid") Long vid) {
+        return Response.ok(teilnehmerService.findAll(vid)).build();
     }
 
     @GET
@@ -30,22 +32,18 @@ public class TeilnehmerResource {
     }
 
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
     @Transactional
-    public Response createTeilnehmer(User user) {
-        User created = teilnehmerService.createTeilnehmer(user);
+    public Response createTeilnehmer(Teilnehmer user, @QueryParam("vid") Long vid) {
+        Teilnehmer created = teilnehmerService.createTeilnehmer(user, vid);
         return Response.status(Response.Status.CREATED).entity(created).build();
     }
 
     @PUT
     @Path("/{id}")
-    @Consumes(MediaType.APPLICATION_JSON)
     @Transactional
-    public Response updateTeilnehmer(@PathParam("id") Long id, Teilnehmer user) {
-        Teilnehmer updated = teilnehmerService.updateTeilnehmer(id, user);
-        if (updated == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
+    public Response updateTeilnehmer(@PathParam("id") Long id, Teilnehmer user, @QueryParam("vid") Long vid) {
+        Teilnehmer updated = teilnehmerService.updateTeilnehmer(id, user, vid);
+        if (updated == null) return Response.status(Response.Status.NOT_FOUND).build();
         return Response.ok(updated).build();
     }
 
@@ -70,13 +68,12 @@ public class TeilnehmerResource {
     @POST
     @Path("/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response uploadCsv(FileUploadDto data) {
+    public Response uploadCsv(FileUploadDto data, @QueryParam("vid") Long vid) {
         try {
-            teilnehmerService.importFromCsv(data.file.uploadedFile().toFile().toPath());
-            return Response.ok("Import erfolgreich").build();
+            int count = teilnehmerService.importFromCsv(data.file.uploadedFile().toFile().toPath(), vid);
+            return Response.ok("Import erfolgreich: " + count + " Teilnehmer angelegt.").build();
         } catch (Exception e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("Fehler beim Import: " + e.getMessage()).build();
+            return Response.status(Response.Status.BAD_REQUEST).entity("Fehler beim Import: " + e.getMessage()).build();
         }
     }
 }

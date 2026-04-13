@@ -1,5 +1,6 @@
 package kreyj.vortragsmanager.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.opencsv.bean.CsvBindByName;
@@ -16,7 +17,6 @@ import java.time.LocalDateTime;
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "role", discriminatorType = DiscriminatorType.STRING)
 @UserDefinition
-// Jackson Magic: Erlaubt automatische Umwandlung von JSON in die richtige Unterklasse basierend auf "role"
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "role", visible = true)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = Admin.class, name = "ADMIN"),
@@ -55,9 +55,10 @@ public abstract class User extends SqliteEntity {
     @Column(name = "reset_token_expiry")
     public LocalDateTime resetTokenExpiry;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER) // EAGER um sicherzustellen, dass sie geladen wird
     @JoinColumn(name = "veranstaltung_id", columnDefinition = "INTEGER")
-    public Veranstaltung veranstaltung; // Relation zur Veranstaltung (Optional für Admins)
+    @JsonIgnoreProperties({"organisator", "gebaeude"})
+    public Veranstaltung veranstaltung;
 
     @Version
     public Long version;
@@ -67,5 +68,14 @@ public abstract class User extends SqliteEntity {
 
     public static User findByEmail(String e) {
         return find("email", e).firstResult();
+    }
+
+    // Explizite Getter/Setter für bessere Kompatibilität und Debugging
+    public Veranstaltung getVeranstaltung() {
+        return veranstaltung;
+    }
+
+    public void setVeranstaltung(Veranstaltung veranstaltung) {
+        this.veranstaltung = veranstaltung;
     }
 }

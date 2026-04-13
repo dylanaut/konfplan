@@ -4,6 +4,7 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
+import kreyj.vortragsmanager.dto.UserDto;
 import kreyj.vortragsmanager.entity.Admin;
 import kreyj.vortragsmanager.entity.User;
 import kreyj.vortragsmanager.service.AdminService;
@@ -31,7 +32,7 @@ class AdminResourceTest {
 
     @Test
     void testGetAllUsersGlobal() {
-        User admin1 = new Admin();
+        UserDto admin1 = new UserDto();
         admin1.email = "admin1@example.com";
         admin1.role = "ADMIN";
 
@@ -39,7 +40,7 @@ class AdminResourceTest {
         Mockito.when(adminService.getAllUsers()).thenReturn(Arrays.asList(admin1));
 
         given()
-                .when().get("/api/admin/users")
+                .when().get("/api/admin/benutzer")
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
@@ -63,7 +64,7 @@ class AdminResourceTest {
     @TestSecurity(user = "user@example.com", roles = "USER")
     void testGlobalAccessForbidden() {
         given()
-                .when().get("/api/admin/users")
+                .when().get("/api/admin/benutzer")
                 .then()
                 .statusCode(403);
     }

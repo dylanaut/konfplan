@@ -39,7 +39,7 @@
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Logo URL (optional)</label>
-          <input v-model="form.logo" type="text" class="input-field" placeholder="z.B. https://example.com/logo.png" />
+          <input v-model="form.logo" type="text" class="input-field" placeholder="https://..." />
         </div>
 
         <div>
@@ -49,7 +49,8 @@
 
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-1">Organisator (Admin)</label>
-          <select v-model="form.organisator.id" class="input-field" required>
+          <select v-model="form.organisatorId" class="input-field" required>
+            <option :value="null">Bitte wählen...</option>
             <option v-for="admin in admins" :key="admin.id" :value="admin.id">
               {{ admin.lastName }}, {{ admin.firstName }} ({{ admin.email }})
             </option>
@@ -72,7 +73,7 @@ const props = defineProps({
   isVisible: { type: Boolean, required: true },
   veranstaltung: { type: Object, default: null },
   admins: { type: Array, default: () => [] },
-  allGebaeude: { type: Array, default: () => [] } // Liste aller verfügbaren Gebäude
+  allGebaeude: { type: Array, default: () => [] }
 });
 
 const emit = defineEmits(['close', 'save']);
@@ -85,7 +86,7 @@ const form = reactive({
   endetAm: '',
   logo: '',
   logo_link: '',
-  organisator: { id: null },
+  organisatorId: null, // Direkt als ID für das DTO
   version: 0
 });
 
@@ -98,7 +99,7 @@ watch(
       form.endetAm = val?.endetAm ? val.endetAm.slice(0, 16) : '';
       form.logo = val?.logo ?? '';
       form.logo_link = val?.logo_link ?? '';
-      form.organisator.id = val?.organisator?.id ?? (props.admins[0]?.id || null);
+      form.organisatorId = val?.organisatorId ?? (props.admins[0]?.id || null);
       form.version = val?.version ?? 0;
       selectedGebaeudeIds.value = val?.gebaeude?.map(g => g.id) ?? [];
     },
@@ -106,8 +107,8 @@ watch(
 );
 
 const save = () => {
-  // Mapping der IDs zurück zu Gebäude-Objekten für das Backend
-  const gebaeude = props.allGebaeude.filter(g => selectedGebaeudeIds.value.includes(g.id));
+  // Wir senden die Gebäude als Liste von Objekten mit IDs (passend zum DTO)
+  const gebaeude = selectedGebaeudeIds.value.map(id => ({ id }));
   emit('save', { ...form, gebaeude });
 };
 </script>

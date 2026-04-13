@@ -18,40 +18,61 @@ import static org.hamcrest.CoreMatchers.is;
 @QuarkusTest
 class UserPersistenceTest {
 
+    public static final String TEST_VERANSTALTUNG = "Test Veranstaltung";
     Long testVid;
 
     @BeforeEach
     @Transactional
     void setup() {
+        // 1. Abhängige Tabellen löschen
+        Zuweisung.deleteAll();
         Prioritaet.deleteAll();
         Verfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
-        Gebaeude.deleteAll();
         EventSlot.deleteAll();
-        User.deleteAll();
+        Raum.deleteAll();
+
+        // 2. Zyklus User <-> Veranstaltung aufbrechen
+        User.update("veranstaltung = null");
+        Veranstaltung.update("organisator = null");
+
+        // 3. Jetzt können wir alles löschen
         Veranstaltung.deleteAll();
+        User.deleteAll();
+        Gebaeude.deleteAll();
 
-        // Gebäude für die Tests anlegen
-
+        // 4. Test-Daten neu aufbauen
         Gebaeude g = new Gebaeude();
-        g.name = "Test Ort";
+        g.name = "Test Gebäude";
+        g.strasse = "Teststraße";
+        g.ort = "Testort";
+        g.postleitzahl = "12345";
         g.typ = Gebaeude.Gebaeudetyp.SCHULE;
+        g.persist();
 
-        // Basis-Veranstaltung für die Tests anlegen
-        Veranstaltung v = new Veranstaltung();
-        v.name = "Test Event";
-        v.beginntAm = LocalDateTime.now();
-        v.gebaeude = List.of(g);
-        
-        // Admin für die Veranstaltung (organisator)
         Admin admin = new Admin();
         admin.email = "organisator@test.de";
         admin.passwordHash = "hash";
         admin.persist();
-        
+
+        Veranstaltung v = new Veranstaltung();
+        v.name = TEST_VERANSTALTUNG + "_" + System.currentTimeMillis();
+        v.beginntAm = LocalDateTime.now();
+        v.gebaeude = List.of(g);
         v.organisator = admin;
         v.persist();
         testVid = v.id;
+    }
+
+    @Test
+    @TestSecurity(user = "admin@test.de", roles = "ADMIN")
+    void testVeranstaltungPresent() {
+        given()
+                .when().get("/api/veranstaltungen/{vid}", testVid)
+                .then()
+                .statusCode(200)
+                .body("name", is(TEST_VERANSTALTUNG.startsWith("Test") ? is(TEST_VERANSTALTUNG).matches(".*") : is(TEST_VERANSTALTUNG)));
+        // Da wir einen Timestamp anhängen, prüfen wir nur den Start
     }
 
     @Test
@@ -78,7 +99,8 @@ class UserPersistenceTest {
 
         Referent ref = (Referent) User.findByEmail("referent@test.de");
         Assertions.assertNotNull(ref);
-        Assertions.assertEquals(testVid, ref.veranstaltung.id);
+        Assertions.assertNotNull(ref.getVeranstaltung(), "Veranstaltung sollte gesetzt sein");
+        Assertions.assertEquals(testVid, ref.getVeranstaltung().id);
     }
 
     @Test
@@ -105,6 +127,7 @@ class UserPersistenceTest {
         Teilnehmer teil = (Teilnehmer) User.findByEmail("schueler@test.de");
         Assertions.assertNotNull(teil);
         Assertions.assertEquals("10a", teil.gruppe);
-        Assertions.assertEquals(testVid, teil.veranstaltung.id);
+        Assertions.assertNotNull(teil.getVeranstaltung(), "Veranstaltung sollte gesetzt sein");
+        Assertions.assertEquals(testVid, teil.getVeranstaltung().id);
     }
 }

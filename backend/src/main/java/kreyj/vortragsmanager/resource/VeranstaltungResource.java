@@ -6,9 +6,7 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import kreyj.vortragsmanager.dto.FileUploadDto;
-import kreyj.vortragsmanager.dto.SolverConfigDto;
-import kreyj.vortragsmanager.dto.VortragStatDto;
+import kreyj.vortragsmanager.dto.*;
 import kreyj.vortragsmanager.entity.*;
 import kreyj.vortragsmanager.service.*;
 
@@ -27,61 +25,71 @@ public class VeranstaltungResource {
     AdminService adminService;
 
     @Inject
-    ReferentService referentService;
-
-    @Inject
-    TeilnehmerService teilnehmerService;
-
-    @Inject
     OptimierungService optimierungService;
 
-    // --- BASIS: VERANSTALTUNGEN ---
+    @Inject
+    PlanService planService;
+
+    // --- BASIS: VERANSTALTUNGEN (DTO-basiert) ---
 
     @GET
-    public List<Veranstaltung> getAll() {
+    public List<VeranstaltungDto> getAll() {
         return veranstaltungService.listAll();
     }
 
+    @GET
+    @Path("/{vid}")
+    public Response getOne(@PathParam("vid") Long vid) {
+        VeranstaltungDto v = veranstaltungService.findById(vid);
+        if (v == null) return Response.status(Response.Status.NOT_FOUND).build();
+        return Response.ok(v).build();
+    }
+
     @POST
-    public Response create(Veranstaltung v) {
+    public Response create(VeranstaltungDto vDto) {
         try {
-            Veranstaltung saved = veranstaltungService.save(v);
+            VeranstaltungDto saved = veranstaltungService.save(vDto);
             return Response.status(Response.Status.CREATED).entity(saved).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
     }
 
-    // --- HIERARCHISCH: OPTIMIERUNG ---
-
-    @POST
-    @Path("/{vid}/optimierung/start")
-    public Response starteOptimierung(@PathParam("vid") Long vid, SolverConfigDto config) {
+    @PUT
+    @Path("/{id}")
+    public Response update(@PathParam("id") Long id, VeranstaltungDto vDto) {
+        vDto.id = id;
         try {
-            optimierungService.starteOptimierung(vid, config);
-            return Response.ok("Optimierungsprozess wurde gestartet.").build();
-        } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Fehler beim Starten der Optimierung: " + e.getMessage()).build();
+            VeranstaltungDto updated = veranstaltungService.save(vDto);
+            if (updated == null) return Response.status(Response.Status.NOT_FOUND).build();
+            return Response.ok(updated).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
     }
 
-    // --- HIERARCHISCH: BENUTZER ---
+    @DELETE
+    @Path("/{id}")
+    public Response delete(@PathParam("id") Long id) {
+        boolean deleted = veranstaltungService.delete(id);
+        if (!deleted) return Response.status(Response.Status.NOT_FOUND).build();
+        return Response.noContent().build();
+    }
+
+    // --- HIERARCHISCH ---
 
     @GET
     @Path("/{vid}/benutzer")
-    public List<User> getBenutzer(@PathParam("vid") Long vid) {
-        return adminService.getAllUsers(); // Hier ggf. vid-Filterung im Service ergänzen
+    public List<UserDto> getBenutzer(@PathParam("vid") Long vid) {
+        return adminService.getAllUsers(vid);
     }
 
     @POST
     @Path("/{vid}/benutzer")
-    public Response createBenutzer(@PathParam("vid") Long vid, User user) {
-        User created = adminService.createUser(user, vid);
+    public Response createBenutzer(@PathParam("vid") Long vid, UserDto userDto) {
+        UserDto created = adminService.createUser(userDto, vid);
         return Response.status(Response.Status.CREATED).entity(created).build();
     }
-
-    // --- HIERARCHISCH: VORTRÄGE ---
 
     @GET
     @Path("/{vid}/vortraege")
@@ -89,13 +97,41 @@ public class VeranstaltungResource {
         return adminService.getAllVortraege(vid);
     }
 
-    // --- HIERARCHISCH: SLOTS ---
-
     @GET
     @Path("/{vid}/slots")
     public List<EventSlot> getSlots(@PathParam("vid") Long vid) {
         return adminService.getAllEventSlots(vid);
     }
 
-    // ... (Weitere Endpunkte wie bisher)
+    @GET
+    @Path("/{vid}/stats") // Fehlender Endpunkt für den Test und das Dashboard
+    public List<VortragStatDto> getStats(@PathParam("vid") Long vid) {
+        return adminService.getStats(vid);
+    }
+
+    // --- PLANUNG & ERGEBNISSE ---
+
+    @GET
+    @Path("/{vid}/plan/details")
+    public List<VortragBelegungDto> getDetaillierterPlan(@PathParam("vid") Long vid) {
+        return planService.getDetaillierterPlan(vid);
+    }
+
+    @GET
+    @Path("/{vid}/plan/qualitaet")
+    public PlanQualitaetDto getPlanQualitaet(@PathParam("vid") Long vid) {
+        return planService.getPlanQualitaet(vid);
+    }
+
+    @POST
+    @Path("/{vid}/optimierung/start")
+    public Response starteOptimierung(@PathParam("vid") Long vid, SolverConfigDto config) {
+        try {
+            optimierungService.starteOptimierung(vid, config);
+            return Response.ok("Optimierung erfolgreich abgeschlossen.").build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Fehler bei der Optimierung: " + e.getMessage()).build();
+        }
+    }
 }

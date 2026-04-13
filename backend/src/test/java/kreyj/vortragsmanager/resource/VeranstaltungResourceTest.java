@@ -4,17 +4,15 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
+import kreyj.vortragsmanager.dto.UserDto;
 import kreyj.vortragsmanager.dto.VortragStatDto;
 import kreyj.vortragsmanager.entity.EventSlot;
-import kreyj.vortragsmanager.entity.Teilnehmer;
 import kreyj.vortragsmanager.entity.Vortrag;
 import kreyj.vortragsmanager.entity.Wahlvortrag;
 import kreyj.vortragsmanager.service.AdminService;
-import kreyj.vortragsmanager.service.VeranstaltungService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import java.util.Arrays;
 import java.util.Collections;
 
 import static io.restassured.RestAssured.given;
@@ -23,12 +21,8 @@ import static org.hamcrest.CoreMatchers.is;
 @QuarkusTest
 @TestSecurity(user = "admin@test.de", roles = "ADMIN")
 class VeranstaltungResourceTest {
-
     @InjectMock
     AdminService adminService;
-
-    @InjectMock
-    VeranstaltungService veranstaltungService;
 
     @Test
     void testGetVortraegeHierarchical() {
@@ -78,14 +72,14 @@ class VeranstaltungResourceTest {
                 .body("size()", is(1))
                 .body("[0].titel", is("Vortrag 1"))
                 .body("[0].countPrio1", is(5))
-                .body("[0].countPrio1", is(4))
-                .body("[0].countPrio1", is(3));
+                .body("[0].countPrio2", is(4))
+                .body("[0].countPrio3", is(3));
     }
 
     @Test
     void testCreateBenutzerHierarchical() {
         Long vid = 1L;
-        Teilnehmer t = new Teilnehmer();
+        UserDto t = new UserDto();
         t.email = "new@test.de";
         t.role = "TEILNEHMER";
 
