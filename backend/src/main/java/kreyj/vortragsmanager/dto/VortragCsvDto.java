@@ -24,9 +24,9 @@ public class VortragCsvDto {
     @CsvBindByName(column = "maxWiederholungen")
     public int maxWiederholungen;
 
-    @CsvBindByName(column = "pflichtraumName")
-    public String pflichtraumName;
+    @CsvBindByName(column = "pflichtraum")
+    public String pflichtraum;
 
-    @CsvBindByName(column = "pflichtslotBeschreibung")
-    public String pflichtslotBeschreibung;
+    @CsvBindByName(column = "pflichtslot")
+    public String pflichtslot;
 }

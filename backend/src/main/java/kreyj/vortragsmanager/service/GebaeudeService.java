@@ -64,7 +64,6 @@ public class GebaeudeService {
                 // Räume parsen und zuweisen
                 if (dto.raeumeRaw != null && !dto.raeumeRaw.isBlank()) {
                     String[] raumStrings = dto.raeumeRaw.split("\\|");
-                    boolean wasAdded = false;
                     for (String rs : raumStrings) {
                         String[] parts = rs.trim().split(":");
                         if (parts.length >= 2) {
@@ -77,12 +76,9 @@ public class GebaeudeService {
                             r.gebaeude = g;
                             r.persist();
                             g.raeume.add(r);
-                            wasAdded = true;
                         }
                     }
-                    if (wasAdded) {
-                        g.persist();
-                    }
+                    g.persist();
                 }
                 count++;
             }

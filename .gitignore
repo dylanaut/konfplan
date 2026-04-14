@@ -2309,3 +2309,4 @@ build/
 /frontend/node/npx.cmd
 /.idea/dataSources/
 /frontend/dist/
+/.idea/active-tab-highlighter.xml

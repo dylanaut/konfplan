@@ -91,7 +91,7 @@ public class VeranstaltungResource {
     public Response importVeranstaltungen(@RestForm("file") FileUpload file) {
         try {
             int count = veranstaltungService.importFromCsv(file.uploadedFile().toFile().toPath());
-            return Response.ok("Import erfolgreich: " + count + " Veranstaltungen angelegt.").build();
+            return Response.ok("Import erfolgreich: " + count + " Veranstaltung(en) angelegt.").build();
         } catch (Exception e) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
         }

@@ -89,7 +89,7 @@ public class ReferentService {
                     nr.organisation = dto.organisation;
                     nr.slogan = dto.slogan;
                     nr.biography = dto.biography;
-                    nr.veranstaltung = veranstaltung; // Zuweisung
+                    nr.veranstaltung = veranstaltung;
                     
                     String tempPassword = UUID.randomUUID().toString();
                     nr.passwordHash = BcryptUtil.bcryptHash(tempPassword);

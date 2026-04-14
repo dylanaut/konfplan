@@ -23,9 +23,6 @@ public class Veranstaltung extends SqliteEntity {
     @Convert(converter = LocalDateTimeConverter.class)
     public LocalDateTime endetAm;
 
-    // Das Attribut 'ort' wird entfernt, da es durch die Relation zu Gebaeude ersetzt wird.
-    // public String ort;
-
     public String logo;
 
     public String logo_link;

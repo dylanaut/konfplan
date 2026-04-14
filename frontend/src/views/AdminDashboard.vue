@@ -37,6 +37,7 @@
     </div>
 
     <!-- START-ZUSTAND (Empty State) -->
+    <div>selectedVid: {{ selectedVid }}, activeTab: {{ activeTab }}</div>
     <div v-if="!selectedVid && !['veranstaltungen', 'gebäude'].includes(activeTab)" class="bg-indigo-50 p-10 rounded-2xl text-center border-2 border-dashed border-indigo-200 animate-fade-in">
       <div class="text-indigo-400 mb-4 flex justify-center"><CalendarIcon class="w-12 h-12"/></div>
       <h2 class="text-xl font-bold text-indigo-900">Keine Veranstaltung ausgewählt</h2>
@@ -278,7 +279,7 @@ import EventSlotEditorModal from '../components/EventSlotEditorModal.vue';
 import GebaeudeEditorModal from '../components/GebaeudeEditorModal.vue';
 
 // State
-const activeTab = ref('veranstaltungen');
+const activeTab = ref('ergebnisse');
 const selectedVid = ref(null);
 const veranstaltungen = ref([]);
 const gebaeude = ref([]);

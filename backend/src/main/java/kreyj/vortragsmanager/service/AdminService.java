@@ -1,5 +1,6 @@
 package kreyj.vortragsmanager.service;
 
+import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -147,8 +148,10 @@ public class AdminService {
     public int importAdminsFromCsv(Path csvFilePath) throws Exception {
         int count = 0;
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
-            List<AdminCsvDto> beans = new CsvToBeanBuilder<AdminCsvDto>(reader)
-                    .withType(AdminCsvDto.class).withSeparator(';').withIgnoreLeadingWhiteSpace(true).build().parse();
+            CsvToBean<AdminCsvDto> build = new CsvToBeanBuilder<AdminCsvDto>(reader)
+                    .withType(AdminCsvDto.class).withSeparator(';')
+                    .withIgnoreLeadingWhiteSpace(true).build();
+            List<AdminCsvDto> beans = build.parse();
             for (AdminCsvDto dto : beans) {
                 if (User.findByEmail(dto.email) == null) {
                     Admin a = new Admin();
@@ -161,6 +164,7 @@ public class AdminService {
                 }
             }
         }
+
         return count;
     }
 
@@ -232,8 +236,8 @@ public class AdminService {
             for (EventSlotCsvDto dto : beans) {
                 EventSlot s = new EventSlot();
                 s.description = dto.description;
-                s.startTime = LocalDateTime.parse(dto.startTime, DATE_FORMAT);
-                s.endTime = LocalDateTime.parse(dto.endTime, DATE_FORMAT);
+                s.startTime = LocalDateTime.parse(dto.day + " " + dto.startTime, DATE_FORMAT);
+                s.endTime = LocalDateTime.parse(dto.day + " " + dto.endTime, DATE_FORMAT);
                 s.veranstaltung = v;
                 s.persist();
                 count++;

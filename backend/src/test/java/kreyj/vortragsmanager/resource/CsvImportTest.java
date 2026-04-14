@@ -52,11 +52,11 @@ class CsvImportTest {
 
     @Test
     void testImportVeranstaltungen() {
-        String csv = "Name;Beginn;Ende;Organisator_Email;Gebaeude_Namen\n" +
-                     "CSV Event;2025-12-01 08:00;;admin@test.de;";
+        String csv = "Name;Beginn;Ende;Organisator_Email;Gebaeude_Namen;Logo;Logo_link\n" +
+                     "CSV Event;2026-10-01 10:00;2026-10-01 17:00;admin@test.de;assets/RKS_Logo.png;https://realschuleplus-linz.de/home/home.html";
 
         given()
-                .multiPart("file", "events.csv", csv.getBytes())
+                .multiPart("file", "veranstaltungen.csv", csv.getBytes())
                 .when().post("/api/veranstaltungen/import")
                 .then()
                 .statusCode(200)
@@ -78,6 +78,22 @@ class CsvImportTest {
         Gebaeude g = Gebaeude.find("name", "Altbau").firstResult();
         Assertions.assertNotNull(g);
         Assertions.assertEquals(2, g.raeume.size(), "Anzahl Räume sollte 2 sein");
+    }
+
+    @Test
+    void testImportVeranstalter() {
+        String csv = "Email;Nachname;Vorname\n" +
+                "kathrin.jessen@rks-linz.de;Jessen;Kathrin";
+
+        given()
+                .multiPart("file", "veranstalter.csv", csv.getBytes())
+                .when().post("/api/admin/admins/import")
+                .then()
+                .statusCode(200);
+
+        Admin organisator = (Admin) User.findByEmail("kathrin.jessen@rks-linz.de");
+        Assertions.assertNotNull(organisator);
+        Assertions.assertEquals("Kathrin", organisator.firstName);
     }
 
     @Test

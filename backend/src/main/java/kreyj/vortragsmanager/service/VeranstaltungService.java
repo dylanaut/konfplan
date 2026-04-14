@@ -85,7 +85,9 @@ public class VeranstaltungService {
         int count = 0;
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             List<VeranstaltungCsvDto> beans = new CsvToBeanBuilder<VeranstaltungCsvDto>(reader)
-                    .withType(VeranstaltungCsvDto.class).withSeparator(';').withIgnoreLeadingWhiteSpace(true).build().parse();
+                    .withType(VeranstaltungCsvDto.class).withSeparator(';').withIgnoreLeadingWhiteSpace(true)
+                    .build()
+                    .parse();
 
             for (VeranstaltungCsvDto dto : beans) {
                 User admin = User.findByEmail(dto.organisatorEmail);
