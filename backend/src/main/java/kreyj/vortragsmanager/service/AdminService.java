@@ -13,7 +13,6 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -180,6 +179,15 @@ public class AdminService {
                     v.zielgruppe = dto.zielgruppe;
                     v.referent = (Referent) referent;
                     v.veranstaltung = v_ent;
+
+                    if (v instanceof Pflichtvortrag pflichtvortrag) {
+                       // lookup pflichtvortrag.pflichtslot = dto.pflichtslotBeschreibung;
+                       // lookup pflichtvortrag.pflichtraum = dto.pflichtraumName;
+                    } else if (v instanceof Wahlvortrag wahlvortrag) {
+                        wahlvortrag.wiederholbar = dto.wiederholbar;
+                        wahlvortrag.maxWiederholungen = dto.maxWiederholungen;
+                    }
+
                     v.persist();
                     count++;
                 }

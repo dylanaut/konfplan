@@ -3,9 +3,10 @@ package kreyj.vortragsmanager.service;
 import com.opencsv.bean.CsvToBeanBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
-import kreyj.vortragsmanager.dto.GebaeudeRaeumeCsvDto; // Neues DTO
+import kreyj.vortragsmanager.dto.GebaeudeRaeumeCsvDto;
 import kreyj.vortragsmanager.entity.Gebaeude;
 import kreyj.vortragsmanager.entity.Raum;
+
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.util.List;
@@ -63,6 +64,7 @@ public class GebaeudeService {
                 // Räume parsen und zuweisen
                 if (dto.raeumeRaw != null && !dto.raeumeRaw.isBlank()) {
                     String[] raumStrings = dto.raeumeRaw.split("\\|");
+                    boolean wasAdded = false;
                     for (String rs : raumStrings) {
                         String[] parts = rs.trim().split(":");
                         if (parts.length >= 2) {
@@ -72,11 +74,15 @@ public class GebaeudeService {
                             if (parts.length >= 3) {
                                 r.etage = parts[2].trim();
                             }
+                            r.gebaeude = g;
                             r.persist();
                             g.raeume.add(r);
+                            wasAdded = true;
                         }
                     }
-                    g.persist();
+                    if (wasAdded) {
+                        g.persist();
+                    }
                 }
                 count++;
             }

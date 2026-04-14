@@ -2,16 +2,16 @@ package kreyj.vortragsmanager.resource;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.*;
 import kreyj.vortragsmanager.entity.EventSlot;
 import kreyj.vortragsmanager.entity.Vortrag;
-import kreyj.vortragsmanager.service.AdminService;
-import kreyj.vortragsmanager.service.OptimierungService;
-import kreyj.vortragsmanager.service.PlanService;
-import kreyj.vortragsmanager.service.VeranstaltungService;
+import kreyj.vortragsmanager.service.*;
+import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 import java.util.List;
 
@@ -28,12 +28,18 @@ public class VeranstaltungResource {
     AdminService adminService;
 
     @Inject
+    ReferentService referentService;
+
+    @Inject
+    TeilnehmerService teilnehmerService;
+
+    @Inject
     OptimierungService optimierungService;
 
     @Inject
     PlanService planService;
 
-    // --- BASIS: VERANSTALTUNGEN (DTO-basiert) ---
+    // --- BASIS: VERANSTALTUNGEN ---
 
     @GET
     public List<VeranstaltungDto> getAll() {
@@ -79,7 +85,19 @@ public class VeranstaltungResource {
         return Response.noContent().build();
     }
 
-    // --- HIERARCHISCH ---
+    @POST
+    @Path("/import")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response importVeranstaltungen(@RestForm("file") FileUpload file) {
+        try {
+            int count = veranstaltungService.importFromCsv(file.uploadedFile().toFile().toPath());
+            return Response.ok("Import erfolgreich: " + count + " Veranstaltungen angelegt.").build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
+        }
+    }
+
+    // --- HIERARCHISCH (PRO VERANSTALTUNG) ---
 
     @GET
     @Path("/{vid}/benutzer")
@@ -94,10 +112,46 @@ public class VeranstaltungResource {
         return Response.status(Response.Status.CREATED).entity(created).build();
     }
 
+    @POST
+    @Path("/{vid}/referenten/import")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response importReferenten(@PathParam("vid") Long vid, @RestForm("file") FileUpload file) {
+        try {
+            int count = referentService.importFromCsv(file.uploadedFile().toFile().toPath(), vid);
+            return Response.ok("Import erfolgreich: " + count + " Referenten angelegt.").build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
+        }
+    }
+
+    @POST
+    @Path("/{vid}/teilnehmer/import")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response uploadTeilnehmerCsv(@PathParam("vid") Long vid, @RestForm("file") FileUpload file) {
+        try {
+            int count = teilnehmerService.importFromCsv(file.uploadedFile().toFile().toPath(), vid);
+            return Response.ok("Import erfolgreich: " + count + " Teilnehmer angelegt.").build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
+        }
+    }
+
     @GET
     @Path("/{vid}/vortraege")
     public List<Vortrag> getVortraege(@PathParam("vid") Long vid) {
         return adminService.getAllVortraege(vid);
+    }
+
+    @POST
+    @Path("/{vid}/vortraege/import")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response importVortraege(@PathParam("vid") Long vid, @RestForm("file") FileUpload file) {
+        try {
+            int count = adminService.importVortraegeFromCsv(file.uploadedFile().toFile().toPath(), vid);
+            return Response.ok("Import erfolgreich: " + count + " Vorträge angelegt.").build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
+        }
     }
 
     @GET
@@ -106,8 +160,20 @@ public class VeranstaltungResource {
         return adminService.getAllEventSlots(vid);
     }
 
+    @POST
+    @Path("/{vid}/slots/import")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response importSlots(@PathParam("vid") Long vid, @RestForm("file") FileUpload file) {
+        try {
+            int count = adminService.importSlotsFromCsv(file.uploadedFile().toFile().toPath(), vid);
+            return Response.ok("Import erfolgreich: " + count + " Zeit-Slots angelegt.").build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
+        }
+    }
+
     @GET
-    @Path("/{vid}/stats") // Fehlender Endpunkt für den Test und das Dashboard
+    @Path("/{vid}/stats")
     public List<VortragStatDto> getStats(@PathParam("vid") Long vid) {
         return adminService.getStats(vid);
     }
@@ -124,6 +190,12 @@ public class VeranstaltungResource {
     @Path("/{vid}/plan/qualitaet")
     public PlanQualitaetDto getPlanQualitaet(@PathParam("vid") Long vid) {
         return planService.getPlanQualitaet(vid);
+    }
+
+    @GET
+    @Path("/{vid}/plan")
+    public List<ZuweisungDto> getGesamtplan(@PathParam("vid") Long vid) {
+        return planService.getGesamtplan(vid);
     }
 
     @POST

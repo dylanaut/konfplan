@@ -1,5 +1,6 @@
 package kreyj.vortragsmanager.resource;
 
+import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
