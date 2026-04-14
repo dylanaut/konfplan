@@ -1,0 +1,22 @@
+= Known Bugs
+Jürgen Krey <juergen.krey@msg.group>
+v0.1, 14.04.26
+
+=== Übersicht
+
+[cols="6,1,1"]
+|===
+| Fehler | geändert | getestet
+
+| im frontend @AdminDashboard fehlt die funktion openVeranstaltungEditor
+| done | -
+
+| wenn ich im Admin Bereich auf den Tab Gebäude wechsle, möchte ich dort Gebäude neu anlegen oder per CSV importieren - analog zu Veranstaltung
+
+| done | -
+
+| beim Anlegen einer neuen Veranstaltung ist die ADMIN Auswahlliste leer, obwohl ich als Admin angemeldet bin?
+| done | -
+|===
+
+

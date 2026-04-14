@@ -6,7 +6,7 @@ test.describe('Vortragsmanager Planungs-Workflow', () => {
     // 1. LOGIN
     await page.goto('http://localhost:5173/login');
     await page.fill('input[type="email"]', 'juergenkrey@yahoo.de');
-    await page.fill('input[type="password"]', 'start123'); // Annahme Standardpasswort
+    await page.fill('input[type="password"]', 'admin123'); // Annahme Standardpasswort
     await page.click('button:has-text("Anmelden")');
     await expect(page).toHaveURL(/.*\/admin/);
 
