@@ -8,18 +8,19 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.*;
 import kreyj.vortragsmanager.entity.*;
+import org.jboss.logging.Logger;
 
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @ApplicationScoped
 public class AdminService {
+    private static final Logger LOG = Logger.getLogger(AdminService.class);
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -171,7 +172,21 @@ public class AdminService {
     @Transactional
     public int importVortraegeFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception {
         int count = 0;
-        Veranstaltung v_ent = Veranstaltung.findById(veranstaltungId);
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
+        var v_raeume = veranstaltung.gebaeude.stream()
+                .flatMap(g -> g.raeume.stream())
+                .toList();
+
+        Map<String, Map<Gebaeude, Raum>> raeumeByName = new HashMap<>();
+        for (Raum r : v_raeume) {
+            if (!raeumeByName.containsKey(r.name)) {
+                raeumeByName.put(r.name, new HashMap<>());
+            }
+            raeumeByName.get(r.name).put(r.gebaeude, r);
+        }
+
+        Map<String, EventSlot> slotsByName = veranstaltung.eventSlots.stream().collect(Collectors.toMap(s -> s.description, s -> s));
+
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             List<VortragCsvDto> beans = new CsvToBeanBuilder<VortragCsvDto>(reader).withType(VortragCsvDto.class).withSeparator(';').withIgnoreLeadingWhiteSpace(true).build().parse();
             for (VortragCsvDto dto : beans) {
@@ -180,13 +195,34 @@ public class AdminService {
                     Vortrag v = dto.istPflicht ? new Pflichtvortrag() : new Wahlvortrag();
                     v.titel = dto.titel;
                     v.inhalt = dto.inhalt;
-                    v.zielgruppe = dto.zielgruppe;
                     v.referent = (Referent) referent;
-                    v.veranstaltung = v_ent;
+                    v.veranstaltung = veranstaltung;
 
                     if (v instanceof Pflichtvortrag pflichtvortrag) {
-                       // lookup pflichtvortrag.pflichtslot = dto.pflichtslotBeschreibung;
-                       // lookup pflichtvortrag.pflichtraum = dto.pflichtraumName;
+                        pflichtvortrag.pflichtgruppe = dto.pflichtGruppe;
+                        pflichtvortrag.pflichtslot = slotsByName.get(dto.pflichtSlot);
+                        Map<Gebaeude, Raum> gebaeudeRaumMap = raeumeByName.get(dto.pflichtRaum);
+                        if (null == gebaeudeRaumMap) {
+                            LOG.warn("Unbekannter Raum '" + dto.pflichtRaum + "' für '" + v.titel + "'");
+                        } else {
+                            Raum gebaeudeRaum = null;
+
+                            Set<Gebaeude> gebaeudeSet = veranstaltung.gebaeude.stream()
+                                    .filter(gebaeudeRaumMap::containsKey)
+                                    .collect(Collectors.toSet());
+
+                            if (gebaeudeSet.isEmpty()) {
+                                LOG.warn("Raum '" + dto.pflichtRaum + "' nicht gefunden in Veranstaltungsgebäuden "
+                                        + veranstaltung.gebaeude.stream().map(g -> g.name)
+                                        .collect(Collectors.joining(", ")));
+                            } else if (gebaeudeSet.size() == 1) {
+                                pflichtvortrag.pflichtraum = gebaeudeRaumMap.get(gebaeudeSet.iterator().next());
+                            } else {
+                                LOG.warn("Raum '" + dto.pflichtRaum + "' nicht eindeutig in Veranstaltungsgebäuden "
+                                        + gebaeudeSet.stream().map(g -> g.name)
+                                        .collect(Collectors.joining(", ")));
+                            }
+                        }
                     } else if (v instanceof Wahlvortrag wahlvortrag) {
                         wahlvortrag.wiederholbar = dto.wiederholbar;
                         wahlvortrag.maxWiederholungen = dto.maxWiederholungen;
@@ -252,7 +288,15 @@ public class AdminService {
         if (entity == null || !entity.veranstaltung.id.equals(veranstaltungId)) return null;
         entity.titel = updated.titel;
         entity.inhalt = updated.inhalt;
-        entity.zielgruppe = updated.zielgruppe;
+        if (entity instanceof Pflichtvortrag pv && updated instanceof Pflichtvortrag updatedPv) {
+            pv.pflichtgruppe = updatedPv.pflichtgruppe;
+            pv.pflichtslot = updatedPv.pflichtslot;
+            pv.pflichtraum = updatedPv.pflichtraum;
+        } else if (entity instanceof Wahlvortrag wv && updated instanceof Wahlvortrag updatedWv) {
+            wv.wiederholbar = updatedWv.wiederholbar;
+            wv.maxWiederholungen = updatedWv.maxWiederholungen;
+            wv.wahlSlots = updatedWv.wahlSlots;
+        }
         return entity;
     }
 

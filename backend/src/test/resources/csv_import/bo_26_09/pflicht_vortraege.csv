@@ -1,4 +1,4 @@
-istPflicht;Titel;Referent_Email;Zielgruppe;pflichtraum;pflichtslot;Inhalt;wiederholbar;maxWiederholungen;wahlSlots
+istPflicht;Titel;Referent_Email;Pflichtgruppe;Pflichtraum;Pflichtslot;Inhalt;wiederholbar;maxWiederholungen;wahlSlots
 true;Vortrag Arbeitsagentur für 8.1;juergenkrey-monika_engler@yahoo.de;"8.1";A-1.01;2;Studien- und Berufsberatung für Klasse 8.1;false;1;
 true;Vortrag Arbeitsagentur für 8.3;juergenkrey-monika_engler@yahoo.de;"8.3";A-2.03;1;Studien- und Berufsberatung für Klasse 8.3;false;1;
 true;Vortrag Arbeitsagentur für 8.4;juergenkrey-monika_engler@yahoo.de;"8.4";V-0.05;3;Studien- und Berufsberatung für Klasse 8.4;false;1;

@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 @Entity
 @DiscriminatorValue("PFLICHT")
 public class Pflichtvortrag extends Vortrag {
+    public String pflichtgruppe;
 
     @ManyToOne(optional = false)
     public Raum pflichtraum;

@@ -123,7 +123,7 @@ public class OptimierungService {
 
         // Vorträge
         sb.append("w_daten = [").append(vortraege.stream().map(v -> {
-            String sIds = v.wahlslots.stream().map(s -> String.valueOf(slots.indexOf(s) + 1)).collect(Collectors.joining(", "));
+            String sIds = v.wahlSlots.stream().map(s -> String.valueOf(slots.indexOf(s) + 1)).collect(Collectors.joining(", "));
             return String.format("(name: \"%s\", referent_id: %d, moegliche_slot_ids: [%s])", v.titel, refMap.get(v.referent.id), sIds);
         }).collect(Collectors.joining(", "))).append("];\n\n");
 

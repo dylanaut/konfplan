@@ -18,7 +18,7 @@ public class Wahlvortrag extends Vortrag {
         joinColumns = @JoinColumn(name = "vortrag_id", columnDefinition = "INTEGER"),
         inverseJoinColumns = @JoinColumn(name = "eventslot_id", columnDefinition = "INTEGER")
     )
-    public List<EventSlot> wahlslots = new ArrayList<>();
+    public List<EventSlot> wahlSlots = new ArrayList<>();
 
     public Wahlvortrag() {
         // this.istPflicht = false; // Nicht mehr nötig

@@ -56,11 +56,14 @@ public class ReferentService {
         if (vortrag != null) {
             vortrag.titel = dto.titel;
             vortrag.inhalt = dto.inhalt;
-            vortrag.zielgruppe = dto.zielgruppe;
 
             if (vortrag instanceof Wahlvortrag wahlvortrag) {
                 wahlvortrag.wiederholbar = dto.wiederholbar;
                 wahlvortrag.maxWiederholungen = dto.maxWiederholungen;
+                // TBD check wahlSlots
+            } else if (vortrag instanceof Pflichtvortrag pflichtvortrag) {
+                pflichtvortrag.pflichtgruppe = dto.pflichtgruppe;
+                // TBD check pflichtSlot, pflichtRaum
             }
         }
     }
@@ -90,7 +93,7 @@ public class ReferentService {
                     nr.slogan = dto.slogan;
                     nr.biography = dto.biography;
                     nr.veranstaltung = veranstaltung;
-                    
+
                     String tempPassword = UUID.randomUUID().toString();
                     nr.passwordHash = BcryptUtil.bcryptHash(tempPassword);
 
@@ -106,9 +109,9 @@ public class ReferentService {
     public void toggleSlot(String email, Long slotId, boolean available) {
         Referent referent = Referent.find("email", email).firstResult();
         EventSlot slot = EventSlot.findById(slotId);
-        
+
         Verfuegbarkeit verfuegbarkeit = Verfuegbarkeit
-            .find("referent = ?1 and slot = ?2", referent, slot).firstResult();
+                .find("referent = ?1 and slot = ?2", referent, slot).firstResult();
 
         if (verfuegbarkeit == null) {
             verfuegbarkeit = new Verfuegbarkeit();

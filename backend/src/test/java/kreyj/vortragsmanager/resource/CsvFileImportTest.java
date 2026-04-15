@@ -143,7 +143,7 @@ class CsvFileImportTest {
                 .then()
                 .statusCode(200);
 
-        Assertions.assertEquals(12, Wahlvortrag.count());
+        Assertions.assertEquals(16, Wahlvortrag.count());
         Wahlvortrag wv = Wahlvortrag.find("titel", "Traumberuf Polizei?").firstResult();
         Assertions.assertNotNull(wv, "Wahlvortrag sollte importiert worden sein");
         Assertions.assertTrue(wv.wiederholbar);
@@ -156,11 +156,11 @@ class CsvFileImportTest {
                 .then()
                 .statusCode(200);
 
-        Assertions.assertEquals(12, Pflichtvortrag.count());
-        Pflichtvortrag pv = Wahlvortrag.find("titel", "Java Kurs").firstResult();
+        Assertions.assertEquals(18, Pflichtvortrag.count());
+        Pflichtvortrag pv = Pflichtvortrag.find("titel", "Vortrag Arbeitsagentur für 10.5").firstResult();
         Assertions.assertNotNull(pv, "Pflichtvortrag sollte importiert worden sein");
-        Assertions.assertEquals(pv.pflichtraum.name, "");
-        Assertions.assertEquals(pv.pflichtslot.description, "");
+        Assertions.assertEquals(pv.pflichtraum.name, "A-2.04");
+        Assertions.assertEquals(pv.pflichtslot.description, "9");
     }
 
     private static File getCsvFile(String fileName) {

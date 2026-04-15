@@ -24,8 +24,6 @@ public abstract class Vortrag extends SqliteEntity {
     @Column(columnDefinition = "TEXT")
     public String inhalt;
 
-    public String zielgruppe;
-
     @ManyToOne(optional = false)
     @JoinColumn(name = "referent_id", columnDefinition = "INTEGER")
     public Referent referent;

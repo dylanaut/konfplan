@@ -5,7 +5,9 @@ import kreyj.vortragsmanager.entity.converter.LocalDateTimeConverter;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(uniqueConstraints = {
@@ -38,6 +40,9 @@ public class Veranstaltung extends SqliteEntity {
         inverseJoinColumns = @JoinColumn(name = "gebaeude_id", columnDefinition = "INTEGER")
     )
     public List<Gebaeude> gebaeude = new ArrayList<>();
+
+    @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL)
+    public Set<EventSlot> eventSlots = new HashSet<>();
 
     @Version
     public Long version;

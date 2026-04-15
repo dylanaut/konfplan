@@ -3,6 +3,9 @@ package kreyj.vortragsmanager.dto;
 import com.opencsv.bean.CsvBindByName;
 
 public class VortragCsvDto {
+    @CsvBindByName(column = "istPflicht")
+    public boolean istPflicht;
+
     @CsvBindByName(column = "Titel", required = true)
     public String titel;
 
@@ -12,21 +15,17 @@ public class VortragCsvDto {
     @CsvBindByName(column = "Inhalt")
     public String inhalt;
 
-    @CsvBindByName(column = "Zielgruppe")
-    public String zielgruppe;
-
-    @CsvBindByName(column = "istPflicht")
-    public boolean istPflicht;
-
     @CsvBindByName(column = "wiederholbar")
     public boolean wiederholbar;
 
     @CsvBindByName(column = "maxWiederholungen")
     public int maxWiederholungen;
 
-    @CsvBindByName(column = "pflichtraum")
-    public String pflichtraum;
+    @CsvBindByName(column = "Pflichtgruppe")
+    public String pflichtGruppe;
+    @CsvBindByName(column = "Pflichtraum")
+    public String pflichtRaum;
 
-    @CsvBindByName(column = "pflichtslot")
-    public String pflichtslot;
+    @CsvBindByName(column = "Pflichtslot")
+    public String pflichtSlot;
 }
