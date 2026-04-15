@@ -1,11 +1,13 @@
 package kreyj.vortragsmanager.service;
 
 import com.opencsv.bean.CsvToBeanBuilder;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.dto.GebaeudeRaeumeCsvDto;
 import kreyj.vortragsmanager.entity.Gebaeude;
 import kreyj.vortragsmanager.entity.Raum;
+import org.jboss.logging.Logger;
 
 import java.io.FileReader;
 import java.nio.file.Path;
@@ -13,7 +15,7 @@ import java.util.List;
 
 @ApplicationScoped
 public class GebaeudeService {
-
+    private static final Logger LOG = Logger.getLogger(GebaeudeService.class);
     public List<Gebaeude> listAll() {
         return Gebaeude.listAll();
     }
@@ -52,8 +54,15 @@ public class GebaeudeService {
                     .parse();
 
             for (GebaeudeRaeumeCsvDto dto : beans) {
+                String gebaeudeName = dto.name;
+
+                if (Gebaeude.find("name = ?1", gebaeudeName).count() > 0) {
+                    LOG.info("Gebaeude already exists: " + gebaeudeName);
+                    continue;
+                }
+
                 Gebaeude g = new Gebaeude();
-                g.name = dto.name;
+                g.name = gebaeudeName;
                 g.typ = Gebaeude.Gebaeudetyp.valueOf(dto.typ.toUpperCase());
                 g.strasse = dto.strasse;
                 g.hausnummer = dto.hausnummer;

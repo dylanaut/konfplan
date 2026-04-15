@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+PROJECT_DIR=~/Java/berufsorientierung/vortragsmanager
 
-### flyway - locks DB on startup
-sqlite3 ../backend/vortragsmanager.db < ../backend/src/main/resources/db/migration/V1__init.sql
+### init schema & 1 admin
+sqlite3 $PROJECT_DIR/vortragsmanager.db < $PROJECT_DIR/backend/src/main/resources/db/migration/V1__init.sql

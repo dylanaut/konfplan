@@ -3,7 +3,6 @@ package kreyj.vortragsmanager.resource;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.entity.*;
 import org.junit.jupiter.api.Assertions;
@@ -11,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -29,11 +29,11 @@ class CsvImportTest {
         Verfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
         EventSlot.deleteAll();
-        
+
         User.update("veranstaltung = null");
         Veranstaltung.deleteAll();
         User.deleteAll();
-        
+
         Raum.deleteAll();
         Gebaeude.deleteAll();
 
@@ -42,31 +42,53 @@ class CsvImportTest {
         admin.passwordHash = "hash";
         admin.persist();
 
+        Gebaeude gebaeude = setupGebaeude("RKS_LINZ");
+        testVid = setupVeranstaltung(admin, List.of(gebaeude));
+    }
+
+    private Gebaeude setupGebaeude(String gebaeudeName) {
+        Gebaeude gebaeude = new Gebaeude();
+
+        gebaeude.name = gebaeudeName;
+        gebaeude.typ = Gebaeude.Gebaeudetyp.SCHULE;
+        gebaeude.strasse = "Alte Str.";
+        gebaeude.hausnummer = "10";
+        gebaeude.postleitzahl = "12345";
+        gebaeude.ort = "Stadt";
+        gebaeude.persist();
+
+        return gebaeude;
+    }
+
+    private Long setupVeranstaltung(Admin admin, List<Gebaeude> gebaeudeList) {
+
         Veranstaltung v = new Veranstaltung();
         v.name = "Basis Event " + System.currentTimeMillis();
         v.beginntAm = LocalDateTime.of(2025, 10, 10, 9, 0);
         v.organisator = admin;
+        v.gebaeude.addAll(gebaeudeList);
         v.persist();
-        testVid = v.id;
+
+        return v.id;
     }
 
     @Test
     void testImportVeranstaltungen() {
         String csv = "Name;Beginn;Ende;Organisator_Email;Gebaeude_Namen;Logo;Logo_link\n" +
-                     "CSV Event;2026-10-01 10:00;2026-10-01 17:00;admin@test.de;assets/RKS_Logo.png;https://realschuleplus-linz.de/home/home.html";
+                "CSV Event;2026-10-01 10:00;2026-10-01 17:00;admin@test.de;RKS_LINZ;assets/RKS_Logo.png;https://realschuleplus-linz.de/home/home.html";
 
         given()
                 .multiPart("file", "veranstaltungen.csv", csv.getBytes())
                 .when().post("/api/veranstaltungen/import")
                 .then()
                 .statusCode(200)
-                .body(containsString("1 Veranstaltungen angelegt"));
+                .body(containsString("1 Veranstaltung(en) angelegt"));
     }
 
     @Test
     void testImportGebaeudeMitRaeumen() {
         String csv = "Name;Typ;Strasse;Hausnummer;PLZ;Ort;Räume\n" +
-                     "Altbau;SCHULE;Alte Str.;10;12345;Stadt;A101:30:1.OG|Lab:20:EG";
+                "Altbau;SCHULE;Alte Str.;10;12345;Stadt;A101:30:1.OG|Lab:20:EG";
 
         given()
                 .multiPart("file", "gebaeude.csv", csv.getBytes())
@@ -99,7 +121,7 @@ class CsvImportTest {
     @Test
     void testImportReferenten() {
         String csv = "Vorname;Nachname;Email;Position;Organisation;Slogan;Biografie\n" +
-                     "Max;Referent;max@ref.de;Experte;TechCorp;Think Big;Bio Text";
+                "Max;Referent;max@ref.de;Experte;TechCorp;Think Big;Bio Text";
 
         given()
                 .multiPart("file", "referenten.csv", csv.getBytes())
@@ -115,7 +137,7 @@ class CsvImportTest {
     @Test
     void testImportTeilnehmer() {
         String csv = "Vorname;Nachname;Email;Gruppe\n" +
-                     "Tom;Student;tom@stud.de;10b";
+                "Tom;Student;tom@stud.de;10b";
 
         given()
                 .multiPart("file", "teilnehmer.csv", csv.getBytes())
@@ -130,8 +152,8 @@ class CsvImportTest {
 
     @Test
     void testImportEventSlots() {
-        String csv = "Bezeichnung;Beginn;Ende\n" +
-                     "Slot 1;2025-10-10 09:00;2025-10-10 09:45";
+        String csv = "Bezeichnung;Tag;Beginn;Ende\n" +
+                "Slot 1;2025-10-10;09:00;09:45";
 
         given()
                 .multiPart("file", "slots.csv", csv.getBytes())
@@ -144,7 +166,8 @@ class CsvImportTest {
 
     @Test
     void testImportVortraege() {
-        QuarkusTransaction.begin();       Referent r = new Referent();
+        QuarkusTransaction.begin();
+        Referent r = new Referent();
         r.email = "vortrag@ref.de";
         r.firstName = "Max";
         r.lastName = "Ref";
@@ -153,8 +176,8 @@ class CsvImportTest {
         r.persist();
         QuarkusTransaction.commit();
 
-        String csv = "istPflicht;Titel;Referent_Email;Inhalt;Zielgruppe;wiederholbar;maxWiederholungen;pflichtraumName;pflichtslotBeschreibung\n" +
-                     "false;Java Kurs;vortrag@ref.de;Inhalt Text;Alle;true;2;;";
+        String csv = "istPflicht;Titel;Referent_Email;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;Pflichtslot\n" +
+                "false;Java Kurs;vortrag@ref.de;Inhalt Text;Alle;true;2;;";
 
         given()
                 .multiPart("file", "vortraege.csv", csv.getBytes())

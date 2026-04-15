@@ -154,7 +154,8 @@ public class AdminService {
                     .withIgnoreLeadingWhiteSpace(true).build();
             List<AdminCsvDto> beans = build.parse();
             for (AdminCsvDto dto : beans) {
-                if (User.findByEmail(dto.email) == null) {
+                User byEmail = User.findByEmail(dto.email);
+                if (byEmail == null) {
                     Admin a = new Admin();
                     a.email = dto.email.trim().toLowerCase();
                     a.firstName = dto.firstName;

@@ -17,6 +17,33 @@ v0.1, 14.04.26
 
 | beim Anlegen einer neuen Veranstaltung ist die ADMIN Auswahlliste leer, obwohl ich als Admin angemeldet bin?
 | done | -
+
+| zusätzlicher Admin-CSV Import in AdminDashboard einrichten
+| done | -
+
+| check, falls keine Gebäude -> keine Veranstaltungs -Import
+| done | -
+
+| Die UI muss bei allen CSV Importen eine kurze Rückmeldung über die Anzahl der erfolgreichen und erfolglos gelesenen Datensätze als modaler dialog geben. Der Dialog wird im Gut-Fall nach 3 sekunden ausgeblendet. Wenn Fehler aufgetreten sind, muss der Nutzer den Dialog zum Schliessen bestätigen.
+| done | -
+
+| erfolglos gelesene, nicht importierbare CSV Datensätze müssen in den Server-Logs auftauchen
+| |
+
+| Über die UI importierte CSV-Daten (z.B. veranstalter.csv) scheinen nicht in der Datenbank zu landen?
+||-
+
+|
+||-
+
+|
+||-
+
+|
+||-
+
+|
+||-
 |===
 
 
