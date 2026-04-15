@@ -58,7 +58,7 @@ class CsvFileImportTest {
     private void setupVeranstalter() {
         // import Veranstalter
         given()
-                .multiPart("file", getCsvFile("veranstalter.csv"))
+                .multiPart("file", getCsvFile("organisatoren.csv"))
                 .when().post("/api/admin/admins/import")
                 .then()
                 .statusCode(200);

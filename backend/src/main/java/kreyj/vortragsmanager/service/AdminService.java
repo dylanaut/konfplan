@@ -84,12 +84,12 @@ public class AdminService {
         entity.isActive = dto.isActive;
 
         if (entity instanceof Referent r) {
-            r.biography = dto.biography;
-            r.jobRole = dto.jobRole;
-            r.organisation = dto.organisation;
-            r.slogan = dto.slogan;
+            r.biography = r.biography;
+            r.jobRole = r.jobRole;
+            r.organisation = r.organisation;
+            r.slogan = r.slogan;
         } else if (entity instanceof Teilnehmer t) {
-            t.gruppe = dto.gruppe;
+            t.gruppe = t.gruppe;
         }
 
         return mapToDto(entity);
@@ -149,24 +149,43 @@ public class AdminService {
     public int importAdminsFromCsv(Path csvFilePath) throws Exception {
         int count = 0;
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
-            CsvToBean<AdminCsvDto> build = new CsvToBeanBuilder<AdminCsvDto>(reader)
-                    .withType(AdminCsvDto.class).withSeparator(';')
-                    .withIgnoreLeadingWhiteSpace(true).build();
-            List<AdminCsvDto> beans = build.parse();
+            CsvToBean<AdminCsvDto> csvToBean = new CsvToBeanBuilder<AdminCsvDto>(reader)
+                    .withType(AdminCsvDto.class)
+                    .withSeparator(';')
+                    .withIgnoreLeadingWhiteSpace(true)
+                    .withThrowExceptions(false)
+                    .build();
+
+            List<AdminCsvDto> beans = csvToBean.parse();
+
+            csvToBean.getCapturedExceptions().forEach(e -> 
+                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
+            );
+
             for (AdminCsvDto dto : beans) {
-                User byEmail = User.findByEmail(dto.email);
+                if (dto.email == null || dto.email.isBlank()) {
+                    LOG.warn("Admin-Zeile übersprungen: Email fehlt.");
+                    continue;
+                }
+                String email = dto.email.trim().toLowerCase();
+                User byEmail = User.findByEmail(email);
                 if (byEmail == null) {
                     Admin a = new Admin();
-                    a.email = dto.email.trim().toLowerCase();
+                    a.email = email;
                     a.firstName = dto.firstName;
                     a.lastName = dto.lastName;
                     a.passwordHash = BcryptUtil.bcryptHash(UUID.randomUUID().toString());
                     a.persist();
                     count++;
+                } else {
+                    LOG.warn("Admin '" + email + "' übersprungen: Existiert bereits.");
                 }
             }
+        } catch (Exception e) {
+            LOG.error("Kritischer Fehler beim Importieren der Admins aus CSV: " + csvFilePath, e);
+            throw e;
         }
-
+        LOG.info("Admin-Import abgeschlossen: " + count + " Admins importiert.");
         return count;
     }
 
@@ -174,6 +193,10 @@ public class AdminService {
     public int importVortraegeFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception {
         int count = 0;
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
+        if (veranstaltung == null) {
+            LOG.error("CSV-Import (Vorträge) abgebrochen: Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
+            throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
+        }
         var v_raeume = veranstaltung.gebaeude.stream()
                 .flatMap(g -> g.raeume.stream())
                 .toList();
@@ -189,8 +212,25 @@ public class AdminService {
         Map<String, EventSlot> slotsByName = veranstaltung.eventSlots.stream().collect(Collectors.toMap(s -> s.description, s -> s));
 
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
-            List<VortragCsvDto> beans = new CsvToBeanBuilder<VortragCsvDto>(reader).withType(VortragCsvDto.class).withSeparator(';').withIgnoreLeadingWhiteSpace(true).build().parse();
+            CsvToBean<VortragCsvDto> csvToBean = new CsvToBeanBuilder<VortragCsvDto>(reader)
+                    .withType(VortragCsvDto.class)
+                    .withSeparator(';')
+                    .withIgnoreLeadingWhiteSpace(true)
+                    .withThrowExceptions(false)
+                    .build();
+
+            List<VortragCsvDto> beans = csvToBean.parse();
+
+            csvToBean.getCapturedExceptions().forEach(e -> 
+                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
+            );
+
             for (VortragCsvDto dto : beans) {
+                if (dto.titel == null || dto.titel.isBlank()) {
+                    LOG.warn("Vortrag übersprungen: Titel fehlt.");
+                    continue;
+                }
+
                 User referent = User.findByEmail(dto.referentEmail);
                 if (referent instanceof Referent) {
                     Vortrag v = dto.istPflicht ? new Pflichtvortrag() : new Wahlvortrag();
@@ -202,26 +242,26 @@ public class AdminService {
                     if (v instanceof Pflichtvortrag pflichtvortrag) {
                         pflichtvortrag.pflichtgruppe = dto.pflichtGruppe;
                         pflichtvortrag.pflichtslot = slotsByName.get(dto.pflichtSlot);
+                        if (pflichtvortrag.pflichtslot == null && dto.pflichtSlot != null && !dto.pflichtSlot.isBlank()) {
+                             LOG.warn("Vortrag '" + v.titel + "': Slot '" + dto.pflichtSlot + "' nicht gefunden.");
+                        }
+
                         Map<Gebaeude, Raum> gebaeudeRaumMap = raeumeByName.get(dto.pflichtRaum);
                         if (null == gebaeudeRaumMap) {
-                            LOG.warn("Unbekannter Raum '" + dto.pflichtRaum + "' für '" + v.titel + "'");
+                            if (dto.pflichtRaum != null && !dto.pflichtRaum.isBlank()) {
+                                LOG.warn("Vortrag '" + v.titel + "': Unbekannter Raum '" + dto.pflichtRaum + "'");
+                            }
                         } else {
-                            Raum gebaeudeRaum = null;
-
                             Set<Gebaeude> gebaeudeSet = veranstaltung.gebaeude.stream()
                                     .filter(gebaeudeRaumMap::containsKey)
                                     .collect(Collectors.toSet());
 
                             if (gebaeudeSet.isEmpty()) {
-                                LOG.warn("Raum '" + dto.pflichtRaum + "' nicht gefunden in Veranstaltungsgebäuden "
-                                        + veranstaltung.gebaeude.stream().map(g -> g.name)
-                                        .collect(Collectors.joining(", ")));
+                                LOG.warn("Vortrag '" + v.titel + "': Raum '" + dto.pflichtRaum + "' nicht gefunden in Veranstaltungsgebäuden.");
                             } else if (gebaeudeSet.size() == 1) {
                                 pflichtvortrag.pflichtraum = gebaeudeRaumMap.get(gebaeudeSet.iterator().next());
                             } else {
-                                LOG.warn("Raum '" + dto.pflichtRaum + "' nicht eindeutig in Veranstaltungsgebäuden "
-                                        + gebaeudeSet.stream().map(g -> g.name)
-                                        .collect(Collectors.joining(", ")));
+                                LOG.warn("Vortrag '" + v.titel + "': Raum '" + dto.pflichtRaum + "' nicht eindeutig in Veranstaltungsgebäuden.");
                             }
                         }
                     } else if (v instanceof Wahlvortrag wahlvortrag) {
@@ -231,9 +271,15 @@ public class AdminService {
 
                     v.persist();
                     count++;
+                } else {
+                    LOG.warn("Vortrag '" + dto.titel + "' übersprungen: Referent mit Email " + dto.referentEmail + " nicht gefunden oder kein Referent.");
                 }
             }
+        } catch (Exception e) {
+            LOG.error("Kritischer Fehler beim Importieren der Vorträge aus CSV: " + csvFilePath, e);
+            throw e;
         }
+        LOG.info("Vortrag-Import abgeschlossen: " + count + " Vorträge importiert.");
         return count;
     }
 
@@ -268,18 +314,47 @@ public class AdminService {
     public int importSlotsFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception {
         int count = 0;
         Veranstaltung v = Veranstaltung.findById(veranstaltungId);
+        if (v == null) {
+            LOG.error("CSV-Import (Slots) abgebrochen: Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
+            throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
+        }
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
-            List<EventSlotCsvDto> beans = new CsvToBeanBuilder<EventSlotCsvDto>(reader).withType(EventSlotCsvDto.class).withSeparator(';').withIgnoreLeadingWhiteSpace(true).build().parse();
+             CsvToBean<EventSlotCsvDto> csvToBean = new CsvToBeanBuilder<EventSlotCsvDto>(reader)
+                    .withType(EventSlotCsvDto.class)
+                    .withSeparator(';')
+                    .withIgnoreLeadingWhiteSpace(true)
+                    .withThrowExceptions(false)
+                    .build();
+
+            List<EventSlotCsvDto> beans = csvToBean.parse();
+
+            csvToBean.getCapturedExceptions().forEach(e -> 
+                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
+            );
+
             for (EventSlotCsvDto dto : beans) {
+                if (dto.description == null || dto.description.isBlank()) {
+                    LOG.warn("Slot übersprungen: Beschreibung fehlt.");
+                    continue;
+                }
                 EventSlot s = new EventSlot();
                 s.description = dto.description;
-                s.startTime = LocalDateTime.parse(dto.day + " " + dto.startTime, DATE_FORMAT);
-                s.endTime = LocalDateTime.parse(dto.day + " " + dto.endTime, DATE_FORMAT);
+                try {
+                    s.startTime = LocalDateTime.parse(dto.day + " " + dto.startTime, DATE_FORMAT);
+                    s.endTime = LocalDateTime.parse(dto.day + " " + dto.endTime, DATE_FORMAT);
+                } catch (Exception e) {
+                    LOG.error("Fehler beim Parsen der Zeit für Slot '" + dto.description + "': " + e.getMessage());
+                    continue;
+                }
                 s.veranstaltung = v;
                 s.persist();
                 count++;
             }
+        } catch (Exception e) {
+            LOG.error("Kritischer Fehler beim Importieren der Slots aus CSV: " + csvFilePath, e);
+            throw e;
         }
+        LOG.info("Slot-Import abgeschlossen: " + count + " Slots importiert.");
         return count;
     }
 

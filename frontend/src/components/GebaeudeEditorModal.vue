@@ -17,13 +17,11 @@
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-1">Gebäudetyp</label>
           <select v-model="form.typ" class="input-field" required>
-            <option value="HAUPTGEBÄUDE">Hauptgebäude</option>
-            <option value="NEBENGEBÄUDE">Nebengebäude</option>
-            <option value="FACHTRAKT">Fachtrakt</option>
+            <option value="SCHULE">Schule</option>
+            <option value="KINO">Kino</option>
             <option value="SPORTHALLE">Sporthalle</option>
-            <option value="MENSA_AULA">Mensa/Aula</option>
+            <option value="SAAL">Saal</option>
             <option value="EXTERN">Extern</option>
-            <option value="PROVISORIUM">Provisorium</option>
           </select>
         </div>
 

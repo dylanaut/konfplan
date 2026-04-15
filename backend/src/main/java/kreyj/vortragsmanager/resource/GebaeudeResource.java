@@ -6,10 +6,12 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.FileUploadDto;
+import kreyj.vortragsmanager.dto.GebaeudeSimpleDto;
 import kreyj.vortragsmanager.entity.Gebaeude;
 import kreyj.vortragsmanager.entity.Raum;
 import kreyj.vortragsmanager.service.GebaeudeService;
 import kreyj.vortragsmanager.service.RaumService;
+
 import java.util.List;
 
 @Path("/api/gebaeude")
@@ -27,8 +29,23 @@ public class GebaeudeResource {
     // --- GEBÄUDE ---
 
     @GET
-    public List<Gebaeude> getAll() {
-        return gebaeudeService.listAll();
+    public List<GebaeudeSimpleDto> getAll() {
+        return gebaeudeService.listAll()
+                .stream().map(GebaeudeResource::mapToDto).toList();
+    }
+
+    public static GebaeudeSimpleDto mapToDto(Gebaeude gebaeude) {
+        GebaeudeSimpleDto dto = new GebaeudeSimpleDto();
+        dto.id = gebaeude.id;
+        dto.name = gebaeude.name;
+        dto.strasse = gebaeude.strasse;
+        dto.hausnummer = gebaeude.hausnummer;
+        dto.ort = gebaeude.ort;
+        dto.postleitzahl = gebaeude.postleitzahl;
+        dto.typ = gebaeude.typ;
+        dto.version = gebaeude.version;
+
+        return dto;
     }
 
     @POST

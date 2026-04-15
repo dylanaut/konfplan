@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS Gebaeude
     hausnummer   VARCHAR(20),
     postleitzahl VARCHAR(10)         NOT NULL,
     ort          VARCHAR(255)        NOT NULL,
-    version      BIGINT              NOT NULL DEFAULT 1 -- Neu für Optimistic Locking
+    version      BIGINT              NOT NULL DEFAULT 1
 );
 
 -- 4. Zeit-Slots
@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS EventSlot
     startTime        TIMESTAMP NOT NULL,
     endTime          TIMESTAMP NOT NULL,
     description      VARCHAR(255),
+    version          BIGINT    NOT NULL DEFAULT 1,
     veranstaltung_id INTEGER   NOT NULL,
     FOREIGN KEY (veranstaltung_id) REFERENCES Veranstaltung (id) ON DELETE CASCADE
 );

@@ -57,7 +57,7 @@ public abstract class User extends SqliteEntity {
 
     @ManyToOne(fetch = FetchType.EAGER) // EAGER um sicherzustellen, dass sie geladen wird
     @JoinColumn(name = "veranstaltung_id", columnDefinition = "INTEGER")
-    @JsonIgnoreProperties({"organisator", "gebaeude"})
+    @JsonIgnoreProperties({"organisator", "gebaeude", "eventSlots"})
     public Veranstaltung veranstaltung;
 
     @Version

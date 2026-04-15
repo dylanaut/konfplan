@@ -7,9 +7,17 @@ public class GebaeudeSimpleDto {
 
     public String name;
 
-    public Gebaeude.Gebaeudetyp typ;
+    public String strasse;
+
+    public String hausnummer;
+
+    public String postleitzahl;
 
     public String ort;
+
+    public Gebaeude.Gebaeudetyp typ;
+
+    public Long version;
 
     public GebaeudeSimpleDto() {
     }

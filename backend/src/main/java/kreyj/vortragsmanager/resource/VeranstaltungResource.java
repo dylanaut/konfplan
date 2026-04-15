@@ -2,18 +2,19 @@ package kreyj.vortragsmanager.resource;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.*;
 import kreyj.vortragsmanager.entity.EventSlot;
+import kreyj.vortragsmanager.entity.Veranstaltung;
 import kreyj.vortragsmanager.entity.Vortrag;
 import kreyj.vortragsmanager.service.*;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Path("/api/veranstaltungen")
 @RolesAllowed("ADMIN")
@@ -43,15 +44,19 @@ public class VeranstaltungResource {
 
     @GET
     public List<VeranstaltungDto> getAll() {
-        return veranstaltungService.listAll();
+        return veranstaltungService.listAll().stream()
+                .map(VeranstaltungResource::mapToDto)
+                .collect(Collectors.toList());
     }
 
     @GET
     @Path("/{vid}")
     public Response getOne(@PathParam("vid") Long vid) {
-        VeranstaltungDto vDto = veranstaltungService.findById(vid);
-        if (vDto == null) return Response.status(Response.Status.NOT_FOUND).build();
-        return Response.ok(vDto).build();
+        Veranstaltung vEntity = veranstaltungService.findById(vid);
+        if (vEntity == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(mapToDto(vEntity)).build();
     }
 
     @POST
@@ -70,7 +75,9 @@ public class VeranstaltungResource {
         vDto.id = id;
         try {
             VeranstaltungDto updated = veranstaltungService.save(vDto);
-            if (updated == null) return Response.status(Response.Status.NOT_FOUND).build();
+            if (updated == null) {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
             return Response.ok(updated).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
@@ -81,7 +88,9 @@ public class VeranstaltungResource {
     @Path("/{id}")
     public Response delete(@PathParam("id") Long id) {
         boolean deleted = veranstaltungService.delete(id);
-        if (!deleted) return Response.status(Response.Status.NOT_FOUND).build();
+        if (!deleted) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
         return Response.noContent().build();
     }
 
@@ -110,6 +119,26 @@ public class VeranstaltungResource {
     public Response createBenutzer(@PathParam("vid") Long vid, UserDto userDto) {
         UserDto created = adminService.createUser(userDto, vid);
         return Response.status(Response.Status.CREATED).entity(created).build();
+    }
+
+    @PUT
+    @Path("/{vid}/benutzer/{id}")
+    public Response updateBenutzer(@PathParam("vid") Long vid, @PathParam("id") Long id, UserDto userDto) {
+        UserDto updated = adminService.updateUser(id, userDto, vid);
+        if (updated == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(updated).build();
+    }
+
+    @DELETE
+    @Path("/{vid}/benutzer/{id}")
+    public Response deleteBenutzer(@PathParam("vid") Long vid, @PathParam("id") Long id) {
+        boolean deleted = adminService.deleteUser(id);
+        if (!deleted) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.noContent().build();
     }
 
     @POST
@@ -143,6 +172,33 @@ public class VeranstaltungResource {
     }
 
     @POST
+    @Path("/{vid}/vortraege")
+    public Response createVortrag(@PathParam("vid") Long vid, Vortrag vortrag) {
+        Vortrag created = adminService.createVortrag(vortrag, vid);
+        return Response.status(Response.Status.CREATED).entity(created).build();
+    }
+
+    @PUT
+    @Path("/{vid}/vortraege/{id}")
+    public Response updateVortrag(@PathParam("vid") Long vid, @PathParam("id") Long id, Vortrag vortrag) {
+        Vortrag updated = adminService.updateVortrag(id, vortrag, vid);
+        if (updated == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(updated).build();
+    }
+
+    @DELETE
+    @Path("/{vid}/vortraege/{id}")
+    public Response deleteVortrag(@PathParam("vid") Long vid, @PathParam("id") Long id) {
+        boolean deleted = adminService.deleteVortrag(id, vid);
+        if (!deleted) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.noContent().build();
+    }
+
+    @POST
     @Path("/{vid}/vortraege/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response importVortraege(@PathParam("vid") Long vid, @RestForm("file") FileUpload file) {
@@ -156,8 +212,38 @@ public class VeranstaltungResource {
 
     @GET
     @Path("/{vid}/slots")
-    public List<EventSlot> getSlots(@PathParam("vid") Long vid) {
-        return adminService.getAllEventSlots(vid);
+    public List<EventSlotDto> getSlots(@PathParam("vid") Long vid) {
+        return adminService.getAllEventSlots(vid)
+                .stream()
+                .map(VeranstaltungResource::mapSlotToDto).toList();
+    }
+
+
+    @POST
+    @Path("/{vid}/slots")
+    public Response createSlot(@PathParam("vid") Long vid, EventSlot slot) {
+        EventSlot created = adminService.createEventSlot(slot, vid);
+        return Response.status(Response.Status.CREATED).entity(created).build();
+    }
+
+    @PUT
+    @Path("/{vid}/slots/{id}")
+    public Response updateSlot(@PathParam("vid") Long vid, @PathParam("id") Long id, EventSlot slot) {
+        EventSlot updated = adminService.updateEventSlot(id, slot, vid);
+        if (updated == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(updated).build();
+    }
+
+    @DELETE
+    @Path("/{vid}/slots/{id}")
+    public Response deleteSlot(@PathParam("vid") Long vid, @PathParam("id") Long id) {
+        boolean deleted = adminService.deleteEventSlot(id, vid);
+        if (!deleted) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.noContent().build();
     }
 
     @POST
@@ -208,5 +294,35 @@ public class VeranstaltungResource {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("Fehler bei der Optimierung: " + e.getMessage()).build();
         }
+    }
+
+    // -------------------------------------------------------------------
+    // helper methods
+    // -------------------------------------------------------------------
+
+    public static VeranstaltungDto mapToDto(Veranstaltung v) {
+        VeranstaltungDto dto = new VeranstaltungDto();
+        dto.id = v.id;
+        dto.name = v.name;
+        dto.beginntAm = v.beginntAm;
+        dto.endetAm = v.endetAm;
+        dto.logo = v.logo;
+        dto.logo_link = v.logo_link;
+        dto.organisatorId = v.organisator != null ? v.organisator.id : null;
+        dto.organisatorName = v.organisator != null ? v.organisator.lastName : "";
+        dto.gebaeude = v.gebaeude.stream().map(GebaeudeResource::mapToDto).toList();
+        dto.version = v.version;
+        return dto;
+    }
+
+    public static EventSlotDto mapSlotToDto(EventSlot eventSlot) {
+        EventSlotDto dto = new EventSlotDto();
+        dto.description = eventSlot.description;
+        dto.startTime = eventSlot.startTime;
+        dto.endTime = eventSlot.endTime;
+
+        dto.version = eventSlot.version;
+
+        return dto;
     }
 }

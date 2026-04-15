@@ -13,6 +13,9 @@ public class EventSlot extends SqliteEntity {
     public LocalDateTime endTime;
     public String description;
 
+    @Version
+    public Long version;
+
     @ManyToOne(optional = false)
     @JoinColumn(name = "veranstaltung_id", columnDefinition = "INTEGER")
     public Veranstaltung veranstaltung;

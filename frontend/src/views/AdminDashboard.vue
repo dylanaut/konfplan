@@ -2,12 +2,14 @@
   <div class="max-w-7xl mx-auto space-y-6 pb-20">
 
     <!-- Page Header & Veranstaltungsauswahl -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+    <div
+        class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       <div class="flex-1">
         <h1 class="text-2xl font-bold text-gray-900">Admin-Bereich</h1>
         <div class="mt-4 flex items-center gap-3">
           <label class="text-sm font-bold text-gray-500 uppercase tracking-wider">Aktive Veranstaltung:</label>
-          <select v-model="selectedVid" @change="loadData" class="input-field max-w-md border-indigo-200 focus:ring-indigo-500">
+          <select v-model="selectedVid" @change="loadData"
+                  class="input-field max-w-md border-indigo-200 focus:ring-indigo-500">
             <option :value="null">-- Bitte wählen / Keine Auswahl --</option>
             <option v-for="v in veranstaltungen" :key="v.id" :value="v.id">
               {{ v.name }} ({{ formatDate(v.beginntAm) }})
@@ -16,11 +18,15 @@
         </div>
       </div>
       <div v-if="selectedVid" class="flex gap-2">
-        <button @click="downloadTuerschilder" class="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-md text-sm font-bold">
-          <FileTextIcon class="w-4 h-4"/> Türschilder (PDF)
+        <button @click="downloadTuerschilder"
+                class="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-md text-sm font-bold">
+          <FileTextIcon class="w-4 h-4"/>
+          Türschilder (PDF)
         </button>
-        <button @click="downloadExport" class="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition shadow-md text-sm font-bold">
-          <DownloadIcon class="w-4 h-4"/> CSV Export
+        <button @click="downloadExport"
+                class="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition shadow-md text-sm font-bold">
+          <DownloadIcon class="w-4 h-4"/>
+          CSV Export
         </button>
       </div>
     </div>
@@ -31,20 +37,29 @@
         <button v-for="tab in visibleTabs" :key="tab"
                 @click="activeTab = tab"
                 :class="[activeTab === tab ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm capitalize']">
-          {{ tab === 'planung' ? 'Optimierung' : tab === 'ergebnisse' ? 'Ergebnisse' : tab === 'administratoren' ? 'Veranstalter' : tab }}
+          {{
+            tab === 'planung' ? 'Optimierung' : tab === 'ergebnisse' ? 'Ergebnisse' : tab === 'administratoren' ? 'Organisatoren' : tab
+          }}
         </button>
       </nav>
     </div>
 
     <!-- START-ZUSTAND (Empty State) -->
-    <div v-if="!selectedVid && !['veranstaltungen', 'gebäude', 'administratoren'].includes(activeTab)" class="bg-indigo-50 p-10 rounded-2xl text-center border-2 border-dashed border-indigo-200 animate-fade-in">
-      <div class="text-indigo-400 mb-4 flex justify-center"><CalendarIcon class="w-12 h-12"/></div>
+    <div v-if="!selectedVid && !['veranstaltungen', 'gebäude', 'administratoren'].includes(activeTab)"
+         class="bg-indigo-50 p-10 rounded-2xl text-center border-2 border-dashed border-indigo-200 animate-fade-in">
+      <div class="text-indigo-400 mb-4 flex justify-center">
+        <CalendarIcon class="w-12 h-12"/>
+      </div>
       <h2 class="text-xl font-bold text-indigo-900">Keine Veranstaltung ausgewählt</h2>
       <p class="text-indigo-600 mt-2 mb-6">Bitte wählen Sie oben eine Veranstaltung aus oder legen Sie eine neue an.</p>
       <div class="flex justify-center gap-4">
-        <button @click="activeTab = 'veranstaltungen'" class="bg-white text-indigo-700 px-6 py-3 rounded-xl font-bold border border-indigo-200 shadow-sm">Zu den Veranstaltungen</button>
+        <button @click="activeTab = 'veranstaltungen'"
+                class="bg-white text-indigo-700 px-6 py-3 rounded-xl font-bold border border-indigo-200 shadow-sm">Zu
+          den Veranstaltungen
+        </button>
         <button @click="openVeranstaltungEditor(null)" class="btn-primary flex items-center gap-2">
-          <PlusCircleIcon class="w-5 h-5"/> Neue Veranstaltung anlegen
+          <PlusCircleIcon class="w-5 h-5"/>
+          Neue Veranstaltung anlegen
         </button>
       </div>
     </div>
@@ -64,7 +79,12 @@
       <div class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50 text-[10px] uppercase font-bold text-gray-500">
-          <tr><th class="px-6 py-3 text-left">Vortrag</th><th class="px-6 py-3 text-left">Zeit/Raum</th><th class="px-6 py-3 text-center">Belegung</th><th class="px-6 py-3 text-left">Teilnehmer</th></tr>
+          <tr>
+            <th class="px-6 py-3 text-left">Vortrag</th>
+            <th class="px-6 py-3 text-left">Zeit/Raum</th>
+            <th class="px-6 py-3 text-center">Belegung</th>
+            <th class="px-6 py-3 text-left">Teilnehmer</th>
+          </tr>
           </thead>
           <tbody class="divide-y divide-gray-100 text-sm">
           <tr v-for="b in belegungsPlan" :key="b.vortragTitel + b.slotZeit" class="hover:bg-gray-50 transition">
@@ -78,32 +98,18 @@
       </div>
     </section>
 
-    <!-- TAB: OPTIMIERUNG (Planung) -->
-    <section v-if="activeTab === 'planung' && selectedVid" class="space-y-6 animate-fade-in">
-      <div class="bg-indigo-900 text-white p-8 rounded-2xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-8">
-        <div class="space-y-4">
-          <h2 class="text-3xl font-black">Planung & Optimierung</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white/10 p-4 rounded-xl">
-            <select v-model="solverConfig.solver" class="bg-indigo-800 border-none rounded text-white text-sm">
-              <option value="OR-tools">OR-Tools</option><option value="Gecode">Gecode</option>
-            </select>
-            <input v-model.number="solverConfig.timeout" type="number" class="bg-indigo-800 border-none rounded text-white text-sm" />
-          </div>
-        </div>
-        <button @click="startOptimization" :disabled="isOptimizing" class="bg-green-500 px-10 py-5 rounded-2xl font-black text-xl flex items-center gap-3">
-          <ZapIcon v-if="!isOptimizing"/><LoaderIcon v-else class="animate-spin"/>
-          {{ isOptimizing ? 'Optimierung läuft...' : 'Jetzt Optimieren' }}
-        </button>
-      </div>
-    </section>
-
     <!-- TAB: VERANSTALTUNGEN -->
     <section v-if="activeTab === 'veranstaltungen'" class="space-y-4">
       <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
         <h2 class="text-xl font-bold text-gray-800">Veranstaltungen</h2>
         <div class="flex gap-2">
-          <button @click="triggerUpload('/api/veranstaltungen/import')" class="btn-secondary flex items-center gap-2">
-            <UploadIcon class="w-4 h-4"/> CSV Import
+          <button @click="triggerUpload('/api/veranstaltungen/import')"
+                  :disabled="!canImportVeranstaltung"
+                  :class="{'opacity-50 cursor-not-allowed': !canImportVeranstaltung}"
+                  :title="!canImportVeranstaltung ? 'Bitte legen Sie zuerst mindestens einen Organisator und ein Gebäude an.' : ''"
+                  class="btn-secondary flex items-center gap-2">
+            <UploadIcon class="w-4 h-4"/>
+            CSV Import
           </button>
           <button @click="openVeranstaltungEditor(null)" class="btn-primary">+ Neu</button>
         </div>
@@ -118,7 +124,9 @@
             <td class="px-6 py-4 text-right space-x-2">
               <button @click="selectedVid = v.id; loadData()" class="text-indigo-600 font-bold">Auswählen</button>
               <button @click="openVeranstaltungEditor(v)" class="text-gray-600">Bearbeiten</button>
-              <button @click="deleteVeranstaltung(v.id)" class="text-red-600"><Trash2Icon class="w-4 h-4 inline"/></button>
+              <button @click="deleteVeranstaltung(v.id)" class="text-red-600">
+                <Trash2Icon class="w-4 h-4 inline"/>
+              </button>
             </td>
           </tr>
           </tbody>
@@ -132,7 +140,8 @@
         <h2 class="text-xl font-bold text-gray-800">Gebäude</h2>
         <div class="flex gap-2">
           <button @click="triggerUpload('/api/gebaeude/import')" class="btn-secondary flex items-center gap-2">
-            <UploadIcon class="w-4 h-4"/> CSV Import
+            <UploadIcon class="w-4 h-4"/>
+            CSV Import
           </button>
           <button @click="openGebaeudeEditor(null)" class="btn-primary">+ Neu</button>
         </div>
@@ -142,10 +151,13 @@
           <tbody class="text-sm">
           <tr v-for="g in gebaeude" :key="g.id">
             <td class="px-6 py-4 font-bold">{{ g.name }}</td>
-            <td class="px-6 py-4">{{ g.strasse }} {{ g.hausnummer }}, {{ g.ort }}</td>
+            <td class="px-6 py-4">{{ g.strasse }} {{ g.hausnummer }}, {{ g.postleitzahl }} {{ g.ort }}</td>
+            <td class="px-6 py-4">{{ g.typ }}</td>
             <td class="px-6 py-4 text-right space-x-2">
               <button @click="openGebaeudeEditor(g)" class="text-indigo-600">Bearbeiten</button>
-              <button @click="deleteGebaeude(g.id)" class="text-red-600 ml-2"><Trash2Icon class="w-4 h-4 inline"/></button>
+              <button @click="deleteGebaeude(g.id)" class="text-red-600 ml-2">
+                <Trash2Icon class="w-4 h-4 inline"/>
+              </button>
             </td>
           </tr>
           </tbody>
@@ -156,10 +168,11 @@
     <!-- TAB: ADMINISTRATOREN -->
     <section v-if="activeTab === 'administratoren'" class="space-y-4 animate-fade-in">
       <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-        <h2 class="text-xl font-bold text-gray-800">Globale Veranstalter</h2>
+        <h2 class="text-xl font-bold text-gray-800">Organisatoren</h2>
         <div class="flex gap-2">
           <button @click="triggerUpload('/api/admin/admins/import')" class="btn-secondary flex items-center gap-2">
-            <UploadIcon class="w-4 h-4"/> CSV Import
+            <UploadIcon class="w-4 h-4"/>
+            CSV Import
           </button>
           <button @click="openUserModal({role: 'ADMIN'})" class="btn-primary">+ Neu</button>
         </div>
@@ -172,7 +185,9 @@
             <td class="px-6 py-4 text-gray-600">{{ a.email }}</td>
             <td class="px-6 py-4 text-right space-x-3">
               <button @click="openUserModal(a)" class="text-indigo-600 hover:underline">Bearbeiten</button>
-              <button @click="deleteUser(a.id)" class="text-red-600"><Trash2Icon class="w-4 h-4 inline"/></button>
+              <button @click="deleteUser(a.id)" class="text-red-600">
+                <Trash2Icon class="w-4 h-4 inline"/>
+              </button>
             </td>
           </tr>
           </tbody>
@@ -187,8 +202,12 @@
         <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
           <h2 class="text-xl font-bold text-gray-800">Personen (Referenten & Teilnehmer)</h2>
           <div class="flex gap-2">
-            <button @click="triggerUpload(`/api/veranstaltungen/${selectedVid}/teilnehmer/import`)" class="btn-secondary">Teilnehmer CSV</button>
-            <button @click="triggerUpload(`/api/veranstaltungen/${selectedVid}/referenten/import`)" class="btn-secondary">Referenten CSV</button>
+            <button @click="triggerUpload(`/api/veranstaltungen/${selectedVid}/teilnehmer/import`)"
+                    class="btn-secondary">Teilnehmer CSV
+            </button>
+            <button @click="triggerUpload(`/api/veranstaltungen/${selectedVid}/referenten/import`)"
+                    class="btn-secondary">Referenten CSV
+            </button>
             <button @click="openUserModal(null)" class="btn-primary">+ Neu</button>
           </div>
         </div>
@@ -197,10 +216,13 @@
             <tbody class="divide-y divide-gray-100">
             <tr v-for="u in filteredUsers" :key="u.id">
               <td class="px-6 py-4 font-bold">{{ u.lastName }}, {{ u.firstName }}</td>
-              <td class="px-6 py-4">{{ u.email }} | <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase text-indigo-600">{{ u.role }}</span></td>
+              <td class="px-6 py-4">{{ u.email }} | <span
+                  class="px-2 py-0.5 rounded text-[10px] font-bold uppercase text-indigo-600">{{ u.role }}</span></td>
               <td class="px-6 py-4 text-right">
                 <button @click="openUserModal(u)" class="text-indigo-600">Bearbeiten</button>
-                <button @click="deleteUser(u.id)" class="text-red-600 ml-3"><Trash2Icon class="w-4 h-4 inline"/></button>
+                <button @click="deleteUser(u.id)" class="text-red-600 ml-3">
+                  <Trash2Icon class="w-4 h-4 inline"/>
+                </button>
               </td>
             </tr>
             </tbody>
@@ -213,7 +235,9 @@
         <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
           <h2 class="text-xl font-bold text-gray-800">Vorträge</h2>
           <div class="flex gap-2">
-            <button @click="triggerUpload(`/api/veranstaltungen/${selectedVid}/vortraege/import`)" class="btn-secondary">CSV Import</button>
+            <button @click="triggerUpload(`/api/veranstaltungen/${selectedVid}/vortraege/import`)"
+                    class="btn-secondary">CSV Import
+            </button>
             <button @click="openVortragEditor(null)" class="btn-primary">+ Neu</button>
           </div>
         </div>
@@ -221,11 +245,15 @@
           <table class="min-w-full divide-y divide-gray-200 text-sm">
             <tbody class="divide-y divide-gray-100">
             <tr v-for="v in vortraege" :key="v.id">
-              <td class="px-6 py-4 font-bold">{{ v.titel }} <span v-if="v.istPflicht" class="text-[10px] text-red-600 ml-2">PFLICHT</span></td>
+              <td class="px-6 py-4 font-bold">{{ v.titel }} <span v-if="v.istPflicht"
+                                                                  class="text-[10px] text-red-600 ml-2">PFLICHT</span>
+              </td>
               <td class="px-6 py-4">{{ v.referent?.lastName }}</td>
               <td class="px-6 py-4 text-right">
                 <button @click="openVortragEditor(v)" class="text-indigo-600">Bearbeiten</button>
-                <button @click="deleteVortrag(v.id)" class="text-red-600 ml-3"><Trash2Icon class="w-4 h-4 inline"/></button>
+                <button @click="deleteVortrag(v.id)" class="text-red-600 ml-3">
+                  <Trash2Icon class="w-4 h-4 inline"/>
+                </button>
               </td>
             </tr>
             </tbody>
@@ -237,7 +265,13 @@
       <section v-if="activeTab === 'slots'" class="space-y-4 animate-fade-in">
         <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
           <h2 class="text-xl font-bold text-gray-800">Zeit-Slots</h2>
-          <button @click="openSlotEditor(null)" class="btn-primary">+ Neu</button>
+          <div class="flex gap-2">
+            <button @click="triggerUpload(`/api/veranstaltungen/${selectedVid}/slots/import`)" class="btn-secondary flex items-center gap-2">
+              <UploadIcon class="w-4 h-4"/>
+              CSV Import
+            </button>
+            <button @click="openSlotEditor(null)" class="btn-primary">+ Neu</button>
+          </div>
         </div>
         <div class="bg-white shadow rounded-xl overflow-hidden p-6 border border-gray-100">
           <ul class="divide-y divide-gray-100">
@@ -245,7 +279,9 @@
               <span>{{ s.description }} ({{ formatTime(s.startTime) }} - {{ formatTime(s.endTime) }})</span>
               <div class="space-x-2">
                 <button @click="openSlotEditor(s)" class="text-indigo-600 text-sm">Bearbeiten</button>
-                <button @click="deleteSlot(s.id)" class="text-red-600"><Trash2Icon class="w-4 h-4 inline"/></button>
+                <button @click="deleteSlot(s.id)" class="text-red-600">
+                  <Trash2Icon class="w-4 h-4 inline"/>
+                </button>
               </div>
             </li>
           </ul>
@@ -266,7 +302,9 @@
               <td class="px-6 py-4 text-center">{{ r.kapazitaet }} Plätze</td>
               <td class="px-6 py-4 text-right">
                 <button @click="openRaumEditor(r)" class="text-indigo-600">Bearbeiten</button>
-                <button @click="deleteRaum(r)" class="text-red-600 ml-3"><Trash2Icon class="w-4 h-4 inline"/></button>
+                <button @click="deleteRaum(r)" class="text-red-600 ml-3">
+                  <Trash2Icon class="w-4 h-4 inline"/>
+                </button>
               </td>
             </tr>
             </tbody>
@@ -280,8 +318,11 @@
           <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <h3 class="font-bold text-gray-900 mb-4 line-clamp-2 h-12">Statistik</h3>
             <div class="space-y-2">
-              <div class="flex justify-between text-[10px] font-bold text-gray-500 uppercase"><span>Ø Priorität</span><span>{{ qualitaet.durchschnittsPrio?.toFixed(2) || '0.00' }}</span></div>
-              <div class="flex justify-between text-[10px] font-bold text-gray-500 uppercase mt-4"><span>Gesamt Zuweisungen</span><span>{{ qualitaet.gesamtZuweisungen || 0 }}</span></div>
+              <div class="flex justify-between text-[10px] font-bold text-gray-500 uppercase">
+                <span>Ø Priorität</span><span>{{ qualitaet.durchschnittsPrio?.toFixed(2) || '0.00' }}</span></div>
+              <div class="flex justify-between text-[10px] font-bold text-gray-500 uppercase mt-4"><span>Gesamt Zuweisungen</span><span>{{
+                  qualitaet.gesamtZuweisungen || 0
+                }}</span></div>
             </div>
           </div>
         </div>
@@ -292,7 +333,10 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
             <div class="text-[10px] text-gray-500 uppercase font-bold">Ø Priorität</div>
-            <div class="text-2xl font-black text-indigo-600">{{ qualitaet.durchschnittsPrio?.toFixed(2) || '0.00' }}</div>
+            <div class="text-2xl font-black text-indigo-600">{{
+                qualitaet.durchschnittsPrio?.toFixed(2) || '0.00'
+              }}
+            </div>
           </div>
           <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
             <div class="text-[10px] text-gray-500 uppercase font-bold">Zuweisungen</div>
@@ -303,7 +347,12 @@
         <div class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
           <table class="min-w-full divide-y divide-gray-200 text-sm">
             <thead class="bg-gray-50 text-[10px] uppercase font-bold text-gray-500">
-            <tr><th class="px-6 py-3 text-left">Vortrag</th><th class="px-6 py-3 text-left">Zeit/Raum</th><th class="px-6 py-3 text-center">Belegung</th><th class="px-6 py-3 text-left">Teilnehmer</th></tr>
+            <tr>
+              <th class="px-6 py-3 text-left">Vortrag</th>
+              <th class="px-6 py-3 text-left">Zeit/Raum</th>
+              <th class="px-6 py-3 text-center">Belegung</th>
+              <th class="px-6 py-3 text-left">Teilnehmer</th>
+            </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
             <tr v-for="b in belegungsPlan" :key="b.vortragTitel + b.slotZeit" class="hover:bg-gray-50 transition">
@@ -319,24 +368,31 @@
 
       <!-- PLANUNG -->
       <section v-if="activeTab === 'planung'" class="space-y-6 animate-fade-in">
-        <div class="bg-indigo-900 text-white p-8 rounded-2xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-8">
+        <div
+            class="bg-indigo-900 text-white p-8 rounded-2xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-8">
           <div class="space-y-4 flex-1">
             <h2 class="text-3xl font-black">Planung & Optimierung</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white/10 p-4 rounded-xl border border-white/10">
               <div>
                 <label class="block text-[10px] uppercase font-bold text-indigo-300 mb-1">MiniZinc Solver</label>
-                <select v-model="solverConfig.solver" class="w-full bg-indigo-800 border-none rounded text-sm text-white focus:ring-2 focus:ring-green-400">
-                  <option value="OR-tools">Google OR-Tools</option><option value="Gecode">Gecode</option><option value="COIN-BC">COIN-BC</option>
+                <select v-model="solverConfig.solver"
+                        class="w-full bg-indigo-800 border-none rounded text-sm text-white focus:ring-2 focus:ring-green-400">
+                  <option value="OR-tools">Google OR-Tools</option>
+                  <option value="Gecode">Gecode</option>
+                  <option value="COIN-BC">COIN-BC</option>
                 </select>
               </div>
               <div>
                 <label class="block text-[10px] uppercase font-bold text-indigo-300 mb-1">Timeout (Sek.)</label>
-                <input v-model.number="solverConfig.timeout" type="number" class="w-full bg-indigo-800 border-none rounded text-sm text-white focus:ring-2 focus:ring-green-400" />
+                <input v-model.number="solverConfig.timeout" type="number"
+                       class="w-full bg-indigo-800 border-none rounded text-sm text-white focus:ring-2 focus:ring-green-400"/>
               </div>
             </div>
           </div>
-          <button @click="startOptimization" :disabled="isOptimizing" class="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-2xl transition-all transform hover:scale-105 flex items-center gap-3">
-            <ZapIcon v-if="!isOptimizing"/><LoaderIcon v-else class="animate-spin"/>
+          <button @click="startOptimization" :disabled="isOptimizing"
+                  class="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-2xl transition-all transform hover:scale-105 flex items-center gap-3">
+            <ZapIcon v-if="!isOptimizing"/>
+            <LoaderIcon v-else class="animate-spin"/>
             {{ isOptimizing ? 'Optimierung läuft...' : 'Jetzt Optimieren' }}
           </button>
         </div>
@@ -344,22 +400,33 @@
     </template>
 
     <!-- Global File Input -->
-    <input type="file" ref="fileInput" class="hidden" @change="handleGlobalUpload" accept=".csv" />
+    <input type="file" ref="fileInput" class="hidden" @change="handleGlobalUpload" accept=".csv"/>
 
     <!-- Modals -->
-    <VeranstaltungEditorModal :isVisible="showVeranstaltungModal" :veranstaltung="selectedVeranstaltung" :admins="admins" :allGebaeude="gebaeude" @close="showVeranstaltungModal = false" @save="handleSaveVeranstaltung" />
-    <GebaeudeEditorModal :isVisible="showGebaeudeModal" :gebaeude="selectedGebaeude" @close="showGebaeudeModal = false" @save="handleSaveGebaeude" />
-    <RaumEditorModal :isVisible="showRaumModal" :raum="selectedRaum" :slots="eventSlots" :gebaeude="gebaeude" @close="showRaumModal = false" @save="handleSaveRaum" />
-    <UserEditorModal :isVisible="showUserModal" :user="selectedUser" :eventSlots="eventSlots" @close="showUserModal = false" @save="handleSaveUser" />
-    <AdminVortragEditorModal :isVisible="showVortragModal" :vortrag="selectedVortrag" :referenten="referenten" :raeume="raeume" :slots="eventSlots" @close="showVortragModal = false" @save="handleSaveVortrag" />
-    <EventSlotEditorModal :isVisible="showSlotModal" :slot="selectedSlot" @close="showSlotModal = false" @save="handleSaveSlot" />
+    <VeranstaltungEditorModal :isVisible="showVeranstaltungModal" :veranstaltung="selectedVeranstaltung"
+                              :admins="admins" :allGebaeude="gebaeude" @close="showVeranstaltungModal = false"
+                              @save="handleSaveVeranstaltung"/>
+    <GebaeudeEditorModal :isVisible="showGebaeudeModal" :gebaeude="selectedGebaeude" @close="showGebaeudeModal = false"
+                         @save="handleSaveGebaeude"/>
+    <RaumEditorModal :isVisible="showRaumModal" :raum="selectedRaum" :slots="eventSlots" :gebaeude="gebaeude"
+                     @close="showRaumModal = false" @save="handleSaveRaum"/>
+    <UserEditorModal :isVisible="showUserModal" :user="selectedUser" :eventSlots="eventSlots"
+                     @close="showUserModal = false" @save="handleSaveUser"/>
+    <AdminVortragEditorModal :isVisible="showVortragModal" :vortrag="selectedVortrag" :referenten="referenten"
+                             :raeume="raeume" :slots="eventSlots" @close="showVortragModal = false"
+                             @save="handleSaveVortrag"/>
+    <EventSlotEditorModal :isVisible="showSlotModal" :slot="selectedSlot" @close="showSlotModal = false"
+                          @save="handleSaveSlot"/>
 
     <!-- CSV Import Feedback Modal -->
     <div v-if="showCsvFeedbackModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
         <h3 class="text-lg font-bold text-gray-900 mb-4">CSV Import Ergebnis</h3>
-        <p class="mb-2">Erfolgreich importiert: <span class="font-bold text-green-600">{{ csvFeedback.successCount }}</span></p>
-        <p v-if="csvFeedback.errorCount > 0" class="mb-4">Fehlerhafte Zeilen: <span class="font-bold text-red-600">{{ csvFeedback.errorCount }}</span></p>
+        <p class="mb-2">Erfolgreich importiert: <span class="font-bold text-green-600">{{
+            csvFeedback.successCount
+          }}</span></p>
+        <p v-if="csvFeedback.errorCount > 0" class="mb-4">Fehlerhafte Zeilen: <span
+            class="font-bold text-red-600">{{ csvFeedback.errorCount }}</span></p>
         <p v-if="csvFeedback.errorMessage" class="text-red-500 text-sm mb-4">{{ csvFeedback.errorMessage }}</p>
         <button @click="showCsvFeedbackModal = false" class="btn-primary w-full">Schließen</button>
       </div>
@@ -368,9 +435,18 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, reactive } from 'vue';
+import {computed, onMounted, reactive, ref} from 'vue';
 import api from '../api/axios';
-import { Download as DownloadIcon, Trash2 as Trash2Icon, Upload as UploadIcon, Calendar as CalendarIcon, PlusCircle as PlusCircleIcon, Zap as ZapIcon, Loader as LoaderIcon, FileText as FileTextIcon } from 'lucide-vue-next';
+import {
+  Calendar as CalendarIcon,
+  Download as DownloadIcon,
+  FileText as FileTextIcon,
+  Loader as LoaderIcon,
+  PlusCircle as PlusCircleIcon,
+  Trash2 as Trash2Icon,
+  Upload as UploadIcon,
+  Zap as ZapIcon
+} from 'lucide-vue-next';
 import AdminVortragEditorModal from '../components/AdminVortragEditorModal.vue';
 import UserEditorModal from '../components/UserEditorModal.vue';
 import VeranstaltungEditorModal from '../components/VeranstaltungEditorModal.vue';
@@ -406,7 +482,7 @@ const showSlotModal = ref(false);
 const selectedSlot = ref(null);
 
 const isOptimizing = ref(false);
-const solverConfig = reactive({ solver: 'OR-tools', timeout: 120 });
+const solverConfig = reactive({solver: 'OR-tools', timeout: 120});
 const fileInput = ref(null);
 const currentUploadEndpoint = ref('');
 
@@ -427,7 +503,7 @@ const visibleTabs = computed(() => {
 const admins = computed(() => users.value.filter(u => u.role === 'ADMIN'));
 const filteredUsers = computed(() => users.value.filter(u => u.role !== 'ADMIN'));
 
-const hasGebaeudeForVeranstaltungImport = computed(() => gebaeude.value.length > 0);
+const canImportVeranstaltung = computed(() => admins.value.length > 0 && gebaeude.value.length > 0);
 
 onMounted(async () => {
   await refreshVeranstaltungen();
@@ -435,12 +511,34 @@ onMounted(async () => {
   await refreshAdmins();
 });
 
-const refreshVeranstaltungen = async () => { try { const res = await api.get('/api/veranstaltungen'); veranstaltungen.value = res.data; } catch (e) {console.log('exc ' +e + ' while refreshVeranstaltungen')} };
-const refreshGebaeude = async () => { try { const res = await api.get('/api/gebaeude'); gebaeude.value = res.data; updateRaeumeList(); } catch (e) {console.log('exc ' +e + ' while refreshGebaeude')} };
-const refreshAdmins = async () => { try { const res = await api.get('/api/admin/users'); users.value = res.data; } catch (e) {console.log('exc ' +e + ' while refreshAdmins')} };
+const refreshVeranstaltungen = async () => {
+  try {
+    const res = await api.get('/api/veranstaltungen');
+    veranstaltungen.value = res.data;
+  } catch (e) {
+    console.error('Fehler beim Laden der Veranstaltungen:', e);
+  }
+};
+const refreshGebaeude = async () => {
+  try {
+    const res = await api.get('/api/gebaeude');
+    gebaeude.value = res.data;
+    updateRaeumeList();
+  } catch (e) {
+    console.error('Fehler beim Laden der Gebäude:', e);
+  }
+};
+const refreshAdmins = async () => {
+  try {
+    const res = await api.get('/api/admin/benutzer');
+    users.value = res.data;
+  } catch (e) {
+    console.error('Fehler beim Laden der Administratoren:', e);
+  }
+};
 
 const updateRaeumeList = () => {
-  raeume.value = gebaeude.value.flatMap(g => g.raeume.map(r => ({ ...r, gebaeude: { id: g.id, name: g.name } })));
+  raeume.value = gebaeude.value.flatMap(g => g.raeume.map(r => ({...r, gebaeude: {id: g.id, name: g.name}})));
 };
 
 const loadData = async () => {
@@ -455,82 +553,299 @@ const loadData = async () => {
     const globalAdmins = users.value.filter(u => u.role === 'ADMIN');
     users.value = [...globalAdmins, ...localUsers];
 
-    vortraege.value = vRes.data; referenten.value = rRes.data; eventSlots.value = sRes.data;
-    stats.value = stRes.data; belegungsPlan.value = pRes.data; qualitaet.value = qRes.data;
-  } catch (err) { console.error(err); }
+    vortraege.value = vRes.data;
+    referenten.value = rRes.data;
+    eventSlots.value = sRes.data;
+    stats.value = stRes.data;
+    belegungsPlan.value = pRes.data;
+    qualitaet.value = qRes.data;
+  } catch (err) {
+    console.error('Fehler beim Laden der Veranstaltungsdaten:', err);
+  }
 };
 
 // --- CRUD ACTIONS ---
-const openVeranstaltungEditor = (v) => { selectedVeranstaltung.value = v || { name: '', beginntAm: '', endetAm: '', gebaeude: [], organisatorId: admins.value[0]?.id }; showVeranstaltungModal.value = true; };
+const openVeranstaltungEditor = (v) => {
+  selectedVeranstaltung.value = v || {
+    name: '',
+    beginntAm: '',
+    endetAm: '',
+    gebaeude: [],
+    organisatorId: admins.value[0]?.id
+  };
+  showVeranstaltungModal.value = true;
+};
 const handleSaveVeranstaltung = async (v) => {
   try {
     if (v.id) await api.put(`/api/veranstaltungen/${v.id}`, v);
-    else { const res = await api.post('/api/veranstaltungen', v); if (veranstaltungen.value.length === 0) { selectedVid.value = res.data.id; activeTab.value = 'ergebnisse'; } }
-    showVeranstaltungModal.value = false; await refreshVeranstaltungen();
-  } catch (e) { alert("Fehler!"); }
+    else {
+      const res = await api.post('/api/veranstaltungen', v);
+      if (veranstaltungen.value.length === 0) {
+        selectedVid.value = res.data.id;
+        activeTab.value = 'ergebnisse';
+      }
+    }
+    showVeranstaltungModal.value = false;
+    await refreshVeranstaltungen();
+  } catch (e) {
+    console.error('Fehler beim Speichern der Veranstaltung:', e);
+    alert("Fehler beim Speichern der Veranstaltung!");
+  }
 };
-const deleteVeranstaltung = async (id) => { if (confirm("Löschen?")) { await api.delete(`/api/veranstaltungen/${id}`); if (selectedVid.value === id) selectedVid.value = null; await refreshVeranstaltungen(); } };
+const deleteVeranstaltung = async (id) => {
+  if (confirm("Löschen?")) {
+    try {
+      await api.delete(`/api/veranstaltungen/${id}`);
+      if (selectedVid.value === id) selectedVid.value = null;
+      await refreshVeranstaltungen();
+    } catch (e) {
+      console.error('Fehler beim Löschen der Veranstaltung:', e);
+      alert("Fehler beim Löschen der Veranstaltung!");
+    }
+  }
+};
 
-const openGebaeudeEditor = (g) => { selectedGebaeude.value = g || { name: '', typ: 'SCHULE', strasse: '', hausnummer: '', postleitzahl: '', ort: '' }; showGebaeudeModal.value = true; };
-const handleSaveGebaeude = async (g) => { try { if (g.id) await api.put(`/api/gebaeude/${g.id}`, g); else await api.post('/api/gebaeude', g); showGebaeudeModal.value = false; await refreshGebaeude(); } catch (e) {} };
-const deleteGebaeude = async (id) => { if (confirm("Löschen?")) { await api.delete(`/api/gebaeude/${id}`); await refreshGebaeude(); } };
+const openGebaeudeEditor = (g) => {
+  selectedGebaeude.value = g || {name: '', typ: 'SCHULE', strasse: '', hausnummer: '', postleitzahl: '', ort: ''};
+  showGebaeudeModal.value = true;
+};
+const handleSaveGebaeude = async (g) => {
+  try {
+    if (g.id) await api.put(`/api/gebaeude/${g.id}`, g); else await api.post('/api/gebaeude', g);
+    showGebaeudeModal.value = false;
+    await refreshGebaeude();
+  } catch (e) {
+    console.error('Fehler beim Speichern des Gebäudes:', e);
+    alert("Fehler beim Speichern des Gebäudes!");
+  }
+};
+const deleteGebaeude = async (id) => {
+  if (confirm("Löschen?")) {
+    try {
+      await api.delete(`/api/gebaeude/${id}`);
+      await refreshGebaeude();
+    } catch (e) {
+      console.error('Fehler beim Löschen des Gebäudes:', e);
+      alert("Fehler beim Löschen des Gebäudes!");
+    }
+  }
+};
 
-const openRaumEditor = (r) => { selectedRaum.value = r || { name: '', kapazitaet: 10, gebaeude: { id: gebaeude.value[0]?.id } }; showRaumModal.value = true; };
+const openRaumEditor = (r) => {
+  selectedRaum.value = r || {name: '', kapazitaet: 10, gebaeude: {id: gebaeude.value[0]?.id}};
+  showRaumModal.value = true;
+};
 const handleSaveRaum = async (r) => {
   const url = r.id ? `/api/gebaeude/${r.gebaeude.id}/raeume/${r.id}` : `/api/gebaeude/${r.gebaeude.id}/raeume`;
-  try { if (r.id) await api.put(url, r); else await api.post(url, r); showRaumModal.value = false; await refreshGebaeude(); } catch (e) {}
+  try {
+    if (r.id) await api.put(url, r); else await api.post(url, r);
+    showRaumModal.value = false;
+    await refreshGebaeude();
+  } catch (e) {
+    console.error('Fehler beim Speichern des Raumes:', e);
+    alert("Fehler beim Speichern des Raumes!");
+  }
 };
-const deleteRaum = async (r) => { if (confirm("Löschen?")) { await api.delete(`/api/gebaeude/${r.gebaeude.id}/raeume/${r.id}`); await refreshGebaeude(); } };
+const deleteRaum = async (r) => {
+  if (confirm("Löschen?")) {
+    try {
+      await api.delete(`/api/gebaeude/${r.gebaeude.id}/raeume/${r.id}`);
+      await refreshGebaeude();
+    } catch (e) {
+      console.error('Fehler beim Löschen des Raumes:', e);
+      alert("Fehler beim Löschen des Raumes!");
+    }
+  }
+};
 
-const openUserModal = (u) => { selectedUser.value = u || { firstName: '', lastName: '', email: '', role: 'TEILNEHMER', isActive: true, gruppe: '', veranstaltungId: selectedVid.value }; showUserModal.value = true; };
+const openUserModal = (u) => {
+  selectedUser.value = u || {
+    firstName: '',
+    lastName: '',
+    email: '',
+    role: 'TEILNEHMER',
+    isActive: true,
+    gruppe: '',
+    veranstaltungId: selectedVid.value
+  };
+  showUserModal.value = true;
+};
 const handleSaveUser = async (u) => {
-  const isGlobal = u.role === 'ADMIN';
-  const base = isGlobal ? `/api/admin/users` : `/api/veranstaltungen/${selectedVid.value}/benutzer`;
-  try { if (u.id) await api.put(`${base}/${u.id}`, u); else await api.post(base, u); showUserModal.value = false; loadData(); refreshAdmins(); } catch (e) {}
-};
-const deleteUser = async (id) => { if (confirm("Löschen?")) { try { await api.delete(`/api/admin/users/${id}`); loadData(); refreshAdmins(); } catch (e) {} } };
+  const isGlobalAdmin = u.role === 'ADMIN';
+  let endpoint;
 
-const openVortragEditor = (v) => { selectedVortrag.value = v || { titel: '', inhalt: '', zielgruppe: '', referent: { id: null }, vortrag_typ: 'WAHL' }; showVortragModal.value = true; };
+  if (isGlobalAdmin) {
+    endpoint = `/api/admin/benutzer`;
+  } else if (selectedVid.value) {
+    endpoint = `/api/veranstaltungen/${selectedVid.value}/benutzer`;
+  } else {
+    alert("Fehler: Keine Veranstaltung ausgewählt für Benutzer.");
+    return;
+  }
+
+  try {
+    if (u.id) await api.put(`${endpoint}/${u.id}`, u);
+    else await api.post(endpoint, u);
+    showUserModal.value = false;
+    await loadData();
+    await refreshAdmins();
+  } catch (e) {
+    console.error('Fehler beim Speichern des Benutzers:', e);
+    alert("Fehler beim Speichern des Benutzers!");
+  }
+};
+const deleteUser = async (id) => {
+  if (confirm("Löschen?")) {
+    try {
+      const userToDelete = users.value.find(u => u.id === id);
+      let endpoint;
+
+      if (userToDelete && userToDelete.role === 'ADMIN') {
+        endpoint = `/api/admin/benutzer/${id}`;
+      } else if (selectedVid.value) {
+        endpoint = `/api/veranstaltungen/${selectedVid.value}/benutzer/${id}`;
+      } else {
+        alert("Fehler: Keine Veranstaltung ausgewählt oder Benutzerrolle unbekannt.");
+        return;
+      }
+
+      await api.delete(endpoint);
+      await loadData();
+      await refreshAdmins();
+    } catch (e) {
+      console.error('Fehler beim Löschen des Benutzers:', e);
+      alert("Fehler beim Löschen des Benutzers!");
+    }
+  }
+};
+
+const openVortragEditor = (v) => {
+  selectedVortrag.value = v || {titel: '', inhalt: '', zielgruppe: '', referent: {id: null}, vortrag_typ: 'WAHL'};
+  showVortragModal.value = true;
+};
 const handleSaveVortrag = async (v) => {
   const base = `/api/veranstaltungen/${selectedVid.value}/vortraege`;
-  try { if (v.id) await api.put(`${base}/${v.id}`, v); else await api.post(base, v); showVortragModal.value = false; loadData(); } catch (e) {}
+  try {
+    if (v.id) await api.put(`${base}/${v.id}`, v); else await api.post(base, v);
+    showVortragModal.value = false;
+    await loadData();
+  } catch (e) {
+    console.error('Fehler beim Speichern des Vortrags:', e);
+    alert("Fehler beim Speichern des Vortrags!");
+  }
 };
-const deleteVortrag = async (id) => { if (confirm("Löschen?")) { await api.delete(`/api/veranstaltungen/${selectedVid.value}/vortraege/${id}`); loadData(); } };
+const deleteVortrag = async (id) => {
+  if (confirm("Löschen?")) {
+    try {
+      await api.delete(`/api/veranstaltungen/${selectedVid.value}/vortraege/${id}`);
+      await loadData();
+    } catch (e) {
+      console.error('Fehler beim Löschen des Vortrags:', e);
+      alert("Fehler beim Löschen des Vortrags!");
+    }
+  }
+};
 
-const openSlotEditor = (s) => { selectedSlot.value = s || { description: '', startTime: '', endTime: '' }; showSlotModal.value = true; };
+const openSlotEditor = (s) => {
+  selectedSlot.value = s || {description: '', startTime: '', endTime: ''};
+  showSlotModal.value = true;
+};
 const handleSaveSlot = async (s) => {
   const base = `/api/veranstaltungen/${selectedVid.value}/slots`;
-  try { if (s.id) await api.put(`${base}/${s.id}`, s); else await api.post(base, s); showSlotModal.value = false; loadData(); } catch (e) {}
+  try {
+    if (s.id) await api.put(`${base}/${s.id}`, s); else await api.post(base, s);
+    showSlotModal.value = false;
+    await loadData();
+  } catch (e) {
+    console.error('Fehler beim Speichern des Slots:', e);
+    alert("Fehler beim Speichern des Slots!");
+  }
 };
-const deleteSlot = async (id) => { if (confirm("Löschen?")) { await api.delete(`/api/veranstaltungen/${selectedVid.value}/slots/${id}`); loadData(); } };
+const deleteSlot = async (id) => {
+  if (confirm("Löschen?")) {
+    try {
+      await api.delete(`/api/veranstaltungen/${selectedVid.value}/slots/${id}`);
+      await loadData();
+    } catch (e) {
+      console.error('Fehler beim Löschen des Slots:', e);
+      alert("Fehler beim Löschen des Slots!");
+    }
+  }
+};
 
 const startOptimization = async () => {
   isOptimizing.value = true;
-  try { await api.post(`/api/veranstaltungen/${selectedVid.value}/optimierung/start`, solverConfig); await loadData(); activeTab.value = 'ergebnisse'; } catch (e) {} finally { isOptimizing.value = false; }
+  try {
+    await api.post(`/api/veranstaltungen/${selectedVid.value}/optimierung/start`, solverConfig);
+    await loadData();
+    activeTab.value = 'ergebnisse';
+  } catch (e) {
+    console.error('Fehler bei der Optimierung:', e);
+    alert("Fehler bei der Optimierung!");
+  } finally {
+    isOptimizing.value = false;
+  }
 };
 
 const downloadTuerschilder = async () => {
-  try { const res = await api.get(`/api/veranstaltungen/${selectedVid.value}/export/tuerschilder`, { responseType: 'blob' }); const url = window.URL.createObjectURL(new Blob([res.data])); const link = document.createElement('a'); link.href = url; link.setAttribute('download', 'tuerschilder.pdf'); document.body.appendChild(link); link.click(); } catch (e) {}
+  try {
+    const res = await api.get(`/api/veranstaltungen/${selectedVid.value}/export/tuerschilder`, {responseType: 'blob'});
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'tuerschilder.pdf');
+    document.body.appendChild(link);
+    link.click();
+  } catch (e) {
+    console.error('Fehler beim Download der Türschilder:', e);
+    alert("Fehler beim Download der Türschilder!");
+  }
 };
 const downloadExport = async () => {
-  try { const res = await api.get(`/api/veranstaltungen/${selectedVid.value}/export/csv`, { responseType: 'blob' }); const url = window.URL.createObjectURL(new Blob([res.data])); const link = document.createElement('a'); link.href = url; link.setAttribute('download', 'planung.csv'); document.body.appendChild(link); link.click(); } catch (e) {}
+  try {
+    const res = await api.get(`/api/veranstaltungen/${selectedVid.value}/export/csv`, {responseType: 'blob'});
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'planung.csv');
+    document.body.appendChild(link);
+    link.click();
+  } catch (e) {
+    console.error('Fehler beim CSV Export:', e);
+    alert("Fehler beim CSV Export!");
+  }
 };
 
-const triggerUpload = (endpoint) => { currentUploadEndpoint.value = endpoint; fileInput.value.click(); };
+const triggerUpload = (endpoint) => {
+  if (endpoint === '/api/veranstaltungen/import' && !canImportVeranstaltung.value) {
+    alert("Bitte legen Sie zuerst mindestens einen Organisator und ein Gebäude an.");
+    return;
+  }
+  currentUploadEndpoint.value = endpoint;
+  fileInput.value.click();
+};
 const handleGlobalUpload = async (event) => {
-  const file = event.target.files[0]; if (!file) return;
-  const formData = new FormData(); formData.append('file', file);
+  const file = event.target.files[0];
+  if (!file) return;
+  const formData = new FormData();
+  formData.append('file', file);
 
-  const endpoint = currentUploadEndpoint.value + (selectedVid.value && currentUploadEndpoint.value.includes('{vid}') ? '' : (selectedVid.value ? `?vid=${selectedVid.value}` : ''));
+  const endpoint = currentUploadEndpoint.value;
   const finalEndpoint = endpoint.replace('{vid}', selectedVid.value);
 
   try {
-    const res = await api.post(finalEndpoint, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-    showCsvFeedback(res.data, false); // Erfolgreich
-    await loadData(); await refreshVeranstaltungen(); await refreshGebaeude(); await refreshAdmins();
+    const res = await api.post(finalEndpoint, formData, {headers: {'Content-Type': 'multipart/form-data'}});
+    showCsvFeedback(res.data, false);
+    await loadData();
+    await refreshVeranstaltungen();
+    await refreshGebaeude();
+    await refreshAdmins();
   } catch (e) {
-    showCsvFeedback(e.response?.data || e.message, true); // Fehler
-  } finally { event.target.value = ''; }
+    console.error('Fehler beim CSV Import:', e);
+    showCsvFeedback(e.response?.data || e.message, true);
+  } finally {
+    event.target.value = '';
+  }
 };
 
 const showCsvFeedback = (message, isError) => {
@@ -540,13 +855,13 @@ const showCsvFeedback = (message, isError) => {
 
   if (isError) {
     csvFeedback.errorMessage = message;
-    csvFeedback.errorCount = 1; // Einfachheitshalber 1 Fehler, wenn es ein generischer Fehler ist
+    csvFeedback.errorCount = 1;
   } else {
     const match = message.match(/(\d+)\s.*angelegt/);
     if (match && match[1]) {
       csvFeedback.successCount = parseInt(match[1]);
     } else {
-      csvFeedback.successCount = 1; // Fallback
+      csvFeedback.successCount = 1;
     }
   }
   showCsvFeedbackModal.value = true;
@@ -559,13 +874,34 @@ const showCsvFeedback = (message, isError) => {
 };
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('de-DE') : '';
-const formatTime = (t) => t ? new Date(t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '';
+const formatTime = (t) => t ? new Date(t).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'}) : '';
 </script>
 
 <style scoped>
-.btn-primary { @apply rounded-lg bg-indigo-600 px-4 py-2 text-white font-bold hover:bg-indigo-700 transition shadow-sm text-sm border-none cursor-pointer; }
-.btn-secondary { @apply bg-white text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 font-bold border border-gray-200 transition shadow-sm text-sm cursor-pointer; }
-.input-field { @apply rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:ring-2 focus:ring-indigo-500 bg-white text-sm; }
-.animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+.btn-primary {
+  @apply rounded-lg bg-indigo-600 px-4 py-2 text-white font-bold hover:bg-indigo-700 transition shadow-sm text-sm border-none cursor-pointer;
+}
+
+.btn-secondary {
+  @apply bg-white text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 font-bold border border-gray-200 transition shadow-sm text-sm cursor-pointer;
+}
+
+.input-field {
+  @apply rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:ring-2 focus:ring-indigo-500 bg-white text-sm;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 </style>

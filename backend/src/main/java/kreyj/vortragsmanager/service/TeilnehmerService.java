@@ -1,5 +1,6 @@
 package kreyj.vortragsmanager.service;
 
+import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -8,6 +9,7 @@ import kreyj.vortragsmanager.dto.TeilnehmerCsvDto;
 import kreyj.vortragsmanager.entity.Teilnehmer;
 import kreyj.vortragsmanager.entity.User;
 import kreyj.vortragsmanager.entity.Veranstaltung;
+import org.jboss.logging.Logger;
 
 import java.io.FileReader;
 import java.nio.file.Path;
@@ -16,6 +18,8 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class TeilnehmerService {
+
+    private static final Logger LOG = Logger.getLogger(TeilnehmerService.class);
 
     public List<User> findAll(Long veranstaltungId) {
         return User.find("role = 'TEILNEHMER' and veranstaltung.id = ?1", veranstaltungId).list();
@@ -30,7 +34,10 @@ public class TeilnehmerService {
         if (user == null || user.email == null) return null;
 
         User existing = User.findByEmail(user.email.trim().toLowerCase());
-        if (existing != null) return null;
+        if (existing != null) {
+            LOG.warn("Teilnehmer konnte nicht erstellt werden: Email " + user.email + " bereits vergeben.");
+            return null;
+        }
 
         Veranstaltung v = Veranstaltung.findById(veranstaltungId);
         if (v == null) throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
@@ -46,21 +53,36 @@ public class TeilnehmerService {
     @Transactional
     public int importFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception {
         Veranstaltung v = Veranstaltung.findById(veranstaltungId);
-        if (v == null) throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
+        if (v == null) {
+            LOG.error("CSV-Import abgebrochen: Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
+            throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
+        }
 
         int count = 0;
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
-            List<TeilnehmerCsvDto> beans = new CsvToBeanBuilder<TeilnehmerCsvDto>(reader)
+            CsvToBean<TeilnehmerCsvDto> csvToBean = new CsvToBeanBuilder<TeilnehmerCsvDto>(reader)
                     .withType(TeilnehmerCsvDto.class)
                     .withIgnoreLeadingWhiteSpace(true)
                     .withSeparator(';')
-                    .build()
-                    .parse();
+                    .withThrowExceptions(false)
+                    .build();
+
+            List<TeilnehmerCsvDto> beans = csvToBean.parse();
+
+            csvToBean.getCapturedExceptions().forEach(e -> 
+                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
+            );
 
             for (TeilnehmerCsvDto dto : beans) {
-                if (User.findByEmail(dto.email) == null) {
+                if (dto.email == null || dto.email.isBlank()) {
+                    LOG.warn("Teilnehmer-Zeile übersprungen: Email fehlt.");
+                    continue;
+                }
+                
+                String email = dto.email.trim().toLowerCase();
+                if (User.findByEmail(email) == null) {
                     Teilnehmer nt = new Teilnehmer();
-                    nt.email = dto.email.trim().toLowerCase();
+                    nt.email = email;
                     nt.firstName = dto.firstName;
                     nt.lastName = dto.lastName;
                     nt.gruppe = dto.gruppe;
@@ -71,9 +93,15 @@ public class TeilnehmerService {
 
                     nt.persist();
                     count++;
+                } else {
+                    LOG.warn("Teilnehmer übersprungen: Email " + email + " existiert bereits.");
                 }
             }
+        } catch (Exception e) {
+            LOG.error("Kritischer Fehler beim Importieren der Teilnehmer aus CSV: " + csvFilePath, e);
+            throw e;
         }
+        LOG.info("CSV-Import abgeschlossen: " + count + " Teilnehmer erfolgreich importiert.");
         return count;
     }
 

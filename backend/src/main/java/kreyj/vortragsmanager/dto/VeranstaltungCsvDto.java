@@ -12,7 +12,13 @@ public class VeranstaltungCsvDto {
     @CsvBindByName(column = "Ende")
     public String endetAm;
 
-    // 'ort' wurde entfernt
+
+    @CsvBindByName(column = "Logo")
+    public String logo;
+
+    @CsvBindByName(column = "Logo_Link")
+    public String logo_link;
+
 
     @CsvBindByName(column = "Organisator_Email", required = true)
     public String organisatorEmail;

@@ -28,18 +28,18 @@ v0.1, 14.04.26
 | done | -
 
 | erfolglos gelesene, nicht importierbare CSV Datensätze müssen in den Server-Logs auftauchen
-| |
+| done|
 
 | Über die UI importierte CSV-Daten (z.B. veranstalter.csv) scheinen nicht in der Datenbank zu landen?
-||-
+| |-
 
-|
-||-
+| warum schliesst UI den modalen dialog nicht nach SAVE?
+| done |-
 
-|
-||-
+| auf dem Tab Slots im AdminDashboard fehlt ein CSV Importer für EventSlots zur aktuellen veranstaltung
+| done|-
 
-|
+| fehler beim Speichern verhindert close dialog
 ||-
 
 |
