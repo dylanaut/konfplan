@@ -12,8 +12,9 @@ import kreyj.vortragsmanager.entity.*;
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class ReferentService {
@@ -41,31 +42,119 @@ public class ReferentService {
         }
     }
 
-    public Vortrag getVortrag(String email) {
+    public List<RefVortragDto> getMeineVortraege(String email) {
         Referent referent = Referent.find("email", email).firstResult();
-        if (referent != null) {
-            return Vortrag.find("referent", referent).firstResult();
+        if (referent == null) return new ArrayList<>();
+
+        List<Vortrag> vortraege = Vortrag.find("referent", referent).list();
+        return vortraege.stream().map(this::mapToDto).collect(Collectors.toList());
+    }
+
+    private RefVortragDto mapToDto(Vortrag v) {
+        RefVortragDto dto = new RefVortragDto();
+        dto.id = v.id;
+        dto.version = v.version;
+        dto.title = v.titel;
+        dto.abstractText = v.inhalt;
+        
+        if (v instanceof Wahlvortrag wahlvortrag) {
+            dto.willingToRepeat = wahlvortrag.wiederholbar;
+            dto.maxWiederholungen = wahlvortrag.maxWiederholungen;
+            // TODO: Target Audience if entity supports it
+        } else if (v instanceof Pflichtvortrag pflichtvortrag) {
+            dto.pflichtgruppe = pflichtvortrag.pflichtgruppe;
         }
-        return null;
+
+        // Availabilities (aus der Verfuegbarkeit-Tabelle für den Referenten)
+        // Hier müsste die Logik ggf. verfeinert werden, wenn Verfügbarkeiten pro Vortrag gespeichert werden sollen.
+        // Aktuell scheint es global pro Referent zu sein.
+        List<Verfuegbarkeit> availabilities = Verfuegbarkeit.find("referent", v.referent).list();
+        dto.availabilities = availabilities.stream()
+                .filter(a -> a.isAvailable)
+                .map(a -> a.slot.id)
+                .collect(Collectors.toList());
+
+        return dto;
     }
 
     @Transactional
-    public void updateVortrag(String email, RefVortragDto dto) {
+    public RefVortragDto createVortrag(String email, RefVortragDto dto) {
         Referent referent = Referent.find("email", email).firstResult();
-        Vortrag vortrag = Vortrag.find("referent", referent).firstResult();
-        if (vortrag != null) {
-            vortrag.titel = dto.titel;
-            vortrag.inhalt = dto.inhalt;
+        if (referent == null) return null;
 
-            if (vortrag instanceof Wahlvortrag wahlvortrag) {
-                wahlvortrag.wiederholbar = dto.wiederholbar;
+        // Standardmäßig als Wahlvortrag erstellen (kann je nach Anforderung angepasst werden)
+        Wahlvortrag vortrag = new Wahlvortrag();
+        vortrag.referent = referent;
+        vortrag.veranstaltung = referent.veranstaltung;
+        updateVortragFromDto(vortrag, dto);
+        vortrag.persist();
+
+        // Verfügbarkeiten speichern
+        updateAvailabilities(referent, dto.availabilities);
+
+        return mapToDto(vortrag);
+    }
+
+    @Transactional
+    public RefVortragDto updateVortrag(String email, Long vortragId, RefVortragDto dto) {
+        Referent referent = Referent.find("email", email).firstResult();
+        Vortrag vortrag = Vortrag.findById(vortragId);
+
+        if (vortrag == null || !vortrag.referent.id.equals(referent.id)) return null;
+
+        updateVortragFromDto(vortrag, dto);
+        
+        // Verfügbarkeiten speichern
+        updateAvailabilities(referent, dto.availabilities);
+
+        return mapToDto(vortrag);
+    }
+
+    private void updateVortragFromDto(Vortrag vortrag, RefVortragDto dto) {
+        vortrag.titel = dto.title;
+        vortrag.inhalt = dto.abstractText;
+
+        if (vortrag instanceof Wahlvortrag wahlvortrag) {
+            wahlvortrag.wiederholbar = dto.willingToRepeat;
+            if (dto.maxWiederholungen > 0) {
                 wahlvortrag.maxWiederholungen = dto.maxWiederholungen;
-                // TBD check wahlSlots
-            } else if (vortrag instanceof Pflichtvortrag pflichtvortrag) {
-                pflichtvortrag.pflichtgruppe = dto.pflichtgruppe;
-                // TBD check pflichtSlot, pflichtRaum
             }
+        } else if (vortrag instanceof Pflichtvortrag pflichtvortrag) {
+            pflichtvortrag.pflichtgruppe = dto.pflichtgruppe;
         }
+    }
+
+    private void updateAvailabilities(Referent referent, List<Long> slotIds) {
+        if (slotIds == null) return;
+
+        // Zuerst alle bestehenden Verfügbarkeiten auf false setzen (oder löschen)
+        Verfuegbarkeit.update("isAvailable = false where referent = ?1", referent);
+
+        // Dann die übergebenen auf true setzen oder neu anlegen
+        for (Long slotId : slotIds) {
+            EventSlot slot = EventSlot.findById(slotId);
+            if (slot == null) continue;
+
+            Verfuegbarkeit v = Verfuegbarkeit.find("referent = ?1 and slot = ?2", referent, slot).firstResult();
+            if (v == null) {
+                v = new Verfuegbarkeit();
+                v.referent = referent;
+                v.slot = slot;
+            }
+            v.isAvailable = true;
+            v.persist();
+        }
+    }
+
+    @Transactional
+    public boolean deleteVortrag(String email, Long vortragId) {
+        Referent referent = Referent.find("email", email).firstResult();
+        Vortrag vortrag = Vortrag.findById(vortragId);
+
+        if (vortrag == null || !vortrag.referent.id.equals(referent.id)) return false;
+
+        vortrag.delete();
+        return true;
     }
 
     @Transactional
@@ -94,7 +183,7 @@ public class ReferentService {
                     nr.biography = dto.biography;
                     nr.veranstaltung = veranstaltung;
 
-                    String tempPassword = "start123"; // UUID.randomUUID().toString();
+                    String tempPassword = "start123";
                     nr.passwordHash = BcryptUtil.bcryptHash(tempPassword);
 
                     nr.persist();

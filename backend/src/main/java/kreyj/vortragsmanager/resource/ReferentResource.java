@@ -46,16 +46,42 @@ public class ReferentResource {
     }
 
     @GET
-    @Path("/vortrag")
-    public Vortrag getVortrag() {
-        return referentService.getVortrag(jwt.getSubject());
+    @Path("/vortraege")
+    public List<RefVortragDto> getMeineVortraege() {
+        return referentService.getMeineVortraege(jwt.getSubject());
+    }
+
+    @POST
+    @Path("/vortraege")
+    public Response createVortrag(RefVortragDto dto) {
+        try {
+            RefVortragDto saved = referentService.createVortrag(jwt.getSubject(), dto);
+            return Response.ok(saved).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(e.getMessage()).build();
+        }
     }
 
     @PUT
-    @Path("/vortrag")
-    public Response updateVortrag(RefVortragDto dto) {
-        referentService.updateVortrag(jwt.getSubject(), dto);
-        return Response.ok().build();
+    @Path("/vortraege/{vortragId}")
+    public Response updateVortrag(@PathParam("vortragId") Long vortragId, RefVortragDto dto) {
+        try {
+            RefVortragDto updated = referentService.updateVortrag(jwt.getSubject(), vortragId, dto);
+            if (updated == null) return Response.status(Response.Status.NOT_FOUND).build();
+            return Response.ok(updated).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(e.getMessage()).build();
+        }
+    }
+
+    @DELETE
+    @Path("/vortraege/{vortragId}")
+    public Response deleteVortrag(@PathParam("vortragId") Long vortragId) {
+        boolean deleted = referentService.deleteVortrag(jwt.getSubject(), vortragId);
+        if (!deleted) return Response.status(Response.Status.NOT_FOUND).build();
+        return Response.noContent().build();
     }
 
     @GET

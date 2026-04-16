@@ -107,20 +107,6 @@
             <version>${openpdf.version}</version>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>io.quarkiverse.mailpit</groupId>-->
-<!--            <artifactId>quarkus-mailpit</artifactId>-->
-<!--            <version>${quarkus-mailpit.version}</version>-->
-<!--        </dependency>-->
-
-        <!-- If you want to use test framework to verify emails also -->
-<!--        <dependency>-->
-<!--            <groupId>io.quarkiverse.mailpit</groupId>-->
-<!--            <artifactId>quarkus-mailpit-testing</artifactId>-->
-<!--            <version>${quarkus-mailpit.version}</version>-->
-<!--            <scope>test</scope>-->
-<!--        </dependency>-->
-
         <!-- Testing -->
         <dependency>
             <groupId>io.quarkus</groupId>

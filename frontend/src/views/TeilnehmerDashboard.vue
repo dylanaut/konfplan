@@ -1,13 +1,12 @@
 <template>
-  <div class="max-w-6xl mx-auto space-y-8">
+  <div class="max-w-6xl mx-auto space-y-8 pb-20">
 
-    <!-- MODUS: MEIN PLAN (Sichtbar, wenn Zuweisungen vorhanden sind) -->
+    <!-- MODUS: MEIN PLAN -->
     <section v-if="myPlan.length > 0" class="bg-indigo-900 text-white p-8 rounded-2xl shadow-2xl animate-fade-in">
       <div class="flex items-center gap-3 mb-6">
         <CalendarCheckIcon class="w-8 h-8 text-indigo-300" />
         <h2 class="text-3xl font-black">Mein Vortragsplan</h2>
       </div>
-
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div v-for="z in myPlan" :key="z.id" class="bg-white/10 border border-white/20 p-5 rounded-xl backdrop-blur-sm">
           <div class="text-[10px] uppercase font-bold text-indigo-300 mb-1">{{ z.slotZeit }}</div>
@@ -18,21 +17,13 @@
           </div>
         </div>
       </div>
-
-      <div class="mt-6 text-xs text-indigo-300 italic">
-        Hinweis: Dies ist Ihr verbindlicher Plan. Die untenstehende Auswahl diente als Grundlage für die Berechnung.
-      </div>
     </section>
 
     <!-- HEADER & WAHL-MODUS -->
     <div class="space-y-6">
       <header class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <h2 class="text-2xl font-bold text-gray-800">Verfügbare Vorträge</h2>
-        <p class="text-gray-600 mt-1">
-          Wählen Sie Ihre Top 10 Vorträge aus. 1 = Höchste Priorität, 10 = Niedrigste.
-        </p>
-
-        <!-- Status-Leiste: Vergebene Prioritäten -->
+        <p class="text-gray-600 mt-1">Wählen Sie Ihre Top 10 Vorträge aus. 1 = Höchste Priorität.</p>
         <div class="mt-4 flex flex-wrap gap-2">
           <div v-for="n in 10" :key="n"
                :class="['w-8 h-8 flex items-center justify-center rounded-full border text-xs font-bold',
@@ -61,17 +52,27 @@
             </div>
 
             <h3 class="text-lg font-bold text-gray-900 leading-tight mb-2 pr-12">{{ vortrag.titel }}</h3>
-            <p class="text-sm text-gray-500 mb-4 flex items-center">
-              <UserIcon class="w-4 h-4 mr-1" /> {{ vortrag.referent?.firstName }} {{ vortrag.referent?.lastName }}
-            </p>
 
-            <p class="text-gray-600 text-sm line-clamp-3 mb-4">
+            <div class="flex flex-col mb-4">
+              <p class="text-sm font-bold text-gray-700 flex items-center cursor-help"
+                 :title="vortrag.referent?.biography || 'Keine Biografie hinterlegt'">
+                <UserIcon class="w-4 h-4 mr-1 text-indigo-500" />
+                {{ vortrag.referent?.firstName }} {{ vortrag.referent?.lastName }}
+              </p>
+              <p v-if="vortrag.referent?.organisation"
+                 class="text-xs text-gray-500 ml-5 italic cursor-help"
+                 :title="vortrag.referent?.slogan || 'Kein Slogan hinterlegt'">
+                {{ vortrag.referent.organisation }}
+              </p>
+            </div>
+
+            <p class="text-gray-600 text-sm mb-4">
               {{ vortrag.inhalt }}
             </p>
           </div>
 
-          <!-- Footer: Priorität wählen (Deaktiviert wenn Plan existiert oder Pflicht) -->
-          <div class="bg-gray-50 p-4 border-t border-gray-100">
+          <!-- Footer -->
+          <div class="bg-gray-50 p-4 border-t border-gray-100 mt-auto">
             <div v-if="vortrag.istPflicht" class="text-xs text-red-600 font-medium italic text-center py-2">
               Pflichtveranstaltung
             </div>
@@ -94,10 +95,7 @@
 
       <!-- Save Button -->
       <div v-if="myPlan.length === 0" class="fixed bottom-6 right-6 lg:static lg:mt-8 lg:flex lg:justify-end">
-        <button
-            @click="saveAllPriorities"
-            class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full shadow-lg font-bold flex items-center gap-2"
-        >
+        <button @click="saveAllPriorities" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full shadow-lg font-bold flex items-center gap-2">
           <SaveIcon class="w-5 h-5" /> Auswahl speichern
         </button>
       </div>
@@ -121,17 +119,14 @@ const myPlan = ref([]);
 
 onMounted(async () => {
   try {
-    // 1. Plan abrufen
     const planRes = await api.get('/api/participant/my-plan');
     myPlan.value = planRes.data;
 
-    // Veranstaltungskontext laden (für die Kopfzeile)
     const veranstaltungRes = await api.get('/api/participant/my-event');
     eventContext.setEvent(veranstaltungRes.data);
 
-    // 2. Vorträge und eigene Prioritäten laden
     const [vortragRes, prioRes] = await Promise.all([
-      api.get('/api/admin/vortraege'), // Hier später vid-spezifischen Endpunkt für Teilnehmer nutzen
+      api.get('/api/admin/vortraege'), // TODO: Teilnehmer-spezifischer Endpunkt
       api.get('/api/teilnehmer/priorities')
     ]);
     vortraege.value = vortragRes.data;
@@ -145,8 +140,7 @@ const getCurrentPriority = (vortragId) => myPriorities.value.find(p => p.vortrag
 const isRankTaken = (rank) => myPriorities.value.some(p => p.prioWert == rank);
 
 const updatePriority = (vortragId, value) => {
-  if (myPlan.value.length > 0) return; // Sperre, wenn Plan existiert
-
+  if (myPlan.value.length > 0) return;
   myPriorities.value = myPriorities.value.filter(p => p.vortragId !== vortragId);
   if (value !== "") {
     myPriorities.value = myPriorities.value.filter(p => p.prioWert != value);
@@ -166,7 +160,6 @@ const saveAllPriorities = async () => {
 </script>
 
 <style scoped>
-.animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-.line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 </style>
