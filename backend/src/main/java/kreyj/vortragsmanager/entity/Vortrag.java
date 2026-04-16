@@ -14,10 +14,7 @@ import jakarta.persistence.*;
     @JsonSubTypes.Type(value = Pflichtvortrag.class, name = "PFLICHT"),
     @JsonSubTypes.Type(value = Wahlvortrag.class, name = "WAHL")
 })
-public abstract class Vortrag extends SqliteEntity {
-    @Version
-    public Long version;
-
+public abstract class Vortrag extends VersionedEntity {
     @Column(nullable = false)
     public String titel;
 

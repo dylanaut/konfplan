@@ -4,9 +4,8 @@ import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
-import jakarta.ws.rs.ext.Provider;
 
-@Provider
+//@Provider
 public class CustomExceptionMapper implements ExceptionMapper<Throwable> {
 
     @Override

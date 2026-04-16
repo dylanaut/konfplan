@@ -5,7 +5,7 @@ import com.opencsv.bean.CsvToBeanBuilder;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
-import kreyj.vortragsmanager.dto.TeilnehmerCsvDto;
+import kreyj.vortragsmanager.dto.csv.TeilnehmerCsvDto;
 import kreyj.vortragsmanager.entity.Teilnehmer;
 import kreyj.vortragsmanager.entity.User;
 import kreyj.vortragsmanager.entity.Veranstaltung;
@@ -88,7 +88,7 @@ public class TeilnehmerService {
                     nt.gruppe = dto.gruppe;
                     nt.veranstaltung = v;
 
-                    String tempPassword = UUID.randomUUID().toString();
+                    String tempPassword = "start123"; // UUID.randomUUID().toString();
                     nt.passwordHash = BcryptUtil.bcryptHash(tempPassword);
 
                     nt.persist();

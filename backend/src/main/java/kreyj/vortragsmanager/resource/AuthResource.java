@@ -86,7 +86,7 @@ public class AuthResource {
             String token = Jwt.issuer("https://vortragsmanager.kreyj")
                     .upn(user.email)
                     .groups(user.role)
-                    .expiresIn(Duration.ofHours(8))
+                    .expiresIn(Duration.ofHours(4))
                     .sign();
             return Response.ok(new TokenResponse(token, user.role)).build();
         }

@@ -13,7 +13,7 @@ import java.util.Set;
 @Table(uniqueConstraints = {
     @UniqueConstraint(columnNames = {"name", "beginntAm"})
 })
-public class Veranstaltung extends SqliteEntity {
+public class Veranstaltung extends VersionedEntity {
 
     @Column(nullable = false)
     public String name;
@@ -43,7 +43,4 @@ public class Veranstaltung extends SqliteEntity {
 
     @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL)
     public Set<EventSlot> eventSlots = new HashSet<>();
-
-    @Version
-    public Long version;
 }

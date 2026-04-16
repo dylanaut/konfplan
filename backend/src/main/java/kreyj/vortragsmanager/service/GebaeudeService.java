@@ -4,7 +4,7 @@ import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
-import kreyj.vortragsmanager.dto.GebaeudeRaeumeCsvDto;
+import kreyj.vortragsmanager.dto.csv.GebaeudeRaeumeCsvDto;
 import kreyj.vortragsmanager.entity.Gebaeude;
 import kreyj.vortragsmanager.entity.Raum;
 import org.jboss.logging.Logger;

@@ -17,6 +17,7 @@
         <maven.compiler.target>21</maven.compiler.target>
         <opencsv.version>5.11.2</opencsv.version>
         <openpdf.version>2.0.3</openpdf.version>
+        <quarkus-mailpit.version>2.0.0</quarkus-mailpit.version>
     </properties>
 
     <dependencyManagement>
@@ -105,6 +106,20 @@
             <artifactId>openpdf</artifactId>
             <version>${openpdf.version}</version>
         </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>io.quarkiverse.mailpit</groupId>-->
+<!--            <artifactId>quarkus-mailpit</artifactId>-->
+<!--            <version>${quarkus-mailpit.version}</version>-->
+<!--        </dependency>-->
+
+        <!-- If you want to use test framework to verify emails also -->
+<!--        <dependency>-->
+<!--            <groupId>io.quarkiverse.mailpit</groupId>-->
+<!--            <artifactId>quarkus-mailpit-testing</artifactId>-->
+<!--            <version>${quarkus-mailpit.version}</version>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
 
         <!-- Testing -->
         <dependency>

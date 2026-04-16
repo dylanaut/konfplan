@@ -90,8 +90,8 @@ const handleLogin = async () => {
 
     // Redirect basierend auf Rolle
     if (res.data.role === 'ADMIN') router.push('/admin');
-    else if (res.data.role === 'SPEAKER') router.push('/speaker');
-    else router.push('/participant');
+    else if (res.data.role === 'REFERENT') router.push('/referent');
+    else router.push('/teilnehmer');  // TEILNEHMER
   } catch (e) {
     alert("Login fehlgeschlagen. Bitte prüfen Sie Ihre Daten.");
   } finally {

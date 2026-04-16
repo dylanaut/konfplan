@@ -6,15 +6,12 @@ import kreyj.vortragsmanager.entity.converter.LocalDateTimeConverter;
 import java.time.LocalDateTime;
 
 @Entity
-public class EventSlot extends SqliteEntity {
+public class EventSlot extends VersionedEntity {
     @Convert(converter = LocalDateTimeConverter.class)
     public LocalDateTime startTime;
     @Convert(converter = LocalDateTimeConverter.class)
     public LocalDateTime endTime;
     public String description;
-
-    @Version
-    public Long version;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "veranstaltung_id", columnDefinition = "INTEGER")

@@ -85,6 +85,7 @@ CREATE TABLE IF NOT EXISTS Raum
     kapazitaet  INTEGER      NOT NULL,
     etage       VARCHAR(100),
     gebaeude_id INTEGER      NOT NULL,
+    version     BIGINT       NOT NULL DEFAULT 1,
     FOREIGN KEY (gebaeude_id) REFERENCES Gebaeude (id) ON DELETE CASCADE
 );
 
@@ -154,6 +155,7 @@ CREATE TABLE IF NOT EXISTS Zuweisung
     vortrag_id    INTEGER NOT NULL,
     eventslot_id  INTEGER NOT NULL,
     raum_id       INTEGER NOT NULL,
+    version       BIGINT NOT NULL DEFAULT 1,
     FOREIGN KEY (teilnehmer_id) REFERENCES User (id) ON DELETE CASCADE,
     FOREIGN KEY (vortrag_id) REFERENCES Vortrag (id) ON DELETE CASCADE,
     FOREIGN KEY (eventslot_id) REFERENCES EventSlot (id) ON DELETE CASCADE,
@@ -178,13 +180,72 @@ CREATE TABLE IF NOT EXISTS Verfuegbarkeit
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     referent_id INTEGER,
     slot_id     INTEGER,
-    isAvailable BOOLEAN DEFAULT 1,
+    isAvailable BOOLEAN         DEFAULT 1,
+    version     BIGINT NOT NULL DEFAULT 1,
     FOREIGN KEY (referent_id) REFERENCES User (id) ON DELETE CASCADE,
     FOREIGN KEY (slot_id) REFERENCES EventSlot (id) ON DELETE CASCADE
 );
 
--- STAMMDATEN
+-- SUPER ADMIN
 INSERT INTO User (id, email, password_hash, role, first_name, last_name, is_active, version)
 VALUES (1, 'juergenkrey@yahoo.de', '$2a$10$8920ztppz0N29GNOOw1FCuZJqMUIJhybpqw9tKwkS0rR3BmELJIlC', 'ADMIN', 'Jürgen',
         'Krey', 1, 1);
 
+--- more admins
+INSERT INTO User (id, email, password_hash, role, first_name, last_name, is_active, version)
+VALUES (2, 'kathrin.jessen@rks-linz.de', '$2a$10$8920ztppz0N29GNOOw1FCuZJqMUIJhybpqw9tKwkS0rR3BmELJIlC', 'ADMIN',
+        'Kathrin',
+        'Jessen', 1, 1);
+
+-- DEMO Referent
+INSERT INTO User (id, email, password_hash, role, first_name, last_name, is_active, version)
+VALUES (10, 'beau.referent@yahoo.de', '$2a$10$8920ztppz0N29GNOOw1FCuZJqMUIJhybpqw9tKwkS0rR3BmELJIlC', 'REFERENT', 'Beau',
+        'Referent', 1, 1);
+
+-- Demo Teilnehmer
+INSERT INTO User (id, email, password_hash, role, first_name, last_name, is_active, version)
+VALUES (20, 'beau.teilnehmer@yahoo.de', '$2a$10$8920ztppz0N29GNOOw1FCuZJqMUIJhybpqw9tKwkS0rR3BmELJIlC', 'TEILNEHMER', 'Beau',
+        'Teilnehmer', 1, 1);
+
+
+
+
+INSERT INTO Gebaeude(id, name, typ, strasse, hausnummer, postleitzahl, ort, version)
+VALUES (1, 'RKS Linz', 'SCHULE', 'Im Rosengarten', '2', '53545', 'Linz am Rhein', 1);
+
+
+INSERT INTO Raum(name, kapazitaet, etage, gebaeude_id, version)
+VALUES ('B-002', 35, 'EG', 1, 1);
+
+INSERT INTO Raum(name, kapazitaet, etage, gebaeude_id, version)
+VALUES ('A-0.12', 27, 'EG', 1, 1);
+
+INSERT INTO Raum(name, kapazitaet, etage, gebaeude_id, version)
+VALUES ('A-0.13', 27, 'EG', 1, 1);
+
+INSERT INTO Raum(name, kapazitaet, etage, gebaeude_id, version)
+VALUES ('A-1.01', 25, '1.OG', 1, 1);
+
+INSERT INTO Raum(name, kapazitaet, etage, gebaeude_id, version)
+VALUES ('A-1.04', 27, '1.OG', 1, 1);
+
+INSERT INTO Raum(name, kapazitaet, etage, gebaeude_id, version)
+VALUES ('A-1.07', 27, '1.OG', 1, 1);
+
+INSERT INTO Raum(name, kapazitaet, etage, gebaeude_id, version)
+VALUES ('A-2.01', 25, '2.OG', 1, 1);
+
+INSERT INTO Raum(name, kapazitaet, etage, gebaeude_id, version)
+VALUES ('A-2.03', 27, '2.OG', 1, 1);
+
+INSERT INTO Raum(name, kapazitaet, etage, gebaeude_id, version)
+VALUES ('A-2.04', 27, '2.OG', 1, 1);
+
+INSERT INTO Raum(name, kapazitaet, etage, gebaeude_id, version)
+VALUES ('A-2.06', 27, '2.OG', 1, 1);
+
+INSERT INTO Raum(name, kapazitaet, etage, gebaeude_id, version)
+VALUES ('V-0.05', 27, 'EG', 1, 1);
+
+INSERT INTO Raum(name, kapazitaet, etage, gebaeude_id, version)
+VALUES ('A-2.07', 25, '2.OG', 1, 1);

@@ -4,10 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-public class Prioritaet extends SqliteEntity {
-    @Version
-    public Long version;
-
+public class Prioritaet extends VersionedEntity {
     @ManyToOne
     public Teilnehmer teilnehmer;
 

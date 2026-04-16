@@ -3,7 +3,7 @@ package kreyj.vortragsmanager.entity;
 import jakarta.persistence.*;
 
 @Entity
-public class Verfuegbarkeit extends SqliteEntity {
+public class Verfuegbarkeit extends VersionedEntity {
 
     @ManyToOne
     @JoinColumn(name = "referent_id", columnDefinition = "INTEGER")

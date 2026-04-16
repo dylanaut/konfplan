@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
         @JsonSubTypes.Type(value = Referent.class, name = "REFERENT"),
         @JsonSubTypes.Type(value = Teilnehmer.class, name = "TEILNEHMER")
 })
-public abstract class User extends SqliteEntity {
+public abstract class User extends VersionedEntity {
 
     @Column(unique = true)
     @Username
@@ -59,9 +59,6 @@ public abstract class User extends SqliteEntity {
     @JoinColumn(name = "veranstaltung_id", columnDefinition = "INTEGER")
     @JsonIgnoreProperties({"organisator", "gebaeude", "eventSlots"})
     public Veranstaltung veranstaltung;
-
-    @Version
-    public Long version;
 
     public User() {
     }

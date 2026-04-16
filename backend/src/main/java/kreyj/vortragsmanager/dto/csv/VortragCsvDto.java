@@ -1,4 +1,4 @@
-package kreyj.vortragsmanager.dto;
+package kreyj.vortragsmanager.dto.csv;
 
 import com.opencsv.bean.CsvBindByName;
 

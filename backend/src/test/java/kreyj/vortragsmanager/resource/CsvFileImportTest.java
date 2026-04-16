@@ -58,39 +58,39 @@ class CsvFileImportTest {
     private void setupVeranstalter() {
         // import Veranstalter
         given()
-                .multiPart("file", getCsvFile("organisatoren.csv"))
+                .multiPart("file", getCsvFile("test-organisatoren.csv"))
                 .when().post("/api/admin/admins/import")
                 .then()
                 .statusCode(200);
 
-        Admin organisator = (Admin) User.findByEmail("kathrin.jessen@rks-linz.de");
+        Admin organisator = (Admin) User.findByEmail("test.admin@rks-linz.de");
         Assertions.assertNotNull(organisator);
-        Assertions.assertEquals("Kathrin", organisator.firstName);
+        Assertions.assertEquals("Admin", organisator.firstName);
         orgEmail = organisator.email;
     }
 
     private static void setupGebaeude() {
         given()
-                .multiPart("file", getCsvFile("gebaeude.csv"))
+                .multiPart("file", getCsvFile("test-gebaeude.csv"))
                 .when().post("/api/gebaeude/import")
                 .then()
                 .statusCode(200)
                 .body(containsString("Import erfolgreich"));
 
-        Gebaeude g = Gebaeude.find("name", "RKS Linz").firstResult();
+        Gebaeude g = Gebaeude.find("name", "TestGebäude").firstResult();
         Assertions.assertNotNull(g);
         Assertions.assertEquals(12, g.raeume.size(), "Anzahl Räume sollte sein");
     }
 
     private void setupVeranstaltungen() {
         given()
-                .multiPart("file", getCsvFile("veranstaltungen.csv"))
+                .multiPart("file", getCsvFile("test-veranstaltungen.csv"))
                 .when().post("/api/veranstaltungen/import")
                 .then()
                 .statusCode(200)
-                .body(containsString("1 Veranstaltung(en) angelegt"));
+                .body(containsString("2 Veranstaltung(en) angelegt"));
 
-        Veranstaltung v = Veranstaltung.find("name", "Messe Berufsorientierung 2026").firstResult();
+        Veranstaltung v = Veranstaltung.find("name", "TV_1").firstResult();
         Assertions.assertNotNull(v);
         testVid = v.id;
     }

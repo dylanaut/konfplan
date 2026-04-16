@@ -303,25 +303,30 @@ public class VeranstaltungResource {
     public static VeranstaltungDto mapToDto(Veranstaltung v) {
         VeranstaltungDto dto = new VeranstaltungDto();
         dto.id = v.id;
+        dto.version = v.version;
+
         dto.name = v.name;
         dto.beginntAm = v.beginntAm;
         dto.endetAm = v.endetAm;
         dto.logo = v.logo;
         dto.logo_link = v.logo_link;
+
         dto.organisatorId = v.organisator != null ? v.organisator.id : null;
         dto.organisatorName = v.organisator != null ? v.organisator.lastName : "";
         dto.gebaeude = v.gebaeude.stream().map(GebaeudeResource::mapToDto).toList();
-        dto.version = v.version;
+
         return dto;
     }
 
     public static EventSlotDto mapSlotToDto(EventSlot eventSlot) {
         EventSlotDto dto = new EventSlotDto();
+
+        dto.id = eventSlot.id;
+        dto.version = eventSlot.version;
+
         dto.description = eventSlot.description;
         dto.startTime = eventSlot.startTime;
         dto.endTime = eventSlot.endTime;
-
-        dto.version = eventSlot.version;
 
         return dto;
     }

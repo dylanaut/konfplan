@@ -17,7 +17,7 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import java.time.LocalDate;
 import java.util.List;
 
-@Path("/api/referent")
+@Path("/api/referenten")
 @RolesAllowed({"ADMIN","REFERENT"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

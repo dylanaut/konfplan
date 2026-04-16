@@ -3,7 +3,7 @@ package kreyj.vortragsmanager.entity;
 import jakarta.persistence.*;
 
 @Entity
-public class Zuweisung extends SqliteEntity {
+public class Zuweisung extends VersionedEntity {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "teilnehmer_id", columnDefinition = "INTEGER")

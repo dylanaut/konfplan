@@ -5,7 +5,7 @@ import com.opencsv.bean.CsvToBeanBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.dto.GebaeudeSimpleDto;
-import kreyj.vortragsmanager.dto.VeranstaltungCsvDto;
+import kreyj.vortragsmanager.dto.csv.VeranstaltungCsvDto;
 import kreyj.vortragsmanager.dto.VeranstaltungDto;
 import kreyj.vortragsmanager.entity.Admin;
 import kreyj.vortragsmanager.entity.Gebaeude;
@@ -67,8 +67,8 @@ public class VeranstaltungService {
         // Gebaeude-Relation (ManyToMany) aktualisieren
         entity.gebaeude.clear();
         if (dto.gebaeude != null) {
-            for (GebaeudeSimpleDto gDto : dto.gebaeude) {
-                Gebaeude attached = Gebaeude.findById(gDto.id);
+            for (GebaeudeSimpleDto gebaeudeId : dto.gebaeude) {
+                Gebaeude attached = Gebaeude.findById(gebaeudeId);
                 if (attached != null) {
                     entity.gebaeude.add(attached);
                 }

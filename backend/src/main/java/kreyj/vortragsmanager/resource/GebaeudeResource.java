@@ -7,6 +7,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.FileUploadDto;
 import kreyj.vortragsmanager.dto.GebaeudeSimpleDto;
+import kreyj.vortragsmanager.dto.RaumDto;
 import kreyj.vortragsmanager.entity.Gebaeude;
 import kreyj.vortragsmanager.entity.Raum;
 import kreyj.vortragsmanager.service.GebaeudeService;
@@ -32,20 +33,6 @@ public class GebaeudeResource {
     public List<GebaeudeSimpleDto> getAll() {
         return gebaeudeService.listAll()
                 .stream().map(GebaeudeResource::mapToDto).toList();
-    }
-
-    public static GebaeudeSimpleDto mapToDto(Gebaeude gebaeude) {
-        GebaeudeSimpleDto dto = new GebaeudeSimpleDto();
-        dto.id = gebaeude.id;
-        dto.name = gebaeude.name;
-        dto.strasse = gebaeude.strasse;
-        dto.hausnummer = gebaeude.hausnummer;
-        dto.ort = gebaeude.ort;
-        dto.postleitzahl = gebaeude.postleitzahl;
-        dto.typ = gebaeude.typ;
-        dto.version = gebaeude.version;
-
-        return dto;
     }
 
     @POST
@@ -141,5 +128,37 @@ public class GebaeudeResource {
         } catch (Exception e) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
         }
+    }
+
+    // -------------------------------------------------------------------
+    // Helper methods
+    // -------------------------------------------------------------------
+
+    public static GebaeudeSimpleDto mapToDto(Gebaeude gebaeude) {
+        GebaeudeSimpleDto dto = new GebaeudeSimpleDto();
+        dto.id = gebaeude.id;
+        dto.version = gebaeude.version;
+
+        dto.name = gebaeude.name;
+        dto.strasse = gebaeude.strasse;
+        dto.hausnummer = gebaeude.hausnummer;
+        dto.ort = gebaeude.ort;
+        dto.postleitzahl = gebaeude.postleitzahl;
+        dto.typ = gebaeude.typ;
+
+        dto.raeume = gebaeude.raeume.stream().map(GebaeudeResource::mapRaumToDto).toList();
+
+        return dto;
+    }
+    public static RaumDto mapRaumToDto(Raum raum) {
+        RaumDto dto = new RaumDto();
+
+        dto.id = raum.id;
+        dto.version = raum.version;
+        dto.name = raum.name;
+        dto.kapazitaet = raum.kapazitaet;
+        dto.etage = raum.etage;
+
+        return dto;
     }
 }

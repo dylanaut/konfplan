@@ -2,9 +2,9 @@ package kreyj.vortragsmanager.dto;
 
 import kreyj.vortragsmanager.entity.Gebaeude;
 
-public class GebaeudeSimpleDto {
-    public Long id;
+import java.util.List;
 
+public class GebaeudeSimpleDto extends VersionedDto {
     public String name;
 
     public String strasse;
@@ -17,7 +17,7 @@ public class GebaeudeSimpleDto {
 
     public Gebaeude.Gebaeudetyp typ;
 
-    public Long version;
+    public List<RaumDto> raeume;
 
     public GebaeudeSimpleDto() {
     }

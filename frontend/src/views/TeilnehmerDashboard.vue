@@ -108,11 +108,13 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../api/axios';
+import { useEventContextStore } from '../stores/eventContext';
 import {
   User as UserIcon, Save as SaveIcon,
   CalendarCheck as CalendarCheckIcon, MapPin as MapPinIcon
 } from 'lucide-vue-next';
 
+const eventContext = useEventContextStore();
 const vortraege = ref([]);
 const myPriorities = ref([]);
 const myPlan = ref([]);
@@ -123,10 +125,14 @@ onMounted(async () => {
     const planRes = await api.get('/api/participant/my-plan');
     myPlan.value = planRes.data;
 
+    // Veranstaltungskontext laden (für die Kopfzeile)
+    const veranstaltungRes = await api.get('/api/participant/my-event');
+    eventContext.setEvent(veranstaltungRes.data);
+
     // 2. Vorträge und eigene Prioritäten laden
     const [vortragRes, prioRes] = await Promise.all([
       api.get('/api/admin/vortraege'), // Hier später vid-spezifischen Endpunkt für Teilnehmer nutzen
-      api.get('/api/participant/priorities')
+      api.get('/api/teilnehmer/priorities')
     ]);
     vortraege.value = vortragRes.data;
     myPriorities.value = prioRes.data.map(p => ({ vortragId: p.vortrag.id, prioWert: p.prioWert }));
@@ -151,7 +157,7 @@ const updatePriority = (vortragId, value) => {
 const saveAllPriorities = async () => {
   try {
     const payload = myPriorities.value.map(p => ({ vortragId: p.vortragId, prioWert: p.prioWert }));
-    await api.post('/api/participant/priorities', payload);
+    await api.post('/api/teilnehmer/priorities', payload);
     alert("Erfolgreich gespeichert!");
   } catch (e) {
     alert("Fehler beim Speichern.");

@@ -7,6 +7,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.*;
+import kreyj.vortragsmanager.dto.csv.AdminCsvDto;
+import kreyj.vortragsmanager.dto.csv.EventSlotCsvDto;
+import kreyj.vortragsmanager.dto.csv.VortragCsvDto;
 import kreyj.vortragsmanager.entity.*;
 import org.jboss.logging.Logger;
 

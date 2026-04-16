@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-public class Gebaeude extends SqliteEntity {
+public class Gebaeude extends VersionedEntity {
 
     @Column(nullable = false, unique = true)
     public String name;
@@ -30,9 +30,6 @@ public class Gebaeude extends SqliteEntity {
 
     @ManyToMany(mappedBy = "gebaeude")
     public List<Veranstaltung> veranstaltungen = new ArrayList<>();
-
-    @Version // Optimistic Locking
-    public Long version;
 
     public enum Gebaeudetyp {
         SCHULE, KINO, SPORTHALLE, SAAL, EXTERN

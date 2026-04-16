@@ -1,6 +1,7 @@
 package kreyj.vortragsmanager.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
+
 import java.util.List;
 
 @RegisterForReflection
@@ -13,5 +14,6 @@ public class VortragBelegungDto {
     public int auslastung; // in Prozent
     public int kapazitaet;
 
-    public VortragBelegungDto() {}
+    public VortragBelegungDto() {
+    }
 }

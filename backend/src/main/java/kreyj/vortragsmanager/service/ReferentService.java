@@ -6,7 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.dto.RefProfilDto;
 import kreyj.vortragsmanager.dto.RefVortragDto;
-import kreyj.vortragsmanager.dto.ReferentCsvDto;
+import kreyj.vortragsmanager.dto.csv.ReferentCsvDto;
 import kreyj.vortragsmanager.entity.*;
 
 import java.io.FileReader;
@@ -94,7 +94,7 @@ public class ReferentService {
                     nr.biography = dto.biography;
                     nr.veranstaltung = veranstaltung;
 
-                    String tempPassword = UUID.randomUUID().toString();
+                    String tempPassword = "start123"; // UUID.randomUUID().toString();
                     nr.passwordHash = BcryptUtil.bcryptHash(tempPassword);
 
                     nr.persist();

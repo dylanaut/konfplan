@@ -1,15 +1,12 @@
 package kreyj.vortragsmanager.entity;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Entity
-public class Raum extends SqliteEntity {
+public class Raum extends VersionedEntity {
 
     @Column(nullable = false)
     public String name;
