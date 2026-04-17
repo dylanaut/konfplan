@@ -57,7 +57,7 @@ class AdminResourceTest {
                 .when().post("/api/admin/admins/import")
                 .then()
                 .statusCode(200)
-                .body(is("Import erfolgreich: 3 Administratoren angelegt."));
+                .body(is("Import erfolgreich: 3 Admins angelegt."));
     }
 
     @Test

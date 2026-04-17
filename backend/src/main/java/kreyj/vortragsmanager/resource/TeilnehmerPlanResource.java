@@ -14,11 +14,11 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.util.List;
 
-@Path("/api/participant")
+@Path("/api/teilnehmer")
 @RolesAllowed({"TEILNEHMER", "ADMIN"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class ParticipantPlanResource {
+public class TeilnehmerPlanResource {
 
     @Inject
     JsonWebToken jwt;

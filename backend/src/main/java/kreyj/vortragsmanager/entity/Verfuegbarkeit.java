@@ -6,8 +6,8 @@ import jakarta.persistence.*;
 public class Verfuegbarkeit extends VersionedEntity {
 
     @ManyToOne
-    @JoinColumn(name = "referent_id", columnDefinition = "INTEGER")
-    public Referent referent;
+    @JoinColumn(name = "user_id", columnDefinition = "INTEGER")
+    public User user;
 
     @ManyToOne
     @JoinColumn(name = "slot_id", columnDefinition = "INTEGER")

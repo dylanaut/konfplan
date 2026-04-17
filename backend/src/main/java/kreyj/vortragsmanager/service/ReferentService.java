@@ -138,7 +138,7 @@ public class ReferentService {
             Verfuegbarkeit v = Verfuegbarkeit.find("referent = ?1 and slot = ?2", referent, slot).firstResult();
             if (v == null) {
                 v = new Verfuegbarkeit();
-                v.referent = referent;
+                v.user = referent;
                 v.slot = slot;
             }
             v.isAvailable = true;
@@ -204,7 +204,7 @@ public class ReferentService {
 
         if (verfuegbarkeit == null) {
             verfuegbarkeit = new Verfuegbarkeit();
-            verfuegbarkeit.referent = referent;
+            verfuegbarkeit.user = referent;
             verfuegbarkeit.slot = slot;
         }
         verfuegbarkeit.isAvailable = available;

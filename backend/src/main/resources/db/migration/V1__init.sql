@@ -155,7 +155,7 @@ CREATE TABLE IF NOT EXISTS Zuweisung
     vortrag_id    INTEGER NOT NULL,
     eventslot_id  INTEGER NOT NULL,
     raum_id       INTEGER NOT NULL,
-    version       BIGINT NOT NULL DEFAULT 1,
+    version       BIGINT  NOT NULL DEFAULT 1,
     FOREIGN KEY (teilnehmer_id) REFERENCES User (id) ON DELETE CASCADE,
     FOREIGN KEY (vortrag_id) REFERENCES Vortrag (id) ON DELETE CASCADE,
     FOREIGN KEY (eventslot_id) REFERENCES EventSlot (id) ON DELETE CASCADE,
@@ -178,11 +178,11 @@ CREATE TABLE IF NOT EXISTS Prioritaet
 CREATE TABLE IF NOT EXISTS Verfuegbarkeit
 (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    referent_id INTEGER,
+    user_id     INTEGER,
     slot_id     INTEGER,
     isAvailable BOOLEAN         DEFAULT 1,
     version     BIGINT NOT NULL DEFAULT 1,
-    FOREIGN KEY (referent_id) REFERENCES User (id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES User (id) ON DELETE CASCADE,
     FOREIGN KEY (slot_id) REFERENCES EventSlot (id) ON DELETE CASCADE
 );
 
@@ -199,14 +199,15 @@ VALUES (2, 'kathrin.jessen@rks-linz.de', '$2a$10$8920ztppz0N29GNOOw1FCuZJqMUIJhy
 
 -- DEMO Referent
 INSERT INTO User (id, email, password_hash, role, first_name, last_name, is_active, version)
-VALUES (10, 'beau.referent@yahoo.de', '$2a$10$8920ztppz0N29GNOOw1FCuZJqMUIJhybpqw9tKwkS0rR3BmELJIlC', 'REFERENT', 'Beau',
+VALUES (10, 'beau.referent@yahoo.de', '$2a$10$8920ztppz0N29GNOOw1FCuZJqMUIJhybpqw9tKwkS0rR3BmELJIlC', 'REFERENT',
+        'Beau',
         'Referent', 1, 1);
 
 -- Demo Teilnehmer
 INSERT INTO User (id, email, password_hash, role, first_name, last_name, is_active, version)
-VALUES (20, 'beau.teilnehmer@yahoo.de', '$2a$10$8920ztppz0N29GNOOw1FCuZJqMUIJhybpqw9tKwkS0rR3BmELJIlC', 'TEILNEHMER', 'Beau',
+VALUES (20, 'beau.teilnehmer@yahoo.de', '$2a$10$8920ztppz0N29GNOOw1FCuZJqMUIJhybpqw9tKwkS0rR3BmELJIlC', 'TEILNEHMER',
+        'Beau',
         'Teilnehmer', 1, 1);
-
 
 
 

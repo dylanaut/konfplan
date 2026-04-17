@@ -13,9 +13,9 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.util.List;
 
-@Path("/api/participant/priorities")
+@Path("/api/teilnehmer/priorities")
 @Authenticated
-public class ParticipantPriorityResource {
+public class TeilnehmerPrioritaetenResource {
 
     @Inject
     JsonWebToken jwt;
