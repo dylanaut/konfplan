@@ -1,12 +1,12 @@
 package kreyj.vortragsmanager.resource;
 
 import io.quarkus.test.InjectMock;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import kreyj.vortragsmanager.dto.UserDto;
-import kreyj.vortragsmanager.entity.Admin;
-import kreyj.vortragsmanager.entity.User;
 import kreyj.vortragsmanager.service.AdminService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +20,7 @@ import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
 @TestSecurity(user = "admin@example.com", roles = "ADMIN")
+@QuarkusTestResource(H2DatabaseTestResource.class)
 class AdminResourceTest {
 
     @InjectMock

@@ -15,7 +15,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "User")
+@Table(name = "\"User\"")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "role", discriminatorType = DiscriminatorType.STRING)
 @UserDefinition
@@ -60,10 +60,10 @@ public abstract class User extends VersionedEntity {
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "User_Veranstaltung",
-        joinColumns = @JoinColumn(name = "user_id", columnDefinition = "INTEGER"),
-        inverseJoinColumns = @JoinColumn(name = "veranstaltung_id", columnDefinition = "INTEGER")
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "veranstaltung_id")
     )
-    @JsonIgnoreProperties({"organisator", "gebaeude", "eventSlots", "teilnehmer"})
+    @JsonIgnoreProperties({"benutzer", "gebaeude", "eventSlots"})
     public Set<Veranstaltung> veranstaltungen = new HashSet<>();
 
     public User() {

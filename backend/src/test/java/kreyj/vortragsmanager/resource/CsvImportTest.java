@@ -1,6 +1,8 @@
 package kreyj.vortragsmanager.resource;
 
 import io.quarkus.narayana.jta.QuarkusTransaction;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.transaction.Transactional;
@@ -17,6 +19,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 @QuarkusTest
 @TestSecurity(user = "admin@test.de", roles = "ADMIN")
+@QuarkusTestResource(H2DatabaseTestResource.class)
 class CsvImportTest {
 
     Long testVid;
@@ -24,17 +27,12 @@ class CsvImportTest {
     @BeforeEach
     @Transactional
     void setup() {
-        Zuweisung.deleteAll();
-        Prioritaet.deleteAll();
-        Verfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
-        EventSlot.deleteAll();
-
-        Veranstaltung.deleteAll();
         User.deleteAll();
-
         Raum.deleteAll();
         Gebaeude.deleteAll();
+        EventSlot.deleteAll();
+        Veranstaltung.deleteAll();
 
         Admin admin = new Admin();
         admin.email = "admin@test.de";
@@ -64,9 +62,11 @@ class CsvImportTest {
         Veranstaltung v = new Veranstaltung();
         v.name = "Basis Event " + System.currentTimeMillis();
         v.beginntAm = LocalDateTime.of(2025, 10, 10, 9, 0);
-        admin.addVeranstaltung(v);
         v.gebaeude.addAll(gebaeudeList);
         v.persist();
+
+        admin.addVeranstaltung(v);
+        admin.persist();
 
         return v.id;
     }
@@ -171,8 +171,9 @@ class CsvImportTest {
         r.firstName = "Max";
         r.lastName = "Ref";
         r.passwordHash = "hash";
-        r.veranstaltungen.add(Veranstaltung.findById(testVid));
+        r.addVeranstaltung(Veranstaltung.findById(testVid));
         r.persist();
+
         QuarkusTransaction.commit();
 
         String csv = "istPflicht;Titel;Referent_Email;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;Pflichtslot\n" +

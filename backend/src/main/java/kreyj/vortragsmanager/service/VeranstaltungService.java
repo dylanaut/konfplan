@@ -3,7 +3,6 @@ package kreyj.vortragsmanager.service;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.dto.GebaeudeSimpleDto;
 import kreyj.vortragsmanager.dto.VeranstaltungDto;
@@ -13,7 +12,6 @@ import kreyj.vortragsmanager.entity.Gebaeude;
 import kreyj.vortragsmanager.entity.User;
 import kreyj.vortragsmanager.entity.Veranstaltung;
 import kreyj.vortragsmanager.resource.VeranstaltungResource;
-import kreyj.vortragsmanager.util.SQLiteBackup;
 import org.jboss.logging.Logger;
 
 import java.io.FileReader;
@@ -27,9 +25,6 @@ import java.util.List;
 public class VeranstaltungService {
     private static final Logger LOG = Logger.getLogger(VeranstaltungService.class);
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-
-    @Inject
-    private SQLiteBackup backupService;
 
     public List<Veranstaltung> listAll() {
         return Veranstaltung.listAll();
@@ -77,7 +72,7 @@ public class VeranstaltungService {
         entity.gebaeude.clear();
         if (dto.gebaeude != null) {
             for (GebaeudeSimpleDto gebaeudeId : dto.gebaeude) {
-                Gebaeude attached = Gebaeude.findById(gebaeudeId);
+                Gebaeude attached = Gebaeude.findById(gebaeudeId.id);
                 if (attached != null) {
                     entity.gebaeude.add(attached);
                 }
@@ -128,10 +123,7 @@ public class VeranstaltungService {
                     v.persist();
                     
                     // Admin verknüpfen
-                    admin.addVeranstaltung(v);
-                    admin.persist();
-
-                    // Gebäude verknüpfen
+                    admin.veranstaltungen.add(v);
 
                     if (dto.gebaeudeNamen != null && !dto.gebaeudeNamen.isEmpty()) {
                         Arrays.stream(dto.gebaeudeNamen.split("\\|")).map(String::trim).forEach(name -> {

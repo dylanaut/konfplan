@@ -1,5 +1,7 @@
 package kreyj.vortragsmanager.resource;
 
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -13,12 +15,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
-import static jakarta.ws.rs.core.Response.Status.CREATED;
-import static jakarta.ws.rs.core.Response.Status.OK;
+import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.matchesPattern;
 
 @QuarkusTest
+@QuarkusTestResource(H2DatabaseTestResource.class)
 class UserPersistenceTest {
 
     public static final String TEST_VERANSTALTUNG = "Test Veranstaltung";
@@ -27,20 +29,13 @@ class UserPersistenceTest {
     @BeforeEach
     @Transactional
     void setup() {
-        // 1. Abhängige Tabellen löschen
-        Zuweisung.deleteAll();
-        Prioritaet.deleteAll();
-        Verfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
-        EventSlot.deleteAll();
-        Raum.deleteAll();
-
-        // 2. Jetzt können wir alles löschen
-        Veranstaltung.deleteAll();
         User.deleteAll();
+        Raum.deleteAll();
         Gebaeude.deleteAll();
+        EventSlot.deleteAll();
+        Veranstaltung.deleteAll();
 
-        // 3. Test-Daten neu aufbauen
         Gebaeude g = new Gebaeude();
         g.name = "Test Gebäude";
         g.strasse = "Teststraße";
@@ -59,9 +54,10 @@ class UserPersistenceTest {
         v.beginntAm = LocalDateTime.now();
         v.gebaeude = List.of(g);
         v.persist();
+        testVid = v.id;
+
         admin.addVeranstaltung(v);
         admin.persist();
-        testVid = v.id;
     }
 
     @Test
@@ -85,22 +81,21 @@ class UserPersistenceTest {
                     "firstName": "Jens",
                     "lastName": "Riewa",
                     "jobRole": "Nachrichtensprecher",
-                    "biography": "Lange Erfahrung im TV.",
-                    "veranstaltungIds": %s
+                    "biography": "Lange Erfahrung im TV."
                 }
-                """.formatted(List.of(testVid));
+                """;
 
         given()
                 .contentType(ContentType.JSON)
                 .body(json)
-                .when().post("/api/admin/benutzer")
+                .when().post("/api/veranstaltungen/{vid}/benutzer", testVid)
                 .then()
-                .statusCode(CREATED.getStatusCode())
+                .statusCode(201)
                 .body("role", is("REFERENT"));
 
         Referent ref = (Referent) User.findByEmail("referent@test.de");
         Assertions.assertNotNull(ref);
-        Assertions.assertNotNull(ref.veranstaltungen, "Veranstaltung sollte gesetzt sein");
+        Assertions.assertNotNull(ref.veranstaltungen, "Veranstaltungen sollten nicht leer sein");
         Assertions.assertEquals(testVid, ref.veranstaltungen.iterator().next().id);
     }
 
@@ -113,23 +108,22 @@ class UserPersistenceTest {
                     "email": "schueler@test.de",
                     "firstName": "Peter",
                     "lastName": "Müller",
-                    "gruppe": "10a",
-                    "veranstaltungIds": %s
+                    "gruppe": "10a"
                 }
-                """.formatted(List.of(testVid));
+                """;
 
         given()
                 .contentType(ContentType.JSON)
                 .body(json)
-                .when().post("/api/admin/benutzer")
+                .when().post("/api/veranstaltungen/{vid}/benutzer", testVid)
                 .then()
-                .statusCode(CREATED.getStatusCode())
+                .statusCode(201)
                 .body("role", is("TEILNEHMER"));
 
         Teilnehmer teil = (Teilnehmer) User.findByEmail("schueler@test.de");
         Assertions.assertNotNull(teil);
         Assertions.assertEquals("10a", teil.gruppe);
-        Assertions.assertNotNull(teil.veranstaltungen, "Veranstaltung sollte gesetzt sein");
+        Assertions.assertNotEquals(emptyList(), teil.veranstaltungen, "Veranstaltung sollten nicht leer sein");
         Assertions.assertEquals(testVid, teil.veranstaltungen.iterator().next().id);
     }
 }

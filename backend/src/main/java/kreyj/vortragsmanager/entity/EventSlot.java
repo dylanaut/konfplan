@@ -14,6 +14,6 @@ public class EventSlot extends VersionedEntity {
     public String description;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "veranstaltung_id", columnDefinition = "INTEGER")
+    @JoinColumn(name = "veranstaltung_id")
     public Veranstaltung veranstaltung;
 }

@@ -38,6 +38,7 @@ public class TeilnehmerResource {
         return Response.status(Response.Status.CREATED).entity(created).build();
     }
 
+    @Deprecated
     @PUT
     @Path("/{id}")
     @Transactional
@@ -50,9 +51,9 @@ public class TeilnehmerResource {
     @DELETE
     @Path("/{id}")
     public Response deleteTeilnehmer(@PathParam("id") Long id) {
-        User byId = teilnehmerService.findById(id);
-        if (byId == null) return Response.status(Response.Status.NOT_FOUND).build();
-        teilnehmerService.deleteUser(byId);
+        User user = teilnehmerService.findById(id);
+        if (user == null) return Response.status(Response.Status.NOT_FOUND).build();
+        teilnehmerService.deleteUser(user);
         return Response.noContent().build();
     }
 

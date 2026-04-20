@@ -34,8 +34,8 @@ public class Veranstaltung extends VersionedEntity {
     @ManyToMany
     @JoinTable(
             name = "Veranstaltung_Gebaeude",
-            joinColumns = @JoinColumn(name = "veranstaltung_id", columnDefinition = "INTEGER"),
-            inverseJoinColumns = @JoinColumn(name = "gebaeude_id", columnDefinition = "INTEGER")
+            joinColumns = @JoinColumn(name = "veranstaltung_id"),
+            inverseJoinColumns = @JoinColumn(name = "gebaeude_id")
     )
     public List<Gebaeude> gebaeude = new ArrayList<>();
 
@@ -49,18 +49,18 @@ public class Veranstaltung extends VersionedEntity {
     public Set<Admin> organisatoren() {
         return benutzer.stream().filter(u -> u instanceof Admin)
                 .map(u -> (Admin) u)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     public Set<Teilnehmer> teilnehmer() {
         return benutzer.stream().filter(u -> u instanceof Teilnehmer)
                 .map(u -> (Teilnehmer) u)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     public Set<Referent> referenten() {
         return benutzer.stream().filter(u -> u instanceof Referent)
                 .map(u -> (Referent) u)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toUnmodifiableSet());
     }
 }

@@ -4,7 +4,6 @@ import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.UserDto;
@@ -23,18 +22,17 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.apache.commons.collections4.SetUtils.difference;
+
 @ApplicationScoped
 public class AdminService {
     private static final Logger LOG = Logger.getLogger(AdminService.class);
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    @Inject
-    MailService mailService;
-
     public List<UserDto> getAllUsers(Long veranstaltungId) {
         List<User> globals = User.list("role = 'ADMIN'");
-        List<User> localized = User.find("select u from User u join u.veranstaltungen v where v.id = ?1", veranstaltungId).list();
+        List<User> localized = User.list("veranstaltung.id = ?1", veranstaltungId);
 
         return Stream.concat(globals.stream(), localized.stream())
                 .distinct()
@@ -46,18 +44,16 @@ public class AdminService {
         return User.<User>listAll().stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
-    public UserDto createUser(UserDto dto, Long veranstaltungId) {
-        return createUser(dto, List.of(veranstaltungId));
-    }
-
     @Transactional
-    public UserDto createUser(UserDto dto, List<Long> veranstaltungIds) {
-        User user = switch (dto.role) {
-            case "REFERENT" -> new Referent();
-            case "TEILNEHMER" -> new Teilnehmer();
-            case "ADMIN" -> new Admin();
-            case null, default -> throw new IllegalStateException("Rolle nicht spezifiziert");
-        };
+    public UserDto createUser(UserDto dto, List<Long> veranstaltungsIds) {
+        User user;
+        if ("REFERENT".equals(dto.role)) {
+            user = new Referent();
+        } else if ("TEILNEHMER".equals(dto.role)) {
+            user = new Teilnehmer();
+        } else {
+            user = new Admin();
+        }
 
         user.email = dto.email;
         user.firstName = dto.firstName;
@@ -68,12 +64,13 @@ public class AdminService {
             user.passwordHash = BcryptUtil.bcryptHash("start123");
         }
 
-        if (dto.veranstaltungIds != null) {
-            for (Long vid : dto.veranstaltungIds) {
-                Veranstaltung v = Veranstaltung.findById(vid);
-                if (v != null) {
+        if (null != veranstaltungsIds) {
+            for (Long veranstaltungId : veranstaltungsIds) {
+                Veranstaltung v = Veranstaltung.findById(veranstaltungId);
+                if (null == v) {
+                    LOG.error("Unbekannte Veranstaltung zu id: " + veranstaltungId);
+                } else {
                     user.veranstaltungen.add(v);
-                    v.benutzer.add(user);
                 }
             }
         }
@@ -88,19 +85,12 @@ public class AdminService {
         }
 
         user.persist();
-        if (null == user.role) {
-            user.role = dto.role;
-        }
 
         return mapToDto(user);
     }
 
-    public UserDto updateUser(Long id, UserDto dto, Long veranstaltungId) {
-        return updateUser(id, dto, List.of(veranstaltungId));
-    }
-
     @Transactional
-    public UserDto updateUser(Long id, UserDto dto, List<Long> veranstaltungIds) {
+    public UserDto updateUser(Long id, UserDto dto, List<Long> vUpdateIds) {
         User user = User.findById(id);
         if (user == null) {
             return null;
@@ -111,47 +101,42 @@ public class AdminService {
         user.email = dto.email;
         user.isActive = dto.isActive;
 
-        user.veranstaltungen.clear();
-        if (dto.veranstaltungIds != null) {
-            for (Long vid : dto.veranstaltungIds) {
-                Veranstaltung v = Veranstaltung.findById(vid);
-                if (v != null) {
+        if (null != vUpdateIds) {
+            Set<Long> oldVIds = user.veranstaltungen.stream().map(v -> v.id).collect(Collectors.toSet());
+            Set<Long> vNewIdSet = new HashSet<>(vUpdateIds);
+
+            Set<Long> toRemoves = difference(oldVIds, vNewIdSet).toSet();
+
+            // alte ID nicht in updateIds enthalten -> entfernen
+            for (Long toRemove : toRemoves) {
+                Veranstaltung v = Veranstaltung.findById(toRemove);
+                if (null != v) {
+                    user.removeVeranstaltung(v);
+                }
+            }
+
+
+            Set<Long> toAdds = difference(vNewIdSet, oldVIds).toSet();
+            for (Long toAdd : toAdds) {
+                Veranstaltung v = Veranstaltung.findById(toAdd);
+                if (null == v) {
+                    LOG.error("Unbekannte Veranstaltung zu id: " + toAdd);
+                } else {
                     user.addVeranstaltung(v);
                 }
             }
         }
 
         if (user instanceof Referent r) {
-            r.biography = dto.biography;
-            r.jobRole = dto.jobRole;
-            r.organisation = dto.organisation;
-            r.slogan = dto.slogan;
+            r.biography = r.biography;
+            r.jobRole = r.jobRole;
+            r.organisation = r.organisation;
+            r.slogan = r.slogan;
         } else if (user instanceof Teilnehmer t) {
-            t.gruppe = dto.gruppe;
+            t.gruppe = t.gruppe;
         }
-
-        user.persist();
 
         return mapToDto(user);
-    }
-
-    @Transactional
-    public void inviteUserToEvent(Long userId, Long eventId) {
-        User user = User.findById(userId);
-        Veranstaltung event = Veranstaltung.findById(eventId);
-
-        if (user == null || event == null) {
-            throw new IllegalArgumentException("Benutzer oder Veranstaltung nicht gefunden.");
-        }
-
-        if (event.endetAm != null && event.endetAm.isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Die Veranstaltung ist bereits beendet.");
-        }
-
-        if (!user.veranstaltungen.contains(event)) {
-            user.veranstaltungen.add(event);
-            mailService.sendEventInvitation(user, event);
-        }
     }
 
     private UserDto mapToDto(User u) {
@@ -162,7 +147,7 @@ public class AdminService {
         dto.lastName = u.lastName;
         dto.role = u.role;
         dto.isActive = u.isActive;
-        dto.veranstaltungIds = u.veranstaltungen.stream().map(v -> v.id).toList();
+        dto.veranstaltungIds = null != u.veranstaltungen ? u.veranstaltungen.stream().map(v -> v.id).toList() : Collections.emptyList();
 
         if (u instanceof Referent r) {
             dto.biography = r.biography;
@@ -174,6 +159,9 @@ public class AdminService {
         }
         return dto;
     }
+
+    // ... (Restliche Methoden für Vorträge, Slots etc. analog anpassen oder beibehalten) ...
+    // Hinweis: Auch für Vorträge sollten wir DTOs nutzen, um Zyklen zu vermeiden!
 
     @Transactional
     public boolean deleteUser(Long id) {
@@ -193,7 +181,7 @@ public class AdminService {
     }
 
     public List<User> getAllReferenten(Long veranstaltungId) {
-        return User.find("select u from User u join u.veranstaltungen v where u.role = 'REFERENT' and v.id = ?1", veranstaltungId).list();
+        return User.find("role = 'REFERENT' and veranstaltung.id = ?1", veranstaltungId).list();
     }
 
     @Transactional
