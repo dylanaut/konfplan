@@ -11,6 +11,8 @@ import io.quarkus.security.jpa.Username;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "User")
@@ -55,10 +57,14 @@ public abstract class User extends VersionedEntity {
     @Column(name = "reset_token_expiry")
     public LocalDateTime resetTokenExpiry;
 
-    @ManyToOne(fetch = FetchType.EAGER) // EAGER um sicherzustellen, dass sie geladen wird
-    @JoinColumn(name = "veranstaltung_id", columnDefinition = "INTEGER")
-    @JsonIgnoreProperties({"organisator", "gebaeude", "eventSlots"})
-    public Veranstaltung veranstaltung;
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "User_Veranstaltung",
+        joinColumns = @JoinColumn(name = "user_id", columnDefinition = "INTEGER"),
+        inverseJoinColumns = @JoinColumn(name = "veranstaltung_id", columnDefinition = "INTEGER")
+    )
+    @JsonIgnoreProperties({"organisator", "gebaeude", "eventSlots", "teilnehmer"})
+    public Set<Veranstaltung> veranstaltungen = new HashSet<>();
 
     public User() {
     }
@@ -67,12 +73,13 @@ public abstract class User extends VersionedEntity {
         return find("email", e).firstResult();
     }
 
-    // Explizite Getter/Setter für bessere Kompatibilität und Debugging
-    public Veranstaltung getVeranstaltung() {
-        return veranstaltung;
+    public void addVeranstaltung(Veranstaltung v) {
+        this.veranstaltungen.add(v);
+        v.benutzer.add(this); // Aktualisiert die Rückrichtung im Speicher
     }
 
-    public void setVeranstaltung(Veranstaltung veranstaltung) {
-        this.veranstaltung = veranstaltung;
+    public void removeVeranstaltung(Veranstaltung v) {
+        this.veranstaltungen.remove(v);
+        v.benutzer.remove(this);
     }
 }

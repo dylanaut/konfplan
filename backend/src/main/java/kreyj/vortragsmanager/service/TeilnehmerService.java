@@ -4,11 +4,13 @@ import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.dto.csv.TeilnehmerCsvDto;
 import kreyj.vortragsmanager.entity.Teilnehmer;
 import kreyj.vortragsmanager.entity.User;
 import kreyj.vortragsmanager.entity.Veranstaltung;
+import kreyj.vortragsmanager.util.SQLiteBackup;
 import org.jboss.logging.Logger;
 
 import java.io.FileReader;
@@ -21,8 +23,11 @@ public class TeilnehmerService {
 
     private static final Logger LOG = Logger.getLogger(TeilnehmerService.class);
 
+    @Inject
+    SQLiteBackup backupService;
+
     public List<User> findAll(Long veranstaltungId) {
-        return User.find("role = 'TEILNEHMER' and veranstaltung.id = ?1", veranstaltungId).list();
+        return User.find("select u from User u join u.veranstaltungen v where u.role = 'TEILNEHMER' and v.id = ?1", veranstaltungId).list();
     }
 
     public User findById(Long id) {
@@ -42,7 +47,7 @@ public class TeilnehmerService {
         Veranstaltung v = Veranstaltung.findById(veranstaltungId);
         if (v == null) throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
 
-        user.veranstaltung = v;
+        user.veranstaltungen.add(v);
         String tempPassword = UUID.randomUUID().toString();
         user.passwordHash = BcryptUtil.bcryptHash(tempPassword);
         
@@ -64,6 +69,7 @@ public class TeilnehmerService {
                     .withType(TeilnehmerCsvDto.class)
                     .withIgnoreLeadingWhiteSpace(true)
                     .withSeparator(';')
+                    .withFilter(line -> line.length > 0 && !line[0].startsWith("#"))
                     .withThrowExceptions(false)
                     .build();
 
@@ -80,22 +86,26 @@ public class TeilnehmerService {
                 }
                 
                 String email = dto.email.trim().toLowerCase();
-                if (User.findByEmail(email) == null) {
-                    Teilnehmer nt = new Teilnehmer();
+                User existing = User.findByEmail(email);
+                Teilnehmer nt;
+                if (existing == null) {
+                    nt = new Teilnehmer();
                     nt.email = email;
                     nt.firstName = dto.firstName;
                     nt.lastName = dto.lastName;
                     nt.gruppe = dto.gruppe;
-                    nt.veranstaltung = v;
-
-                    String tempPassword = "start123"; // UUID.randomUUID().toString();
+                    String tempPassword = "start123";
                     nt.passwordHash = BcryptUtil.bcryptHash(tempPassword);
-
                     nt.persist();
-                    count++;
+                } else if (existing instanceof Teilnehmer) {
+                    nt = (Teilnehmer) existing;
                 } else {
-                    LOG.warn("Teilnehmer übersprungen: Email " + email + " existiert bereits.");
+                    LOG.warn("User " + email + " exists but is not a Teilnehmer. Skipping.");
+                    continue;
                 }
+
+                nt.veranstaltungen.add(v);
+                count++;
             }
         } catch (Exception e) {
             LOG.error("Kritischer Fehler beim Importieren der Teilnehmer aus CSV: " + csvFilePath, e);
@@ -127,7 +137,12 @@ public class TeilnehmerService {
         tn.email = teilnehmer.email == null ? existing.email : teilnehmer.email.trim().toLowerCase();
         tn.gruppe = teilnehmer.gruppe;
         tn.isActive = teilnehmer.isActive;
-        tn.veranstaltung = Veranstaltung.findById(veranstaltungId);
+        
+        if (veranstaltungId != null) {
+            Veranstaltung v = Veranstaltung.findById(veranstaltungId);
+            if (v != null) tn.veranstaltungen.add(v);
+        }
+
         return tn;
     }
 }

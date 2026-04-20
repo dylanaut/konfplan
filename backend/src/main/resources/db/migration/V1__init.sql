@@ -1,6 +1,7 @@
 -- Flyway Migration für SQLite - Gebäude- und Raumverwaltung mit Version
 
 DROP TABLE IF EXISTS Veranstaltung_Gebaeude;
+DROP TABLE IF EXISTS User_Veranstaltung;
 DROP TABLE IF EXISTS Zuweisung;
 DROP TABLE IF EXISTS Wahlvortrag_EventSlot;
 DROP TABLE IF EXISTS Verfuegbarkeit;
@@ -32,9 +33,7 @@ CREATE TABLE IF NOT EXISTS User
     job_role           VARCHAR(100),
     organisation       VARCHAR(255),
     slogan             VARCHAR(255),
-    gruppe             VARCHAR(255),
-    veranstaltung_id   INTEGER,
-    FOREIGN KEY (veranstaltung_id) REFERENCES Veranstaltung (id)
+    gruppe             VARCHAR(255)
 );
 
 -- 2. Veranstaltung
@@ -46,10 +45,8 @@ CREATE TABLE IF NOT EXISTS Veranstaltung
     endetAm        TIMESTAMP,
     logo           VARCHAR(255),
     logo_link      VARCHAR(255),
-    organisator_id INTEGER      NOT NULL,
     version        BIGINT       NOT NULL DEFAULT 1,
-    UNIQUE (name, beginntAm),
-    FOREIGN KEY (organisator_id) REFERENCES User (id)
+    UNIQUE (name, beginntAm)
 );
 
 -- 3. Gebaeude
@@ -97,6 +94,14 @@ CREATE TABLE IF NOT EXISTS Veranstaltung_Gebaeude
     PRIMARY KEY (veranstaltung_id, gebaeude_id),
     FOREIGN KEY (veranstaltung_id) REFERENCES Veranstaltung (id) ON DELETE CASCADE,
     FOREIGN KEY (gebaeude_id) REFERENCES Gebaeude (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS User_Veranstaltung (
+    user_id INTEGER NOT NULL,
+    veranstaltung_id INTEGER NOT NULL,
+    PRIMARY KEY (user_id, veranstaltung_id),
+    FOREIGN KEY (user_id) REFERENCES User (id) ON DELETE CASCADE,
+    FOREIGN KEY (veranstaltung_id) REFERENCES Veranstaltung (id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS Raum_EventSlot

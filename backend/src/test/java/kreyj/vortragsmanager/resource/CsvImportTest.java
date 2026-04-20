@@ -30,7 +30,6 @@ class CsvImportTest {
         Vortrag.deleteAll();
         EventSlot.deleteAll();
 
-        User.update("veranstaltung = null");
         Veranstaltung.deleteAll();
         User.deleteAll();
 
@@ -65,7 +64,7 @@ class CsvImportTest {
         Veranstaltung v = new Veranstaltung();
         v.name = "Basis Event " + System.currentTimeMillis();
         v.beginntAm = LocalDateTime.of(2025, 10, 10, 9, 0);
-        v.organisator = admin;
+        admin.addVeranstaltung(v);
         v.gebaeude.addAll(gebaeudeList);
         v.persist();
 
@@ -172,7 +171,7 @@ class CsvImportTest {
         r.firstName = "Max";
         r.lastName = "Ref";
         r.passwordHash = "hash";
-        r.setVeranstaltung(Veranstaltung.findById(testVid));
+        r.veranstaltungen.add(Veranstaltung.findById(testVid));
         r.persist();
         QuarkusTransaction.commit();
 

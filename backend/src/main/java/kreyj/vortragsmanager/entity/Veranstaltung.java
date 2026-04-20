@@ -1,5 +1,6 @@
 package kreyj.vortragsmanager.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import kreyj.vortragsmanager.entity.converter.LocalDateTimeConverter;
 
@@ -8,10 +9,11 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"name", "beginntAm"})
+        @UniqueConstraint(columnNames = {"name", "beginntAm"})
 })
 public class Veranstaltung extends VersionedEntity {
 
@@ -29,18 +31,36 @@ public class Veranstaltung extends VersionedEntity {
 
     public String logo_link;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "organisator_id", columnDefinition = "INTEGER")
-    public User organisator;
-
     @ManyToMany
     @JoinTable(
-        name = "Veranstaltung_Gebaeude",
-        joinColumns = @JoinColumn(name = "veranstaltung_id", columnDefinition = "INTEGER"),
-        inverseJoinColumns = @JoinColumn(name = "gebaeude_id", columnDefinition = "INTEGER")
+            name = "Veranstaltung_Gebaeude",
+            joinColumns = @JoinColumn(name = "veranstaltung_id", columnDefinition = "INTEGER"),
+            inverseJoinColumns = @JoinColumn(name = "gebaeude_id", columnDefinition = "INTEGER")
     )
     public List<Gebaeude> gebaeude = new ArrayList<>();
 
     @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL)
     public Set<EventSlot> eventSlots = new HashSet<>();
+
+    @ManyToMany(mappedBy = "veranstaltungen")
+    @JsonIgnoreProperties("veranstaltungen")
+    public Set<User> benutzer = new HashSet<>();
+
+    public Set<Admin> organisatoren() {
+        return benutzer.stream().filter(u -> u instanceof Admin)
+                .map(u -> (Admin) u)
+                .collect(Collectors.toSet());
+    }
+
+    public Set<Teilnehmer> teilnehmer() {
+        return benutzer.stream().filter(u -> u instanceof Teilnehmer)
+                .map(u -> (Teilnehmer) u)
+                .collect(Collectors.toSet());
+    }
+
+    public Set<Referent> referenten() {
+        return benutzer.stream().filter(u -> u instanceof Referent)
+                .map(u -> (Referent) u)
+                .collect(Collectors.toSet());
+    }
 }

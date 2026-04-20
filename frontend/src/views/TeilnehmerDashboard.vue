@@ -2,13 +2,13 @@
   <div class="max-w-6xl mx-auto space-y-8 pb-20">
 
     <!-- MODUS: MEIN PLAN -->
-    <section v-if="myPlan.length > 0" class="bg-indigo-900 text-white p-8 rounded-2xl shadow-2xl animate-fade-in">
+    <section v-if="zuweisungen.length > 0" class="bg-indigo-900 text-white p-8 rounded-2xl shadow-2xl animate-fade-in">
       <div class="flex items-center gap-3 mb-6">
         <CalendarCheckIcon class="w-8 h-8 text-indigo-300" />
         <h2 class="text-3xl font-black">Mein Vortragsplan</h2>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div v-for="z in myPlan" :key="z.id" class="bg-white/10 border border-white/20 p-5 rounded-xl backdrop-blur-sm">
+        <div v-for="z in zuweisungen" :key="z.id" class="bg-white/10 border border-white/20 p-5 rounded-xl backdrop-blur-sm">
           <div class="text-[10px] uppercase font-bold text-indigo-300 mb-1">{{ z.slotZeit }}</div>
           <h3 class="text-lg font-bold mb-2">{{ z.vortragTitel }}</h3>
           <div class="flex items-center gap-2 text-sm text-indigo-100">
@@ -78,7 +78,7 @@
             </div>
             <template v-else>
               <select
-                  :disabled="myPlan.length > 0"
+                  :disabled="zuweisungen.length > 0"
                   :value="getCurrentPriority(vortrag.id) || ''"
                   @change="updatePriority(vortrag.id, $event.target.value)"
                   class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-gray-100 disabled:text-gray-400"
@@ -94,7 +94,7 @@
       </div>
 
       <!-- Save Button -->
-      <div v-if="myPlan.length === 0" class="fixed bottom-6 right-6 lg:static lg:mt-8 lg:flex lg:justify-end">
+      <div v-if="zuweisungen.length === 0" class="fixed bottom-6 right-6 lg:static lg:mt-8 lg:flex lg:justify-end">
         <button @click="saveAllPriorities" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full shadow-lg font-bold flex items-center gap-2">
           <SaveIcon class="w-5 h-5" /> Auswahl speichern
         </button>
@@ -114,43 +114,43 @@ import {
 
 const eventContext = useEventContextStore();
 const vortraege = ref([]);
-const myPriorities = ref([]);
-const myPlan = ref([]);
+const prios = ref([]);
+const zuweisungen = ref([]);
 
 onMounted(async () => {
   try {
-    const planRes = await api.get('/api/participant/my-plan');
-    myPlan.value = planRes.data;
+    const zuweisungenRes = await api.get('/api/teilnehmer/zuweisungen');
+    zuweisungen.value = zuweisungenRes.data;
 
-    const veranstaltungRes = await api.get('/api/participant/my-event');
+    const veranstaltungRes = await api.get('/api/teilnehmer/event');
     eventContext.setEvent(veranstaltungRes.data);
 
     const [vortragRes, prioRes] = await Promise.all([
-      api.get('/api/admin/vortraege'), // TODO: Teilnehmer-spezifischer Endpunkt
-      api.get('/api/teilnehmer/priorities')
+      api.get('/api/admin/vortraege'),
+      api.get('/api/teilnehmer/prios')
     ]);
     vortraege.value = vortragRes.data;
-    myPriorities.value = prioRes.data.map(p => ({ vortragId: p.vortrag.id, prioWert: p.prioWert }));
+    prios.value = prioRes.data.map(p => ({ vortragId: p.vortrag.id, prioWert: p.prioWert }));
   } catch (err) {
     console.error("Fehler beim Laden:", err);
   }
 });
 
-const getCurrentPriority = (vortragId) => myPriorities.value.find(p => p.vortragId === vortragId)?.prioWert;
-const isRankTaken = (rank) => myPriorities.value.some(p => p.prioWert == rank);
+const getCurrentPriority = (vortragId) => prios.value.find(p => p.vortragId === vortragId)?.prioWert;
+const isRankTaken = (rank) => prios.value.some(p => p.prioWert == rank);
 
 const updatePriority = (vortragId, value) => {
-  if (myPlan.value.length > 0) return;
-  myPriorities.value = myPriorities.value.filter(p => p.vortragId !== vortragId);
+  if (zuweisungen.value.length > 0) return;
+  prios.value = prios.value.filter(p => p.vortragId !== vortragId);
   if (value !== "") {
-    myPriorities.value = myPriorities.value.filter(p => p.prioWert != value);
-    myPriorities.value.push({ vortragId, prioWert: parseInt(value) });
+    prios.value = prios.value.filter(p => p.prioWert != value);
+    prios.value.push({ vortragId, prioWert: parseInt(value) });
   }
 };
 
 const saveAllPriorities = async () => {
   try {
-    const payload = myPriorities.value.map(p => ({ vortragId: p.vortragId, prioWert: p.prioWert }));
+    const payload = prios.value.map(p => ({ vortragId: p.vortragId, prioWert: p.prioWert }));
     await api.post('/api/teilnehmer/priorities', payload);
     alert("Erfolgreich gespeichert!");
   } catch (e) {

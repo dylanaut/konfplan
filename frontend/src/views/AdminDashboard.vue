@@ -166,7 +166,7 @@
                           <tr><th class="px-3 py-1.5 text-left">Name</th><th class="px-3 py-1.5 text-left">Prios</th></tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                          <tr v-for="part in participants" :key="part.id" class="hover:bg-indigo-50/30 transition">
+                          <tr v-for="part in teilnehmer" :key="part.id" class="hover:bg-indigo-50/30 transition">
                             <td class="px-3 py-1.5 font-semibold text-gray-800" :title="part.email">{{ part.lastName }}, {{ part.firstName }}</td>
                             <td class="px-3 py-1.5 text-gray-500">{{ part.prioritaeten?.map(p => `${p.vortragId}:${p.prioWert}`).join(', ') || '-' }}</td>
                           </tr>
@@ -200,7 +200,7 @@
                       </tr>
                    </thead>
                    <tbody class="divide-y divide-gray-100">
-                      <tr v-for="s in speakers" :key="s.id">
+                      <tr v-for="s in referenten" :key="s.id">
                          <td class="px-3 py-2 font-medium" :title="s.email">{{ s.lastName }}</td>
                          <td v-for="slot in sortedSlots" :key="slot.id" class="px-2 py-2 text-center">
                             <input type="checkbox" :checked="isAvailable(s.id, slot.id)" @change="toggleAvailability(s.id, slot.id, $event.target.checked)" class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3" />
@@ -224,7 +224,7 @@
                       </tr>
                    </thead>
                    <tbody class="divide-y divide-gray-100">
-                      <tr v-for="p in participants" :key="p.id">
+                      <tr v-for="p in teilnehmer" :key="p.id">
                          <td class="px-3 py-2 font-medium" :title="p.email">{{ p.lastName }}</td>
                          <td v-for="slot in sortedSlots" :key="slot.id" class="px-2 py-2 text-center">
                             <input type="checkbox" :checked="isAvailable(p.id, slot.id)" @change="toggleAvailability(p.id, slot.id, $event.target.checked)" class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3" />
@@ -384,7 +384,10 @@
               <td class="px-4 py-2 font-bold" :title="u.email">{{ u.lastName }}, {{ u.firstName }}</td>
               <td class="px-4 py-2 text-gray-500">{{ u.gruppe }}</td>
               <td class="px-4 py-2 text-right">
-                <button @click="openUserModal(u)" class="text-indigo-600" title="Bearbeiten">
+                <button @click="openInviteModal(u)" class="text-indigo-600 ml-3" title="Einladen">
+                  <MailIcon class="w-3.5 h-3.5 inline"/>
+                </button>
+                <button @click="openUserModal(u)" class="text-indigo-600 ml-3" title="Bearbeiten">
                   <PencilIcon class="w-3.5 h-3.5 inline"/>
                 </button>
                 <button @click="deleteUser(u.id)" class="text-red-600 ml-3">
@@ -422,7 +425,10 @@
             <tr v-for="u in paginatedSpeakers" :key="u.id" class="hover:bg-gray-50">
               <td class="px-4 py-2 font-bold" :title="u.email">{{ u.lastName }}, {{ u.firstName }}</td>
               <td class="px-4 py-2 text-right">
-                <button @click="openUserModal(u)" class="text-indigo-600" title="Bearbeiten">
+                <button @click="openInviteModal(u)" class="text-indigo-600 ml-3" title="Einladen">
+                  <MailIcon class="w-3.5 h-3.5 inline"/>
+                </button>
+                <button @click="openUserModal(u)" class="text-indigo-600 ml-3" title="Bearbeiten">
                   <PencilIcon class="w-3.5 h-3.5 inline"/>
                 </button>
                 <button @click="deleteUser(u.id)" class="text-red-600 ml-3">
@@ -599,11 +605,13 @@
                      @close="showRaumModal = false" @save="handleSaveRaum"/>
     <UserEditorModal :isVisible="showUserModal" :user="selectedUser" :eventSlots="eventSlots"
                      @close="showUserModal = false" @save="handleSaveUser"/>
-    <AdminVortragEditorModal :isVisible="showVortragModal" :vortrag="selectedVortrag" :referenten="speakers"
+    <AdminVortragEditorModal :isVisible="showVortragModal" :vortrag="selectedVortrag" :referenten="referenten"
                              :raeume="raeume" :slots="eventSlots" @close="showVortragModal = false"
                              @save="handleSaveVortrag"/>
     <EventSlotEditorModal :isVisible="showSlotModal" :slot="selectedSlot" @close="showSlotModal = false"
                           @save="handleSaveSlot"/>
+    <InviteUserModal :isVisible="showInviteModal" :user="selectedUserForInvite" :futureEvents="futureEvents"
+                     @close="showInviteModal = false" @invite="handleInviteUser"/>
 
     <!-- CSV Import Feedback Modal -->
     <div v-if="showCsvFeedbackModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -644,7 +652,9 @@ import {
   Upload as UploadIcon,
   Zap as ZapIcon,
   Pencil as PencilIcon,
-  Users as UsersIcon
+  Users as UsersIcon,
+  User as UserIcon,
+  Mail as MailIcon
 } from 'lucide-vue-next';
 import AdminVortragEditorModal from '../components/AdminVortragEditorModal.vue';
 import UserEditorModal from '../components/UserEditorModal.vue';
@@ -652,6 +662,7 @@ import VeranstaltungEditorModal from '../components/VeranstaltungEditorModal.vue
 import RaumEditorModal from '../components/RaumEditorModal.vue';
 import EventSlotEditorModal from '../components/EventSlotEditorModal.vue';
 import GebaeudeEditorModal from '../components/GebaeudeEditorModal.vue';
+import InviteUserModal from '../components/InviteUserModal.vue';
 
 const eventContext = useEventContextStore();
 
@@ -739,6 +750,8 @@ const showVortragModal = ref(false);
 const selectedVortrag = ref(null);
 const showSlotModal = ref(false);
 const selectedSlot = ref(null);
+const showInviteModal = ref(false);
+const selectedUserForInvite = ref(null);
 
 const isOptimizing = ref(false);
 const solverConfig = reactive({solver: 'OR-tools', timeout: 120});
@@ -757,6 +770,14 @@ const visibleTabs = computed(() => {
   const base = ['veranstaltungen', 'gebaeude', 'administratoren'];
   if (selectedVid.value) return ['ergebnisse', 'planung', 'teilnehmer', 'referenten', 'vortraege', 'slots', 'raeume', 'verfuegbarkeiten', ...base];
   return base;
+});
+
+const futureEvents = computed(() => {
+  const now = new Date();
+  return veranstaltungen.value.filter(v => {
+    const endDate = v.endetAm ? new Date(v.endetAm) : new Date(v.beginntAm);
+    return endDate > now;
+  });
 });
 
 // --- Generic Filter, Sort & Paginate Logic ---
@@ -811,8 +832,8 @@ const sortRaeume = (raumList) => {
 };
 
 const admins = computed(() => users.value.filter(u => u.role === 'ADMIN'));
-const speakers = computed(() => users.value.filter(u => u.role === 'REFERENT'));
-const participants = computed(() => users.value.filter(u => u.role === 'TEILNEHMER'));
+const referenten = computed(() => users.value.filter(u => u.role === 'REFERENT'));
+const teilnehmer = computed(() => users.value.filter(u => u.role === 'TEILNEHMER'));
 
 const filteredVeranstaltungen = computed(() => processList(veranstaltungen.value, filters.veranstaltungen, sorts.veranstaltungen));
 const paginatedVeranstaltungen = computed(() => paginate(filteredVeranstaltungen.value, pages.veranstaltungen));
@@ -823,10 +844,10 @@ const paginatedGebaeude = computed(() => paginate(filteredGebaeude.value, pages.
 const filteredAdmins = computed(() => processList(admins.value, filters.admins, sorts.admins));
 const paginatedAdmins = computed(() => paginate(filteredAdmins.value, pages.admins));
 
-const filteredSpeakers = computed(() => processList(speakers.value, filters.referenten, sorts.referenten));
+const filteredSpeakers = computed(() => processList(referenten.value, filters.referenten, sorts.referenten));
 const paginatedSpeakers = computed(() => paginate(filteredSpeakers.value, pages.referenten));
 
-const filteredParticipants = computed(() => processList(participants.value, filters.teilnehmer, sorts.teilnehmer));
+const filteredParticipants = computed(() => processList(teilnehmer.value, filters.teilnehmer, sorts.teilnehmer));
 const paginatedParticipants = computed(() => paginate(filteredParticipants.value, pages.teilnehmer));
 
 const filteredVortraege = computed(() => processList(vortraege.value, filters.vortraege, sorts.vortraege));
@@ -1007,7 +1028,7 @@ const openUserModal = (u) => {
     role: u?.role || 'TEILNEHMER',
     isActive: true,
     gruppe: '',
-    veranstaltungId: selectedVid.value
+    veranstaltungIds: selectedVid.value ? [selectedVid.value] : []
   };
   showUserModal.value = true;
 };
@@ -1043,6 +1064,21 @@ const deleteUser = async (id) => {
     } catch (e) {
       console.error('Fehler beim Löschen des Benutzers:', e);
     }
+  }
+};
+
+const openInviteModal = (u) => {
+  selectedUserForInvite.value = u;
+  showInviteModal.value = true;
+};
+const handleInviteUser = async ({ userId, eventId }) => {
+  try {
+    await api.post(`/api/admin/benutzer/${userId}/einladen/${eventId}`);
+    alert("Einladung erfolgreich versendet!");
+    showInviteModal.value = false;
+    await loadData();
+  } catch (e) {
+    alert("Fehler beim Einladen: " + (e.response?.data || e.message));
   }
 };
 

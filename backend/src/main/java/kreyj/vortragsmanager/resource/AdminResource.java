@@ -35,20 +35,32 @@ public class AdminResource {
 
     @POST
     @Path("/benutzer")
-    public UserDto createUser(UserDto dto) {
-        return adminService.createUser(dto, dto.veranstaltungId);
+    public Response createUser(UserDto dto) {
+        UserDto created = adminService.createUser(dto, dto.veranstaltungIds);
+        return Response.status(Response.Status.CREATED).entity(created).build();
     }
 
     @PUT
     @Path("/benutzer/{id}")
     public UserDto updateUser(@PathParam("id") Long id, UserDto dto) {
-        return adminService.updateUser(id, dto, dto.veranstaltungId);
+        return adminService.updateUser(id, dto, dto.veranstaltungIds);
     }
 
     @DELETE
     @Path("/benutzer/{id}")
     public void deleteUser(@PathParam("id") Long id) {
         adminService.deleteUser(id);
+    }
+
+    @POST
+    @Path("/benutzer/{userId}/einladen/{eventId}")
+    public Response inviteUser(@PathParam("userId") Long userId, @PathParam("eventId") Long eventId) {
+        try {
+            adminService.inviteUserToEvent(userId, eventId);
+            return Response.ok("Benutzer erfolgreich eingeladen.").build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
     }
 
     @POST
@@ -66,12 +78,12 @@ public class AdminResource {
     @GET
     @Path("/veranstaltung/{vid}/verfuegbarkeiten")
     public List<VerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
-        return Verfuegbarkeit.find("user.veranstaltung.id = ?1", vid).stream()
+        return Verfuegbarkeit.find("select v from Verfuegbarkeit v join v.user u join u.veranstaltungen va where va.id = ?1", vid).stream()
                 .map(v -> {
                     Verfuegbarkeit vf = (Verfuegbarkeit) v;
                     return new VerfuegbarkeitDto(vf.user.id, vf.slot.id, vf.isAvailable);
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @POST

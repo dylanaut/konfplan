@@ -34,7 +34,6 @@ class CsvFileImportTest {
         Vortrag.deleteAll();
         EventSlot.deleteAll();
 
-        User.update("veranstaltung = null");
         Veranstaltung.deleteAll();
         User.deleteAll();
 

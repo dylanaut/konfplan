@@ -7,8 +7,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.RefProfilDto;
 import kreyj.vortragsmanager.dto.RefVortragDto;
+import kreyj.vortragsmanager.dto.ReferentVeranstaltungDto;
 import kreyj.vortragsmanager.dto.ZuweisungDto;
-import kreyj.vortragsmanager.entity.Vortrag;
 import kreyj.vortragsmanager.entity.User;
 import kreyj.vortragsmanager.service.PlanService;
 import kreyj.vortragsmanager.service.ReferentService;
@@ -95,6 +95,26 @@ public class ReferentResource {
     public Response setDayAvailability(@QueryParam("date") String dateStr, @QueryParam("available") boolean available) {
         LocalDate date = LocalDate.parse(dateStr);
         referentService.toggleEntireDay(jwt.getSubject(), date, available);
+        return Response.ok().build();
+    }
+
+    @GET
+    @Path("/events-for-registration")
+    public List<ReferentVeranstaltungDto> getEventsForRegistration() {
+        return referentService.getEventsForRegistration(jwt.getSubject());
+    }
+
+    @POST
+    @Path("/events/{vid}/vortraege/{tid}/register")
+    public Response registerTalkForEvent(@PathParam("vid") Long vid, @PathParam("tid") Long tid) {
+        referentService.registerTalkForEvent(jwt.getSubject(), tid, vid);
+        return Response.ok().build();
+    }
+
+    @DELETE
+    @Path("/events/{vid}/vortraege/{tid}/deregister")
+    public Response deregisterTalkFromEvent(@PathParam("vid") Long vid, @PathParam("tid") Long tid) {
+        referentService.deregisterTalkFromEvent(jwt.getSubject(), tid, vid);
         return Response.ok().build();
     }
 }

@@ -13,6 +13,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
+import static jakarta.ws.rs.core.Response.Status.CREATED;
+import static jakarta.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.matchesPattern;
 
@@ -33,16 +35,12 @@ class UserPersistenceTest {
         EventSlot.deleteAll();
         Raum.deleteAll();
 
-        // 2. Zyklus User <-> Veranstaltung aufbrechen
-        User.update("veranstaltung = null");
-//        Veranstaltung.update("organisator = null");
-
-        // 3. Jetzt können wir alles löschen
+        // 2. Jetzt können wir alles löschen
         Veranstaltung.deleteAll();
         User.deleteAll();
         Gebaeude.deleteAll();
 
-        // 4. Test-Daten neu aufbauen
+        // 3. Test-Daten neu aufbauen
         Gebaeude g = new Gebaeude();
         g.name = "Test Gebäude";
         g.strasse = "Teststraße";
@@ -60,8 +58,9 @@ class UserPersistenceTest {
         v.name = TEST_VERANSTALTUNG + "_" + System.currentTimeMillis();
         v.beginntAm = LocalDateTime.now();
         v.gebaeude = List.of(g);
-        v.organisator = admin;
         v.persist();
+        admin.addVeranstaltung(v);
+        admin.persist();
         testVid = v.id;
     }
 
@@ -86,22 +85,23 @@ class UserPersistenceTest {
                     "firstName": "Jens",
                     "lastName": "Riewa",
                     "jobRole": "Nachrichtensprecher",
-                    "biography": "Lange Erfahrung im TV."
+                    "biography": "Lange Erfahrung im TV.",
+                    "veranstaltungIds": %s
                 }
-                """;
+                """.formatted(List.of(testVid));
 
         given()
                 .contentType(ContentType.JSON)
                 .body(json)
-                .when().post("/api/veranstaltungen/{vid}/benutzer", testVid)
+                .when().post("/api/admin/benutzer")
                 .then()
-                .statusCode(201)
+                .statusCode(CREATED.getStatusCode())
                 .body("role", is("REFERENT"));
 
         Referent ref = (Referent) User.findByEmail("referent@test.de");
         Assertions.assertNotNull(ref);
-        Assertions.assertNotNull(ref.getVeranstaltung(), "Veranstaltung sollte gesetzt sein");
-        Assertions.assertEquals(testVid, ref.getVeranstaltung().id);
+        Assertions.assertNotNull(ref.veranstaltungen, "Veranstaltung sollte gesetzt sein");
+        Assertions.assertEquals(testVid, ref.veranstaltungen.iterator().next().id);
     }
 
     @Test
@@ -113,22 +113,23 @@ class UserPersistenceTest {
                     "email": "schueler@test.de",
                     "firstName": "Peter",
                     "lastName": "Müller",
-                    "gruppe": "10a"
+                    "gruppe": "10a",
+                    "veranstaltungIds": %s
                 }
-                """;
+                """.formatted(List.of(testVid));
 
         given()
                 .contentType(ContentType.JSON)
                 .body(json)
-                .when().post("/api/veranstaltungen/{vid}/benutzer", testVid)
+                .when().post("/api/admin/benutzer")
                 .then()
-                .statusCode(201)
+                .statusCode(CREATED.getStatusCode())
                 .body("role", is("TEILNEHMER"));
 
         Teilnehmer teil = (Teilnehmer) User.findByEmail("schueler@test.de");
         Assertions.assertNotNull(teil);
         Assertions.assertEquals("10a", teil.gruppe);
-        Assertions.assertNotNull(teil.getVeranstaltung(), "Veranstaltung sollte gesetzt sein");
-        Assertions.assertEquals(testVid, teil.getVeranstaltung().id);
+        Assertions.assertNotNull(teil.veranstaltungen, "Veranstaltung sollte gesetzt sein");
+        Assertions.assertEquals(testVid, teil.veranstaltungen.iterator().next().id);
     }
 }

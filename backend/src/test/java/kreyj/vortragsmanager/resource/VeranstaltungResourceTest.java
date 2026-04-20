@@ -83,7 +83,7 @@ class VeranstaltungResourceTest {
         t.email = "new@test.de";
         t.role = "TEILNEHMER";
 
-        Mockito.when(adminService.createUser(Mockito.any(), Mockito.eq(vid))).thenReturn(t);
+        Mockito.when(adminService.createUser(Mockito.any(), Mockito.anyList())).thenReturn(t);
 
         given()
                 .contentType(ContentType.JSON)

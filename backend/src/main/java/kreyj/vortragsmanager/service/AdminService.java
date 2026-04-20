@@ -4,9 +4,11 @@ import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
-import kreyj.vortragsmanager.dto.*;
+import kreyj.vortragsmanager.dto.UserDto;
+import kreyj.vortragsmanager.dto.VortragStatDto;
 import kreyj.vortragsmanager.dto.csv.AdminCsvDto;
 import kreyj.vortragsmanager.dto.csv.EventSlotCsvDto;
 import kreyj.vortragsmanager.dto.csv.VortragCsvDto;
@@ -27,9 +29,12 @@ public class AdminService {
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
+    @Inject
+    MailService mailService;
+
     public List<UserDto> getAllUsers(Long veranstaltungId) {
         List<User> globals = User.list("role = 'ADMIN'");
-        List<User> localized = User.list("veranstaltung.id = ?1", veranstaltungId);
+        List<User> localized = User.find("select u from User u join u.veranstaltungen v where v.id = ?1", veranstaltungId).list();
 
         return Stream.concat(globals.stream(), localized.stream())
                 .distinct()
@@ -41,12 +46,18 @@ public class AdminService {
         return User.<User>listAll().stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
-    @Transactional
     public UserDto createUser(UserDto dto, Long veranstaltungId) {
-        User user;
-        if ("REFERENT".equals(dto.role)) user = new Referent();
-        else if ("TEILNEHMER".equals(dto.role)) user = new Teilnehmer();
-        else user = new Admin();
+        return createUser(dto, List.of(veranstaltungId));
+    }
+
+    @Transactional
+    public UserDto createUser(UserDto dto, List<Long> veranstaltungIds) {
+        User user = switch (dto.role) {
+            case "REFERENT" -> new Referent();
+            case "TEILNEHMER" -> new Teilnehmer();
+            case "ADMIN" -> new Admin();
+            case null, default -> throw new IllegalStateException("Rolle nicht spezifiziert");
+        };
 
         user.email = dto.email;
         user.firstName = dto.firstName;
@@ -57,45 +68,90 @@ public class AdminService {
             user.passwordHash = BcryptUtil.bcryptHash("start123");
         }
 
+        if (dto.veranstaltungIds != null) {
+            for (Long vid : dto.veranstaltungIds) {
+                Veranstaltung v = Veranstaltung.findById(vid);
+                if (v != null) {
+                    user.veranstaltungen.add(v);
+                    v.benutzer.add(user);
+                }
+            }
+        }
+
         if (user instanceof Referent r) {
             r.biography = dto.biography;
             r.jobRole = dto.jobRole;
             r.organisation = dto.organisation;
             r.slogan = dto.slogan;
-            r.veranstaltung = Veranstaltung.findById(veranstaltungId);
         } else if (user instanceof Teilnehmer t) {
             t.gruppe = dto.gruppe;
-            t.veranstaltung = Veranstaltung.findById(veranstaltungId);
+        }
+
+        user.persist();
+        if (null == user.role) {
+            user.role = dto.role;
+        }
+
+        return mapToDto(user);
+    }
+
+    public UserDto updateUser(Long id, UserDto dto, Long veranstaltungId) {
+        return updateUser(id, dto, List.of(veranstaltungId));
+    }
+
+    @Transactional
+    public UserDto updateUser(Long id, UserDto dto, List<Long> veranstaltungIds) {
+        User user = User.findById(id);
+        if (user == null) {
+            return null;
+        }
+
+        user.firstName = dto.firstName;
+        user.lastName = dto.lastName;
+        user.email = dto.email;
+        user.isActive = dto.isActive;
+
+        user.veranstaltungen.clear();
+        if (dto.veranstaltungIds != null) {
+            for (Long vid : dto.veranstaltungIds) {
+                Veranstaltung v = Veranstaltung.findById(vid);
+                if (v != null) {
+                    user.addVeranstaltung(v);
+                }
+            }
+        }
+
+        if (user instanceof Referent r) {
+            r.biography = dto.biography;
+            r.jobRole = dto.jobRole;
+            r.organisation = dto.organisation;
+            r.slogan = dto.slogan;
+        } else if (user instanceof Teilnehmer t) {
+            t.gruppe = dto.gruppe;
         }
 
         user.persist();
 
-        UserDto userDto = mapToDto(user);
-        userDto.role = dto.role;
-
-        return userDto;
+        return mapToDto(user);
     }
 
     @Transactional
-    public UserDto updateUser(Long id, UserDto dto, Long veranstaltungId) {
-        User entity = User.findById(id);
-        if (entity == null) return null;
+    public void inviteUserToEvent(Long userId, Long eventId) {
+        User user = User.findById(userId);
+        Veranstaltung event = Veranstaltung.findById(eventId);
 
-        entity.firstName = dto.firstName;
-        entity.lastName = dto.lastName;
-        entity.email = dto.email;
-        entity.isActive = dto.isActive;
-
-        if (entity instanceof Referent r) {
-            r.biography = r.biography;
-            r.jobRole = r.jobRole;
-            r.organisation = r.organisation;
-            r.slogan = r.slogan;
-        } else if (entity instanceof Teilnehmer t) {
-            t.gruppe = t.gruppe;
+        if (user == null || event == null) {
+            throw new IllegalArgumentException("Benutzer oder Veranstaltung nicht gefunden.");
         }
 
-        return mapToDto(entity);
+        if (event.endetAm != null && event.endetAm.isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Die Veranstaltung ist bereits beendet.");
+        }
+
+        if (!user.veranstaltungen.contains(event)) {
+            user.veranstaltungen.add(event);
+            mailService.sendEventInvitation(user, event);
+        }
     }
 
     private UserDto mapToDto(User u) {
@@ -106,7 +162,7 @@ public class AdminService {
         dto.lastName = u.lastName;
         dto.role = u.role;
         dto.isActive = u.isActive;
-        dto.veranstaltungId = u.veranstaltung != null ? u.veranstaltung.id : null;
+        dto.veranstaltungIds = u.veranstaltungen.stream().map(v -> v.id).toList();
 
         if (u instanceof Referent r) {
             dto.biography = r.biography;
@@ -119,9 +175,6 @@ public class AdminService {
         return dto;
     }
 
-    // ... (Restliche Methoden für Vorträge, Slots etc. analog anpassen oder beibehalten) ...
-    // Hinweis: Auch für Vorträge sollten wir DTOs nutzen, um Zyklen zu vermeiden!
-
     @Transactional
     public boolean deleteUser(Long id) {
         return User.deleteById(id);
@@ -130,7 +183,9 @@ public class AdminService {
     @Transactional
     public void toggleUserStatus(Long id) {
         User entity = User.findById(id);
-        if (entity != null) entity.isActive = !entity.isActive;
+        if (entity != null) {
+            entity.isActive = !entity.isActive;
+        }
     }
 
     public List<Vortrag> getAllVortraege(Long veranstaltungId) {
@@ -138,7 +193,7 @@ public class AdminService {
     }
 
     public List<User> getAllReferenten(Long veranstaltungId) {
-        return User.find("role = 'REFERENT' and veranstaltung.id = ?1", veranstaltungId).list();
+        return User.find("select u from User u join u.veranstaltungen v where u.role = 'REFERENT' and v.id = ?1", veranstaltungId).list();
     }
 
     @Transactional
@@ -161,8 +216,8 @@ public class AdminService {
 
             List<AdminCsvDto> beans = csvToBean.parse();
 
-            csvToBean.getCapturedExceptions().forEach(e -> 
-                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
+            csvToBean.getCapturedExceptions().forEach(e ->
+                    LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
             );
 
             for (AdminCsvDto dto : beans) {
@@ -224,8 +279,8 @@ public class AdminService {
 
             List<VortragCsvDto> beans = csvToBean.parse();
 
-            csvToBean.getCapturedExceptions().forEach(e -> 
-                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
+            csvToBean.getCapturedExceptions().forEach(e ->
+                    LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
             );
 
             for (VortragCsvDto dto : beans) {
@@ -246,7 +301,7 @@ public class AdminService {
                         pflichtvortrag.pflichtgruppe = dto.pflichtGruppe;
                         pflichtvortrag.pflichtslot = slotsByName.get(dto.pflichtSlot);
                         if (pflichtvortrag.pflichtslot == null && dto.pflichtSlot != null && !dto.pflichtSlot.isBlank()) {
-                             LOG.warn("Vortrag '" + v.titel + "': Slot '" + dto.pflichtSlot + "' nicht gefunden.");
+                            LOG.warn("Vortrag '" + v.titel + "': Slot '" + dto.pflichtSlot + "' nicht gefunden.");
                         }
 
                         Map<Gebaeude, Raum> gebaeudeRaumMap = raeumeByName.get(dto.pflichtRaum);
@@ -322,7 +377,7 @@ public class AdminService {
             throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
         }
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
-             CsvToBean<EventSlotCsvDto> csvToBean = new CsvToBeanBuilder<EventSlotCsvDto>(reader)
+            CsvToBean<EventSlotCsvDto> csvToBean = new CsvToBeanBuilder<EventSlotCsvDto>(reader)
                     .withType(EventSlotCsvDto.class)
                     .withSeparator(';')
                     .withIgnoreLeadingWhiteSpace(true)
@@ -331,8 +386,8 @@ public class AdminService {
 
             List<EventSlotCsvDto> beans = csvToBean.parse();
 
-            csvToBean.getCapturedExceptions().forEach(e -> 
-                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
+            csvToBean.getCapturedExceptions().forEach(e ->
+                    LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
             );
 
             for (EventSlotCsvDto dto : beans) {
@@ -364,7 +419,9 @@ public class AdminService {
     @Transactional
     public Vortrag updateVortrag(Long id, Vortrag updated, Long veranstaltungId) {
         Vortrag entity = Vortrag.findById(id);
-        if (entity == null || !entity.veranstaltung.id.equals(veranstaltungId)) return null;
+        if (entity == null || !entity.veranstaltung.id.equals(veranstaltungId)) {
+            return null;
+        }
         entity.titel = updated.titel;
         entity.inhalt = updated.inhalt;
         if (entity instanceof Pflichtvortrag pv && updated instanceof Pflichtvortrag updatedPv) {

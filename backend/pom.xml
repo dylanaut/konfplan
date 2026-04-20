@@ -97,6 +97,12 @@
             <version>${openpdf.version}</version>
         </dependency>
 
+        <!-- scheduler ist derzeit nur für SQLite DB notwendig-->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-scheduler</artifactId>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -163,7 +169,8 @@
                                 </goals>
                                 <phase>generate-test-sources</phase>
                                 <configuration>
-                                    <outputFilename>${project.basedir}/src/main/asciidoc/VM-Klassendiagramm.dot</outputFilename>
+                                    <outputFilename>${project.basedir}/src/main/asciidoc/VM-Klassendiagramm.dot
+                                    </outputFilename>
                                     <scanPackages>
                                         <scanPackage>
                                             kreyj.vortragsmanager.entity
