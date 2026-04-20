@@ -1,11 +1,13 @@
 package kreyj.vortragsmanager.resource;
 
-import io.quarkus.narayana.jta.QuarkusTransaction;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.entity.*;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.commons.util.ClassLoaderUtils;
@@ -19,6 +21,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 @QuarkusTest
 @TestSecurity(user = "admin@test.de", roles = "ADMIN")
+@QuarkusTestResource(H2DatabaseTestResource.class)
 class CsvFileImportTest {
 
     public static final String CSV_DIR = "csv_import/bo_26_09/";
@@ -28,18 +31,12 @@ class CsvFileImportTest {
     @BeforeEach
     @Transactional
     void setupTransactional() {
-        Zuweisung.deleteAll();
-        Prioritaet.deleteAll();
-        Verfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
-        EventSlot.deleteAll();
-
-        User.update("veranstaltung = null");
-        Veranstaltung.deleteAll();
         User.deleteAll();
-
         Raum.deleteAll();
         Gebaeude.deleteAll();
+        EventSlot.deleteAll();
+        Veranstaltung.deleteAll();
 
         Admin admin = new Admin();
         admin.email = "admin@test.de";
@@ -111,14 +108,14 @@ class CsvFileImportTest {
     @Test
     void testImportTeilnehmer() {
         given()
-                .multiPart("file", getCsvFile("teilnehmer.csv"))
+                .multiPart("file", getCsvFile("teilnehmer_9.1.csv"))
                 .when().post("/api/veranstaltungen/{vid}/teilnehmer/import", testVid)
                 .then()
                 .statusCode(200);
 
-        Teilnehmer t = (Teilnehmer) User.findByEmail("naja.alfter@rks-linz.de");
+        Teilnehmer t = (Teilnehmer) User.findByEmail("hayal.yaldir@rks-linz.de");
         Assertions.assertNotNull(t);
-        Assertions.assertEquals("10.3", t.gruppe);
+        Assertions.assertEquals("9.1", t.gruppe);
     }
 
     @Test

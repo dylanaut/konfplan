@@ -1,5 +1,7 @@
 package kreyj.vortragsmanager.resource;
 
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -13,10 +15,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
+import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.matchesPattern;
 
 @QuarkusTest
+@QuarkusTestResource(H2DatabaseTestResource.class)
 class UserPersistenceTest {
 
     public static final String TEST_VERANSTALTUNG = "Test Veranstaltung";
@@ -25,24 +29,13 @@ class UserPersistenceTest {
     @BeforeEach
     @Transactional
     void setup() {
-        // 1. Abhängige Tabellen löschen
-        Zuweisung.deleteAll();
-        Prioritaet.deleteAll();
-        Verfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
-        EventSlot.deleteAll();
-        Raum.deleteAll();
-
-        // 2. Zyklus User <-> Veranstaltung aufbrechen
-        User.update("veranstaltung = null");
-//        Veranstaltung.update("organisator = null");
-
-        // 3. Jetzt können wir alles löschen
-        Veranstaltung.deleteAll();
         User.deleteAll();
+        Raum.deleteAll();
         Gebaeude.deleteAll();
+        EventSlot.deleteAll();
+        Veranstaltung.deleteAll();
 
-        // 4. Test-Daten neu aufbauen
         Gebaeude g = new Gebaeude();
         g.name = "Test Gebäude";
         g.strasse = "Teststraße";
@@ -60,9 +53,11 @@ class UserPersistenceTest {
         v.name = TEST_VERANSTALTUNG + "_" + System.currentTimeMillis();
         v.beginntAm = LocalDateTime.now();
         v.gebaeude = List.of(g);
-        v.organisator = admin;
         v.persist();
         testVid = v.id;
+
+        admin.addVeranstaltung(v);
+        admin.persist();
     }
 
     @Test
@@ -100,8 +95,8 @@ class UserPersistenceTest {
 
         Referent ref = (Referent) User.findByEmail("referent@test.de");
         Assertions.assertNotNull(ref);
-        Assertions.assertNotNull(ref.getVeranstaltung(), "Veranstaltung sollte gesetzt sein");
-        Assertions.assertEquals(testVid, ref.getVeranstaltung().id);
+        Assertions.assertNotNull(ref.veranstaltungen, "Veranstaltungen sollten nicht leer sein");
+        Assertions.assertEquals(testVid, ref.veranstaltungen.iterator().next().id);
     }
 
     @Test
@@ -128,7 +123,7 @@ class UserPersistenceTest {
         Teilnehmer teil = (Teilnehmer) User.findByEmail("schueler@test.de");
         Assertions.assertNotNull(teil);
         Assertions.assertEquals("10a", teil.gruppe);
-        Assertions.assertNotNull(teil.getVeranstaltung(), "Veranstaltung sollte gesetzt sein");
-        Assertions.assertEquals(testVid, teil.getVeranstaltung().id);
+        Assertions.assertNotEquals(emptyList(), teil.veranstaltungen, "Veranstaltung sollten nicht leer sein");
+        Assertions.assertEquals(testVid, teil.veranstaltungen.iterator().next().id);
     }
 }

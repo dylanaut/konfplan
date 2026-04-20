@@ -23,8 +23,8 @@ public class Raum extends VersionedEntity {
     @ManyToMany
     @JoinTable(
         name = "Raum_EventSlot",
-        joinColumns = @JoinColumn(name = "raum_id", columnDefinition = "INTEGER"),
-        inverseJoinColumns = @JoinColumn(name = "eventslot_id", columnDefinition = "INTEGER")
+        joinColumns = @JoinColumn(name = "raum_id"),
+        inverseJoinColumns = @JoinColumn(name = "eventslot_id")
     )
     public Set<EventSlot> verfuegbareSlots = new HashSet<>();
 

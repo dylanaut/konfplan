@@ -8,6 +8,7 @@ import kreyj.vortragsmanager.dto.RefProfilDto;
 import kreyj.vortragsmanager.dto.RefVortragDto;
 import kreyj.vortragsmanager.dto.csv.ReferentCsvDto;
 import kreyj.vortragsmanager.entity.*;
+import org.jboss.logging.Logger;
 
 import java.io.FileReader;
 import java.nio.file.Path;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class ReferentService {
+    private static final Logger LOG = Logger.getLogger(ReferentService.class);
 
     public Referent getProfile(String email) {
         User user = User.findByEmail(email);
@@ -44,7 +46,9 @@ public class ReferentService {
 
     public List<RefVortragDto> getMeineVortraege(String email) {
         Referent referent = Referent.find("email", email).firstResult();
-        if (referent == null) return new ArrayList<>();
+        if (referent == null) {
+            return new ArrayList<>();
+        }
 
         List<Vortrag> vortraege = Vortrag.find("referent", referent).list();
         return vortraege.stream().map(this::mapToDto).collect(Collectors.toList());
@@ -54,11 +58,11 @@ public class ReferentService {
         RefVortragDto dto = new RefVortragDto();
         dto.id = v.id;
         dto.version = v.version;
-        dto.title = v.titel;
+        dto.titel = v.titel;
         dto.abstractText = v.inhalt;
-        
+
         if (v instanceof Wahlvortrag wahlvortrag) {
-            dto.willingToRepeat = wahlvortrag.wiederholbar;
+            dto.wiederholbar = wahlvortrag.wiederholbar;
             dto.maxWiederholungen = wahlvortrag.maxWiederholungen;
             // TODO: Target Audience if entity supports it
         } else if (v instanceof Pflichtvortrag pflichtvortrag) {
@@ -69,7 +73,7 @@ public class ReferentService {
         // Hier müsste die Logik ggf. verfeinert werden, wenn Verfügbarkeiten pro Vortrag gespeichert werden sollen.
         // Aktuell scheint es global pro Referent zu sein.
         List<Verfuegbarkeit> availabilities = Verfuegbarkeit.find("referent", v.referent).list();
-        dto.availabilities = availabilities.stream()
+        dto.verfuegIds = availabilities.stream()
                 .filter(a -> a.isAvailable)
                 .map(a -> a.slot.id)
                 .collect(Collectors.toList());
@@ -80,17 +84,24 @@ public class ReferentService {
     @Transactional
     public RefVortragDto createVortrag(String email, RefVortragDto dto) {
         Referent referent = Referent.find("email", email).firstResult();
-        if (referent == null) return null;
+        if (referent == null) {
+            return null;
+        }
 
         // Standardmäßig als Wahlvortrag erstellen (kann je nach Anforderung angepasst werden)
         Wahlvortrag vortrag = new Wahlvortrag();
         vortrag.referent = referent;
-        vortrag.veranstaltung = referent.veranstaltung;
+        Veranstaltung veranstaltung = Veranstaltung.findById(dto.veranstaltungId);
+        if (null == veranstaltung) {
+            LOG.error("Unbekannte Veranstaltung zu id: " + dto.veranstaltungId);
+        } else {
+            vortrag.veranstaltung = veranstaltung;
+        }
         updateVortragFromDto(vortrag, dto);
         vortrag.persist();
 
         // Verfügbarkeiten speichern
-        updateAvailabilities(referent, dto.availabilities);
+        updateAvailabilities(referent, dto.verfuegIds);
 
         return mapToDto(vortrag);
     }
@@ -100,22 +111,24 @@ public class ReferentService {
         Referent referent = Referent.find("email", email).firstResult();
         Vortrag vortrag = Vortrag.findById(vortragId);
 
-        if (vortrag == null || !vortrag.referent.id.equals(referent.id)) return null;
+        if (vortrag == null || !vortrag.referent.id.equals(referent.id)) {
+            return null;
+        }
 
         updateVortragFromDto(vortrag, dto);
-        
+
         // Verfügbarkeiten speichern
-        updateAvailabilities(referent, dto.availabilities);
+        updateAvailabilities(referent, dto.verfuegIds);
 
         return mapToDto(vortrag);
     }
 
     private void updateVortragFromDto(Vortrag vortrag, RefVortragDto dto) {
-        vortrag.titel = dto.title;
+        vortrag.titel = dto.titel;
         vortrag.inhalt = dto.abstractText;
 
         if (vortrag instanceof Wahlvortrag wahlvortrag) {
-            wahlvortrag.wiederholbar = dto.willingToRepeat;
+            wahlvortrag.wiederholbar = dto.wiederholbar;
             if (dto.maxWiederholungen > 0) {
                 wahlvortrag.maxWiederholungen = dto.maxWiederholungen;
             }
@@ -125,7 +138,9 @@ public class ReferentService {
     }
 
     private void updateAvailabilities(Referent referent, List<Long> slotIds) {
-        if (slotIds == null) return;
+        if (slotIds == null) {
+            return;
+        }
 
         // Zuerst alle bestehenden Verfügbarkeiten auf false setzen (oder löschen)
         Verfuegbarkeit.update("isAvailable = false where referent = ?1", referent);
@@ -133,7 +148,9 @@ public class ReferentService {
         // Dann die übergebenen auf true setzen oder neu anlegen
         for (Long slotId : slotIds) {
             EventSlot slot = EventSlot.findById(slotId);
-            if (slot == null) continue;
+            if (slot == null) {
+                continue;
+            }
 
             Verfuegbarkeit v = Verfuegbarkeit.find("referent = ?1 and slot = ?2", referent, slot).firstResult();
             if (v == null) {
@@ -151,7 +168,9 @@ public class ReferentService {
         Referent referent = Referent.find("email", email).firstResult();
         Vortrag vortrag = Vortrag.findById(vortragId);
 
-        if (vortrag == null || !vortrag.referent.id.equals(referent.id)) return false;
+        if (vortrag == null || !vortrag.referent.id.equals(referent.id)) {
+            return false;
+        }
 
         vortrag.delete();
         return true;
@@ -161,7 +180,9 @@ public class ReferentService {
     public int importFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception {
         int count = 0;
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        if (veranstaltung == null) throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
+        if (veranstaltung == null) {
+            throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
+        }
 
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             List<ReferentCsvDto> beans = new CsvToBeanBuilder<ReferentCsvDto>(reader)
@@ -173,20 +194,20 @@ public class ReferentService {
 
             for (ReferentCsvDto dto : beans) {
                 if (User.findByEmail(dto.email) == null) {
-                    Referent nr = new Referent();
-                    nr.email = dto.email.trim().toLowerCase();
-                    nr.firstName = dto.firstName;
-                    nr.lastName = dto.lastName;
-                    nr.jobRole = dto.jobRole;
-                    nr.organisation = dto.organisation;
-                    nr.slogan = dto.slogan;
-                    nr.biography = dto.biography;
-                    nr.veranstaltung = veranstaltung;
+                    Referent ref = new Referent();
+                    ref.email = dto.email.trim().toLowerCase();
+                    ref.firstName = dto.firstName;
+                    ref.lastName = dto.lastName;
+                    ref.jobRole = dto.jobRole;
+                    ref.organisation = dto.organisation;
+                    ref.slogan = dto.slogan;
+                    ref.biography = dto.biography;
+                    ref.addVeranstaltung(veranstaltung);
 
                     String tempPassword = "start123";
-                    nr.passwordHash = BcryptUtil.bcryptHash(tempPassword);
+                    ref.passwordHash = BcryptUtil.bcryptHash(tempPassword);
 
-                    nr.persist();
+                    ref.persist();
                     count++;
                 }
             }

@@ -5,8 +5,8 @@ import com.opencsv.bean.CsvToBeanBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.dto.GebaeudeSimpleDto;
-import kreyj.vortragsmanager.dto.csv.VeranstaltungCsvDto;
 import kreyj.vortragsmanager.dto.VeranstaltungDto;
+import kreyj.vortragsmanager.dto.csv.VeranstaltungCsvDto;
 import kreyj.vortragsmanager.entity.Admin;
 import kreyj.vortragsmanager.entity.Gebaeude;
 import kreyj.vortragsmanager.entity.User;
@@ -23,7 +23,6 @@ import java.util.List;
 
 @ApplicationScoped
 public class VeranstaltungService {
-
     private static final Logger LOG = Logger.getLogger(VeranstaltungService.class);
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -53,30 +52,31 @@ public class VeranstaltungService {
         entity.logo = dto.logo;
         entity.logo_link = dto.logo_link;
 
-        if (dto.organisatorId != null) {
-            User admin = User.findById(dto.organisatorId);
-            if (admin != null && "ADMIN".equals(admin.role)) {
-                entity.organisator = admin;
-            } else {
-                throw new IllegalArgumentException("Der Organisator muss ein Benutzer mit der Rolle ADMIN sein.");
+        if (entity.id == null) {
+            entity.persist();
+        }
+
+        // Organisatoren (Admins) verknüpfen
+        if (dto.organisatorIds != null && !dto.organisatorIds.isEmpty()) {
+            for (Long adminId : dto.organisatorIds) {
+                User admin = User.findById(adminId);
+                if (admin != null && "ADMIN".equals(admin.role)) {
+                    if (!admin.veranstaltungen.contains(entity)) {
+                        admin.veranstaltungen.add(entity);
+                    }
+                }
             }
-        } else if (entity.id == null) {
-            throw new IllegalArgumentException("Ein Organisator ist für eine neue Veranstaltung zwingend erforderlich.");
         }
 
         // Gebaeude-Relation (ManyToMany) aktualisieren
         entity.gebaeude.clear();
         if (dto.gebaeude != null) {
             for (GebaeudeSimpleDto gebaeudeId : dto.gebaeude) {
-                Gebaeude attached = Gebaeude.findById(gebaeudeId);
+                Gebaeude attached = Gebaeude.findById(gebaeudeId.id);
                 if (attached != null) {
                     entity.gebaeude.add(attached);
                 }
             }
-        }
-
-        if (entity.id == null) {
-            entity.persist();
         }
 
         return VeranstaltungResource.mapToDto(entity);
@@ -95,8 +95,8 @@ public class VeranstaltungService {
 
             List<VeranstaltungCsvDto> beans = csvToBean.parse();
 
-            csvToBean.getCapturedExceptions().forEach(e -> 
-                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
+            csvToBean.getCapturedExceptions().forEach(e ->
+                    LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
             );
 
             for (VeranstaltungCsvDto dto : beans) {
@@ -120,7 +120,11 @@ public class VeranstaltungService {
                     }
                     v.logo = dto.logo;
                     v.logo_link = dto.logo_link;
-                    v.organisator = admin;
+                    v.persist();
+                    
+                    // Admin verknüpfen
+                    admin.veranstaltungen.add(v);
+
                     if (dto.gebaeudeNamen != null && !dto.gebaeudeNamen.isEmpty()) {
                         Arrays.stream(dto.gebaeudeNamen.split("\\|")).map(String::trim).forEach(name -> {
                             Gebaeude g = Gebaeude.find("name", name).firstResult();
@@ -131,7 +135,6 @@ public class VeranstaltungService {
                             }
                         });
                     }
-                    v.persist();
                     count++;
                 } else {
                     LOG.warn("Veranstaltung '" + dto.name + "' übersprungen: Organisator (Admin) mit Email " + dto.organisatorEmail + " nicht gefunden.");

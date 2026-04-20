@@ -1,5 +1,7 @@
 package kreyj.vortragsmanager.resource;
 
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -9,31 +11,26 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 
 import static io.restassured.RestAssured.given;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
-public class UserInheritanceTest {
+@QuarkusTestResource(H2DatabaseTestResource.class)
+class UserInheritanceTest {
 
     Long testVid;
 
     @BeforeEach
     @Transactional
     void setup() {
-        Zuweisung.deleteAll();
-        Prioritaet.deleteAll();
-        Verfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
-        EventSlot.deleteAll();
-
-        User.update("veranstaltung = null");
-        Veranstaltung.deleteAll();
         User.deleteAll();
-
         Raum.deleteAll();
         Gebaeude.deleteAll();
+        EventSlot.deleteAll();
+        Veranstaltung.deleteAll();
 
         Admin admin = new Admin();
         admin.email = "org@test.de";
@@ -43,9 +40,11 @@ public class UserInheritanceTest {
         Veranstaltung v = new Veranstaltung();
         v.name = "Inheritance Test Event " + System.currentTimeMillis();
         v.beginntAm = LocalDateTime.now();
-        v.organisator = admin;
         v.persist();
         testVid = v.id;
+
+        admin.addVeranstaltung(v);
+        admin.persist();
     }
 
     @Test
@@ -71,8 +70,8 @@ public class UserInheritanceTest {
 
         Referent ref = (Referent) User.findByEmail("expert@vortragsmanager.de");
         assertNotNull(ref, "Referent sollte in der DB existieren");
-        assertNotNull(ref.veranstaltung, "Veranstaltung des Referenten sollte nicht null sein");
-        assertEquals(testVid, ref.veranstaltung.id);
+        assertNotEquals(Collections.emptyList(), ref.veranstaltungen, "Veranstaltung des Referenten sollte nicht leer sein");
+        assertEquals(testVid, ref.veranstaltungen.iterator().next().id);
     }
 
     @Test
@@ -100,8 +99,8 @@ public class UserInheritanceTest {
         Teilnehmer tn = (Teilnehmer) User.findByEmail("student@vortragsmanager.de");
         assertNotNull(tn, "Teilnehmer sollte in der DB existieren");
         assertNotNull(Veranstaltung.findById(testVid), "Veranstaltung %d sollte in der DB existieren".formatted(testVid));
-        assertNotNull(tn.getVeranstaltung(), "Veranstaltung des Teilnehmers sollte nicht null sein");
-        assertEquals(testVid, tn.veranstaltung.id);
+        assertNotNull(tn.veranstaltungen, "Veranstaltung des Teilnehmers sollte nicht leer sein");
+        assertEquals(testVid, tn.veranstaltungen.iterator().next().id);
         assertEquals("10.3", tn.gruppe);
     }
 }

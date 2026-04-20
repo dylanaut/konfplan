@@ -31,7 +31,9 @@ public class TeilnehmerService {
 
     @Transactional
     public Teilnehmer createTeilnehmer(Teilnehmer user, Long veranstaltungId) {
-        if (user == null || user.email == null) return null;
+        if (user == null || user.email == null) {
+            return null;
+        }
 
         User existing = User.findByEmail(user.email.trim().toLowerCase());
         if (existing != null) {
@@ -40,12 +42,14 @@ public class TeilnehmerService {
         }
 
         Veranstaltung v = Veranstaltung.findById(veranstaltungId);
-        if (v == null) throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
+        if (v == null) {
+            throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
+        }
 
-        user.veranstaltung = v;
+        user.addVeranstaltung(v);
         String tempPassword = UUID.randomUUID().toString();
         user.passwordHash = BcryptUtil.bcryptHash(tempPassword);
-        
+
         user.persist();
         return user;
     }
@@ -69,8 +73,8 @@ public class TeilnehmerService {
 
             List<TeilnehmerCsvDto> beans = csvToBean.parse();
 
-            csvToBean.getCapturedExceptions().forEach(e -> 
-                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
+            csvToBean.getCapturedExceptions().forEach(e ->
+                    LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
             );
 
             for (TeilnehmerCsvDto dto : beans) {
@@ -78,20 +82,20 @@ public class TeilnehmerService {
                     LOG.warn("Teilnehmer-Zeile übersprungen: Email fehlt.");
                     continue;
                 }
-                
+
                 String email = dto.email.trim().toLowerCase();
                 if (User.findByEmail(email) == null) {
-                    Teilnehmer nt = new Teilnehmer();
-                    nt.email = email;
-                    nt.firstName = dto.firstName;
-                    nt.lastName = dto.lastName;
-                    nt.gruppe = dto.gruppe;
-                    nt.veranstaltung = v;
+                    Teilnehmer tn = new Teilnehmer();
+                    tn.email = email;
+                    tn.firstName = dto.firstName;
+                    tn.lastName = dto.lastName;
+                    tn.gruppe = dto.gruppe;
+                    tn.addVeranstaltung(v);
 
                     String tempPassword = "start123"; // UUID.randomUUID().toString();
-                    nt.passwordHash = BcryptUtil.bcryptHash(tempPassword);
+                    tn.passwordHash = BcryptUtil.bcryptHash(tempPassword);
 
-                    nt.persist();
+                    tn.persist();
                     count++;
                 } else {
                     LOG.warn("Teilnehmer übersprungen: Email " + email + " existiert bereits.");
@@ -119,7 +123,9 @@ public class TeilnehmerService {
     @Transactional
     public Teilnehmer updateTeilnehmer(Long id, Teilnehmer teilnehmer, Long veranstaltungId) {
         User existing = User.findById(id);
-        if (existing == null || !(existing instanceof Teilnehmer)) return null;
+        if (existing == null || !(existing instanceof Teilnehmer)) {
+            return null;
+        }
 
         Teilnehmer tn = (Teilnehmer) existing;
         tn.firstName = teilnehmer.firstName;
@@ -127,7 +133,12 @@ public class TeilnehmerService {
         tn.email = teilnehmer.email == null ? existing.email : teilnehmer.email.trim().toLowerCase();
         tn.gruppe = teilnehmer.gruppe;
         tn.isActive = teilnehmer.isActive;
-        tn.veranstaltung = Veranstaltung.findById(veranstaltungId);
+
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
+        if (null != veranstaltung) {
+            tn.addVeranstaltung(veranstaltung);
+        }
+
         return tn;
     }
 }

@@ -35,8 +35,8 @@
 
                 <!-- Zielpublikum -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Zielpublikum</label>
-                  <input v-model="localTalk.targetAudience" type="text" class="edit-input" />
+                  <label class="block text-sm font-medium text-gray-700">Zielgruppe</label>
+                  <input v-model="localTalk.zielgruppe" type="text" class="edit-input" />
                 </div>
 
                 <!-- Abstract -->
