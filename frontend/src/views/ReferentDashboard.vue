@@ -69,6 +69,14 @@
         <h2 class="text-xl font-bold">{{ isEditingNewTalk ? 'Neuen Vortrag anlegen' : 'Vortragsdetails bearbeiten' }}</h2>
       </div>
       <div class="space-y-4">
+        <div v-if="isEditingNewTalk">
+           <label class="block text-sm font-medium text-gray-700 mb-1">Veranstaltung auswählen</label>
+           <select v-model="selectedTalk.veranstaltungId" class="input-field" required>
+              <option :value="null" disabled>-- Bitte wählen --</option>
+              <option v-for="event in events" :key="event.id" :value="event.id">{{ event.name }}</option>
+           </select>
+        </div>
+
         <div>
           <label class="block text-sm font-medium text-gray-700">Titel des Vortrags</label>
           <input v-model="selectedTalk.title" type="text" class="input-field" />
@@ -88,7 +96,7 @@
     </section>
 
     <!-- Sektion: Verfügbarkeit -->
-    <section v-if="selectedTalk || isEditingNewTalk" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+    <section v-if="(selectedTalk || isEditingNewTalk) && selectedTalk.veranstaltungId" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       <div class="flex items-center gap-2 mb-6 text-indigo-600">
         <CalendarIcon class="w-6 h-6" />
         <h2 class="text-xl font-bold">Meine Verfügbarkeit für diesen Vortrag</h2>
@@ -242,12 +250,9 @@ const fetchEventsForRegistration = async () => {
 };
 
 const relevantSlotsForTalk = computed(() => {
-  if (!selectedTalk.value) return [];
-  // Wenn wir alle Slots haben, filtern wir die, die zur Veranstaltung des ausgewählten Vortrags gehören
-  // Da die API /api/slots ggf. alle zurückgibt, müssen wir wissen, welche zur Veranstaltung gehören.
-  // In der aktuellen Implementierung zeigen wir einfach alle an, die zeitlich passen oder wir gehen davon aus
-  // dass der Referent nur Slots seiner Veranstaltung sieht.
-  return allSlots.value;
+  if (!selectedTalk.value || !selectedTalk.value.veranstaltungId) return [];
+  // Nur Slots anzeigen, die zur Veranstaltung des Vortrags gehören
+  return allSlots.value.filter(s => s.veranstaltungId === selectedTalk.value.veranstaltungId);
 });
 
 const groupedSlots = computed(() => {
@@ -297,7 +302,8 @@ const addNewTalk = () => {
     title: '',
     abstractText: '',
     wiederholbar: false,
-    availabilities: []
+    availabilities: [],
+    veranstaltungId: events.value.length > 0 ? events.value[0].id : null
   };
   isEditingNewTalk.value = true;
 };
@@ -325,12 +331,10 @@ const isFutureEvent = (event) => {
 };
 
 const getTalksFromOtherEvents = (targetEventId) => {
-    // Gibt alle Vorträge zurück, deren Titel noch nicht in der Zielveranstaltung existiert
     const existingTitles = vortraege.value
         .filter(t => t.veranstaltungId === targetEventId)
         .map(t => t.title);
 
-    // Wir nehmen nur einen Vortrag pro Titel aus anderen Veranstaltungen
     const otherTalks = vortraege.value.filter(t => t.veranstaltungId !== targetEventId);
     const uniqueOther = [];
     const seenTitles = new Set();

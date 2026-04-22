@@ -90,31 +90,23 @@ public class ReferentResource {
         return planService.getPlanFuerReferent(jwt.getSubject());
     }
 
-    @POST
-    @Path("/verfuegbarkeit/tag")
-    public Response setDayAvailability(@QueryParam("date") String dateStr, @QueryParam("available") boolean available) {
-        LocalDate date = LocalDate.parse(dateStr);
-        referentService.toggleEntireDay(jwt.getSubject(), date, available);
-        return Response.ok().build();
-    }
-
     @GET
     @Path("/events-for-registration")
-    public List<ReferentVeranstaltungDto> getEventsForRegistration() {
-        return referentService.getEventsForRegistration(jwt.getSubject());
+    public List<ReferentVeranstaltungDto> getReferentVeranstaltungen() {
+        return referentService.getReferentVeranstaltungen(jwt.getSubject());
     }
 
     @POST
-    @Path("/events/{vid}/vortraege/{tid}/register")
-    public Response registerTalkForEvent(@PathParam("vid") Long vid, @PathParam("tid") Long tid) {
-        referentService.registerTalkForEvent(jwt.getSubject(), tid, vid);
+    @Path("/events/{eventId}/vortraege/{talkId}/register")
+    public Response registerTalkForEvent(@PathParam("eventId") Long eventId, @PathParam("talkId") Long talkId) {
+        referentService.registerTalkForEvent(jwt.getSubject(), talkId, eventId);
         return Response.ok().build();
     }
 
     @DELETE
-    @Path("/events/{vid}/vortraege/{tid}/deregister")
-    public Response deregisterTalkFromEvent(@PathParam("vid") Long vid, @PathParam("tid") Long tid) {
-        referentService.deregisterTalkFromEvent(jwt.getSubject(), tid, vid);
+    @Path("/events/{eventId}/vortraege/{talkId}/deregister")
+    public Response deregisterTalkFromEvent(@PathParam("eventId") Long eventId, @PathParam("talkId") Long talkId) {
+        referentService.deregisterTalkFromEvent(jwt.getSubject(), talkId, eventId);
         return Response.ok().build();
     }
 }

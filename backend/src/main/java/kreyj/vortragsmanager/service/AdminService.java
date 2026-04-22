@@ -31,10 +31,10 @@ public class AdminService {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     public List<UserDto> getAllUsers(Long veranstaltungId) {
-        List<User> globals = User.list("role = 'ADMIN'");
-        List<User> localized = User.list("veranstaltung.id = ?1", veranstaltungId);
+        List<User> admins = User.list("role = 'ADMIN'");
+        List<User> vUsers = User.find("SELECT u FROM User u JOIN u.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
 
-        return Stream.concat(globals.stream(), localized.stream())
+        return Stream.concat(admins.stream(), vUsers.stream())
                 .distinct()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
@@ -383,17 +383,19 @@ public class AdminService {
                     LOG.warn("Slot übersprungen: Beschreibung fehlt.");
                     continue;
                 }
-                EventSlot s = new EventSlot();
-                s.description = dto.description;
+                EventSlot slot = new EventSlot();
+                slot.description = dto.description;
                 try {
-                    s.startTime = LocalDateTime.parse(dto.day + " " + dto.startTime, DATE_FORMAT);
-                    s.endTime = LocalDateTime.parse(dto.day + " " + dto.endTime, DATE_FORMAT);
+                    slot.startTime = LocalDateTime.parse(dto.day + " " + dto.startTime, DATE_FORMAT);
+                    slot.endTime = LocalDateTime.parse(dto.day + " " + dto.endTime, DATE_FORMAT);
                 } catch (Exception e) {
                     LOG.error("Fehler beim Parsen der Zeit für Slot '" + dto.description + "': " + e.getMessage());
                     continue;
                 }
-                s.veranstaltung = v;
-                s.persist();
+                slot.veranstaltung = v;
+                slot.persist();
+
+                v.persist();
                 count++;
             }
         } catch (Exception e) {

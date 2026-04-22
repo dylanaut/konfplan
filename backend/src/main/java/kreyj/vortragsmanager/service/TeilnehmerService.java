@@ -68,6 +68,7 @@ public class TeilnehmerService {
                     .withType(TeilnehmerCsvDto.class)
                     .withIgnoreLeadingWhiteSpace(true)
                     .withSeparator(';')
+                    .withFilter(line -> line.length > 0 && !line[0].startsWith("#"))
                     .withThrowExceptions(false)
                     .build();
 

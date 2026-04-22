@@ -28,6 +28,9 @@ public class SlotResource {
         dto.startTime = s.startTime;
         dto.endTime = s.endTime;
         dto.description = s.description;
+        if (s.veranstaltung != null) {
+            dto.veranstaltungId = s.veranstaltung.id;
+        }
         return dto;
     }
 }

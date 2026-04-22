@@ -11,4 +11,6 @@ public class EventSlotDto extends VersionedDto {
     public LocalDateTime startTime;
 
     public LocalDateTime endTime;
+
+    public Long veranstaltungId;
 }
