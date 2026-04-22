@@ -24,6 +24,22 @@
           <input v-model="form.endetAm" type="datetime-local" class="input-field" />
         </div>
 
+        <!-- Organisatoren Auswahl (Multi-Select) -->
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Organisatoren (Admins)</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 bg-gray-50 border rounded-lg">
+            <div v-for="admin in admins" :key="admin.id" class="flex items-center gap-2">
+              <input type="checkbox" :id="'admin-'+admin.id" :value="admin.id" v-model="form.organisatorIds" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+              <label :for="'admin-'+admin.id" class="text-sm text-gray-700 truncate">
+                {{ admin.lastName }}, {{ admin.firstName }}
+              </label>
+            </div>
+            <div v-if="admins.length === 0" class="text-xs text-gray-500 italic p-1">
+              Keine Administratoren gefunden. Legen Sie zuerst welche an.
+            </div>
+          </div>
+        </div>
+
         <!-- Gebaeude Auswahl (Multi-Select) -->
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-2">Zugehörige Gebäude</label>
@@ -47,19 +63,9 @@
           <input v-model="form.logo_link" type="url" class="input-field" placeholder="https://..." />
         </div>
 
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Organisator (Admin)</label>
-          <select v-model="form.organisatorId" class="input-field" required>
-            <option :value="null">Bitte wählen...</option>
-            <option v-for="admin in admins" :key="admin.id" :value="admin.id">
-              {{ admin.lastName }}, {{ admin.firstName }} ({{ admin.email }})
-            </option>
-          </select>
-        </div>
-
         <div class="md:col-span-2 flex justify-end gap-3 pt-4 border-t">
           <button type="button" class="btn-secondary" @click="$emit('close')">Abbrechen</button>
-          <button type="submit" class="btn-primary">Speichern</button>
+          <button type="submit" class="btn-primary" :disabled="form.organisatorIds.length === 0">Speichern</button>
         </div>
       </form>
     </div>
@@ -86,7 +92,7 @@ const form = reactive({
   endetAm: '',
   logo: '',
   logo_link: '',
-  organisatorId: null, // Direkt als ID für das DTO
+  organisatorIds: [],
   version: 0
 });
 
@@ -99,7 +105,7 @@ watch(
       form.endetAm = val?.endetAm ? val.endetAm.slice(0, 16) : '';
       form.logo = val?.logo ?? '';
       form.logo_link = val?.logo_link ?? '';
-      form.organisatorId = val?.organisatorId ?? (props.admins[0]?.id || null);
+      form.organisatorIds = val?.organisatorIds ?? [];
       form.version = val?.version ?? 0;
       selectedGebaeudeIds.value = val?.gebaeude?.map(g => g.id) ?? [];
     },
@@ -107,7 +113,6 @@ watch(
 );
 
 const save = () => {
-  // Wir senden die Gebäude als Liste von Objekten mit IDs (passend zum DTO)
   const gebaeude = selectedGebaeudeIds.value.map(id => ({ id }));
   emit('save', { ...form, gebaeude });
 };
@@ -115,6 +120,6 @@ const save = () => {
 
 <style scoped>
 .input-field { @apply w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white; }
-.btn-primary { @apply rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700; }
+.btn-primary { @apply rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 disabled:opacity-50; }
 .btn-secondary { @apply rounded-lg bg-gray-100 px-4 py-2 text-gray-700 hover:bg-gray-200; }
 </style>

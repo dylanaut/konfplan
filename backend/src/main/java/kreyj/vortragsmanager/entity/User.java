@@ -60,8 +60,8 @@ public abstract class User extends VersionedEntity {
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "User_Veranstaltung",
-        joinColumns = @JoinColumn(name = "user_id", columnDefinition = "BIGINT"),
-        inverseJoinColumns = @JoinColumn(name = "veranstaltung_id", columnDefinition = "BIGINT")
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "veranstaltung_id")
     )
     @JsonIgnoreProperties({"benutzer", "gebaeude", "eventSlots"})
     public Set<Veranstaltung> veranstaltungen = new HashSet<>();
@@ -75,7 +75,7 @@ public abstract class User extends VersionedEntity {
 
     public void addVeranstaltung(Veranstaltung v) {
         this.veranstaltungen.add(v);
-        v.benutzer.add(this);
+        v.benutzer.add(this); // Aktualisiert die Rückrichtung im Speicher
     }
 
     public void removeVeranstaltung(Veranstaltung v) {

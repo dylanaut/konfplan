@@ -26,8 +26,8 @@
                 <!-- Referent (Dropdown) -->
                 <div>
                   <label class="block text-sm font-medium text-gray-700">Referent</label>
-                  <select v-model="localTalk.speaker.id" class="edit-input">
-                    <option v-for="s in speakers" :key="s.id" :value="s.id">
+                  <select v-model="localTalk.referent.id" class="edit-input">
+                    <option v-for="s in referenten" :key="s.id" :value="s.id">
                       {{ s.lastName }}, {{ s.firstName }} ({{ s.organization }})
                     </option>
                   </select>
@@ -35,8 +35,8 @@
 
                 <!-- Zielpublikum -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Zielpublikum</label>
-                  <input v-model="localTalk.targetAudience" type="text" class="edit-input" />
+                  <label class="block text-sm font-medium text-gray-700">Zielgruppe</label>
+                  <input v-model="localTalk.zielgruppe" type="text" class="edit-input" />
                 </div>
 
                 <!-- Abstract -->
@@ -71,8 +71,8 @@ import { Edit3 as Edit3Icon } from 'lucide-vue-next';
 
 const props = defineProps({
   isVisible: Boolean,
-  talk: Object,
-  speakers: Array
+  vortrag: Object,
+  referenten: Array
 });
 
 const emit = defineEmits(['close', 'save']);
@@ -80,7 +80,7 @@ const emit = defineEmits(['close', 'save']);
 // Lokale Kopie des Vortrags, um reaktive Seiteneffekte in der Liste zu vermeiden
 const localTalk = ref({});
 
-watch(() => props.talk, (newVal) => {
+watch(() => props.vortrag, (newVal) => {
   if (newVal) {
     localTalk.value = JSON.parse(JSON.stringify(newVal)); // Deep Copy
   }

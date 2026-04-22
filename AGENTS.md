@@ -38,7 +38,7 @@ cd frontend && npm install && npm run dev
 | Backend      | Quarkus 3.20.1, Java 21, RESTEasy Reactive        |
 | ORM          | Hibernate ORM Panache (Active Record Pattern)     |
 | Datenbank    | SQLite via `quarkus-jdbc-sqlite4j`                |
-| Migration    | Flyway (`V1__init.sql`)                           |
+| Migration    | Flyway (`V1__tables.sql`)                           |
 | Security     | JWT (SmallRye), BCrypt, `quarkus-security-jpa`    |
 | Optimierung  | MiniZinc (externer Prozess via `OptimierungService`) |
 | CSV-Import   | OpenCSV 5.11.2                                    |

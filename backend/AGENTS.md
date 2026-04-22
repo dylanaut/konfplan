@@ -16,7 +16,7 @@ src/main/java/kreyj/vortragsmanager/
 
 src/main/resources/
 ├── application.properties
-├── db/migration/V1__init.sql   # Flyway-Schema
+├── db/migration/V1__tables.sql   # Flyway-Schema
 ├── minizinc/vortragsplanung.mzn  # Optimierungsmodell
 ├── templates/                  # Freemarker-Templates (E-Mail)
 └── assets/                     # Statische Dateien (Logo)

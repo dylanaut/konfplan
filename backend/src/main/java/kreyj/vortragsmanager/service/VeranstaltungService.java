@@ -56,12 +56,14 @@ public class VeranstaltungService {
             entity.persist();
         }
 
-        // Organisatoren (Admins) verknüpfen (Owning Side ist User)
-        if (dto.organisatorIds != null) {
+        // Organisatoren (Admins) verknüpfen
+        if (dto.organisatorIds != null && !dto.organisatorIds.isEmpty()) {
             for (Long adminId : dto.organisatorIds) {
                 User admin = User.findById(adminId);
                 if (admin != null && "ADMIN".equals(admin.role)) {
-                    admin.addVeranstaltung(entity);
+                    if (!admin.veranstaltungen.contains(entity)) {
+                        admin.veranstaltungen.add(entity);
+                    }
                 }
             }
         }
@@ -120,8 +122,8 @@ public class VeranstaltungService {
                     v.logo_link = dto.logo_link;
                     v.persist();
                     
-                    // Admin verknüpfen (Owning Side ist User)
-                    admin.addVeranstaltung(v);
+                    // Admin verknüpfen
+                    admin.veranstaltungen.add(v);
 
                     if (dto.gebaeudeNamen != null && !dto.gebaeudeNamen.isEmpty()) {
                         Arrays.stream(dto.gebaeudeNamen.split("\\|")).map(String::trim).forEach(name -> {
@@ -129,7 +131,7 @@ public class VeranstaltungService {
                             if (g != null) {
                                 v.gebaeude.add(g);
                             } else {
-                                LOG.warn("Veranstaltung '" + v.name + "': Gebäude nicht gefunden: '" + name + "'");
+                                LOG.warn("Veranstaltung '" + dto.name + "': Gebäude nicht gefunden: '" + name + "'");
                             }
                         });
                     }

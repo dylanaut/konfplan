@@ -1,6 +1,8 @@
 package kreyj.vortragsmanager.resource;
 
 import io.quarkus.test.InjectMock;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -20,6 +22,7 @@ import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
 @TestSecurity(user = "admin@test.de", roles = "ADMIN")
+@QuarkusTestResource(H2DatabaseTestResource.class)
 class VeranstaltungResourceTest {
     @InjectMock
     AdminService adminService;
@@ -83,7 +86,7 @@ class VeranstaltungResourceTest {
         t.email = "new@test.de";
         t.role = "TEILNEHMER";
 
-        Mockito.when(adminService.createUser(Mockito.any(), Mockito.eq(vid))).thenReturn(t);
+        Mockito.when(adminService.createUser(Mockito.any(), Mockito.anyList())).thenReturn(t);
 
         given()
                 .contentType(ContentType.JSON)

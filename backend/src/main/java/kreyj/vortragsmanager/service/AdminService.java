@@ -6,7 +6,8 @@ import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
-import kreyj.vortragsmanager.dto.*;
+import kreyj.vortragsmanager.dto.UserDto;
+import kreyj.vortragsmanager.dto.VortragStatDto;
 import kreyj.vortragsmanager.dto.csv.AdminCsvDto;
 import kreyj.vortragsmanager.dto.csv.EventSlotCsvDto;
 import kreyj.vortragsmanager.dto.csv.VortragCsvDto;
@@ -21,6 +22,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.apache.commons.collections4.SetUtils.difference;
+
 @ApplicationScoped
 public class AdminService {
     private static final Logger LOG = Logger.getLogger(AdminService.class);
@@ -28,10 +31,10 @@ public class AdminService {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     public List<UserDto> getAllUsers(Long veranstaltungId) {
-        List<User> globals = User.list("role = 'ADMIN'");
-        List<User> localized = User.list("veranstaltung.id = ?1", veranstaltungId);
+        List<User> admins = User.list("role = 'ADMIN'");
+        List<User> vUsers = User.find("SELECT u FROM User u JOIN u.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
 
-        return Stream.concat(globals.stream(), localized.stream())
+        return Stream.concat(admins.stream(), vUsers.stream())
                 .distinct()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
@@ -42,11 +45,15 @@ public class AdminService {
     }
 
     @Transactional
-    public UserDto createUser(UserDto dto, Long veranstaltungId) {
+    public UserDto createUser(UserDto dto, List<Long> veranstaltungsIds) {
         User user;
-        if ("REFERENT".equals(dto.role)) user = new Referent();
-        else if ("TEILNEHMER".equals(dto.role)) user = new Teilnehmer();
-        else user = new Admin();
+        if ("REFERENT".equals(dto.role)) {
+            user = new Referent();
+        } else if ("TEILNEHMER".equals(dto.role)) {
+            user = new Teilnehmer();
+        } else {
+            user = new Admin();
+        }
 
         user.email = dto.email;
         user.firstName = dto.firstName;
@@ -57,45 +64,79 @@ public class AdminService {
             user.passwordHash = BcryptUtil.bcryptHash("start123");
         }
 
+        if (null != veranstaltungsIds) {
+            for (Long veranstaltungId : veranstaltungsIds) {
+                Veranstaltung v = Veranstaltung.findById(veranstaltungId);
+                if (null == v) {
+                    LOG.error("Unbekannte Veranstaltung zu id: " + veranstaltungId);
+                } else {
+                    user.veranstaltungen.add(v);
+                }
+            }
+        }
+
         if (user instanceof Referent r) {
             r.biography = dto.biography;
             r.jobRole = dto.jobRole;
             r.organisation = dto.organisation;
             r.slogan = dto.slogan;
-            r.veranstaltung = Veranstaltung.findById(veranstaltungId);
         } else if (user instanceof Teilnehmer t) {
             t.gruppe = dto.gruppe;
-            t.veranstaltung = Veranstaltung.findById(veranstaltungId);
         }
 
         user.persist();
 
-        UserDto userDto = mapToDto(user);
-        userDto.role = dto.role;
-
-        return userDto;
+        return mapToDto(user);
     }
 
     @Transactional
-    public UserDto updateUser(Long id, UserDto dto, Long veranstaltungId) {
-        User entity = User.findById(id);
-        if (entity == null) return null;
+    public UserDto updateUser(Long id, UserDto dto, List<Long> vUpdateIds) {
+        User user = User.findById(id);
+        if (user == null) {
+            return null;
+        }
 
-        entity.firstName = dto.firstName;
-        entity.lastName = dto.lastName;
-        entity.email = dto.email;
-        entity.isActive = dto.isActive;
+        user.firstName = dto.firstName;
+        user.lastName = dto.lastName;
+        user.email = dto.email;
+        user.isActive = dto.isActive;
 
-        if (entity instanceof Referent r) {
+        if (null != vUpdateIds) {
+            Set<Long> oldVIds = user.veranstaltungen.stream().map(v -> v.id).collect(Collectors.toSet());
+            Set<Long> vNewIdSet = new HashSet<>(vUpdateIds);
+
+            Set<Long> toRemoves = difference(oldVIds, vNewIdSet).toSet();
+
+            // alte ID nicht in updateIds enthalten -> entfernen
+            for (Long toRemove : toRemoves) {
+                Veranstaltung v = Veranstaltung.findById(toRemove);
+                if (null != v) {
+                    user.removeVeranstaltung(v);
+                }
+            }
+
+
+            Set<Long> toAdds = difference(vNewIdSet, oldVIds).toSet();
+            for (Long toAdd : toAdds) {
+                Veranstaltung v = Veranstaltung.findById(toAdd);
+                if (null == v) {
+                    LOG.error("Unbekannte Veranstaltung zu id: " + toAdd);
+                } else {
+                    user.addVeranstaltung(v);
+                }
+            }
+        }
+
+        if (user instanceof Referent r) {
             r.biography = r.biography;
             r.jobRole = r.jobRole;
             r.organisation = r.organisation;
             r.slogan = r.slogan;
-        } else if (entity instanceof Teilnehmer t) {
+        } else if (user instanceof Teilnehmer t) {
             t.gruppe = t.gruppe;
         }
 
-        return mapToDto(entity);
+        return mapToDto(user);
     }
 
     private UserDto mapToDto(User u) {
@@ -106,7 +147,7 @@ public class AdminService {
         dto.lastName = u.lastName;
         dto.role = u.role;
         dto.isActive = u.isActive;
-        dto.veranstaltungId = u.veranstaltung != null ? u.veranstaltung.id : null;
+        dto.veranstaltungIds = null != u.veranstaltungen ? u.veranstaltungen.stream().map(v -> v.id).toList() : Collections.emptyList();
 
         if (u instanceof Referent r) {
             dto.biography = r.biography;
@@ -130,7 +171,9 @@ public class AdminService {
     @Transactional
     public void toggleUserStatus(Long id) {
         User entity = User.findById(id);
-        if (entity != null) entity.isActive = !entity.isActive;
+        if (entity != null) {
+            entity.isActive = !entity.isActive;
+        }
     }
 
     public List<Vortrag> getAllVortraege(Long veranstaltungId) {
@@ -161,8 +204,8 @@ public class AdminService {
 
             List<AdminCsvDto> beans = csvToBean.parse();
 
-            csvToBean.getCapturedExceptions().forEach(e -> 
-                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
+            csvToBean.getCapturedExceptions().forEach(e ->
+                    LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
             );
 
             for (AdminCsvDto dto : beans) {
@@ -224,8 +267,8 @@ public class AdminService {
 
             List<VortragCsvDto> beans = csvToBean.parse();
 
-            csvToBean.getCapturedExceptions().forEach(e -> 
-                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
+            csvToBean.getCapturedExceptions().forEach(e ->
+                    LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
             );
 
             for (VortragCsvDto dto : beans) {
@@ -246,7 +289,7 @@ public class AdminService {
                         pflichtvortrag.pflichtgruppe = dto.pflichtGruppe;
                         pflichtvortrag.pflichtslot = slotsByName.get(dto.pflichtSlot);
                         if (pflichtvortrag.pflichtslot == null && dto.pflichtSlot != null && !dto.pflichtSlot.isBlank()) {
-                             LOG.warn("Vortrag '" + v.titel + "': Slot '" + dto.pflichtSlot + "' nicht gefunden.");
+                            LOG.warn("Vortrag '" + v.titel + "': Slot '" + dto.pflichtSlot + "' nicht gefunden.");
                         }
 
                         Map<Gebaeude, Raum> gebaeudeRaumMap = raeumeByName.get(dto.pflichtRaum);
@@ -322,7 +365,7 @@ public class AdminService {
             throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
         }
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
-             CsvToBean<EventSlotCsvDto> csvToBean = new CsvToBeanBuilder<EventSlotCsvDto>(reader)
+            CsvToBean<EventSlotCsvDto> csvToBean = new CsvToBeanBuilder<EventSlotCsvDto>(reader)
                     .withType(EventSlotCsvDto.class)
                     .withSeparator(';')
                     .withIgnoreLeadingWhiteSpace(true)
@@ -331,8 +374,8 @@ public class AdminService {
 
             List<EventSlotCsvDto> beans = csvToBean.parse();
 
-            csvToBean.getCapturedExceptions().forEach(e -> 
-                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
+            csvToBean.getCapturedExceptions().forEach(e ->
+                    LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
             );
 
             for (EventSlotCsvDto dto : beans) {
@@ -340,17 +383,19 @@ public class AdminService {
                     LOG.warn("Slot übersprungen: Beschreibung fehlt.");
                     continue;
                 }
-                EventSlot s = new EventSlot();
-                s.description = dto.description;
+                EventSlot slot = new EventSlot();
+                slot.description = dto.description;
                 try {
-                    s.startTime = LocalDateTime.parse(dto.day + " " + dto.startTime, DATE_FORMAT);
-                    s.endTime = LocalDateTime.parse(dto.day + " " + dto.endTime, DATE_FORMAT);
+                    slot.startTime = LocalDateTime.parse(dto.day + " " + dto.startTime, DATE_FORMAT);
+                    slot.endTime = LocalDateTime.parse(dto.day + " " + dto.endTime, DATE_FORMAT);
                 } catch (Exception e) {
                     LOG.error("Fehler beim Parsen der Zeit für Slot '" + dto.description + "': " + e.getMessage());
                     continue;
                 }
-                s.veranstaltung = v;
-                s.persist();
+                slot.veranstaltung = v;
+                slot.persist();
+
+                v.persist();
                 count++;
             }
         } catch (Exception e) {
@@ -364,7 +409,9 @@ public class AdminService {
     @Transactional
     public Vortrag updateVortrag(Long id, Vortrag updated, Long veranstaltungId) {
         Vortrag entity = Vortrag.findById(id);
-        if (entity == null || !entity.veranstaltung.id.equals(veranstaltungId)) return null;
+        if (entity == null || !entity.veranstaltung.id.equals(veranstaltungId)) {
+            return null;
+        }
         entity.titel = updated.titel;
         entity.inhalt = updated.inhalt;
         if (entity instanceof Pflichtvortrag pv && updated instanceof Pflichtvortrag updatedPv) {

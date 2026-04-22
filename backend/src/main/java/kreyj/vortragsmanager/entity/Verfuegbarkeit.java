@@ -6,11 +6,11 @@ import jakarta.persistence.*;
 public class Verfuegbarkeit extends VersionedEntity {
 
     @ManyToOne
-    @JoinColumn(name = "user_id", columnDefinition = "INTEGER")
+    @JoinColumn(name = "user_id")
     public User user;
 
     @ManyToOne
-    @JoinColumn(name = "slot_id", columnDefinition = "INTEGER")
+    @JoinColumn(name = "slot_id")
     public EventSlot slot;
 
     public boolean isAvailable = true;

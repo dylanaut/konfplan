@@ -9,10 +9,11 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"name", "beginntAm"})
+        @UniqueConstraint(columnNames = {"name", "beginntAm"})
 })
 public class Veranstaltung extends VersionedEntity {
 
@@ -32,9 +33,9 @@ public class Veranstaltung extends VersionedEntity {
 
     @ManyToMany
     @JoinTable(
-        name = "Veranstaltung_Gebaeude",
-        joinColumns = @JoinColumn(name = "veranstaltung_id", columnDefinition = "BIGINT"),
-        inverseJoinColumns = @JoinColumn(name = "gebaeude_id", columnDefinition = "BIGINT")
+            name = "Veranstaltung_Gebaeude",
+            joinColumns = @JoinColumn(name = "veranstaltung_id"),
+            inverseJoinColumns = @JoinColumn(name = "gebaeude_id")
     )
     public List<Gebaeude> gebaeude = new ArrayList<>();
 
@@ -44,4 +45,22 @@ public class Veranstaltung extends VersionedEntity {
     @ManyToMany(mappedBy = "veranstaltungen")
     @JsonIgnoreProperties("veranstaltungen")
     public Set<User> benutzer = new HashSet<>();
+
+    public Set<Admin> organisatoren() {
+        return benutzer.stream().filter(u -> u instanceof Admin)
+                .map(u -> (Admin) u)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    public Set<Teilnehmer> teilnehmer() {
+        return benutzer.stream().filter(u -> u instanceof Teilnehmer)
+                .map(u -> (Teilnehmer) u)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    public Set<Referent> referenten() {
+        return benutzer.stream().filter(u -> u instanceof Referent)
+                .map(u -> (Referent) u)
+                .collect(Collectors.toUnmodifiableSet());
+    }
 }

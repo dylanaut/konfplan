@@ -30,19 +30,19 @@ public class TeilnehmerPlanResource {
     PrioritaetService prioritaetService;
 
     @GET
-    @Path("/my-plan")
-    public List<ZuweisungDto> getMyPlan() {
+    @Path("/zuweisungen")
+    public List<ZuweisungDto> getPlan() {
         return planService.getPlanFuerTeilnehmer(jwt.getSubject());
     }
 
     @GET
-    @Path("/priorities")
-    public List<Prioritaet> getMyPriorities() {
+    @Path("/prios")
+    public List<Prioritaet> getPrios() {
         return prioritaetService.getPrioritaetenForUser(jwt.getSubject());
     }
 
     @POST
-    @Path("/priorities")
+    @Path("/prios")
     public Response savePriorities(List<PrioritaetRequest> requests) {
         prioritaetService.savePrioritaeten(jwt.getSubject(), requests);
         return Response.ok().build();

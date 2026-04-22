@@ -6,10 +6,12 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.*;
+import kreyj.vortragsmanager.entity.Admin;
 import kreyj.vortragsmanager.entity.EventSlot;
 import kreyj.vortragsmanager.entity.Veranstaltung;
 import kreyj.vortragsmanager.entity.Vortrag;
 import kreyj.vortragsmanager.service.*;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
@@ -39,6 +41,9 @@ public class VeranstaltungResource {
 
     @Inject
     PlanService planService;
+
+    @Inject
+    JsonWebToken jwt;
 
     // --- BASIS: VERANSTALTUNGEN ---
 
@@ -117,14 +122,14 @@ public class VeranstaltungResource {
     @POST
     @Path("/{vid}/benutzer")
     public Response createBenutzer(@PathParam("vid") Long vid, UserDto userDto) {
-        UserDto created = adminService.createUser(userDto, vid);
+        UserDto created = adminService.createUser(userDto, List.of(vid));
         return Response.status(Response.Status.CREATED).entity(created).build();
     }
 
     @PUT
     @Path("/{vid}/benutzer/{id}")
     public Response updateBenutzer(@PathParam("vid") Long vid, @PathParam("id") Long id, UserDto userDto) {
-        UserDto updated = adminService.updateUser(id, userDto, vid);
+        UserDto updated = adminService.updateUser(id, userDto, List.of(vid));
         if (updated == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
@@ -311,8 +316,16 @@ public class VeranstaltungResource {
         dto.logo = v.logo;
         dto.logo_link = v.logo_link;
 
-        dto.organisatorId = v.organisator != null ? v.organisator.id : null;
-        dto.organisatorName = v.organisator != null ? v.organisator.lastName : "";
+        // Organisatoren filtern und hinzufügen
+        if (v.benutzer != null) {
+            v.benutzer.stream()
+                    .filter(u -> u instanceof Admin)
+                    .forEach(u -> {
+                        dto.organisatorIds.add(u.id);
+                        dto.organisatorNamen.add(u.lastName);
+                    });
+        }
+
         dto.gebaeude = v.gebaeude.stream().map(GebaeudeResource::mapToDto).toList();
 
         return dto;
