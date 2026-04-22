@@ -43,7 +43,7 @@ public class ReferentService {
     }
 
     public List<RefVortragDto> getMeineVortraege(String email) {
-        Referent referent = Referent.find("email", email).firstResult();
+        Referent referent = (Referent) User.findByEmail(email);
         if (referent == null) return new ArrayList<>();
 
         List<Vortrag> vortraege = Vortrag.find("referent", referent).list();
@@ -58,17 +58,14 @@ public class ReferentService {
         dto.abstractText = v.inhalt;
         
         if (v instanceof Wahlvortrag wahlvortrag) {
-            dto.willingToRepeat = wahlvortrag.wiederholbar;
+            dto.wiederholbar = wahlvortrag.wiederholbar;
             dto.maxWiederholungen = wahlvortrag.maxWiederholungen;
-            // TODO: Target Audience if entity supports it
         } else if (v instanceof Pflichtvortrag pflichtvortrag) {
             dto.pflichtgruppe = pflichtvortrag.pflichtgruppe;
         }
 
         // Availabilities (aus der Verfuegbarkeit-Tabelle für den Referenten)
-        // Hier müsste die Logik ggf. verfeinert werden, wenn Verfügbarkeiten pro Vortrag gespeichert werden sollen.
-        // Aktuell scheint es global pro Referent zu sein.
-        List<Verfuegbarkeit> availabilities = Verfuegbarkeit.find("referent", v.referent).list();
+        List<Verfuegbarkeit> availabilities = Verfuegbarkeit.find("user", v.referent).list();
         dto.availabilities = availabilities.stream()
                 .filter(a -> a.isAvailable)
                 .map(a -> a.slot.id)
@@ -79,17 +76,22 @@ public class ReferentService {
 
     @Transactional
     public RefVortragDto createVortrag(String email, RefVortragDto dto) {
-        Referent referent = Referent.find("email", email).firstResult();
+        Referent referent = (Referent) User.findByEmail(email);
         if (referent == null) return null;
 
-        // Standardmäßig als Wahlvortrag erstellen (kann je nach Anforderung angepasst werden)
         Wahlvortrag vortrag = new Wahlvortrag();
         vortrag.referent = referent;
-        vortrag.veranstaltung = referent.veranstaltung;
+        
+        // Da ein Referent nun in mehreren Veranstaltungen sein kann,
+        // müssen wir die Veranstaltung für den Vortrag explizit festlegen.
+        // Für den Übergang nehmen wir die erste verfügbare oder eine aus dem DTO.
+        if (!referent.veranstaltungen.isEmpty()) {
+            vortrag.veranstaltung = referent.veranstaltungen.iterator().next();
+        }
+
         updateVortragFromDto(vortrag, dto);
         vortrag.persist();
 
-        // Verfügbarkeiten speichern
         updateAvailabilities(referent, dto.availabilities);
 
         return mapToDto(vortrag);
@@ -97,14 +99,12 @@ public class ReferentService {
 
     @Transactional
     public RefVortragDto updateVortrag(String email, Long vortragId, RefVortragDto dto) {
-        Referent referent = Referent.find("email", email).firstResult();
+        Referent referent = (Referent) User.findByEmail(email);
         Vortrag vortrag = Vortrag.findById(vortragId);
 
         if (vortrag == null || !vortrag.referent.id.equals(referent.id)) return null;
 
         updateVortragFromDto(vortrag, dto);
-        
-        // Verfügbarkeiten speichern
         updateAvailabilities(referent, dto.availabilities);
 
         return mapToDto(vortrag);
@@ -115,7 +115,7 @@ public class ReferentService {
         vortrag.inhalt = dto.abstractText;
 
         if (vortrag instanceof Wahlvortrag wahlvortrag) {
-            wahlvortrag.wiederholbar = dto.willingToRepeat;
+            wahlvortrag.wiederholbar = dto.wiederholbar;
             if (dto.maxWiederholungen > 0) {
                 wahlvortrag.maxWiederholungen = dto.maxWiederholungen;
             }
@@ -127,15 +127,13 @@ public class ReferentService {
     private void updateAvailabilities(Referent referent, List<Long> slotIds) {
         if (slotIds == null) return;
 
-        // Zuerst alle bestehenden Verfügbarkeiten auf false setzen (oder löschen)
-        Verfuegbarkeit.update("isAvailable = false where referent = ?1", referent);
+        Verfuegbarkeit.update("isAvailable = false where user = ?1", referent);
 
-        // Dann die übergebenen auf true setzen oder neu anlegen
         for (Long slotId : slotIds) {
             EventSlot slot = EventSlot.findById(slotId);
             if (slot == null) continue;
 
-            Verfuegbarkeit v = Verfuegbarkeit.find("referent = ?1 and slot = ?2", referent, slot).firstResult();
+            Verfuegbarkeit v = Verfuegbarkeit.find("user = ?1 and slot = ?2", referent, slot).firstResult();
             if (v == null) {
                 v = new Verfuegbarkeit();
                 v.user = referent;
@@ -148,7 +146,7 @@ public class ReferentService {
 
     @Transactional
     public boolean deleteVortrag(String email, Long vortragId) {
-        Referent referent = Referent.find("email", email).firstResult();
+        Referent referent = (Referent) User.findByEmail(email);
         Vortrag vortrag = Vortrag.findById(vortragId);
 
         if (vortrag == null || !vortrag.referent.id.equals(referent.id)) return false;
@@ -172,50 +170,28 @@ public class ReferentService {
                     .parse();
 
             for (ReferentCsvDto dto : beans) {
-                if (User.findByEmail(dto.email) == null) {
-                    Referent nr = new Referent();
-                    nr.email = dto.email.trim().toLowerCase();
-                    nr.firstName = dto.firstName;
-                    nr.lastName = dto.lastName;
-                    nr.jobRole = dto.jobRole;
-                    nr.organisation = dto.organisation;
-                    nr.slogan = dto.slogan;
-                    nr.biography = dto.biography;
-                    nr.veranstaltung = veranstaltung;
+                User existing = User.findByEmail(dto.email);
+                Referent ref;
+                if (existing == null) {
+                    ref = new Referent();
+                    ref.email = dto.email.trim().toLowerCase();
+                    ref.passwordHash = BcryptUtil.bcryptHash("start123");
+                    ref.persist();
+                } else if (existing instanceof Referent) {
+                    ref = (Referent) existing;
+                } else continue;
 
-                    String tempPassword = "start123";
-                    nr.passwordHash = BcryptUtil.bcryptHash(tempPassword);
+                ref.firstName = dto.firstName;
+                ref.lastName = dto.lastName;
+                ref.jobRole = dto.jobRole;
+                ref.organisation = dto.organisation;
+                ref.slogan = dto.slogan;
+                ref.biography = dto.biography;
+                ref.addVeranstaltung(veranstaltung);
 
-                    nr.persist();
-                    count++;
-                }
+                count++;
             }
         }
         return count;
-    }
-
-    @Transactional
-    public void toggleSlot(String email, Long slotId, boolean available) {
-        Referent referent = Referent.find("email", email).firstResult();
-        EventSlot slot = EventSlot.findById(slotId);
-
-        Verfuegbarkeit verfuegbarkeit = Verfuegbarkeit
-                .find("referent = ?1 and slot = ?2", referent, slot).firstResult();
-
-        if (verfuegbarkeit == null) {
-            verfuegbarkeit = new Verfuegbarkeit();
-            verfuegbarkeit.user = referent;
-            verfuegbarkeit.slot = slot;
-        }
-        verfuegbarkeit.isAvailable = available;
-        verfuegbarkeit.persist();
-    }
-
-    @Transactional
-    public void toggleEntireDay(String email, LocalDate date, boolean available) {
-        List<EventSlot> dailySlots = EventSlot.list("date(startTime) = ?1", date);
-        for (EventSlot slot : dailySlots) {
-            toggleSlot(email, slot.id, available);
-        }
     }
 }

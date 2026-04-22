@@ -1,5 +1,6 @@
 package kreyj.vortragsmanager.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import kreyj.vortragsmanager.entity.converter.LocalDateTimeConverter;
 
@@ -29,18 +30,18 @@ public class Veranstaltung extends VersionedEntity {
 
     public String logo_link;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "organisator_id", columnDefinition = "INTEGER")
-    public User organisator;
-
     @ManyToMany
     @JoinTable(
         name = "Veranstaltung_Gebaeude",
-        joinColumns = @JoinColumn(name = "veranstaltung_id", columnDefinition = "INTEGER"),
-        inverseJoinColumns = @JoinColumn(name = "gebaeude_id", columnDefinition = "INTEGER")
+        joinColumns = @JoinColumn(name = "veranstaltung_id", columnDefinition = "BIGINT"),
+        inverseJoinColumns = @JoinColumn(name = "gebaeude_id", columnDefinition = "BIGINT")
     )
     public List<Gebaeude> gebaeude = new ArrayList<>();
 
     @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL)
     public Set<EventSlot> eventSlots = new HashSet<>();
+
+    @ManyToMany(mappedBy = "veranstaltungen")
+    @JsonIgnoreProperties("veranstaltungen")
+    public Set<User> benutzer = new HashSet<>();
 }
