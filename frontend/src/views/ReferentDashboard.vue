@@ -35,7 +35,7 @@
         </button>
       </div>
 
-      <div v-if="talks.length === 0 && !isEditingNewTalk" class="text-center text-gray-500 py-8">
+      <div v-if="vortraege.length === 0 && !isEditingNewTalk" class="text-center text-gray-500 py-8">
         <p>Sie haben noch keine Vorträge angelegt.</p>
         <button @click="addNewTalk" class="mt-4 btn-primary">
           <PlusIcon class="w-5 h-5 mr-1" /> Jetzt einen Vortrag hinzufügen
@@ -43,15 +43,18 @@
       </div>
 
       <div v-else class="space-y-4">
-        <div v-for="t in talks" :key="t.id"
+        <div v-for="t in vortraege" :key="t.id"
              :class="['flex items-center justify-between p-4 border rounded-lg',
                       selectedTalk && selectedTalk.id === t.id ? 'bg-indigo-50 border-indigo-300' : 'bg-gray-50 border-gray-200']">
-          <span class="font-medium text-gray-800">{{ t.title || 'Unbenannter Vortrag' }}</span>
+          <div class="flex flex-col">
+            <span class="font-medium text-gray-800">{{ t.title || 'Unbenannter Vortrag' }}</span>
+            <span class="text-xs text-gray-500">{{ t.veranstaltungName }}</span>
+          </div>
           <div class="space-x-2">
             <button @click="selectTalk(t)" class="btn-secondary-sm">
               <EditIcon class="w-4 h-4" /> Bearbeiten
             </button>
-            <button @click="deleteTalk(t.id)" class="btn-danger-sm">
+            <button @click="deleteTalk(t)" class="btn-danger-sm">
               <Trash2Icon class="w-4 h-4" /> Löschen
             </button>
           </div>
@@ -66,6 +69,14 @@
         <h2 class="text-xl font-bold">{{ isEditingNewTalk ? 'Neuen Vortrag anlegen' : 'Vortragsdetails bearbeiten' }}</h2>
       </div>
       <div class="space-y-4">
+        <div v-if="isEditingNewTalk">
+           <label class="block text-sm font-medium text-gray-700 mb-1">Veranstaltung auswählen</label>
+           <select v-model="selectedTalk.veranstaltungId" class="input-field" required>
+              <option :value="null" disabled>-- Bitte wählen --</option>
+              <option v-for="event in events" :key="event.id" :value="event.id">{{ event.name }}</option>
+           </select>
+        </div>
+
         <div>
           <label class="block text-sm font-medium text-gray-700">Titel des Vortrags</label>
           <input v-model="selectedTalk.title" type="text" class="input-field" />
@@ -76,7 +87,7 @@
         </div>
 
         <div class="flex items-center gap-4 p-4 bg-indigo-50 rounded-lg">
-          <input v-model="selectedTalk.willingToRepeat" type="checkbox" class="w-5 h-5 text-indigo-600" id="repeat" />
+          <input v-model="selectedTalk.wiederholbar" type="checkbox" class="w-5 h-5 text-indigo-600" id="repeat" />
           <label for="repeat" class="text-sm font-medium text-indigo-900">
             Ich bin bereit, den Vortrag bei hoher Nachfrage mehrfach zu halten.
           </label>
@@ -85,10 +96,14 @@
     </section>
 
     <!-- Sektion: Verfügbarkeit -->
-    <section v-if="selectedTalk || isEditingNewTalk" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+    <section v-if="(selectedTalk || isEditingNewTalk) && selectedTalk.veranstaltungId" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       <div class="flex items-center gap-2 mb-6 text-indigo-600">
         <CalendarIcon class="w-6 h-6" />
         <h2 class="text-xl font-bold">Meine Verfügbarkeit für diesen Vortrag</h2>
+      </div>
+
+      <div v-if="relevantSlotsForTalk.length === 0" class="text-gray-500 py-4 italic">
+        Für die Veranstaltung dieses Vortrags sind noch keine Zeit-Slots angelegt.
       </div>
 
       <div v-for="(slots, date) in groupedSlots" :key="date" class="mb-8 last:mb-0">
@@ -126,27 +141,38 @@
 
       <div v-else class="space-y-6">
         <div v-for="event in events" :key="event.id" class="border border-gray-200 rounded-lg p-4">
-          <h3 class="font-bold text-lg text-gray-800 mb-2">{{ event.name }}</h3>
-          <p class="text-sm text-gray-600 mb-4">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
-
-          <div v-if="talks.length === 0" class="text-gray-500 text-sm">
-            Sie haben noch keine Vorträge, die Sie für diese Veranstaltung anmelden könnten.
+          <div class="flex justify-between items-start mb-4">
+             <div>
+               <h3 class="font-bold text-lg text-gray-800">{{ event.name }}</h3>
+               <p class="text-sm text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
+             </div>
+             <span v-if="!isFutureEvent(event)" class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">Vergangen</span>
+             <span v-else class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Zukünftig</span>
           </div>
-          <div v-else class="space-y-3">
-            <div v-for="talkItem in talks" :key="talkItem.id" class="flex items-center justify-between p-3 bg-gray-50 rounded-md">
-              <span class="text-sm font-medium text-gray-700">{{ talkItem.title || 'Unbenannter Vortrag' }}</span>
-              <div>
-                <button v-if="!isTalkRegisteredForEvent(event.id, talkItem.id)"
-                        @click="registerTalkForEvent(event.id, talkItem.id)"
-                        class="btn-primary-sm">
-                  <CheckIcon class="w-4 h-4 mr-1" /> Anmelden
-                </button>
-                <button v-else
-                        @click="deregisterTalkFromEvent(event.id, talkItem.id)"
-                        class="btn-danger-sm">
-                  <XIcon class="w-4 h-4 mr-1" /> Abmelden
+
+          <div class="space-y-3">
+            <!-- Schon angemeldete Vorträge -->
+            <div v-for="talkItem in vortraege.filter(t => t.veranstaltungId === event.id)" :key="talkItem.id"
+                 class="flex items-center justify-between p-3 bg-indigo-50 border border-indigo-100 rounded-md">
+              <span class="text-sm font-medium text-indigo-900">{{ talkItem.title }}</span>
+              <button v-if="isFutureEvent(event)" @click="deregisterTalkFromEvent(event.id, talkItem.id)" class="btn-danger-sm">
+                <XIcon class="w-4 h-4 mr-1" /> Zurückziehen
+              </button>
+            </div>
+
+            <!-- Klon-Optionen (Vorträge aus anderen Veranstaltungen) -->
+            <template v-if="isFutureEvent(event)">
+               <div v-for="talkItem in getTalksFromOtherEvents(event.id)" :key="'other-'+talkItem.id"
+                   class="flex items-center justify-between p-3 bg-gray-50 rounded-md opacity-75">
+                <span class="text-sm text-gray-600 italic">{{ talkItem.title }} (von {{ talkItem.veranstaltungName }})</span>
+                <button @click="registerTalkForEvent(event.id, talkItem.id)" class="btn-primary-sm">
+                  <PlusIcon class="w-4 h-4 mr-1" /> In dieses Event kopieren
                 </button>
               </div>
+            </template>
+
+            <div v-if="vortraege.length === 0" class="text-gray-500 text-sm italic">
+               Sie haben noch keine Vorträge angelegt.
             </div>
           </div>
         </div>
@@ -169,7 +195,7 @@ import { User as UserIcon, FileText as FileTextIcon, Calendar as CalendarIcon, S
 
 const referent = ref({});
 const allSlots = ref([]);
-const talks = ref([]);
+const vortraege = ref([]);
 const selectedTalk = ref(null);
 const isEditingNewTalk = ref(false);
 const events = ref([]);
@@ -177,7 +203,7 @@ const events = ref([]);
 onMounted(async () => {
   await fetchReferentData();
   await fetchAllSlots();
-  await fetchReferentTalks();
+  await fetchReferentenVortraege();
   await fetchEventsForRegistration();
 });
 
@@ -199,13 +225,13 @@ const fetchAllSlots = async () => {
   }
 };
 
-const fetchReferentTalks = async () => {
+const fetchReferentenVortraege = async () => {
   try {
     const talksRes = await api.get('/api/referenten/vortraege');
-    talks.value = talksRes.data;
-    if (talks.value.length > 0 && !selectedTalk.value) {
-      selectedTalk.value = talks.value[0];
-    } else if (talks.value.length === 0) {
+    vortraege.value = talksRes.data;
+    if (vortraege.value.length > 0 && !selectedTalk.value) {
+      selectedTalk.value = { ...vortraege.value[0] };
+    } else if (vortraege.value.length === 0) {
       selectedTalk.value = null;
     }
     isEditingNewTalk.value = false;
@@ -223,9 +249,15 @@ const fetchEventsForRegistration = async () => {
   }
 };
 
+const relevantSlotsForTalk = computed(() => {
+  if (!selectedTalk.value || !selectedTalk.value.veranstaltungId) return [];
+  // Nur Slots anzeigen, die zur Veranstaltung des Vortrags gehören
+  return allSlots.value.filter(s => s.veranstaltungId === selectedTalk.value.veranstaltungId);
+});
+
 const groupedSlots = computed(() => {
   const groups = {};
-  allSlots.value.forEach(slot => {
+  relevantSlotsForTalk.value.forEach(slot => {
     const date = slot.startTime.split('T')[0];
     if (!groups[date]) groups[date] = [];
     groups[date].push(slot);
@@ -269,42 +301,69 @@ const addNewTalk = () => {
   selectedTalk.value = {
     title: '',
     abstractText: '',
-    willingToRepeat: false,
-    availabilities: []
+    wiederholbar: false,
+    availabilities: [],
+    veranstaltungId: events.value.length > 0 ? events.value[0].id : null
   };
   isEditingNewTalk.value = true;
 };
 
-const deleteTalk = async (talkId) => {
+const deleteTalk = async (talk) => {
+  const event = events.value.find(e => e.id === talk.veranstaltungId);
+  if (event && !isFutureEvent(event)) {
+      alert("Vorträge für vergangene Veranstaltungen können nicht gelöscht werden.");
+      return;
+  }
   if (!confirm('Sind Sie sicher?')) return;
   try {
-    await api.delete(`/api/referenten/vortraege/${talkId}`);
+    await api.delete(`/api/referenten/vortraege/${talk.id}`);
     selectedTalk.value = null;
-    await fetchReferentTalks();
+    await fetchReferentenVortraege();
     await fetchEventsForRegistration();
   } catch (e) {
     console.error("Fehler beim Löschen:", e);
   }
 };
 
-const isTalkRegisteredForEvent = (eventId, talkId) => {
-  const event = events.value.find(e => e.id === eventId);
-  return event && event.registeredTalkIds && event.registeredTalkIds.includes(talkId);
+const isFutureEvent = (event) => {
+    if (!event || !event.beginntAm) return false;
+    return new Date(event.beginntAm) > new Date();
+};
+
+const getTalksFromOtherEvents = (targetEventId) => {
+    const existingTitles = vortraege.value
+        .filter(t => t.veranstaltungId === targetEventId)
+        .map(t => t.title);
+
+    const otherTalks = vortraege.value.filter(t => t.veranstaltungId !== targetEventId);
+    const uniqueOther = [];
+    const seenTitles = new Set();
+
+    for (const t of otherTalks) {
+        if (!existingTitles.includes(t.title) && !seenTitles.has(t.title)) {
+            uniqueOther.push(t);
+            seenTitles.add(t.title);
+        }
+    }
+    return uniqueOther;
 };
 
 const registerTalkForEvent = async (eventId, talkId) => {
   try {
-    await api.post(`/api/veranstaltungen/${eventId}/vortraege/${talkId}/register`);
+    await api.post(`/api/referenten/events/${eventId}/vortraege/${talkId}/register`);
+    await fetchReferentenVortraege();
     await fetchEventsForRegistration();
+    alert("Vortrag wurde erfolgreich kopiert.");
   } catch (e) {
     console.error("Fehler beim Anmelden:", e);
   }
 };
 
 const deregisterTalkFromEvent = async (eventId, talkId) => {
-  if (!confirm('Abmelden?')) return;
+  if (!confirm('Abmelden? Dies zieht den Vortrag für diese Veranstaltung zurück.')) return;
   try {
-    await api.delete(`/api/veranstaltungen/${eventId}/vortraege/${talkId}/deregister`);
+    await api.delete(`/api/referenten/events/${eventId}/vortraege/${talkId}/deregister`);
+    await fetchReferentenVortraege();
     await fetchEventsForRegistration();
   } catch (e) {
     console.error("Fehler beim Abmelden:", e);
@@ -320,7 +379,8 @@ const saveAll = async () => {
       } else {
         await api.put(`/api/referenten/vortraege/${selectedTalk.value.id}`, selectedTalk.value);
       }
-      await fetchReferentTalks();
+      await fetchReferentenVortraege();
+      await fetchEventsForRegistration();
     }
     alert("Gespeichert!");
   } catch (e) {

@@ -1,6 +1,8 @@
 package kreyj.vortragsmanager.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import java.util.List;
+import java.util.ArrayList;
 
 @RegisterForReflection
 public class UserDto extends VersionedDto {
@@ -9,7 +11,7 @@ public class UserDto extends VersionedDto {
     public String lastName;
     public String role;
     public boolean isActive;
-    public Long veranstaltungId;
+    public List<Long> veranstaltungIds = new ArrayList<>();
 
     // Referent-spezifisch
     public String biography;

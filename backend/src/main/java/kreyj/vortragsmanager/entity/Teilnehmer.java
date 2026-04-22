@@ -20,11 +20,12 @@ public class Teilnehmer extends User {
     @ManyToMany
     @JoinTable(
             name = "Teilnehmer_EventSlot",
-            joinColumns = @JoinColumn(name = "teilnehmer_id", columnDefinition = "INTEGER"),
-            inverseJoinColumns = @JoinColumn(name = "eventslot_id", columnDefinition = "INTEGER")
+            joinColumns = @JoinColumn(name = "teilnehmer_id"),
+            inverseJoinColumns = @JoinColumn(name = "eventslot_id")
     )
     public List<EventSlot> verfuegbareSlots = new ArrayList<>();
 
     public Teilnehmer() {
+        this.role = "TEILNEHMER";
     }
 }

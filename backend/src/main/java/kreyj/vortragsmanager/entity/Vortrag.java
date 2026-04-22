@@ -22,11 +22,11 @@ public abstract class Vortrag extends VersionedEntity {
     public String inhalt;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "referent_id", columnDefinition = "INTEGER")
+    @JoinColumn(name = "referent_id")
     public Referent referent;
 
     @ManyToOne(optional = false) // Relation zur Veranstaltung
-    @JoinColumn(name = "veranstaltung_id", columnDefinition = "INTEGER")
+    @JoinColumn(name = "veranstaltung_id")
     public Veranstaltung veranstaltung;
 
     @JsonProperty("istPflicht")

@@ -28,5 +28,7 @@ public class Referent extends User {
     @OneToMany(mappedBy = "referent", cascade = CascadeType.ALL)
     public List<Vortrag> vortraege = new ArrayList<>();
 
-    public Referent() {}
+    public Referent() {
+        this.role = "REFERENT";
+    }
 }

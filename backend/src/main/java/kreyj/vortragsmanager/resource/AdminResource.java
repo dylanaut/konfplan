@@ -36,13 +36,13 @@ public class AdminResource {
     @POST
     @Path("/benutzer")
     public UserDto createUser(UserDto dto) {
-        return adminService.createUser(dto, dto.veranstaltungId);
+        return adminService.createUser(dto, dto.veranstaltungIds);
     }
 
     @PUT
     @Path("/benutzer/{id}")
     public UserDto updateUser(@PathParam("id") Long id, UserDto dto) {
-        return adminService.updateUser(id, dto, dto.veranstaltungId);
+        return adminService.updateUser(id, dto, dto.veranstaltungIds);
     }
 
     @DELETE

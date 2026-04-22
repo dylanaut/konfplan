@@ -4,13 +4,15 @@ import java.util.List;
 
 public class RefVortragDto extends VersionedDto {
     public Long id;
-    public String title;
+    public String titel;
     public String abstractText;
-    public String targetAudience;
-    public boolean willingToRepeat;
-    public List<Long> availabilities; // Liste der Slot-IDs
-    
+    public String zielgruppe;
+    public boolean wiederholbar;
+    public List<Long> verfuegIds; // Liste der Slot-IDs
+
     // Bestehende Felder (aus Kompatibilitätsgründen oder falls benötigt)
     public String pflichtgruppe;
     public int maxWiederholungen;
+    public Long veranstaltungId;
+    public String veranstaltungName;
 }

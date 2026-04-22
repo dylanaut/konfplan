@@ -3,21 +3,27 @@ package kreyj.vortragsmanager.service;
 import com.opencsv.bean.CsvToBeanBuilder;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.dto.RefProfilDto;
 import kreyj.vortragsmanager.dto.RefVortragDto;
+import kreyj.vortragsmanager.dto.ReferentVeranstaltungDto;
 import kreyj.vortragsmanager.dto.csv.ReferentCsvDto;
 import kreyj.vortragsmanager.entity.*;
+import org.jboss.logging.Logger;
 
 import java.io.FileReader;
 import java.nio.file.Path;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class ReferentService {
+    private static final Logger LOG = Logger.getLogger(ReferentService.class);
+
+    @Inject
+    MailService mailService;
 
     public Referent getProfile(String email) {
         User user = User.findByEmail(email);
@@ -50,29 +56,52 @@ public class ReferentService {
         return vortraege.stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
+    public List<ReferentVeranstaltungDto> getReferentVeranstaltungen(String email) {
+        Referent referent = Referent.find("email", email).firstResult();
+        if (referent == null) return new ArrayList<>();
+
+        // Alle Veranstaltungen, bei denen der Referent gelistet ist
+        Set<Veranstaltung> events = new HashSet<>(referent.veranstaltungen);
+
+        // Und alle Veranstaltungen, für die er bereits einen Vortrag hat
+        List<Vortrag> vortraege = Vortrag.find("referent", referent).list();
+        vortraege.stream().map(t -> t.veranstaltung).forEach(events::add);
+
+        return events.stream().map(e -> {
+            ReferentVeranstaltungDto dto = new ReferentVeranstaltungDto();
+            dto.id = e.id;
+            dto.name = e.name;
+            dto.beginntAm = e.beginntAm;
+            dto.endetAm = e.endetAm;
+            dto.registeredTalkIds = vortraege.stream()
+                    .filter(t -> t.veranstaltung.id.equals(e.id))
+                    .map(t -> t.id)
+                    .collect(Collectors.toList());
+            return dto;
+        }).sorted(Comparator.comparing(e -> e.beginntAm)).collect(Collectors.toList());
+    }
+
     private RefVortragDto mapToDto(Vortrag v) {
         RefVortragDto dto = new RefVortragDto();
         dto.id = v.id;
         dto.version = v.version;
-        dto.title = v.titel;
+        dto.titel = v.titel;
         dto.abstractText = v.inhalt;
-        
+        dto.veranstaltungId = v.veranstaltung.id;
+        dto.veranstaltungName = v.veranstaltung.name;
+
         if (v instanceof Wahlvortrag wahlvortrag) {
-            dto.willingToRepeat = wahlvortrag.wiederholbar;
+            dto.wiederholbar = wahlvortrag.wiederholbar;
             dto.maxWiederholungen = wahlvortrag.maxWiederholungen;
-            // TODO: Target Audience if entity supports it
+            dto.verfuegIds = wahlvortrag.wahlSlots.stream()
+                    .map(s -> s.id)
+                    .collect(Collectors.toList());
         } else if (v instanceof Pflichtvortrag pflichtvortrag) {
             dto.pflichtgruppe = pflichtvortrag.pflichtgruppe;
+            if (pflichtvortrag.pflichtslot != null) {
+                dto.verfuegIds = List.of(pflichtvortrag.pflichtslot.id);
+            }
         }
-
-        // Availabilities (aus der Verfuegbarkeit-Tabelle für den Referenten)
-        // Hier müsste die Logik ggf. verfeinert werden, wenn Verfügbarkeiten pro Vortrag gespeichert werden sollen.
-        // Aktuell scheint es global pro Referent zu sein.
-        List<Verfuegbarkeit> availabilities = Verfuegbarkeit.find("referent", v.referent).list();
-        dto.availabilities = availabilities.stream()
-                .filter(a -> a.isAvailable)
-                .map(a -> a.slot.id)
-                .collect(Collectors.toList());
 
         return dto;
     }
@@ -82,15 +111,18 @@ public class ReferentService {
         Referent referent = Referent.find("email", email).firstResult();
         if (referent == null) return null;
 
-        // Standardmäßig als Wahlvortrag erstellen (kann je nach Anforderung angepasst werden)
+        Veranstaltung veranstaltung = Veranstaltung.findById(dto.veranstaltungId);
+        if (veranstaltung == null) throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
+
         Wahlvortrag vortrag = new Wahlvortrag();
         vortrag.referent = referent;
-        vortrag.veranstaltung = referent.veranstaltung;
+        vortrag.veranstaltung = veranstaltung;
         updateVortragFromDto(vortrag, dto);
         vortrag.persist();
 
-        // Verfügbarkeiten speichern
-        updateAvailabilities(referent, dto.availabilities);
+        if (vortrag.veranstaltung.beginntAm.isAfter(LocalDateTime.now())) {
+            mailService.sendTalkRegistrationNotification(vortrag.veranstaltung, referent, vortrag, true);
+        }
 
         return mapToDto(vortrag);
     }
@@ -103,46 +135,89 @@ public class ReferentService {
         if (vortrag == null || !vortrag.referent.id.equals(referent.id)) return null;
 
         updateVortragFromDto(vortrag, dto);
-        
-        // Verfügbarkeiten speichern
-        updateAvailabilities(referent, dto.availabilities);
-
         return mapToDto(vortrag);
     }
 
-    private void updateVortragFromDto(Vortrag vortrag, RefVortragDto dto) {
-        vortrag.titel = dto.title;
-        vortrag.inhalt = dto.abstractText;
+    @Transactional
+    public void registerTalkForEvent(String email, Long talkId, Long eventId) {
+        Referent referent = Referent.find("email", email).firstResult();
+        Vortrag sourceTalk = Vortrag.findById(talkId);
+        Veranstaltung targetEvent = Veranstaltung.findById(eventId);
 
-        if (vortrag instanceof Wahlvortrag wahlvortrag) {
-            wahlvortrag.wiederholbar = dto.willingToRepeat;
-            if (dto.maxWiederholungen > 0) {
-                wahlvortrag.maxWiederholungen = dto.maxWiederholungen;
-            }
-        } else if (vortrag instanceof Pflichtvortrag pflichtvortrag) {
-            pflichtvortrag.pflichtgruppe = dto.pflichtgruppe;
+        if (referent == null || sourceTalk == null || targetEvent == null) return;
+        if (!sourceTalk.referent.id.equals(referent.id)) return;
+
+        // Prüfen, ob bereits ein Vortrag mit diesem Titel in der Zielveranstaltung existiert
+        boolean exists = Vortrag.find("referent = ?1 and veranstaltung = ?2 and titel = ?3", referent, targetEvent, sourceTalk.titel).count() > 0;
+        if (exists) return;
+
+        Vortrag newTalk;
+        if (sourceTalk instanceof Wahlvortrag sw) {
+            Wahlvortrag nw = new Wahlvortrag();
+            nw.wiederholbar = sw.wiederholbar;
+            nw.maxWiederholungen = sw.maxWiederholungen;
+            // Wir übernehmen keine Slots, da diese veranstaltungsspezifisch sind!
+            newTalk = nw;
+        } else {
+            Pflichtvortrag np = new Pflichtvortrag();
+            np.pflichtgruppe = ((Pflichtvortrag) sourceTalk).pflichtgruppe;
+            newTalk = np;
+        }
+
+        newTalk.titel = sourceTalk.titel;
+        newTalk.inhalt = sourceTalk.inhalt;
+        newTalk.referent = referent;
+        newTalk.veranstaltung = targetEvent;
+        newTalk.persist();
+
+        if (targetEvent.beginntAm.isAfter(LocalDateTime.now())) {
+            mailService.sendTalkRegistrationNotification(targetEvent, referent, newTalk, true);
         }
     }
 
-    private void updateAvailabilities(Referent referent, List<Long> slotIds) {
-        if (slotIds == null) return;
+    @Transactional
+    public void deregisterTalkFromEvent(String email, Long talkId, Long eventId) {
+        Referent referent = Referent.find("email", email).firstResult();
+        Vortrag talk = Vortrag.findById(talkId);
+        Veranstaltung event = Veranstaltung.findById(eventId);
 
-        // Zuerst alle bestehenden Verfügbarkeiten auf false setzen (oder löschen)
-        Verfuegbarkeit.update("isAvailable = false where referent = ?1", referent);
+        if (referent == null || talk == null || event == null) return;
+        if (!talk.referent.id.equals(referent.id) || !talk.veranstaltung.id.equals(event.id)) return;
 
-        // Dann die übergebenen auf true setzen oder neu anlegen
-        for (Long slotId : slotIds) {
-            EventSlot slot = EventSlot.findById(slotId);
-            if (slot == null) continue;
+        talk.delete();
 
-            Verfuegbarkeit v = Verfuegbarkeit.find("referent = ?1 and slot = ?2", referent, slot).firstResult();
-            if (v == null) {
-                v = new Verfuegbarkeit();
-                v.user = referent;
-                v.slot = slot;
+        if (event.beginntAm.isAfter(LocalDateTime.now())) {
+            mailService.sendTalkRegistrationNotification(event, referent, talk, false);
+        }
+    }
+
+    private void updateVortragFromDto(Vortrag vortrag, RefVortragDto dto) {
+        vortrag.titel = dto.titel;
+        vortrag.inhalt = dto.abstractText;
+
+        if (vortrag instanceof Wahlvortrag wahlvortrag) {
+            wahlvortrag.wiederholbar = dto.wiederholbar;
+            if (dto.maxWiederholungen > 0) {
+                wahlvortrag.maxWiederholungen = dto.maxWiederholungen;
             }
-            v.isAvailable = true;
-            v.persist();
+            if (dto.verfuegIds != null) {
+                wahlvortrag.wahlSlots.clear();
+                for (Long sid : dto.verfuegIds) {
+                    EventSlot slot = EventSlot.findById(sid);
+                    // Validierung: Slot muss zur Veranstaltung des Vortrags gehören
+                    if (slot != null && slot.veranstaltung.id.equals(vortrag.veranstaltung.id)) {
+                        wahlvortrag.wahlSlots.add(slot);
+                    }
+                }
+            }
+        } else if (vortrag instanceof Pflichtvortrag pflichtvortrag) {
+            pflichtvortrag.pflichtgruppe = dto.pflichtgruppe;
+            if (dto.verfuegIds != null && !dto.verfuegIds.isEmpty()) {
+                EventSlot slot = EventSlot.findById(dto.verfuegIds.get(0));
+                if (slot != null && slot.veranstaltung.id.equals(vortrag.veranstaltung.id)) {
+                    pflichtvortrag.pflichtslot = slot;
+                }
+            }
         }
     }
 
@@ -153,7 +228,13 @@ public class ReferentService {
 
         if (vortrag == null || !vortrag.referent.id.equals(referent.id)) return false;
 
+        Veranstaltung event = vortrag.veranstaltung;
         vortrag.delete();
+
+        if (event.beginntAm.isAfter(LocalDateTime.now())) {
+            mailService.sendTalkRegistrationNotification(event, referent, vortrag, false);
+        }
+
         return true;
     }
 
@@ -172,50 +253,34 @@ public class ReferentService {
                     .parse();
 
             for (ReferentCsvDto dto : beans) {
-                if (User.findByEmail(dto.email) == null) {
-                    Referent nr = new Referent();
-                    nr.email = dto.email.trim().toLowerCase();
-                    nr.firstName = dto.firstName;
-                    nr.lastName = dto.lastName;
-                    nr.jobRole = dto.jobRole;
-                    nr.organisation = dto.organisation;
-                    nr.slogan = dto.slogan;
-                    nr.biography = dto.biography;
-                    nr.veranstaltung = veranstaltung;
-
+                User existingUser = User.findByEmail(dto.email);
+                Referent ref;
+                if (existingUser == null) {
+                    ref = new Referent();
+                    ref.email = dto.email.trim().toLowerCase();
                     String tempPassword = "start123";
-                    nr.passwordHash = BcryptUtil.bcryptHash(tempPassword);
-
-                    nr.persist();
-                    count++;
+                    ref.passwordHash = BcryptUtil.bcryptHash(tempPassword);
+                    ref.persist();
+                } else if (existingUser instanceof Referent) {
+                    ref = (Referent) existingUser;
+                } else {
+                    LOG.warn("User mit Email " + dto.email + " existiert bereits, ist aber kein Referent. Überspringe.");
+                    continue;
                 }
+
+                ref.firstName = dto.firstName;
+                ref.lastName = dto.lastName;
+                ref.jobRole = dto.jobRole;
+                ref.organisation = dto.organisation;
+                ref.slogan = dto.slogan;
+                ref.biography = dto.biography;
+                if (!ref.veranstaltungen.contains(veranstaltung)) {
+                    ref.veranstaltungen.add(veranstaltung);
+                }
+
+                count++;
             }
         }
         return count;
-    }
-
-    @Transactional
-    public void toggleSlot(String email, Long slotId, boolean available) {
-        Referent referent = Referent.find("email", email).firstResult();
-        EventSlot slot = EventSlot.findById(slotId);
-
-        Verfuegbarkeit verfuegbarkeit = Verfuegbarkeit
-                .find("referent = ?1 and slot = ?2", referent, slot).firstResult();
-
-        if (verfuegbarkeit == null) {
-            verfuegbarkeit = new Verfuegbarkeit();
-            verfuegbarkeit.user = referent;
-            verfuegbarkeit.slot = slot;
-        }
-        verfuegbarkeit.isAvailable = available;
-        verfuegbarkeit.persist();
-    }
-
-    @Transactional
-    public void toggleEntireDay(String email, LocalDate date, boolean available) {
-        List<EventSlot> dailySlots = EventSlot.list("date(startTime) = ?1", date);
-        for (EventSlot slot : dailySlots) {
-            toggleSlot(email, slot.id, available);
-        }
     }
 }
