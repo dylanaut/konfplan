@@ -4,6 +4,7 @@ import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.UserDto;
@@ -29,6 +30,9 @@ public class AdminService {
     private static final Logger LOG = Logger.getLogger(AdminService.class);
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+    @Inject
+    MailService mailService;
 
     public List<UserDto> getAllUsers(Long veranstaltungId) {
         List<User> admins = User.list("role = 'ADMIN'");
@@ -128,15 +132,39 @@ public class AdminService {
         }
 
         if (user instanceof Referent r) {
-            r.biography = r.biography;
-            r.jobRole = r.jobRole;
-            r.organisation = r.organisation;
-            r.slogan = r.slogan;
+            r.biography = dto.biography;
+            r.jobRole = dto.jobRole;
+            r.organisation = dto.organisation;
+            r.slogan = dto.slogan;
         } else if (user instanceof Teilnehmer t) {
-            t.gruppe = t.gruppe;
+            t.gruppe = dto.gruppe;
         }
 
         return mapToDto(user);
+    }
+
+    @Transactional
+    public void inviteUserToEvent(Long userId, Long eventId) {
+        User user = User.findById(userId);
+        Veranstaltung event = Veranstaltung.findById(eventId);
+
+        if (user == null || event == null) {
+            throw new IllegalArgumentException("Benutzer oder Veranstaltung nicht gefunden.");
+        }
+
+        // Validierung: Veranstaltung darf nicht in der Vergangenheit liegen (Enddatum prüfen)
+        LocalDateTime now = LocalDateTime.now();
+        if (event.endetAm != null && event.endetAm.isBefore(now)) {
+            throw new IllegalArgumentException("Die Veranstaltung '" + event.name + "' ist bereits beendet.");
+        }
+
+        if (!user.veranstaltungen.contains(event)) {
+            user.addVeranstaltung(event);
+            mailService.sendEventInvitation(user, event);
+            LOG.info("Benutzer " + user.email + " zu Veranstaltung " + event.name + " eingeladen.");
+        } else {
+            LOG.info("Benutzer " + user.email + " ist bereits für Veranstaltung " + event.name + " registriert.");
+        }
     }
 
     private UserDto mapToDto(User u) {
@@ -159,9 +187,6 @@ public class AdminService {
         }
         return dto;
     }
-
-    // ... (Restliche Methoden für Vorträge, Slots etc. analog anpassen oder beibehalten) ...
-    // Hinweis: Auch für Vorträge sollten wir DTOs nutzen, um Zyklen zu vermeiden!
 
     @Transactional
     public boolean deleteUser(Long id) {

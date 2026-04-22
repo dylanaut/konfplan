@@ -713,6 +713,7 @@ const vortraege = ref([]);
 const eventSlots = ref([]);
 const belegungsPlan = ref([]);
 const qualitaet = ref({});
+const verfuegbarkeiten = ref([]);
 
 const isGlobalLoading = ref(false);
 
@@ -911,9 +912,10 @@ const loadData = async () => {
   if (!selectedVid.value) return;
   const base = `/api/veranstaltungen/${selectedVid.value}`;
   try {
-    const [uRes, vRes, sRes, pRes, qRes] = await Promise.all([
+    const [uRes, vRes, sRes, pRes, qRes, avRes] = await Promise.all([
       api.get(`${base}/benutzer`), api.get(`${base}/vortraege`),
-      api.get(`${base}/slots`), api.get(`${base}/plan/details`), api.get(`${base}/plan/qualitaet`)
+      api.get(`${base}/slots`), api.get(`${base}/plan/details`), api.get(`${base}/plan/qualitaet`),
+      api.get(`/api/admin/veranstaltung/${selectedVid.value}/verfuegbarkeiten`)
     ]);
     const localUsers = uRes.data;
     const globalAdmins = users.value.filter(u => u.role === 'ADMIN');
@@ -923,6 +925,7 @@ const loadData = async () => {
     eventSlots.value = sRes.data;
     belegungsPlan.value = pRes.data;
     qualitaet.value = qRes.data;
+    verfuegbarkeiten.value = avRes.data;
   } catch (err) {
     console.error('Fehler beim Laden der Veranstaltungsdaten:', err);
   }
@@ -935,7 +938,7 @@ const openVeranstaltungEditor = (v) => {
     beginntAm: '',
     endetAm: '',
     gebaeude: [],
-    organisatorId: admins.value[0]?.id
+    organisatorIds: []
   };
   showVeranstaltungModal.value = true;
 };
@@ -1129,6 +1132,25 @@ const deleteSlot = async (id) => {
     } catch (e) {
       console.error('Fehler beim Löschen des Slots:', e);
     }
+  }
+};
+
+const isAvailable = (userId, slotId) => {
+  return verfuegbarkeiten.value.some(v => v.userId === userId && v.slotId === slotId && v.isAvailable);
+};
+
+const toggleAvailability = async (userId, slotId, isAvailable) => {
+  try {
+    await api.post('/api/admin/verfuegbarkeit', { userId, slotId, isAvailable });
+    // Lokalen State aktualisieren
+    const idx = verfuegbarkeiten.value.findIndex(v => v.userId === userId && v.slotId === slotId);
+    if (idx !== -1) {
+      verfuegbarkeiten.value[idx].isAvailable = isAvailable;
+    } else {
+      verfuegbarkeiten.value.push({ userId, slotId, isAvailable });
+    }
+  } catch (e) {
+    console.error('Fehler beim Aktualisieren der Verfügbarkeit:', e);
   }
 };
 

@@ -52,6 +52,17 @@ public class AdminResource {
     }
 
     @POST
+    @Path("/benutzer/{userId}/einladen/{eventId}")
+    public Response inviteUser(@PathParam("userId") Long userId, @PathParam("eventId") Long eventId) {
+        try {
+            adminService.inviteUserToEvent(userId, eventId);
+            return Response.ok("Benutzer erfolgreich eingeladen.").build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
+
+    @POST
     @Path("/admins/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response importAdmins(@RestForm("file") FileUpload file) {
@@ -66,7 +77,7 @@ public class AdminResource {
     @GET
     @Path("/veranstaltung/{vid}/verfuegbarkeiten")
     public List<VerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
-        return Verfuegbarkeit.find("user.veranstaltung.id = ?1", vid).stream()
+        return Verfuegbarkeit.find("select v from Verfuegbarkeit v join v.user u join u.veranstaltungen va where va.id = ?1", vid).stream()
                 .map(v -> {
                     Verfuegbarkeit vf = (Verfuegbarkeit) v;
                     return new VerfuegbarkeitDto(vf.user.id, vf.slot.id, vf.isAvailable);
@@ -75,12 +86,18 @@ public class AdminResource {
     }
 
     @POST
-    @Path("/verfuegbarkeit")
+    @Path("/veranstaltung/{vid}/verfuegbarkeit")
     @Transactional
-    public Response updateVerfuegbarkeit(VerfuegbarkeitDto dto) {
+    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, VerfuegbarkeitDto dto) {
         User user = User.findById(dto.userId);
         EventSlot slot = EventSlot.findById(dto.slotId);
         if (user == null || slot == null) return Response.status(Response.Status.NOT_FOUND).build();
+
+        // Validierung: Gehört der Slot zur angegebenen Veranstaltung?
+        if (!slot.veranstaltung.id.equals(vid)) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Slot gehört nicht zur angegebenen Veranstaltung.").build();
+        }
 
         Verfuegbarkeit v = Verfuegbarkeit.find("user = ?1 and slot = ?2", user, slot).firstResult();
         if (v == null) {
