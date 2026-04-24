@@ -110,21 +110,21 @@ public class VeranstaltungResource {
     // --- HIERARCHISCH (PRO VERANSTALTUNG) ---
 
     @GET
-    @Path("/{vid}/benutzer")
-    public List<UserDto> getBenutzer(@PathParam("vid") Long vid) {
+    @Path("/{vid}/nutzer")
+    public List<UserDto> getNutzer(@PathParam("vid") Long vid) {
         return adminService.getAllUsers(vid);
     }
 
     @POST
-    @Path("/{vid}/benutzer")
-    public Response createBenutzer(@PathParam("vid") Long vid, UserDto userDto) {
+    @Path("/{vid}/nutzer")
+    public Response createNutzer(@PathParam("vid") Long vid, UserDto userDto) {
         UserDto created = adminService.createUser(userDto, List.of(vid));
         return Response.status(Response.Status.CREATED).entity(created).build();
     }
 
     @PUT
-    @Path("/{vid}/benutzer/{id}")
-    public Response updateBenutzer(@PathParam("vid") Long vid, @PathParam("id") Long id, UserDto userDto) {
+    @Path("/{vid}/nutzer/{id}")
+    public Response updateNutzer(@PathParam("vid") Long vid, @PathParam("id") Long id, UserDto userDto) {
         UserDto updated = adminService.updateUser(id, userDto, List.of(vid));
         if (updated == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -133,8 +133,8 @@ public class VeranstaltungResource {
     }
 
     @DELETE
-    @Path("/{vid}/benutzer/{id}")
-    public Response deleteBenutzer(@PathParam("vid") Long vid, @PathParam("id") Long id) {
+    @Path("/{vid}/nutzer/{id}")
+    public Response deleteNutzer(@PathParam("vid") Long vid, @PathParam("id") Long id) {
         boolean deleted = adminService.deleteUser(id);
         if (!deleted) {
             return Response.status(Response.Status.NOT_FOUND).build();

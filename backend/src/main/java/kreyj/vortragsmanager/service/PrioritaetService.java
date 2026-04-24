@@ -19,7 +19,7 @@ public class PrioritaetService {
     @Transactional
     public void savePrioritaeten(String email, List<PrioritaetRequest> requests) {
         Nutzer nutzer = Nutzer.findByEmail(email);
-        if (!(nutzer instanceof Teilnehmer)) throw new WebApplicationException("Benutzer ist kein Teilnehmer", 400);
+        if (!(nutzer instanceof Teilnehmer)) throw new WebApplicationException("Nutzer ist kein Teilnehmer", 400);
         Teilnehmer teilnehmer = (Teilnehmer) nutzer;
 
         // Deadline Check
@@ -66,7 +66,7 @@ public class PrioritaetService {
 
     public List<Prioritaet> getPrioritaetenForUser(String email) {
         Nutzer nutzer = Nutzer.findByEmail(email);
-        if (!(nutzer instanceof Teilnehmer)) throw new WebApplicationException("Benutzer ist kein Teilnehmer", 400);
+        if (!(nutzer instanceof Teilnehmer)) throw new WebApplicationException("Nutzer ist kein Teilnehmer", 400);
         Teilnehmer teilnehmer = (Teilnehmer) nutzer;
         return Prioritaet.list("teilnehmer", teilnehmer);
     }

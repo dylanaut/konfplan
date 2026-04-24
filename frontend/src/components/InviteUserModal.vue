@@ -2,7 +2,7 @@
   <div v-if="isVisible" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
     <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl animate-fade-in">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-bold text-gray-900">Benutzer einladen</h2>
+        <h2 class="text-xl font-bold text-gray-900">Nutzer einladen</h2>
         <button @click="$emit('close')" class="text-gray-400 hover:text-gray-600">
           <XIcon class="w-6 h-6" />
         </button>
@@ -31,7 +31,7 @@
         <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100">
           <p class="text-[10px] text-indigo-700 leading-relaxed">
             <InfoIcon class="w-3 h-3 inline mr-1" />
-            Der Benutzer wird per E-Mail über die Einladung informiert und der Veranstaltung hinzugefügt.
+            Der Nutzer wird per E-Mail über die Einladung informiert und der Veranstaltung hinzugefügt.
           </p>
         </div>
       </div>

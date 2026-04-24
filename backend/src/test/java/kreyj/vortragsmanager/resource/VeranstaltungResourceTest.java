@@ -80,7 +80,7 @@ class VeranstaltungResourceTest {
     }
 
     @Test
-    void testCreateBenutzerHierarchical() {
+    void testCreateNutzerHierarchical() {
         Long vid = 1L;
         UserDto t = new UserDto();
         t.email = "new@test.de";
@@ -91,7 +91,7 @@ class VeranstaltungResourceTest {
         given()
                 .contentType(ContentType.JSON)
                 .body(t)
-                .when().post("/api/veranstaltungen/{vid}/benutzer", vid)
+                .when().post("/api/veranstaltungen/{vid}/nutzer", vid)
                 .then()
                 .statusCode(201)
                 .body("email", is("new@test.de"));

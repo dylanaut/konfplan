@@ -64,13 +64,13 @@ class NutzerInheritanceTest {
         given()
                 .contentType(ContentType.JSON)
                 .body(json)
-                .when().post("/api/veranstaltungen/{vid}/benutzer", testVid)
+                .when().post("/api/veranstaltungen/{vid}/nutzer", testVid)
                 .then()
                 .statusCode(201);
 
         Referent ref = (Referent) Nutzer.findByEmail("expert@vortragsmanager.de");
         assertNotNull(ref, "Referent sollte in der DB existieren");
-        assertNotEquals(Collections.emptyList(), ref.veranstaltungen, "Veranstaltung des Referenten sollte nicht leer sein");
+        assertFalse(ref.veranstaltungen.isEmpty(), "Veranstaltung des Referenten sollte nicht leer sein");
         assertEquals(testVid, ref.veranstaltungen.iterator().next().id);
     }
 
@@ -91,7 +91,7 @@ class NutzerInheritanceTest {
         given()
                 .contentType(ContentType.JSON)
                 .body(json)
-                .when().post("/api/veranstaltungen/{vid}/benutzer", testVid)
+                .when().post("/api/veranstaltungen/{vid}/nutzer", testVid)
                 .then()
                 .log().ifStatusCodeIsEqualTo(201)
                 .statusCode(201);

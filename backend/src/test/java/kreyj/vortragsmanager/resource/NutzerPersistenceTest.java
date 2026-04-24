@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
-import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.matchesPattern;
 
@@ -88,7 +87,7 @@ class NutzerPersistenceTest {
         given()
                 .contentType(ContentType.JSON)
                 .body(json)
-                .when().post("/api/veranstaltungen/{vid}/benutzer", testVid)
+                .when().post("/api/veranstaltungen/{vid}/nutzer", testVid)
                 .then()
                 .statusCode(201)
                 .body("role", is("REFERENT"));
@@ -115,7 +114,7 @@ class NutzerPersistenceTest {
         given()
                 .contentType(ContentType.JSON)
                 .body(json)
-                .when().post("/api/veranstaltungen/{vid}/benutzer", testVid)
+                .when().post("/api/veranstaltungen/{vid}/nutzer", testVid)
                 .then()
                 .statusCode(201)
                 .body("role", is("TEILNEHMER"));
@@ -123,7 +122,7 @@ class NutzerPersistenceTest {
         Teilnehmer teil = (Teilnehmer) Nutzer.findByEmail("schueler@test.de");
         Assertions.assertNotNull(teil);
         Assertions.assertEquals("10a", teil.gruppe);
-        Assertions.assertNotEquals(emptyList(), teil.veranstaltungen, "Veranstaltung sollten nicht leer sein");
+        Assertions.assertFalse(teil.veranstaltungen.isEmpty(), "Veranstaltung sollten nicht leer sein");
         Assertions.assertEquals(testVid, teil.veranstaltungen.iterator().next().id);
     }
 }

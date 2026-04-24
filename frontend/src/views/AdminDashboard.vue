@@ -917,7 +917,7 @@ const refreshGebaeude = async () => {
 };
 const refreshAdmins = async () => {
   try {
-    const res = await api.get('/api/admin/benutzer');
+    const res = await api.get('/api/admin/nutzer');
     users.value = res.data;
   } catch (e) {
     console.error('Fehler beim Laden der Administratoren:', e);
@@ -940,7 +940,7 @@ const loadData = async () => {
   const base = `/api/veranstaltungen/${selectedVid.value}`;
   try {
     const [uRes, vRes, sRes, pRes, qRes, avRes] = await Promise.all([
-      api.get(`${base}/benutzer`), api.get(`${base}/vortraege`),
+      api.get(`${base}/nutzer`), api.get(`${base}/vortraege`),
       api.get(`${base}/slots`), api.get(`${base}/plan/details`), api.get(`${base}/plan/qualitaet`),
       api.get(`/api/admin/veranstaltung/${selectedVid.value}/verfuegbarkeiten`)
     ]);
@@ -1065,8 +1065,8 @@ const openUserModal = (u) => {
 const handleSaveUser = async (u) => {
   const isGlobalAdmin = u.role === 'ADMIN';
   let endpoint;
-  if (isGlobalAdmin) endpoint = `/api/admin/benutzer`;
-  else if (selectedVid.value) endpoint = `/api/veranstaltungen/${selectedVid.value}/benutzer`;
+  if (isGlobalAdmin) endpoint = `/api/admin/nutzer`;
+  else if (selectedVid.value) endpoint = `/api/veranstaltungen/${selectedVid.value}/nutzer`;
   else return;
 
   try {
@@ -1076,7 +1076,7 @@ const handleSaveUser = async (u) => {
     await loadData();
     await refreshAdmins();
   } catch (e) {
-    console.error('Fehler beim Speichern des Benutzers:', e);
+    console.error('Fehler beim Speichern des Nutzers:', e);
   }
 };
 const deleteUser = async (id) => {
@@ -1084,15 +1084,15 @@ const deleteUser = async (id) => {
     try {
       const userToDelete = users.value.find(u => u.id === id);
       let endpoint;
-      if (userToDelete && userToDelete.role === 'ADMIN') endpoint = `/api/admin/benutzer/${id}`;
-      else if (selectedVid.value) endpoint = `/api/veranstaltungen/${selectedVid.value}/benutzer/${id}`;
+      if (userToDelete && userToDelete.role === 'ADMIN') endpoint = `/api/admin/nutzer/${id}`;
+      else if (selectedVid.value) endpoint = `/api/veranstaltungen/${selectedVid.value}/nutzer/${id}`;
       else return;
 
       await api.delete(endpoint);
       await loadData();
       await refreshAdmins();
     } catch (e) {
-      console.error('Fehler beim Löschen des Benutzers:', e);
+      console.error('Fehler beim Löschen des Nutzers:', e);
     }
   }
 };
@@ -1103,7 +1103,7 @@ const openInviteModal = (u) => {
 };
 const handleInviteUser = async ({ userId, eventId }) => {
   try {
-    await api.post(`/api/admin/benutzer/${userId}/einladen/${eventId}`);
+    await api.post(`/api/admin/nutzer/${userId}/einladen/${eventId}`);
     alert("Einladung erfolgreich versendet!");
     showInviteModal.value = false;
     await loadData();

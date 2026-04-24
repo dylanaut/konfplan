@@ -21,7 +21,7 @@ actor "Teilnehmer" as User
 package "Vortragsmanager System" {
   (Veranstaltungen verwalten) as UC1
   (Gebäude & Räume verwalten) as UC2
-  (Benutzerkonten verwalten) as UC3
+  (Nutzerkonten verwalten) as UC3
   (Zeit-Slots definieren) as UC4
   (Vorträge & Zuweisungen verwalten) as UC5
   (Optimierung starten) as UC6
@@ -71,10 +71,10 @@ User --> UC13
 `GET/POST/PUT/DELETE /api/gebaeude` +
 `GET/POST/PUT/DELETE /api/gebaeude/{id}/raeume`
 
-| **Benutzerkonten verwalten**
+| **Nutzerkonten verwalten**
 | Anlage und Pflege von Administratoren, Referenten und Teilnehmern. +
-`GET/POST/PUT/DELETE /api/admin/benutzer` +
-`GET/POST/PUT/DELETE /api/veranstaltungen/{vid}/benutzer`
+`GET/POST/PUT/DELETE /api/admin/nutzer` +
+`GET/POST/PUT/DELETE /api/veranstaltungen/{vid}/nutzer`
 
 | **Optimierung starten**
 | Ausführen des MiniZinc-Solvers zur optimalen Zuweisung von Teilnehmern zu Vorträgen basierend auf Prioritäten. +

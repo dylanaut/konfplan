@@ -50,13 +50,13 @@ test.describe('Vortragsmanager Planungs-Workflow', () => {
     await expect(page.locator('td:has-text("Slot 3")')).toBeVisible();
 
     // 6. REFERENTEN & VORTRÄGE ANLEGEN (Beispielhaft für einen)
-    await page.click('nav button:has-text("benutzer")');
+    await page.click('nav button:has-text("nutzer")');
     await page.click('button:has-text("+ Neu")');
     await page.selectOption('select:has-text("Teilnehmer")', 'REFERENT');
     await page.fill('label:has-text("Vorname") + input', 'Max');
     await page.fill('label:has-text("Nachname") + input', 'Referent');
     await page.fill('label:has-text("E-Mail") + input', 'max@referent.de');
-    await page.click('button:has-text("Benutzer erstellen")');
+    await page.click('button:has-text("Nutzer erstellen")');
 
     await page.click('nav button:has-text("vorträge")');
     await page.click('button:has-text("+ Neu")');
@@ -66,12 +66,12 @@ test.describe('Vortragsmanager Planungs-Workflow', () => {
     await expect(page.locator('td:has-text("Vortrag von Max")')).toBeVisible();
 
     // 7. TEILNEHMER ANLEGEN (Beispielhaft für einen)
-    await page.click('nav button:has-text("benutzer")');
+    await page.click('nav button:has-text("nutzer")');
     await page.click('button:has-text("+ Neu")');
     await page.fill('label:has-text("Vorname") + input', 'Tom');
     await page.fill('label:has-text("Nachname") + input', 'Teilnehmer');
     await page.fill('label:has-text("E-Mail") + input', 'tom@student.de');
-    await page.click('button:has-text("Benutzer erstellen")');
+    await page.click('button:has-text("Nutzer erstellen")');
 
     // 8. KONTROLLE IN VORTRAGSPLANUNG
     await page.click('nav button:has-text("Vortragsplanung")');

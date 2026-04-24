@@ -3,7 +3,7 @@
     <div class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-bold text-gray-900">
-          {{ nutzer?.id ? 'Benutzer bearbeiten' : 'Neuen Benutzer anlegen' }}
+          {{ nutzer?.id ? 'Nutzer bearbeiten' : 'Neuen Nutzer anlegen' }}
         </h2>
         <button class="text-gray-500 hover:text-gray-700" @click="$emit('close')">✕</button>
       </div>
@@ -58,13 +58,13 @@
 
         <div class="md:col-span-2 flex items-center gap-2 mt-2">
           <input id="isActive" v-model="form.isActive" type="checkbox" class="h-4 w-4" />
-          <label for="isActive" class="text-sm text-gray-700 font-medium">Benutzerkonto ist aktiv</label>
+          <label for="isActive" class="text-sm text-gray-700 font-medium">Nutzerkonto ist aktiv</label>
         </div>
 
         <div class="md:col-span-2 flex justify-end gap-3 pt-6 border-t mt-4">
           <button type="button" class="btn-secondary" @click="$emit('close')">Abbrechen</button>
           <button type="submit" class="btn-primary">
-            {{ nutzer?.id ? 'Änderungen speichern' : 'Benutzer erstellen' }}
+            {{ nutzer?.id ? 'Änderungen speichern' : 'Nutzer erstellen' }}
           </button>
         </div>
       </form>

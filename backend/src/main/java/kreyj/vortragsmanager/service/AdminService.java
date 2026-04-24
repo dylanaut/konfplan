@@ -67,17 +67,6 @@ public class AdminService {
             nutzer.passwordHash = BcryptUtil.bcryptHash("start123");
         }
 
-        if (null != veranstaltungsIds) {
-            for (Long veranstaltungId : veranstaltungsIds) {
-                Veranstaltung v = Veranstaltung.findById(veranstaltungId);
-                if (null == v) {
-                    LOG.error("Unbekannte Veranstaltung zu id: " + veranstaltungId);
-                } else {
-                    nutzer.veranstaltungen.add(v);
-                }
-            }
-        }
-
         if (nutzer instanceof Referent r) {
             r.biography = dto.biography;
             r.jobRole = dto.jobRole;
@@ -88,6 +77,18 @@ public class AdminService {
         }
 
         nutzer.persist();
+
+        if (null != veranstaltungsIds) {
+            for (Long veranstaltungId : veranstaltungsIds) {
+                Veranstaltung v = Veranstaltung.findById(veranstaltungId);
+                if (null == v) {
+                    LOG.error("Unbekannte Veranstaltung zu id: " + veranstaltungId);
+                } else {
+                    nutzer.addVeranstaltung(v);
+                    nutzer.persist();
+                }
+            }
+        }
 
         return mapToDto(nutzer);
     }
@@ -148,7 +149,7 @@ public class AdminService {
         Veranstaltung event = Veranstaltung.findById(eventId);
 
         if (nutzer == null || event == null) {
-            throw new IllegalArgumentException("Benutzer oder Veranstaltung nicht gefunden.");
+            throw new IllegalArgumentException("Nutzer oder Veranstaltung nicht gefunden.");
         }
 
         // Validierung: Veranstaltung darf nicht in der Vergangenheit liegen (Enddatum prüfen)
@@ -160,9 +161,9 @@ public class AdminService {
         if (!nutzer.veranstaltungen.contains(event)) {
             nutzer.addVeranstaltung(event);
             mailService.sendEventInvitation(nutzer, event);
-            LOG.info("Benutzer " + nutzer.email + " zu Veranstaltung " + event.name + " eingeladen.");
+            LOG.info("Nutzer " + nutzer.email + " zu Veranstaltung " + event.name + " eingeladen.");
         } else {
-            LOG.info("Benutzer " + nutzer.email + " ist bereits für Veranstaltung " + event.name + " registriert.");
+            LOG.info("Nutzer " + nutzer.email + " ist bereits für Veranstaltung " + event.name + " registriert.");
         }
     }
 

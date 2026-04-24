@@ -53,10 +53,10 @@ package "Vortragsmanager API" {
   (uploadTeilnehmerCsv) as uploadTeilnehmerCsv
   (importVortraege) as importVortraege
   (getGesamtplan) as getGesamtplan
-  (getBenutzer) as getBenutzer
-  (createBenutzer) as createBenutzer
-  (updateBenutzer) as updateBenutzer
-  (deleteBenutzer) as deleteBenutzer
+  (getNutzer) as getNutzer
+  (createNutzer) as createNutzer
+  (updateNutzer) as updateNutzer
+  (deleteNutzer) as deleteNutzer
   (getSlots) as getSlots
   (createSlot) as createSlot
   (updateSlot) as updateSlot
@@ -117,10 +117,10 @@ ADMIN --> uploadTeilnehmerCsv
 ADMIN --> importVortraege
 ADMIN --> getVortraege
 ADMIN --> getGesamtplan
-ADMIN --> getBenutzer
-ADMIN --> createBenutzer
-ADMIN --> updateBenutzer
-ADMIN --> deleteBenutzer
+ADMIN --> getNutzer
+ADMIN --> createNutzer
+ADMIN --> updateNutzer
+ADMIN --> deleteNutzer
 ADMIN --> getSlots
 ADMIN --> createSlot
 ADMIN --> updateSlot
@@ -313,19 +313,19 @@ TEILNEHMER --> getAll
 | ADMIN
 | getAllUsers
 | GET
-| `/api/admin/benutzer`
+| `/api/admin/nutzer`
 | ADMIN
 | createUser
 | POST
-| `/api/admin/benutzer`
+| `/api/admin/nutzer`
 | ADMIN
 | updateUser
 | PUT
-| `/api/admin/benutzer/{id}`
+| `/api/admin/nutzer/{id}`
 | ADMIN
 | inviteUser
 | POST
-| `/api/admin/benutzer/{userId}/einladen/{eventId}`
+| `/api/admin/nutzer/{userId}/einladen/{eventId}`
 | ADMIN
 | importAdmins
 | POST
@@ -333,7 +333,7 @@ TEILNEHMER --> getAll
 | ADMIN
 | deleteUser
 | DELETE
-| `/api/admin/benutzer/{id}`
+| `/api/admin/nutzer/{id}`
 | ADMIN
 |===
 
@@ -378,21 +378,21 @@ TEILNEHMER --> getAll
 | GET
 | `/api/veranstaltungen/{vid}/plan`
 | ADMIN
-| getBenutzer
+| getNutzer
 | GET
-| `/api/veranstaltungen/{vid}/benutzer`
+| `/api/veranstaltungen/{vid}/nutzer`
 | ADMIN
-| createBenutzer
+| createNutzer
 | POST
-| `/api/veranstaltungen/{vid}/benutzer`
+| `/api/veranstaltungen/{vid}/nutzer`
 | ADMIN
-| updateBenutzer
+| updateNutzer
 | PUT
-| `/api/veranstaltungen/{vid}/benutzer/{id}`
+| `/api/veranstaltungen/{vid}/nutzer/{id}`
 | ADMIN
-| deleteBenutzer
+| deleteNutzer
 | DELETE
-| `/api/veranstaltungen/{vid}/benutzer/{id}`
+| `/api/veranstaltungen/{vid}/nutzer/{id}`
 | ADMIN
 | getSlots
 | GET

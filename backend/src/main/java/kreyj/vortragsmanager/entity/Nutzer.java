@@ -62,7 +62,7 @@ public abstract class Nutzer extends VersionedEntity {
             joinColumns = @JoinColumn(name = "nutzer_id"),
             inverseJoinColumns = @JoinColumn(name = "veranstaltung_id")
     )
-    @JsonIgnoreProperties({"benutzer", "gebaeude", "eventSlots"})
+    @JsonIgnoreProperties({"nutzer", "gebaeude", "eventSlots"})
     public Set<Veranstaltung> veranstaltungen = new HashSet<>();
 
     public Nutzer() {
@@ -78,10 +78,28 @@ public abstract class Nutzer extends VersionedEntity {
         }
         this.veranstaltungen.add(v);
         v.nutzer.add(this);
+
+        if (this instanceof Referent || this instanceof Teilnehmer) {
+            for (EventSlot slot : v.eventSlots) {
+                if (Verfuegbarkeit.count("nutzer = ?1 and slot = ?2", this, slot) == 0) {
+                    Verfuegbarkeit verfuegbarkeit = new Verfuegbarkeit();
+                    verfuegbarkeit.nutzer = this;
+                    verfuegbarkeit.slot = slot;
+                    verfuegbarkeit.isAvailable = true;
+                    verfuegbarkeit.persist();
+                }
+            }
+        }
     }
 
     public void removeVeranstaltung(Veranstaltung v) {
         this.veranstaltungen.remove(v);
         v.nutzer.remove(this);
+
+        if (this instanceof Referent || this instanceof Teilnehmer) {
+            for (EventSlot slot : v.eventSlots) {
+                Verfuegbarkeit.delete("nutzer = ?1 and slot = ?2", this, slot);
+            }
+        }
     }
 }

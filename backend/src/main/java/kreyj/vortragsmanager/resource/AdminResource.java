@@ -28,35 +28,35 @@ public class AdminResource {
     AdminService adminService;
 
     @GET
-    @Path("/benutzer")
+    @Path("/nutzer")
     public List<UserDto> getAllUsers() {
         return adminService.getAllUsers();
     }
 
     @POST
-    @Path("/benutzer")
+    @Path("/nutzer")
     public UserDto createUser(UserDto dto) {
         return adminService.createUser(dto, dto.veranstaltungIds);
     }
 
     @PUT
-    @Path("/benutzer/{id}")
+    @Path("/nutzer/{id}")
     public UserDto updateUser(@PathParam("id") Long id, UserDto dto) {
         return adminService.updateUser(id, dto, dto.veranstaltungIds);
     }
 
     @DELETE
-    @Path("/benutzer/{id}")
+    @Path("/nutzer/{id}")
     public void deleteUser(@PathParam("id") Long id) {
         adminService.deleteUser(id);
     }
 
     @POST
-    @Path("/benutzer/{userId}/einladen/{eventId}")
+    @Path("/nutzer/{userId}/einladen/{eventId}")
     public Response inviteUser(@PathParam("userId") Long userId, @PathParam("eventId") Long eventId) {
         try {
             adminService.inviteUserToEvent(userId, eventId);
-            return Response.ok("Benutzer erfolgreich eingeladen.").build();
+            return Response.ok("Nutzer erfolgreich eingeladen.").build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }

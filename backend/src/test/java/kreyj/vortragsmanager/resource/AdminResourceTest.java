@@ -41,7 +41,7 @@ class AdminResourceTest {
         Mockito.when(adminService.getAllUsers()).thenReturn(Arrays.asList(admin1));
 
         given()
-                .when().get("/api/admin/benutzer")
+                .when().get("/api/admin/nutzer")
                 .then()
                 .statusCode(200)
                 .contentType(ContentType.JSON)
@@ -65,7 +65,7 @@ class AdminResourceTest {
     @TestSecurity(user = "nutzer@example.com", roles = "USER")
     void testGlobalAccessForbidden() {
         given()
-                .when().get("/api/admin/benutzer")
+                .when().get("/api/admin/nutzer")
                 .then()
                 .statusCode(403);
     }
