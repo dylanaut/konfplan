@@ -62,7 +62,7 @@ class AdminResourceTest {
     }
 
     @Test
-    @TestSecurity(user = "user@example.com", roles = "USER")
+    @TestSecurity(user = "nutzer@example.com", roles = "USER")
     void testGlobalAccessForbidden() {
         given()
                 .when().get("/api/admin/benutzer")

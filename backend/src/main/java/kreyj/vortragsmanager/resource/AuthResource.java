@@ -14,7 +14,7 @@ import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.LoginRequest;
 import kreyj.vortragsmanager.dto.ResetRequest;
 import kreyj.vortragsmanager.dto.TokenResponse;
-import kreyj.vortragsmanager.entity.User;
+import kreyj.vortragsmanager.entity.Nutzer;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.time.Duration;
@@ -35,23 +35,23 @@ public class AuthResource {
     @PermitAll
     @Transactional
     public Response forgotPassword(@QueryParam("email") String email) {
-        User user = User.findByEmail(email);
+        Nutzer nutzer = Nutzer.findByEmail(email);
 
-        if (user != null) {
+        if (nutzer != null) {
             String token = UUID.randomUUID().toString();
-            user.resetToken = token;
-            user.resetTokenExpiry = LocalDateTime.now().plusHours(2);
-            user.persist();
+            nutzer.resetToken = token;
+            nutzer.resetTokenExpiry = LocalDateTime.now().plusHours(2);
+            nutzer.persist();
 
             String resetUrl = "http://localhost:5173/reset-password?token=" + token;
 
-            passwordResetTemplate.to(user.email)
+            passwordResetTemplate.to(nutzer.email)
                     .subject("Passwort zurücksetzen - Vortragsmanager")
-                    .data("firstName", user.firstName)
+                    .data("firstName", nutzer.firstName)
                     .data("resetLink", resetUrl)
                     .send()
                     .subscribe().with(
-                            success -> System.out.println("Mail gesendet an " + user.email),
+                            success -> System.out.println("Mail gesendet an " + nutzer.email),
                             failure -> System.err.println("Mail-Fehler: " + failure.getMessage())
                     );
         }
@@ -64,10 +64,10 @@ public class AuthResource {
     @PermitAll
     @Transactional
     public Response resetPassword(ResetRequest req) {
-        User user = User.find("resetToken", req.token).firstResult();
-        if (user != null && user.resetTokenExpiry.isAfter(LocalDateTime.now())) {
-            user.passwordHash = BcryptUtil.bcryptHash(req.newPassword);
-            user.resetToken = null;
+        Nutzer nutzer = Nutzer.find("resetToken", req.token).firstResult();
+        if (nutzer != null && nutzer.resetTokenExpiry.isAfter(LocalDateTime.now())) {
+            nutzer.passwordHash = BcryptUtil.bcryptHash(req.newPassword);
+            nutzer.resetToken = null;
             return Response.ok().build();
         }
         return Response.status(Response.Status.BAD_REQUEST).build();
@@ -78,17 +78,17 @@ public class AuthResource {
     @PermitAll
     @Transactional
     public Response login(LoginRequest loginRequest) {
-        User user = User.findByEmail(loginRequest.email);
+        Nutzer nutzer = Nutzer.findByEmail(loginRequest.email);
 
-        if (user != null && BcryptUtil.matches(loginRequest.password, user.passwordHash) && user.isActive) {
+        if (nutzer != null && BcryptUtil.matches(loginRequest.password, nutzer.passwordHash) && nutzer.isActive) {
             // Wir lassen sign() ohne explizites Secret, 
             // damit Quarkus das Secret aus der application.properties (smallrye.jwt.sign.key) verwendet.
             String token = Jwt.issuer("https://vortragsmanager.kreyj")
-                    .upn(user.email)
-                    .groups(user.role)
+                    .upn(nutzer.email)
+                    .groups(nutzer.role)
                     .expiresIn(Duration.ofHours(4))
                     .sign();
-            return Response.ok(new TokenResponse(token, user.role)).build();
+            return Response.ok(new TokenResponse(token, nutzer.role)).build();
         }
         return Response.status(Response.Status.UNAUTHORIZED).build();
     }

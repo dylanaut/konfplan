@@ -7,7 +7,7 @@ public class Verfuegbarkeit extends VersionedEntity {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
-    public User user;
+    public Nutzer nutzer;
 
     @ManyToOne
     @JoinColumn(name = "slot_id")

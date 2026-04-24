@@ -8,13 +8,14 @@
 
           <!-- EVENT CONTEXT UI -->
           <div v-if="eventContext.selectedEvent" class="flex items-center gap-3 border-l border-indigo-500 pl-4 animate-fade-in overflow-hidden">
-            <a v-if="eventContext.selectedEvent.logoLink" :href="eventContext.selectedEvent.logoLink" target="_blank" rel="noopener noreferrer" class="shrink-0 hover:opacity-80 transition-opacity">
-              <img v-if="eventContext.selectedEvent.logoUrl" :src="eventContext.selectedEvent.logoUrl" class="h-8 w-auto object-contain bg-white/10 rounded p-1" :alt="eventContext.selectedEvent.name" />
+            <a v-if="eventContext.selectedEvent.logo_link" :href="eventContext.selectedEvent.logo_link" target="_blank" rel="noopener noreferrer" class="shrink-0 hover:opacity-80 transition-opacity">
+              <img v-if="eventContext.selectedEvent.logo" :src="eventContext.selectedEvent.logo" class="h-8 w-auto object-contain bg-white/10 rounded p-1" :alt="eventContext.selectedEvent.name" />
             </a>
             <div class="flex flex-col min-w-0">
               <span class="font-black text-xs uppercase tracking-tighter truncate">{{ eventContext.selectedEvent.name }}</span>
               <span class="text-[10px] text-indigo-200 font-bold whitespace-nowrap">{{ formatDate(eventContext.selectedEvent.beginntAm) }}</span>
             </div>
+<!--            <span style="color: red">&gt;{{eventContext.selectedEvent.logo}}&lt;</span>-->
           </div>
         </div>
 

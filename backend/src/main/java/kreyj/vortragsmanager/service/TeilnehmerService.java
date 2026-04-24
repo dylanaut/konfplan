@@ -6,8 +6,8 @@ import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.dto.csv.TeilnehmerCsvDto;
+import kreyj.vortragsmanager.entity.Nutzer;
 import kreyj.vortragsmanager.entity.Teilnehmer;
-import kreyj.vortragsmanager.entity.User;
 import kreyj.vortragsmanager.entity.Veranstaltung;
 import org.jboss.logging.Logger;
 
@@ -21,12 +21,12 @@ public class TeilnehmerService {
 
     private static final Logger LOG = Logger.getLogger(TeilnehmerService.class);
 
-    public List<User> findAll(Long veranstaltungId) {
-        return User.find("role = 'TEILNEHMER' and veranstaltung.id = ?1", veranstaltungId).list();
+    public List<Nutzer> findAll(Long veranstaltungId) {
+        return Nutzer.find("role = 'TEILNEHMER' and veranstaltung.id = ?1", veranstaltungId).list();
     }
 
-    public User findById(Long id) {
-        return User.findById(id);
+    public Nutzer findById(Long id) {
+        return Nutzer.findById(id);
     }
 
     @Transactional
@@ -35,7 +35,7 @@ public class TeilnehmerService {
             return null;
         }
 
-        User existing = User.findByEmail(user.email.trim().toLowerCase());
+        Nutzer existing = Nutzer.findByEmail(user.email.trim().toLowerCase());
         if (existing != null) {
             LOG.warn("Teilnehmer konnte nicht erstellt werden: Email " + user.email + " bereits vergeben.");
             return null;
@@ -85,7 +85,7 @@ public class TeilnehmerService {
                 }
 
                 String email = dto.email.trim().toLowerCase();
-                if (User.findByEmail(email) == null) {
+                if (Nutzer.findByEmail(email) == null) {
                     Teilnehmer tn = new Teilnehmer();
                     tn.email = email;
                     tn.firstName = dto.firstName;
@@ -111,19 +111,19 @@ public class TeilnehmerService {
     }
 
     @Transactional
-    public void deleteUser(User user) {
-        user.delete();
+    public void deleteUser(Nutzer nutzer) {
+        nutzer.delete();
     }
 
     @Transactional
-    public void toggleActive(User user) {
-        user.isActive = !user.isActive;
-        user.persist();
+    public void toggleActive(Nutzer nutzer) {
+        nutzer.isActive = !nutzer.isActive;
+        nutzer.persist();
     }
 
     @Transactional
     public Teilnehmer updateTeilnehmer(Long id, Teilnehmer teilnehmer, Long veranstaltungId) {
-        User existing = User.findById(id);
+        Nutzer existing = Nutzer.findById(id);
         if (existing == null || !(existing instanceof Teilnehmer)) {
             return null;
         }

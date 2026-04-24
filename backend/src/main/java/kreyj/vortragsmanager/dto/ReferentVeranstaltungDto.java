@@ -8,5 +8,8 @@ public class ReferentVeranstaltungDto extends VersionedDto {
     public String name;
     public LocalDateTime beginntAm;
     public LocalDateTime endetAm;
+
+    public LocalDateTime deadlineReferenten;
+
     public List<Long> registeredTalkIds; // IDs of talks by this referent for this event
 }

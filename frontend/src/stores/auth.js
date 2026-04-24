@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import router from '../router';
+import { useEventContextStore } from './eventContext';
 
 export const useAuthStore = defineStore('auth', {
     state: () => ({
@@ -24,6 +25,10 @@ export const useAuthStore = defineStore('auth', {
             this.userRole = null;
             localStorage.removeItem('token');
             localStorage.removeItem('role');
+
+            // Event-Kontext zurücksetzen
+            const eventContext = useEventContextStore();
+            eventContext.clearEvent();
             
             // Weiterleitung zur Login-Seite
             router.push('/login');

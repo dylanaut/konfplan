@@ -7,8 +7,8 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.FileUploadDto;
+import kreyj.vortragsmanager.entity.Nutzer;
 import kreyj.vortragsmanager.entity.Teilnehmer;
-import kreyj.vortragsmanager.entity.User;
 import kreyj.vortragsmanager.service.TeilnehmerService;
 
 @Path("/api/admin/teilnehmer")
@@ -51,16 +51,16 @@ public class TeilnehmerResource {
     @DELETE
     @Path("/{id}")
     public Response deleteTeilnehmer(@PathParam("id") Long id) {
-        User user = teilnehmerService.findById(id);
-        if (user == null) return Response.status(Response.Status.NOT_FOUND).build();
-        teilnehmerService.deleteUser(user);
+        Nutzer nutzer = teilnehmerService.findById(id);
+        if (nutzer == null) return Response.status(Response.Status.NOT_FOUND).build();
+        teilnehmerService.deleteUser(nutzer);
         return Response.noContent().build();
     }
 
     @PATCH
     @Path("/{id}/toggle")
     public Response toggleActive(@PathParam("id") Long id) {
-        User byId = teilnehmerService.findById(id);
+        Nutzer byId = teilnehmerService.findById(id);
         if (byId == null) return Response.status(Response.Status.NOT_FOUND).build();
         teilnehmerService.toggleActive(byId);
         return Response.noContent().build();

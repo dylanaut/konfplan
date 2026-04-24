@@ -15,7 +15,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "\"User\"")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "role", discriminatorType = DiscriminatorType.STRING)
 @UserDefinition
@@ -25,7 +24,7 @@ import java.util.Set;
         @JsonSubTypes.Type(value = Referent.class, name = "REFERENT"),
         @JsonSubTypes.Type(value = Teilnehmer.class, name = "TEILNEHMER")
 })
-public abstract class User extends VersionedEntity {
+public abstract class Nutzer extends VersionedEntity {
 
     @Column(unique = true)
     @Username
@@ -59,27 +58,30 @@ public abstract class User extends VersionedEntity {
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-        name = "User_Veranstaltung",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "veranstaltung_id")
+            name = "Nutzer_Veranstaltung",
+            joinColumns = @JoinColumn(name = "nutzer_id"),
+            inverseJoinColumns = @JoinColumn(name = "veranstaltung_id")
     )
     @JsonIgnoreProperties({"benutzer", "gebaeude", "eventSlots"})
     public Set<Veranstaltung> veranstaltungen = new HashSet<>();
 
-    public User() {
+    public Nutzer() {
     }
 
-    public static User findByEmail(String e) {
+    public static Nutzer findByEmail(String e) {
         return find("email", e).firstResult();
     }
 
     public void addVeranstaltung(Veranstaltung v) {
+        if (this.veranstaltungen.contains(v)) {
+            return;
+        }
         this.veranstaltungen.add(v);
-        v.benutzer.add(this); // Aktualisiert die Rückrichtung im Speicher
+        v.nutzer.add(this);
     }
 
     public void removeVeranstaltung(Veranstaltung v) {
         this.veranstaltungen.remove(v);
-        v.benutzer.remove(this);
+        v.nutzer.remove(this);
     }
 }

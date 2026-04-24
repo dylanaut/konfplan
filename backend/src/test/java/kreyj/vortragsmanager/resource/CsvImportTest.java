@@ -28,7 +28,7 @@ class CsvImportTest {
     @Transactional
     void setup() {
         Vortrag.deleteAll();
-        User.deleteAll();
+        Nutzer.deleteAll();
         Raum.deleteAll();
         Gebaeude.deleteAll();
         EventSlot.deleteAll();
@@ -112,7 +112,7 @@ class CsvImportTest {
                 .then()
                 .statusCode(200);
 
-        Admin organisator = (Admin) User.findByEmail("kathrin.jessen@rks-linz.de");
+        Admin organisator = (Admin) Nutzer.findByEmail("kathrin.jessen@rks-linz.de");
         Assertions.assertNotNull(organisator);
         Assertions.assertEquals("Kathrin", organisator.firstName);
     }
@@ -128,7 +128,7 @@ class CsvImportTest {
                 .then()
                 .statusCode(200);
 
-        Referent r = (Referent) User.findByEmail("max@ref.de");
+        Referent r = (Referent) Nutzer.findByEmail("max@ref.de");
         Assertions.assertNotNull(r);
         Assertions.assertEquals("TechCorp", r.organisation);
     }
@@ -144,7 +144,7 @@ class CsvImportTest {
                 .then()
                 .statusCode(200);
 
-        Teilnehmer t = (Teilnehmer) User.findByEmail("tom@stud.de");
+        Teilnehmer t = (Teilnehmer) Nutzer.findByEmail("tom@stud.de");
         Assertions.assertNotNull(t);
         Assertions.assertEquals("10b", t.gruppe);
     }

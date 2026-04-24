@@ -9,7 +9,7 @@ import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.UserDto;
 import kreyj.vortragsmanager.dto.VerfuegbarkeitDto;
 import kreyj.vortragsmanager.entity.EventSlot;
-import kreyj.vortragsmanager.entity.User;
+import kreyj.vortragsmanager.entity.Nutzer;
 import kreyj.vortragsmanager.entity.Verfuegbarkeit;
 import kreyj.vortragsmanager.service.AdminService;
 import org.jboss.resteasy.reactive.RestForm;
@@ -77,10 +77,10 @@ public class AdminResource {
     @GET
     @Path("/veranstaltung/{vid}/verfuegbarkeiten")
     public List<VerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
-        return Verfuegbarkeit.find("select v from Verfuegbarkeit v join v.user u join u.veranstaltungen va where va.id = ?1", vid).stream()
+        return Verfuegbarkeit.find("select v from Verfuegbarkeit v join v.nutzer u join u.veranstaltungen va where va.id = ?1", vid).stream()
                 .map(v -> {
                     Verfuegbarkeit vf = (Verfuegbarkeit) v;
-                    return new VerfuegbarkeitDto(vf.user.id, vf.slot.id, vf.isAvailable);
+                    return new VerfuegbarkeitDto(vf.nutzer.id, vf.slot.id, vf.isAvailable);
                 })
                 .collect(Collectors.toList());
     }
@@ -89,9 +89,9 @@ public class AdminResource {
     @Path("/veranstaltung/{vid}/verfuegbarkeit")
     @Transactional
     public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, VerfuegbarkeitDto dto) {
-        User user = User.findById(dto.userId);
+        Nutzer nutzer = Nutzer.findById(dto.userId);
         EventSlot slot = EventSlot.findById(dto.slotId);
-        if (user == null || slot == null) return Response.status(Response.Status.NOT_FOUND).build();
+        if (nutzer == null || slot == null) return Response.status(Response.Status.NOT_FOUND).build();
 
         // Validierung: Gehört der Slot zur angegebenen Veranstaltung?
         if (!slot.veranstaltung.id.equals(vid)) {
@@ -99,10 +99,10 @@ public class AdminResource {
                     .entity("Slot gehört nicht zur angegebenen Veranstaltung.").build();
         }
 
-        Verfuegbarkeit v = Verfuegbarkeit.find("user = ?1 and slot = ?2", user, slot).firstResult();
+        Verfuegbarkeit v = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", nutzer, slot).firstResult();
         if (v == null) {
             v = new Verfuegbarkeit();
-            v.user = user;
+            v.nutzer = nutzer;
             v.slot = slot;
         }
         v.isAvailable = dto.isAvailable;

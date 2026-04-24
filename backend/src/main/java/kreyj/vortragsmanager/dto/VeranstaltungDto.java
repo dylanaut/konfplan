@@ -11,6 +11,8 @@ public class VeranstaltungDto extends VersionedDto {
     public String name;
     public LocalDateTime beginntAm;
     public LocalDateTime endetAm;
+    public LocalDateTime deadlineReferenten;
+    public LocalDateTime deadlineTeilnehmer;
 
     public String logo;
     public String logo_link;

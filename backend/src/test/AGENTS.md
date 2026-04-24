@@ -33,7 +33,7 @@ src/test/
 
 ```java
 @QuarkusTest
-@TestSecurity(user = "admin@test.de", roles = "ADMIN") // Authentifizierung simulieren
+@TestSecurity(nutzer = "admin@test.de", roles = "ADMIN") // Authentifizierung simulieren
 class MeineResourceTest {
 
     Long testVid;  // ID der Test-Veranstaltung

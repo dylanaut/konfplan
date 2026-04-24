@@ -31,18 +31,18 @@ public class MailService {
         mailer.send(Mail.withText(organisator.email, subject, body));
     }
 
-    public void sendEventInvitation(User user, Veranstaltung event) {
-        if (user.email == null) return;
+    public void sendEventInvitation(Nutzer nutzer, Veranstaltung event) {
+        if (nutzer.email == null) return;
 
         String subject = "Einladung zur Veranstaltung: " + event.name;
         String body = String.format(
             "Hallo %s %s,\n\nDu wurdest zur Veranstaltung '%s' eingeladen.\n" +
             "Datum: %s\n\nWir freuen uns auf Deine Teilnahme!",
-            user.firstName, user.lastName,
+            nutzer.firstName, nutzer.lastName,
             event.name,
             event.beginntAm.toString()
         );
 
-        mailer.send(Mail.withText(user.email, subject, body));
+        mailer.send(Mail.withText(nutzer.email, subject, body));
     }
 }

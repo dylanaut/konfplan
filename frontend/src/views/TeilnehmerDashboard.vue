@@ -1,105 +1,131 @@
 <template>
   <div class="max-w-6xl mx-auto space-y-8 pb-20">
 
-    <!-- MODUS: MEIN PLAN -->
-    <section v-if="zuweisungen.length > 0" class="bg-indigo-900 text-white p-8 rounded-2xl shadow-2xl animate-fade-in">
-      <div class="flex items-center gap-3 mb-6">
-        <CalendarCheckIcon class="w-8 h-8 text-indigo-300" />
-        <h2 class="text-3xl font-black">Mein Vortragsplan</h2>
+    <!-- VERANSTALTUNGS-AUSWAHL -->
+    <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-xl font-bold text-gray-900">Mein Dashboard</h1>
+        <p class="text-sm text-gray-500">Wählen Sie eine Veranstaltung, um Ihren Plan zu sehen oder Prioritäten zu setzen.</p>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div v-for="z in zuweisungen" :key="z.id" class="bg-white/10 border border-white/20 p-5 rounded-xl backdrop-blur-sm">
-          <div class="text-[10px] uppercase font-bold text-indigo-300 mb-1">{{ z.slotZeit }}</div>
-          <h3 class="text-lg font-bold mb-2">{{ z.vortragTitel }}</h3>
-          <div class="flex items-center gap-2 text-sm text-indigo-100">
-            <MapPinIcon class="w-4 h-4" />
-            <span>{{ z.raumName }} ({{ z.gebaeudeName }})</span>
-          </div>
-        </div>
+      <div class="flex items-center gap-3">
+        <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Veranstaltung:</label>
+        <select v-model="selectedVid" @change="handleVeranstaltungChange"
+                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 max-w-xs">
+          <option :value="null">-- Bitte wählen --</option>
+          <option v-for="v in veranstaltungen" :key="v.id" :value="v.id">
+            {{ v.name }} ({{ formatDate(v.beginntAm) }})
+          </option>
+        </select>
       </div>
     </section>
 
-    <!-- HEADER & WAHL-MODUS -->
-    <div class="space-y-6">
-      <header class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h2 class="text-2xl font-bold text-gray-800">Verfügbare Vorträge</h2>
-        <p class="text-gray-600 mt-1">Wählen Sie Ihre Top 10 Vorträge aus. 1 = Höchste Priorität.</p>
-        <div class="mt-4 flex flex-wrap gap-2">
-          <div v-for="n in 10" :key="n"
-               :class="['w-8 h-8 flex items-center justify-center rounded-full border text-xs font-bold',
-                        isRankTaken(n) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-gray-100 text-gray-400 border-gray-200']">
-            {{ n }}
-          </div>
-        </div>
-      </header>
-
-      <!-- Vortrags-Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div v-for="vortrag in vortraege" :key="vortrag.id"
-             :class="['bg-white rounded-xl shadow-sm border flex flex-col overflow-hidden hover:shadow-md transition-shadow relative',
-                      vortrag.istPflicht ? 'border-red-300 ring-1 ring-red-100' : 'border-gray-100']">
-
-          <div v-if="vortrag.istPflicht" class="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-bl-lg uppercase tracking-widest shadow-sm z-10">
-            Pflicht
-          </div>
-
-          <div class="p-5 flex-1">
-            <div class="flex justify-between items-start mb-2">
-              <span class="text-xs font-semibold uppercase tracking-wider text-indigo-500">{{ vortrag.zielgruppe }}</span>
-              <span v-if="getCurrentPriority(vortrag.id)" class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-xs font-bold">
-                Prio {{ getCurrentPriority(vortrag.id) }}
-              </span>
-            </div>
-
-            <h3 class="text-lg font-bold text-gray-900 leading-tight mb-2 pr-12">{{ vortrag.titel }}</h3>
-
-            <div class="flex flex-col mb-4">
-              <p class="text-sm font-bold text-gray-700 flex items-center cursor-help"
-                 :title="vortrag.referent?.biography || 'Keine Biografie hinterlegt'">
-                <UserIcon class="w-4 h-4 mr-1 text-indigo-500" />
-                {{ vortrag.referent?.firstName }} {{ vortrag.referent?.lastName }}
-              </p>
-              <p v-if="vortrag.referent?.organisation"
-                 class="text-xs text-gray-500 ml-5 italic cursor-help"
-                 :title="vortrag.referent?.slogan || 'Kein Slogan hinterlegt'">
-                {{ vortrag.referent.organisation }}
-              </p>
-            </div>
-
-            <p class="text-gray-600 text-sm mb-4">
-              {{ vortrag.inhalt }}
-            </p>
-          </div>
-
-          <!-- Footer -->
-          <div class="bg-gray-50 p-4 border-t border-gray-100 mt-auto">
-            <div v-if="vortrag.istPflicht" class="text-xs text-red-600 font-medium italic text-center py-2">
-              Pflichtveranstaltung
-            </div>
-            <template v-else>
-              <select
-                  :disabled="zuweisungen.length > 0"
-                  :value="getCurrentPriority(vortrag.id) || ''"
-                  @change="updatePriority(vortrag.id, $event.target.value)"
-                  class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-gray-100 disabled:text-gray-400"
-              >
-                <option value="">Keine Wahl</option>
-                <option v-for="n in 10" :key="n" :value="n" :disabled="isRankTaken(n) && getCurrentPriority(vortrag.id) !== n">
-                  Rang {{ n }}
-                </option>
-              </select>
-            </template>
-          </div>
-        </div>
-      </div>
-
-      <!-- Save Button -->
-      <div v-if="zuweisungen.length === 0" class="fixed bottom-6 right-6 lg:static lg:mt-8 lg:flex lg:justify-end">
-        <button @click="saveAllPriorities" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full shadow-lg font-bold flex items-center gap-2">
-          <SaveIcon class="w-5 h-5" /> Auswahl speichern
-        </button>
-      </div>
+    <div v-if="!selectedVid" class="bg-indigo-50 p-12 rounded-2xl text-center border-2 border-dashed border-indigo-200 animate-fade-in">
+      <CalendarIcon class="w-12 h-12 text-indigo-300 mx-auto mb-4" />
+      <h2 class="text-xl font-bold text-indigo-900">Keine Veranstaltung ausgewählt</h2>
+      <p class="text-indigo-600 mt-2">Bitte wählen Sie oben eine Veranstaltung aus, um fortzufahren.</p>
     </div>
+
+    <template v-else>
+      <!-- MODUS: MEIN PLAN -->
+      <section v-if="zuweisungen.length > 0" class="bg-indigo-900 text-white p-8 rounded-2xl shadow-2xl animate-fade-in">
+        <div class="flex items-center gap-3 mb-6">
+          <CalendarCheckIcon class="w-8 h-8 text-indigo-300" />
+          <h2 class="text-3xl font-black">Mein Vortragsplan</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div v-for="z in zuweisungen" :key="z.id" class="bg-white/10 border border-white/20 p-5 rounded-xl backdrop-blur-sm">
+            <div class="text-[10px] uppercase font-bold text-indigo-300 mb-1">{{ z.slotZeit }}</div>
+            <h3 class="text-lg font-bold mb-2">{{ z.vortragTitel }}</h3>
+            <div class="flex items-center gap-2 text-sm text-indigo-100">
+              <MapPinIcon class="w-4 h-4" />
+              <span>{{ z.raumName }} ({{ z.gebaeudeName }})</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HEADER & WAHL-MODUS -->
+      <div class="space-y-6">
+        <header class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h2 class="text-2xl font-bold text-gray-800">Verfügbare Vorträge</h2>
+          <p class="text-gray-600 mt-1">Wählen Sie Ihre Top 10 Vorträge aus. 1 = Höchste Priorität.</p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <div v-for="n in 10" :key="n"
+                 :class="['w-8 h-8 flex items-center justify-center rounded-full border text-xs font-bold',
+                          isRankTaken(n) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-gray-100 text-gray-400 border-gray-200']">
+              {{ n }}
+            </div>
+          </div>
+        </header>
+
+        <!-- Vortrags-Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div v-for="vortrag in vortraege" :key="vortrag.id"
+               :class="['bg-white rounded-xl shadow-sm border flex flex-col overflow-hidden hover:shadow-md transition-shadow relative',
+                        vortrag.istPflicht ? 'border-red-300 ring-1 ring-red-100' : 'border-gray-100']">
+
+            <div v-if="vortrag.istPflicht" class="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-bl-lg uppercase tracking-widest shadow-sm z-10">
+              Pflicht
+            </div>
+
+            <div class="p-5 flex-1">
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-indigo-500">{{ vortrag.zielgruppe }}</span>
+                <span v-if="getCurrentPriority(vortrag.id)" class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-xs font-bold">
+                  Prio {{ getCurrentPriority(vortrag.id) }}
+                </span>
+              </div>
+
+              <h3 class="text-lg font-bold text-gray-900 leading-tight mb-2 pr-12">{{ vortrag.titel }}</h3>
+
+              <div class="flex flex-col mb-4">
+                <p class="text-sm font-bold text-gray-700 flex items-center cursor-help"
+                   :title="vortrag.referent?.biography || 'Keine Biografie hinterlegt'">
+                  <UserIcon class="w-4 h-4 mr-1 text-indigo-500" />
+                  {{ vortrag.referent?.firstName }} {{ vortrag.referent?.lastName }}
+                </p>
+                <p v-if="vortrag.referent?.organisation"
+                   class="text-xs text-gray-500 ml-5 italic cursor-help"
+                   :title="vortrag.referent?.slogan || 'Kein Slogan hinterlegt'">
+                  {{ vortrag.referent.organisation }}
+                </p>
+              </div>
+
+              <p class="text-gray-600 text-sm mb-4">
+                {{ vortrag.inhalt }}
+              </p>
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-gray-50 p-4 border-t border-gray-100 mt-auto">
+              <div v-if="vortrag.istPflicht" class="text-xs text-red-600 font-medium italic text-center py-2">
+                Pflichtveranstaltung
+              </div>
+              <template v-else>
+                <select
+                    :disabled="zuweisungen.length > 0"
+                    :value="getCurrentPriority(vortrag.id) || ''"
+                    @change="updatePriority(vortrag.id, $event.target.value)"
+                    class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-gray-100 disabled:text-gray-400"
+                >
+                  <option value="">Keine Wahl</option>
+                  <option v-for="n in 10" :key="n" :value="n" :disabled="isRankTaken(n) && getCurrentPriority(vortrag.id) !== n">
+                    Rang {{ n }}
+                  </option>
+                </select>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Save Button -->
+        <div v-if="zuweisungen.length === 0" class="fixed bottom-6 right-6 lg:static lg:mt-8 lg:flex lg:justify-end">
+          <button @click="saveAllPriorities" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full shadow-lg font-bold flex items-center gap-2">
+            <SaveIcon class="w-5 h-5" /> Auswahl speichern
+          </button>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -109,32 +135,58 @@ import api from '../api/axios';
 import { useEventContextStore } from '../stores/eventContext';
 import {
   User as UserIcon, Save as SaveIcon,
-  CalendarCheck as CalendarCheckIcon, MapPin as MapPinIcon
+  CalendarCheck as CalendarCheckIcon, MapPin as MapPinIcon,
+  Calendar as CalendarIcon
 } from 'lucide-vue-next';
 
 const eventContext = useEventContextStore();
+const veranstaltungen = ref([]);
+const selectedVid = ref(null);
 const vortraege = ref([]);
 const prios = ref([]);
 const zuweisungen = ref([]);
 
 onMounted(async () => {
   try {
-    const zuweisungenRes = await api.get('/api/teilnehmer/zuweisungen');
-    zuweisungen.value = zuweisungenRes.data;
+    const vRes = await api.get('/api/teilnehmer/veranstaltungen');
+    veranstaltungen.value = vRes.data;
 
-    const veranstaltungRes = await api.get('/api/teilnehmer/event');
-    eventContext.setEvent(veranstaltungRes.data);
+    // Wenn nur eine Veranstaltung vorhanden ist, diese direkt auswählen
+    if (veranstaltungen.value.length === 1) {
+      selectedVid.value = veranstaltungen.value[0].id;
+      await handleVeranstaltungChange();
+    }
+  } catch (err) {
+    console.error("Fehler beim Laden der Veranstaltungen:", err);
+  }
+});
 
-    const [vortragRes, prioRes] = await Promise.all([
-      api.get('/api/admin/vortraege'),
-      api.get('/api/teilnehmer/prios')
+const handleVeranstaltungChange = async () => {
+  if (!selectedVid.value) {
+    vortraege.value = [];
+    prios.value = [];
+    zuweisungen.value = [];
+    eventContext.clearEvent();
+    return;
+  }
+
+  try {
+    const ev = veranstaltungen.value.find(v => v.id === selectedVid.value);
+    eventContext.setEvent(ev);
+
+    const [zuweisungenRes, vortragRes, prioRes] = await Promise.all([
+      api.get(`/api/teilnehmer/zuweisungen?vid=${selectedVid.value}`),
+      api.get(`/api/teilnehmer/vortraege?vid=${selectedVid.value}`),
+      api.get(`/api/teilnehmer/prios?vid=${selectedVid.value}`)
     ]);
+
+    zuweisungen.value = zuweisungenRes.data;
     vortraege.value = vortragRes.data;
     prios.value = prioRes.data.map(p => ({ vortragId: p.vortrag.id, prioWert: p.prioWert }));
   } catch (err) {
-    console.error("Fehler beim Laden:", err);
+    console.error("Fehler beim Laden der Veranstaltungsdaten:", err);
   }
-});
+};
 
 const getCurrentPriority = (vortragId) => prios.value.find(p => p.vortragId === vortragId)?.prioWert;
 const isRankTaken = (rank) => prios.value.some(p => p.prioWert == rank);
@@ -157,6 +209,8 @@ const saveAllPriorities = async () => {
     alert("Fehler beim Speichern.");
   }
 };
+
+const formatDate = (d) => d ? new Date(d).toLocaleDateString('de-DE') : '';
 </script>
 
 <style scoped>

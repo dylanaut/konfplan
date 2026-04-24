@@ -7,7 +7,7 @@ import java.util.List;
 
 @Entity
 @DiscriminatorValue("REFERENT")
-public class Referent extends User {
+public class Referent extends Nutzer {
 
     @Column(name = "job_role")
     @CsvBindByName(column = "Position")

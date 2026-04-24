@@ -27,6 +27,12 @@ public class Veranstaltung extends VersionedEntity {
     @Convert(converter = LocalDateTimeConverter.class)
     public LocalDateTime endetAm;
 
+    @Convert(converter = LocalDateTimeConverter.class)
+    public LocalDateTime deadlineReferenten;
+
+    @Convert(converter = LocalDateTimeConverter.class)
+    public LocalDateTime deadlineTeilnehmer;
+
     public String logo;
 
     public String logo_link;
@@ -42,25 +48,52 @@ public class Veranstaltung extends VersionedEntity {
     @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL)
     public Set<EventSlot> eventSlots = new HashSet<>();
 
+    @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL)
+    public Set<Vortrag> vortraege = new HashSet<>();
+
     @ManyToMany(mappedBy = "veranstaltungen")
     @JsonIgnoreProperties("veranstaltungen")
-    public Set<User> benutzer = new HashSet<>();
+    public Set<Nutzer> nutzer = new HashSet<>();
 
     public Set<Admin> organisatoren() {
-        return benutzer.stream().filter(u -> u instanceof Admin)
+        return nutzer.stream().filter(u -> u instanceof Admin)
                 .map(u -> (Admin) u)
                 .collect(Collectors.toUnmodifiableSet());
     }
 
     public Set<Teilnehmer> teilnehmer() {
-        return benutzer.stream().filter(u -> u instanceof Teilnehmer)
+        return nutzer.stream().filter(u -> u instanceof Teilnehmer)
                 .map(u -> (Teilnehmer) u)
                 .collect(Collectors.toUnmodifiableSet());
     }
 
     public Set<Referent> referenten() {
-        return benutzer.stream().filter(u -> u instanceof Referent)
+        return nutzer.stream().filter(u -> u instanceof Referent)
                 .map(u -> (Referent) u)
                 .collect(Collectors.toUnmodifiableSet());
+    }
+
+    public void addSlot(EventSlot slot) {
+        if (this.eventSlots.contains(slot)) {
+            return;
+        }
+        this.eventSlots.add(slot);
+        slot.veranstaltung = this;
+    }
+
+    public void addVortrag(Vortrag vortrag) {
+        if (this.vortraege.contains(vortrag)) {
+            return;
+        }
+        this.vortraege.add(vortrag);
+        vortrag.veranstaltung = this;
+    }
+
+    public void addNutzer(Nutzer nutzer) {
+        if (this.nutzer.contains(nutzer)) {
+            return;
+        }
+        this.nutzer.add(nutzer);
+        nutzer.addVeranstaltung(this);
     }
 }

@@ -5,6 +5,8 @@ import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.RefProfilDto;
 import kreyj.vortragsmanager.dto.RefVortragDto;
 import kreyj.vortragsmanager.dto.ReferentVeranstaltungDto;
@@ -26,18 +28,18 @@ public class ReferentService {
     MailService mailService;
 
     public Referent getProfile(String email) {
-        User user = User.findByEmail(email);
-        if (user instanceof Referent) {
-            return (Referent) user;
+        Nutzer nutzer = Nutzer.findByEmail(email);
+        if (nutzer instanceof Referent) {
+            return (Referent) nutzer;
         }
         return null;
     }
 
     @Transactional
     public void updateProfile(String email, RefProfilDto dto) {
-        User user = User.findByEmail(email);
-        if (user instanceof Referent) {
-            Referent referent = (Referent) user;
+        Nutzer nutzer = Nutzer.findByEmail(email);
+        if (nutzer instanceof Referent) {
+            Referent referent = (Referent) nutzer;
             referent.biography = dto.biography;
             referent.jobRole = dto.jobRole;
             referent.organisation = dto.organisation;
@@ -48,7 +50,7 @@ public class ReferentService {
         }
     }
 
-    public List<RefVortragDto> getMeineVortraege(String email) {
+    public List<RefVortragDto> getReferentVortraege(String email) {
         Referent referent = Referent.find("email", email).firstResult();
         if (referent == null) return new ArrayList<>();
 
@@ -73,6 +75,7 @@ public class ReferentService {
             dto.name = e.name;
             dto.beginntAm = e.beginntAm;
             dto.endetAm = e.endetAm;
+            dto.deadlineReferenten = e.deadlineReferenten;
             dto.registeredTalkIds = vortraege.stream()
                     .filter(t -> t.veranstaltung.id.equals(e.id))
                     .map(t -> t.id)
@@ -114,6 +117,8 @@ public class ReferentService {
         Veranstaltung veranstaltung = Veranstaltung.findById(dto.veranstaltungId);
         if (veranstaltung == null) throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
 
+        checkDeadline(veranstaltung);
+
         Wahlvortrag vortrag = new Wahlvortrag();
         vortrag.referent = referent;
         vortrag.veranstaltung = veranstaltung;
@@ -134,6 +139,8 @@ public class ReferentService {
 
         if (vortrag == null || !vortrag.referent.id.equals(referent.id)) return null;
 
+        checkDeadline(vortrag.veranstaltung);
+
         updateVortragFromDto(vortrag, dto);
         return mapToDto(vortrag);
     }
@@ -146,6 +153,8 @@ public class ReferentService {
 
         if (referent == null || sourceTalk == null || targetEvent == null) return;
         if (!sourceTalk.referent.id.equals(referent.id)) return;
+
+        checkDeadline(targetEvent);
 
         // Prüfen, ob bereits ein Vortrag mit diesem Titel in der Zielveranstaltung existiert
         boolean exists = Vortrag.find("referent = ?1 and veranstaltung = ?2 and titel = ?3", referent, targetEvent, sourceTalk.titel).count() > 0;
@@ -183,6 +192,8 @@ public class ReferentService {
 
         if (referent == null || talk == null || event == null) return;
         if (!talk.referent.id.equals(referent.id) || !talk.veranstaltung.id.equals(event.id)) return;
+
+        checkDeadline(event);
 
         talk.delete();
 
@@ -228,6 +239,8 @@ public class ReferentService {
 
         if (vortrag == null || !vortrag.referent.id.equals(referent.id)) return false;
 
+        checkDeadline(vortrag.veranstaltung);
+
         Veranstaltung event = vortrag.veranstaltung;
         vortrag.delete();
 
@@ -236,6 +249,13 @@ public class ReferentService {
         }
 
         return true;
+    }
+
+    private void checkDeadline(Veranstaltung v) {
+        if (v.deadlineReferenten != null && v.deadlineReferenten.isBefore(LocalDateTime.now())) {
+            throw new WebApplicationException("Die Deadline für Referenten für diese Veranstaltung ist bereits abgelaufen.",
+                    Response.Status.FORBIDDEN);
+        }
     }
 
     @Transactional
@@ -253,18 +273,18 @@ public class ReferentService {
                     .parse();
 
             for (ReferentCsvDto dto : beans) {
-                User existingUser = User.findByEmail(dto.email);
+                Nutzer existingNutzer = Nutzer.findByEmail(dto.email);
                 Referent ref;
-                if (existingUser == null) {
+                if (existingNutzer == null) {
                     ref = new Referent();
                     ref.email = dto.email.trim().toLowerCase();
                     String tempPassword = "start123";
                     ref.passwordHash = BcryptUtil.bcryptHash(tempPassword);
                     ref.persist();
-                } else if (existingUser instanceof Referent) {
-                    ref = (Referent) existingUser;
+                } else if (existingNutzer instanceof Referent) {
+                    ref = (Referent) existingNutzer;
                 } else {
-                    LOG.warn("User mit Email " + dto.email + " existiert bereits, ist aber kein Referent. Überspringe.");
+                    LOG.warn("Nutzer mit Email " + dto.email + " existiert bereits, ist aber kein Referent. Überspringe.");
                     continue;
                 }
 

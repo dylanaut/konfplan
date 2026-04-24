@@ -13,28 +13,38 @@ actor "PUBLIC" as PUBLIC
 actor "REFERENT" as REFERENT
 actor "TEILNEHMER" as TEILNEHMER
 package "Vortragsmanager API" {
-  (getAlleVeranstaltungsteilnehmer) as getAlleVeranstaltungsteilnehmer
   (createTeilnehmer) as createTeilnehmer
   (updateTeilnehmer) as updateTeilnehmer
   (deleteTeilnehmer) as deleteTeilnehmer
-  (toggleActive) as toggleActive
   (getTeilnehmer) as getTeilnehmer
   (uploadCsv) as uploadCsv
+  (toggleActive) as toggleActive
+  (getAlleVeranstaltungsteilnehmer) as getAlleVeranstaltungsteilnehmer
+  (getReferentVeranstaltungen) as getReferentVeranstaltungen
+  (deregisterTalkFromEvent) as deregisterTalkFromEvent
   (getMeineVortraege) as getMeineVortraege
-  (setDayAvailability) as setDayAvailability
-  (getProfile) as getProfile
-  (updateProfile) as updateProfile
+  (registerTalkForEvent) as registerTalkForEvent
+  (getMyPlan) as getMyPlan
   (createVortrag) as createVortrag
   (updateVortrag) as updateVortrag
+  (updateProfile) as updateProfile
+  (getProfile) as getProfile
   (deleteVortrag) as deleteVortrag
-  (getMyPlan) as getMyPlan
-  (deleteUser) as deleteUser
+  (getMyPriorities) as getMyPriorities
+  (updateMyPriorities) as updateMyPriorities
+  (getMeineVeranstaltungen) as getMeineVeranstaltungen
+  (getPlan) as getPlan
+  (getPrios) as getPrios
+  (savePriorities) as savePriorities
+  (getVortraege) as getVortraege
+  (getVerfuegbarkeiten) as getVerfuegbarkeiten
+  (updateVerfuegbarkeit) as updateVerfuegbarkeit
   (getAllUsers) as getAllUsers
   (createUser) as createUser
   (updateUser) as updateUser
+  (inviteUser) as inviteUser
   (importAdmins) as importAdmins
-  (getOne) as getOne
-  (getStats) as getStats
+  (deleteUser) as deleteUser
   (getDetaillierterPlan) as getDetaillierterPlan
   (getPlanQualitaet) as getPlanQualitaet
   (starteOptimierung) as starteOptimierung
@@ -47,51 +57,57 @@ package "Vortragsmanager API" {
   (createBenutzer) as createBenutzer
   (updateBenutzer) as updateBenutzer
   (deleteBenutzer) as deleteBenutzer
-  (getVortraege) as getVortraege
   (getSlots) as getSlots
   (createSlot) as createSlot
   (updateSlot) as updateSlot
   (deleteSlot) as deleteSlot
   (importSlots) as importSlots
+  (getOne) as getOne
+  (getStats) as getStats
   (update) as update
   (delete) as delete
   (create) as create
   (getAll) as getAll
-  (getMyPriorities) as getMyPriorities
-  (savePriorities) as savePriorities
   (getRaeumeByGebaeude) as getRaeumeByGebaeude
   (importGebaeude) as importGebaeude
   (createRaum) as createRaum
   (updateRaum) as updateRaum
   (deleteRaum) as deleteRaum
   (importRaeume) as importRaeume
-  (updateMyPriorities) as updateMyPriorities
-  (login) as login
   (forgotPassword) as forgotPassword
   (resetPassword) as resetPassword
+  (login) as login
 }
-ADMIN --> getAlleVeranstaltungsteilnehmer
 ADMIN --> createTeilnehmer
 ADMIN --> updateTeilnehmer
 ADMIN --> deleteTeilnehmer
-ADMIN --> toggleActive
 ADMIN --> getTeilnehmer
 ADMIN --> uploadCsv
+ADMIN --> toggleActive
+ADMIN --> getAlleVeranstaltungsteilnehmer
+ADMIN --> getReferentVeranstaltungen
+ADMIN --> deregisterTalkFromEvent
 ADMIN --> getMeineVortraege
-ADMIN --> setDayAvailability
-ADMIN --> getProfile
-ADMIN --> updateProfile
+ADMIN --> registerTalkForEvent
+ADMIN --> getMyPlan
 ADMIN --> createVortrag
 ADMIN --> updateVortrag
+ADMIN --> updateProfile
+ADMIN --> getProfile
 ADMIN --> deleteVortrag
-ADMIN --> getMyPlan
-ADMIN --> deleteUser
+ADMIN --> getMeineVeranstaltungen
+ADMIN --> getPlan
+ADMIN --> getPrios
+ADMIN --> savePriorities
+ADMIN --> getVortraege
+ADMIN --> getVerfuegbarkeiten
+ADMIN --> updateVerfuegbarkeit
 ADMIN --> getAllUsers
 ADMIN --> createUser
 ADMIN --> updateUser
+ADMIN --> inviteUser
 ADMIN --> importAdmins
-ADMIN --> getOne
-ADMIN --> getStats
+ADMIN --> deleteUser
 ADMIN --> getDetaillierterPlan
 ADMIN --> getPlanQualitaet
 ADMIN --> starteOptimierung
@@ -99,54 +115,60 @@ ADMIN --> importVeranstaltungen
 ADMIN --> importReferenten
 ADMIN --> uploadTeilnehmerCsv
 ADMIN --> importVortraege
-ADMIN --> createVortrag
-ADMIN --> updateVortrag
-ADMIN --> deleteVortrag
+ADMIN --> getVortraege
 ADMIN --> getGesamtplan
 ADMIN --> getBenutzer
 ADMIN --> createBenutzer
 ADMIN --> updateBenutzer
 ADMIN --> deleteBenutzer
-ADMIN --> getVortraege
 ADMIN --> getSlots
 ADMIN --> createSlot
 ADMIN --> updateSlot
 ADMIN --> deleteSlot
 ADMIN --> importSlots
+ADMIN --> getOne
+ADMIN --> createVortrag
+ADMIN --> updateVortrag
+ADMIN --> getStats
+ADMIN --> deleteVortrag
 ADMIN --> update
 ADMIN --> delete
 ADMIN --> create
 ADMIN --> getAll
-ADMIN --> getMyPriorities
-ADMIN --> getMyPlan
-ADMIN --> savePriorities
-ADMIN --> getOne
 ADMIN --> getRaeumeByGebaeude
 ADMIN --> importGebaeude
 ADMIN --> createRaum
 ADMIN --> updateRaum
 ADMIN --> deleteRaum
 ADMIN --> importRaeume
+ADMIN --> getOne
 ADMIN --> update
 ADMIN --> delete
 ADMIN --> create
 ADMIN --> getAll
+ADMIN --> getAll
 PUBLIC --> getMyPriorities
 PUBLIC --> updateMyPriorities
-PUBLIC --> login
 PUBLIC --> forgotPassword
 PUBLIC --> resetPassword
+PUBLIC --> login
+REFERENT --> getReferentVeranstaltungen
+REFERENT --> deregisterTalkFromEvent
 REFERENT --> getMeineVortraege
-REFERENT --> setDayAvailability
-REFERENT --> getProfile
-REFERENT --> updateProfile
+REFERENT --> registerTalkForEvent
+REFERENT --> getMyPlan
 REFERENT --> createVortrag
 REFERENT --> updateVortrag
+REFERENT --> updateProfile
+REFERENT --> getProfile
 REFERENT --> deleteVortrag
-REFERENT --> getMyPlan
-TEILNEHMER --> getMyPriorities
-TEILNEHMER --> getMyPlan
+REFERENT --> getAll
+TEILNEHMER --> getMeineVeranstaltungen
+TEILNEHMER --> getPlan
+TEILNEHMER --> getPrios
 TEILNEHMER --> savePriorities
+TEILNEHMER --> getVortraege
+TEILNEHMER --> getAll
 @enduml
 ----
 
@@ -157,10 +179,6 @@ TEILNEHMER --> savePriorities
 [cols="2,1,3,2", options="header"]
 |===
 | Aktion | Method | Pfad | Rollen
-| getAlleVeranstaltungsteilnehmer
-| GET
-| `/api/admin/teilnehmer`
-| ADMIN
 | createTeilnehmer
 | POST
 | `/api/admin/teilnehmer`
@@ -173,10 +191,6 @@ TEILNEHMER --> savePriorities
 | DELETE
 | `/api/admin/teilnehmer/{id}`
 | ADMIN
-| toggleActive
-| PATCH
-| `/api/admin/teilnehmer/{id}/toggle`
-| ADMIN
 | getTeilnehmer
 | GET
 | `/api/admin/teilnehmer/{id}`
@@ -185,6 +199,14 @@ TEILNEHMER --> savePriorities
 | POST
 | `/api/admin/teilnehmer/import`
 | ADMIN
+| toggleActive
+| PATCH
+| `/api/admin/teilnehmer/{id}/toggle`
+| ADMIN
+| getAlleVeranstaltungsteilnehmer
+| GET
+| `/api/admin/teilnehmer`
+| ADMIN
 |===
 
 === ReferentResource
@@ -192,21 +214,25 @@ TEILNEHMER --> savePriorities
 [cols="2,1,3,2", options="header"]
 |===
 | Aktion | Method | Pfad | Rollen
+| getReferentVeranstaltungen
+| GET
+| `/api/referenten/events-for-registration`
+| ADMIN, REFERENT
+| deregisterTalkFromEvent
+| DELETE
+| `/api/referenten/events/{eventId}/vortraege/{talkId}/deregister`
+| ADMIN, REFERENT
 | getMeineVortraege
 | GET
 | `/api/referenten/vortraege`
 | ADMIN, REFERENT
-| setDayAvailability
+| registerTalkForEvent
 | POST
-| `/api/referenten/verfuegbarkeit/tag`
+| `/api/referenten/events/{eventId}/vortraege/{talkId}/register`
 | ADMIN, REFERENT
-| getProfile
+| getMyPlan
 | GET
-| `/api/referenten/profile`
-| ADMIN, REFERENT
-| updateProfile
-| PUT
-| `/api/referenten/profile`
+| `/api/referenten/my-plan`
 | ADMIN, REFERENT
 | createVortrag
 | POST
@@ -216,14 +242,60 @@ TEILNEHMER --> savePriorities
 | PUT
 | `/api/referenten/vortraege/{vortragId}`
 | ADMIN, REFERENT
+| updateProfile
+| PUT
+| `/api/referenten/profile`
+| ADMIN, REFERENT
+| getProfile
+| GET
+| `/api/referenten/profile`
+| ADMIN, REFERENT
 | deleteVortrag
 | DELETE
 | `/api/referenten/vortraege/{vortragId}`
 | ADMIN, REFERENT
-| getMyPlan
+|===
+
+=== TeilnehmerPrioritaetenResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getMyPriorities
 | GET
-| `/api/referenten/my-plan`
-| ADMIN, REFERENT
+| `/api/teilnehmer/priorities`
+| PUBLIC
+| updateMyPriorities
+| POST
+| `/api/teilnehmer/priorities`
+| PUBLIC
+|===
+
+=== TeilnehmerPlanResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getMeineVeranstaltungen
+| GET
+| `/api/teilnehmer/veranstaltungen`
+| TEILNEHMER, ADMIN
+| getPlan
+| GET
+| `/api/teilnehmer/zuweisungen`
+| TEILNEHMER, ADMIN
+| getPrios
+| GET
+| `/api/teilnehmer/prios`
+| TEILNEHMER, ADMIN
+| savePriorities
+| POST
+| `/api/teilnehmer/prios`
+| TEILNEHMER, ADMIN
+| getVortraege
+| GET
+| `/api/teilnehmer/vortraege`
+| TEILNEHMER, ADMIN
 |===
 
 === AdminResource
@@ -231,9 +303,13 @@ TEILNEHMER --> savePriorities
 [cols="2,1,3,2", options="header"]
 |===
 | Aktion | Method | Pfad | Rollen
-| deleteUser
-| DELETE
-| `/api/admin/benutzer/{id}`
+| getVerfuegbarkeiten
+| GET
+| `/api/admin/veranstaltung/{vid}/verfuegbarkeiten`
+| ADMIN
+| updateVerfuegbarkeit
+| POST
+| `/api/admin/veranstaltung/{vid}/verfuegbarkeit`
 | ADMIN
 | getAllUsers
 | GET
@@ -247,9 +323,17 @@ TEILNEHMER --> savePriorities
 | PUT
 | `/api/admin/benutzer/{id}`
 | ADMIN
+| inviteUser
+| POST
+| `/api/admin/benutzer/{userId}/einladen/{eventId}`
+| ADMIN
 | importAdmins
 | POST
 | `/api/admin/admins/import`
+| ADMIN
+| deleteUser
+| DELETE
+| `/api/admin/benutzer/{id}`
 | ADMIN
 |===
 
@@ -258,14 +342,6 @@ TEILNEHMER --> savePriorities
 [cols="2,1,3,2", options="header"]
 |===
 | Aktion | Method | Pfad | Rollen
-| getOne
-| GET
-| `/api/veranstaltungen/{vid}`
-| ADMIN
-| getStats
-| GET
-| `/api/veranstaltungen/{vid}/stats`
-| ADMIN
 | getDetaillierterPlan
 | GET
 | `/api/veranstaltungen/{vid}/plan/details`
@@ -294,17 +370,9 @@ TEILNEHMER --> savePriorities
 | POST
 | `/api/veranstaltungen/{vid}/vortraege/import`
 | ADMIN
-| createVortrag
-| POST
+| getVortraege
+| GET
 | `/api/veranstaltungen/{vid}/vortraege`
-| ADMIN
-| updateVortrag
-| PUT
-| `/api/veranstaltungen/{vid}/vortraege/{id}`
-| ADMIN
-| deleteVortrag
-| DELETE
-| `/api/veranstaltungen/{vid}/vortraege/{id}`
 | ADMIN
 | getGesamtplan
 | GET
@@ -326,10 +394,6 @@ TEILNEHMER --> savePriorities
 | DELETE
 | `/api/veranstaltungen/{vid}/benutzer/{id}`
 | ADMIN
-| getVortraege
-| GET
-| `/api/veranstaltungen/{vid}/vortraege`
-| ADMIN
 | getSlots
 | GET
 | `/api/veranstaltungen/{vid}/slots`
@@ -350,6 +414,26 @@ TEILNEHMER --> savePriorities
 | POST
 | `/api/veranstaltungen/{vid}/slots/import`
 | ADMIN
+| getOne
+| GET
+| `/api/veranstaltungen/{vid}`
+| ADMIN
+| createVortrag
+| POST
+| `/api/veranstaltungen/{vid}/vortraege`
+| ADMIN
+| updateVortrag
+| PUT
+| `/api/veranstaltungen/{vid}/vortraege/{id}`
+| ADMIN
+| getStats
+| GET
+| `/api/veranstaltungen/{vid}/stats`
+| ADMIN
+| deleteVortrag
+| DELETE
+| `/api/veranstaltungen/{vid}/vortraege/{id}`
+| ADMIN
 | update
 | PUT
 | `/api/veranstaltungen/{id}`
@@ -368,34 +452,11 @@ TEILNEHMER --> savePriorities
 | ADMIN
 |===
 
-=== ParticipantPlanResource
-
-[cols="2,1,3,2", options="header"]
-|===
-| Aktion | Method | Pfad | Rollen
-| getMyPriorities
-| GET
-| `/api/participant/priorities`
-| TEILNEHMER, ADMIN
-| getMyPlan
-| GET
-| `/api/participant/my-plan`
-| TEILNEHMER, ADMIN
-| savePriorities
-| POST
-| `/api/participant/priorities`
-| TEILNEHMER, ADMIN
-|===
-
 === GebaeudeResource
 
 [cols="2,1,3,2", options="header"]
 |===
 | Aktion | Method | Pfad | Rollen
-| getOne
-| GET
-| `/api/gebaeude/{id}`
-| ADMIN
 | getRaeumeByGebaeude
 | GET
 | `/api/gebaeude/{gid}/raeume`
@@ -420,6 +481,10 @@ TEILNEHMER --> savePriorities
 | POST
 | `/api/gebaeude/{gid}/raeume/import`
 | ADMIN
+| getOne
+| GET
+| `/api/gebaeude/{id}`
+| ADMIN
 | update
 | PUT
 | `/api/gebaeude/{id}`
@@ -438,19 +503,15 @@ TEILNEHMER --> savePriorities
 | ADMIN
 |===
 
-=== ParticipantPriorityResource
+=== SlotResource
 
 [cols="2,1,3,2", options="header"]
 |===
 | Aktion | Method | Pfad | Rollen
-| getMyPriorities
+| getAll
 | GET
-| `/api/participant/priorities`
-| PUBLIC
-| updateMyPriorities
-| POST
-| `/api/participant/priorities`
-| PUBLIC
+| `/api/slots`
+| ADMIN, REFERENT, TEILNEHMER
 |===
 
 === AuthResource
@@ -458,10 +519,6 @@ TEILNEHMER --> savePriorities
 [cols="2,1,3,2", options="header"]
 |===
 | Aktion | Method | Pfad | Rollen
-| login
-| POST
-| `/api/auth/login`
-| PUBLIC
 | forgotPassword
 | POST
 | `/api/auth/forgot-password`
@@ -469,6 +526,10 @@ TEILNEHMER --> savePriorities
 | resetPassword
 | POST
 | `/api/auth/reset-password`
+| PUBLIC
+| login
+| POST
+| `/api/auth/login`
 | PUBLIC
 |===
 

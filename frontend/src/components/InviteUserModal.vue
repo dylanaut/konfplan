@@ -8,9 +8,9 @@
         </button>
       </div>
 
-      <div v-if="user" class="mb-6">
+      <div v-if="nutzer" class="mb-6">
         <p class="text-sm text-gray-600">
-          Laden Sie <span class="font-bold text-gray-900">{{ user.firstName }} {{ user.lastName }}</span> zu einer weiteren Veranstaltung ein.
+          Laden Sie <span class="font-bold text-gray-900">{{ nutzer.firstName }} {{ nutzer.lastName }}</span> zu einer weiteren Veranstaltung ein.
         </p>
       </div>
 
@@ -57,7 +57,7 @@ import { X as XIcon, Info as InfoIcon, Loader as LoaderIcon } from 'lucide-vue-n
 
 const props = defineProps({
   isVisible: Boolean,
-  user: Object,
+  nutzer: Object,
   futureEvents: Array
 });
 
@@ -70,7 +70,7 @@ const confirmInvite = async () => {
   if (!selectedEventId.value) return;
   isSubmitting.value = true;
   try {
-    await emit('invite', { userId: props.user.id, eventId: selectedEventId.value });
+    await emit('invite', { userId: props.nutzer.id, eventId: selectedEventId.value });
     selectedEventId.value = null;
   } finally {
     isSubmitting.value = false;

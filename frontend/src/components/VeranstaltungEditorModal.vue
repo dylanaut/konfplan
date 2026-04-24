@@ -24,6 +24,16 @@
           <input v-model="form.endetAm" type="datetime-local" class="input-field" />
         </div>
 
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Deadline für Referenten</label>
+          <input v-model="form.deadlineReferenten" type="datetime-local" class="input-field" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Deadline für Teilnehmer</label>
+          <input v-model="form.deadlineTeilnehmer" type="datetime-local" class="input-field" />
+        </div>
+
         <!-- Organisatoren Auswahl (Multi-Select) -->
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-2">Organisatoren (Admins)</label>
@@ -90,6 +100,8 @@ const form = reactive({
   name: '',
   beginntAm: '',
   endetAm: '',
+  deadlineReferenten: '',
+  deadlineTeilnehmer: '',
   logo: '',
   logo_link: '',
   organisatorIds: [],
@@ -103,6 +115,8 @@ watch(
       form.name = val?.name ?? '';
       form.beginntAm = val?.beginntAm ? val.beginntAm.slice(0, 16) : '';
       form.endetAm = val?.endetAm ? val.endetAm.slice(0, 16) : '';
+      form.deadlineReferenten = val?.deadlineReferenten ? val.deadlineReferenten.slice(0, 16) : '';
+      form.deadlineTeilnehmer = val?.deadlineTeilnehmer ? val.deadlineTeilnehmer.slice(0, 16) : '';
       form.logo = val?.logo ?? '';
       form.logo_link = val?.logo_link ?? '';
       form.organisatorIds = val?.organisatorIds ?? [];

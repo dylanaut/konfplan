@@ -54,7 +54,7 @@ build/
 /frontend/dist/assets/ResetPassword-C6upOpkp.js
 /frontend/dist/assets/SpeakerDashboard-8FHFVomc.js
 /frontend/dist/assets/SpeakerDashboard-BHib-qB-.css
-/frontend/dist/assets/user-iqKVodtV.js
+/frontend/dist/assets/nutzer-iqKVodtV.js
 /frontend/dist/index.html
 /frontend/node/node_modules/corepack/dist/corepack.js
 /frontend/node/node_modules/corepack/dist/npm.js
@@ -377,7 +377,7 @@ build/
 /frontend/node/node_modules/npm/lib/utils/ping.js
 /frontend/node/node_modules/npm/lib/utils/pulse-till-done.js
 /frontend/node/node_modules/npm/lib/utils/queryable.js
-/frontend/node/node_modules/npm/lib/utils/read-user-info.js
+/frontend/node/node_modules/npm/lib/utils/read-nutzer-info.js
 /frontend/node/node_modules/npm/lib/utils/reify-finish.js
 /frontend/node/node_modules/npm/lib/utils/reify-output.js
 /frontend/node/node_modules/npm/lib/utils/replace-info.js
@@ -1684,9 +1684,9 @@ build/
 /frontend/node/node_modules/npm/node_modules/npm-registry-fetch/lib/index.js
 /frontend/node/node_modules/npm/node_modules/npm-registry-fetch/LICENSE.md
 /frontend/node/node_modules/npm/node_modules/npm-registry-fetch/package.json
-/frontend/node/node_modules/npm/node_modules/npm-user-validate/lib/index.js
-/frontend/node/node_modules/npm/node_modules/npm-user-validate/LICENSE
-/frontend/node/node_modules/npm/node_modules/npm-user-validate/package.json
+/frontend/node/node_modules/npm/node_modules/npm-nutzer-validate/lib/index.js
+/frontend/node/node_modules/npm/node_modules/npm-nutzer-validate/LICENSE
+/frontend/node/node_modules/npm/node_modules/npm-nutzer-validate/package.json
 /frontend/node/node_modules/npm/node_modules/npmlog/lib/log.js
 /frontend/node/node_modules/npm/node_modules/npmlog/LICENSE.md
 /frontend/node/node_modules/npm/node_modules/npmlog/package.json

@@ -3,7 +3,7 @@
     <div class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-bold text-gray-900">
-          {{ user?.id ? 'Benutzer bearbeiten' : 'Neuen Benutzer anlegen' }}
+          {{ nutzer?.id ? 'Benutzer bearbeiten' : 'Neuen Benutzer anlegen' }}
         </h2>
         <button class="text-gray-500 hover:text-gray-700" @click="$emit('close')">✕</button>
       </div>
@@ -27,7 +27,7 @@
 
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-1">Rolle</label>
-          <select v-model="form.role" class="input-field" required :disabled="!!user?.id">
+          <select v-model="form.role" class="input-field" required :disabled="!!nutzer?.id">
             <option value="TEILNEHMER">Teilnehmer</option>
             <option value="REFERENT">Referent</option>
             <option value="ADMIN">Administrator</option>
@@ -64,7 +64,7 @@
         <div class="md:col-span-2 flex justify-end gap-3 pt-6 border-t mt-4">
           <button type="button" class="btn-secondary" @click="$emit('close')">Abbrechen</button>
           <button type="submit" class="btn-primary">
-            {{ user?.id ? 'Änderungen speichern' : 'Benutzer erstellen' }}
+            {{ nutzer?.id ? 'Änderungen speichern' : 'Benutzer erstellen' }}
           </button>
         </div>
       </form>
@@ -77,7 +77,7 @@ import { reactive, watch } from 'vue';
 
 const props = defineProps({
   isVisible: { type: Boolean, required: true },
-  user: { type: Object, default: null },
+  nutzer: { type: Object, default: null },
 });
 
 const emit = defineEmits(['close', 'save']);
@@ -95,7 +95,7 @@ const form = reactive({
 });
 
 watch(
-    () => props.user,
+    () => props.nutzer,
     (val) => {
       form.id = val?.id ?? null;
       form.firstName = val?.firstName ?? '';

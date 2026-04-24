@@ -9,12 +9,11 @@ import kreyj.vortragsmanager.dto.RefProfilDto;
 import kreyj.vortragsmanager.dto.RefVortragDto;
 import kreyj.vortragsmanager.dto.ReferentVeranstaltungDto;
 import kreyj.vortragsmanager.dto.ZuweisungDto;
-import kreyj.vortragsmanager.entity.User;
+import kreyj.vortragsmanager.entity.Nutzer;
 import kreyj.vortragsmanager.service.PlanService;
 import kreyj.vortragsmanager.service.ReferentService;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Path("/api/referenten")
@@ -34,7 +33,7 @@ public class ReferentResource {
 
     @GET
     @Path("/profile")
-    public User getProfile() {
+    public Nutzer getProfile() {
         return referentService.getProfile(jwt.getSubject());
     }
 
@@ -47,8 +46,8 @@ public class ReferentResource {
 
     @GET
     @Path("/vortraege")
-    public List<RefVortragDto> getMeineVortraege() {
-        return referentService.getMeineVortraege(jwt.getSubject());
+    public List<RefVortragDto> getReferentenVortraege() {
+        return referentService.getReferentVortraege(jwt.getSubject());
     }
 
     @POST
@@ -58,7 +57,7 @@ public class ReferentResource {
             RefVortragDto saved = referentService.createVortrag(jwt.getSubject(), dto);
             return Response.ok(saved).build();
         } catch (Exception e) {
-            return Response.status(Response.Status.BAD_REQUEST)
+            return Response.status(Response.Status.FORBIDDEN)
                     .entity(e.getMessage()).build();
         }
     }
@@ -70,6 +69,8 @@ public class ReferentResource {
             RefVortragDto updated = referentService.updateVortrag(jwt.getSubject(), vortragId, dto);
             if (updated == null) return Response.status(Response.Status.NOT_FOUND).build();
             return Response.ok(updated).build();
+        } catch (WebApplicationException e) {
+            return e.getResponse();
         } catch (Exception e) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(e.getMessage()).build();

@@ -8,7 +8,7 @@ import java.util.List;
 
 @Entity
 @DiscriminatorValue("TEILNEHMER")
-public class Teilnehmer extends User {
+public class Teilnehmer extends Nutzer {
 
     @Column(name = "gruppe")
     @CsvBindByName(column = "Gruppe")

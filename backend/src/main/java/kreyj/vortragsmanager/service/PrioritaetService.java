@@ -4,10 +4,11 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
 import kreyj.vortragsmanager.dto.PrioritaetRequest;
+import kreyj.vortragsmanager.entity.Nutzer;
 import kreyj.vortragsmanager.entity.Prioritaet;
 import kreyj.vortragsmanager.entity.Vortrag;
-import kreyj.vortragsmanager.entity.User;
 import kreyj.vortragsmanager.entity.Teilnehmer;
+import kreyj.vortragsmanager.entity.Veranstaltung;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,9 +18,20 @@ public class PrioritaetService {
 
     @Transactional
     public void savePrioritaeten(String email, List<PrioritaetRequest> requests) {
-        User user = User.findByEmail(email);
-        if (!(user instanceof Teilnehmer)) throw new WebApplicationException("Benutzer ist kein Teilnehmer", 400);
-        Teilnehmer teilnehmer = (Teilnehmer) user;
+        Nutzer nutzer = Nutzer.findByEmail(email);
+        if (!(nutzer instanceof Teilnehmer)) throw new WebApplicationException("Benutzer ist kein Teilnehmer", 400);
+        Teilnehmer teilnehmer = (Teilnehmer) nutzer;
+
+        // Deadline Check
+        if (!requests.isEmpty()) {
+            Vortrag v1 = Vortrag.findById(requests.get(0).vortragId);
+            if (v1 != null) {
+                Veranstaltung v = v1.veranstaltung;
+                if (v.deadlineTeilnehmer != null && v.deadlineTeilnehmer.isBefore(LocalDateTime.now())) {
+                    throw new WebApplicationException("Die Deadline für Teilnehmer für diese Veranstaltung ist bereits abgelaufen.", 403);
+                }
+            }
+        }
 
         // 1. Validierung: Nur Werte 1-10 erlaubt
         boolean invalidRange = requests.stream()
@@ -53,9 +65,9 @@ public class PrioritaetService {
     }
 
     public List<Prioritaet> getPrioritaetenForUser(String email) {
-        User user = User.findByEmail(email);
-        if (!(user instanceof Teilnehmer)) throw new WebApplicationException("Benutzer ist kein Teilnehmer", 400);
-        Teilnehmer teilnehmer = (Teilnehmer) user;
+        Nutzer nutzer = Nutzer.findByEmail(email);
+        if (!(nutzer instanceof Teilnehmer)) throw new WebApplicationException("Benutzer ist kein Teilnehmer", 400);
+        Teilnehmer teilnehmer = (Teilnehmer) nutzer;
         return Prioritaet.list("teilnehmer", teilnehmer);
     }
 }

@@ -21,7 +21,7 @@ import static org.hamcrest.Matchers.matchesPattern;
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
-class UserPersistenceTest {
+class NutzerPersistenceTest {
 
     public static final String TEST_VERANSTALTUNG = "Test Veranstaltung";
     Long testVid;
@@ -30,7 +30,7 @@ class UserPersistenceTest {
     @Transactional
     void setup() {
         Vortrag.deleteAll();
-        User.deleteAll();
+        Nutzer.deleteAll();
         Raum.deleteAll();
         Gebaeude.deleteAll();
         EventSlot.deleteAll();
@@ -93,7 +93,7 @@ class UserPersistenceTest {
                 .statusCode(201)
                 .body("role", is("REFERENT"));
 
-        Referent ref = (Referent) User.findByEmail("referent@test.de");
+        Referent ref = (Referent) Nutzer.findByEmail("referent@test.de");
         Assertions.assertNotNull(ref);
         Assertions.assertNotNull(ref.veranstaltungen, "Veranstaltungen sollten nicht leer sein");
         Assertions.assertEquals(testVid, ref.veranstaltungen.iterator().next().id);
@@ -120,7 +120,7 @@ class UserPersistenceTest {
                 .statusCode(201)
                 .body("role", is("TEILNEHMER"));
 
-        Teilnehmer teil = (Teilnehmer) User.findByEmail("schueler@test.de");
+        Teilnehmer teil = (Teilnehmer) Nutzer.findByEmail("schueler@test.de");
         Assertions.assertNotNull(teil);
         Assertions.assertEquals("10a", teil.gruppe);
         Assertions.assertNotEquals(emptyList(), teil.veranstaltungen, "Veranstaltung sollten nicht leer sein");

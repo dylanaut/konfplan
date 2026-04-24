@@ -7,7 +7,6 @@ import io.quarkus.test.security.TestSecurity;
 import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.entity.*;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.commons.util.ClassLoaderUtils;
@@ -32,7 +31,7 @@ class CsvFileImportTest {
     @Transactional
     void setupTransactional() {
         Vortrag.deleteAll();
-        User.deleteAll();
+        Nutzer.deleteAll();
         Raum.deleteAll();
         Gebaeude.deleteAll();
         EventSlot.deleteAll();
@@ -60,7 +59,7 @@ class CsvFileImportTest {
                 .then()
                 .statusCode(200);
 
-        Admin organisator = (Admin) User.findByEmail("test.admin@rks-linz.de");
+        Admin organisator = (Admin) Nutzer.findByEmail("test.admin@rks-linz.de");
         Assertions.assertNotNull(organisator);
         Assertions.assertEquals("Admin", organisator.firstName);
         orgEmail = organisator.email;
@@ -100,7 +99,7 @@ class CsvFileImportTest {
                 .then()
                 .statusCode(200);
 
-        Referent r = (Referent) User.findByEmail("juergenkreyalias-ref@yahoo.com");
+        Referent r = (Referent) Nutzer.findByEmail("juergenkreyalias-ref@yahoo.com");
         Assertions.assertNotNull(r);
         Assertions.assertEquals("msg systems", r.organisation);
     }
@@ -113,7 +112,7 @@ class CsvFileImportTest {
                 .then()
                 .statusCode(200);
 
-        Teilnehmer t = (Teilnehmer) User.findByEmail("hayal.yaldir@rks-linz.de");
+        Teilnehmer t = (Teilnehmer) Nutzer.findByEmail("hayal.yaldir@rks-linz.de");
         Assertions.assertNotNull(t);
         Assertions.assertEquals("9.1", t.gruppe);
     }

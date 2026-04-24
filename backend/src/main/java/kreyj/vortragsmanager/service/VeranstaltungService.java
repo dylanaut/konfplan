@@ -3,28 +3,29 @@ package kreyj.vortragsmanager.service;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import kreyj.vortragsmanager.dto.GebaeudeSimpleDto;
 import kreyj.vortragsmanager.dto.VeranstaltungDto;
 import kreyj.vortragsmanager.dto.csv.VeranstaltungCsvDto;
 import kreyj.vortragsmanager.entity.Admin;
 import kreyj.vortragsmanager.entity.Gebaeude;
-import kreyj.vortragsmanager.entity.User;
+import kreyj.vortragsmanager.entity.Nutzer;
 import kreyj.vortragsmanager.entity.Veranstaltung;
 import kreyj.vortragsmanager.resource.VeranstaltungResource;
+import kreyj.vortragsmanager.util.DateHelper;
 import org.jboss.logging.Logger;
 
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+
+import static kreyj.vortragsmanager.util.DateHelper.DATE_FORMAT;
 
 @ApplicationScoped
 public class VeranstaltungService {
     private static final Logger LOG = Logger.getLogger(VeranstaltungService.class);
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     public List<Veranstaltung> listAll() {
         return Veranstaltung.listAll();
@@ -37,48 +38,40 @@ public class VeranstaltungService {
     @Transactional
     public VeranstaltungDto save(VeranstaltungDto dto) {
         Veranstaltung entity;
-        if (dto.id == null) {
-            entity = new Veranstaltung();
-        } else {
+        if (dto.id != null) {
             entity = Veranstaltung.findById(dto.id);
-            if (entity == null) {
-                return null;
-            }
+            if (entity == null) return null;
+        } else {
+            entity = new Veranstaltung();
         }
 
         entity.name = dto.name;
         entity.beginntAm = dto.beginntAm;
         entity.endetAm = dto.endetAm;
+        entity.deadlineReferenten = dto.deadlineReferenten;
+        entity.deadlineTeilnehmer = dto.deadlineTeilnehmer;
         entity.logo = dto.logo;
         entity.logo_link = dto.logo_link;
 
-        if (entity.id == null) {
-            entity.persist();
-        }
-
-        // Organisatoren (Admins) verknüpfen
-        if (dto.organisatorIds != null && !dto.organisatorIds.isEmpty()) {
-            for (Long adminId : dto.organisatorIds) {
-                User admin = User.findById(adminId);
-                if (admin != null && "ADMIN".equals(admin.role)) {
-                    if (!admin.veranstaltungen.contains(entity)) {
-                        admin.veranstaltungen.add(entity);
-                    }
-                }
-            }
-        }
-
-        // Gebaeude-Relation (ManyToMany) aktualisieren
+        // Gebäude zuweisen
         entity.gebaeude.clear();
         if (dto.gebaeude != null) {
-            for (GebaeudeSimpleDto gebaeudeId : dto.gebaeude) {
-                Gebaeude attached = Gebaeude.findById(gebaeudeId.id);
-                if (attached != null) {
-                    entity.gebaeude.add(attached);
-                }
+            for (var gDto : dto.gebaeude) {
+                Gebaeude g = Gebaeude.findById(gDto.id);
+                if (g != null) entity.gebaeude.add(g);
             }
         }
 
+        // Organisatoren zuweisen
+        if (dto.organisatorIds != null) {
+            entity.nutzer.removeIf(u -> u instanceof Admin);
+            for (Long aid : dto.organisatorIds) {
+                Admin a = Admin.findById(aid);
+                if (a != null) entity.addNutzer(a);
+            }
+        }
+
+        if (dto.id == null) entity.persist();
         return VeranstaltungResource.mapToDto(entity);
     }
 
@@ -105,7 +98,7 @@ public class VeranstaltungService {
                     continue;
                 }
 
-                User admin = User.findByEmail(dto.organisatorEmail);
+                Nutzer admin = Nutzer.findByEmail(dto.organisatorEmail);
                 if (admin instanceof Admin) {
                     Veranstaltung v = new Veranstaltung();
                     v.name = dto.name;
@@ -121,7 +114,7 @@ public class VeranstaltungService {
                     v.logo = dto.logo;
                     v.logo_link = dto.logo_link;
                     v.persist();
-                    
+
                     // Admin verknüpfen
                     admin.veranstaltungen.add(v);
 

@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
-class UserInheritanceTest {
+class NutzerInheritanceTest {
 
     Long testVid;
 
@@ -26,7 +26,7 @@ class UserInheritanceTest {
     @Transactional
     void setup() {
         Vortrag.deleteAll();
-        User.deleteAll();
+        Nutzer.deleteAll();
         Raum.deleteAll();
         Gebaeude.deleteAll();
         EventSlot.deleteAll();
@@ -68,7 +68,7 @@ class UserInheritanceTest {
                 .then()
                 .statusCode(201);
 
-        Referent ref = (Referent) User.findByEmail("expert@vortragsmanager.de");
+        Referent ref = (Referent) Nutzer.findByEmail("expert@vortragsmanager.de");
         assertNotNull(ref, "Referent sollte in der DB existieren");
         assertNotEquals(Collections.emptyList(), ref.veranstaltungen, "Veranstaltung des Referenten sollte nicht leer sein");
         assertEquals(testVid, ref.veranstaltungen.iterator().next().id);
@@ -96,7 +96,7 @@ class UserInheritanceTest {
                 .log().ifStatusCodeIsEqualTo(201)
                 .statusCode(201);
 
-        Teilnehmer tn = (Teilnehmer) User.findByEmail("student@vortragsmanager.de");
+        Teilnehmer tn = (Teilnehmer) Nutzer.findByEmail("student@vortragsmanager.de");
         assertNotNull(tn, "Teilnehmer sollte in der DB existieren");
         assertNotNull(Veranstaltung.findById(testVid), "Veranstaltung %d sollte in der DB existieren".formatted(testVid));
         assertNotNull(tn.veranstaltungen, "Veranstaltung des Teilnehmers sollte nicht leer sein");

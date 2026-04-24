@@ -11,7 +11,6 @@ import kreyj.vortragsmanager.entity.EventSlot;
 import kreyj.vortragsmanager.entity.Veranstaltung;
 import kreyj.vortragsmanager.entity.Vortrag;
 import kreyj.vortragsmanager.service.*;
-import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
@@ -41,9 +40,6 @@ public class VeranstaltungResource {
 
     @Inject
     PlanService planService;
-
-    @Inject
-    JsonWebToken jwt;
 
     // --- BASIS: VERANSTALTUNGEN ---
 
@@ -313,12 +309,14 @@ public class VeranstaltungResource {
         dto.name = v.name;
         dto.beginntAm = v.beginntAm;
         dto.endetAm = v.endetAm;
+        dto.deadlineReferenten = v.deadlineReferenten;
+        dto.deadlineTeilnehmer = v.deadlineTeilnehmer;
         dto.logo = v.logo;
         dto.logo_link = v.logo_link;
 
         // Organisatoren filtern und hinzufügen
-        if (v.benutzer != null) {
-            v.benutzer.stream()
+        if (v.nutzer != null) {
+            v.nutzer.stream()
                     .filter(u -> u instanceof Admin)
                     .forEach(u -> {
                         dto.organisatorIds.add(u.id);

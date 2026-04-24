@@ -13,8 +13,8 @@ import jakarta.ws.rs.core.MediaType;
 import kreyj.vortragsmanager.dto.LoginRequest;
 import kreyj.vortragsmanager.dto.ResetRequest;
 import kreyj.vortragsmanager.entity.Admin;
+import kreyj.vortragsmanager.entity.Nutzer;
 import kreyj.vortragsmanager.entity.Teilnehmer;
-import kreyj.vortragsmanager.entity.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -36,20 +36,20 @@ class AuthResourceTest {
 
     @BeforeEach
     void setup() {
-        PanacheMock.mock(User.class);
+        PanacheMock.mock(Nutzer.class);
     }
 
     @Test
     void testForgotPassword_UserExists() {
-        User user = new Admin();
-        user.email = "test@example.com";
-        user.firstName = "Test";
-        user.role = "ADMIN";
-        user.passwordHash = "some-dummy-hash"; // Passwort setzen, um NOT NULL constraint zu erfüllen
+        Nutzer nutzer = new Admin();
+        nutzer.email = "test@example.com";
+        nutzer.firstName = "Test";
+        nutzer.role = "ADMIN";
+        nutzer.passwordHash = "some-dummy-hash"; // Passwort setzen, um NOT NULL constraint zu erfüllen
 
-        Mockito.when(User.findByEmail("test@example.com")).thenReturn(user);
-        // Wir müssen sicherstellen, dass persist() auf dem Mock-User nichts tut
-        Mockito.doNothing().when(Mockito.mock(User.class)).persist();
+        Mockito.when(Nutzer.findByEmail("test@example.com")).thenReturn(nutzer);
+        // Wir müssen sicherstellen, dass persist() auf dem Mock-Nutzer nichts tut
+        Mockito.doNothing().when(Mockito.mock(Nutzer.class)).persist();
 
         given()
                 .queryParam("email", "test@example.com")
@@ -65,7 +65,7 @@ class AuthResourceTest {
 
     @Test
     void testForgotPassword_UserNotFound() {
-        Mockito.when(User.findByEmail("unknown@example.com")).thenReturn(null);
+        Mockito.when(Nutzer.findByEmail("unknown@example.com")).thenReturn(null);
 
         given()
                 .queryParam("email", "unknown@example.com")
@@ -76,14 +76,14 @@ class AuthResourceTest {
 
     @Test
     void testResetPassword_Success() {
-        User user = new Teilnehmer();
-        user.resetToken = "valid-token";
-        user.resetTokenExpiry = LocalDateTime.now().plusHours(1);
-        user.passwordHash = BcryptUtil.bcryptHash("oldSecretPassword");
+        Nutzer nutzer = new Teilnehmer();
+        nutzer.resetToken = "valid-token";
+        nutzer.resetTokenExpiry = LocalDateTime.now().plusHours(1);
+        nutzer.passwordHash = BcryptUtil.bcryptHash("oldSecretPassword");
 
         PanacheQuery query = Mockito.mock(PanacheQuery.class);
-        Mockito.when(User.find("resetToken", "valid-token")).thenReturn(query);
-        Mockito.when(query.firstResult()).thenReturn(user);
+        Mockito.when(Nutzer.find("resetToken", "valid-token")).thenReturn(query);
+        Mockito.when(query.firstResult()).thenReturn(nutzer);
 
         ResetRequest req = new ResetRequest("valid-token", "newSecretPassword");
 
@@ -97,15 +97,15 @@ class AuthResourceTest {
 
     @Test
     void testLogin_Success() {
-        User user = new Teilnehmer();
-        user.email = "user@example.com";
-        user.passwordHash = BcryptUtil.bcryptHash("correctPassword");
-        user.role = "TEILNEHMER";
-        user.isActive = true;
+        Nutzer nutzer = new Teilnehmer();
+        nutzer.email = "nutzer@example.com";
+        nutzer.passwordHash = BcryptUtil.bcryptHash("correctPassword");
+        nutzer.role = "TEILNEHMER";
+        nutzer.isActive = true;
 
-        Mockito.when(User.findByEmail("user@example.com")).thenReturn(user);
+        Mockito.when(Nutzer.findByEmail("nutzer@example.com")).thenReturn(nutzer);
 
-        LoginRequest loginReq = new LoginRequest("user@example.com", "correctPassword");
+        LoginRequest loginReq = new LoginRequest("nutzer@example.com", "correctPassword");
 
         given()
                 .contentType(MediaType.APPLICATION_JSON)

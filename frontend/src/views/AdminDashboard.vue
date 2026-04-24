@@ -137,12 +137,18 @@
             </tr>
             <tr v-if="selectedVid === v.id" class="bg-gray-50/50">
               <td colspan="3" class="px-4 py-4 space-y-6">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="flex flex-col gap-6">
+                  <!-- Vorträge & Referenten -->
                   <div class="space-y-2">
-                    <h4 class="text-[10px] font-black text-indigo-700 uppercase tracking-widest border-b border-indigo-100 pb-1 flex items-center gap-2">
-                      <FileTextIcon class="w-3 h-3"/> Vorträge & Referenten
-                    </h4>
-                    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                    <button @click="expandedSections.vortraege = !expandedSections.vortraege"
+                            class="w-full flex items-center justify-between text-[10px] font-black text-indigo-700 uppercase tracking-widest border-b border-indigo-100 pb-1 hover:bg-indigo-50 transition-colors">
+                      <div class="flex items-center gap-2">
+                        <FileTextIcon class="w-3 h-3"/> Vorträge & Referenten
+                      </div>
+                      <ChevronDownIcon v-if="!expandedSections.vortraege" class="w-3 h-3"/>
+                      <ChevronUpIcon v-else class="w-3 h-3"/>
+                    </button>
+                    <div v-if="expandedSections.vortraege" class="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm animate-fade-in">
                       <table class="min-w-full divide-y divide-gray-200 text-[10px]">
                         <thead class="bg-gray-50 text-[8px] uppercase font-bold text-gray-500">
                           <tr><th class="px-3 py-1.5 text-left">Titel</th><th class="px-3 py-1.5 text-left">Referent</th></tr>
@@ -156,11 +162,18 @@
                       </table>
                     </div>
                   </div>
+
+                  <!-- Teilnehmer & Prioritäten -->
                   <div class="space-y-2">
-                    <h4 class="text-[10px] font-black text-indigo-700 uppercase tracking-widest border-b border-indigo-100 pb-1 flex items-center gap-2">
-                      <UsersIcon class="w-3 h-3"/> Teilnehmer & Prioritäten
-                    </h4>
-                    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                    <button @click="expandedSections.teilnehmer = !expandedSections.teilnehmer"
+                            class="w-full flex items-center justify-between text-[10px] font-black text-indigo-700 uppercase tracking-widest border-b border-indigo-100 pb-1 hover:bg-indigo-50 transition-colors">
+                      <div class="flex items-center gap-2">
+                        <UsersIcon class="w-3 h-3"/> Teilnehmer & Prioritäten
+                      </div>
+                      <ChevronDownIcon v-if="!expandedSections.teilnehmer" class="w-3 h-3"/>
+                      <ChevronUpIcon v-else class="w-3 h-3"/>
+                    </button>
+                    <div v-if="expandedSections.teilnehmer" class="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm animate-fade-in">
                       <table class="min-w-full divide-y divide-gray-200 text-[10px]">
                         <thead class="bg-gray-50 text-[8px] uppercase font-bold text-gray-500">
                           <tr><th class="px-3 py-1.5 text-left">Name</th><th class="px-3 py-1.5 text-left">Prios</th></tr>
@@ -462,7 +475,7 @@
             <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
             <tr>
               <th @click="toggleSort('vortraege', 'titel')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Titel <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-              <th class="px-4 py-1.5 text-left font-bold">Referent</th>
+              <th @click="toggleSort('vortraege', 'referentName')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Referent <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
               <th class="px-4 py-1.5 text-right font-bold">Aktionen</th>
             </tr>
             </thead>
@@ -472,7 +485,7 @@
                 {{ v.titel }}
                 <span v-if="v.istPflicht" class="text-[9px] text-red-600 ml-1">PFLICHT</span>
               </td>
-              <td class="px-4 py-2">{{ v.referent?.lastName }}</td>
+              <td class="px-4 py-2">{{ v.referentName }}</td>
               <td class="px-4 py-2 text-right">
                 <button @click="openVortragEditor(v)" class="text-indigo-600" title="Bearbeiten">
                   <PencilIcon class="w-3.5 h-3.5 inline"/>
@@ -654,7 +667,9 @@ import {
   Pencil as PencilIcon,
   Users as UsersIcon,
   User as UserIcon,
-  Mail as MailIcon
+  Mail as MailIcon,
+  ChevronDown as ChevronDownIcon,
+  ChevronUp as ChevronUpIcon
 } from 'lucide-vue-next';
 import AdminVortragEditorModal from '../components/AdminVortragEditorModal.vue';
 import UserEditorModal from '../components/UserEditorModal.vue';
@@ -729,6 +744,12 @@ const sorts = reactive({
   vortraege: {key: 'titel', dir: 'asc'},
   slots: {key: 'startTime', dir: 'asc'},
   raeume: {key: 'name', dir: 'asc'}
+});
+
+// Steuerung für einklappbare Bereiche in der Veranstaltungs-Detailansicht
+const expandedSections = reactive({
+  vortraege: true,
+  teilnehmer: true
 });
 
 // Watcher für Filter, um Paginierung zurückzusetzen
@@ -851,7 +872,13 @@ const paginatedSpeakers = computed(() => paginate(filteredSpeakers.value, pages.
 const filteredParticipants = computed(() => processList(teilnehmer.value, filters.teilnehmer, sorts.teilnehmer));
 const paginatedParticipants = computed(() => paginate(filteredParticipants.value, pages.teilnehmer));
 
-const filteredVortraege = computed(() => processList(vortraege.value, filters.vortraege, sorts.vortraege));
+const filteredVortraege = computed(() => {
+  const list = vortraege.value.map(v => ({
+    ...v,
+    referentName: v.referent ? `${v.referent.lastName}, ${v.referent.firstName}` : ''
+  }));
+  return processList(list, filters.vortraege, sorts.vortraege);
+});
 const paginatedVortraege = computed(() => paginate(filteredVortraege.value, pages.vortraege));
 
 const sortedSlots = computed(() => {
@@ -1071,7 +1098,7 @@ const deleteUser = async (id) => {
 };
 
 const openInviteModal = (u) => {
-  selectedUserForInvite.value = u;
+  selectedUserForInvite = u;
   showInviteModal.value = true;
 };
 const handleInviteUser = async ({ userId, eventId }) => {
