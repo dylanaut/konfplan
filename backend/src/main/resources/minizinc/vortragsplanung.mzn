@@ -7,7 +7,7 @@ include "globals.mzn";
 
 % --- STRUKTUREN ---
 type Slot = record(int: id, string: tag, string: start, string: ende);
-type Raum = record(string: name, int: kapazitaet, string: etage);
+type Raum = record(string: name, int: kapazitaet);
 type Person = record(string: name, string: klasse, array[int] of int: prios);
 type Wahlvortrag = record(
     string: name,

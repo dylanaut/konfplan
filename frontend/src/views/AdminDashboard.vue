@@ -341,8 +341,26 @@
       <!-- TEILNEHMER -->
       <section v-if="activeTab === 'teilnehmer'" class="space-y-4 animate-fade-in">
         <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-          <h2 class="text-lg font-bold text-gray-800">Teilnehmer</h2>
+          <div class="flex items-center gap-4">
+             <h2 class="text-lg font-bold text-gray-800">Teilnehmer</h2>
+             <!-- Batch-Aktionen -->
+             <div v-if="selectedParticipantIds.length > 0" class="flex items-center gap-2 animate-fade-in bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-100">
+                <span class="text-[10px] font-bold text-indigo-600 uppercase">{{ selectedParticipantIds.length }} ausgewählt:</span>
+                <button @click="batchDeactivateParticipants" class="text-xs text-orange-600 hover:underline font-bold">Deaktivieren</button>
+                <button @click="batchDeleteParticipants" class="text-xs text-red-600 hover:underline font-bold">Löschen</button>
+                <button @click="batchEmailParticipants" class="text-xs text-indigo-600 hover:underline font-bold flex items-center gap-1">
+                   <MailIcon class="w-3.5 h-3.5"/> E-Mail
+                </button>
+                <button @click="selectAllFilteredParticipants" v-if="selectedParticipantIds.length < filteredParticipants.length" class="text-[9px] bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded hover:bg-indigo-300 ml-2 font-black">
+                   ALLE {{ filteredParticipants.length }} AUSWÄHLEN
+                </button>
+             </div>
+          </div>
           <div class="flex gap-2">
+            <select v-model="filters.participantGroup" class="input-field text-xs py-1 px-2">
+               <option value="">Alle Gruppen</option>
+               <option v-for="g in participantGroups" :key="g" :value="g">{{ g }}</option>
+            </select>
             <input v-model="filters.teilnehmer" placeholder="Suchen..." class="input-field text-xs py-1 px-2"/>
             <button @click="triggerUpload(`/api/veranstaltungen/${selectedVid}/teilnehmer/import`)"
                     class="btn-secondary text-xs py-1 px-3">Import
@@ -350,12 +368,16 @@
             <button @click="openUserModal({role: 'TEILNEHMER'})" class="btn-primary text-xs py-1 px-3">+ Neu</button>
           </div>
         </div>
-        <div v-if="paginatedParticipants.length > 0" class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
+        <div v-if="filteredParticipants.length > 0" class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
           <table class="min-w-full divide-y divide-gray-200 text-xs">
             <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
             <tr>
+              <th class="px-4 py-1.5 text-left w-10">
+                 <input type="checkbox" :checked="isAllOnPageSelected" @change="toggleSelectAllPage" class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3" />
+              </th>
               <th @click="toggleSort('teilnehmer', 'lastName')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Name <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
               <th @click="toggleSort('teilnehmer', 'gruppe')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Gruppe <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
+              <th @click="toggleSort('teilnehmer', 'isActive')" class="px-4 py-1.5 text-center cursor-pointer hover:text-indigo-600 transition font-bold">Aktiv <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
               <th v-for="slot in sortedSlots" :key="slot.id" class="px-2 py-2 text-center text-[8px] font-bold text-gray-500">
                  {{ formatTime(slot.startTime) }}
               </th>
@@ -363,9 +385,18 @@
             </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-            <tr v-for="u in paginatedParticipants" :key="u.id" class="hover:bg-gray-50">
+            <tr v-for="u in paginatedParticipants" :key="u.id" :class="['hover:bg-gray-50', selectedParticipantIds.includes(u.id) ? 'bg-indigo-50/50' : '']">
+              <td class="px-4 py-2">
+                 <input type="checkbox" :value="u.id" v-model="selectedParticipantIds" class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3" />
+              </td>
               <td class="px-4 py-2 font-bold" :title="u.email">{{ u.lastName }}, {{ u.firstName }}</td>
               <td class="px-4 py-2 text-gray-500">{{ u.gruppe }}</td>
+              <td class="px-4 py-2 text-center">
+                 <div @click="toggleParticipantActive(u)" class="cursor-pointer">
+                    <CheckIcon v-if="u.isActive" class="w-4 h-4 text-green-500 mx-auto"/>
+                    <XIcon v-else class="w-4 h-4 text-red-500 mx-auto"/>
+                 </div>
+              </td>
               <td v-for="slot in sortedSlots" :key="slot.id" class="px-2 py-2 text-center">
                  <input type="checkbox" :checked="isAvailable(u.id, slot.id)" @change="toggleAvailability(u.id, slot.id, $event.target.checked)" :disabled="isEventFinished" class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3" />
               </td>
@@ -403,7 +434,7 @@
             <button @click="openUserModal({role: 'REFERENT'})" class="btn-primary text-xs py-1 px-3">+ Neu</button>
           </div>
         </div>
-        <div v-if="paginatedSpeakers.length > 0" class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
+        <div v-if="filteredSpeakers.length > 0" class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
           <table class="min-w-full divide-y divide-gray-200 text-xs">
             <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
             <tr>
@@ -457,7 +488,7 @@
             <button @click="openVortragEditor(null)" class="btn-primary text-xs py-1 px-3">+ Neu</button>
           </div>
         </div>
-        <div v-if="paginatedVortraege.length > 0" class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
+        <div v-if="filteredVortraege.length > 0" class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
           <table class="min-w-full divide-y divide-gray-200 text-xs">
             <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
             <tr>
@@ -501,11 +532,12 @@
         <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
           <h2 class="text-lg font-bold text-gray-800">Zeit-Slots</h2>
           <div class="flex gap-2">
+            <input v-model="filters.slots" placeholder="Suchen..." class="input-field text-xs py-1 px-2"/>
             <button @click="triggerUpload(`/api/veranstaltungen/${selectedVid}/slots/import`)" class="btn-secondary text-xs py-1 px-3">Import</button>
             <button @click="openSlotEditor(null)" class="btn-primary text-xs py-1 px-3">+ Neu</button>
           </div>
         </div>
-        <div class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
+        <div v-if="filteredSlots.length > 0" class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
           <table class="min-w-full divide-y divide-gray-200 text-xs">
             <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
             <tr>
@@ -515,7 +547,7 @@
             </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-            <tr v-for="s in sortedSlots" :key="s.id" class="hover:bg-gray-50">
+            <tr v-for="s in paginatedSlots" :key="s.id" class="hover:bg-gray-50">
               <td class="px-4 py-2 font-bold">{{ formatDateTime(s.startTime) }} - {{ formatTime(s.endTime) }}</td>
               <td class="px-4 py-2">{{ s.description }}</td>
               <td class="px-4 py-2 text-right space-x-3">
@@ -529,6 +561,11 @@
             </tr>
             </tbody>
           </table>
+          <PaginationControls v-model:currentPage="pages.slots" :totalItems="filteredSlots.length" :pageSize="pageSize"/>
+        </div>
+        <div v-else class="bg-white p-8 rounded-xl text-center border-2 border-dashed border-gray-200 text-gray-500">
+          <HourglassIcon class="w-10 h-10 mx-auto mb-3 text-gray-400" />
+          <p class="font-bold">Bitte Zeit-Slots erfassen.</p>
         </div>
       </section>
 
@@ -536,9 +573,12 @@
       <section v-if="activeTab === 'raeume'" class="space-y-4 animate-fade-in">
         <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
           <h2 class="text-lg font-bold text-gray-800">Räume</h2>
-          <button @click="openRaumEditor(null)" class="btn-primary text-xs py-1 px-3">+ Neu</button>
+          <div class="flex gap-2">
+            <input v-model="filters.raeume" placeholder="Suchen..." class="input-field text-xs py-1 px-2"/>
+            <button @click="openRaumEditor(null)" class="btn-primary text-xs py-1 px-3">+ Neu</button>
+          </div>
         </div>
-        <div class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
+        <div v-if="filteredRaeume.length > 0" class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
           <table class="min-w-full divide-y divide-gray-200 text-xs">
             <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
             <tr>
@@ -549,7 +589,7 @@
             </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-            <tr v-for="r in sortRaeume(raeume)" :key="r.id" class="hover:bg-gray-50">
+            <tr v-for="r in paginatedRaeume" :key="r.id" class="hover:bg-gray-50">
               <td class="px-4 py-2 font-bold">{{ r.name }} ({{ r.gebaeude?.name }})</td>
               <td class="px-4 py-2 text-center">{{ r.kapazitaet }}</td>
               <td class="px-4 py-2">{{ r.etage || '-' }}</td>
@@ -564,6 +604,11 @@
             </tr>
             </tbody>
           </table>
+          <PaginationControls v-model:currentPage="pages.raeume" :totalItems="filteredRaeume.length" :pageSize="pageSize"/>
+        </div>
+        <div v-else class="bg-white p-8 rounded-xl text-center border-2 border-dashed border-gray-200 text-gray-500">
+          <MapPinIcon class="w-10 h-10 mx-auto mb-3 text-gray-400" />
+          <p class="font-bold">Bitte Räume erfassen.</p>
         </div>
       </section>
 
@@ -664,7 +709,10 @@ import {
   User as UserIcon,
   Mail as MailIcon,
   ChevronDown as ChevronDownIcon,
-  ChevronUp as ChevronUpIcon
+  ChevronUp as ChevronUpIcon,
+  Check as CheckIcon,
+  X as XIcon,
+  MapPin as MapPinIcon
 } from 'lucide-vue-next';
 import AdminVortragEditorModal from '../components/AdminVortragEditorModal.vue';
 import UserEditorModal from '../components/UserEditorModal.vue';
@@ -724,14 +772,19 @@ const belegungsPlan = ref([]);
 const qualitaet = ref({});
 const verfuegbarkeiten = ref([]);
 
+const selectedParticipantIds = ref([]); // State for multi-select participants
+
 const isGlobalLoading = ref(false);
 
 const pageSize = 15;
 const pages = reactive({
   veranstaltungen: 1, gebaeude: 1, admins: 1, teilnehmer: 1, referenten: 1, vortraege: 1,
-  v_vortraege: 1, v_teilnehmer: 1
+  v_vortraege: 1, v_teilnehmer: 1, slots: 1, raeume: 1
 });
-const filters = reactive({veranstaltungen: '', gebaeude: '', admins: '', teilnehmer: '', referenten: '', vortraege: ''});
+const filters = reactive({
+  veranstaltungen: '', gebaeude: '', admins: '', teilnehmer: '', referenten: '', vortraege: '',
+  participantGroup: '', slots: '', raeume: ''
+});
 const sorts = reactive({
   veranstaltungen: {key: 'name', dir: 'asc'},
   gebaeude: {key: 'name', dir: 'asc'},
@@ -760,6 +813,12 @@ watch(() => filters.admins, () => { pages.admins = 1; });
 watch(() => filters.teilnehmer, () => { pages.teilnehmer = 1; });
 watch(() => filters.referenten, () => { pages.referenten = 1; });
 watch(() => filters.vortraege, () => { pages.vortraege = 1; });
+watch(() => filters.slots, () => { pages.slots = 1; });
+watch(() => filters.raeume, () => { pages.raeume = 1; });
+watch(() => filters.participantGroup, () => {
+  pages.teilnehmer = 1;
+  selectedParticipantIds.value = []; // Clear selection when group filter changes
+});
 
 const showVeranstaltungModal = ref(false);
 const selectedVeranstaltung = ref(null);
@@ -866,6 +925,11 @@ const admins = computed(() => users.value.filter(u => u.role === 'ADMIN'));
 const referenten = computed(() => users.value.filter(u => u.role === 'REFERENT'));
 const teilnehmer = computed(() => users.value.filter(u => u.role === 'TEILNEHMER'));
 
+const participantGroups = computed(() => {
+   const groups = new Set(teilnehmer.value.map(t => t.gruppe).filter(Boolean));
+   return Array.from(groups).sort();
+});
+
 const filteredVeranstaltungen = computed(() => processList(veranstaltungen.value, filters.veranstaltungen, sorts.veranstaltungen));
 const paginatedVeranstaltungen = computed(() => paginate(filteredVeranstaltungen.value, pages.veranstaltungen));
 
@@ -878,14 +942,20 @@ const paginatedAdmins = computed(() => paginate(filteredAdmins.value, pages.admi
 const filteredSpeakers = computed(() => processList(referenten.value, filters.referenten, sorts.referenten));
 const paginatedSpeakers = computed(() => paginate(filteredSpeakers.value, pages.referenten));
 
-const filteredParticipants = computed(() => processList(teilnehmer.value, filters.teilnehmer, sorts.teilnehmer));
-const paginatedParticipants = computed(() => paginate(filteredParticipants.length > 0 ? filteredParticipants.value : [], pages.teilnehmer));
+const filteredParticipants = computed(() => {
+  let list = [...teilnehmer.value];
+  if (filters.participantGroup) {
+     list = list.filter(t => t.gruppe === filters.participantGroup);
+  }
+  return processList(list, filters.teilnehmer, sorts.teilnehmer);
+});
+const paginatedParticipants = computed(() => paginate(filteredParticipants.value, pages.teilnehmer));
 
 const filteredVortraege = computed(() => {
   const list = vortraege.value.map(v => ({
     ...v,
-    referentName: v.referent ? `${v.referent.lastName}, ${v.referent.firstName}` : '',
-    referentOrganisation: v.referent?.organisation || ''
+    referentName: v.referentName,
+    referentOrganisation: v.referentOrganisation || ''
   }));
   return processList(list, filters.vortraege, sorts.vortraege);
 });
@@ -905,12 +975,38 @@ const filteredVSubParticipants = computed(() => {
 });
 const paginatedVSubParticipants = computed(() => paginate(filteredVSubParticipants.value, pages.v_teilnehmer));
 
+const filteredSlots = computed(() => processList(eventSlots.value, filters.slots, sorts.slots));
+const paginatedSlots = computed(() => paginate(filteredSlots.value, pages.slots));
+
+const filteredRaeume = computed(() => processList(raeume.value, filters.raeume, sorts.raeume));
+const paginatedRaeume = computed(() => paginate(filteredRaeume.value, pages.raeume));
+
 const sortedSlots = computed(() => {
   return [...eventSlots.value].sort((a, b) => {
     const cmp = new Date(a.startTime) - new Date(b.startTime);
     return sorts.slots.dir === 'asc' ? cmp : -cmp;
   });
 });
+
+const isAllOnPageSelected = computed(() => {
+   if (paginatedParticipants.value.length === 0) return false;
+   return paginatedParticipants.value.every(p => selectedParticipantIds.value.includes(p.id));
+});
+
+const toggleSelectAllPage = () => {
+   if (isAllOnPageSelected.value) {
+      const pageIds = paginatedParticipants.value.map(p => p.id);
+      selectedParticipantIds.value = selectedParticipantIds.value.filter(id => !pageIds.includes(id));
+   } else {
+      const pageIds = paginatedParticipants.value.map(p => p.id);
+      const newIds = pageIds.filter(id => !selectedParticipantIds.value.includes(id));
+      selectedParticipantIds.value.push(...newIds);
+   }
+};
+
+const selectAllFilteredParticipants = () => {
+   selectedParticipantIds.value = filteredParticipants.value.map(p => p.id);
+};
 
 const canImportVeranstaltung = computed(() => admins.value.length > 0 && gebaeude.value.length > 0);
 const canImportVortraege = computed(() => eventSlots.value.length > 0);
@@ -960,6 +1056,7 @@ const handleVeranstaltungChange = () => {
   // Reset sub-pagination
   pages.v_vortraege = 1;
   pages.v_teilnehmer = 1;
+  selectedParticipantIds.value = []; // Clear selection on event change
 
   loadData();
 };
@@ -1124,6 +1221,52 @@ const deleteUser = async (id) => {
       console.error('Fehler beim Löschen des Nutzers:', e);
     }
   }
+};
+
+const toggleParticipantActive = async (u) => {
+   try {
+      await api.put(`/api/veranstaltungen/${selectedVid.value}/nutzer/${u.id}`, { ...u, isActive: !u.isActive });
+      u.isActive = !u.isActive;
+   } catch (e) {
+      console.error("Fehler beim Umschalten des Status:", e);
+   }
+};
+
+const batchDeactivateParticipants = async () => {
+   if (!confirm(`${selectedParticipantIds.value.length} Teilnehmer deaktivieren?`)) return;
+   try {
+      for (const id of selectedParticipantIds.value) {
+         const u = teilnehmer.value.find(p => p.id === id);
+         if (u) await api.put(`/api/veranstaltungen/${selectedVid.value}/nutzer/${u.id}`, { ...u, isActive: false });
+      }
+      await loadData();
+      selectedParticipantIds.value = [];
+      alert("Erfolgreich deaktiviert.");
+   } catch (e) {
+      console.error("Fehler bei Batch-Deaktivierung:", e);
+   }
+};
+
+const batchDeleteParticipants = async () => {
+   if (!confirm(`${selectedParticipantIds.value.length} Teilnehmer endgültig löschen?`)) return;
+   try {
+      for (const id of selectedParticipantIds.value) {
+         await api.delete(`/api/veranstaltungen/${selectedVid.value}/nutzer/${id}`);
+      }
+      await loadData();
+      selectedParticipantIds.value = [];
+      alert("Erfolgreich gelöscht.");
+   } catch (e) {
+      console.error("Fehler bei Batch-Löschung:", e);
+   }
+};
+
+const batchEmailParticipants = () => {
+   const emails = teilnehmer.value
+      .filter(p => selectedParticipantIds.value.includes(p.id))
+      .map(p => p.email)
+      .join(',');
+   window.location.href = `mailto:?bcc=${emails}`;
 };
 
 const openInviteModal = (u) => {

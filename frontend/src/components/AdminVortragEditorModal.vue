@@ -34,12 +34,15 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Referent</label>
-            <select v-model="form.referent.id" class="input-field" required>
+            <select v-model="form.referent.id" class="input-field" required :disabled="form.vortrag_typ === 'PFLICHT'">
               <option :value="null">Bitte wählen...</option>
               <option v-for="r in referenten" :key="r.id" :value="r.id">
                 {{ r.lastName }}, {{ r.firstName }}
               </option>
             </select>
+            <p v-if="form.vortrag_typ === 'PFLICHT'" class="text-[10px] text-gray-500 mt-1 italic">
+              Referent bei Pflichtvorträgen nicht änderbar.
+            </p>
           </div>
         </div>
 
@@ -56,7 +59,7 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Pflicht-Slot</label>
               <select v-model="form.pflichtslot.id" class="input-field" required>
-                <option v-for="s in slots" :key="s.id" :value="s.id">{{ s.description }}</option>
+                <option v-for="s in slots" :key="s.id" :value="s.id">{{ formatSlot(s) }}</option>
               </select>
             </div>
           </div>
@@ -77,10 +80,10 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Verfügbare Wahl-Slots</label>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-32 overflow-y-auto p-2 bg-white border rounded-lg">
+            <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-2 bg-white border rounded-lg">
               <div v-for="s in slots" :key="s.id" class="flex items-center gap-2 text-xs">
                 <input type="checkbox" :value="s.id" v-model="selectedWahlslotIds" class="h-4 w-4 rounded" />
-                <span>{{ s.description }}</span>
+                <span class="font-medium text-gray-800">{{ formatSlot(s) }}</span>
               </div>
             </div>
           </div>
@@ -139,6 +142,15 @@ watch(
     },
     { immediate: true }
 );
+
+const formatSlot = (s) => {
+  if (!s || !s.startTime) return '';
+  const date = new Date(s.startTime);
+  const weekday = date.toLocaleDateString('de-DE', { weekday: 'short' });
+  const time = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const endTime = s.endTime ? new Date(s.endTime).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '';
+  return `${s.description} (${weekday}, ${time}${endTime ? ' - ' + endTime : ''})`;
+};
 
 const save = () => {
   const payload = { ...form };
