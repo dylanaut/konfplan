@@ -8,7 +8,7 @@ Der **Vortragsmanager** ist eine Webanwendung zur Planung und Verwaltung von Ver
 
 ```
 vortragsmanager/
-├── backend/          # Quarkus 3.20.1, Java 21, SQLite
+├── backend/          # Quarkus 3.33.1, Java 21, PostgreSQL (Dev/Prod), H2 (Test)
 ├── frontend/         # Vue 3 + Vite + Tailwind CSS
 └── pom.xml           # Maven Multi-Module Parent
 ```
@@ -35,43 +35,43 @@ cd frontend && npm install && npm run dev
 
 | Schicht      | Technologie                                       |
 |--------------|---------------------------------------------------|
-| Backend      | Quarkus 3.20.1, Java 21, RESTEasy Reactive        |
+| Backend      | Quarkus 3.33.1, Java 21, RESTEasy Reactive        |
 | ORM          | Hibernate ORM Panache (Active Record Pattern)     |
-| Datenbank    | SQLite via `quarkus-jdbc-sqlite4j`                |
-| Migration    | Flyway (`V1__tables.sql`)                           |
+| Datenbank    | PostgreSQL (Prod/Dev), H2 (Test)                  |
+| Migration    | Flyway                                            |
 | Security     | JWT (SmallRye), BCrypt, `quarkus-security-jpa`    |
 | Optimierung  | MiniZinc (externer Prozess via `OptimierungService`) |
 | CSV-Import   | OpenCSV 5.11.2                                    |
 | PDF-Export   | OpenPDF 2.0.3                                     |
-| E-Mail       | Quarkus Mailer (Mailtrap für Dev)                 |
+| E-Mail       | Quarkus Mailer (Mailpit für Dev)                  |
 | Frontend     | Vue 3, Vite, Tailwind CSS, Pinia, Vue Router      |
 | Integration  | Quarkus Quinoa (Frontend-Build eingebettet)       |
 | E2E-Tests    | Playwright                                        |
 
 ## Domänenmodell (Kurzübersicht)
 
-- **Veranstaltung** – zentrale Entität; hat EventSlots, Gebäude, User
-- **User** (SINGLE_TABLE) → Admin | Referent | Teilnehmer
+- **Veranstaltung** – Zentrale Entität; hat EventSlots, Gebäude, Nutzer; besitzt Deadlines für Referenten/Teilnehmer.
+- **Nutzer** (SINGLE_TABLE) → Admin | Referent | Teilnehmer
 - **Vortrag** (SINGLE_TABLE) → Pflichtvortrag | Wahlvortrag
-- **EventSlot** – Zeitfenster innerhalb einer Veranstaltung
-- **Zuweisung** – ordnet Teilnehmer einem Vortrag + Slot + Raum zu
-- **Prioritaet** – Präferenz eines Teilnehmers für einen Wahlvortrag
-- **Verfuegbarkeit** – gibt an, wann ein Teilnehmer/Raum verfügbar ist
+- **EventSlot** – Zeitfenster innerhalb einer Veranstaltung; mit Überschneidungsprüfung.
+- **Zuweisung** – Ordnet Teilnehmer einem Vortrag + Slot + Raum zu.
+- **Prioritaet** – Präferenz eines Teilnehmers für einen Wahlvortrag (Ranking 1-10).
+- **Verfuegbarkeit** – Gibt an, ob Nutzer in einem Slot verfügbar ist (Default: true bei Zuweisung).
+- **RaumVerfuegbarkeit** – Modelliert die Verfügbarkeit von Räumen pro Slot inklusive veranstaltungsübergreifender Prüfung.
 
 ## Wichtige Konventionen
 
-- Alle Entitäten erben von `SqliteEntity` (Panache Active Record, `Long id`)
-- Polymorphe Typen nutzen `@Inheritance(SINGLE_TABLE)` + Jackson `@JsonSubTypes`
-- Datenbankfelder: Public Fields (kein Lombok), kein privater Getter/Setter-Boilerplate außer wo nötig
-- Optimistic Locking: `@Version Long version` in allen Entitäten
-- Datum/Zeit: `LocalDateTime` mit Custom `LocalDateTimeConverter` (ISO-Format als String in SQLite)
-- Fehlerbehandlung: `CustomExceptionMapper` mappt Exceptions auf HTTP-Responses
-- Alle REST-Endpunkte unter `/api/...`; Security via `@RolesAllowed`
+- Alle Entitäten erben von `VersionedEntity` (Panache Active Record, `Long id`, `@Version Long version`).
+- Polymorphe Typen nutzen `@Inheritance(SINGLE_TABLE)` + Jackson `@JsonSubTypes`.
+- Datenbankfelder: Public Fields (kein Lombok), kein privater Getter/Setter-Boilerplate außer wo nötig.
+- Datum/Zeit: `LocalDateTime` mit Custom `LocalDateTimeConverter`.
+- Fehlerbehandlung: `CustomExceptionMapper` mappt Exceptions auf HTTP-Responses.
+- Alle REST-Endpunkte unter `/api/...`; Security via `@RolesAllowed`.
 
 ## Bekannte Besonderheiten
 
-- SQLite erlaubt nur **max. 2 gleichzeitige JDBC-Verbindungen** → keine parallelen Schreiboperationen
-- MiniZinc muss auf dem System installiert sein (`minizinc` im PATH) für `OptimierungService`
-- Flyway-Migration muss manuell aktiviert werden (`quarkus.flyway.migrate-at-start=true`)
-- Passwort-Reset per E-Mail (Mailtrap-Credentials in `application.properties` setzen)
-- Standard-Passwort bei CSV-Import: `start123` (BCrypt-gehasht)
+- MiniZinc muss auf dem System installiert sein (`minizinc` im PATH) für `OptimierungService`.
+- Deadlines verhindern Eingaben/Änderungen für Referenten und Teilnehmer nach Ablauf.
+- Räume werden veranstaltungsübergreifend auf Überschneidungen geprüft.
+- Passwort-Reset per E-Mail (Mailpit-Credentials in `application.properties` setzen).
+- Standard-Passwort bei Erstellung/Import: `start123` (BCrypt-gehasht).

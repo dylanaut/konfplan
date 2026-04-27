@@ -98,7 +98,7 @@ User --> UC13
 
 | **Verfügbarkeit pflegen**
 | Angabe, in welchen Zeit-Slots der Referent für Vorträge zur Verfügung steht. +
-`POST /api/referenten/verfuegbarkeit/tag`
+`POST /api/referenten/verfuegbarkeiten/tag`
 
 | **Vorträge zu Events anmelden**
 | Anmeldung spezifischer Vorträge für eine konkrete Veranstaltung. +
@@ -106,7 +106,7 @@ User --> UC13
 
 | **Einsatzplan einsehen**
 | Ansicht, wann und in welchem Raum die eigenen Vorträge stattfinden. +
-`GET /api/referenten/my-plan`
+`GET /api/referenten/plaene`
 |===
 
 === Rolle: Teilnehmer
@@ -122,7 +122,7 @@ User --> UC13
 
 | **Persönlichen Plan einsehen**
 | Nach der Optimierung: Ansicht des verbindlichen individuellen Stundenplans. +
-`GET /api/participant/my-plan`
+`GET /api/participant/plaene`
 
 | **Referenten-Info einholen**
 | Einsehen von Biografien und Profilen der Referenten zur Entscheidungsfindung. +

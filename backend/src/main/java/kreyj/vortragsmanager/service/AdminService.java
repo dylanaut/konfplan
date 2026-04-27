@@ -364,20 +364,41 @@ public class AdminService {
 
     @Transactional
     public EventSlot createEventSlot(EventSlot slot, Long veranstaltungId) {
-        slot.veranstaltung = Veranstaltung.findById(veranstaltungId);
+        Veranstaltung v = Veranstaltung.findById(veranstaltungId);
+        validateSlot(slot, v, null);
+        slot.veranstaltung = v;
         slot.persist();
+        v.addSlot(slot);
         return slot;
     }
 
     @Transactional
     public EventSlot updateEventSlot(Long id, EventSlot updated, Long veranstaltungId) {
         EventSlot entity = EventSlot.findById(id);
+        Veranstaltung v = Veranstaltung.findById(veranstaltungId);
         if (entity != null && entity.veranstaltung.id.equals(veranstaltungId)) {
+            validateSlot(updated, v, id);
             entity.description = updated.description;
             entity.startTime = updated.startTime;
             entity.endTime = updated.endTime;
         }
         return entity;
+    }
+
+    private void validateSlot(EventSlot slot, Veranstaltung v, Long excludeId) {
+        if (v == null) throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
+        if (slot.startTime == null || slot.endTime == null) throw new IllegalArgumentException("Beginn und Ende müssen gesetzt sein.");
+        if (!slot.endTime.isAfter(slot.startTime)) throw new IllegalArgumentException("Das Ende muss nach dem Beginn liegen.");
+        if (slot.startTime.isBefore(v.beginntAm)) throw new IllegalArgumentException("Der Slot darf nicht vor der Veranstaltung beginnen.");
+
+        List<EventSlot> existing = EventSlot.find("veranstaltung = ?1", v).list();
+        for (EventSlot other : existing) {
+            if (excludeId != null && other.id.equals(excludeId)) continue;
+            // Überschneidungsprüfung: (StartA < EndeB) AND (EndA > StartB)
+            if (slot.startTime.isBefore(other.endTime) && slot.endTime.isAfter(other.startTime)) {
+                throw new IllegalArgumentException("Der Zeit-Slot überschneidet sich mit einem vorhandenen Intervall (" + other.description + ").");
+            }
+        }
     }
 
     @Transactional

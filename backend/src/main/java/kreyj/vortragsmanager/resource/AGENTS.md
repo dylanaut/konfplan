@@ -2,109 +2,50 @@
 
 ## Zweck
 
-Resource-Klassen sind die **JAX-RS REST-Controller**. Sie empfangen HTTP-Anfragen, delegieren die Verarbeitung an Services und geben HTTP-Antworten zurück. Keine Geschäftslogik hier.
+Resource-Klassen sind die **JAX-RS REST-Controller**. Sie empfangen HTTP-Anfragen, delegieren die Verarbeitung an Services und geben HTTP-Antworten zurück. In den Resource-Klassen findet **keine Geschäftslogik** statt, außer einfachem Request-Mapping und Fehlerbehandlung.
 
 ## Vorhandene Resources
 
-| Klasse                      | Basis-Pfad                          | Rolle           |
-|-----------------------------|-------------------------------------|-----------------|
-| `AuthResource`              | `/api/auth`                         | Public (Login, Reset) |
-| `AdminResource`             | `/api/admin`                        | ADMIN           |
-| `VeranstaltungResource`     | `/api/veranstaltungen`              | ADMIN           |
-| `GebaeudeResource`          | `/api/gebaeude`                     | ADMIN           |
-| `ReferentResource`          | `/api/referenten`                   | REFERENT        |
-| `TeilnehmerResource`        | `/api/teilnehmer`                   | TEILNEHMER      |
-| `ParticipantPriorityResource` | `/api/veranstaltungen/{vid}/prioritaeten` | TEILNEHMER |
-| `ParticipantPlanResource`   | `/api/veranstaltungen/{vid}/plan`   | TEILNEHMER      |
-
-## Pflichtstruktur für neue Resource-Klassen
-
-```java
-@Path("/api/meine-ressource")
-@RolesAllowed("ADMIN")                          // Zugriff auf Rollenebene einschränken
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
-public class MeineResource {
-
-    @Inject
-    MeinService meinService;
-
-    @GET
-    public List<MeinDto> getAll() {
-        return meinService.listAll();
-    }
-
-    @GET
-    @Path("/{id}")
-    public Response getById(@PathParam("id") Long id) {
-        MeinDto dto = meinService.findById(id);
-        if (dto == null) return Response.status(Response.Status.NOT_FOUND).build();
-        return Response.ok(dto).build();
-    }
-
-    @POST
-    public Response create(MeinDto dto) {
-        try {
-            MeinDto saved = meinService.create(dto);
-            return Response.ok(saved).build();
-        } catch (Exception e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage()).build();
-        }
-    }
-
-    @PUT
-    @Path("/{id}")
-    public Response update(@PathParam("id") Long id, MeinDto dto) {
-        MeinDto updated = meinService.update(id, dto);
-        if (updated == null) return Response.status(Response.Status.NOT_FOUND).build();
-        return Response.ok(updated).build();
-    }
-
-    @DELETE
-    @Path("/{id}")
-    public Response delete(@PathParam("id") Long id) {
-        boolean deleted = meinService.delete(id);
-        if (!deleted) return Response.status(Response.Status.NOT_FOUND).build();
-        return Response.noContent().build();
-    }
-}
-```
+| Klasse                         | Basis-Pfad             | Rolle(n)             |
+|--------------------------------|------------------------|----------------------|
+| `AuthResource`                 | `/api/auth`            | Public               |
+| `AdminResource`                | `/api/admin`           | ADMIN                |
+| `VeranstaltungResource`        | `/api/veranstaltungen` | ADMIN                |
+| `GebaeudeResource`             | `/api/gebaeude`        | ADMIN                |
+| `ReferentResource`             | `/api/referenten`      | REFERENT, ADMIN      |
+| `TeilnehmerResource`           | `/api/teilnehmer`      | TEILNEHMER, ADMIN    |
+| `TeilnehmerPlanResource`       | `/api/teilnehmer`      | TEILNEHMER, ADMIN    |
+| `TeilnehmerPrioritaetenResource`| `/api/teilnehmer/priorities` | TEILNEHMER |
+| `SlotResource`                 | `/api/slots`           | Public (für Auswahl) |
 
 ## Regeln & Konventionen
 
-- **Keine Geschäftslogik** in Resource-Klassen – nur HTTP-Mapping
-- Jede Resource braucht `@Produces` und `@Consumes` auf Klassenebene
-- `@RolesAllowed` auf Klassenebene setzen; ggf. einzelne Methoden überschreiben
-- Rückgabetyp: `Response` wenn 404/Fehler möglich; direkter Typ bei immer-erfolgreich
-- Für Datei-Uploads: `@RestForm FileUpload` + `@Consumes(MediaType.MULTIPART_FORM_DATA)`
-- Pfad-Parameter mit `@PathParam`, Query-Parameter mit `@QueryParam`
+- **Request-Mapping**: Nur Mapping von Pfad-/Query-Parametern und DTOs.
+- **DTO-Nutzung**: Zur Kommunikation mit dem Frontend werden fast ausschließlich DTOs verwendet (siehe Paket `dto`).
+- **Security**: Alle Klassen sind mit `@RolesAllowed` oder `@Authenticated` abgesichert. Nutzer-spezifische Daten werden über das `JsonWebToken` (`jwt.getSubject()`) identifiziert.
+- **Deadline-Checks**: Operationen, die Daten verändern (POST, PUT, DELETE), prüfen in den Services die in der `Veranstaltung` hinterlegten Deadlines und geben bei Überschreitung `403 Forbidden` zurück.
+
+## Wichtige Endpunkte (Beispiele)
+
+### Verfügbarkeiten
+- `GET /api/admin/veranstaltung/{vid}/verfuegbarkeiten`: Alle Nutzer-Verfügbarkeiten einer Veranstaltung.
+- `GET /api/admin/veranstaltung/{vid}/raeume/verfuegbarkeiten`: Raumverfügbarkeiten inklusive veranstaltungsübergreifender Belegungsprüfung.
+
+### Hierarchische Struktur
+Viele Endpunkte folgen dem Muster `/api/veranstaltungen/{vid}/...`, um den Kontext der aktuellen Veranstaltung direkt im Pfad abzubilden.
 
 ## Datei-Upload-Pattern (CSV-Import)
 
 ```java
 @POST
-@Path("/import")
+@Path("/{vid}/referenten/import")
 @Consumes(MediaType.MULTIPART_FORM_DATA)
-public Response importCsv(@RestForm("file") FileUpload file,
-                           @PathParam("vid") Long vid) {
+public Response importReferenten(@PathParam("vid") Long vid, @RestForm("file") FileUpload file) {
     try {
-        ImportResultDto result = meinService.importCsv(
-            Files.newInputStream(file.uploadedFile()), vid);
-        return Response.ok(result).build();
+        int count = referentService.importFromCsv(file.uploadedFile().toFile().toPath(), vid);
+        return Response.ok("Import erfolgreich: " + count + " Referenten angelegt.").build();
     } catch (Exception e) {
-        return Response.status(Response.Status.BAD_REQUEST)
-                .entity(e.getMessage()).build();
+        return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
     }
 }
 ```
-
-## Rollenmatrix
-
-| Endpunkt-Typ                        | Rolle       |
-|-------------------------------------|-------------|
-| Veranstaltungs- und User-Verwaltung | ADMIN       |
-| Vortrag anlegen, Optimierung starten | ADMIN      |
-| Eigenes Profil, eigene Vorträge     | REFERENT    |
-| Prioritäten setzen, Plan einsehen   | TEILNEHMER  |
-| Login, Passwort-Reset               | Public      |

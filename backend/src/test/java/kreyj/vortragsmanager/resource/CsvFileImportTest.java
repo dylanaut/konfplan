@@ -30,6 +30,9 @@ class CsvFileImportTest {
     @BeforeEach
     @Transactional
     void setupTransactional() {
+        Zuweisung.deleteAll();
+        Verfuegbarkeit.deleteAll();
+        RaumVerfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
         Nutzer.deleteAll();
         Raum.deleteAll();

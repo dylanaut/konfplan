@@ -8,10 +8,11 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.RefProfilDto;
-import kreyj.vortragsmanager.dto.RefVortragDto;
+import kreyj.vortragsmanager.dto.VortragDto;
 import kreyj.vortragsmanager.dto.ReferentVeranstaltungDto;
 import kreyj.vortragsmanager.dto.csv.ReferentCsvDto;
 import kreyj.vortragsmanager.entity.*;
+import kreyj.vortragsmanager.resource.ReferentResource;
 import org.jboss.logging.Logger;
 
 import java.io.FileReader;
@@ -50,17 +51,21 @@ public class ReferentService {
         }
     }
 
-    public List<RefVortragDto> getReferentVortraege(String email) {
+    public List<VortragDto> getReferentVortraege(String email) {
         Referent referent = Referent.find("email", email).firstResult();
-        if (referent == null) return new ArrayList<>();
+        if (referent == null) {
+            return new ArrayList<>();
+        }
 
         List<Vortrag> vortraege = Vortrag.find("referent", referent).list();
-        return vortraege.stream().map(this::mapToDto).collect(Collectors.toList());
+        return vortraege.stream().map(ReferentResource::mapVortragToDto).collect(Collectors.toList());
     }
 
     public List<ReferentVeranstaltungDto> getReferentVeranstaltungen(String email) {
         Referent referent = Referent.find("email", email).firstResult();
-        if (referent == null) return new ArrayList<>();
+        if (referent == null) {
+            return new ArrayList<>();
+        }
 
         // Alle Veranstaltungen, bei denen der Referent gelistet ist
         Set<Veranstaltung> events = new HashSet<>(referent.veranstaltungen);
@@ -84,38 +89,18 @@ public class ReferentService {
         }).sorted(Comparator.comparing(e -> e.beginntAm)).collect(Collectors.toList());
     }
 
-    private RefVortragDto mapToDto(Vortrag v) {
-        RefVortragDto dto = new RefVortragDto();
-        dto.id = v.id;
-        dto.version = v.version;
-        dto.titel = v.titel;
-        dto.abstractText = v.inhalt;
-        dto.veranstaltungId = v.veranstaltung.id;
-        dto.veranstaltungName = v.veranstaltung.name;
-
-        if (v instanceof Wahlvortrag wahlvortrag) {
-            dto.wiederholbar = wahlvortrag.wiederholbar;
-            dto.maxWiederholungen = wahlvortrag.maxWiederholungen;
-            dto.verfuegIds = wahlvortrag.wahlSlots.stream()
-                    .map(s -> s.id)
-                    .collect(Collectors.toList());
-        } else if (v instanceof Pflichtvortrag pflichtvortrag) {
-            dto.pflichtgruppe = pflichtvortrag.pflichtgruppe;
-            if (pflichtvortrag.pflichtslot != null) {
-                dto.verfuegIds = List.of(pflichtvortrag.pflichtslot.id);
-            }
-        }
-
-        return dto;
-    }
 
     @Transactional
-    public RefVortragDto createVortrag(String email, RefVortragDto dto) {
+    public VortragDto createVortrag(String email, VortragDto dto) {
         Referent referent = Referent.find("email", email).firstResult();
-        if (referent == null) return null;
+        if (referent == null) {
+            return null;
+        }
 
         Veranstaltung veranstaltung = Veranstaltung.findById(dto.veranstaltungId);
-        if (veranstaltung == null) throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
+        if (veranstaltung == null) {
+            throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
+        }
 
         checkDeadline(veranstaltung);
 
@@ -129,20 +114,22 @@ public class ReferentService {
             mailService.sendTalkRegistrationNotification(vortrag.veranstaltung, referent, vortrag, true);
         }
 
-        return mapToDto(vortrag);
+        return ReferentResource.mapVortragToDto(vortrag);
     }
 
     @Transactional
-    public RefVortragDto updateVortrag(String email, Long vortragId, RefVortragDto dto) {
+    public VortragDto updateVortrag(String email, Long vortragId, VortragDto dto) {
         Referent referent = Referent.find("email", email).firstResult();
         Vortrag vortrag = Vortrag.findById(vortragId);
 
-        if (vortrag == null || !vortrag.referent.id.equals(referent.id)) return null;
+        if (vortrag == null || !vortrag.referent.id.equals(referent.id)) {
+            return null;
+        }
 
         checkDeadline(vortrag.veranstaltung);
 
         updateVortragFromDto(vortrag, dto);
-        return mapToDto(vortrag);
+        return ReferentResource.mapVortragToDto(vortrag);
     }
 
     @Transactional
@@ -151,14 +138,20 @@ public class ReferentService {
         Vortrag sourceTalk = Vortrag.findById(talkId);
         Veranstaltung targetEvent = Veranstaltung.findById(eventId);
 
-        if (referent == null || sourceTalk == null || targetEvent == null) return;
-        if (!sourceTalk.referent.id.equals(referent.id)) return;
+        if (referent == null || sourceTalk == null || targetEvent == null) {
+            return;
+        }
+        if (!sourceTalk.referent.id.equals(referent.id)) {
+            return;
+        }
 
         checkDeadline(targetEvent);
 
         // Prüfen, ob bereits ein Vortrag mit diesem Titel in der Zielveranstaltung existiert
         boolean exists = Vortrag.find("referent = ?1 and veranstaltung = ?2 and titel = ?3", referent, targetEvent, sourceTalk.titel).count() > 0;
-        if (exists) return;
+        if (exists) {
+            return;
+        }
 
         Vortrag newTalk;
         if (sourceTalk instanceof Wahlvortrag sw) {
@@ -190,8 +183,12 @@ public class ReferentService {
         Vortrag talk = Vortrag.findById(talkId);
         Veranstaltung event = Veranstaltung.findById(eventId);
 
-        if (referent == null || talk == null || event == null) return;
-        if (!talk.referent.id.equals(referent.id) || !talk.veranstaltung.id.equals(event.id)) return;
+        if (referent == null || talk == null || event == null) {
+            return;
+        }
+        if (!talk.referent.id.equals(referent.id) || !talk.veranstaltung.id.equals(event.id)) {
+            return;
+        }
 
         checkDeadline(event);
 
@@ -202,7 +199,7 @@ public class ReferentService {
         }
     }
 
-    private void updateVortragFromDto(Vortrag vortrag, RefVortragDto dto) {
+    private void updateVortragFromDto(Vortrag vortrag, VortragDto dto) {
         vortrag.titel = dto.titel;
         vortrag.inhalt = dto.abstractText;
 
@@ -237,7 +234,9 @@ public class ReferentService {
         Referent referent = Referent.find("email", email).firstResult();
         Vortrag vortrag = Vortrag.findById(vortragId);
 
-        if (vortrag == null || !vortrag.referent.id.equals(referent.id)) return false;
+        if (vortrag == null || !vortrag.referent.id.equals(referent.id)) {
+            return false;
+        }
 
         checkDeadline(vortrag.veranstaltung);
 
@@ -262,7 +261,9 @@ public class ReferentService {
     public int importFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception {
         int count = 0;
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        if (veranstaltung == null) throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
+        if (veranstaltung == null) {
+            throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
+        }
 
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             List<ReferentCsvDto> beans = new CsvToBeanBuilder<ReferentCsvDto>(reader)
@@ -294,9 +295,9 @@ public class ReferentService {
                 ref.organisation = dto.organisation;
                 ref.slogan = dto.slogan;
                 ref.biography = dto.biography;
-                if (!ref.veranstaltungen.contains(veranstaltung)) {
-                    ref.veranstaltungen.add(veranstaltung);
-                }
+
+                ref.persist();
+                ref.addVeranstaltung(veranstaltung);
 
                 count++;
             }

@@ -2,19 +2,20 @@ package kreyj.vortragsmanager.resource;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.PrioritaetRequest;
 import kreyj.vortragsmanager.dto.VeranstaltungDto;
+import kreyj.vortragsmanager.dto.VerfuegbarkeitDto;
 import kreyj.vortragsmanager.dto.ZuweisungDto;
-import kreyj.vortragsmanager.entity.Prioritaet;
-import kreyj.vortragsmanager.entity.Teilnehmer;
-import kreyj.vortragsmanager.entity.Vortrag;
+import kreyj.vortragsmanager.entity.*;
 import kreyj.vortragsmanager.service.PlanService;
 import kreyj.vortragsmanager.service.PrioritaetService;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,7 +41,7 @@ public class TeilnehmerPlanResource {
         Teilnehmer t = Teilnehmer.find("email", email).firstResult();
         if (t == null) return List.of();
         return t.veranstaltungen.stream()
-                .map(VeranstaltungResource::mapToDto)
+                .map(VeranstaltungResource::mapVeranstaltungToDto)
                 .collect(Collectors.toList());
     }
 
@@ -70,5 +71,49 @@ public class TeilnehmerPlanResource {
     public List<Vortrag> getVortraege(@QueryParam("vid") Long vid) {
         if (vid == null) return List.of();
         return Vortrag.find("veranstaltung.id", vid).list();
+    }
+
+    @GET
+    @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
+    public List<VerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
+        Nutzer nutzer = Nutzer.findByEmail(jwt.getSubject());
+        if (!(nutzer instanceof Teilnehmer)) throw new WebApplicationException("Kein Teilnehmer", 403);
+
+        return Verfuegbarkeit.find("nutzer = ?1 and slot.veranstaltung.id = ?2", nutzer, vid).stream()
+                .map(v -> {
+                    Verfuegbarkeit vf = (Verfuegbarkeit) v;
+                    return new VerfuegbarkeitDto(vf.nutzer.id, vf.slot.id, vf.isAvailable);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @POST
+    @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
+    @Transactional
+    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, VerfuegbarkeitDto dto) {
+        Nutzer nutzer = Nutzer.findByEmail(jwt.getSubject());
+        if (!(nutzer instanceof Teilnehmer)) return Response.status(Response.Status.FORBIDDEN).build();
+
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (veranstaltung == null) return Response.status(Response.Status.NOT_FOUND).build();
+
+        // Deadline Check
+        if (veranstaltung.deadlineTeilnehmer != null && veranstaltung.deadlineTeilnehmer.isBefore(LocalDateTime.now())) {
+            return Response.status(Response.Status.FORBIDDEN)
+                    .entity("Die Deadline für Teilnehmer ist bereits abgelaufen.").build();
+        }
+
+        EventSlot slot = EventSlot.findById(dto.slotId);
+        if (slot == null || !slot.veranstaltung.id.equals(vid)) return Response.status(Response.Status.BAD_REQUEST).build();
+
+        Verfuegbarkeit v = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", nutzer, slot).firstResult();
+        if (v == null) {
+            v = new Verfuegbarkeit();
+            v.nutzer = nutzer;
+            v.slot = slot;
+        }
+        v.isAvailable = dto.isAvailable;
+        v.persist();
+        return Response.ok().build();
     }
 }

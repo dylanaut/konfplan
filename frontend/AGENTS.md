@@ -4,125 +4,58 @@
 
 Das Frontend ist eine **Vue 3**-Single-Page-Application mit Vite, Tailwind CSS und Pinia. Es kommuniziert mit dem Quarkus-Backend über eine REST-API und wird im Produktionsbetrieb via **Quarkus Quinoa** eingebettet.
 
-## Technologien
+## Schlüsseltechnologien
 
-| Technologie      | Version  | Zweck                              |
-|------------------|----------|------------------------------------|
-| Vue 3            | ^3.3     | UI-Framework (Composition API)     |
-| Vite             | ^7.3     | Build-Tool + Dev-Server            |
-| Pinia            | ^2.1     | State Management                   |
-| Vue Router       | ^4.2     | Client-seitiges Routing            |
-| Tailwind CSS     | ^3.4     | Utility-First CSS                  |
-| Axios            | ^1.4     | HTTP-Client                        |
-| jwt-decode       | ^3.1     | JWT-Parsing im Browser             |
-| lucide-vue-next  | ^0.244   | Icon-Bibliothek                    |
-| Playwright       | ^1.59    | End-to-End-Tests                   |
+| Technologie      | Zweck                              |
+|------------------|------------------------------------|
+| Vue 3            | UI-Framework (Composition API)     |
+| Vite 7           | Build-Tool + Dev-Server            |
+| Pinia 2          | State Management (Auth, Context)   |
+| Tailwind CSS 3   | Styling                            |
+| lucide-vue-next  | Icon-Set                           |
+| Axios            | HTTP-Client                        |
+| Playwright       | End-to-End-Tests                   |
 
-## Projektstruktur
+## Projektstruktur & Dashboards
 
-```
-src/
-├── main.js              # App-Einstiegspunkt (Vue + Router + Pinia)
-├── App.vue              # Root-Komponente
-├── style.css            # Globale Styles + Tailwind-Direktiven
-├── router/
-│   └── index.js         # Routen + Navigation Guards
-├── stores/
-│   └── auth.js          # Pinia Auth-Store (JWT, Rolle, Login/Logout)
-├── api/
-│   └── axios.js         # Axios-Instanz mit Auth-Header-Interceptor
-├── views/               # Seiten-Komponenten (1 pro Route)
-│   ├── Login.vue
-│   ├── ResetPassword.vue
-│   ├── AdminDashboard.vue      # Haupt-UI für Admins
-│   ├── ReferentDashboard.vue   # Profil + Vorträge für Referenten
-│   └── TeilnehmerDashboard.vue # Prioritäten + Plan für Teilnehmer
-└── components/          # Wiederverwendbare UI-Komponenten (Modals)
-    ├── AdminTalkEditorModal.vue
-    ├── AdminVortragEditorModal.vue
-    ├── UserEditorModal.vue
-    ├── RaumEditorModal.vue
-    ├── GebaeudeEditorModal.vue
-    ├── VeranstaltungEditorModal.vue
-    └── EventSlotEditorModal.vue
-```
+- **`AdminDashboard.vue`**: Zentrale Steuerung für Admins. Tabs für Veranstaltungen, Nutzer, Vorträge, Slots und Räume. Enthält jetzt integrierte Verfügbarkeitsmatrizen in den Nutzer-Tabs und veranstaltungsübergreifende Raumbelegungs-Checks.
+- **`ReferentDashboard.vue`**: Verwaltung des eigenen Profils, der Vorträge und der persönlichen Verfügbarkeit pro Veranstaltung. Berücksichtigt Deadlines.
+- **`TeilnehmerDashboard.vue`**: Ansicht des persönlichen Vortragsplans und Pflege der Prioritäten (Top 10) für Wahlvorträge.
+
+## Wichtige Konzepte
+
+### EventContext Store (`stores/eventContext.js`)
+Speichert die aktuell im Admin-Bereich ausgewählte Veranstaltung global, damit beim Tab-Wechsel der Kontext erhalten bleibt.
+
+### Dynamische Formulare & Modals
+Editoren für Entitäten (Nutzer, Vorträge, Räume etc.) sind als separate Komponenten in `components/` ausgelagert und werden als Modals eingeblendet.
+
+### Deadline-Handling
+Das UI prüft die in den Veranstaltungs-DTOs gelieferten Deadlines (`deadlineReferenten`, `deadlineTeilnehmer`). Bei Ablauf werden Eingabefelder und Speicher-Buttons deaktiviert (HTML `disabled`).
+
+### Verfügbarkeits-Matrizen
+Die Verfügbarkeiten von Referenten und Teilnehmern sind als interaktive Checkbox-Matrizen direkt in die jeweiligen Nutzer-Listen integriert, um die Usability zu erhöhen.
 
 ## Entwicklung & Build
 
 ```bash
 # Abhängigkeiten installieren
-npm install
+cd frontend && npm install
 
 # Dev-Server starten (Port 5173, Proxy zu Backend :9000)
 npm run dev
-
-# Produktions-Build (Output nach dist/)
-npm run build
 
 # E2E-Tests ausführen (Backend muss laufen)
 npx playwright test
 ```
 
-## Routing & Zugangskontrolle
-
-| Route            | Komponente              | Rolle         |
-|------------------|-------------------------|---------------|
-| `/login`         | `Login.vue`             | Public        |
-| `/reset-password`| `ResetPassword.vue`     | Public        |
-| `/admin`         | `AdminDashboard.vue`    | ADMIN         |
-| `/referent`      | `ReferentDashboard.vue` | REFERENT      |
-| `/teilnehmer`    | `TeilnehmerDashboard.vue` | TEILNEHMER  |
-
-Der Navigation Guard in `router/index.js` prüft `authStore.isAuthenticated` und `authStore.userRole`. Unberechtigte Zugriffe werden zu `/login` weitergeleitet.
-
-## Auth-Store (Pinia)
-
-```javascript
-// stores/auth.js – Nutzung
-const authStore = useAuthStore();
-
-authStore.token       // JWT-String oder null
-authStore.userRole    // "ADMIN" | "REFERENT" | "TEILNEHMER" | null
-authStore.isAuthenticated  // Boolean
-
-authStore.login(token)   // Setzt Token, dekodiert Rolle
-authStore.logout()       // Löscht Token und leitet zu /login
-```
+## Styling-Konventionen
+- Utility-First mit Tailwind CSS direkt in den Templates.
+- Icons immer aus `lucide-vue-next`.
+- Übergangseffekte mit der CSS-Klasse `animate-fade-in` für eine flüssige UX.
+- Paginierung bei allen größeren Listen (Admin-Bereich).
 
 ## API-Kommunikation
-
-Alle API-Calls über die konfigurierte **Axios-Instanz** aus `api/axios.js`:
-```javascript
-import api from '@/api/axios';
-
-// Beispiel
-const response = await api.get('/api/veranstaltungen');
-const data = response.data;
-```
-
-- Base-URL: `/` (relativ, kein hardcodierter Host)
-- Auth-Header wird automatisch als Interceptor gesetzt (`Authorization: Bearer <token>`)
-- Backend-Port 9000 (Dev: Vite-Proxy leitet `/api` weiter)
-
-## Konventionen
-
-- **Composition API** (`<script setup>`) verwenden, keine Options API
-- Komponenten in `components/` sind Modal-Dialoge (Editor-Pattern)
-- Neue Views in `views/` anlegen und in `router/index.js` registrieren
-- Tailwind-Klassen direkt im Template, keine separaten CSS-Dateien
-- Icons aus `lucide-vue-next`: `import { IconName } from 'lucide-vue-next'`
-- Kein TypeScript (Projekt verwendet vanilla JavaScript)
-- Keine globalen `console.log`-Aufrufe im produktiven Code
-
-## E2E-Tests (Playwright)
-
-```
-tests/
-├── example.spec.js              # Basis-Smoke-Test
-└── PlanungsWorkflow.spec.js     # Vollständiger Planungs-Workflow
-```
-
-- Konfiguration: `playwright.config.js`
-- Tests laufen gegen `http://localhost:9000` (Quarkus muss laufen)
-- CI: `.github/workflows/playwright.yml`
-- Neue Tests in `tests/*.spec.js` ablegen
+- Nutzung der zentralen Axios-Instanz (`api/axios.js`).
+- Automatisches Mitsenden des JWT-Tokens im Authorization-Header.
+- Relative Pfade (z. B. `api.get('/api/vortraege')`) verwenden.

@@ -3,7 +3,6 @@ package kreyj.vortragsmanager.service;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.dto.VeranstaltungDto;
 import kreyj.vortragsmanager.dto.csv.VeranstaltungCsvDto;
@@ -12,7 +11,6 @@ import kreyj.vortragsmanager.entity.Gebaeude;
 import kreyj.vortragsmanager.entity.Nutzer;
 import kreyj.vortragsmanager.entity.Veranstaltung;
 import kreyj.vortragsmanager.resource.VeranstaltungResource;
-import kreyj.vortragsmanager.util.DateHelper;
 import org.jboss.logging.Logger;
 
 import java.io.FileReader;
@@ -72,7 +70,7 @@ public class VeranstaltungService {
         }
 
         if (dto.id == null) entity.persist();
-        return VeranstaltungResource.mapToDto(entity);
+        return VeranstaltungResource.mapVeranstaltungToDto(entity);
     }
 
     @Transactional

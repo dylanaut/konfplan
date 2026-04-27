@@ -6,11 +6,10 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import kreyj.vortragsmanager.dto.RaumVerfuegbarkeitDto;
 import kreyj.vortragsmanager.dto.UserDto;
 import kreyj.vortragsmanager.dto.VerfuegbarkeitDto;
-import kreyj.vortragsmanager.entity.EventSlot;
-import kreyj.vortragsmanager.entity.Nutzer;
-import kreyj.vortragsmanager.entity.Verfuegbarkeit;
+import kreyj.vortragsmanager.entity.*;
 import kreyj.vortragsmanager.service.AdminService;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
@@ -82,11 +81,11 @@ public class AdminResource {
                     Verfuegbarkeit vf = (Verfuegbarkeit) v;
                     return new VerfuegbarkeitDto(vf.nutzer.id, vf.slot.id, vf.isAvailable);
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @POST
-    @Path("/veranstaltung/{vid}/verfuegbarkeit")
+    @Path("/veranstaltung/{vid}/verfuegbarkeiten")
     @Transactional
     public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, VerfuegbarkeitDto dto) {
         Nutzer nutzer = Nutzer.findById(dto.userId);
@@ -107,6 +106,51 @@ public class AdminResource {
         }
         v.isAvailable = dto.isAvailable;
         v.persist();
+        return Response.ok().build();
+    }
+
+    @GET
+    @Path("/veranstaltung/{vid}/raeume/verfuegbarkeiten")
+    public List<RaumVerfuegbarkeitDto> getRaumVerfuegbarkeiten(@PathParam("vid") Long vid) {
+        Veranstaltung event = Veranstaltung.findById(vid);
+        if (event == null) throw new NotFoundException();
+
+        List<EventSlot> slots = EventSlot.find("veranstaltung.id", vid).list();
+        List<Raum> raeume = event.gebaeude.stream().flatMap(g -> g.raeume.stream()).toList();
+
+        return raeume.stream().flatMap(r -> slots.stream().map(s -> {
+            RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.find("raum = ?1 and slot = ?2", r, s).firstResult();
+            RaumVerfuegbarkeitDto dto = new RaumVerfuegbarkeitDto(r.id, s.id, rv != null && rv.isBelegt);
+
+            // Cross-event check: Is this room busy in ANY other event at a time that overlaps with this slot?
+            List<RaumVerfuegbarkeit> otherRvs = RaumVerfuegbarkeit.find("raum = ?1 and isBelegt = true and slot.veranstaltung.id != ?2", r, vid).list();
+            for (RaumVerfuegbarkeit otherRv : otherRvs) {
+                if (otherRv.slot.startTime.isBefore(s.endTime) && otherRv.slot.endTime.isAfter(s.startTime)) {
+                    dto.isBlockedByOtherEvent = true;
+                    dto.blockingEventName = otherRv.slot.veranstaltung.name;
+                    break;
+                }
+            }
+            return dto;
+        })).collect(Collectors.toList());
+    }
+
+    @POST
+    @Path("/veranstaltung/{vid}/raeume/verfuegbarkeit")
+    @Transactional
+    public Response updateRaumVerfuegbarkeit(@PathParam("vid") Long vid, RaumVerfuegbarkeitDto dto) {
+        Raum raum = Raum.findById(dto.raumId);
+        EventSlot slot = EventSlot.findById(dto.slotId);
+        if (raum == null || slot == null) return Response.status(Response.Status.NOT_FOUND).build();
+
+        RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.find("raum = ?1 and slot = ?2", raum, slot).firstResult();
+        if (rv == null) {
+            rv = new RaumVerfuegbarkeit();
+            rv.raum = raum;
+            rv.slot = slot;
+        }
+        rv.isBelegt = dto.isBelegt;
+        rv.persist();
         return Response.ok().build();
     }
 }

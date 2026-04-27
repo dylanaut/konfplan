@@ -27,6 +27,9 @@ class CsvImportTest {
     @BeforeEach
     @Transactional
     void setup() {
+        Zuweisung.deleteAll();
+        RaumVerfuegbarkeit.deleteAll();
+        Verfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
         Nutzer.deleteAll();
         Raum.deleteAll();
@@ -165,16 +168,15 @@ class CsvImportTest {
 
     @Test
     void testImportVortraege() {
-        QuarkusTransaction.begin();
-        Referent r = new Referent();
-        r.email = "vortrag@ref.de";
-        r.firstName = "Max";
-        r.lastName = "Ref";
-        r.passwordHash = "hash";
-        r.addVeranstaltung(Veranstaltung.findById(testVid));
-        r.persist();
-
-        QuarkusTransaction.commit();
+        QuarkusTransaction.run(() -> {
+            Referent r = new Referent();
+            r.email = "vortrag@ref.de";
+            r.firstName = "Max";
+            r.lastName = "Ref";
+            r.passwordHash = "hash";
+            r.addVeranstaltung(Veranstaltung.findById(testVid));
+            r.persist();
+        });
 
         String csv = "istPflicht;Titel;Referent_Email;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;Pflichtslot\n" +
                 "false;Java Kurs;vortrag@ref.de;Inhalt Text;Alle;true;2;;";

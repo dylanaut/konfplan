@@ -216,11 +216,11 @@ TEILNEHMER --> getAll
 | Aktion | Method | Pfad | Rollen
 | getReferentVeranstaltungen
 | GET
-| `/api/referenten/events-for-registration`
+| `/api/referenten/veranstaltungen`
 | ADMIN, REFERENT
 | deregisterTalkFromEvent
 | DELETE
-| `/api/referenten/events/{eventId}/vortraege/{talkId}/deregister`
+| `/api/referenten/veranstaltungen/{eventId}/vortraege/{talkId}/deregister`
 | ADMIN, REFERENT
 | getMeineVortraege
 | GET
@@ -228,11 +228,11 @@ TEILNEHMER --> getAll
 | ADMIN, REFERENT
 | registerTalkForEvent
 | POST
-| `/api/referenten/events/{eventId}/vortraege/{talkId}/register`
+| `/api/referenten/veranstaltungen/{eventId}/vortraege/{talkId}/register`
 | ADMIN, REFERENT
 | getMyPlan
 | GET
-| `/api/referenten/my-plan`
+| `/api/referenten/plaene`
 | ADMIN, REFERENT
 | createVortrag
 | POST
@@ -309,7 +309,7 @@ TEILNEHMER --> getAll
 | ADMIN
 | updateVerfuegbarkeit
 | POST
-| `/api/admin/veranstaltung/{vid}/verfuegbarkeit`
+| `/api/admin/veranstaltung/{vid}/verfuegbarkeiten`
 | ADMIN
 | getAllUsers
 | GET

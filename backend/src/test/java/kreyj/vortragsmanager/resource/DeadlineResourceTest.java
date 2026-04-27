@@ -10,7 +10,7 @@ import io.quarkus.test.security.jwt.JwtSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.dto.PrioritaetRequest;
-import kreyj.vortragsmanager.dto.RefVortragDto;
+import kreyj.vortragsmanager.dto.VortragDto;
 import kreyj.vortragsmanager.dto.VeranstaltungDto;
 import kreyj.vortragsmanager.entity.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +35,9 @@ class DeadlineResourceTest {
     @Transactional
     void setup() {
         // Aufräumen
+        Zuweisung.deleteAll();
+        RaumVerfuegbarkeit.deleteAll();
+        Verfuegbarkeit.deleteAll();
         Prioritaet.deleteAll();
         Vortrag.deleteAll();
         Nutzer.deleteAll();
@@ -79,7 +82,7 @@ class DeadlineResourceTest {
             @Claim(key = "sub", value = "referent@test.de")
     })
     void testReferentDeadlineExceeded() {
-        RefVortragDto dto = new RefVortragDto();
+        VortragDto dto = new VortragDto();
         dto.titel = "Neuer Vortrag";
         dto.veranstaltungId = pastEventId;
 

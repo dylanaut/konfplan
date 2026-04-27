@@ -1,21 +1,18 @@
 package kreyj.vortragsmanager.resource;
 
-import io.quarkus.test.InjectMock;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
+import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.dto.UserDto;
-import kreyj.vortragsmanager.dto.VortragStatDto;
-import kreyj.vortragsmanager.entity.EventSlot;
-import kreyj.vortragsmanager.entity.Vortrag;
-import kreyj.vortragsmanager.entity.Wahlvortrag;
-import kreyj.vortragsmanager.service.AdminService;
+import kreyj.vortragsmanager.entity.*;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
-import java.util.Collections;
+import java.time.LocalDateTime;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
@@ -24,37 +21,76 @@ import static org.hamcrest.CoreMatchers.is;
 @TestSecurity(user = "admin@test.de", roles = "ADMIN")
 @QuarkusTestResource(H2DatabaseTestResource.class)
 class VeranstaltungResourceTest {
-    @InjectMock
-    AdminService adminService;
+
+    Long testVid;
+
+    @BeforeEach
+    @Transactional
+    void setup() {
+        Zuweisung.deleteAll();
+        Verfuegbarkeit.deleteAll();
+        RaumVerfuegbarkeit.deleteAll();
+        Vortrag.deleteAll();
+        Nutzer.deleteAll();
+        Raum.deleteAll();
+        Gebaeude.deleteAll();
+        EventSlot.deleteAll();
+        Veranstaltung.deleteAll();
+
+        Admin admin = new Admin();
+        admin.email = "admin@test.de";
+        admin.passwordHash = "hash";
+        admin.persist();
+
+        Veranstaltung v = new Veranstaltung();
+        v.name = "Test Event " + System.currentTimeMillis();
+        v.beginntAm = LocalDateTime.now();
+        v.persist();
+        testVid = v.id;
+
+        admin.addVeranstaltung(v);
+        admin.persist();
+    }
 
     @Test
     void testGetVortraegeHierarchical() {
-        Long vid = 1L;
-        Vortrag v1 = new Wahlvortrag();
-        v1.id = 10L;
-        v1.titel = "Test Vortrag";
-
-        Mockito.when(adminService.getAllVortraege(vid)).thenReturn(Collections.singletonList(v1));
-
+        createWahlvortrag("Test Vortrag");
+        
         given()
-                .when().get("/api/veranstaltungen/{vid}/vortraege", vid)
+                .when().get("/api/veranstaltungen/{vid}/vortraege", testVid)
                 .then()
                 .statusCode(200)
                 .body("size()", is(1))
                 .body("[0].titel", is("Test Vortrag"));
     }
 
-    @Test
-    void testGetSlotsHierarchical() {
-        Long vid = 1L;
-        EventSlot s1 = new EventSlot();
-        s1.id = 5L;
-        s1.description = "Slot A";
+    @Transactional
+    Vortrag createWahlvortrag(String titel) {
+        Referent r = new Referent();
+        r.email = "ref@vresource.de";
+        r.lastName = "Mustermann";
+        r.persist();
+        
+        Wahlvortrag v = new Wahlvortrag();
+        v.titel = titel;
+        v.referent = r;
+        v.veranstaltung = Veranstaltung.findById(testVid);
+        v.persist();
+        return v;
+    }
 
-        Mockito.when(adminService.getAllEventSlots(vid)).thenReturn(Collections.singletonList(s1));
+    @Test
+    @Transactional
+    void testGetSlotsHierarchical() {
+        EventSlot s1 = new EventSlot();
+        s1.description = "Slot A";
+        s1.startTime = LocalDateTime.now();
+        s1.endTime = LocalDateTime.now().plusHours(1);
+        s1.veranstaltung = Veranstaltung.findById(testVid);
+        s1.persist();
 
         given()
-                .when().get("/api/veranstaltungen/{vid}/slots", vid)
+                .when().get("/api/veranstaltungen/{vid}/slots", testVid)
                 .then()
                 .statusCode(200)
                 .body("size()", is(1))
@@ -62,38 +98,35 @@ class VeranstaltungResourceTest {
     }
 
     @Test
+    @Transactional
     void testGetStatsHierarchical() {
-        Long vid = 1L;
-        VortragStatDto dto = new VortragStatDto("Vortrag 1", 5, 4, 3, 10, 15);
-
-        Mockito.when(adminService.getStats(vid)).thenReturn(Collections.singletonList(dto));
+        Vortrag v = createWahlvortrag("Vortrag 1");
 
         given()
-                .when().get("/api/veranstaltungen/{vid}/stats", vid)
+                .when().get("/api/veranstaltungen/{vid}/stats", testVid)
                 .then()
                 .statusCode(200)
                 .body("size()", is(1))
-                .body("[0].titel", is("Vortrag 1"))
-                .body("[0].countPrio1", is(5))
-                .body("[0].countPrio2", is(4))
-                .body("[0].countPrio3", is(3));
+                .body("[0].titel", is("Vortrag 1"));
     }
 
     @Test
+    @Transactional
     void testCreateNutzerHierarchical() {
-        Long vid = 1L;
         UserDto t = new UserDto();
         t.email = "new@test.de";
         t.role = "TEILNEHMER";
-
-        Mockito.when(adminService.createUser(Mockito.any(), Mockito.anyList())).thenReturn(t);
+        t.firstName = "Neu";
+        t.lastName = "Nutzer";
 
         given()
                 .contentType(ContentType.JSON)
                 .body(t)
-                .when().post("/api/veranstaltungen/{vid}/nutzer", vid)
+                .when().post("/api/veranstaltungen/{vid}/nutzer", testVid)
                 .then()
                 .statusCode(201)
                 .body("email", is("new@test.de"));
+        
+        Assertions.assertNotNull(Nutzer.findByEmail("new@test.de"));
     }
 }

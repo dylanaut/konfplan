@@ -91,12 +91,13 @@ public class TeilnehmerService {
                     tn.firstName = dto.firstName;
                     tn.lastName = dto.lastName;
                     tn.gruppe = dto.gruppe;
-                    tn.addVeranstaltung(v);
 
                     String tempPassword = "start123"; // UUID.randomUUID().toString();
                     tn.passwordHash = BcryptUtil.bcryptHash(tempPassword);
 
                     tn.persist();
+                    tn.addVeranstaltung(v);
+
                     count++;
                 } else {
                     LOG.warn("Teilnehmer übersprungen: Email " + email + " existiert bereits.");

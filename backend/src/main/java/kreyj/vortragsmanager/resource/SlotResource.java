@@ -1,7 +1,9 @@
 package kreyj.vortragsmanager.resource;
 
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import kreyj.vortragsmanager.dto.EventSlotDto;
 import kreyj.vortragsmanager.entity.EventSlot;
@@ -17,20 +19,26 @@ public class SlotResource {
     @GET
     public List<EventSlotDto> getAll() {
         return EventSlot.<EventSlot>listAll().stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .map(SlotResource::mapSlotToDto)
+                .toList();
     }
 
-    private EventSlotDto mapToDto(EventSlot s) {
+
+    // -------------------------------------------------------------------
+    // helper methods
+    // -------------------------------------------------------------------
+
+    public static EventSlotDto mapSlotToDto(EventSlot eventSlot) {
         EventSlotDto dto = new EventSlotDto();
-        dto.id = s.id;
-        dto.version = s.version;
-        dto.startTime = s.startTime;
-        dto.endTime = s.endTime;
-        dto.description = s.description;
-        if (s.veranstaltung != null) {
-            dto.veranstaltungId = s.veranstaltung.id;
-        }
+
+        dto.id = eventSlot.id;
+        dto.version = eventSlot.version;
+
+        dto.description = eventSlot.description;
+        dto.startTime = eventSlot.startTime;
+        dto.endTime = eventSlot.endTime;
+        dto.veranstaltungId = eventSlot.veranstaltung.id;
+
         return dto;
     }
 }

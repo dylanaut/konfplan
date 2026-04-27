@@ -23,6 +23,45 @@
       </div>
     </section>
 
+    <!-- NEUE Sektion: Meine Verfügbarkeit (pro Veranstaltung) -->
+    <section v-if="events.length > 0" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <div class="flex items-center gap-2 mb-6 text-indigo-600">
+        <CalendarIcon class="w-6 h-6" />
+        <h2 class="text-xl font-bold">Meine Verfügbarkeit pro Veranstaltung</h2>
+      </div>
+
+      <div class="space-y-6">
+        <div v-for="event in events" :key="event.id" class="border border-gray-200 rounded-lg p-4">
+          <div class="flex justify-between items-start mb-4">
+             <div>
+               <h3 class="font-bold text-lg text-gray-800">{{ event.name }}</h3>
+               <p class="text-xs text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
+               <p v-if="event.deadlineReferenten" :class="['text-[10px] font-bold mt-1', isDeadlinePassed(event.deadlineReferenten) ? 'text-red-600' : 'text-orange-600']">
+                  Deadline für Referenten: {{ formatDateTime(event.deadlineReferenten) }}
+               </p>
+             </div>
+          </div>
+
+          <!-- Slots für diese Veranstaltung -->
+          <div v-if="getSlotsForEvent(event.id).length === 0" class="text-xs text-gray-500 italic">
+             Noch keine Zeit-Slots für diese Veranstaltung angelegt.
+          </div>
+          <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+             <button
+                v-for="slot in getSlotsForEvent(event.id)" :key="slot.id"
+                @click="toggleEventAvailability(event, slot.id)"
+                :disabled="isDeadlinePassed(event.deadlineReferenten)"
+                :class="['p-2 rounded-lg border text-[10px] transition-all text-center',
+                       isUserAvailable(event.id, slot.id) ? 'bg-indigo-600 text-white border-indigo-600 font-bold' : 'bg-gray-50 text-gray-400 border-gray-200',
+                       isDeadlinePassed(event.deadlineReferenten) ? 'opacity-80 cursor-not-allowed' : 'hover:border-indigo-400']"
+             >
+                {{ formatTime(slot.startTime) }} - {{ formatTime(slot.endTime) }}
+             </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Sektion: Meine Vorträge -->
     <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       <div class="flex items-center justify-between mb-6 text-indigo-600">
@@ -106,41 +145,6 @@
       </div>
     </section>
 
-    <!-- Sektion: Verfügbarkeit -->
-    <section v-if="(selectedTalk || isEditingNewTalk) && selectedTalk.veranstaltungId" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-      <div class="flex items-center gap-2 mb-6 text-indigo-600">
-        <CalendarIcon class="w-6 h-6" />
-        <h2 class="text-xl font-bold">Meine Verfügbarkeit für diesen Vortrag</h2>
-      </div>
-
-      <div v-if="relevantSlotsForTalk.length === 0" class="text-gray-500 py-4 italic">
-        Für die Veranstaltung dieses Vortrags sind noch keine Zeit-Slots angelegt.
-      </div>
-
-      <div v-for="(slots, date) in groupedSlots" :key="date" class="mb-8 last:mb-0">
-        <div class="flex justify-between items-center mb-4 border-b pb-2">
-          <h3 class="font-bold text-gray-800">{{ formatDate(date) }}</h3>
-          <div class="space-x-2" v-if="!isDeadlinePassedForTalk(selectedTalk)">
-            <button @click="toggleDay(date, true)" class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Alle an</button>
-            <button @click="toggleDay(date, false)" class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">Alle aus</button>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          <button
-              v-for="slot in slots" :key="slot.id"
-              @click="toggleSlot(slot.id)"
-              :disabled="isDeadlinePassedForTalk(selectedTalk)"
-              :class="['p-3 rounded-lg border text-sm transition-all text-center',
-                     isAvailable(slot.id) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-gray-50 text-gray-400 border-gray-200',
-                     isDeadlinePassedForTalk(selectedTalk) ? 'cursor-not-allowed opacity-80' : '']"
-          >
-            {{ formatTime(slot.startTime) }} - {{ formatTime(slot.endTime) }}
-          </button>
-        </div>
-      </div>
-    </section>
-
     <!-- Sektion: Veranstaltungsanmeldungen -->
     <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       <div class="flex items-center gap-2 mb-6 text-indigo-600">
@@ -206,7 +210,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, reactive } from 'vue';
 import api from '../api/axios';
 import { User as UserIcon, FileText as FileTextIcon, Calendar as CalendarIcon, Save as SaveIcon, Plus as PlusIcon, Edit as EditIcon, Trash2 as Trash2Icon, ListChecks as ListChecksIcon, Check as CheckIcon, X as XIcon } from 'lucide-vue-next';
 
@@ -216,6 +220,9 @@ const vortraege = ref([]);
 const selectedTalk = ref(null);
 const isEditingNewTalk = ref(false);
 const events = ref([]);
+
+// Neue State für Verfügbarkeiten pro Event
+const eventAvailabilities = reactive({}); // Key: eventId, Value: Array von slotIds
 
 onMounted(async () => {
   await fetchReferentData();
@@ -259,54 +266,58 @@ const fetchReferentenVortraege = async () => {
 
 const fetchEventsForRegistration = async () => {
   try {
-    const eventsRes = await api.get('/api/referenten/events-for-registration');
+    const eventsRes = await api.get('/api/referenten/veranstaltungen');
     events.value = eventsRes.data;
+
+    // Verfügbarkeiten für alle Events laden
+    for (const event of events.value) {
+       await fetchAvailabilitiesForEvent(event.id);
+    }
   } catch (error) {
     console.error("Fehler beim Laden der Veranstaltungen:", error);
   }
 };
 
-const relevantSlotsForTalk = computed(() => {
-  if (!selectedTalk.value || !selectedTalk.value.veranstaltungId) return [];
-  // Nur Slots anzeigen, die zur Veranstaltung des Vortrags gehören
-  return allSlots.value.filter(s => s.veranstaltungId === selectedTalk.value.veranstaltungId);
-});
-
-const groupedSlots = computed(() => {
-  const groups = {};
-  relevantSlotsForTalk.value.forEach(slot => {
-    const date = slot.startTime.split('T')[0];
-    if (!groups[date]) groups[date] = [];
-    groups[date].push(slot);
-  });
-  return groups;
-});
-
-const isAvailable = (slotId) => {
-  return selectedTalk.value && selectedTalk.value.availabilities && selectedTalk.value.availabilities.includes(slotId);
+const fetchAvailabilitiesForEvent = async (vid) => {
+   try {
+      const res = await api.get(`/api/referenten/veranstaltungen/${vid}/verfuegbarkeiten`);
+      eventAvailabilities[vid] = res.data.filter(v => v.isAvailable).map(v => v.slotId);
+   } catch (e) {
+      console.error(`Fehler beim Laden der Verfügbarkeiten für Event ${vid}:`, e);
+   }
 };
 
-const toggleSlot = (slotId) => {
-  if (!selectedTalk.value || isDeadlinePassedForTalk(selectedTalk.value)) return;
-  if (!selectedTalk.value.availabilities) selectedTalk.value.availabilities = [];
-  if (isAvailable(slotId)) {
-    selectedTalk.value.availabilities = selectedTalk.value.availabilities.filter(id => id !== slotId);
-  } else {
-    selectedTalk.value.availabilities.push(slotId);
-  }
+const getSlotsForEvent = (eventId) => {
+   return allSlots.value.filter(s => s.veranstaltungId === eventId);
 };
 
-const toggleDay = (date, status) => {
-  if (!selectedTalk.value || isDeadlinePassedForTalk(selectedTalk.value)) return;
-  const daySlotIds = groupedSlots.value[date].map(s => s.id);
-  if (!selectedTalk.value.availabilities) selectedTalk.value.availabilities = [];
-  if (status) {
-    daySlotIds.forEach(id => {
-      if (!selectedTalk.value.availabilities.includes(id)) selectedTalk.value.availabilities.push(id);
-    });
-  } else {
-    selectedTalk.value.availabilities.filter(id => !daySlotIds.includes(id));
-  }
+const isUserAvailable = (eventId, slotId) => {
+   return eventAvailabilities[eventId] && eventAvailabilities[eventId].includes(slotId);
+};
+
+const toggleEventAvailability = async (event, slotId) => {
+   if (isDeadlinePassed(event.deadlineReferenten)) return;
+
+   const current = isUserAvailable(event.id, slotId);
+   const newValue = !current;
+
+   try {
+      await api.post(`/api/referenten/veranstaltungen/${event.id}/verfuegbarkeiten`, {
+         userId: referent.value.id,
+         slotId: slotId,
+         isAvailable: newValue
+      });
+
+      // Lokal aktualisieren
+      if (newValue) {
+         if (!eventAvailabilities[event.id]) eventAvailabilities[event.id] = [];
+         eventAvailabilities[event.id].push(slotId);
+      } else {
+         eventAvailabilities[event.id] = eventAvailabilities[event.id].filter(id => id !== slotId);
+      }
+   } catch (e) {
+      alert("Fehler beim Aktualisieren der Verfügbarkeit: " + (e.response?.data || e.message));
+   }
 };
 
 const selectTalk = (talk) => {
@@ -315,29 +326,19 @@ const selectTalk = (talk) => {
 };
 
 const addNewTalk = () => {
-  if (isAnyDeadlinePassed) {
-      // Find the first event where deadline is not passed
-      const availableEvent = events.value.find(e => !isDeadlinePassed(e.deadlineReferenten));
-      if (!availableEvent) {
-          alert("Für alle verfügbaren Veranstaltungen ist die Deadline bereits abgelaufen.");
-          return;
-      }
-      selectedTalk.value = {
-        title: '',
-        abstractText: '',
-        wiederholbar: false,
-        availabilities: [],
-        veranstaltungId: availableEvent.id
-      };
-  } else {
-      selectedTalk.value = {
-        title: '',
-        abstractText: '',
-        wiederholbar: false,
-        availabilities: [],
-        veranstaltungId: events.value.length > 0 ? events.value[0].id : null
-      };
+  // Find the first event where deadline is not passed
+  const availableEvent = events.value.find(e => !isDeadlinePassed(e.deadlineReferenten));
+  if (!availableEvent) {
+      alert("Für alle verfügbaren Veranstaltungen ist die Deadline bereits abgelaufen.");
+      return;
   }
+  selectedTalk.value = {
+    title: '',
+    abstractText: '',
+    wiederholbar: false,
+    availabilities: [],
+    veranstaltungId: availableEvent.id
+  };
   isEditingNewTalk.value = true;
 };
 
@@ -415,7 +416,7 @@ const registerTalkForEvent = async (eventId, talkId) => {
       return;
   }
   try {
-    await api.post(`/api/referenten/events/${eventId}/vortraege/${talkId}/register`);
+    await api.post(`/api/referenten/veranstaltungen/${eventId}/vortraege/${talkId}/register`);
     await fetchReferentenVortraege();
     await fetchEventsForRegistration();
     alert("Vortrag wurde erfolgreich kopiert.");
@@ -431,7 +432,7 @@ const deregisterTalkFromEvent = async (eventId, talkId) => {
   }
   if (!confirm('Abmelden? Dies zieht den Vortrag für diese Veranstaltung zurück.')) return;
   try {
-    await api.delete(`/api/referenten/events/${eventId}/vortraege/${talkId}/deregister`);
+    await api.delete(`/api/referenten/veranstaltungen/${eventId}/vortraege/${talkId}/deregister`);
     await fetchReferentenVortraege();
     await fetchEventsForRegistration();
   } catch (e) {
@@ -441,7 +442,6 @@ const deregisterTalkFromEvent = async (eventId, talkId) => {
 
 const saveAll = async () => {
   try {
-    // Profil darf immer gespeichert werden (oder auch sperren? Ich sperre es wenn IRGENDEINE Deadline abgelaufen ist um sicher zu gehen)
     if (!isAnyDeadlinePassed) {
         await api.put('/api/referenten/profile', referent.value);
     }

@@ -2,7 +2,7 @@
 
 ## Überblick
 
-Das Backend ist eine **Quarkus 3.20.1**-Anwendung (Java 21) mit RESTful API, JWT-Security und SQLite-Datenbank. Es folgt einer klassischen Dreischicht-Architektur: `resource` → `service` → `entity`.
+Das Backend ist eine **Quarkus 3.33.1**-Anwendung (Java 21) mit RESTful API, JWT-Security und einer PostgreSQL-Datenbank für Dev/Prod sowie H2 für Tests. Es folgt einer klassischen Dreischicht-Architektur: `resource` → `service` → `entity`.
 
 ## Paketstruktur
 
@@ -12,17 +12,14 @@ src/main/java/kreyj/vortragsmanager/
 ├── dto/          # Datentransferobjekte (Request/Response)
 ├── service/      # Geschäftslogik (@ApplicationScoped)
 ├── resource/     # JAX-RS REST-Endpunkte (@Path)
-└── util/         # Querschnittsklassen (z. B. ExceptionMapper)
+└── util/         # Querschnittsklassen (z. B. LoggingFilter)
 
 src/main/resources/
 ├── application.properties
-├── db/migration/V1__tables.sql   # Flyway-Schema
+├── db/migration/   # Flyway-Schema
 ├── minizinc/vortragsplanung.mzn  # Optimierungsmodell
 ├── templates/                  # Freemarker-Templates (E-Mail)
-└── assets/                     # Statische Dateien (Logo)
-
-src/test/java/kreyj/vortragsmanager/resource/  # Integrationstests
-src/test/resources/csv_import/bo_26_09/         # Reale Testdaten (CSV)
+└── assets/                     # Statische Dateien
 ```
 
 ## Entwicklung
@@ -42,39 +39,37 @@ cd backend && ../mvnw package
 
 - Port: **9000**
 - CORS für Frontend-Dev auf Port **5173** aktiviert
-- SQLite-Datei: `vortragsmanager.db` (im Arbeitsverzeichnis)
+- Datenbank: PostgreSQL (Docker Dev Services im Dev-Modus, konfiguriert für Prod)
+- Test-Datenbank: H2 In-Memory
 - JWT: RSA-Schlüsselpaar in `src/main/resources/` (PEM-Dateien)
-- Hibernate: `validate` (Schema wird NICHT automatisch angepasst → Flyway)
-- Flyway: Standardmäßig **deaktiviert** (`migrate-at-start=false`), für Dev manuell aktivieren
+- Hibernate: `drop-and-create` (Dev/Test) bzw. `update` (Prod)
+- Flyway: Zur Schema-Migration genutzt.
 
 ## Architekturregeln
 
-1. **Resource-Klassen** haben keine Geschäftslogik – nur HTTP-Mapping und Delegation an Services
-2. **Service-Klassen** sind `@ApplicationScoped`; Transaktionen mit `@Transactional`
-3. **Entities** nutzen Panache Active Record (statische Finder-Methoden direkt auf der Klasse)
-4. Neue Entitäten **müssen** von `SqliteEntity` erben
-5. Neue Entitäten **müssen** `@Version Long version` für Optimistic Locking enthalten
-6. Für SQLite gilt: **kein `GenerationType.SEQUENCE`** – immer `GenerationType.IDENTITY` + `columnDefinition = "INTEGER"`
-7. Datums-/Zeitfelder: `LocalDateTime` + `@Convert(converter = LocalDateTimeConverter.class)`
+1. **Resource-Klassen** haben keine Geschäftslogik – nur HTTP-Mapping, Delegation an Services und Mapping zu DTOs.
+2. **Service-Klassen** sind `@ApplicationScoped`; Transaktionen mit `@Transactional`.
+3. **Entities** nutzen Panache Active Record (statische Finder-Methoden direkt auf der Klasse).
+4. Neue Entitäten **müssen** von `VersionedEntity` erben.
+5. Neue Entitäten **müssen** `@Version Long version` für Optimistic Locking enthalten.
+6. Datums-/Zeitfelder: `LocalDateTime` + `@Convert(converter = LocalDateTimeConverter.class)`.
 
 ## Security
 
-- Drei Rollen: `ADMIN`, `REFERENT`, `TEILNEHMER`
-- Alle Endpunkte mit `@RolesAllowed` absichern
-- JWT-Token wird von `AuthResource` ausgestellt (RSA-signiert)
-- Passwörter: BCrypt via `BcryptUtil.bcryptHash()`
+- Rollen: `ADMIN`, `REFERENT`, `TEILNEHMER`.
+- Alle Endpunkte mit `@RolesAllowed` oder `@Authenticated` absichern.
+- JWT-Token wird von `AuthResource` ausgestellt.
+- Passwörter: BCrypt via `BcryptUtil.bcryptHash()`.
 
-## SQLite-Besonderheiten
+## Geschäftslogik-Highlights
 
-- Max. **2 JDBC-Verbindungen** gleichzeitig (Konfiguration beachten!)
-- `foreign_keys=true` und `busy_timeout=30000` als JDBC-Properties gesetzt
-- Keine DDL-Autogeneration durch Hibernate – Schema nur über Flyway-Migrationen ändern
-- Für neue Felder/Tabellen: neue Flyway-Datei `V2__beschreibung.sql` anlegen
+- **Slot-Validierung**: Prüfung auf Überschneidungsfreiheit und zeitliche Korrektheit bei Erstellung/Update von EventSlots.
+- **Verfügbarkeiten**: Automatische Erstellung von Standard-Verfügbarkeiten (true) beim Hinzufügen von Nutzern zu Veranstaltungen.
+- **Raum-Management**: Veranstaltungsübergreifende Prüfung der Raumverfügbarkeit zur Vermeidung von Doppelbelegungen.
+- **Deadlines**: Referenten und Teilnehmer können ihre Daten nur bis zu einem administrativ festgelegten Zeitpunkt ändern.
 
 ## MiniZinc-Optimierung
 
 Der `OptimierungService` ruft MiniZinc als externen Prozess auf:
 - Modell: `src/main/resources/minizinc/vortragsplanung.mzn`
-- MiniZinc muss auf dem System installiert sein (`minizinc` im PATH)
-- Der Service schreibt temporäre `.dzn`-Datendateien und liest JSON-Output
-- Timeouts und Solver-Konfiguration über `SolverConfigDto`
+- Timeouts und Solver-Konfiguration (z.B. OR-Tools) über `SolverConfigDto`.

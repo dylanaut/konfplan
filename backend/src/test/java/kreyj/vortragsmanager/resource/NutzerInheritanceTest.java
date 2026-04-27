@@ -11,7 +11,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,6 +24,9 @@ class NutzerInheritanceTest {
     @BeforeEach
     @Transactional
     void setup() {
+        Zuweisung.deleteAll();
+        Verfuegbarkeit.deleteAll();
+        RaumVerfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
         Nutzer.deleteAll();
         Raum.deleteAll();
@@ -93,7 +95,6 @@ class NutzerInheritanceTest {
                 .body(json)
                 .when().post("/api/veranstaltungen/{vid}/nutzer", testVid)
                 .then()
-                .log().ifStatusCodeIsEqualTo(201)
                 .statusCode(201);
 
         Teilnehmer tn = (Teilnehmer) Nutzer.findByEmail("student@vortragsmanager.de");

@@ -46,7 +46,7 @@ public class VeranstaltungResource {
     @GET
     public List<VeranstaltungDto> getAll() {
         return veranstaltungService.listAll().stream()
-                .map(VeranstaltungResource::mapToDto)
+                .map(VeranstaltungResource::mapVeranstaltungToDto)
                 .collect(Collectors.toList());
     }
 
@@ -57,7 +57,7 @@ public class VeranstaltungResource {
         if (vEntity == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(mapToDto(vEntity)).build();
+        return Response.ok(mapVeranstaltungToDto(vEntity)).build();
     }
 
     @POST
@@ -168,8 +168,9 @@ public class VeranstaltungResource {
 
     @GET
     @Path("/{vid}/vortraege")
-    public List<Vortrag> getVortraege(@PathParam("vid") Long vid) {
-        return adminService.getAllVortraege(vid);
+    public List<VortragDto> getVortraege(@PathParam("vid") Long vid) {
+        List<Vortrag> allVortraege = adminService.getAllVortraege(vid);
+        return allVortraege.stream().map(ReferentResource::mapVortragToDto).toList();
     }
 
     @POST
@@ -216,25 +217,33 @@ public class VeranstaltungResource {
     public List<EventSlotDto> getSlots(@PathParam("vid") Long vid) {
         return adminService.getAllEventSlots(vid)
                 .stream()
-                .map(VeranstaltungResource::mapSlotToDto).toList();
+                .map(SlotResource::mapSlotToDto).toList();
     }
 
 
     @POST
     @Path("/{vid}/slots")
     public Response createSlot(@PathParam("vid") Long vid, EventSlot slot) {
-        EventSlot created = adminService.createEventSlot(slot, vid);
-        return Response.status(Response.Status.CREATED).entity(created).build();
+        try {
+            EventSlot created = adminService.createEventSlot(slot, vid);
+            return Response.status(Response.Status.CREATED).entity(SlotResource.mapSlotToDto(created)).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
     }
 
     @PUT
     @Path("/{vid}/slots/{id}")
     public Response updateSlot(@PathParam("vid") Long vid, @PathParam("id") Long id, EventSlot slot) {
-        EventSlot updated = adminService.updateEventSlot(id, slot, vid);
-        if (updated == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+        try {
+            EventSlot updated = adminService.updateEventSlot(id, slot, vid);
+            if (updated == null) {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
+            return Response.ok(SlotResource.mapSlotToDto(updated)).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
-        return Response.ok(updated).build();
     }
 
     @DELETE
@@ -301,7 +310,7 @@ public class VeranstaltungResource {
     // helper methods
     // -------------------------------------------------------------------
 
-    public static VeranstaltungDto mapToDto(Veranstaltung v) {
+    public static VeranstaltungDto mapVeranstaltungToDto(Veranstaltung v) {
         VeranstaltungDto dto = new VeranstaltungDto();
         dto.id = v.id;
         dto.version = v.version;
@@ -325,19 +334,6 @@ public class VeranstaltungResource {
         }
 
         dto.gebaeude = v.gebaeude.stream().map(GebaeudeResource::mapToDto).toList();
-
-        return dto;
-    }
-
-    public static EventSlotDto mapSlotToDto(EventSlot eventSlot) {
-        EventSlotDto dto = new EventSlotDto();
-
-        dto.id = eventSlot.id;
-        dto.version = eventSlot.version;
-
-        dto.description = eventSlot.description;
-        dto.startTime = eventSlot.startTime;
-        dto.endTime = eventSlot.endTime;
 
         return dto;
     }

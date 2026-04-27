@@ -28,6 +28,9 @@ class NutzerPersistenceTest {
     @BeforeEach
     @Transactional
     void setup() {
+        Zuweisung.deleteAll();
+        Verfuegbarkeit.deleteAll();
+        RaumVerfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
         Nutzer.deleteAll();
         Raum.deleteAll();
