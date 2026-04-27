@@ -1,5 +1,6 @@
 package kreyj.vortragsmanager.resource;
 
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -20,23 +21,13 @@ import static org.hamcrest.CoreMatchers.is;
 @QuarkusTest
 @TestSecurity(user = "admin@test.de", roles = "ADMIN")
 @QuarkusTestResource(H2DatabaseTestResource.class)
-class VeranstaltungResourceTest {
+class VeranstaltungResourceTest extends ResourceTestBase {
 
     Long testVid;
 
     @BeforeEach
     @Transactional
     void setup() {
-        Zuweisung.deleteAll();
-        Verfuegbarkeit.deleteAll();
-        RaumVerfuegbarkeit.deleteAll();
-        Vortrag.deleteAll();
-        Nutzer.deleteAll();
-        Raum.deleteAll();
-        Gebaeude.deleteAll();
-        EventSlot.deleteAll();
-        Veranstaltung.deleteAll();
-
         Admin admin = new Admin();
         admin.email = "admin@test.de";
         admin.passwordHash = "hash";
@@ -54,7 +45,9 @@ class VeranstaltungResourceTest {
 
     @Test
     void testGetVortraegeHierarchical() {
-        createWahlvortrag("Test Vortrag");
+        QuarkusTransaction.run(() -> {
+            createWahlvortrag("Test Vortrag");
+        });
         
         given()
                 .when().get("/api/veranstaltungen/{vid}/vortraege", testVid)
@@ -64,10 +57,9 @@ class VeranstaltungResourceTest {
                 .body("[0].titel", is("Test Vortrag"));
     }
 
-    @Transactional
-    Vortrag createWahlvortrag(String titel) {
+    private void createWahlvortrag(String titel) {
         Referent r = new Referent();
-        r.email = "ref@vresource.de";
+        r.email = "ref-" + System.currentTimeMillis() + "@vresource.de";
         r.lastName = "Mustermann";
         r.persist();
         
@@ -76,18 +68,18 @@ class VeranstaltungResourceTest {
         v.referent = r;
         v.veranstaltung = Veranstaltung.findById(testVid);
         v.persist();
-        return v;
     }
 
     @Test
-    @Transactional
     void testGetSlotsHierarchical() {
-        EventSlot s1 = new EventSlot();
-        s1.description = "Slot A";
-        s1.startTime = LocalDateTime.now();
-        s1.endTime = LocalDateTime.now().plusHours(1);
-        s1.veranstaltung = Veranstaltung.findById(testVid);
-        s1.persist();
+        QuarkusTransaction.run(() -> {
+            EventSlot s1 = new EventSlot();
+            s1.description = "Slot A";
+            s1.startTime = LocalDateTime.now();
+            s1.endTime = LocalDateTime.now().plusHours(1);
+            s1.veranstaltung = Veranstaltung.findById(testVid);
+            s1.persist();
+        });
 
         given()
                 .when().get("/api/veranstaltungen/{vid}/slots", testVid)
@@ -98,9 +90,10 @@ class VeranstaltungResourceTest {
     }
 
     @Test
-    @Transactional
     void testGetStatsHierarchical() {
-        Vortrag v = createWahlvortrag("Vortrag 1");
+        QuarkusTransaction.run(() -> {
+            createWahlvortrag("Vortrag 1");
+        });
 
         given()
                 .when().get("/api/veranstaltungen/{vid}/stats", testVid)

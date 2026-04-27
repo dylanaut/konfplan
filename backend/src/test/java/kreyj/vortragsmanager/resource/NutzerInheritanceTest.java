@@ -17,23 +17,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
-class NutzerInheritanceTest {
+class NutzerInheritanceTest extends ResourceTestBase {
 
     Long testVid;
 
     @BeforeEach
     @Transactional
     void setup() {
-        Zuweisung.deleteAll();
-        Verfuegbarkeit.deleteAll();
-        RaumVerfuegbarkeit.deleteAll();
-        Vortrag.deleteAll();
-        Nutzer.deleteAll();
-        Raum.deleteAll();
-        Gebaeude.deleteAll();
-        EventSlot.deleteAll();
-        Veranstaltung.deleteAll();
-
         Admin admin = new Admin();
         admin.email = "org@test.de";
         admin.passwordHash = "hash";

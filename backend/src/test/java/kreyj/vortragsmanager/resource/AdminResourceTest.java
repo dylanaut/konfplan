@@ -15,7 +15,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
@@ -23,21 +22,11 @@ import static org.hamcrest.CoreMatchers.is;
 @QuarkusTest
 @TestSecurity(user = "admin@example.com", roles = "ADMIN")
 @QuarkusTestResource(H2DatabaseTestResource.class)
-class AdminResourceTest {
+class AdminResourceTest extends ResourceTestBase {
 
     @BeforeEach
     @Transactional
     void setup() {
-        Zuweisung.deleteAll();
-        Verfuegbarkeit.deleteAll();
-        RaumVerfuegbarkeit.deleteAll();
-        Vortrag.deleteAll();
-        Nutzer.deleteAll();
-        Raum.deleteAll();
-        Gebaeude.deleteAll();
-        EventSlot.deleteAll();
-        Veranstaltung.deleteAll();
-        
         Admin admin = new Admin();
         admin.email = "admin@example.com";
         admin.passwordHash = "hash";

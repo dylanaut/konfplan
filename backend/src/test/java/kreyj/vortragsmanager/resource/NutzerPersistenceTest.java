@@ -20,7 +20,7 @@ import static org.hamcrest.Matchers.matchesPattern;
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
-class NutzerPersistenceTest {
+class NutzerPersistenceTest extends ResourceTestBase {
 
     public static final String TEST_VERANSTALTUNG = "Test Veranstaltung";
     Long testVid;
@@ -28,16 +28,6 @@ class NutzerPersistenceTest {
     @BeforeEach
     @Transactional
     void setup() {
-        Zuweisung.deleteAll();
-        Verfuegbarkeit.deleteAll();
-        RaumVerfuegbarkeit.deleteAll();
-        Vortrag.deleteAll();
-        Nutzer.deleteAll();
-        Raum.deleteAll();
-        Gebaeude.deleteAll();
-        EventSlot.deleteAll();
-        Veranstaltung.deleteAll();
-
         Gebaeude g = new Gebaeude();
         g.name = "Test Gebäude";
         g.strasse = "Teststraße";
