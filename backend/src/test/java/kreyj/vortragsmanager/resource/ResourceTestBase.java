@@ -11,7 +11,7 @@ public abstract class ResourceTestBase {
     public void cleanDatabase() {
         Zuweisung.deleteAll();
         Verfuegbarkeit.deleteAll();
-        RaumVerfuegbarkeit.deleteAll();
+        RaumBelegbarkeit.deleteAll();
         Prioritaet.deleteAll();
         Vortrag.deleteAll();
         Nutzer.deleteAll();

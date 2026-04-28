@@ -5,16 +5,20 @@ import com.opencsv.bean.CsvToBeanBuilder;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
+import kreyj.vortragsmanager.dto.VortragPrioDto;
 import kreyj.vortragsmanager.dto.csv.TeilnehmerCsvDto;
-import kreyj.vortragsmanager.entity.Nutzer;
-import kreyj.vortragsmanager.entity.Teilnehmer;
-import kreyj.vortragsmanager.entity.Veranstaltung;
+import kreyj.vortragsmanager.entity.*;
 import org.jboss.logging.Logger;
 
 import java.io.FileReader;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class TeilnehmerService {
@@ -142,5 +146,47 @@ public class TeilnehmerService {
         }
 
         return tn;
+    }
+
+    @Transactional
+    public void savePriorities(Long userId, Long veranstaltungId, List<VortragPrioDto> priorityDtos) {
+        Teilnehmer teilnehmer = Teilnehmer.findById(userId);
+        if (teilnehmer == null) {
+            throw new NotFoundException("Teilnehmer mit ID " + userId + " nicht gefunden.");
+        }
+
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
+        if (veranstaltung == null) {
+            throw new NotFoundException("Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
+        }
+
+        // Admin kann Prioritäten bis zum Ende der Veranstaltung ändern
+        // Teilnehmer nur bis zur deadlineTeilnehmer
+        if (LocalDateTime.now().isAfter(veranstaltung.endetAm)) {
+            throw new ForbiddenException("Die Veranstaltung ist bereits beendet. Prioritäten können nicht mehr geändert werden.");
+        }
+
+        // Bestehende Prioritäten des Teilnehmers für diese Veranstaltung löschen
+        Prioritaet.delete("teilnehmer = ?1 and vortrag.veranstaltung = ?2", teilnehmer, veranstaltung);
+
+        // Neue Prioritäten speichern
+        for (VortragPrioDto dto : priorityDtos) {
+            if (dto.prioWert > 0) { // Nur Prioritäten > 0 speichern
+                Vortrag vortrag = Vortrag.findById(dto.vortragId);
+                if (vortrag == null) {
+                    LOG.warn("Vortrag mit ID " + dto.vortragId + " für Priorität von Teilnehmer " + userId + " nicht gefunden. Überspringe.");
+                    continue;
+                }
+                if (!vortrag.veranstaltung.id.equals(veranstaltungId)) {
+                    throw new BadRequestException("Vortrag " + dto.vortragId + " gehört nicht zur Veranstaltung " + veranstaltungId);
+                }
+
+                Prioritaet prioritaet = new Prioritaet();
+                prioritaet.teilnehmer = teilnehmer;
+                prioritaet.vortrag = vortrag;
+                prioritaet.prioWert = dto.prioWert;
+                prioritaet.persist();
+            }
+        }
     }
 }

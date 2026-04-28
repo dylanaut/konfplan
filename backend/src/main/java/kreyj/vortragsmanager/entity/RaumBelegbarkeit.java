@@ -3,7 +3,7 @@ package kreyj.vortragsmanager.entity;
 import jakarta.persistence.*;
 
 @Entity
-public class RaumVerfuegbarkeit extends VersionedEntity {
+public class RaumBelegbarkeit extends VersionedEntity {
 
     @ManyToOne
     @JoinColumn(name = "raum_id")
@@ -15,5 +15,5 @@ public class RaumVerfuegbarkeit extends VersionedEntity {
 
     public boolean isBelegt = false;
 
-    public RaumVerfuegbarkeit() {}
+    public RaumBelegbarkeit() {}
 }

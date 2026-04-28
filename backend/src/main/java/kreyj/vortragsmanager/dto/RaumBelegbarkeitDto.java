@@ -3,16 +3,16 @@ package kreyj.vortragsmanager.dto;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @RegisterForReflection
-public class RaumVerfuegbarkeitDto {
+public class RaumBelegbarkeitDto {
     public Long raumId;
     public Long slotId;
     public boolean isBelegt;
     public boolean isBlockedByOtherEvent;
     public String blockingEventName;
 
-    public RaumVerfuegbarkeitDto() {}
+    public RaumBelegbarkeitDto() {}
 
-    public RaumVerfuegbarkeitDto(Long raumId, Long slotId, boolean isBelegt) {
+    public RaumBelegbarkeitDto(Long raumId, Long slotId, boolean isBelegt) {
         this.raumId = raumId;
         this.slotId = slotId;
         this.isBelegt = isBelegt;

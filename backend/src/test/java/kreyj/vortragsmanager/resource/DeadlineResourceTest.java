@@ -36,7 +36,7 @@ class DeadlineResourceTest {
     void setup() {
         // Aufräumen
         Zuweisung.deleteAll();
-        RaumVerfuegbarkeit.deleteAll();
+        RaumBelegbarkeit.deleteAll();
         Verfuegbarkeit.deleteAll();
         Prioritaet.deleteAll();
         Vortrag.deleteAll();

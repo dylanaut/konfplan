@@ -44,6 +44,39 @@
         </div>
       </section>
 
+      <!-- NEUE SEKTION: Meine Verfügbarkeit -->
+      <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 animate-fade-in">
+        <div class="flex items-center gap-2 mb-6 text-indigo-600">
+          <CheckSquareIcon class="w-6 h-6" />
+          <h2 class="text-xl font-bold">Meine Verfügbarkeit</h2>
+        </div>
+
+        <div v-if="currentEvent && currentEvent.deadlineTeilnehmer" :class="['mb-4 p-3 rounded-lg text-sm flex items-center gap-2', isDeadlinePassed(currentEvent.deadlineTeilnehmer) ? 'bg-red-50 border border-red-200 text-red-800' : 'bg-orange-50 border border-orange-200 text-orange-800']">
+          <template v-if="isDeadlinePassed(currentEvent.deadlineTeilnehmer)">
+            <XIcon class="w-4 h-4" /> Die Deadline für die Verfügbarkeitsangabe ist am {{ formatDateTime(currentEvent.deadlineTeilnehmer) }} abgelaufen.
+          </template>
+          <template v-else>
+            <CalendarIcon class="w-4 h-4" /> Deadline für Verfügbarkeit: {{ formatDateTime(currentEvent.deadlineTeilnehmer) }}
+          </template>
+        </div>
+
+        <div v-if="getSlotsForEvent.length === 0" class="text-xs text-gray-500 italic">
+          Noch keine Zeit-Slots für diese Veranstaltung angelegt.
+        </div>
+        <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+          <button
+              v-for="slot in getSlotsForEvent" :key="slot.id"
+              @click="toggleAvailability(slot.id)"
+              :disabled="isDeadlinePassed(currentEvent?.deadlineTeilnehmer)"
+              :class="['p-2 rounded-lg border text-[10px] transition-all text-center',
+                       isUserAvailable(slot.id) ? 'bg-indigo-600 text-white border-indigo-600 font-bold' : 'bg-gray-50 text-gray-400 border-gray-200',
+                       isDeadlinePassed(currentEvent?.deadlineTeilnehmer) ? 'opacity-80 cursor-not-allowed' : 'hover:border-indigo-400']"
+          >
+            {{ formatTime(slot.startTime) }} - {{ formatTime(slot.endTime) }}
+          </button>
+        </div>
+      </section>
+
       <!-- HEADER & WAHL-MODUS -->
       <div class="space-y-6">
         <header class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -103,7 +136,7 @@
               </div>
               <template v-else>
                 <select
-                    :disabled="zuweisungen.length > 0"
+                    :disabled="zuweisungen.length > 0 || isDeadlinePassed(currentEvent?.deadlineTeilnehmer)"
                     :value="getCurrentPriority(vortrag.id) || ''"
                     @change="updatePriority(vortrag.id, $event.target.value)"
                     class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-gray-100 disabled:text-gray-400"
@@ -120,7 +153,7 @@
 
         <!-- Save Button -->
         <div v-if="zuweisungen.length === 0" class="fixed bottom-6 right-6 lg:static lg:mt-8 lg:flex lg:justify-end">
-          <button @click="saveAllPriorities" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full shadow-lg font-bold flex items-center gap-2">
+          <button @click="saveAllPriorities" :disabled="isDeadlinePassed(currentEvent?.deadlineTeilnehmer)" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full shadow-lg font-bold flex items-center gap-2">
             <SaveIcon class="w-5 h-5" /> Auswahl speichern
           </button>
         </div>
@@ -130,13 +163,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import api from '../api/axios';
 import { useEventContextStore } from '../stores/eventContext';
 import {
   User as UserIcon, Save as SaveIcon,
   CalendarCheck as CalendarCheckIcon, MapPin as MapPinIcon,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon, CheckSquare as CheckSquareIcon, X as XIcon
 } from 'lucide-vue-next';
 
 const eventContext = useEventContextStore();
@@ -145,6 +178,12 @@ const selectedVid = ref(null);
 const vortraege = ref([]);
 const prios = ref([]);
 const zuweisungen = ref([]);
+const allSlots = ref([]); // To store all slots for the selected event
+const teilnehmerAvailabilities = ref([]); // To store participant's availabilities for the selected event
+
+const currentEvent = computed(() => {
+  return veranstaltungen.value.find(v => v.id === selectedVid.value);
+});
 
 onMounted(async () => {
   try {
@@ -166,6 +205,8 @@ const handleVeranstaltungChange = async () => {
     vortraege.value = [];
     prios.value = [];
     zuweisungen.value = [];
+    allSlots.value = [];
+    teilnehmerAvailabilities.value = [];
     eventContext.clearEvent();
     return;
   }
@@ -174,15 +215,20 @@ const handleVeranstaltungChange = async () => {
     const ev = veranstaltungen.value.find(v => v.id === selectedVid.value);
     eventContext.setEvent(ev);
 
-    const [zuweisungenRes, vortragRes, prioRes] = await Promise.all([
+    const [zuweisungenRes, vortragRes, prioRes, slotsRes, availabilitiesRes] = await Promise.all([
       api.get(`/api/teilnehmer/zuweisungen?vid=${selectedVid.value}`),
       api.get(`/api/teilnehmer/vortraege?vid=${selectedVid.value}`),
-      api.get(`/api/teilnehmer/prios?vid=${selectedVid.value}`)
+      api.get(`/api/teilnehmer/prios?vid=${selectedVid.value}`),
+      api.get(`/api/veranstaltungen/${selectedVid.value}/slots`), // Fetch slots for the selected event
+      api.get(`/api/teilnehmer/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`) // Fetch participant's availabilities
     ]);
 
     zuweisungen.value = zuweisungenRes.data;
     vortraege.value = vortragRes.data;
     prios.value = prioRes.data.map(p => ({ vortragId: p.vortrag.id, prioWert: p.prioWert }));
+    allSlots.value = slotsRes.data;
+    teilnehmerAvailabilities.value = availabilitiesRes.data.filter(v => v.isAvailable).map(v => v.slotId);
+
   } catch (err) {
     console.error("Fehler beim Laden der Veranstaltungsdaten:", err);
   }
@@ -192,7 +238,7 @@ const getCurrentPriority = (vortragId) => prios.value.find(p => p.vortragId === 
 const isRankTaken = (rank) => prios.value.some(p => p.prioWert == rank);
 
 const updatePriority = (vortragId, value) => {
-  if (zuweisungen.value.length > 0) return;
+  if (zuweisungen.value.length > 0 || isDeadlinePassed(currentEvent.value?.deadlineTeilnehmer)) return;
   prios.value = prios.value.filter(p => p.vortragId !== vortragId);
   if (value !== "") {
     prios.value = prios.value.filter(p => p.prioWert != value);
@@ -201,16 +247,59 @@ const updatePriority = (vortragId, value) => {
 };
 
 const saveAllPriorities = async () => {
+  if (isDeadlinePassed(currentEvent.value?.deadlineTeilnehmer)) {
+    alert("Die Deadline für die Prioritätenangabe ist abgelaufen. Speichern nicht möglich.");
+    return;
+  }
   try {
     const payload = prios.value.map(p => ({ vortragId: p.vortragId, prioWert: p.prioWert }));
     await api.post('/api/teilnehmer/priorities', payload);
+    await handleVeranstaltungChange(); // Refresh data after save
     alert("Erfolgreich gespeichert!");
   } catch (e) {
     alert("Fehler beim Speichern.");
   }
 };
 
+const getSlotsForEvent = computed(() => {
+  return allSlots.value.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+});
+
+const isUserAvailable = (slotId) => {
+  return teilnehmerAvailabilities.value.includes(slotId);
+};
+
+const toggleAvailability = async (slotId) => {
+  if (isDeadlinePassed(currentEvent.value?.deadlineTeilnehmer)) return;
+
+  const current = isUserAvailable(slotId);
+  const newValue = !current;
+
+  try {
+    await api.post(`/api/teilnehmer/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`, {
+      slotId: slotId,
+      isAvailable: newValue
+    });
+
+    // Lokal aktualisieren
+    if (newValue) {
+      teilnehmerAvailabilities.value.push(slotId);
+    } else {
+      teilnehmerAvailabilities.value = teilnehmerAvailabilities.value.filter(id => id !== slotId);
+    }
+  } catch (e) {
+    alert("Fehler beim Aktualisieren der Verfügbarkeit: " + (e.response?.data || e.message));
+  }
+};
+
+const isDeadlinePassed = (deadline) => {
+    if (!deadline) return false;
+    return new Date(deadline) < new Date();
+};
+
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('de-DE') : '';
+const formatDateTime = (dt) => dt ? new Date(dt).toLocaleDateString('de-DE', {weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'}) : '';
+const formatTime = (t) => t ? new Date(t).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'}) : '';
 </script>
 
 <style scoped>

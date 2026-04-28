@@ -1,16 +1,19 @@
 package kreyj.vortragsmanager.resource;
 
+import io.quarkus.logging.Log;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import kreyj.vortragsmanager.dto.RaumVerfuegbarkeitDto;
+import kreyj.vortragsmanager.dto.AdminPrioritaetUpdateRequestDto;
+import kreyj.vortragsmanager.dto.RaumBelegbarkeitDto;
 import kreyj.vortragsmanager.dto.UserDto;
 import kreyj.vortragsmanager.dto.VerfuegbarkeitDto;
 import kreyj.vortragsmanager.entity.*;
 import kreyj.vortragsmanager.service.AdminService;
+import kreyj.vortragsmanager.service.PrioritaetService;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
@@ -25,6 +28,9 @@ public class AdminResource {
 
     @Inject
     AdminService adminService;
+
+    @Inject
+    PrioritaetService prioritaetService;
 
     @GET
     @Path("/nutzer")
@@ -57,6 +63,7 @@ public class AdminResource {
             adminService.inviteUserToEvent(userId, eventId);
             return Response.ok("Nutzer erfolgreich eingeladen.").build();
         } catch (IllegalArgumentException e) {
+            Log.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
     }
@@ -69,6 +76,7 @@ public class AdminResource {
             int count = adminService.importAdminsFromCsv(file.uploadedFile().toFile().toPath());
             return Response.ok("Import erfolgreich: " + count + " Admins angelegt.").build();
         } catch (Exception e) {
+            Log.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
         }
     }
@@ -111,7 +119,7 @@ public class AdminResource {
 
     @GET
     @Path("/veranstaltung/{vid}/raeume/verfuegbarkeiten")
-    public List<RaumVerfuegbarkeitDto> getRaumVerfuegbarkeiten(@PathParam("vid") Long vid) {
+    public List<RaumBelegbarkeitDto> getRaumVerfuegbarkeiten(@PathParam("vid") Long vid) {
         Veranstaltung event = Veranstaltung.findById(vid);
         if (event == null) throw new NotFoundException();
 
@@ -119,12 +127,12 @@ public class AdminResource {
         List<Raum> raeume = event.gebaeude.stream().flatMap(g -> g.raeume.stream()).toList();
 
         return raeume.stream().flatMap(r -> slots.stream().map(s -> {
-            RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.find("raum = ?1 and slot = ?2", r, s).firstResult();
-            RaumVerfuegbarkeitDto dto = new RaumVerfuegbarkeitDto(r.id, s.id, rv != null && rv.isBelegt);
+            RaumBelegbarkeit rv = RaumBelegbarkeit.find("raum = ?1 and slot = ?2", r, s).firstResult();
+            RaumBelegbarkeitDto dto = new RaumBelegbarkeitDto(r.id, s.id, rv != null && rv.isBelegt);
 
             // Cross-event check: Is this room busy in ANY other event at a time that overlaps with this slot?
-            List<RaumVerfuegbarkeit> otherRvs = RaumVerfuegbarkeit.find("raum = ?1 and isBelegt = true and slot.veranstaltung.id != ?2", r, vid).list();
-            for (RaumVerfuegbarkeit otherRv : otherRvs) {
+            List<RaumBelegbarkeit> otherRvs = RaumBelegbarkeit.find("raum = ?1 and isBelegt = true and slot.veranstaltung.id != ?2", r, vid).list();
+            for (RaumBelegbarkeit otherRv : otherRvs) {
                 if (otherRv.slot.startTime.isBefore(s.endTime) && otherRv.slot.endTime.isAfter(s.startTime)) {
                     dto.isBlockedByOtherEvent = true;
                     dto.blockingEventName = otherRv.slot.veranstaltung.name;
@@ -132,25 +140,60 @@ public class AdminResource {
                 }
             }
             return dto;
-        })).collect(Collectors.toList());
+        })).toList();
     }
 
     @POST
-    @Path("/veranstaltung/{vid}/raeume/verfuegbarkeit")
+    @Path("/veranstaltung/{vid}/raeume/verfuegbarkeiten")
     @Transactional
-    public Response updateRaumVerfuegbarkeit(@PathParam("vid") Long vid, RaumVerfuegbarkeitDto dto) {
+    public Response updateRaumVerfuegbarkeit(@PathParam("vid") Long vid, RaumBelegbarkeitDto dto) {
         Raum raum = Raum.findById(dto.raumId);
         EventSlot slot = EventSlot.findById(dto.slotId);
         if (raum == null || slot == null) return Response.status(Response.Status.NOT_FOUND).build();
 
-        RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.find("raum = ?1 and slot = ?2", raum, slot).firstResult();
+        RaumBelegbarkeit rv = RaumBelegbarkeit.find("raum = ?1 and slot = ?2", raum, slot).firstResult();
         if (rv == null) {
-            rv = new RaumVerfuegbarkeit();
+            rv = new RaumBelegbarkeit();
             rv.raum = raum;
             rv.slot = slot;
         }
         rv.isBelegt = dto.isBelegt;
         rv.persist();
         return Response.ok().build();
+    }
+
+    @PUT
+    @Path("/veranstaltung/{vid}/teilnehmer/{tid}/priorities")
+    @Transactional
+    public Response updateTeilnehmerPrioritaet(
+            @PathParam("vid") Long vid,
+            @PathParam("tid") Long tid,
+            AdminPrioritaetUpdateRequestDto dto) {
+
+        // Basic validation: Check if the participant and vortrag belong to the same event
+        Teilnehmer teilnehmer = Teilnehmer.findById(tid);
+        Vortrag vortrag = Vortrag.findById(dto.vortragId);
+
+        if (teilnehmer == null || vortrag == null) {
+            return Response.status(Response.Status.NOT_FOUND).entity("Teilnehmer oder Vortrag nicht gefunden.").build();
+        }
+
+        if (!teilnehmer.veranstaltungen.stream().anyMatch(v -> v.id.equals(vid))) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Teilnehmer gehört nicht zu dieser Veranstaltung.").build();
+        }
+
+        if (!vortrag.veranstaltung.id.equals(vid)) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Vortrag gehört nicht zu dieser Veranstaltung.").build();
+        }
+
+        try {
+            prioritaetService.updateSinglePrioritaet(tid, dto.vortragId, dto.prioWert);
+            return Response.ok().build();
+        } catch (WebApplicationException e) {
+            return Response.status(e.getResponse().getStatus()).entity(e.getMessage()).build();
+        } catch (Exception e) {
+            Log.error("Fehler beim Aktualisieren der Priorität: " + e.getMessage(), e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Interner Serverfehler beim Aktualisieren der Priorität.").build();
+        }
     }
 }

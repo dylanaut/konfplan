@@ -11,6 +11,7 @@ import kreyj.vortragsmanager.entity.EventSlot;
 import kreyj.vortragsmanager.entity.Veranstaltung;
 import kreyj.vortragsmanager.entity.Vortrag;
 import kreyj.vortragsmanager.service.*;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class VeranstaltungResource {
+    private static final Logger LOG = Logger.getLogger(VeranstaltungResource.class);
 
     @Inject
     VeranstaltungService veranstaltungService;
@@ -66,6 +68,7 @@ public class VeranstaltungResource {
             VeranstaltungDto saved = veranstaltungService.save(vDto);
             return Response.status(Response.Status.CREATED).entity(saved).build();
         } catch (IllegalArgumentException e) {
+            LOG.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
     }
@@ -81,6 +84,7 @@ public class VeranstaltungResource {
             }
             return Response.ok(updated).build();
         } catch (IllegalArgumentException e) {
+            LOG.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
     }
@@ -103,6 +107,7 @@ public class VeranstaltungResource {
             int count = veranstaltungService.importFromCsv(file.uploadedFile().toFile().toPath());
             return Response.ok("Import erfolgreich: " + count + " Veranstaltung(en) angelegt.").build();
         } catch (Exception e) {
+            LOG.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
         }
     }
@@ -150,6 +155,7 @@ public class VeranstaltungResource {
             int count = referentService.importFromCsv(file.uploadedFile().toFile().toPath(), vid);
             return Response.ok("Import erfolgreich: " + count + " Referenten angelegt.").build();
         } catch (Exception e) {
+            LOG.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
         }
     }
@@ -162,7 +168,26 @@ public class VeranstaltungResource {
             int count = teilnehmerService.importFromCsv(file.uploadedFile().toFile().toPath(), vid);
             return Response.ok("Import erfolgreich: " + count + " Teilnehmer angelegt.").build();
         } catch (Exception e) {
+            LOG.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
+        }
+    }
+
+    @PUT
+    @Path("/{vid}/teilnehmer/{userId}/prioritaeten")
+    public Response saveTeilnehmerPrioritaeten(@PathParam("vid") Long vid, @PathParam("userId") Long userId, List<VortragPrioDto> priorityDtos) {
+        try {
+            teilnehmerService.savePriorities(userId, vid, priorityDtos);
+            return Response.noContent().build();
+        } catch (NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
+        } catch (ForbiddenException e) {
+            return Response.status(Response.Status.FORBIDDEN).entity(e.getMessage()).build();
+        } catch (BadRequestException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        } catch (Exception e) {
+            LOG.error("Fehler beim Speichern der Prioritäten für Teilnehmer " + userId + " in Veranstaltung " + vid, e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Fehler beim Speichern der Prioritäten: " + e.getMessage()).build();
         }
     }
 
@@ -208,6 +233,7 @@ public class VeranstaltungResource {
             int count = adminService.importVortraegeFromCsv(file.uploadedFile().toFile().toPath(), vid);
             return Response.ok("Import erfolgreich: " + count + " Vorträge angelegt.").build();
         } catch (Exception e) {
+            LOG.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
         }
     }
@@ -228,6 +254,7 @@ public class VeranstaltungResource {
             EventSlot created = adminService.createEventSlot(slot, vid);
             return Response.status(Response.Status.CREATED).entity(SlotResource.mapSlotToDto(created)).build();
         } catch (IllegalArgumentException e) {
+            LOG.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
     }
@@ -242,6 +269,7 @@ public class VeranstaltungResource {
             }
             return Response.ok(SlotResource.mapSlotToDto(updated)).build();
         } catch (IllegalArgumentException e) {
+            LOG.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
     }
@@ -264,6 +292,7 @@ public class VeranstaltungResource {
             int count = adminService.importSlotsFromCsv(file.uploadedFile().toFile().toPath(), vid);
             return Response.ok("Import erfolgreich: " + count + " Zeit-Slots angelegt.").build();
         } catch (Exception e) {
+            LOG.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
         }
     }
@@ -301,6 +330,7 @@ public class VeranstaltungResource {
             optimierungService.starteOptimierung(vid, config);
             return Response.ok("Optimierung erfolgreich abgeschlossen.").build();
         } catch (Exception e) {
+            LOG.error(e.getMessage(), e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("Fehler bei der Optimierung: " + e.getMessage()).build();
         }

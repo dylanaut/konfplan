@@ -7,7 +7,7 @@ import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.transaction.Transactional;
-import kreyj.vortragsmanager.dto.RaumVerfuegbarkeitDto;
+import kreyj.vortragsmanager.dto.RaumBelegbarkeitDto;
 import kreyj.vortragsmanager.entity.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +30,7 @@ class SlotUndRaumTest {
     @Transactional
     void setup() {
         Zuweisung.deleteAll();
-        RaumVerfuegbarkeit.deleteAll();
+        RaumBelegbarkeit.deleteAll();
         Verfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
         EventSlot.deleteAll();
@@ -163,7 +163,7 @@ class SlotUndRaumTest {
             Raum r = Raum.findById(raumId);
 
             // Raum in Event 2 als belegt markieren
-            RaumVerfuegbarkeit rv2 = new RaumVerfuegbarkeit();
+            RaumBelegbarkeit rv2 = new RaumBelegbarkeit();
             rv2.raum = r;
             rv2.slot = s2;
             rv2.isBelegt = true;
@@ -171,13 +171,13 @@ class SlotUndRaumTest {
         });
 
         // Abfrage für Event 1: Raum sollte für s1 als "blocked" markiert sein
-        List<RaumVerfuegbarkeitDto> dtos = given()
+        List<RaumBelegbarkeitDto> dtos = given()
                 .when().get("/api/admin/veranstaltung/{vid}/raeume/verfuegbarkeiten", vid)
                 .then()
                 .statusCode(200)
-                .extract().body().jsonPath().getList(".", RaumVerfuegbarkeitDto.class);
+                .extract().body().jsonPath().getList(".", RaumBelegbarkeitDto.class);
 
-        RaumVerfuegbarkeitDto target = dtos.stream()
+        RaumBelegbarkeitDto target = dtos.stream()
                 .filter(d -> d.slotId.equals(s1Id[0]))
                 .findFirst().orElseThrow();
 

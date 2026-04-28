@@ -24,7 +24,7 @@ src/test/
         ├── veranstaltungen.csv
         ├── gebaeude.csv
         ├── slots.csv
-        ├── raum_verfuegbarkeiten.csv
+        ├── raum_belegbarkeiten.csv
         ├── tn_verfuegbarkeiten.csv
         └── prioritäten.csv
 ```

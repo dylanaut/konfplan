@@ -32,7 +32,7 @@ class CsvFileImportTest {
     void setupTransactional() {
         Zuweisung.deleteAll();
         Verfuegbarkeit.deleteAll();
-        RaumVerfuegbarkeit.deleteAll();
+        RaumBelegbarkeit.deleteAll();
         Vortrag.deleteAll();
         Nutzer.deleteAll();
         Raum.deleteAll();

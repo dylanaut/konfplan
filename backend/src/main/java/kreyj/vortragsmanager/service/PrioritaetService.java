@@ -64,6 +64,37 @@ public class PrioritaetService {
         }
     }
 
+    @Transactional
+    public Prioritaet updateSinglePrioritaet(Long userId, Long vortragId, int prioWert) {
+        Teilnehmer teilnehmer = Teilnehmer.findById(userId);
+        if (teilnehmer == null) throw new WebApplicationException("Teilnehmer nicht gefunden", 404);
+
+        Vortrag vortrag = Vortrag.findById(vortragId);
+        if (vortrag == null) throw new WebApplicationException("Vortrag nicht gefunden", 404);
+
+        if (prioWert < 0 || prioWert > 10) {
+            throw new WebApplicationException("Priorität muss zwischen 0 und 10 liegen", 400);
+        }
+
+        Prioritaet p = Prioritaet.find("teilnehmer = ?1 and vortrag = ?2", teilnehmer, vortrag).firstResult();
+        if (prioWert == 0) {
+            if (p != null) {
+                p.delete();
+            }
+            return null;
+        }
+
+        if (p == null) {
+            p = new Prioritaet();
+            p.teilnehmer = teilnehmer;
+            p.vortrag = vortrag;
+        }
+        p.prioWert = prioWert;
+        p.lastUpdated = LocalDateTime.now();
+        p.persist();
+        return p;
+    }
+
     public List<Prioritaet> getPrioritaetenForUser(String email) {
         Nutzer nutzer = Nutzer.findByEmail(email);
         if (!(nutzer instanceof Teilnehmer)) throw new WebApplicationException("Nutzer ist kein Teilnehmer", 400);

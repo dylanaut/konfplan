@@ -28,7 +28,7 @@ class CsvImportTest {
     @Transactional
     void setup() {
         Zuweisung.deleteAll();
-        RaumVerfuegbarkeit.deleteAll();
+        RaumBelegbarkeit.deleteAll();
         Verfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
         Nutzer.deleteAll();
