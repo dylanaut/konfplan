@@ -31,6 +31,19 @@ public class Gebaeude extends VersionedEntity {
     @ManyToMany(mappedBy = "gebaeude")
     public List<Veranstaltung> veranstaltungen = new ArrayList<>();
 
+
+    public void addVeranstaltung(Veranstaltung v) {
+        if (this.veranstaltungen.contains(v)) {
+            return;
+        }
+        this.veranstaltungen.add(v);
+        v.addGebaeude(this);
+    }
+
+    // -------------------------------------------------------------------
+    // Helper classes and methods
+    // -------------------------------------------------------------------
+
     public enum Gebaeudetyp {
         SCHULE, KINO, SPORTHALLE, SAAL, EXTERN
     }

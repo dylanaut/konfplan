@@ -58,6 +58,7 @@ cd frontend && npm install && npm run dev
 - **Prioritaet** – Präferenz eines Teilnehmers für einen Wahlvortrag (Ranking 1-10).
 - **Verfuegbarkeit** – Gibt an, ob Nutzer in einem Slot verfügbar ist (Default: true bei Zuweisung).
 - **RaumVerfuegbarkeit** – Modelliert die Verfügbarkeit von Räumen pro Slot inklusive veranstaltungsübergreifender Prüfung.
+- **AdminPrioritaetUpdateRequestDto** - DTO für die Aktualisierung einer einzelnen Teilnehmerpriorität durch Administratoren.
 
 ## Wichtige Konventionen
 
@@ -67,6 +68,7 @@ cd frontend && npm install && npm run dev
 - Datum/Zeit: `LocalDateTime` mit Custom `LocalDateTimeConverter`.
 - Fehlerbehandlung: `CustomExceptionMapper` mappt Exceptions auf HTTP-Responses.
 - Alle REST-Endpunkte unter `/api/...`; Security via `@RolesAllowed`.
+- Neuer Admin-Endpunkt: `PUT /api/admin/veranstaltung/{vid}/teilnehmer/{tid}/priorities` zur individuellen Aktualisierung von Teilnehmerprioritäten.
 
 ## Bekannte Besonderheiten
 

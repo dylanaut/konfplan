@@ -9,7 +9,8 @@
         <div class="mt-2 flex items-center gap-3">
           <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Aktive Veranstaltung:</label>
           <select v-model="selectedVid" @change="handleVeranstaltungChange"
-                  class="input-field max-w-md border-indigo-200 focus:ring-indigo-500 py-1 text-xs">
+                  class="input-field max-w-md border-indigo-200 focus:ring-indigo-500 py-1 text-xs pr-10">
+            <!-- Changed pr-8 to pr-10 -->
             <option :value="null">-- Bitte wählen / Keine Auswahl --</option>
             <option v-for="v in veranstaltungen" :key="v.id" :value="v.id">
               {{ v.name }} ({{ formatDate(v.beginntAm) }})
@@ -63,655 +64,108 @@
     </div>
 
     <!-- TABS CONTENT -->
+    <ErgebnisseTab v-if="activeTab === 'ergebnisse' && selectedVid"
+                   :belegungsPlan="belegungsPlan"
+                   :qualitaet="qualitaet"
+    />
 
-    <!-- TAB: ERGEBNISSE -->
-    <section v-if="activeTab === 'ergebnisse' && selectedVid" class="space-y-4 animate-fade-in">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
-          <div class="text-[9px] text-gray-500 uppercase font-bold">Ø Priorität</div>
-          <div class="text-xl font-black text-indigo-600">{{ qualitaet.durchschnittsPrio?.toFixed(2) || '0.00' }}</div>
-        </div>
-      </div>
-      <!-- Belegungsplan Tabelle -->
-      <div class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
-          <tr>
-            <th class="px-4 py-1.5 text-left font-bold">Vortrag</th>
-            <th class="px-4 py-1.5 text-left font-bold">Zeit/Raum</th>
-            <th class="px-4 py-1.5 text-center font-bold">Belegung</th>
-            <th class="px-4 py-1.5 text-left font-bold">Teilnehmer</th>
-          </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100 text-xs">
-          <tr v-for="b in belegungsPlan" :key="b.vortragTitel + b.slotZeit" class="hover:bg-gray-50 transition">
-            <td class="px-4 py-2 font-bold">{{ b.vortragTitel }}</td>
-            <td class="px-4 py-2">{{ b.slotZeit }} | {{ b.raumName }}</td>
-            <td class="px-4 py-2 text-center">{{ b.teilnehmerNamen.length }} / {{ b.kapazitaet }}</td>
-            <td class="px-4 py-2 text-[10px] text-gray-500">{{ b.teilnehmerNamen.join(', ') }}</td>
-          </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <VeranstaltungenTab v-if="activeTab === 'veranstaltungen'"
+                        :veranstaltungen="veranstaltungen"
+                        :selectedVid="selectedVid"
+                        :vortraege="vortraege"
+                        :teilnehmer="teilnehmer"
+                        :pageSize="pageSize"
+                        :canImportVeranstaltung="canImportVeranstaltung"
+                        @triggerUpload="triggerUpload"
+                        @openVeranstaltungEditor="openVeranstaltungEditor"
+                        @deleteVeranstaltung="deleteVeranstaltung"
+                        @selectVeranstaltung="handleVeranstaltungSelection"
+    />
 
-    <!-- TAB: VERANSTALTUNGEN -->
-    <section v-if="activeTab === 'veranstaltungen'" class="space-y-4">
-      <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-        <h2 class="text-lg font-bold text-gray-800">Veranstaltungen</h2>
-        <div class="flex gap-2">
-          <input v-model="filters.veranstaltungen" placeholder="Suchen..." class="input-field text-xs py-1 px-2"/>
-          <button @click="triggerUpload('/api/veranstaltungen/import')"
-                  :disabled="!canImportVeranstaltung"
-                  :class="{'opacity-50 cursor-not-allowed': !canImportVeranstaltung}"
-                  class="btn-secondary flex items-center gap-2 text-xs py-1 px-3">
-            <UploadIcon class="w-3.5 h-3.5"/>
-            Import
-          </button>
-          <button @click="openVeranstaltungEditor(null)" class="btn-primary text-xs py-1 px-3">+ Neu</button>
-        </div>
-      </div>
-      <div class="bg-white shadow rounded-xl overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
-          <tr>
-            <th @click="toggleSort('veranstaltungen', 'name')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Name <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-            <th class="px-4 py-1.5 text-left font-bold">Datum</th>
-            <th class="px-4 py-1.5 text-right font-bold">Aktionen</th>
-          </tr>
-          </thead>
-          <tbody class="text-xs">
-          <template v-for="v in paginatedVeranstaltungen" :key="v.id">
-            <tr :class="selectedVid === v.id ? 'bg-indigo-50 border-l-4 border-l-indigo-500' : ''">
-              <td class="px-4 py-2 font-bold">{{ v.name }}</td>
-              <td class="px-4 py-2">{{ formatDate(v.beginntAm) }}</td>
-              <td class="px-4 py-2 text-right space-x-2">
-                <button @click="selectedVid = v.id; handleVeranstaltungChange()" class="text-indigo-600 font-bold hover:underline">Wählen</button>
-                <button @click="openVeranstaltungEditor(v)" class="text-gray-600" title="Bearbeiten">
-                  <PencilIcon class="w-3.5 h-3.5 inline"/>
-                </button>
-                <button @click="deleteVeranstaltung(v.id)" class="text-red-600">
-                  <Trash2Icon class="w-3.5 h-3.5 inline"/>
-                </button>
-              </td>
-            </tr>
-            <tr v-if="selectedVid === v.id" class="bg-gray-50/50">
-              <td colspan="3" class="px-4 py-4 space-y-6">
-                <div class="flex flex-col gap-6">
-                  <!-- Vorträge & Referenten -->
-                  <div class="space-y-2">
-                    <button @click="expandedSections.vortraege = !expandedSections.vortraege"
-                            class="w-full flex items-center justify-between text-[10px] font-black text-indigo-700 uppercase tracking-widest border-b border-indigo-100 pb-1 hover:bg-indigo-50 transition-colors">
-                      <div class="flex items-center gap-2">
-                        <FileTextIcon class="w-3 h-3"/> Vorträge & Referenten ({{ vortraege.length }})
-                      </div>
-                      <ChevronDownIcon v-if="!expandedSections.vortraege" class="w-3 h-3"/>
-                      <ChevronUpIcon v-else class="w-3 h-3"/>
-                    </button>
-                    <div v-if="expandedSections.vortraege" class="animate-fade-in space-y-2">
-                      <div v-if="vortraege.length > 0" class="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-                        <table class="min-w-full divide-y divide-gray-200 text-[10px]">
-                          <thead class="bg-gray-50 text-[8px] uppercase font-bold text-gray-500">
-                          <tr>
-                            <th @click="toggleSort('v_vortraege', 'titel')" class="px-3 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition">Titel <ArrowUpDownIcon class="w-2.5 h-2.5 inline ml-0.5"/></th>
-                            <th @click="toggleSort('v_vortraege', 'referentName')" class="px-3 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition">Referent <ArrowUpDownIcon class="w-2.5 h-2.5 inline ml-0.5"/></th>
-                          </tr>
-                          </thead>
-                          <tbody class="divide-y divide-gray-100">
-                          <tr v-for="talk in paginatedVSubVortraege" :key="talk.id" class="hover:bg-indigo-50/30 transition">
-                            <td class="px-3 py-1.5 font-semibold text-gray-800">{{ talk.titel }}</td>
-                            <td class="px-3 py-1.5 text-gray-600" :title="talk.referent?.email">{{ talk.referentName }}</td>
-                          </tr>
-                          </tbody>
-                        </table>
-                        <PaginationControls v-model:currentPage="pages.v_vortraege" :totalItems="filteredVSubVortraege.length" :pageSize="pageSize"/>
-                      </div>
-                      <div v-else class="p-4 bg-white rounded-lg border border-dashed border-gray-300 text-center text-gray-500 text-[10px]">
-                        Bitte Vorträge erfassen.
-                      </div>
-                    </div>
-                  </div>
+    <GebaeudeTab v-if="activeTab === 'gebaeude'"
+                 :gebaeude="gebaeude"
+                 :pageSize="pageSize"
+                 @triggerUpload="triggerUpload"
+                 @openGebaeudeEditor="openGebaeudeEditor"
+                 @deleteGebaeude="deleteGebaeude"
+                 @openRaumEditor="openRaumEditor"
+                 @deleteRaum="deleteRaum"
+    />
 
-                  <!-- Teilnehmer & Prioritäten -->
-                  <div class="space-y-2">
-                    <button @click="expandedSections.teilnehmer = !expandedSections.teilnehmer"
-                            class="w-full flex items-center justify-between text-[10px] font-black text-indigo-700 uppercase tracking-widest border-b border-indigo-100 pb-1 hover:bg-indigo-50 transition-colors">
-                      <div class="flex items-center gap-2">
-                        <UsersIcon class="w-3 h-3"/> Teilnehmer & Prioritäten ({{ teilnehmer.length }})
-                      </div>
-                      <ChevronDownIcon v-if="!expandedSections.teilnehmer" class="w-3 h-3"/>
-                      <ChevronUpIcon v-else class="w-3 h-3"/>
-                    </button>
-                    <div v-if="expandedSections.teilnehmer" class="animate-fade-in space-y-2">
-                      <div v-if="teilnehmer.length > 0" class="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-                        <table class="min-w-full divide-y divide-gray-200 text-[10px]">
-                          <thead class="bg-gray-50 text-[8px] uppercase font-bold text-gray-500">
-                          <tr>
-                            <th @click="toggleSort('v_teilnehmer', 'lastName')" class="px-3 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition">Name <ArrowUpDownIcon class="w-2.5 h-2.5 inline ml-0.5"/></th>
-                            <th @click="toggleSort('v_teilnehmer', 'gruppe')" class="px-3 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition">Gruppe <ArrowUpDownIcon class="w-2.5 h-2.5 inline ml-0.5"/></th>
-                            <th class="px-3 py-1.5 text-left">Prios</th>
-                          </tr>
-                          </thead>
-                          <tbody class="divide-y divide-gray-100">
-                          <tr v-for="part in paginatedVSubParticipants" :key="part.id" class="hover:bg-indigo-50/30 transition">
-                            <td class="px-3 py-1.5 font-semibold text-gray-800" :title="part.email">{{ part.lastName }}, {{ part.firstName }}</td>
-                            <td class="px-3 py-1.5 text-gray-600">{{ part.gruppe }}</td>
-                            <td class="px-3 py-1.5 text-gray-500">{{ part.prioritaeten?.map(p => `${p.vortragId}:${p.prioWert}`).join(', ') || '-' }}</td>
-                          </tr>
-                          </tbody>
-                        </table>
-                        <PaginationControls v-model:currentPage="pages.v_teilnehmer" :totalItems="filteredVSubParticipants.length" :pageSize="pageSize"/>
-                      </div>
-                      <div v-else class="p-4 bg-white rounded-lg border border-dashed border-gray-300 text-center text-gray-500 text-[10px]">
-                        Bitte Teilnehmer erfassen.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </td>
-            </tr>
-          </template>
-          </tbody>
-        </table>
-        <PaginationControls v-model:currentPage="pages.veranstaltungen" :totalItems="filteredVeranstaltungen.length" :pageSize="pageSize"/>
-      </div>
-    </section>
+    <AdministratorenTab v-if="activeTab === 'administratoren'"
+                        :admins="admins"
+                        :pageSize="pageSize"
+                        @triggerUpload="triggerUpload"
+                        @openUserModal="openUserModal"
+                        @deleteUser="deleteUser"
+    />
 
-    <!-- TAB: GEBAEUDE -->
-    <section v-if="activeTab === 'gebaeude'" class="space-y-4">
-      <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-        <h2 class="text-lg font-bold text-gray-800">Gebäude</h2>
-        <div class="flex gap-2">
-          <input v-model="filters.gebaeude" placeholder="Suchen..." class="input-field text-xs py-1 px-2"/>
-          <button @click="triggerUpload('/api/gebaeude/import')" class="btn-secondary flex items-center gap-2 text-xs py-1 px-3">
-            <UploadIcon class="w-3.5 h-3.5"/>
-            Import
-          </button>
-          <button @click="openGebaeudeEditor(null)" class="btn-primary text-xs py-1 px-3">+ Neu</button>
-        </div>
-      </div>
-      <div class="bg-white shadow rounded-xl overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
-          <tr>
-            <th @click="toggleSort('gebaeude', 'name')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Name <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-            <th class="px-4 py-1.5 text-left font-bold">Adresse</th>
-            <th class="px-4 py-1.5 text-left font-bold">Typ</th>
-            <th class="px-4 py-1.5 text-right font-bold">Aktionen</th>
-          </tr>
-          </thead>
-          <tbody class="text-xs">
-          <template v-for="g in paginatedGebaeude" :key="g.id">
-            <tr class="bg-white hover:bg-gray-50 transition border-t border-gray-100">
-              <td class="px-4 py-2 font-bold">{{ g.name }}</td>
-              <td class="px-4 py-2 text-gray-600">{{ g.strasse }} {{ g.hausnummer }}, {{ g.ort }}</td>
-              <td class="px-4 py-2">{{ g.typ }}</td>
-              <td class="px-4 py-2 text-right space-x-2">
-                <button @click="openGebaeudeEditor(g)" class="text-indigo-600" title="Bearbeiten">
-                  <PencilIcon class="w-3.5 h-3.5 inline"/>
-                </button>
-                <button @click="deleteGebaeude(g.id)" class="text-red-600 ml-2">
-                  <Trash2Icon class="w-3.5 h-3.5 inline"/>
-                </button>
-              </td>
-            </tr>
-            <tr v-if="g.raeume && g.raeume.length > 0" class="bg-gray-50">
-              <td colspan="4" class="px-4 py-2">
-                <div class="flex items-center justify-between text-[8px] font-bold text-gray-500 uppercase mb-1">
-                  Räume in {{ g.name }}
-                  <button @click="openRaumEditor(null, g.id)" class="btn-primary-xs text-[9px] px-2 py-0.5">+ Raum</button>
-                </div>
-                <div class="border border-gray-200 rounded-lg overflow-hidden bg-white">
-                  <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-100 text-[8px] uppercase font-bold text-gray-500">
-                    <tr>
-                      <th @click="toggleSort('raeume', 'name')" class="px-3 py-1 text-left cursor-pointer hover:text-indigo-600 transition">Raum</th>
-                      <th @click="toggleSort('raeume', 'kapazitaet')" class="px-3 py-1 text-left cursor-pointer hover:text-indigo-600 transition">Kapazität</th>
-                      <th @click="toggleSort('raeume', 'etage')" class="px-3 py-1 text-left cursor-pointer hover:text-indigo-600 transition">Etage</th>
-                      <th class="px-3 py-1 text-right">Aktionen</th>
-                    </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-50 text-[10px]">
-                    <tr v-for="r in sortRaeume(g.raeume)" :key="r.id" class="hover:bg-gray-50 transition">
-                      <td class="px-3 py-1 font-medium text-gray-900">{{ r.name }}</td>
-                      <td class="px-3 py-1 text-gray-600">{{ r.kapazitaet }}</td>
-                      <td class="px-3 py-1 text-gray-600">{{ r.etage || '-' }}</td>
-                      <td class="px-3 py-1 text-right space-x-2">
-                        <button @click="openRaumEditor(r, g.id)" class="text-indigo-600" title="Bearbeiten">
-                          <PencilIcon class="w-3.5 h-3.5 inline"/>
-                        </button>
-                        <button @click="deleteRaum(r)" class="text-red-600">
-                          <Trash2Icon class="w-3.5 h-3.5 inline"/>
-                        </button>
-                      </td>
-                    </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </td>
-            </tr>
-          </template>
-          </tbody>
-        </table>
-        <PaginationControls v-model:currentPage="pages.gebaeude" :totalItems="filteredGebaeude.length" :pageSize="pageSize"/>
-      </div>
-    </section>
+    <TeilnehmerTab v-if="activeTab === 'teilnehmer' && selectedVid"
+                   :teilnehmer="teilnehmer"
+                   :selectedVid="selectedVid"
+                   :pageSize="pageSize"
+                   :sortedSlots="sortedSlots"
+                   :verfuegbarkeiten="verfuegbarkeiten"
+                   :isEventFinished="isEventFinished"
+                   :electiveTalks="electiveTalks"
+                   :participantPriorities="participantPriorities"
+                   :changedPriorities="changedPriorities"
+                   @triggerUpload="triggerUpload"
+                   @openUserModal="openUserModal"
+                   @deleteUser="deleteUser"
+                   @toggleParticipantActive="toggleParticipantActive"
+                   @batchDeactivateParticipants="batchDeactivateParticipants"
+                   @batchDeleteParticipants="batchDeleteParticipants"
+                   @batchEmailParticipants="batchEmailParticipants"
+                   @openInviteModal="openInviteModal"
+                   @toggleAvailability="toggleAvailability"
+                   @saveParticipantPriorities="saveParticipantPriorities"
+    />
 
-    <!-- TAB: ADMINISTRATOREN -->
-    <section v-if="activeTab === 'administratoren'" class="space-y-4 animate-fade-in">
-      <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-        <h2 class="text-lg font-bold text-gray-800">Organisatoren</h2>
-        <div class="flex gap-2">
-          <input v-model="filters.admins" placeholder="Suchen..." class="input-field text-xs py-1 px-2"/>
-          <button @click="triggerUpload('/api/admin/admins/import')" class="btn-secondary flex items-center gap-2 text-xs py-1 px-3">
-            <UploadIcon class="w-3.5 h-3.5"/>
-            Import
-          </button>
-          <button @click="openUserModal({role: 'ADMIN'})" class="btn-primary text-xs py-1 px-3">+ Neu</button>
-        </div>
-      </div>
-      <div class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
-          <tr>
-            <th @click="toggleSort('admins', 'lastName')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Name <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-            <th class="px-4 py-1.5 text-right font-bold">Aktionen</th>
-          </tr>
-          </thead>
-          <tbody class="text-xs">
-          <tr v-for="a in paginatedAdmins" :key="a.id" class="hover:bg-gray-50 transition">
-            <td class="px-4 py-2 font-bold" :title="a.email">{{ a.lastName }}, {{ a.firstName }}</td>
-            <td class="px-4 py-2 text-right space-x-3">
-              <button @click="openUserModal(a)" class="text-indigo-600" title="Bearbeiten">
-                <PencilIcon class="w-3.5 h-3.5 inline"/>
-              </button>
-              <button @click="deleteUser(a.id)" class="text-red-600">
-                <Trash2Icon class="w-3.5 h-3.5 inline"/>
-              </button>
-            </td>
-          </tr>
-          </tbody>
-        </table>
-        <PaginationControls v-model:currentPage="pages.admins" :totalItems="filteredAdmins.length" :pageSize="pageSize"/>
-      </div>
-    </section>
+    <ReferentenTab v-if="activeTab === 'referenten' && selectedVid"
+                   :referenten="referenten"
+                   :selectedVid="selectedVid"
+                   :pageSize="pageSize"
+                   :sortedSlots="sortedSlots"
+                   :verfuegbarkeiten="verfuegbarkeiten"
+                   :isEventFinished="isEventFinished"
+                   @triggerUpload="triggerUpload"
+                   @openUserModal="openUserModal"
+                   @deleteUser="deleteUser"
+                   @openInviteModal="openInviteModal"
+                   @toggleAvailability="toggleAvailability"
+    />
 
-    <!-- KONTEXT-TABS -->
-    <template v-if="selectedVid">
-      <!-- TEILNEHMER -->
-      <section v-if="activeTab === 'teilnehmer'" class="space-y-4 animate-fade-in">
-        <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-          <div class="flex items-center gap-4">
-            <h2 class="text-lg font-bold text-gray-800">Teilnehmer</h2>
-            <!-- Batch-Aktionen -->
-            <div v-if="selectedParticipantIds.length > 0" class="flex items-center gap-2 animate-fade-in bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-100">
-              <span class="text-[10px] font-bold text-indigo-600 uppercase">{{ selectedParticipantIds.length }} ausgewählt:</span>
-              <button @click="batchDeactivateParticipants" class="text-xs text-orange-600 hover:underline font-bold">Deaktivieren</button>
-              <button @click="batchDeleteParticipants" class="text-xs text-red-600 hover:underline font-bold">Löschen</button>
-              <button @click="batchEmailParticipants" class="text-xs text-indigo-600 hover:underline font-bold flex items-center gap-1">
-                <MailIcon class="w-3.5 h-3.5"/> E-Mail
-              </button>
-              <button @click="selectAllFilteredParticipants" v-if="selectedParticipantIds.length < filteredParticipants.length" class="text-[9px] bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded hover:bg-indigo-300 ml-2 font-black">
-                ALLE {{ filteredParticipants.length }} AUSWÄHLEN
-              </button>
-            </div>
-          </div>
-          <div class="flex gap-2">
-            <select v-model="filters.participantGroup" class="input-field text-xs py-1 px-2">
-              <option value="">Alle Gruppen</option>
-              <option v-for="g in participantGroups" :key="g" :value="g">{{ g }}</option>
-            </select>
-            <input v-model="filters.teilnehmer" placeholder="Suchen..." class="input-field text-xs py-1 px-2"/>
-            <button @click="triggerUpload(`/api/veranstaltungen/${selectedVid}/teilnehmer/import`)"
-                    class="btn-secondary text-xs py-1 px-3">Import
-            </button>
-            <button @click="openUserModal({role: 'TEILNEHMER'})" class="btn-primary text-xs py-1 px-3">+ Neu</button>
-          </div>
-        </div>
+    <VortraegeTab v-if="activeTab === 'vortraege' && selectedVid"
+                  :vortraege="vortraege"
+                  :selectedVid="selectedVid"
+                  :pageSize="pageSize"
+                  :canImportVortraege="canImportVortraege"
+                  @triggerUpload="triggerUpload"
+                  @openVortragEditor="openVortragEditor"
+                  @deleteVortrag="deleteVortrag"
+    />
 
-        <!-- Verfügbarkeits-Matrix (Collapsible) -->
-        <div class="space-y-2">
-          <button @click="expandedSections.teilnehmerVerfuegbarkeit = !expandedSections.teilnehmerVerfuegbarkeit"
-                  class="w-full flex items-center justify-between text-[10px] font-black text-indigo-700 uppercase tracking-widest bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:bg-indigo-50 transition-colors">
-            <div class="flex items-center gap-2">
-              <CheckSquareIcon class="w-4 h-4"/> Verfügbarkeiten verwalten
-            </div>
-            <ChevronDownIcon v-if="!expandedSections.teilnehmerVerfuegbarkeit" class="w-3 h-3"/>
-            <ChevronUpIcon v-else class="w-3 h-3"/>
-          </button>
+    <SlotsTab v-if="activeTab === 'slots' && selectedVid"
+              :eventSlots="eventSlots"
+              :selectedVid="selectedVid"
+              :pageSize="pageSize"
+              @triggerUpload="triggerUpload"
+              @openSlotEditor="openSlotEditor"
+              @deleteSlot="deleteSlot"
+    />
 
-          <div v-if="expandedSections.teilnehmerVerfuegbarkeit" class="animate-fade-in">
-            <div v-if="filteredParticipants.length > 0" class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
-              <table class="min-w-full divide-y divide-gray-200 text-xs">
-                <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
-                <tr>
-                  <th class="px-4 py-1.5 text-left w-10">
-                    <input type="checkbox" :checked="isAllOnPageSelected" @change="toggleSelectAllPage" class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3" />
-                  </th>
-                  <th @click="toggleSort('teilnehmer', 'lastName')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Name <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-                  <th @click="toggleSort('teilnehmer', 'gruppe')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Gruppe <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-                  <th @click="toggleSort('teilnehmer', 'isActive')" class="px-4 py-1.5 text-center cursor-pointer hover:text-indigo-600 transition font-bold">Aktiv <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-                  <th v-for="slot in sortedSlots" :key="slot.id" class="px-2 py-2 text-center text-[8px] font-bold text-gray-500">
-                    {{ formatTime(slot.startTime) }}
-                  </th>
-                  <th class="px-4 py-1.5 text-right font-bold">Aktionen</th>
-                </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                <tr v-for="u in paginatedParticipants" :key="u.id" :class="['hover:bg-gray-50', selectedParticipantIds.includes(u.id) ? 'bg-indigo-50/50' : '']">
-                  <td class="px-4 py-2">
-                    <input type="checkbox" :value="u.id" v-model="selectedParticipantIds" class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3" />
-                  </td>
-                  <td class="px-4 py-2 font-bold" :title="u.email">{{ u.lastName }}, {{ u.firstName }}</td>
-                  <td class="px-4 py-2 text-gray-500">{{ u.gruppe }}</td>
-                  <td class="px-4 py-2 text-center">
-                    <div @click="toggleParticipantActive(u)" class="cursor-pointer">
-                      <CheckIcon v-if="u.isActive" class="w-4 h-4 text-green-500 mx-auto"/>
-                      <XIcon v-else class="w-4 h-4 text-red-500 mx-auto"/>
-                    </div>
-                  </td>
-                  <td v-for="slot in sortedSlots" :key="slot.id" class="px-2 py-2 text-center">
-                    <input type="checkbox" :checked="isAvailable(u.id, slot.id)" @change="toggleAvailability(u.id, slot.id, $event.target.checked)" :disabled="isEventFinished" class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3" />
-                  </td>
-                  <td class="px-4 py-2 text-right">
-                    <button @click="openInviteModal(u)" class="text-indigo-600 ml-3" title="Einladen">
-                      <MailIcon class="w-3.5 h-3.5 inline"/>
-                    </button>
-                    <button @click="openUserModal(u)" class="text-indigo-600 ml-3" title="Bearbeiten">
-                      <PencilIcon class="w-3.5 h-3.5 inline"/>
-                    </button>
-                    <button @click="deleteUser(u.id)" class="text-red-600 ml-3">
-                      <Trash2Icon class="w-3.5 h-3.5 inline"/>
-                    </button>
-                  </td>
-                </tr>
-                </tbody>
-              </table>
-              <PaginationControls v-model:currentPage="pages.teilnehmer" :totalItems="filteredParticipants.length" :pageSize="pageSize"/>
-            </div>
-            <div v-else class="bg-white p-8 rounded-xl text-center border-2 border-dashed border-gray-200 text-gray-500">
-              <UsersIcon class="w-10 h-10 mx-auto mb-3 text-gray-400" />
-              <p class="font-bold">Bitte Teilnehmer erfassen.</p>
-            </div>
-          </div>
-        </div>
+    <RaeumeTab v-if="activeTab === 'raeume' && selectedVid"
+               :raeume="raeume"
+               :pageSize="pageSize"
+               @openRaumEditor="openRaumEditor"
+               @deleteRaum="deleteRaum"
+    />
 
-        <!-- Prioritäten-Matrix (Collapsible) -->
-        <div class="space-y-2">
-          <button @click="expandedSections.teilnehmerPrioritaeten = !expandedSections.teilnehmerPrioritaeten"
-                  class="w-full flex items-center justify-between text-[10px] font-black text-indigo-700 uppercase tracking-widest bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:bg-indigo-50 transition-colors">
-            <div class="flex items-center gap-2">
-              <StarIcon class="w-4 h-4"/> Wahl-Prioritäten verwalten
-            </div>
-            <ChevronDownIcon v-if="!expandedSections.teilnehmerPrioritaeten" class="w-3 h-3"/>
-            <ChevronUpIcon v-else class="w-3 h-3"/>
-          </button>
-
-          <div v-if="expandedSections.teilnehmerPrioritaeten" class="animate-fade-in">
-            <div v-if="filteredParticipants.length > 0" class="bg-white shadow rounded-xl border border-gray-100 overflow-x-auto">
-              <table class="min-w-full divide-y divide-gray-200 text-xs">
-                <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
-                <tr>
-                  <th class="px-4 py-1.5 text-left font-bold sticky left-0 bg-gray-50 z-10">Name</th>
-                  <th v-for="talk in electiveTalks" :key="talk.id" class="px-2 py-2 text-center text-[8px] font-bold text-gray-500 min-w-[80px]" :title="talk.titel">
-                    {{ talk.titel.substring(0, 15) }}{{ talk.titel.length > 15 ? '...' : '' }}
-                  </th>
-                </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                <tr v-for="u in paginatedParticipants" :key="'prio-'+u.id" class="hover:bg-gray-50">
-                  <td class="px-4 py-2 font-bold sticky left-0 bg-white hover:bg-gray-50 z-10 border-r border-gray-100">
-                    <div class="flex items-center justify-between gap-2 min-w-[150px]">
-                                        <span :class="isPrioChanged(u.id) ? 'text-orange-600' : 'text-gray-900'">
-                                            {{ u.lastName }}, {{ u.firstName }}
-                                        </span>
-                      <button v-if="isPrioChanged(u.id)"
-                              @click="saveParticipantPriorities(u.id)"
-                              :disabled="isEventFinished"
-                              class="bg-orange-600 hover:bg-orange-700 text-white text-[8px] px-1.5 py-0.5 rounded shadow-sm transition-all animate-fade-in flex items-center gap-1 shrink-0">
-                        <SaveIcon class="w-3 h-3" />
-                        SAVE
-                      </button>
-                    </div>
-                  </td>
-                  <td v-for="talk in electiveTalks" :key="'prio-'+u.id+'-'+talk.id" class="px-1 py-1 text-center">
-                    <input type="number" min="0" max="10"
-                           v-model.number="getParticipantPrio(u.id, talk.id).prioWert"
-                           @input="markPrioChanged(u.id)"
-                           :disabled="isEventFinished"
-                           class="w-12 text-center border rounded py-0.5 text-[10px] focus:ring-indigo-500 focus:border-indigo-500 border-gray-200" />
-                  </td>
-                </tr>
-                </tbody>
-              </table>
-              <PaginationControls v-model:currentPage="pages.teilnehmer" :totalItems="filteredParticipants.length" :pageSize="pageSize"/>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- REFERENTEN -->
-      <section v-if="activeTab === 'referenten'" class="space-y-4 animate-fade-in">
-        <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-          <h2 class="text-lg font-bold text-gray-800">Referenten und Verfügbarkeiten</h2>
-          <div class="flex gap-2">
-            <input v-model="filters.referenten" placeholder="Suchen..." class="input-field text-xs py-1 px-2"/>
-            <button @click="triggerUpload(`/api/veranstaltungen/${selectedVid}/referenten/import`)"
-                    class="btn-secondary text-xs py-1 px-3">Import
-            </button>
-            <button @click="openUserModal({role: 'REFERENT'})" class="btn-primary text-xs py-1 px-3">+ Neu</button>
-          </div>
-        </div>
-        <div v-if="filteredSpeakers.length > 0" class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
-          <table class="min-w-full divide-y divide-gray-200 text-xs">
-            <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
-            <tr>
-              <th @click="toggleSort('referenten', 'lastName')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Name <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-              <th v-for="slot in sortedSlots" :key="slot.id" class="px-2 py-2 text-center text-[8px] font-bold text-gray-500">
-                {{ formatTime(slot.startTime) }}
-              </th>
-              <th class="px-4 py-1.5 text-right font-bold">Aktionen</th>
-            </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-            <tr v-for="u in paginatedSpeakers" :key="u.id" class="hover:bg-gray-50">
-              <td class="px-4 py-2 font-bold" :title="u.email">{{ u.lastName }}, {{ u.firstName }}</td>
-              <td v-for="slot in sortedSlots" :key="slot.id" class="px-2 py-2 text-center">
-                <input type="checkbox" :checked="isAvailable(u.id, slot.id)" @change="toggleAvailability(u.id, slot.id, $event.target.checked)" :disabled="isEventFinished" class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3" />
-              </td>
-              <td class="px-4 py-2 text-right">
-                <button @click="openUserModal(u)" class="text-indigo-600 ml-3" title="Bearbeiten">
-                  <PencilIcon class="w-3.5 h-3.5 inline"/>
-                </button>
-                <button @click="openInviteModal(u)" class="text-indigo-600 ml-3" title="Einladen">
-                  <MailIcon class="w-3.5 h-3.5 inline"/>
-                </button>
-                <button @click="deleteUser(u.id)" class="text-red-600 ml-3">
-                  <Trash2Icon class="w-3.5 h-3.5 inline"/>
-                </button>
-              </td>
-            </tr>
-            </tbody>
-          </table>
-          <PaginationControls v-model:currentPage="pages.referenten" :totalItems="filteredSpeakers.length" :pageSize="pageSize"/>
-        </div>
-        <div v-else class="bg-white p-8 rounded-xl text-center border-2 border-dashed border-gray-200 text-gray-500">
-          <UserIcon class="w-10 h-10 mx-auto mb-3 text-gray-400" />
-          <p class="font-bold">Bitte Referenten erfassen.</p>
-        </div>
-      </section>
-
-      <!-- VORTRÄGE -->
-      <section v-if="activeTab === 'vortraege'" class="space-y-4 animate-fade-in">
-        <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-          <h2 class="text-lg font-bold text-gray-800">Vorträge</h2>
-          <div class="flex gap-2">
-            <input v-model="filters.vortraege" placeholder="Suchen..." class="input-field text-xs py-1 px-2"/>
-            <button @click="triggerUpload('/api/veranstaltungen/{vid}/vortraege/import')"
-                    :disabled="!canImportVortraege"
-                    class="btn-secondary flex items-center gap-2 text-xs py-1 px-3">
-              <UploadIcon class="w-3.5 h-3.5"/>
-              Import
-            </button>
-            <button @click="openVortragEditor(null)" class="btn-primary text-xs py-1 px-3">+ Neu</button>
-          </div>
-        </div>
-        <div v-if="filteredVortraege.length > 0" class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
-          <table class="min-w-full divide-y divide-gray-200 text-xs">
-            <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
-            <tr>
-              <th @click="toggleSort('vortraege', 'titel')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Titel <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-              <th @click="toggleSort('vortraege', 'referentName')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Referent <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-              <th @click="toggleSort('vortraege', 'referentOrganisation')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Organisation <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-              <th @click="toggleSort('vortraege', 'istPflicht')" class="px-4 py-1.5 text-center cursor-pointer hover:text-indigo-600 transition font-bold">Pflicht <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-              <th class="px-4 py-1.5 text-right font-bold">Aktionen</th>
-            </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-            <tr v-for="v in paginatedVortraege" :key="v.id" class="hover:bg-gray-50">
-              <td class="px-4 py-2 font-bold">{{ v.titel }}</td>
-              <td class="px-4 py-2">{{ v.referentName }}</td>
-              <td class="px-4 py-2 text-gray-600">{{ v.referentOrganisation || '-' }}</td>
-              <td class="px-4 py-2 text-center">
-                <span v-if="v.istPflicht" class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-black uppercase tracking-tighter">Ja</span>
-                <span v-else class="text-[10px] text-gray-400">Nein</span>
-              </td>
-              <td class="px-4 py-2 text-right">
-                <button @click="openVortragEditor(v)" class="text-indigo-600" title="Bearbeiten">
-                  <PencilIcon class="w-3.5 h-3.5 inline"/>
-                </button>
-                <button @click="deleteVortrag(v.id)" class="text-red-600 ml-3">
-                  <Trash2Icon class="w-3.5 h-3.5 inline"/>
-                </button>
-              </td>
-            </tr>
-            </tbody>
-          </table>
-          <PaginationControls v-model:currentPage="pages.vortraege" :totalItems="filteredVortraege.length" :pageSize="pageSize"/>
-        </div>
-        <div v-else class="bg-white p-8 rounded-xl text-center border-2 border-dashed border-gray-200 text-gray-500">
-          <FileTextIcon class="w-10 h-10 mx-auto mb-3 text-gray-400" />
-          <p class="font-bold">Bitte Vorträge erfassen.</p>
-        </div>
-      </section>
-
-      <!-- SLOTS -->
-      <section v-if="activeTab === 'slots'" class="space-y-4 animate-fade-in">
-        <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-          <h2 class="text-lg font-bold text-gray-800">Zeit-Slots</h2>
-          <div class="flex gap-2">
-            <input v-model="filters.slots" placeholder="Suchen..." class="input-field text-xs py-1 px-2"/>
-            <button @click="triggerUpload(`/api/veranstaltungen/${selectedVid}/slots/import`)" class="btn-secondary text-xs py-1 px-3">Import</button>
-            <button @click="openSlotEditor(null)" class="btn-primary text-xs py-1 px-3">+ Neu</button>
-          </div>
-        </div>
-        <div v-if="filteredSlots.length > 0" class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
-          <table class="min-w-full divide-y divide-gray-200 text-xs">
-            <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
-            <tr>
-              <th @click="toggleSort('slots', 'startTime')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Zeit <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-              <th @click="toggleSort('slots', 'description')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Beschreibung <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-              <th class="px-4 py-1.5 text-right font-bold">Aktionen</th>
-            </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-            <tr v-for="s in paginatedSlots" :key="s.id" class="hover:bg-gray-50">
-              <td class="px-4 py-2 font-bold">{{ formatDateTime(s.startTime) }} - {{ formatTime(s.endTime) }}</td>
-              <td class="px-4 py-2">{{ s.description }}</td>
-              <td class="px-4 py-2 text-right space-x-3">
-                <button @click="openSlotEditor(s)" class="text-indigo-600" title="Bearbeiten">
-                  <PencilIcon class="w-3.5 h-3.5 inline"/>
-                </button>
-                <button @click="deleteSlot(s.id)" class="text-red-600">
-                  <Trash2Icon class="w-3.5 h-3.5 inline"/>
-                </button>
-              </td>
-            </tr>
-            </tbody>
-          </table>
-          <PaginationControls v-model:currentPage="pages.slots" :totalItems="filteredSlots.length" :pageSize="pageSize"/>
-        </div>
-        <div v-else class="bg-white p-8 rounded-xl text-center border-2 border-dashed border-gray-200 text-gray-500">
-          <HourglassIcon class="w-10 h-10 mx-auto mb-3 text-gray-400" />
-          <p class="font-bold">Bitte Zeit-Slots erfassen.</p>
-        </div>
-      </section>
-
-      <!-- RÄUME -->
-      <section v-if="activeTab === 'raeume'" class="space-y-4 animate-fade-in">
-        <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-          <h2 class="text-lg font-bold text-gray-800">Räume</h2>
-          <div class="flex gap-2">
-            <input v-model="filters.raeume" placeholder="Suchen..." class="input-field text-xs py-1 px-2"/>
-            <button @click="openRaumEditor(null)" class="btn-primary text-xs py-1 px-3">+ Neu</button>
-          </div>
-        </div>
-        <div v-if="filteredRaeume.length > 0" class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
-          <table class="min-w-full divide-y divide-gray-200 text-xs">
-            <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
-            <tr>
-              <th @click="toggleSort('raeume', 'name')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Name <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-              <th @click="toggleSort('raeume', 'kapazitaet')" class="px-4 py-1.5 text-center cursor-pointer hover:text-indigo-600 transition font-bold">Kapazität <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-              <th @click="toggleSort('raeume', 'etage')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Etage <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-              <th class="px-4 py-1.5 text-right font-bold">Aktionen</th>
-            </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-            <tr v-for="r in paginatedRaeume" :key="r.id" class="hover:bg-gray-50">
-              <td class="px-4 py-2 font-bold">{{ r.name }} ({{ r.gebaeude?.name }})</td>
-              <td class="px-4 py-2 text-center">{{ r.kapazitaet }}</td>
-              <td class="px-4 py-2">{{ r.etage || '-' }}</td>
-              <td class="px-4 py-2 text-right">
-                <button @click="openRaumEditor(r)" class="text-indigo-600" title="Bearbeiten">
-                  <PencilIcon class="w-3.5 h-3.5 inline"/>
-                </button>
-                <button @click="deleteRaum(r)" class="text-red-600 ml-3">
-                  <Trash2Icon class="w-3.5 h-3.5 inline"/>
-                </button>
-              </td>
-            </tr>
-            </tbody>
-          </table>
-          <PaginationControls v-model:currentPage="pages.raeume" :totalItems="filteredRaeume.length" :pageSize="pageSize"/>
-        </div>
-        <div v-else class="bg-white p-8 rounded-xl text-center border-2 border-dashed border-gray-200 text-gray-500">
-          <MapPinIcon class="w-10 h-10 mx-auto mb-3 text-gray-400" />
-          <p class="font-bold">Bitte Räume erfassen.</p>
-        </div>
-      </section>
-
-      <!-- PLANUNG -->
-      <section v-if="activeTab === 'planung'" class="space-y-4 animate-fade-in">
-        <div
-            class="bg-indigo-900 text-white p-6 rounded-2xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
-          <div class="space-y-3 flex-1">
-            <h2 class="text-2xl font-black">Planung & Optimierung</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white/10 p-3 rounded-xl border border-white/10">
-              <div>
-                <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">MiniZinc Solver</label>
-                <select v-model="solverConfig.solver"
-                        class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1">
-                  <option value="cp-sat">Google OR-Tools</option>
-                  <option value="Gecode">Gecode</option>
-                  <option value="coinbc">COIN-BC</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">Timeout (Sek.)</label>
-                <input v-model.number="solverConfig.timeout" type="number"
-                       class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
-              </div>
-            </div>
-          </div>
-          <button @click="startOptimization" :disabled="isOptimizing"
-                  class="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-white px-8 py-4 rounded-xl font-black text-lg shadow-2xl transition-all transform hover:scale-105 flex items-center gap-3">
-            <ZapIcon v-if="!isOptimizing" class="w-5 h-5"/>
-            <LoaderIcon v-else class="animate-spin w-5 h-5"/>
-            {{ isOptimizing ? 'Optimierung...' : 'Optimieren' }}
-          </button>
-        </div>
-      </section>
-    </template>
+    <PlanungTab v-if="activeTab === 'planung' && selectedVid"
+                :isOptimizing="isOptimizing"
+                @startOptimization="startOptimization"
+    />
 
     <!-- Global File Input -->
     <input type="file" ref="fileInput" class="hidden" @change="handleGlobalUpload" accept=".csv"/>
@@ -727,8 +181,8 @@
     <UserEditorModal :isVisible="showUserModal" :nutzer="selectedUser" :eventSlots="eventSlots"
                      @close="showUserModal = false" @save="handleSaveUser"/>
     <AdminVortragEditorModal :isVisible="showVortragModal" :vortrag="selectedVortrag" :referenten="referenten"
-                             :raeume="raeume" :slots="eventSlots" @close="showVortragModal = false"
-                             @save="handleSaveVortrag"/>
+                             :raeume="raeume" :slots="eventSlots" :participantGroups="participantGroups"
+                             :error="vortragModalError" @close="closeVortragModal" @save="handleSaveVortrag"/>
     <EventSlotEditorModal :isVisible="showSlotModal" :slot="selectedSlot" @close="showSlotModal = false"
                           @save="handleSaveSlot"/>
     <InviteUserModal :isVisible="showInviteModal" :user="selectedUserForInvite" :futureEvents="futureEvents"
@@ -738,15 +192,19 @@
     <div v-if="showCsvFeedbackModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div class="w-full max-w-sm rounded-xl bg-white p-5 shadow-2xl">
         <h3 class="text-base font-bold text-gray-900 mb-3">CSV Import Ergebnis</h3>
-        <p class="text-sm mb-1">Erfolgreich: <span class="font-bold text-green-600">{{ csvFeedback.successCount }}</span></p>
-        <p v-if="csvFeedback.errorCount > 0" class="text-sm mb-3">Fehler: <span class="font-bold text-red-600">{{ csvFeedback.errorCount }}</span></p>
+        <p class="text-sm mb-1">Erfolgreich: <span class="font-bold text-green-600">{{
+            csvFeedback.successCount
+          }}</span></p>
+        <p v-if="csvFeedback.errorCount > 0" class="text-sm mb-3">Fehler: <span
+            class="font-bold text-red-600">{{ csvFeedback.errorCount }}</span></p>
         <p v-if="csvFeedback.errorMessage" class="text-red-500 text-xs mb-3">{{ csvFeedback.errorMessage }}</p>
         <button @click="showCsvFeedbackModal = false" class="btn-primary w-full py-1.5 text-xs">Schließen</button>
       </div>
     </div>
 
     <!-- Global Loading Spinner -->
-    <div v-if="isGlobalLoading" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
+    <div v-if="isGlobalLoading"
+         class="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
       <div class="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-3 animate-fade-in">
         <div class="relative">
           <LoaderIcon class="w-10 h-10 text-indigo-600 animate-spin"/>
@@ -758,33 +216,30 @@
 </template>
 
 <script setup>
-import {computed, h, onMounted, reactive, ref, watch} from 'vue';
+import {computed, onMounted, reactive, ref} from 'vue';
 import api from '../api/axios';
-import { useEventContextStore } from '../stores/eventContext';
+import {useEventContextStore} from '../stores/eventContext';
 import {
-  ArrowUpDown as ArrowUpDownIcon,
   Calendar as CalendarIcon,
   Download as DownloadIcon,
   FileText as FileTextIcon,
-  Hourglass as HourglassIcon,
   Loader as LoaderIcon,
   PlusCircle as PlusCircleIcon,
-  Trash2 as Trash2Icon,
-  Upload as UploadIcon,
-  Zap as ZapIcon,
-  Pencil as PencilIcon,
-  Users as UsersIcon,
-  User as UserIcon,
-  Mail as MailIcon,
-  ChevronDown as ChevronDownIcon,
-  ChevronUp as ChevronUpIcon,
-  Check as CheckIcon,
-  X as XIcon,
-  MapPin as MapPinIcon,
-  CheckSquare as CheckSquareIcon,
-  Star as StarIcon,
-  Save as SaveIcon
 } from 'lucide-vue-next';
+
+// Import Tab Components
+import ErgebnisseTab from '../components/admin/tabs/ErgebnisseTab.vue';
+import VeranstaltungenTab from '../components/admin/tabs/VeranstaltungenTab.vue';
+import GebaeudeTab from '../components/admin/tabs/GebaeudeTab.vue';
+import AdministratorenTab from '../components/admin/tabs/AdministratorenTab.vue';
+import TeilnehmerTab from '../components/admin/tabs/TeilnehmerTab.vue';
+import ReferentenTab from '../components/admin/tabs/ReferentenTab.vue';
+import VortraegeTab from '../components/admin/tabs/VortraegeTab.vue';
+import SlotsTab from '../components/admin/tabs/SlotsTab.vue';
+import RaeumeTab from '../components/admin/tabs/RaeumeTab.vue';
+import PlanungTab from '../components/admin/tabs/PlanungTab.vue';
+
+// Import Modals
 import AdminVortragEditorModal from '../components/AdminVortragEditorModal.vue';
 import UserEditorModal from '../components/UserEditorModal.vue';
 import VeranstaltungEditorModal from '../components/VeranstaltungEditorModal.vue';
@@ -809,27 +264,6 @@ const tabLabels = {
   administratoren: 'Organisatoren'
 };
 
-// --- Hilfskomponente für Pagination ---
-const PaginationControls = (props, {emit}) => {
-  const totalPages = Math.ceil(props.totalItems / props.pageSize);
-  if (totalPages <= 1) return null;
-  return h('div', {class: 'flex items-center justify-between px-4 py-2 bg-gray-50 border-t border-gray-100'}, [
-    h('span', {class: 'text-[10px] text-gray-500'}, `Seite ${props.currentPage} von ${totalPages}`),
-    h('div', {class: 'flex gap-1.5'}, [
-      h('button', {
-        class: 'btn-secondary text-[10px] py-0.5 px-2',
-        disabled: props.currentPage === 1,
-        onClick: () => emit('update:currentPage', props.currentPage - 1)
-      }, 'Zurück'),
-      h('button', {
-        class: 'btn-secondary text-[10px] py-0.5 px-2',
-        disabled: props.currentPage === totalPages,
-        onClick: () => emit('update:currentPage', props.currentPage + 1)
-      }, 'Weiter')
-    ])
-  ]);
-};
-
 // State
 const activeTab = ref('ergebnisse');
 const selectedVid = ref(null);
@@ -845,54 +279,9 @@ const verfuegbarkeiten = ref([]);
 const participantPriorities = ref({}); // { userId: { talkId: { prioWert: number } } }
 const changedPriorities = ref(new Set()); // Set of userIds with changes
 
-const selectedParticipantIds = ref([]); // State for multi-select participants
-
 const isGlobalLoading = ref(false);
 
 const pageSize = 15;
-const pages = reactive({
-  veranstaltungen: 1, gebaeude: 1, admins: 1, teilnehmer: 1, referenten: 1, vortraege: 1,
-  v_vortraege: 1, v_teilnehmer: 1, slots: 1, raeume: 1
-});
-const filters = reactive({
-  veranstaltungen: '', gebaeude: '', admins: '', teilnehmer: '', referenten: '', vortraege: '',
-  participantGroup: '', slots: '', raeume: ''
-});
-const sorts = reactive({
-  veranstaltungen: {key: 'name', dir: 'asc'},
-  gebaeude: {key: 'name', dir: 'asc'},
-  admins: {key: 'lastName', dir: 'asc'},
-  teilnehmer: {key: 'lastName', dir: 'asc'},
-  referenten: {key: 'lastName', dir: 'asc'},
-  vortraege: {key: 'titel', dir: 'asc'},
-  slots: {key: 'startTime', dir: 'asc'},
-  raeume: {key: 'name', dir: 'asc'},
-  v_vortraege: {key: 'titel', dir: 'asc'},
-  v_teilnehmer: {key: 'lastName', dir: 'asc'}
-});
-
-// Steuerung für einklappbare Bereiche in der Veranstaltungs-Detailansicht
-const expandedSections = reactive({
-  vortraege: false,
-  teilnehmer: false,
-  referentenVerfuegbarkeit: true,
-  teilnehmerVerfuegbarkeit: true,
-  teilnehmerPrioritaeten: false
-});
-
-// Watcher für Filter, um Paginierung zurückzusetzen
-watch(() => filters.veranstaltungen, () => { pages.veranstaltungen = 1; });
-watch(() => filters.gebaeude, () => { pages.gebaeude = 1; });
-watch(() => filters.admins, () => { pages.admins = 1; });
-watch(() => filters.teilnehmer, () => { pages.teilnehmer = 1; });
-watch(() => filters.referenten, () => { pages.referenten = 1; });
-watch(() => filters.vortraege, () => { pages.vortraege = 1; });
-watch(() => filters.slots, () => { pages.slots = 1; });
-watch(() => filters.raeume, () => { pages.raeume = 1; });
-watch(() => filters.participantGroup, () => {
-  pages.teilnehmer = 1;
-  selectedParticipantIds.value = []; // Clear selection when group filter changes
-});
 
 const showVeranstaltungModal = ref(false);
 const selectedVeranstaltung = ref(null);
@@ -904,13 +293,13 @@ const showUserModal = ref(false);
 const selectedUser = ref(null);
 const showVortragModal = ref(false);
 const selectedVortrag = ref(null);
+const vortragModalError = ref(''); // New ref for error message
 const showSlotModal = ref(false);
 const selectedSlot = ref(null);
 const showInviteModal = ref(false);
 const selectedUserForInvite = ref(null);
 
 const isOptimizing = ref(false);
-const solverConfig = reactive({solver: 'OR-tools', timeout: 120});
 const fileInput = ref(null);
 const currentUploadEndpoint = ref('');
 
@@ -944,57 +333,6 @@ const isEventFinished = computed(() => {
   return endDate < new Date();
 });
 
-// --- Generic Filter, Sort & Paginate Logic ---
-const processList = (list, filterText, sortConfig) => {
-  let result = [...list];
-  if (filterText) {
-    const f = filterText.toLowerCase();
-    result = result.filter(item => {
-      const searchStrings = Object.values(item).map(v => v && typeof v === 'object' ? Object.values(v) : v).flat();
-      return searchStrings.some(val => val && String(val).toLowerCase().includes(f));
-    });
-  }
-  result.sort((a, b) => {
-    const valA = a[sortConfig.key] || '';
-    const valB = b[sortConfig.key] || '';
-    if (typeof valA === 'number' && typeof valB === 'number') {
-      return sortConfig.dir === 'asc' ? valA - valB : valB - valA;
-    }
-    const cmp = String(valA).localeCompare(String(valB));
-    return sortConfig.dir === 'asc' ? cmp : -cmp;
-  });
-  return result;
-};
-
-const paginate = (list, page) => {
-  const start = (page - 1) * pageSize;
-  return list.slice(start, start + pageSize);
-};
-
-const toggleSort = (key, field) => {
-  if (sorts[key].key === field) {
-    sorts[key].dir = sorts[key].dir === 'asc' ? 'desc' : 'asc';
-  } else {
-    sorts[key].key = field;
-    sorts[key].dir = 'asc';
-  }
-};
-
-const sortRaeume = (raumList) => {
-  const result = [...raumList];
-  const config = sorts.raeume;
-  result.sort((a, b) => {
-    const valA = a[config.key] || '';
-    const valB = b[config.key] || '';
-    if (typeof valA === 'number' && typeof valB === 'number') {
-      return config.dir === 'asc' ? valA - valB : valB - valA;
-    }
-    const cmp = String(valA).localeCompare(String(valB));
-    return config.dir === 'asc' ? cmp : -cmp;
-  });
-  return result;
-};
-
 const admins = computed(() => users.value.filter(u => u.role === 'ADMIN'));
 const referenten = computed(() => users.value.filter(u => u.role === 'REFERENT'));
 const teilnehmer = computed(() => users.value.filter(u => u.role === 'TEILNEHMER'));
@@ -1004,87 +342,16 @@ const participantGroups = computed(() => {
   return Array.from(groups).sort();
 });
 
-const filteredVeranstaltungen = computed(() => processList(veranstaltungen.value, filters.veranstaltungen, sorts.veranstaltungen));
-const paginatedVeranstaltungen = computed(() => paginate(filteredVeranstaltungen.value, pages.veranstaltungen));
-
-const filteredGebaeude = computed(() => processList(gebaeude.value, filters.gebaeude, sorts.gebaeude));
-const paginatedGebaeude = computed(() => paginate(filteredGebaeude.value, pages.gebaeude));
-
-const filteredAdmins = computed(() => processList(admins.value, filters.admins, sorts.admins));
-const paginatedAdmins = computed(() => paginate(filteredAdmins.value, pages.admins));
-
-const filteredSpeakers = computed(() => processList(referenten.value, filters.referenten, sorts.referenten));
-const paginatedSpeakers = computed(() => paginate(filteredSpeakers.value, pages.referenten));
-
-const filteredParticipants = computed(() => {
-  let list = [...teilnehmer.value];
-  if (filters.participantGroup) {
-    list = list.filter(t => t.gruppe === filters.participantGroup);
-  }
-  return processList(list, filters.teilnehmer, sorts.teilnehmer);
-});
-const paginatedParticipants = computed(() => paginate(filteredParticipants.value, pages.teilnehmer));
-
-const filteredVortraege = computed(() => {
-  const list = vortraege.value.map(v => ({
-    ...v,
-    referentName: v.referentName,
-    referentOrganisation: v.referentOrganisation || ''
-  }));
-  return processList(list, filters.vortraege, sorts.vortraege);
-});
-const paginatedVortraege = computed(() => paginate(filteredVortraege.value, pages.vortraege));
-
-const filteredVSubVortraege = computed(() => {
-  const list = vortraege.value.map(v => ({
-    ...v,
-    referentName: v.referent ? `${v.referent.lastName}, ${v.referent.firstName}` : ''
-  }));
-  return processList(list, '', sorts.v_vortraege);
-});
-const paginatedVSubVortraege = computed(() => paginate(filteredVSubVortraege.value, pages.v_vortraege));
-
-const filteredVSubParticipants = computed(() => {
-  return processList(teilnehmer.value, '', sorts.v_teilnehmer);
-});
-const paginatedVSubParticipants = computed(() => paginate(filteredVSubParticipants.value, pages.v_teilnehmer));
-
-const filteredSlots = computed(() => processList(eventSlots.value, filters.slots, sorts.slots));
-const paginatedSlots = computed(() => paginate(filteredSlots.value, pages.slots));
-
-const filteredRaeume = computed(() => processList(raeume.value, filters.raeume, sorts.raeume));
-const paginatedRaeume = computed(() => paginate(filteredRaeume.value, pages.raeume));
-
 const sortedSlots = computed(() => {
   return [...eventSlots.value].sort((a, b) => {
     const cmp = new Date(a.startTime) - new Date(b.startTime);
-    return sorts.slots.dir === 'asc' ? cmp : -cmp;
+    return cmp; // Default to asc
   });
 });
 
 const electiveTalks = computed(() => {
   return vortraege.value.filter(v => !v.istPflicht).sort((a, b) => a.titel.localeCompare(b.titel));
 });
-
-const isAllOnPageSelected = computed(() => {
-  if (paginatedParticipants.value.length === 0) return false;
-  return paginatedParticipants.value.every(p => selectedParticipantIds.value.includes(p.id));
-});
-
-const toggleSelectAllPage = () => {
-  if (isAllOnPageSelected.value) {
-    const pageIds = paginatedParticipants.value.map(p => p.id);
-    selectedParticipantIds.value = selectedParticipantIds.value.filter(id => !pageIds.includes(id));
-  } else {
-    const pageIds = paginatedParticipants.value.map(p => p.id);
-    const newIds = pageIds.filter(id => !selectedParticipantIds.value.includes(id));
-    selectedParticipantIds.value.push(...newIds);
-  }
-};
-
-const selectAllFilteredParticipants = () => {
-  selectedParticipantIds.value = filteredParticipants.value.map(p => p.id);
-};
 
 const canImportVeranstaltung = computed(() => admins.value.length > 0 && gebaeude.value.length > 0);
 const canImportVortraege = computed(() => eventSlots.value.length > 0);
@@ -1131,12 +398,12 @@ const handleVeranstaltungChange = () => {
   if (ev) eventContext.setEvent(ev);
   else eventContext.clearEvent();
 
-  // Reset sub-pagination
-  pages.v_vortraege = 1;
-  pages.v_teilnehmer = 1;
-  selectedParticipantIds.value = []; // Clear selection on event change
-
   loadData();
+};
+
+const handleVeranstaltungSelection = (vid) => {
+  selectedVid.value = vid;
+  handleVeranstaltungChange();
 };
 
 const loadData = async () => {
@@ -1163,7 +430,7 @@ const loadData = async () => {
     localUsers.filter(u => u.role === 'TEILNEHMER').forEach(u => {
       prioMap[u.id] = {};
       u.prioritaeten?.forEach(p => {
-        prioMap[u.id][p.vortragId] = { prioWert: p.prioWert };
+        prioMap[u.id][p.vortragId] = {prioWert: p.prioWert};
       });
     });
     participantPriorities.value = prioMap;
@@ -1267,7 +534,7 @@ const deleteRaum = async (r) => {
 };
 
 const openUserModal = (u) => {
-  selectedUser.value = u?.id ? { ...u } : {
+  selectedUser.value = u?.id ? {...u} : {
     firstName: '',
     lastName: '',
     email: '',
@@ -1315,45 +582,43 @@ const deleteUser = async (id) => {
 
 const toggleParticipantActive = async (u) => {
   try {
-    await api.put(`/api/veranstaltungen/${selectedVid.value}/nutzer/${u.id}`, { ...u, isActive: !u.isActive });
+    await api.put(`/api/veranstaltungen/${selectedVid.value}/nutzer/${u.id}`, {...u, isActive: !u.isActive});
     u.isActive = !u.isActive;
   } catch (e) {
     console.error("Fehler beim Umschalten des Status:", e);
   }
 };
 
-const batchDeactivateParticipants = async () => {
-  if (!confirm(`${selectedParticipantIds.value.length} Teilnehmer deaktivieren?`)) return;
+const batchDeactivateParticipants = async (selectedParticipantIds) => {
+  if (!confirm(`${selectedParticipantIds.length} Teilnehmer deaktivieren?`)) return;
   try {
-    for (const id of selectedParticipantIds.value) {
+    for (const id of selectedParticipantIds) {
       const u = teilnehmer.value.find(p => p.id === id);
-      if (u) await api.put(`/api/veranstaltungen/${selectedVid.value}/nutzer/${u.id}`, { ...u, isActive: false });
+      if (u) await api.put(`/api/veranstaltungen/${selectedVid.value}/nutzer/${u.id}`, {...u, isActive: false});
     }
     await loadData();
-    selectedParticipantIds.value = [];
     alert("Erfolgreich deaktiviert.");
   } catch (e) {
     console.error("Fehler bei Batch-Deaktivierung:", e);
   }
 };
 
-const batchDeleteParticipants = async () => {
-  if (!confirm(`${selectedParticipantIds.value.length} Teilnehmer endgültig löschen?`)) return;
+const batchDeleteParticipants = async (selectedParticipantIds) => {
+  if (!confirm(`${selectedParticipantIds.length} Teilnehmer endgültig löschen?`)) return;
   try {
-    for (const id of selectedParticipantIds.value) {
+    for (const id of selectedParticipantIds) {
       await api.delete(`/api/veranstaltungen/${selectedVid.value}/nutzer/${id}`);
     }
     await loadData();
-    selectedParticipantIds.value = [];
     alert("Erfolgreich gelöscht.");
   } catch (e) {
     console.error("Fehler bei Batch-Löschung:", e);
   }
 };
 
-const batchEmailParticipants = () => {
+const batchEmailParticipants = (selectedParticipantIds) => {
   const emails = teilnehmer.value
-      .filter(p => selectedParticipantIds.value.includes(p.id))
+      .filter(p => selectedParticipantIds.includes(p.id))
       .map(p => p.email)
       .join(',');
   window.location.href = `mailto:?bcc=${emails}`;
@@ -1363,7 +628,7 @@ const openInviteModal = (u) => {
   selectedUserForInvite.value = u;
   showInviteModal.value = true;
 };
-const handleInviteUser = async ({ userId, eventId }) => {
+const handleInviteUser = async ({userId, eventId}) => {
   try {
     await api.post(`/api/admin/nutzer/${userId}/einladen/${eventId}`);
     alert("Einladung erfolgreich versendet!");
@@ -1375,17 +640,35 @@ const handleInviteUser = async ({ userId, eventId }) => {
 };
 
 const openVortragEditor = (v) => {
-  selectedVortrag.value = v || {titel: '', inhalt: '', zielgruppe: '', referent: {id: null}, vortrag_typ: 'WAHL'};
+  vortragModalError.value = ''; // Clear previous errors
+  selectedVortrag.value = v?.id ? {...v} : {
+    titel: '',
+    inhalt: '',
+    zielgruppe: '',
+    referent: {id: null},
+    vortrag_typ: 'WAHL',
+    pflichtgruppe: '',
+    pflichtraum: {id: null},
+    pflichtslot: {id: null},
+  };
   showVortragModal.value = true;
 };
+
+const closeVortragModal = () => {
+  showVortragModal.value = false;
+  vortragModalError.value = ''; // Clear error when closing
+};
+
 const handleSaveVortrag = async (v) => {
   const base = `/api/veranstaltungen/${selectedVid.value}/vortraege`;
   try {
     if (v.id) await api.put(`${base}/${v.id}`, v); else await api.post(base, v);
     showVortragModal.value = false;
+    vortragModalError.value = ''; // Clear error on success
     await loadData();
   } catch (e) {
     console.error('Fehler beim Speichern des Vortrags:', e);
+    vortragModalError.value = e.response?.data?.message || e.message || 'Unbekannter Fehler beim Speichern des Vortrags.';
   }
 };
 const deleteVortrag = async (id) => {
@@ -1395,6 +678,7 @@ const deleteVortrag = async (id) => {
       await loadData();
     } catch (e) {
       console.error('Fehler beim Löschen des Vortrags:', e);
+      alert("Fehler beim Löschen des Vortrags: " + (e.response?.data?.message || e.message));
     }
   }
 };
@@ -1430,48 +714,35 @@ const isAvailable = (userId, slotId) => {
 
 const toggleAvailability = async (userId, slotId, isAvailable) => {
   try {
-    await api.post(`/api/admin/veranstaltung/${selectedVid.value}/verfuegbarkeit`, { userId, slotId, isAvailable });
+    await api.post(`/api/admin/veranstaltung/${selectedVid.value}/verfuegbarkeit`, {userId, slotId, isAvailable});
     // Lokalen State aktualisieren
     const idx = verfuegbarkeiten.value.findIndex(v => v.userId === userId && v.slotId === slotId);
     if (idx !== -1) {
       verfuegbarkeiten.value[idx].isAvailable = isAvailable;
     } else {
-      verfuegbarkeiten.value.push({ userId, slotId, isAvailable });
+      verfuegbarkeiten.value.push({userId, slotId, isAvailable});
     }
   } catch (e) {
     console.error('Fehler beim Aktualisieren der Verfügbarkeit:', e);
   }
 };
 
-const getParticipantPrio = (userId, talkId) => {
-  if (!participantPriorities.value[userId]) participantPriorities.value[userId] = {};
-  if (!participantPriorities.value[userId][talkId]) participantPriorities.value[userId][talkId] = { prioWert: 0 };
-  return participantPriorities.value[userId][talkId];
-};
-
-const markPrioChanged = (userId) => {
-  changedPriorities.value.add(userId);
-};
-
-const isPrioChanged = (userId) => changedPriorities.value.has(userId);
-
 const saveParticipantPriorities = async (userId) => {
   const userPrios = participantPriorities.value[userId];
   const payload = Object.entries(userPrios)
-      // .filter(([_, data]) => data.prioWert > 0) // <-- DIESER FILTER WIRD ENTFERNT
-      .map(([talkId, data]) => ({ vortragId: parseInt(talkId), prioWert: data.prioWert }));
+      .map(([talkId, data]) => ({vortragId: parseInt(talkId), prioWert: data.prioWert}));
 
   try {
-    await api.put(`/api/veranstaltungen/${selectedVid.value}/teilnehmer/${userId}/prioritaeten`, payload);
+    await api.put(`/api/admin/veranstaltung/${selectedVid.value}/teilnehmer/${userId}/priorities`, payload);
     changedPriorities.value.delete(userId);
     await loadData(); // Refresh data after successful save
   } catch (e) {
-    console.error("Fehler beim Speichern der Prioritäten:", e);
-    alert("Fehler beim Speichern.");
+    console.error("Fehler beim Speichern der Prioritäten: vid=" + selectedVid.value  + ", userId=" + userId, e);
+    alert("Fehler beim Speichern der Prioritäten.");
   }
 };
 
-const startOptimization = async () => {
+const startOptimization = async (solverConfig) => {
   isOptimizing.value = true;
   try {
     await api.post(`/api/veranstaltungen/${selectedVid.value}/optimierung/start`, solverConfig);
@@ -1493,7 +764,9 @@ const downloadTuerschilder = async () => {
     link.setAttribute('download', 'tuerschilder.pdf');
     document.body.appendChild(link);
     link.click();
-  } catch (e) {}
+  } catch (e) {
+    console.error('Fehler beim Download der Tuerschilder:', e);
+  }
 };
 const downloadExport = async () => {
   try {
@@ -1504,7 +777,9 @@ const downloadExport = async () => {
     link.setAttribute('download', 'planung.csv');
     document.body.appendChild(link);
     link.click();
-  } catch (e) {}
+  } catch (e) {
+    console.error('Fehler beim Download des Export:', e);
+  }
 };
 
 const triggerUpload = (endpoint) => {
@@ -1550,27 +825,43 @@ const showCsvFeedback = (message, isError) => {
     csvFeedback.successCount = (match && match[1]) ? parseInt(match[1]) : 1;
   }
   showCsvFeedbackModal.value = true;
-  if (!isError) setTimeout(() => { showCsvFeedbackModal.value = false; }, 3000);
+  if (!isError) setTimeout(() => {
+    showCsvFeedbackModal.value = false;
+  }, 3000);
 };
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('de-DE') : '';
-const formatDateTime = (dt) => dt ? new Date(dt).toLocaleDateString('de-DE', {weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'}) : '';
-const formatTime = (t) => t ? new Date(t).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'}) : '';
 </script>
 
 <style scoped>
 .btn-primary {
   @apply rounded-lg bg-indigo-600 px-3 py-1.5 text-white font-bold hover:bg-indigo-700 transition shadow-sm border-none cursor-pointer disabled:opacity-50;
 }
+
 .btn-primary-xs {
   @apply rounded-md bg-indigo-600 px-2 py-0.5 text-white font-bold hover:bg-indigo-700 transition shadow-sm border-none cursor-pointer;
 }
+
 .btn-secondary {
   @apply bg-white text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 font-bold border border-gray-200 transition shadow-sm cursor-pointer disabled:opacity-50;
 }
+
 .input-field {
   @apply rounded-lg border border-gray-300 px-2 py-1 text-gray-900 focus:ring-2 focus:ring-indigo-500 bg-white;
 }
-.animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 </style>

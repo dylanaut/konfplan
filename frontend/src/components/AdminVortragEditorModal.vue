@@ -5,7 +5,11 @@
         <h2 class="text-xl font-bold text-gray-900">
           {{ vortrag?.id ? 'Vortrag bearbeiten' : 'Neuen Vortrag anlegen' }}
         </h2>
-        <button class="text-gray-500 hover:text-gray-700" @click="$emit('close')">✕</button>
+        <button class="text-gray-500 hover:text-gray-700" @click="close">✕</button>
+      </div>
+
+      <div v-if="error" class="mb-4 p-3 bg-red-100 border border-red-200 text-red-700 text-sm rounded-lg animate-fade-in">
+        {{ error }}
       </div>
 
       <form class="space-y-4" @submit.prevent="save">
@@ -29,7 +33,7 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Zielgruppe</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Zielgruppe (Info-Text)</label>
             <input v-model="form.zielgruppe" type="text" class="input-field" />
           </div>
           <div>
@@ -50,15 +54,27 @@
         <div v-if="form.vortrag_typ === 'PFLICHT'" class="bg-red-50 p-4 rounded-lg space-y-4 border border-red-100">
           <h3 class="text-xs font-bold text-red-700 uppercase tracking-wider">Pflicht-Zuweisung</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Pflicht-Gruppe (Exakt)</label>
+              <select v-model="form.pflichtgruppe" class="input-field" required>
+                <option value="">-- Gruppe wählen --</option>
+                <option v-for="g in participantGroups" :key="g" :value="g">{{ g }}</option>
+              </select>
+              <p class="text-[10px] text-gray-500 mt-1">
+                Wähle die Gruppe aus, für die dieser Vortrag verpflichtend ist.
+              </p>
+            </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Pflicht-Raum</label>
               <select v-model="form.pflichtraum.id" class="input-field" required>
-                <option v-for="r in raeume" :key="r.id" :value="r.id">{{ r.name }}</option>
+                <option :value="null">-- Raum wählen --</option>
+                <option v-for="r in raeume" :key="r.id" :value="r.id">{{ r.name }} (Kap.: {{ r.kapazitaet }})</option>
               </select>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Pflicht-Slot</label>
               <select v-model="form.pflichtslot.id" class="input-field" required>
+                <option :value="null">-- Slot wählen --</option>
                 <option v-for="s in slots" :key="s.id" :value="s.id">{{ formatSlot(s) }}</option>
               </select>
             </div>
@@ -90,7 +106,7 @@
         </div>
 
         <div class="flex justify-end gap-3 pt-4 border-t">
-          <button type="button" class="btn-secondary" @click="$emit('close')">Abbrechen</button>
+          <button type="button" class="btn-secondary" @click="close">Abbrechen</button>
           <button type="submit" class="btn-primary">Speichern</button>
         </div>
       </form>
@@ -106,7 +122,9 @@ const props = defineProps({
   vortrag: { type: Object, default: null },
   referenten: { type: Array, default: () => [] },
   raeume: { type: Array, default: () => [] },
-  slots: { type: Array, default: () => [] }
+  slots: { type: Array, default: () => [] },
+  participantGroups: { type: Array, default: () => [] },
+  error: { type: String, default: '' }
 });
 
 const emit = defineEmits(['close', 'save']);
@@ -121,6 +139,7 @@ const form = reactive({
   referent: { id: null },
   pflichtraum: { id: null },
   pflichtslot: { id: null },
+  pflichtgruppe: '',
   wiederholbar: false,
   maxWiederholungen: 1,
 });
@@ -136,6 +155,7 @@ watch(
       form.referent.id = val?.referent?.id ?? null;
       form.pflichtraum.id = val?.pflichtraum?.id ?? null;
       form.pflichtslot.id = val?.pflichtslot?.id ?? null;
+      form.pflichtgruppe = val?.pflichtgruppe ?? '';
       form.wiederholbar = val?.wiederholbar ?? false;
       form.maxWiederholungen = val?.maxWiederholungen ?? 1;
       selectedWahlslotIds.value = val?.wahlslots?.map(s => s.id) ?? [];
@@ -152,15 +172,24 @@ const formatSlot = (s) => {
   return `${s.description} (${weekday}, ${time}${endTime ? ' - ' + endTime : ''})`;
 };
 
+const close = () => {
+  emit('close');
+};
+
 const save = () => {
   const payload = { ...form };
   if (form.vortrag_typ === 'WAHL') {
     payload.wahlslots = props.slots.filter(s => selectedWahlslotIds.value.includes(s.id));
     payload.pflichtraum = null;
     payload.pflichtslot = null;
+    payload.pflichtgruppe = null;
   } else {
     payload.wahlslots = [];
     payload.wiederholbar = false;
+    // Map objects to IDs for backend if necessary, or keep objects if createVortrag expects them
+    // Based on the existing code, it seems objects are passed
+    payload.pflichtraum = props.raeume.find(r => r.id === form.pflichtraum.id);
+    payload.pflichtslot = props.slots.find(s => s.id === form.pflichtslot.id);
   }
   emit('save', payload);
 };
@@ -170,4 +199,6 @@ const save = () => {
 .input-field { @apply w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:ring-2 focus:ring-indigo-500 bg-white text-sm; }
 .btn-primary { @apply rounded-lg bg-indigo-600 px-4 py-2 text-white font-bold hover:bg-indigo-700 transition; }
 .btn-secondary { @apply rounded-lg bg-gray-100 px-4 py-2 text-gray-700 font-medium hover:bg-gray-200 transition; }
+.animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 </style>

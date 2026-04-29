@@ -178,7 +178,7 @@ public class AdminResource {
             return Response.status(Response.Status.NOT_FOUND).entity("Teilnehmer oder Vortrag nicht gefunden.").build();
         }
 
-        if (!teilnehmer.veranstaltungen.stream().anyMatch(v -> v.id.equals(vid))) {
+        if (teilnehmer.veranstaltungen.stream().noneMatch(v -> v.id.equals(vid))) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Teilnehmer gehört nicht zu dieser Veranstaltung.").build();
         }
 

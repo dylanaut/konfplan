@@ -96,4 +96,12 @@ public class Veranstaltung extends VersionedEntity {
         this.nutzer.add(nutzer);
         nutzer.addVeranstaltung(this);
     }
+
+    public void addGebaeude(Gebaeude gebaeude) {
+        if (this.gebaeude.contains(gebaeude)) {
+            return;
+        }
+        this.gebaeude.add(gebaeude);
+        gebaeude.veranstaltungen.add(this);
+    }
 }

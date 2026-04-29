@@ -2311,3 +2311,4 @@ build/
 /frontend/dist/
 /.idea/active-tab-highlighter.xml
 /vortragsmanager.db
+/.todo/

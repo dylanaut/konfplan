@@ -3,6 +3,9 @@ package kreyj.vortragsmanager.entity;
 import jakarta.persistence.*;
 
 @Entity
+@Table(uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"user_id", "slot_id"})
+})
 public class Verfuegbarkeit extends VersionedEntity {
 
     @ManyToOne

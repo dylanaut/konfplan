@@ -9,6 +9,7 @@ import io.quarkus.security.jpa.Roles;
 import io.quarkus.security.jpa.UserDefinition;
 import io.quarkus.security.jpa.Username;
 import jakarta.persistence.*;
+import org.hibernate.annotations.NaturalId;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -25,7 +26,7 @@ import java.util.Set;
         @JsonSubTypes.Type(value = Teilnehmer.class, name = "TEILNEHMER")
 })
 public abstract class Nutzer extends VersionedEntity {
-
+    @NaturalId(mutable = true)
     @Column(unique = true)
     @Username
     @CsvBindByName(column = "Email")
