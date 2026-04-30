@@ -107,22 +107,39 @@
         </div>
       </button>
 
-      <div v-if="expandedSections.teilnehmerPrioritaeten" class="animate-fade-in">
+      <div v-if="expandedSections.teilnehmerPrioritaeten" class="animate-fade-in space-y-4">
+        <!-- Legende für Wahlvorträge -->
+        <div v-if="electiveTalks.length > 0" class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 text-[10px]">
+          <h3 class="font-black text-indigo-900 uppercase mb-2 flex items-center gap-2">
+            <InfoIcon class="w-3.5 h-3.5" /> Legende der Wahlvorträge
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1">
+            <div v-for="(talk, index) in electiveTalks" :key="'legende-'+talk.id" class="flex gap-2 items-start">
+              <span class="font-black text-indigo-600 shrink-0 w-4 text-right">{{ index + 1 }}:</span>
+              <span class="text-gray-700 truncate"
+                    :title="`Referent: ${talk.referent?.lastName || 'N/A'}${talk.referent?.organisation ? ' (' + talk.referent.organisation : ')'}`">
+                {{ talk.titel }}
+              </span>
+            </div>
+          </div>
+        </div>
+
         <div v-if="filteredParticipants.length > 0" class="bg-white shadow rounded-xl border border-gray-100 overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200 text-xs">
+          <table class="min-w-full divide-y divide-gray-200 text-xs table-fixed">
             <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
             <tr>
-              <th class="px-4 py-1.5 text-left font-bold sticky left-0 bg-gray-50 z-10">Name</th>
-              <th v-for="talk in electiveTalks" :key="talk.id" class="px-2 py-2 text-center text-[8px] font-bold text-gray-500 min-w-[80px]" :title="talk.titel">
-                {{ talk.titel.substring(0, 15) }}{{ talk.titel.length > 15 ? '...' : '' }}
+              <th class="px-4 py-1.5 text-left font-bold sticky left-0 bg-gray-50 z-10 w-48 border-r border-gray-100">Name</th>
+              <th v-for="(talk, index) in electiveTalks" :key="talk.id" class="px-1 py-2 text-center text-[9px] font-black text-indigo-600 w-14 min-w-[56px] border-r border-gray-100" :title="talk.titel">
+                {{ index + 1 }}
               </th>
+              <th class="w-auto"></th> <!-- Spacer column to prevent stretching -->
             </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
             <tr v-for="u in paginatedParticipants" :key="'prio-'+u.id" class="hover:bg-gray-50">
               <td class="px-4 py-2 font-bold sticky left-0 bg-white hover:bg-gray-50 z-10 border-r border-gray-100">
-                <div class="flex items-center justify-between gap-2 min-w-[150px]">
-                  <span :class="isPrioChanged(u.id) ? 'text-orange-600' : 'text-gray-900'">
+                <div class="flex items-center justify-between gap-2">
+                  <span :class="isPrioChanged(u.id) ? 'text-orange-600' : 'text-gray-900'" class="truncate" :title="u.lastName + ', ' + u.firstName">
                       {{ u.lastName }}, {{ u.firstName }}
                   </span>
                   <button v-if="isPrioChanged(u.id)"
@@ -134,13 +151,14 @@
                   </button>
                 </div>
               </td>
-              <td v-for="talk in electiveTalks" :key="'prio-'+u.id+'-'+talk.id" class="px-1 py-1 text-center">
+              <td v-for="talk in electiveTalks" :key="'prio-'+u.id+'-'+talk.id" class="px-1 py-1 text-center border-r border-gray-50">
                 <input type="number" min="0" max="10"
                        v-model.number="getParticipantPrio(u.id, talk.id).prioWert"
                        @input="markPrioChanged(u.id)"
                        :disabled="isEventFinished"
-                       class="w-12 text-center border rounded py-0.5 text-[10px] focus:ring-indigo-500 focus:border-indigo-500 border-gray-200" />
+                       class="w-12 text-center border rounded py-0.5 text-[10px] focus:ring-indigo-500 focus:border-indigo-500 border-gray-100" />
               </td>
+              <td></td>
             </tr>
             </tbody>
           </table>
@@ -159,6 +177,7 @@ import {
   CheckSquare as CheckSquareIcon,
   ChevronDown as ChevronDownIcon,
   ChevronUp as ChevronUpIcon,
+  Info as InfoIcon,
   Mail as MailIcon,
   Pencil as PencilIcon,
   Save as SaveIcon,

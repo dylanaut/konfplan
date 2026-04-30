@@ -35,7 +35,7 @@ class AdminResourceTest extends ResourceTestBase {
 
     @Test
     void testGetAllUsersGlobal() {
-        QuarkusTransaction.run(() -> {
+        QuarkusTransaction.requiringNew().run(() -> {
             Admin a = new Admin();
             a.email = "admin1@example.com";
             a.persist();
@@ -71,7 +71,7 @@ class AdminResourceTest extends ResourceTestBase {
     @Test
     void testUpdateUser() {
         final Long[] userId = new Long[1];
-        QuarkusTransaction.run(() -> {
+        QuarkusTransaction.requiringNew().run(() -> {
             Teilnehmer t = new Teilnehmer();
             t.email = "old@test.de";
             t.persist();
@@ -98,7 +98,7 @@ class AdminResourceTest extends ResourceTestBase {
     @Test
     void testDeleteUser() {
         final Long[] userId = new Long[1];
-        QuarkusTransaction.run(() -> {
+        QuarkusTransaction.requiringNew().run(() -> {
             Teilnehmer t = new Teilnehmer();
             t.email = "todelete@test.de";
             t.persist();
@@ -118,7 +118,7 @@ class AdminResourceTest extends ResourceTestBase {
         final Long[] userId = new Long[1];
         final Long[] eventId = new Long[1];
 
-        QuarkusTransaction.run(() -> {
+        QuarkusTransaction.requiringNew().run(() -> {
             Teilnehmer t = new Teilnehmer();
             t.email = "invite@test.de";
             t.persist();
@@ -137,7 +137,7 @@ class AdminResourceTest extends ResourceTestBase {
                 .then()
                 .statusCode(200);
 
-        QuarkusTransaction.run(() -> {
+        QuarkusTransaction.requiringNew().run(() -> {
             Teilnehmer t = Teilnehmer.findById(userId[0]);
             Assertions.assertEquals(1, t.veranstaltungen.size());
         });
@@ -149,7 +149,7 @@ class AdminResourceTest extends ResourceTestBase {
         final Long[] rid = new Long[1];
         final Long[] sid = new Long[1];
 
-        QuarkusTransaction.run(() -> {
+        QuarkusTransaction.requiringNew().run(() -> {
             Veranstaltung v = new Veranstaltung();
             v.name = "Event " + System.currentTimeMillis();
             v.beginntAm = LocalDateTime.now();
@@ -180,7 +180,7 @@ class AdminResourceTest extends ResourceTestBase {
 
         // GET Test
         given()
-                .when().get("/api/admin/veranstaltung/{vid}/verfuegbarkeiten", vid[0])
+                .when().get("/api/admin/veranstaltungen/{vid}/verfuegbarkeiten", vid[0])
                 .then()
                 .statusCode(200)
                 .body("size()", is(1))
@@ -192,12 +192,12 @@ class AdminResourceTest extends ResourceTestBase {
         given()
                 .contentType(ContentType.JSON)
                 .body(updateDto)
-                .when().post("/api/admin/veranstaltung/{vid}/verfuegbarkeiten", vid[0])
+                .when().post("/api/admin/veranstaltungen/{vid}/verfuegbarkeiten", vid[0])
                 .then()
                 .statusCode(200);
 
         // Verifizieren
-        QuarkusTransaction.run(() -> {
+        QuarkusTransaction.requiringNew().run(() -> {
             Referent r = Referent.findById(rid[0]);
             EventSlot s = EventSlot.findById(sid[0]);
             Verfuegbarkeit updated = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", r, s).firstResult();

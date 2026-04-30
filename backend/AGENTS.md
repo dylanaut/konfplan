@@ -67,7 +67,7 @@ cd backend && ../mvnw package
 - **Verfügbarkeiten**: Automatische Erstellung von Standard-Verfügbarkeiten (true) beim Hinzufügen von Nutzern zu Veranstaltungen.
 - **Raum-Management**: Veranstaltungsübergreifende Prüfung der Raumverfügbarkeit zur Vermeidung von Doppelbelegungen.
 - **Deadlines**: Referenten und Teilnehmer können ihre Daten nur bis zu einem administrativ festgelegten Zeitpunkt ändern.
-- **Prioritäten-Management (Admin)**: Admins können individuelle Prioritäten für Teilnehmer an Wahlvorträgen über den Endpunkt `/api/admin/veranstaltung/{vid}/teilnehmer/{tid}/priorities` aktualisieren. Dies ermöglicht gezielte Updates ohne Beeinflussung anderer Prioritäten.
+- **Prioritäten-Management (Admin)**: Admins können individuelle Prioritäten für Teilnehmer an Wahlvorträgen über den Endpunkt `/api/admin/veranstaltungen/{vid}/teilnehmer/{tid}/priorities` aktualisieren. Dies ermöglicht gezielte Updates ohne Beeinflussung anderer Prioritäten.
 
 ## MiniZinc-Optimierung
 

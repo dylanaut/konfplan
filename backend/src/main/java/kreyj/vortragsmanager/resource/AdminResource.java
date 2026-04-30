@@ -82,7 +82,7 @@ public class AdminResource {
     }
 
     @GET
-    @Path("/veranstaltung/{vid}/verfuegbarkeiten")
+    @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     public List<VerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
         return Verfuegbarkeit.find("select v from Verfuegbarkeit v join v.nutzer u join u.veranstaltungen va where va.id = ?1", vid).stream()
                 .map(v -> {
@@ -93,7 +93,7 @@ public class AdminResource {
     }
 
     @POST
-    @Path("/veranstaltung/{vid}/verfuegbarkeiten")
+    @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Transactional
     public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, VerfuegbarkeitDto dto) {
         Nutzer nutzer = Nutzer.findById(dto.userId);
@@ -118,7 +118,7 @@ public class AdminResource {
     }
 
     @GET
-    @Path("/veranstaltung/{vid}/raeume/verfuegbarkeiten")
+    @Path("/veranstaltungen/{vid}/raeume/verfuegbarkeiten")
     public List<RaumBelegbarkeitDto> getRaumVerfuegbarkeiten(@PathParam("vid") Long vid) {
         Veranstaltung event = Veranstaltung.findById(vid);
         if (event == null) throw new NotFoundException();
@@ -144,7 +144,7 @@ public class AdminResource {
     }
 
     @POST
-    @Path("/veranstaltung/{vid}/raeume/verfuegbarkeiten")
+    @Path("/veranstaltungen/{vid}/raeume/verfuegbarkeiten")
     @Transactional
     public Response updateRaumVerfuegbarkeit(@PathParam("vid") Long vid, RaumBelegbarkeitDto dto) {
         Raum raum = Raum.findById(dto.raumId);
@@ -163,31 +163,33 @@ public class AdminResource {
     }
 
     @PUT
-    @Path("/veranstaltung/{vid}/teilnehmer/{tid}/priorities")
+    @Path("/veranstaltungen/{vid}/teilnehmer/{tid}/priorities")
     @Transactional
     public Response updateTeilnehmerPrioritaet(
             @PathParam("vid") Long vid,
             @PathParam("tid") Long tid,
-            AdminPrioritaetUpdateRequestDto dto) {
+            List<AdminPrioritaetUpdateRequestDto> dtoList) { // Changed to List
 
-        // Basic validation: Check if the participant and vortrag belong to the same event
         Teilnehmer teilnehmer = Teilnehmer.findById(tid);
-        Vortrag vortrag = Vortrag.findById(dto.vortragId);
-
-        if (teilnehmer == null || vortrag == null) {
-            return Response.status(Response.Status.NOT_FOUND).entity("Teilnehmer oder Vortrag nicht gefunden.").build();
+        if (teilnehmer == null) {
+            return Response.status(Response.Status.NOT_FOUND).entity("Teilnehmer nicht gefunden.").build();
         }
 
         if (teilnehmer.veranstaltungen.stream().noneMatch(v -> v.id.equals(vid))) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Teilnehmer gehört nicht zu dieser Veranstaltung.").build();
         }
 
-        if (!vortrag.veranstaltung.id.equals(vid)) {
-            return Response.status(Response.Status.BAD_REQUEST).entity("Vortrag gehört nicht zu dieser Veranstaltung.").build();
-        }
-
         try {
-            prioritaetService.updateSinglePrioritaet(tid, dto.vortragId, dto.prioWert);
+            for (AdminPrioritaetUpdateRequestDto dto : dtoList) {
+                Vortrag vortrag = Vortrag.findById(dto.vortragId);
+                if (vortrag == null) {
+                    return Response.status(Response.Status.NOT_FOUND).entity("Vortrag mit ID " + dto.vortragId + " nicht gefunden.").build();
+                }
+                if (!vortrag.veranstaltung.id.equals(vid)) {
+                    return Response.status(Response.Status.BAD_REQUEST).entity("Vortrag mit ID " + dto.vortragId + " gehört nicht zu dieser Veranstaltung.").build();
+                }
+                prioritaetService.updateSinglePrioritaet(tid, dto.vortragId, dto.prioWert);
+            }
             return Response.ok().build();
         } catch (WebApplicationException e) {
             return Response.status(e.getResponse().getStatus()).entity(e.getMessage()).build();

@@ -36,9 +36,17 @@ public class ServerRequestLoggingFilter implements ContainerRequestFilter {
 
     // Check if media type is text-based (e.g., JSON, XML)
     private boolean isTextualMediaType(MediaType mediaType) {
-        return mediaType != null && mediaType.getType().equals("text")
-                || mediaType.getSubtype().endsWith("json")
-                || mediaType.getSubtype().endsWith("xml");
+        if (mediaType != null) {
+            if (mediaType.getType().equals("text")) {
+                return true;
+            }
+
+            if (null != mediaType.getSubtype()) {
+                return mediaType.getSubtype().endsWith("json")
+                        || mediaType.getSubtype().endsWith("xml");
+            }
+        }
+        return false;
     }
 
     // Read the request body from the input stream

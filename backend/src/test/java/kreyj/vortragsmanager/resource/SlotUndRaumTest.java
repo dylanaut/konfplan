@@ -172,7 +172,7 @@ class SlotUndRaumTest {
 
         // Abfrage für Event 1: Raum sollte für s1 als "blocked" markiert sein
         List<RaumBelegbarkeitDto> dtos = given()
-                .when().get("/api/admin/veranstaltung/{vid}/raeume/verfuegbarkeiten", vid)
+                .when().get("/api/admin/veranstaltungen/{vid}/raeume/verfuegbarkeiten", vid)
                 .then()
                 .statusCode(200)
                 .extract().body().jsonPath().getList(".", RaumBelegbarkeitDto.class);

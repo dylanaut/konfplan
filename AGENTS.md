@@ -68,7 +68,7 @@ cd frontend && npm install && npm run dev
 - Datum/Zeit: `LocalDateTime` mit Custom `LocalDateTimeConverter`.
 - Fehlerbehandlung: `CustomExceptionMapper` mappt Exceptions auf HTTP-Responses.
 - Alle REST-Endpunkte unter `/api/...`; Security via `@RolesAllowed`.
-- Neuer Admin-Endpunkt: `PUT /api/admin/veranstaltung/{vid}/teilnehmer/{tid}/priorities` zur individuellen Aktualisierung von Teilnehmerprioritäten.
+- Neuer Admin-Endpunkt: `PUT /api/admin/veranstaltungen/{vid}/teilnehmer/{tid}/priorities` zur individuellen Aktualisierung von Teilnehmerprioritäten.
 
 ## Bekannte Besonderheiten
 

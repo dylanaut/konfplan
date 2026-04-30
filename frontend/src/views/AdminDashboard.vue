@@ -277,6 +277,7 @@ const belegungsPlan = ref([]);
 const qualitaet = ref({});
 const verfuegbarkeiten = ref([]);
 const participantPriorities = ref({}); // { userId: { talkId: { prioWert: number } } }
+const originalParticipantPriorities = ref({}); // { userId: { talkId: { prioWert: number } } }
 const changedPriorities = ref(new Set()); // Set of userIds with changes
 
 const isGlobalLoading = ref(false);
@@ -413,7 +414,7 @@ const loadData = async () => {
     const [uRes, vRes, sRes, pRes, qRes, avRes] = await Promise.all([
       api.get(`${base}/nutzer`), api.get(`${base}/vortraege`),
       api.get(`${base}/slots`), api.get(`${base}/plan/details`), api.get(`${base}/plan/qualitaet`),
-      api.get(`/api/admin/veranstaltung/${selectedVid.value}/verfuegbarkeiten`)
+      api.get(`/api/admin/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`)
     ]);
     const localUsers = uRes.data;
     const globalAdmins = users.value.filter(u => u.role === 'ADMIN');
@@ -425,15 +426,19 @@ const loadData = async () => {
     qualitaet.value = qRes.data;
     verfuegbarkeiten.value = avRes.data;
 
-    // Prioritäten initialisieren
+    // Prioritäten initialisieren und Originalzustand speichern
     const prioMap = {};
+    const originalPrioMap = {}; // Neues Objekt für Originalzustand
     localUsers.filter(u => u.role === 'TEILNEHMER').forEach(u => {
       prioMap[u.id] = {};
+      originalPrioMap[u.id] = {};
       u.prioritaeten?.forEach(p => {
         prioMap[u.id][p.vortragId] = {prioWert: p.prioWert};
+        originalPrioMap[u.id][p.vortragId] = {prioWert: p.prioWert}; // Originalzustand speichern
       });
     });
     participantPriorities.value = prioMap;
+    originalParticipantPriorities.value = originalPrioMap; // Originalzustand zuweisen
     changedPriorities.value.clear();
 
   } catch (err) {
@@ -714,7 +719,7 @@ const isAvailable = (userId, slotId) => {
 
 const toggleAvailability = async (userId, slotId, isAvailable) => {
   try {
-    await api.post(`/api/admin/veranstaltung/${selectedVid.value}/verfuegbarkeit`, {userId, slotId, isAvailable});
+    await api.post(`/api/admin/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`, {userId, slotId, isAvailable});
     // Lokalen State aktualisieren
     const idx = verfuegbarkeiten.value.findIndex(v => v.userId === userId && v.slotId === slotId);
     if (idx !== -1) {
@@ -728,14 +733,48 @@ const toggleAvailability = async (userId, slotId, isAvailable) => {
 };
 
 const saveParticipantPriorities = async (userId) => {
-  const userPrios = participantPriorities.value[userId];
-  const payload = Object.entries(userPrios)
-      .map(([talkId, data]) => ({vortragId: parseInt(talkId), prioWert: data.prioWert}));
+  const currentUserPrios = participantPriorities.value[userId];
+  const originalUserPrios = originalParticipantPriorities.value[userId] || {};
+
+  const changedPayload = [];
+
+  // Check for changed or new priorities
+  for (const talkId in currentUserPrios) {
+    const currentPrio = currentUserPrios[talkId].prioWert;
+    const originalPrio = originalUserPrios[talkId]?.prioWert;
+
+    // Only add if priority changed or if it's a new priority (originalPrio is undefined/null)
+    if (currentPrio !== originalPrio) {
+      changedPayload.push({vortragId: parseInt(talkId), prioWert: currentPrio});
+    }
+  }
+
+  // Check for removed priorities (if a talk had a priority originally but not anymore, or set to 0)
+  for (const talkId in originalUserPrios) {
+    const currentPrio = currentUserPrios[talkId]?.prioWert; // Will be 0 if cleared, or undefined if entry removed
+    const originalPrio = originalUserPrios[talkId].prioWert;
+
+    // If a priority existed originally and is now 0 or completely removed from current, and original was not 0
+    if (originalPrio !== 0 && (currentPrio === undefined || currentPrio === 0)) {
+      // Ensure it's not already in changedPayload from the above loop (e.g., if changed from 5 to 0)
+      if (!changedPayload.some(item => item.vortragId === parseInt(talkId))) {
+        changedPayload.push({vortragId: parseInt(talkId), prioWert: 0});
+      }
+    }
+  }
+
+  if (changedPayload.length === 0) {
+    changedPriorities.value.delete(userId);
+    return; // No changes to save
+  }
 
   try {
-    await api.put(`/api/admin/veranstaltung/${selectedVid.value}/teilnehmer/${userId}/priorities`, payload);
+    await api.put(`/api/admin/veranstaltungen/${selectedVid.value}/teilnehmer/${userId}/priorities`, changedPayload);
+    // After successful save, update the original priorities for this user
+    originalParticipantPriorities.value[userId] = JSON.parse(JSON.stringify(currentUserPrios));
     changedPriorities.value.delete(userId);
-    await loadData(); // Refresh data after successful save
+    // No need to loadData() for the whole event, as only one user's priorities were changed
+    // await loadData(); // Refresh data after successful save
   } catch (e) {
     console.error("Fehler beim Speichern der Prioritäten: vid=" + selectedVid.value  + ", userId=" + userId, e);
     alert("Fehler beim Speichern der Prioritäten.");

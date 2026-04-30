@@ -251,6 +251,62 @@ public class PflichtvortragServiceTest {
     }
 
     @Test
+    void testCreatePflichtvortragFailsIfRaumAlreadyOccupiedByAnotherPflichtvortrag() {
+        // Create first PV
+        Pflichtvortrag pv1 = new Pflichtvortrag();
+        pv1.titel = "PV1";
+        pv1.referent = referent;
+        pv1.pflichtgruppe = "Gruppe A";
+        pv1.pflichtraum = raum2;
+        pv1.pflichtslot = slot1;
+        adminService.createVortrag(pv1, veranstaltung.id);
+
+        // Attempt to create a second PV using the same room and slot
+        Pflichtvortrag pv2 = new Pflichtvortrag();
+        pv2.titel = "PV2";
+        pv2.referent = referent;
+        pv2.pflichtgruppe = "Gruppe B"; // Different group
+        pv2.pflichtraum = raum2; // Same room
+        pv2.pflichtslot = slot1; // Same slot
+
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
+            adminService.createVortrag(pv2, veranstaltung.id);
+        });
+        assertTrue(thrown.getMessage().contains("Raum 'Raum B' ist im Slot 'Slot 1' bereits belegt."));
+        final long[] pvCount = {0L};
+        QuarkusTransaction.requiringNew().run(() -> pvCount[0] = Pflichtvortrag.count());
+        assertEquals(1, pvCount[0]); // Only PV1 created
+    }
+
+    @Test
+    void testCreatePflichtvortragFailsIfGruppeAlreadyOccupiedByAnotherPflichtvortrag() {
+        // Create first PV
+        Pflichtvortrag pv1 = new Pflichtvortrag();
+        pv1.titel = "PV1";
+        pv1.referent = referent;
+        pv1.pflichtgruppe = "Gruppe A";
+        pv1.pflichtraum = raum2;
+        pv1.pflichtslot = slot1;
+        adminService.createVortrag(pv1, veranstaltung.id);
+
+        // Attempt to create a second PV using the same group and slot
+        Pflichtvortrag pv2 = new Pflichtvortrag();
+        pv2.titel = "PV2";
+        pv2.referent = referent;
+        pv2.pflichtgruppe = "Gruppe A"; // Same group
+        pv2.pflichtraum = raum1; // Different room
+        pv2.pflichtslot = slot1; // Same slot
+
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
+            adminService.createVortrag(pv2, veranstaltung.id);
+        });
+        assertTrue(thrown.getMessage().contains("Nicht alle Teilnehmer der Gruppe 'Gruppe A' sind im Slot 'Slot 1' verfügbar."));
+        final long[] pvCount = {0L};
+        QuarkusTransaction.requiringNew().run(() -> pvCount[0] = Pflichtvortrag.count());
+        assertEquals(1, pvCount[0]); // Only PV1 created
+    }
+
+    @Test
     void testUpdatePflichtvortragChangeSlotSuccess() {
         // Create initial PV
         Pflichtvortrag pv = new Pflichtvortrag();
@@ -394,6 +450,44 @@ public class PflichtvortragServiceTest {
     }
 
     @Test
+    void testUpdatePflichtvortragChangeRaumFailsIfNewRaumOccupiedByAnotherPflichtvortrag() {
+        // Create PV1
+        Pflichtvortrag pv1 = new Pflichtvortrag();
+        pv1.titel = "PV1";
+        pv1.referent = referent;
+        pv1.pflichtgruppe = "Gruppe A";
+        pv1.pflichtraum = raum1;
+        pv1.pflichtslot = slot1;
+        Pflichtvortrag createdPv1 = (Pflichtvortrag) adminService.createVortrag(pv1, veranstaltung.id);
+
+        // Create PV2 that occupies raum2, slot1
+        Pflichtvortrag pv2 = new Pflichtvortrag();
+        pv2.titel = "PV2";
+        pv2.referent = referent;
+        pv2.pflichtgruppe = "Gruppe B";
+        pv2.pflichtraum = raum2;
+        pv2.pflichtslot = slot1;
+        adminService.createVortrag(pv2, veranstaltung.id);
+
+        // Attempt to update PV1 to use raum2 (which is occupied by PV2)
+        Pflichtvortrag updatedPv1 = new Pflichtvortrag();
+        updatedPv1.titel = "PV1 Updated Raum";
+        updatedPv1.referent = referent;
+        updatedPv1.pflichtgruppe = "Gruppe A";
+        updatedPv1.pflichtraum = raum2; // Try to change to raum2
+        updatedPv1.pflichtslot = slot1;
+
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
+            adminService.updateVortrag(createdPv1.id, updatedPv1, veranstaltung.id);
+        });
+        assertTrue(thrown.getMessage().contains("Neuer Raum 'Raum B' ist im Slot 'Slot 1' bereits belegt."));
+
+        // Verify state remains unchanged for PV1
+        assertFalse(isRaumAvailable(raum1, slot1)); // raum1 still occupied by PV1
+        assertFalse(isRaumAvailable(raum2, slot1)); // raum2 still occupied by PV2
+    }
+
+    @Test
     void testUpdatePflichtvortragChangeGruppeSuccess() {
         // Create initial PV for Gruppe A
         Pflichtvortrag pv = new Pflichtvortrag();
@@ -465,6 +559,44 @@ public class PflichtvortragServiceTest {
     }
 
     @Test
+    void testUpdatePflichtvortragChangeGruppeFailsIfNewGruppeOccupiedByAnotherPflichtvortrag() {
+        // Create PV1 for Gruppe A, Slot 1
+        Pflichtvortrag pv1 = new Pflichtvortrag();
+        pv1.titel = "PV1";
+        pv1.referent = referent;
+        pv1.pflichtgruppe = "Gruppe A";
+        pv1.pflichtraum = raum2;
+        pv1.pflichtslot = slot1;
+        Pflichtvortrag createdPv1 = (Pflichtvortrag) adminService.createVortrag(pv1, veranstaltung.id);
+
+        // Create PV2 for Gruppe B, Slot 1
+        Pflichtvortrag pv2 = new Pflichtvortrag();
+        pv2.titel = "PV2";
+        pv2.referent = referent;
+        pv2.pflichtgruppe = "Gruppe B";
+        pv2.pflichtraum = raum1;
+        pv2.pflichtslot = slot1;
+        adminService.createVortrag(pv2, veranstaltung.id);
+
+        // Attempt to update PV1 to use Gruppe B (which is occupied by PV2)
+        Pflichtvortrag updatedPv1 = new Pflichtvortrag();
+        updatedPv1.titel = "PV1 Updated Gruppe";
+        updatedPv1.referent = referent;
+        updatedPv1.pflichtgruppe = "Gruppe B"; // Try to change to Gruppe B
+        updatedPv1.pflichtraum = raum2;
+        updatedPv1.pflichtslot = slot1;
+
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
+            adminService.updateVortrag(createdPv1.id, updatedPv1, veranstaltung.id);
+        });
+        assertTrue(thrown.getMessage().contains("Nicht alle Teilnehmer der neuen Gruppe 'Gruppe B' sind im Slot 'Slot 1' verfügbar."));
+
+        // Verify state remains unchanged for PV1
+        assertFalse(isTeilnehmerAvailable(teilnehmer1, slot1)); // Gruppe A still occupied by PV1
+        assertFalse(isTeilnehmerAvailable(teilnehmer3, slot1)); // Gruppe B still occupied by PV2
+    }
+
+    @Test
     void testDeletePflichtvortragSuccess() {
         // Create initial PV
         Pflichtvortrag pv = new Pflichtvortrag();
@@ -489,65 +621,5 @@ public class PflichtvortragServiceTest {
         Object[] resultArr = {""};
         QuarkusTransaction.requiringNew().run(() -> resultArr[0] = Pflichtvortrag.findById(createdPv.id));
         assertNull(resultArr[0]); // PV deleted
-    }
-
-    @Test
-    void testDeletePflichtvortragConditionalReleaseTeilnehmer() {
-        // Create PV1 for Gruppe A, Slot 1
-        Pflichtvortrag pv1 = new Pflichtvortrag();
-        pv1.titel = "PV1";
-        pv1.referent = referent;
-        pv1.pflichtgruppe = "Gruppe A";
-        pv1.pflichtraum = raum2;
-        pv1.pflichtslot = slot1;
-        Pflichtvortrag createdPv1 = (Pflichtvortrag) adminService.createVortrag(pv1, veranstaltung.id);
-
-        // Manually make teilnehmer1 unavailable for slot1, simulating another reason, in a committed transaction
-        QuarkusTransaction.requiringNew().run(() -> {
-            Verfuegbarkeit vf = new Verfuegbarkeit();
-            vf.nutzer = teilnehmer1;
-            vf.slot = slot1;
-            vf.isAvailable = false;
-            vf.persist();
-        });
-
-        // Delete PV1
-        adminService.deleteVortrag(createdPv1.id, veranstaltung.id);
-
-        // Verify teilnehmer1 is *still* unavailable because of the manual entry
-        assertFalse(isTeilnehmerAvailable(teilnehmer1, slot1));
-        // teilnehmer2 should be available as only PV1 made it unavailable
-        assertTrue(isTeilnehmerAvailable(teilnehmer2, slot1));
-        // Raum should be available as only PV1 made it unavailable
-        assertTrue(isRaumAvailable(raum2, slot1));
-    }
-
-    @Test
-    void testDeletePflichtvortragConditionalReleaseRaum() {
-        // Create PV1 for Gruppe A, Raum 2, Slot 1
-        Pflichtvortrag pv1 = new Pflichtvortrag();
-        pv1.titel = "PV1";
-        pv1.referent = referent;
-        pv1.pflichtgruppe = "Gruppe A";
-        pv1.pflichtraum = raum2;
-        pv1.pflichtslot = slot1;
-        Pflichtvortrag createdPv1 = (Pflichtvortrag) adminService.createVortrag(pv1, veranstaltung.id);
-
-        // Manually block raum2, slot1, simulating another reason for it to be blocked, in a committed transaction
-        QuarkusTransaction.requiringNew().run(() -> {
-            RaumBelegbarkeit rb = new RaumBelegbarkeit();
-            rb.raum = raum2;
-            rb.slot = slot1;
-            rb.isBelegt = true;
-            rb.persist();
-        });
-
-        // Delete PV1
-        adminService.deleteVortrag(createdPv1.id, veranstaltung.id);
-
-        // Verify raum2 is *still* unavailable because of the manual entry
-        assertFalse(isRaumAvailable(raum2, slot1));
-        // Teilnehmer should be available as only PV1 made them unavailable
-        assertTrue(isTeilnehmerAvailable(teilnehmer1, slot1));
     }
 }

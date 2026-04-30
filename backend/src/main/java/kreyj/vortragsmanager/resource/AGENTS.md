@@ -28,8 +28,8 @@ Resource-Klassen sind die **JAX-RS REST-Controller**. Sie empfangen HTTP-Anfrage
 ## Wichtige Endpunkte (Beispiele)
 
 ### Verfügbarkeiten
-- `GET /api/admin/veranstaltung/{vid}/verfuegbarkeiten`: Alle Nutzer-Verfügbarkeiten einer Veranstaltung.
-- `GET /api/admin/veranstaltung/{vid}/raeume/verfuegbarkeiten`: Raumverfügbarkeiten inklusive veranstaltungsübergreifender Belegungsprüfung.
+- `GET /api/admin/veranstaltungen/{vid}/verfuegbarkeiten`: Alle Nutzer-Verfügbarkeiten einer Veranstaltung.
+- `GET /api/admin/veranstaltungen/{vid}/raeume/verfuegbarkeiten`: Raumverfügbarkeiten inklusive veranstaltungsübergreifender Belegungsprüfung.
 
 ### Hierarchische Struktur
 Viele Endpunkte folgen dem Muster `/api/veranstaltungen/{vid}/...`, um den Kontext der aktuellen Veranstaltung direkt im Pfad abzubilden.

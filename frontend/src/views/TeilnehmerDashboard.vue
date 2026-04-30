@@ -44,7 +44,7 @@
         </div>
       </section>
 
-      <!-- NEUE SEKTION: Meine Verfügbarkeit -->
+      <!-- SEKTION: Meine Verfügbarkeit -->
       <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 animate-fade-in">
         <div class="flex items-center gap-2 mb-6 text-indigo-600">
           <CheckSquareIcon class="w-6 h-6" />
@@ -77,84 +77,84 @@
         </div>
       </section>
 
-      <!-- HEADER & WAHL-MODUS -->
+      <!-- WAHL-MODUS MIT KOMPAKTER DARSTELLUNG -->
       <div class="space-y-6">
-        <header class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h2 class="text-2xl font-bold text-gray-800">Verfügbare Vorträge</h2>
-          <p class="text-gray-600 mt-1">Wählen Sie Ihre Top 10 Vorträge aus. 1 = Höchste Priorität.</p>
-          <div class="mt-4 flex flex-wrap gap-2">
+        <header class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800 uppercase tracking-tight flex items-center gap-2">
+              <StarIcon class="w-6 h-6 text-orange-500" /> Wahlvorträge & Prioritäten
+            </h2>
+            <p class="text-gray-600 mt-1">Wählen Sie Ihre Top 10 Vorträge aus. 1 = Höchste Priorität.</p>
+          </div>
+          <div class="hidden md:flex gap-2">
             <div v-for="n in 10" :key="n"
-                 :class="['w-8 h-8 flex items-center justify-center rounded-full border text-xs font-bold',
+                 :class="['w-8 h-8 flex items-center justify-center rounded-full border text-[10px] font-black',
                           isRankTaken(n) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-gray-100 text-gray-400 border-gray-200']">
               {{ n }}
             </div>
           </div>
         </header>
 
-        <!-- Vortrags-Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div v-for="vortrag in vortraege" :key="vortrag.id"
-               :class="['bg-white rounded-xl shadow-sm border flex flex-col overflow-hidden hover:shadow-md transition-shadow relative',
-                        vortrag.istPflicht ? 'border-red-300 ring-1 ring-red-100' : 'border-gray-100']">
-
-            <div v-if="vortrag.istPflicht" class="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-bl-lg uppercase tracking-widest shadow-sm z-10">
-              Pflicht
-            </div>
-
-            <div class="p-5 flex-1">
-              <div class="flex justify-between items-start mb-2">
-                <span class="text-xs font-semibold uppercase tracking-wider text-indigo-500">{{ vortrag.zielgruppe }}</span>
-                <span v-if="getCurrentPriority(vortrag.id)" class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-xs font-bold">
-                  Prio {{ getCurrentPriority(vortrag.id) }}
+        <!-- Legende der Wahlvorträge (wie im Admin-Bereich) -->
+        <div v-if="electiveTalks.length > 0" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 animate-fade-in">
+          <h3 class="font-black text-indigo-900 uppercase text-xs mb-4 flex items-center gap-2">
+            <InfoIcon class="w-4 h-4" /> Übersicht der verfügbaren Wahlvorträge
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-2">
+            <div v-for="(talk, index) in electiveTalks" :key="'legende-'+talk.id" class="flex gap-3 items-start group">
+              <span class="font-black text-indigo-600 shrink-0 w-5 text-right text-sm">{{ index + 1 }}:</span>
+              <div class="min-w-0">
+                <span class="text-gray-800 text-sm font-bold block truncate group-hover:text-indigo-600 transition-colors"
+                      :title="`Referent: ${talk.referent?.lastName || 'N/A'}${talk.referent?.organisation ? ' (' + talk.referent.organisation + ')' : ''}`">
+                  {{ talk.titel }}
                 </span>
+                <p class="text-[10px] text-gray-500 italic truncate">{{ talk.referent?.firstName }} {{ talk.referent?.lastName }}</p>
               </div>
-
-              <h3 class="text-lg font-bold text-gray-900 leading-tight mb-2 pr-12">{{ vortrag.titel }}</h3>
-
-              <div class="flex flex-col mb-4">
-                <p class="text-sm font-bold text-gray-700 flex items-center cursor-help"
-                   :title="vortrag.referent?.biography || 'Keine Biografie hinterlegt'">
-                  <UserIcon class="w-4 h-4 mr-1 text-indigo-500" />
-                  {{ vortrag.referent?.firstName }} {{ vortrag.referent?.lastName }}
-                </p>
-                <p v-if="vortrag.referent?.organisation"
-                   class="text-xs text-gray-500 ml-5 italic cursor-help"
-                   :title="vortrag.referent?.slogan || 'Kein Slogan hinterlegt'">
-                  {{ vortrag.referent.organisation }}
-                </p>
-              </div>
-
-              <p class="text-gray-600 text-sm mb-4">
-                {{ vortrag.inhalt }}
-              </p>
-            </div>
-
-            <!-- Footer -->
-            <div class="bg-gray-50 p-4 border-t border-gray-100 mt-auto">
-              <div v-if="vortrag.istPflicht" class="text-xs text-red-600 font-medium italic text-center py-2">
-                Pflichtveranstaltung
-              </div>
-              <template v-else>
-                <select
-                    :disabled="zuweisungen.length > 0 || isDeadlinePassed(currentEvent?.deadlineTeilnehmer)"
-                    :value="getCurrentPriority(vortrag.id) || ''"
-                    @change="updatePriority(vortrag.id, $event.target.value)"
-                    class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-gray-100 disabled:text-gray-400"
-                >
-                  <option value="">Keine Wahl</option>
-                  <option v-for="n in 10" :key="n" :value="n" :disabled="isRankTaken(n) && getCurrentPriority(vortrag.id) !== n">
-                    Rang {{ n }}
-                  </option>
-                </select>
-              </template>
             </div>
           </div>
         </div>
 
+        <!-- Kompakte Prioritäten-Tabelle -->
+        <div v-if="electiveTalks.length > 0" class="bg-white shadow rounded-xl border border-gray-100 overflow-hidden animate-fade-in">
+          <table class="min-w-full divide-y divide-gray-200 text-xs table-fixed">
+            <thead class="bg-gray-50 text-[10px] uppercase font-black text-gray-500">
+            <tr>
+              <th class="px-6 py-3 text-left w-64 border-r border-gray-100">Info</th>
+              <th v-for="(talk, index) in electiveTalks" :key="'header-'+talk.id"
+                  class="px-1 py-3 text-center text-[10px] font-black text-indigo-600 w-14 min-w-[56px] border-r border-gray-100 bg-indigo-50/30"
+                  :title="talk.titel">
+                {{ index + 1 }}
+              </th>
+              <th class="w-auto bg-gray-50"></th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+            <tr class="hover:bg-gray-50/50 transition-colors">
+              <td class="px-6 py-4 border-r border-gray-100 bg-gray-50/30">
+                <div class="flex flex-col">
+                  <span class="font-black text-indigo-900 uppercase text-[10px]">Meine Wahl</span>
+                  <span class="text-gray-500 text-[9px]">Geben Sie hier Ihre Prioritäten (1-10) ein</span>
+                </div>
+              </td>
+              <td v-for="talk in electiveTalks" :key="'cell-'+talk.id" class="px-1 py-4 text-center border-r border-gray-50">
+                <input type="number" min="1" max="10"
+                       :value="getCurrentPriority(talk.id) || ''"
+                       @input="updatePriority(talk.id, $event.target.value)"
+                       :disabled="zuweisungen.length > 0 || isDeadlinePassed(currentEvent?.deadlineTeilnehmer)"
+                       class="w-12 mx-auto text-center border rounded-lg py-1.5 text-xs font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 border-gray-200 bg-white transition-all disabled:bg-gray-100 disabled:text-gray-300" />
+              </td>
+              <td class="bg-gray-50/10"></td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+
         <!-- Save Button -->
-        <div v-if="zuweisungen.length === 0" class="fixed bottom-6 right-6 lg:static lg:mt-8 lg:flex lg:justify-end">
-          <button @click="saveAllPriorities" :disabled="isDeadlinePassed(currentEvent?.deadlineTeilnehmer)" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full shadow-lg font-bold flex items-center gap-2">
-            <SaveIcon class="w-5 h-5" /> Auswahl speichern
+        <div v-if="zuweisungen.length === 0" class="flex justify-end mt-8">
+          <button @click="saveAllPriorities"
+                  :disabled="isDeadlinePassed(currentEvent?.deadlineTeilnehmer)"
+                  class="bg-green-600 hover:bg-green-700 text-white px-10 py-4 rounded-2xl shadow-xl font-black uppercase tracking-widest text-xs flex items-center gap-3 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100">
+            <SaveIcon class="w-5 h-5" /> Auswahl jetzt speichern
           </button>
         </div>
       </div>
@@ -169,7 +169,8 @@ import { useEventContextStore } from '../stores/eventContext';
 import {
   User as UserIcon, Save as SaveIcon,
   CalendarCheck as CalendarCheckIcon, MapPin as MapPinIcon,
-  Calendar as CalendarIcon, CheckSquare as CheckSquareIcon, X as XIcon
+  Calendar as CalendarIcon, CheckSquare as CheckSquareIcon, X as XIcon,
+  Star as StarIcon, Info as InfoIcon
 } from 'lucide-vue-next';
 
 const eventContext = useEventContextStore();
@@ -178,11 +179,16 @@ const selectedVid = ref(null);
 const vortraege = ref([]);
 const prios = ref([]);
 const zuweisungen = ref([]);
-const allSlots = ref([]); // To store all slots for the selected event
-const teilnehmerAvailabilities = ref([]); // To store participant's availabilities for the selected event
+const allSlots = ref([]);
+const teilnehmerAvailabilities = ref([]);
 
 const currentEvent = computed(() => {
   return veranstaltungen.value.find(v => v.id === selectedVid.value);
+});
+
+// Filter elective talks from all talks
+const electiveTalks = computed(() => {
+  return vortraege.value.filter(v => !v.istPflicht);
 });
 
 onMounted(async () => {
@@ -190,7 +196,6 @@ onMounted(async () => {
     const vRes = await api.get('/api/teilnehmer/veranstaltungen');
     veranstaltungen.value = vRes.data;
 
-    // Wenn nur eine Veranstaltung vorhanden ist, diese direkt auswählen
     if (veranstaltungen.value.length === 1) {
       selectedVid.value = veranstaltungen.value[0].id;
       await handleVeranstaltungChange();
@@ -219,8 +224,8 @@ const handleVeranstaltungChange = async () => {
       api.get(`/api/teilnehmer/zuweisungen?vid=${selectedVid.value}`),
       api.get(`/api/teilnehmer/vortraege?vid=${selectedVid.value}`),
       api.get(`/api/teilnehmer/prios?vid=${selectedVid.value}`),
-      api.get(`/api/veranstaltungen/${selectedVid.value}/slots`), // Fetch slots for the selected event
-      api.get(`/api/teilnehmer/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`) // Fetch participant's availabilities
+      api.get(`/api/veranstaltungen/${selectedVid.value}/slots`),
+      api.get(`/api/teilnehmer/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`)
     ]);
 
     zuweisungen.value = zuweisungenRes.data;
@@ -239,10 +244,15 @@ const isRankTaken = (rank) => prios.value.some(p => p.prioWert == rank);
 
 const updatePriority = (vortragId, value) => {
   if (zuweisungen.value.length > 0 || isDeadlinePassed(currentEvent.value?.deadlineTeilnehmer)) return;
+
+  // Remove old priority for this talk
   prios.value = prios.value.filter(p => p.vortragId !== vortragId);
+
   if (value !== "") {
-    prios.value = prios.value.filter(p => p.prioWert != value);
-    prios.value.push({ vortragId, prioWert: parseInt(value) });
+    const val = parseInt(value);
+    // If another talk has this priority, clear it (enforce unique ranks 1-10)
+    prios.value = prios.value.filter(p => p.prioWert !== val);
+    prios.value.push({ vortragId, prioWert: val });
   }
 };
 
@@ -254,7 +264,7 @@ const saveAllPriorities = async () => {
   try {
     const payload = prios.value.map(p => ({ vortragId: p.vortragId, prioWert: p.prioWert }));
     await api.post('/api/teilnehmer/priorities', payload);
-    await handleVeranstaltungChange(); // Refresh data after save
+    await handleVeranstaltungChange();
     alert("Erfolgreich gespeichert!");
   } catch (e) {
     alert("Fehler beim Speichern.");
@@ -281,7 +291,6 @@ const toggleAvailability = async (slotId) => {
       isAvailable: newValue
     });
 
-    // Lokal aktualisieren
     if (newValue) {
       teilnehmerAvailabilities.value.push(slotId);
     } else {
@@ -298,11 +307,23 @@ const isDeadlinePassed = (deadline) => {
 };
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('de-DE') : '';
-const formatDateTime = (dt) => dt ? new Date(dt).toLocaleDateString('de-DE', {weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'}) : '';
+const formatDateTime = (dt) => dt ? new Date(dt).toLocaleTimeString('de-DE', {weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'}) : '';
 const formatTime = (t) => t ? new Date(t).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'}) : '';
 </script>
 
 <style scoped>
 .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
 </style>

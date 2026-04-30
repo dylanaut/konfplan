@@ -305,11 +305,11 @@ TEILNEHMER --> getAll
 | Aktion | Method | Pfad | Rollen
 | getVerfuegbarkeiten
 | GET
-| `/api/admin/veranstaltung/{vid}/verfuegbarkeiten`
+| `/api/admin/veranstaltungen/{vid}/verfuegbarkeiten`
 | ADMIN
 | updateVerfuegbarkeit
 | POST
-| `/api/admin/veranstaltung/{vid}/verfuegbarkeiten`
+| `/api/admin/veranstaltungen/{vid}/verfuegbarkeiten`
 | ADMIN
 | getAllUsers
 | GET
