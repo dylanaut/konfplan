@@ -1,9 +1,12 @@
 package kreyj.vortragsmanager.dto;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
-public class ReferentVeranstaltungDto extends VersionedDto {
+@RegisterForReflection
+public class ReferentVeranstaltungDto extends AbstractVersionedDto {
     public Long id;
     public String name;
     public LocalDateTime beginntAm;

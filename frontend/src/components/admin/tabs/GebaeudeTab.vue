@@ -4,7 +4,8 @@
       <h2 class="text-lg font-bold text-gray-800">Gebäude</h2>
       <div class="flex gap-2">
         <input v-model="filters.gebaeude" placeholder="Suchen..." class="input-field text-xs py-1 px-2"/>
-        <button @click="emit('triggerUpload', '/api/gebaeude/import')" class="btn-secondary flex items-center gap-2 text-xs py-1 px-3">
+        <button @click="emit('triggerUpload', '/api/gebaeude/import')"
+                class="btn-secondary flex items-center gap-2 text-xs py-1 px-3">
           <UploadIcon class="w-3.5 h-3.5"/>
           Import
         </button>
@@ -15,7 +16,10 @@
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
         <tr>
-          <th @click="toggleSort('gebaeude', 'name')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Name <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
+          <th @click="toggleSort('gebaeude', 'name')"
+              class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Name
+            <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/>
+          </th>
           <th class="px-4 py-1.5 text-left font-bold">Adresse</th>
           <th class="px-4 py-1.5 text-left font-bold">Typ</th>
           <th class="px-4 py-1.5 text-right font-bold">Aktionen</th>
@@ -25,7 +29,20 @@
         <template v-for="g in paginatedGebaeude" :key="g.id">
           <tr class="bg-white hover:bg-gray-50 transition border-t border-gray-100">
             <td class="px-4 py-2 font-bold">{{ g.name }}</td>
-            <td class="px-4 py-2 text-gray-600">{{ g.strasse }} {{ g.hausnummer }}, {{ g.ort }}</td>
+            <td class="px-4 py-2 text-gray-600">
+              <a :href="generateMapsUrl(g)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-blue-600 hover:underline flex items-center gap-1"
+                  title="In Google Maps öffnen"
+              >{{ g.strasse }} {{ g.hausnummer }}, {{ g.ort }}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+              </a>
+            </td>
             <td class="px-4 py-2">{{ g.typ }}</td>
             <td class="px-4 py-2 text-right space-x-2">
               <button @click="emit('openGebaeudeEditor', g)" class="text-indigo-600" title="Bearbeiten">
@@ -40,15 +57,23 @@
             <td colspan="4" class="px-4 py-2">
               <div class="flex items-center justify-between text-[8px] font-bold text-gray-500 uppercase mb-1">
                 Räume in {{ g.name }}
-                <button @click="emit('openRaumEditor', null, g.id)" class="btn-primary-xs text-[9px] px-2 py-0.5">+ Raum</button>
+                <button @click="emit('openRaumEditor', null, g.id)" class="btn-primary-xs text-[9px] px-2 py-0.5">+
+                  Raum
+                </button>
               </div>
               <div class="border border-gray-200 rounded-lg overflow-hidden bg-white">
                 <table class="min-w-full divide-y divide-gray-200">
                   <thead class="bg-gray-100 text-[8px] uppercase font-bold text-gray-500">
                   <tr>
-                    <th @click="toggleSort('raeume', 'name')" class="px-3 py-1 text-left cursor-pointer hover:text-indigo-600 transition">Raum</th>
-                    <th @click="toggleSort('raeume', 'kapazitaet')" class="px-3 py-1 text-left cursor-pointer hover:text-indigo-600 transition">Kapazität</th>
-                    <th @click="toggleSort('raeume', 'etage')" class="px-3 py-1 text-left cursor-pointer hover:text-indigo-600 transition">Etage</th>
+                    <th @click="toggleSort('raeume', 'name')"
+                        class="px-3 py-1 text-left cursor-pointer hover:text-indigo-600 transition">Raum
+                    </th>
+                    <th @click="toggleSort('raeume', 'kapazitaet')"
+                        class="px-3 py-1 text-left cursor-pointer hover:text-indigo-600 transition">Kapazität
+                    </th>
+                    <th @click="toggleSort('raeume', 'etage')"
+                        class="px-3 py-1 text-left cursor-pointer hover:text-indigo-600 transition">Etage
+                    </th>
                     <th class="px-3 py-1 text-right">Aktionen</th>
                   </tr>
                   </thead>
@@ -74,13 +99,14 @@
         </template>
         </tbody>
       </table>
-      <PaginationControls v-model:currentPage="pages.gebaeude" :totalItems="filteredGebaeude.length" :pageSize="pageSize"/>
+      <PaginationControls v-model:currentPage="pages.gebaeude" :totalItems="filteredGebaeude.length"
+                          :pageSize="pageSize"/>
     </div>
   </section>
 </template>
 
 <script setup>
-import { computed, reactive, watch } from 'vue';
+import {computed, reactive, watch} from 'vue';
 import {
   ArrowUpDown as ArrowUpDownIcon,
   Pencil as PencilIcon,
@@ -106,11 +132,13 @@ const filters = reactive({
 });
 
 const internalSorts = reactive({
-  gebaeude: { key: 'name', dir: 'asc' },
-  raeume: { key: 'name', dir: 'asc' }
+  gebaeude: {key: 'name', dir: 'asc'},
+  raeume: {key: 'name', dir: 'asc'}
 });
 
-watch(() => filters.gebaeude, () => { pages.gebaeude = 1; });
+watch(() => filters.gebaeude, () => {
+  pages.gebaeude = 1;
+});
 
 const processList = (list, filterText, sortConfig) => {
   let result = [...list];
@@ -165,11 +193,28 @@ const sortRaeume = (raumList) => {
 const filteredGebaeude = computed(() => processList(props.gebaeude, filters.gebaeude, internalSorts.gebaeude));
 const paginatedGebaeude = computed(() => paginate(filteredGebaeude.value, pages.gebaeude));
 
+const generateMapsUrl = (g) => {
+  // Adresse zusammenfügen
+  const address = `${g.strasse} ${g.hausnummer}, ${g.plz} ${g.ort}`;
+  // URL-konform encodieren
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+};
 </script>
 
 <style scoped>
-.btn-primary { @apply rounded-lg bg-indigo-600 px-3 py-1.5 text-white font-bold hover:bg-indigo-700 transition shadow-sm border-none cursor-pointer disabled:opacity-50; }
-.btn-primary-xs { @apply rounded-md bg-indigo-600 px-2 py-0.5 text-white font-bold hover:bg-indigo-700 transition shadow-sm border-none cursor-pointer; }
-.btn-secondary { @apply bg-white text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 font-bold border border-gray-200 transition shadow-sm cursor-pointer disabled:opacity-50; }
-.input-field { @apply rounded-lg border border-gray-300 px-2 py-1 text-gray-900 focus:ring-2 focus:ring-indigo-500 bg-white; }
+.btn-primary {
+  @apply rounded-lg bg-indigo-600 px-3 py-1.5 text-white font-bold hover:bg-indigo-700 transition shadow-sm border-none cursor-pointer disabled:opacity-50;
+}
+
+.btn-primary-xs {
+  @apply rounded-md bg-indigo-600 px-2 py-0.5 text-white font-bold hover:bg-indigo-700 transition shadow-sm border-none cursor-pointer;
+}
+
+.btn-secondary {
+  @apply bg-white text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 font-bold border border-gray-200 transition shadow-sm cursor-pointer disabled:opacity-50;
+}
+
+.input-field {
+  @apply rounded-lg border border-gray-300 px-2 py-1 text-gray-900 focus:ring-2 focus:ring-indigo-500 bg-white;
+}
 </style>

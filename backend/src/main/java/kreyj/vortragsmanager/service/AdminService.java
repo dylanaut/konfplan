@@ -32,6 +32,9 @@ public class AdminService {
     @Inject
     MailService mailService;
 
+    @Inject
+    ProtokollService protokollService;
+
     public List<UserDto> getAllUsers(Long veranstaltungId) {
         List<Nutzer> admins = Nutzer.list("role = 'ADMIN'");
         List<Nutzer> vNutzers = Nutzer.find("SELECT u FROM Nutzer u JOIN u.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
@@ -89,6 +92,7 @@ public class AdminService {
             }
         }
 
+        protokollService.log(ProtokollKategorie.NUTZER, "Nutzer erstellt", "Neuer Nutzer '" + nutzer.email + "' mit Rolle '" + nutzer.role + "' erstellt.", nutzer.id);
         return mapToDto(nutzer);
     }
 
@@ -139,6 +143,7 @@ public class AdminService {
             t.gruppe = dto.gruppe;
         }
 
+        protokollService.log(ProtokollKategorie.NUTZER, "Nutzer aktualisiert", "Nutzer '" + nutzer.email + "' aktualisiert.", nutzer.id);
         return mapToDto(nutzer);
     }
 
@@ -161,6 +166,7 @@ public class AdminService {
             nutzer.addVeranstaltung(event);
             mailService.sendEventInvitation(nutzer, event);
             LOG.info("Nutzer " + nutzer.email + " zu Veranstaltung " + event.name + " eingeladen.");
+            protokollService.log(ProtokollKategorie.SECURITY, "Nutzer zu Event eingeladen", "Nutzer '" + nutzer.email + "' zu '" + event.name + "' eingeladen.", event.id);
         } else {
             LOG.info("Nutzer " + nutzer.email + " ist bereits für Veranstaltung " + event.name + " registriert.");
         }
@@ -189,7 +195,16 @@ public class AdminService {
 
     @Transactional
     public boolean deleteUser(Long id) {
-        return Nutzer.deleteById(id);
+        Nutzer nutzer = Nutzer.findById(id);
+        if (nutzer != null) {
+            String email = nutzer.email;
+            boolean deleted = Nutzer.deleteById(id);
+            if (deleted) {
+                protokollService.log(ProtokollKategorie.NUTZER, "Nutzer gelöscht", "Nutzer '" + email + "' gelöscht.", id);
+            }
+            return deleted;
+        }
+        return false;
     }
 
     @Transactional
@@ -197,6 +212,7 @@ public class AdminService {
         Nutzer entity = Nutzer.findById(id);
         if (entity != null) {
             entity.isActive = !entity.isActive;
+            protokollService.log(ProtokollKategorie.NUTZER, "Nutzer-Status geändert", "Status von '" + entity.email + "' auf " + (entity.isActive ? "aktiv" : "inaktiv") + " geändert.", id);
         }
     }
 
@@ -250,6 +266,7 @@ public class AdminService {
         veranstaltung.addVortrag(vortrag); // Assuming addVortrag handles duplicates or is idempotent
         veranstaltung.persist(); // Persist veranstaltung to update relationship
 
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag erstellt", "Vortrag '" + vortrag.titel + "' (" + (vortrag.istPflicht() ? "Pflicht" : "Wahl") + ") erstellt.", vortrag.id);
         return vortrag;
     }
 
@@ -285,6 +302,7 @@ public class AdminService {
                     a.passwordHash = BcryptUtil.bcryptHash(UUID.randomUUID().toString());
                     a.persist();
                     count++;
+                    protokollService.log(ProtokollKategorie.NUTZER, "Admin importiert", "Admin '" + email + "' via CSV importiert.", a.id);
                 } else {
                     LOG.warn("Admin '" + email + "' übersprungen: Existiert bereits.");
                 }
@@ -388,6 +406,7 @@ public class AdminService {
                     try {
                         createVortrag(newVortrag, veranstaltungId); // Use the new createVortrag logic
                         count++;
+                        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag importiert", "Vortrag '" + newVortrag.titel + "' via CSV importiert.", newVortrag.id);
                     } catch (IllegalArgumentException e) {
                         LOG.warn("Vortrag '" + dto.titel + "' übersprungen aufgrund von Validierungsfehler: " + e.getMessage());
                     }
@@ -415,6 +434,7 @@ public class AdminService {
         slot.veranstaltung = v;
         slot.persist();
         v.addSlot(slot);
+        protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot erstellt", "Slot '" + slot.description + "' für '" + v.name + "' erstellt.", slot.id);
         return slot;
     }
 
@@ -427,6 +447,7 @@ public class AdminService {
             entity.description = updated.description;
             entity.startTime = updated.startTime;
             entity.endTime = updated.endTime;
+            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot aktualisiert", "Slot '" + entity.description + "' aktualisiert.", entity.id);
         }
         return entity;
     }
@@ -459,7 +480,16 @@ public class AdminService {
 
     @Transactional
     public boolean deleteEventSlot(Long id, Long veranstaltungId) {
-        return EventSlot.delete("id = ?1 and veranstaltung.id = ?2", id, veranstaltungId) > 0;
+        EventSlot slot = EventSlot.findById(id);
+        if (slot != null) {
+            String desc = slot.description;
+            long count = EventSlot.delete("id = ?1 and veranstaltung.id = ?2", id, veranstaltungId);
+            if (count > 0) {
+                protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot gelöscht", "Slot '" + desc + "' gelöscht.", id);
+                return true;
+            }
+        }
+        return false;
     }
 
     @Transactional
@@ -505,6 +535,7 @@ public class AdminService {
                 v.persist();
 
                 count++;
+                protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot importiert", "Slot '" + slot.description + "' via CSV importiert.", slot.id);
             }
         } catch (Exception e) {
             LOG.error("Kritischer Fehler beim Importieren der Slots aus CSV: " + csvFilePath, e);
@@ -623,6 +654,7 @@ public class AdminService {
             wv.maxWiederholungen = updatedWv.maxWiederholungen;
             wv.wahlSlots = updatedWv.wahlSlots; // Assuming this is a collection and handled by JPA
         }
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag aktualisiert", "Vortrag '" + entity.titel + "' aktualisiert.", entity.id);
         return entity;
     }
 
@@ -633,6 +665,7 @@ public class AdminService {
             return false;
         }
 
+        String titel = entity.titel;
         if (entity instanceof Pflichtvortrag pv) {
             // Effekte:
             // * alle Teilnehmer der Gruppe sind für Slot wieder verfügbar
@@ -642,7 +675,11 @@ public class AdminService {
             updateRaumAvailability(pv.pflichtraum, pv.pflichtslot, false, pv.id); // pv.id als excludeId
         }
 
-        return Vortrag.deleteById(id);
+        boolean deleted = Vortrag.deleteById(id);
+        if (deleted) {
+            protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag gelöscht", "Vortrag '" + titel + "' gelöscht.", id);
+        }
+        return deleted;
     }
 
     public List<VortragStatDto> getStats(Long veranstaltungId) {

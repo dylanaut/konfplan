@@ -1,5 +1,8 @@
 package kreyj.vortragsmanager.dto;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
+@RegisterForReflection
 public class RefProfilDto {
     public String email;
     public String firstName;

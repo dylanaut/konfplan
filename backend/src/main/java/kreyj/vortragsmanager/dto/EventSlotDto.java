@@ -5,7 +5,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import java.time.LocalDateTime;
 
 @RegisterForReflection
-public class EventSlotDto extends VersionedDto {
+public class EventSlotDto extends AbstractVersionedDto {
     public String description;
 
     public LocalDateTime startTime;

@@ -1,8 +1,10 @@
 package kreyj.vortragsmanager.dto;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import kreyj.vortragsmanager.entity.Prioritaet;
 import kreyj.vortragsmanager.entity.Vortrag;
 
+@RegisterForReflection
 public class VortragPrioDto {
     public Long vortragId;
     public int prioWert;

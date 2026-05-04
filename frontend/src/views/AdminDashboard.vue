@@ -36,7 +36,7 @@
     <div class="border-b border-gray-200">
       <nav class="-mb-px flex space-x-6 overflow-x-auto">
         <button v-for="tab in visibleTabs" :key="tab"
-                @click="activeTab = tab"
+                @click="handleTabClick(tab)"
                 :class="[activeTab === tab ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-3 px-1 border-b-2 font-medium text-xs capitalize']">
           {{ tabLabels[tab] || tab }}
         </button>
@@ -44,7 +44,7 @@
     </div>
 
     <!-- START-ZUSTAND (Empty State) -->
-    <div v-if="!selectedVid && !['veranstaltungen', 'gebaeude', 'administratoren'].includes(activeTab)"
+    <div v-if="!selectedVid && !['veranstaltungen', 'gebaeude', 'administratoren', 'protokoll'].includes(activeTab)"
          class="bg-indigo-50 p-8 rounded-2xl text-center border-2 border-dashed border-indigo-200 animate-fade-in">
       <div class="text-indigo-400 mb-3 flex justify-center">
         <CalendarIcon class="w-10 h-10"/>
@@ -167,6 +167,10 @@
                 @startOptimization="startOptimization"
     />
 
+    <ProtokollTab v-if="activeTab === 'protokoll'"
+                  :protokolle="protokolle"
+    />
+
     <!-- Global File Input -->
     <input type="file" ref="fileInput" class="hidden" @change="handleGlobalUpload" accept=".csv"/>
 
@@ -238,6 +242,7 @@ import VortraegeTab from '../components/admin/tabs/VortraegeTab.vue';
 import SlotsTab from '../components/admin/tabs/SlotsTab.vue';
 import RaeumeTab from '../components/admin/tabs/RaeumeTab.vue';
 import PlanungTab from '../components/admin/tabs/PlanungTab.vue';
+import ProtokollTab from '../components/admin/tabs/ProtokollTab.vue';
 
 // Import Modals
 import AdminVortragEditorModal from '../components/AdminVortragEditorModal.vue';
@@ -261,7 +266,8 @@ const tabLabels = {
   raeume: 'Räume',
   veranstaltungen: 'Veranstaltungen',
   gebaeude: 'Gebäude',
-  administratoren: 'Organisatoren'
+  administratoren: 'Organisatoren',
+  protokoll: 'Protokoll'
 };
 
 // State
@@ -276,6 +282,7 @@ const eventSlots = ref([]);
 const belegungsPlan = ref([]);
 const qualitaet = ref({});
 const verfuegbarkeiten = ref([]);
+const protokolle = ref([]);
 const participantPriorities = ref({}); // { userId: { talkId: { prioWert: number } } }
 const originalParticipantPriorities = ref({}); // { userId: { talkId: { prioWert: number } } }
 const changedPriorities = ref(new Set()); // Set of userIds with changes
@@ -313,7 +320,7 @@ const csvFeedback = reactive({
 });
 
 const visibleTabs = computed(() => {
-  const base = ['veranstaltungen', 'gebaeude', 'administratoren'];
+  const base = ['veranstaltungen', 'gebaeude', 'administratoren', 'protokoll'];
   if (selectedVid.value) return ['ergebnisse', 'planung', 'teilnehmer', 'referenten', 'vortraege', 'slots', 'raeume', ...base];
   return base;
 });
@@ -390,6 +397,15 @@ const refreshAdmins = async () => {
   }
 };
 
+const refreshProtokolle = async () => {
+  try {
+    const res = await api.get('/api/admin/protokolle');
+    protokolle.value = res.data;
+  } catch (e) {
+    console.error('Fehler beim Laden des Protokolls:', e);
+  }
+};
+
 const updateRaeumeList = () => {
   raeume.value = gebaeude.value.flatMap(g => g.raeume.map(r => ({...r, gebaeude: {id: g.id, name: g.name}})));
 };
@@ -405,6 +421,13 @@ const handleVeranstaltungChange = () => {
 const handleVeranstaltungSelection = (vid) => {
   selectedVid.value = vid;
   handleVeranstaltungChange();
+};
+
+const handleTabClick = (tab) => {
+  activeTab.value = tab;
+  if (tab === 'protokoll') {
+    refreshProtokolle();
+  }
 };
 
 const loadData = async () => {
@@ -440,6 +463,8 @@ const loadData = async () => {
     participantPriorities.value = prioMap;
     originalParticipantPriorities.value = originalPrioMap; // Originalzustand zuweisen
     changedPriorities.value.clear();
+
+    if (activeTab.value === 'protokoll') refreshProtokolle();
 
   } catch (err) {
     console.error('Fehler beim Laden der Veranstaltungsdaten:', err);

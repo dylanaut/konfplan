@@ -1,0 +1,95 @@
+= Vortragsmanager: Entwicklungs- und Produktions-Workflow
+:toc: left
+:icons: font
+:source-highlighter: highlightjs
+
+Dieses Dokument beschreibt, wie das Backend (Quarkus) und das Frontend (Vue/Vite) mithilfe von *Quarkus Quinoa* integriert sind und wie sie gestartet werden.
+
+== 1. Entwicklungsmodus (Dev Mode)
+
+Im Entwicklungsmodus sorgt die Erweiterung **Quinoa** dafür, dass beide Welten miteinander verknüpft werden.
+
+=== Automatischer Start
+Wenn du im Verzeichnis `backend/` den Befehl ausführst:
+
+[source,bash]
+----
+./mvnw quarkus:dev
+----
+
+Passiert folgendes automatisch:
+1. Das **Quarkus-Backend** startet auf Port `9000`.
+2. Quinoa erkennt das Frontend-Verzeichnis (`../frontend`) und startet den **Vite-Dev-Server** auf Port `5173`.
+3. Quarkus agiert als **Proxy**: Du kannst die Anwendung unter `http://localhost:9000` aufrufen. Anfragen, die keine API-Pfad sind, werden intern an das Frontend weitergeleitet.
+
+[TIP]
+====
+Sollte der Frontend-Server nicht starten, stelle sicher, dass die Abhängigkeiten installiert sind:
+[source,bash]
+----
+cd frontend
+npm install
+----
+====
+
+=== Manueller Start des Frontends
+Falls du ausschließlich am UI arbeiten möchtest, kannst du das Frontend auch separat starten:
+
+[source,bash]
+----
+cd frontend
+npm run dev
+----
+Das UI ist dann direkt unter `http://localhost:5173` erreichbar (erfordert CORS-Konfiguration im Backend).
+
+== 2. Produktionsbetrieb (PROD)
+
+Im Produktionsbetrieb verschmelzen Frontend und Backend zu einer einzigen Einheit. Es wird kein separater Vite-Server mehr benötigt.
+
+=== Build-Prozess
+Der Build sollte vom **Wurzelverzeichnis** des Projekts ausgeführt werden, damit das Maven-Multi-Module-System greift:
+
+[source,bash]
+----
+./mvnw clean package -DskipTests
+----
+
+* **Was passiert hier?** Maven ruft `npm run build` im Frontend-Ordner auf. Die fertigen statischen Dateien (aus `dist/`) werden automatisch in das Java-Artefakt (`JAR`) des Backends kopiert.
+
+=== Starten der Anwendung
+Nach dem Build startest du nur noch das Backend:
+
+[source,bash]
+----
+java -jar backend/target/quarkus-app/quarkus-run.jar
+----
+
+* **Das Ergebnis:**
+** Die gesamte Anwendung (inkl. UI) läuft auf einem einzigen Port (Standard: `9000`).
+** Das Frontend wird unter `http://localhost:9000/` ausgeliefert.
+** Die API ist unter `http://localhost:9000/api/...` erreichbar.
+
+== 3. Relevante Konfiguration
+
+Die Steuerung erfolgt in der Datei `/Users/kreyj/Java/berufsorientierung/vortragsmanager/backend/src/main/resources/application.properties`:
+
+[source,properties]
+----
+# Pfad zum Frontend relativ zum Backend-Modul
+quarkus.quinoa.ui-dir=../frontend
+
+# Port des Vite-Dev-Servers für die Proxy-Weiterleitung
+quarkus.quinoa.dev-server.port=5173
+
+# Verzeichnis der gebauten Frontend-Dateien (für Prod-Build)
+quarkus.quinoa.build-dir=dist
+
+# CORS-Einstellungen für die lokale Entwicklung
+quarkus.http.cors.enabled=true
+quarkus.http.cors.origins=http://localhost:5173
+----
+
+[IMPORTANT]
+====
+Stelle sicher, dass **Node.js** und **npm** auf deinem System installiert sind, da Quinoa diese Tools während des Maven-Builds aufruft.
+====

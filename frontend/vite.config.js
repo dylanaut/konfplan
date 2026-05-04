@@ -12,5 +12,8 @@ export default defineConfig({
     server: {
         port: 5173,
         strictPort: true, // Wichtig, damit Vite nicht auf 5174 ausweicht
+    },
+    build: {
+      outDir: 'dist'
     }
 })

@@ -35,57 +35,74 @@ public class OptimierungService {
     @Inject
     ObjectMapper objectMapper;
 
+    @Inject
+    ProtokollService protokollService;
+
     @Transactional
     public void starteOptimierung(Long veranstaltungId, SolverConfigDto config) throws Exception {
         LOG.info("Starte Optimierung für Veranstaltung: " + veranstaltungId);
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
+        String vName = veranstaltung != null ? veranstaltung.name : "ID: " + veranstaltungId;
 
-        // 1. Daten laden
-        List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
-        List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.id", veranstaltungId).list();
-        List<Wahlvortrag> wahlvortraege = Wahlvortrag.find("veranstaltung.id", veranstaltungId).list();
-        List<EventSlot> slots = EventSlot.find("veranstaltung.id", veranstaltungId).list();
-        List<Raum> raeume = Raum.listAll();
-
-        // 2. Bestehende Zuweisungen löschen
-        Zuweisung.delete("slot.veranstaltung.id", veranstaltungId);
-
-        // 3. Pflichtvorträge vorab zuweisen (für alle Teilnehmer)
-        for (Pflichtvortrag pv : pflichtvortraege) {
-            for (Teilnehmer t : teilnehmer) {
-                Zuweisung z = new Zuweisung();
-                z.teilnehmer = t;
-                z.vortrag = pv;
-                z.slot = pv.pflichtslot;
-                z.raum = pv.pflichtraum;
-                z.persist();
-            }
-        }
-        LOG.info(pflichtvortraege.size() + " Pflichtvorträge vorab zugewiesen.");
-
-        if (slots.isEmpty() || teilnehmer.isEmpty() || wahlvortraege.isEmpty()) {
-            LOG.warn("Keine Wahlvorträge oder Slots vorhanden. Optimierung beendet.");
-            return;
-        }
-
-        // 4. MiniZinc Datendatei generieren (mit belegten Slots/Räumen durch Pflichtvorträge)
-        String dznContent = generiereDzn(teilnehmer, wahlvortraege, slots, raeume, pflichtvortraege);
-        LOG.info("MiniZinc Datendatei:\n" + dznContent);
-
-        Path tempDzn = Files.createTempFile("planung_", ".dzn");
-        Files.writeString(tempDzn, dznContent, StandardCharsets.UTF_8);
+        protokollService.log(ProtokollKategorie.PLANUNG, "Optimierung gestartet",
+                "Optimierung für '" + vName + "' mit Solver '" + config.solver + "' gestartet.", veranstaltungId);
 
         try {
-            // 5. MiniZinc aufrufen
-            String resultJson = rufeMiniZincAuf(tempDzn, config.solver, config.timeout, config.numThreads);
+            // 1. Daten laden
+            List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
+            List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.id", veranstaltungId).list();
+            List<Wahlvortrag> wahlvortraege = Wahlvortrag.find("veranstaltung.id", veranstaltungId).list();
+            List<EventSlot> slots = EventSlot.find("veranstaltung.id", veranstaltungId).list();
+            List<Raum> raeume = Raum.listAll();
 
-            if (resultJson != null && !resultJson.isEmpty() && resultJson.contains("instanz_slot")) {
-                // 6. Wahlvortrag-Ergebnisse parsen und persistieren
-                speichereErgebnisse(resultJson, teilnehmer, wahlvortraege, slots, raeume);
-            } else {
-                throw new RuntimeException("MiniZinc konnte keine Lösung für die Wahlvorträge finden.");
+            // 2. Bestehende Zuweisungen löschen
+            Zuweisung.delete("slot.veranstaltung.id", veranstaltungId);
+
+            // 3. Pflichtvorträge vorab zuweisen (für alle Teilnehmer)
+            for (Pflichtvortrag pv : pflichtvortraege) {
+                for (Teilnehmer t : teilnehmer) {
+                    Zuweisung z = new Zuweisung();
+                    z.teilnehmer = t;
+                    z.vortrag = pv;
+                    z.slot = pv.pflichtslot;
+                    z.raum = pv.pflichtraum;
+                    z.persist();
+                }
             }
-        } finally {
-            Files.deleteIfExists(tempDzn);
+            LOG.info(pflichtvortraege.size() + " Pflichtvorträge vorab zugewiesen.");
+
+            if (slots.isEmpty() || teilnehmer.isEmpty() || wahlvortraege.isEmpty()) {
+                LOG.warn("Keine Wahlvorträge oder Slots vorhanden. Optimierung beendet.");
+                protokollService.log(ProtokollKategorie.PLANUNG, "Optimierung abgebrochen", "Keine Wahlvorträge oder Slots vorhanden.", veranstaltungId);
+                return;
+            }
+
+            // 4. MiniZinc Datendatei generieren (mit belegten Slots/Räumen durch Pflichtvorträge)
+            String dznContent = generiereDzn(teilnehmer, wahlvortraege, slots, raeume, pflichtvortraege);
+            LOG.info("MiniZinc Datendatei:\n" + dznContent);
+
+            Path tempDzn = Files.createTempFile("planung_", ".dzn");
+            Files.writeString(tempDzn, dznContent, StandardCharsets.UTF_8);
+
+            try {
+                // 5. MiniZinc aufrufen
+                String resultJson = rufeMiniZincAuf(tempDzn, config.solver, config.timeout, config.numThreads);
+
+                if (resultJson != null && !resultJson.isEmpty() && resultJson.contains("instanz_slot")) {
+                    // 6. Wahlvortrag-Ergebnisse parsen und persistieren
+                    speichereErgebnisse(resultJson, teilnehmer, wahlvortraege, slots, raeume);
+                    protokollService.log(ProtokollKategorie.PLANUNG, "Optimierung erfolgreich",
+                            "Optimierung für '" + vName + "' abgeschlossen. Zuweisungen wurden gespeichert.", veranstaltungId);
+                } else {
+                    protokollService.log(ProtokollKategorie.PLANUNG, "Optimierung fehlgeschlagen", "MiniZinc konnte keine Lösung finden.", veranstaltungId);
+                    throw new RuntimeException("MiniZinc konnte keine Lösung für die Wahlvorträge finden.");
+                }
+            } finally {
+                Files.deleteIfExists(tempDzn);
+            }
+        } catch (Exception e) {
+            protokollService.log(ProtokollKategorie.PLANUNG, "Fehler bei Optimierung", e.getMessage(), veranstaltungId);
+            throw e;
         }
     }
 

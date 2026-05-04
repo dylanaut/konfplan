@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# BEST called with DB_HOST=localhost DB_NAME=vortragsmanager DB_USER=quarkus DB_PASSWORD=quarkus
+
 # 'quarkus.http.port' in application.properties
 QUARKUS_DEV_PORT=9000
 
@@ -10,7 +12,7 @@ SCRIPT_DIR=$PROJECT_DIR/backend/src/main/resources/db/migration
 ENV="${1:-}"  # erstes Argument, optional
 
 # --- Port ermitteln ---
-get_quarkus_dev_port2() {
+get_quarkus_dev_port() {
     local port
     port=$(docker ps \
         --filter "label=io.quarkus.devservice" \
@@ -21,6 +23,22 @@ get_quarkus_dev_port2() {
     if [[ -z "$port" ]]; then
         echo "❌ Kein Quarkus Dev Service Container gefunden!" >&2
         echo "   Läuft 'quarkus dev'?" >&2
+        exit 1
+    fi
+    echo "$port"
+}
+
+get_postgres_container_name_PROD() {
+    local port
+    port=$(docker ps \
+        --filter "label=vm_prod" \
+        --format "{{.Ports}}" \
+        | sed 's/.*:\([0-9]*\)->5432.*/\1/' \
+        | head -1)
+
+    if [[ -z "$port" ]]; then
+        echo "❌ Kein Postgres PROD Container gefunden!" >&2
+        echo "   Läuft 'postgres:18 als Prod DB'?" >&2
         exit 1
     fi
     echo "$port"
@@ -60,8 +78,9 @@ run_sql() {
 # --- Ausführen ---
 psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "CREATE SCHEMA IF NOT EXISTS $DB_SCHEMA;"
 
-run_sql "$SCRIPT_DIR/V1__tables.sql"
-run_sql "$SCRIPT_DIR/V2__data.sql"
+# das macht flyway
+#run_sql "$SCRIPT_DIR/V1__tables.sql"
+#run_sql "$SCRIPT_DIR/V2__data.sql"
 
 echo "✅ Setup abgeschlossen"
 

@@ -15,6 +15,8 @@ import kreyj.vortragsmanager.dto.LoginRequest;
 import kreyj.vortragsmanager.dto.ResetRequest;
 import kreyj.vortragsmanager.dto.TokenResponse;
 import kreyj.vortragsmanager.entity.Nutzer;
+import kreyj.vortragsmanager.entity.ProtokollKategorie;
+import kreyj.vortragsmanager.service.ProtokollService;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.time.Duration;
@@ -29,6 +31,9 @@ public class AuthResource {
 
     @Inject
     JsonWebToken jwt;
+
+    @Inject
+    ProtokollService protokollService;
 
     @POST
     @Path("/forgot-password")
@@ -54,6 +59,9 @@ public class AuthResource {
                             success -> System.out.println("Mail gesendet an " + nutzer.email),
                             failure -> System.err.println("Mail-Fehler: " + failure.getMessage())
                     );
+            protokollService.log(ProtokollKategorie.SECURITY, "Passwort-Reset angefordert", "Nutzer: " + email, nutzer.id);
+        } else {
+             protokollService.log(ProtokollKategorie.SECURITY, "Passwort-Reset für unbekannte E-Mail", "Email: " + email);
         }
 
         return Response.accepted().build();
@@ -68,8 +76,10 @@ public class AuthResource {
         if (nutzer != null && nutzer.resetTokenExpiry.isAfter(LocalDateTime.now())) {
             nutzer.passwordHash = BcryptUtil.bcryptHash(req.newPassword);
             nutzer.resetToken = null;
+            protokollService.log(ProtokollKategorie.SECURITY, "Passwort erfolgreich zurückgesetzt", "Nutzer: " + nutzer.email, nutzer.id);
             return Response.ok().build();
         }
+        protokollService.log(ProtokollKategorie.SECURITY, "Passwort-Reset fehlgeschlagen (Token ungültig/abgelaufen)");
         return Response.status(Response.Status.BAD_REQUEST).build();
     }
 
@@ -81,15 +91,15 @@ public class AuthResource {
         Nutzer nutzer = Nutzer.findByEmail(loginRequest.email);
 
         if (nutzer != null && BcryptUtil.matches(loginRequest.password, nutzer.passwordHash) && nutzer.isActive) {
-            // Wir lassen sign() ohne explizites Secret, 
-            // damit Quarkus das Secret aus der application.properties (smallrye.jwt.sign.key) verwendet.
             String token = Jwt.issuer("https://vortragsmanager.kreyj")
                     .upn(nutzer.email)
                     .groups(nutzer.role)
                     .expiresIn(Duration.ofHours(4))
                     .sign();
+            protokollService.log(ProtokollKategorie.LOGIN, "Erfolgreicher Login", "Rolle: " + nutzer.role, nutzer.id);
             return Response.ok(new TokenResponse(token, nutzer.role)).build();
         }
+        protokollService.log(ProtokollKategorie.SECURITY, "Fehlgeschlagener Login-Versuch", "E-Mail: " + loginRequest.email);
         return Response.status(Response.Status.UNAUTHORIZED).build();
     }
 }

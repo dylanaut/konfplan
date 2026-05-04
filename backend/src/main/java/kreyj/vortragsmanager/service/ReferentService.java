@@ -28,6 +28,9 @@ public class ReferentService {
     @Inject
     MailService mailService;
 
+    @Inject
+    ProtokollService protokollService;
+
     public Referent getProfile(String email) {
         Nutzer nutzer = Nutzer.findByEmail(email);
         if (nutzer instanceof Referent) {
@@ -48,6 +51,7 @@ public class ReferentService {
             referent.firstName = dto.firstName;
             referent.lastName = dto.lastName;
             referent.email = dto.email;
+            protokollService.log(ProtokollKategorie.NUTZER, "Profil aktualisiert", "Referenten-Profil '" + email + "' aktualisiert.", referent.id);
         }
     }
 
@@ -114,6 +118,7 @@ public class ReferentService {
             mailService.sendTalkRegistrationNotification(vortrag.veranstaltung, referent, vortrag, true);
         }
 
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent erstellt", "Referent '" + email + "' hat Vortrag '" + vortrag.titel + "' für Event '" + veranstaltung.name + "' erstellt.", vortrag.id);
         return ReferentResource.mapVortragToDto(vortrag);
     }
 
@@ -129,6 +134,7 @@ public class ReferentService {
         checkDeadline(vortrag.veranstaltung);
 
         updateVortragFromDto(vortrag, dto);
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent aktualisiert", "Referent '" + email + "' hat Vortrag '" + vortrag.titel + "' aktualisiert.", vortrag.id);
         return ReferentResource.mapVortragToDto(vortrag);
     }
 
@@ -175,6 +181,7 @@ public class ReferentService {
         if (targetEvent.beginntAm.isAfter(LocalDateTime.now())) {
             mailService.sendTalkRegistrationNotification(targetEvent, referent, newTalk, true);
         }
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag für weiteres Event registriert", "Referent '" + email + "' hat Vortrag '" + newTalk.titel + "' für Event '" + targetEvent.name + "' registriert.", newTalk.id);
     }
 
     @Transactional
@@ -192,11 +199,13 @@ public class ReferentService {
 
         checkDeadline(event);
 
+        String titel = talk.titel;
         talk.delete();
 
         if (event.beginntAm.isAfter(LocalDateTime.now())) {
             mailService.sendTalkRegistrationNotification(event, referent, talk, false);
         }
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag von Event abgemeldet", "Referent '" + email + "' hat Vortrag '" + titel + "' von Event '" + event.name + "' abgemeldet.", talkId);
     }
 
     private void updateVortragFromDto(Vortrag vortrag, VortragDto dto) {
@@ -241,11 +250,13 @@ public class ReferentService {
         checkDeadline(vortrag.veranstaltung);
 
         Veranstaltung event = vortrag.veranstaltung;
+        String titel = vortrag.titel;
         vortrag.delete();
 
         if (event.beginntAm.isAfter(LocalDateTime.now())) {
             mailService.sendTalkRegistrationNotification(event, referent, vortrag, false);
         }
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent gelöscht", "Referent '" + email + "' hat Vortrag '" + titel + "' gelöscht.", vortragId);
 
         return true;
     }
@@ -300,6 +311,7 @@ public class ReferentService {
                 ref.addVeranstaltung(veranstaltung);
 
                 count++;
+                protokollService.log(ProtokollKategorie.NUTZER, "Referent importiert", "Referent '" + ref.email + "' via CSV importiert und Event '" + veranstaltung.name + "' zugewiesen.", ref.id);
             }
         }
         return count;

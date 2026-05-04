@@ -1,0 +1,79 @@
+= Vortragsmanager: Produktions-Workflow mit Native Image
+:toc: left
+:icons: font
+:source-highlighter: highlightjs
+
+Dieses Dokument beschreibt den Build-Prozess und den Betrieb des Vortragsmanagers als **natives Executable** mittels GraalVM.
+
+== 1. Warum Native Image?
+
+Im Vergleich zum Standard-JRE-Modus bietet das Native Image:
+* **Startzeit:** < 0.1 Sekunden.
+* **Speicherverbrauch:** Deutlich reduzierter RAM-Footprint.
+* **Portabilität:** Keine Java-Laufzeitumgebung (JRE) auf dem Zielsystem erforderlich.
+
+== 2. Erstellung des Native Images
+
+Der Build-Prozess integriert über Quinoa automatisch das Frontend und kompiliert anschließend das gesamte Backend nativ.
+
+=== Variante A: Build mit lokalem GraalVM
+Wenn GraalVM auf deinem System installiert und als `JAVA_HOME` gesetzt ist:
+
+[source,bash]
+----
+./mvnw clean package -Dnative -DskipTests
+----
+
+=== Variante B: Build via Docker/Podman (Empfohlen)
+Falls du kein GraalVM lokal installiert hast, kann Quarkus den Build in einem Container durchführen:
+
+[source,bash]
+----
+./mvnw clean package -Dnative -Dquarkus.native.container-build=true -DskipTests
+----
+
+NOTE: Da das Frontend via Quinoa gebaut wird, müssen **Node.js** und **npm** trotzdem auf dem Host-System vorhanden sein.
+
+== 3. Starten der Anwendung
+
+Nach dem Build findest du im Verzeichnis `backend/target/` kein JAR-File, sondern eine ausführbare Datei (erkennbar am Suffix `-runner`).
+
+=== Ausführung
+[source,bash]
+----
+./backend/target/vortragsmanager-backend-1.0.0-SNAPSHOT-runner
+----
+
+* Die Anwendung ist sofort unter `http://localhost:9000` erreichbar.
+* Das Frontend ist bereits in die Binärdatei eingebettet.
+
+== 4. Konfiguration im Native Mode
+
+Da im Native Mode die `application.properties` fest in das Binary kompilliert werden, solltest du dynamische Werte (wie Datenbank-URLs oder Passwörter) über **Umgebungsvariablen** übergeben:
+
+[source,bash]
+----
+export QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://prod-db:5432/vortragsmanager
+export QUARKUS_DATASOURCE_USERNAME=admin
+export QUARKUS_DATASOURCE_PASSWORD=geheim
+export TEMPLATES_DIR=/opt/vortragsmanager/templates
+./backend/target/vortragsmanager-backend-1.0.0-SNAPSHOT-runner
+----
+
+== 5. Besonderheiten & Einschränkungen
+
+[IMPORTANT]
+====
+* **Reflection:** Quarkus kümmert sich um die meiste Reflection-Konfiguration. Wenn du jedoch eigene Klassen nutzt, die erst zur Laufzeit via Reflection geladen werden (selten nötig bei diesem Projekt), müssen diese explizit registriert werden.
+* **Build-Ressourcen:** Der Native Build benötigt viel CPU und RAM (ca. 4-8 GB freier Speicher empfohlen).
+* **Externe Templates:** Stelle sicher, dass das Verzeichnis in `TEMPLATES_DIR` für den Anwender lesbar ist. Bei der Verwendung von Docker muss dieser Pfad als Volume gemountet werden.
+====
+
+== 6. Kombination mit Docker
+
+Oft wird das native Executable direkt in ein minimales Docker-Image (z.B. `ubi-micro` oder `scratch`) verpackt. Der entsprechende Docker-Build-Befehl lautet:
+
+[source,bash]
+----
+docker build -f backend/src/main/docker/Dockerfile.native -t vortragsmanager/backend-native .
+----

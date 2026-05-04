@@ -1,6 +1,5 @@
 package kreyj.vortragsmanager.dto;
 
-abstract class VersionedDto {
+abstract class AbstractIdDto {
     public Long id;
-    public Long version;
 }

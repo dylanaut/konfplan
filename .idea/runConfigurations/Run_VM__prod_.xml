@@ -1,0 +1,8 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run VM (prod)" type="JarApplication">
+    <option name="JAR_PATH" value="$USER_HOME$/Downloads/quarkus-postgres-main/target/quarkus-app/quarkus-run.jar" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="ALTERNATIVE_JRE_PATH" />
+    <method v="2" />
+  </configuration>
+</component>

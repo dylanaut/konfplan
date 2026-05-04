@@ -4,11 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
 import kreyj.vortragsmanager.dto.PrioritaetRequest;
-import kreyj.vortragsmanager.entity.Nutzer;
-import kreyj.vortragsmanager.entity.Prioritaet;
-import kreyj.vortragsmanager.entity.Vortrag;
-import kreyj.vortragsmanager.entity.Teilnehmer;
-import kreyj.vortragsmanager.entity.Veranstaltung;
+import kreyj.vortragsmanager.entity.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,7 +15,9 @@ public class PrioritaetService {
     @Transactional
     public void savePrioritaeten(String email, List<PrioritaetRequest> requests) {
         Nutzer nutzer = Nutzer.findByEmail(email);
-        if (!(nutzer instanceof Teilnehmer)) throw new WebApplicationException("Nutzer ist kein Teilnehmer", 400);
+        if (!(nutzer instanceof Teilnehmer)) {
+            throw new WebApplicationException("Nutzer ist kein Teilnehmer", 400);
+        }
         Teilnehmer teilnehmer = (Teilnehmer) nutzer;
 
         // Deadline Check
@@ -36,7 +34,9 @@ public class PrioritaetService {
         // 1. Validierung: Nur Werte 1-10 erlaubt
         boolean invalidRange = requests.stream()
                 .anyMatch(r -> r.prioWert < 1 || r.prioWert > 10); // Hier umbenannt
-        if (invalidRange) throw new WebApplicationException("Priorität muss zwischen 1 und 10 liegen", 400);
+        if (invalidRange) {
+            throw new WebApplicationException("Priorität muss zwischen 1 und 10 liegen", 400);
+        }
 
         // 2. Validierung: Keine doppelten Prioritäten (Ranking-Check)
         long uniquePriorities = requests.stream()
@@ -67,10 +67,14 @@ public class PrioritaetService {
     @Transactional
     public Prioritaet updateSinglePrioritaet(Long userId, Long vortragId, int prioWert) {
         Teilnehmer teilnehmer = Teilnehmer.findById(userId);
-        if (teilnehmer == null) throw new WebApplicationException("Teilnehmer nicht gefunden", 404);
+        if (teilnehmer == null) {
+            throw new WebApplicationException("Teilnehmer nicht gefunden", 404);
+        }
 
         Vortrag vortrag = Vortrag.findById(vortragId);
-        if (vortrag == null) throw new WebApplicationException("Vortrag nicht gefunden", 404);
+        if (vortrag == null) {
+            throw new WebApplicationException("Vortrag nicht gefunden", 404);
+        }
 
         if (prioWert < 0 || prioWert > 10) {
             throw new WebApplicationException("Priorität muss zwischen 0 und 10 liegen", 400);
@@ -92,13 +96,17 @@ public class PrioritaetService {
         p.prioWert = prioWert;
         p.lastUpdated = LocalDateTime.now();
         p.persist();
+
         return p;
     }
 
     public List<Prioritaet> getPrioritaetenForUser(String email) {
         Nutzer nutzer = Nutzer.findByEmail(email);
-        if (!(nutzer instanceof Teilnehmer)) throw new WebApplicationException("Nutzer ist kein Teilnehmer", 400);
-        Teilnehmer teilnehmer = (Teilnehmer) nutzer;
+
+        if (!(nutzer instanceof Teilnehmer teilnehmer)) {
+            throw new WebApplicationException("Nutzer ist kein Teilnehmer", 400);
+        }
+
         return Prioritaet.list("teilnehmer", teilnehmer);
     }
 }

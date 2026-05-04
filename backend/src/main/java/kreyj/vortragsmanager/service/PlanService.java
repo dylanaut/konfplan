@@ -49,7 +49,7 @@ public class PlanService {
             Raum raum = entry.getKey();
             List<Zuweisung> zuweisungen = entry.getValue().stream()
                     .sorted(Comparator.comparing(z -> z.slot.startTime))
-                    .collect(Collectors.toList());
+                    .toList();
 
             // 1. Logo & Header
             if (veranstaltung.logo != null && !veranstaltung.logo.isEmpty()) {

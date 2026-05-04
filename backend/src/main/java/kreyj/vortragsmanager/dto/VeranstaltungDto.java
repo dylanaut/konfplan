@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RegisterForReflection
-public class VeranstaltungDto extends VersionedDto {
+public class VeranstaltungDto extends AbstractVersionedDto {
     public String name;
     public LocalDateTime beginntAm;
     public LocalDateTime endetAm;

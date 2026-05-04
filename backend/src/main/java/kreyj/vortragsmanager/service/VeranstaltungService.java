@@ -10,8 +10,10 @@ import kreyj.vortragsmanager.entity.Admin;
 import kreyj.vortragsmanager.entity.Gebaeude;
 import kreyj.vortragsmanager.entity.Nutzer;
 import kreyj.vortragsmanager.entity.Veranstaltung;
+import kreyj.vortragsmanager.entity.ProtokollKategorie; // Import ProtokollKategorie
 import kreyj.vortragsmanager.resource.VeranstaltungResource;
 import org.jboss.logging.Logger;
+import jakarta.inject.Inject; // Import Inject
 
 import java.io.FileReader;
 import java.nio.file.Path;
@@ -25,6 +27,9 @@ import static kreyj.vortragsmanager.util.DateHelper.DATE_FORMAT;
 public class VeranstaltungService {
     private static final Logger LOG = Logger.getLogger(VeranstaltungService.class);
 
+    @Inject
+    ProtokollService protokollService; // Inject ProtokollService
+
     public List<Veranstaltung> listAll() {
         return Veranstaltung.listAll();
     }
@@ -36,11 +41,15 @@ public class VeranstaltungService {
     @Transactional
     public VeranstaltungDto save(VeranstaltungDto dto) {
         Veranstaltung entity;
+        String aktion;
+
         if (dto.id != null) {
             entity = Veranstaltung.findById(dto.id);
             if (entity == null) return null;
+            aktion = "aktualisiert";
         } else {
             entity = new Veranstaltung();
+            aktion = "erstellt";
         }
 
         entity.name = dto.name;
@@ -69,7 +78,12 @@ public class VeranstaltungService {
             }
         }
 
-        if (dto.id == null) entity.persist();
+        if (dto.id == null) {
+            entity.persist();
+            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung erstellt", "Neue Veranstaltung '" + entity.name + "' erstellt.", entity.id);
+        } else {
+            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung aktualisiert", "Veranstaltung '" + entity.name + "' aktualisiert.", entity.id);
+        }
         return VeranstaltungResource.mapVeranstaltungToDto(entity);
     }
 
@@ -127,6 +141,7 @@ public class VeranstaltungService {
                         });
                     }
                     count++;
+                    protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung importiert", "Veranstaltung '" + v.name + "' via CSV importiert.", v.id);
                 } else {
                     LOG.warn("Veranstaltung '" + dto.name + "' übersprungen: Organisator (Admin) mit Email " + dto.organisatorEmail + " nicht gefunden.");
                 }
@@ -141,6 +156,14 @@ public class VeranstaltungService {
 
     @Transactional
     public boolean delete(Long id) {
-        return Veranstaltung.deleteById(id);
+        Veranstaltung veranstaltung = Veranstaltung.findById(id);
+        if (veranstaltung != null) {
+            boolean deleted = Veranstaltung.deleteById(id);
+            if (deleted) {
+                protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung gelöscht", "Veranstaltung '" + veranstaltung.name + "' gelöscht.", veranstaltung.id);
+            }
+            return deleted;
+        }
+        return false;
     }
 }

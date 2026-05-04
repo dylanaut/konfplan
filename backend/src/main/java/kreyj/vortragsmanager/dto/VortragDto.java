@@ -1,8 +1,11 @@
 package kreyj.vortragsmanager.dto;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
 import java.util.List;
 
-public class VortragDto extends VersionedDto {
+@RegisterForReflection
+public class VortragDto extends AbstractVersionedDto {
     public Long id;
     public String titel;
     public String abstractText;

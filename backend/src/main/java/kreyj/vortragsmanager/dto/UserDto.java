@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 @RegisterForReflection
-public class UserDto extends VersionedDto {
+public class UserDto extends AbstractVersionedDto {
     public String email;
     public String firstName;
     public String lastName;
