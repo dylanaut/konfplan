@@ -1,20 +1,20 @@
 package kreyj.vortragsmanager.devsupport;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import io.agroal.api.AgroalDataSource;
+import io.quarkus.agroal.DataSource;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import kreyj.vortragsmanager.entity.EventSlot;
 import kreyj.vortragsmanager.entity.Veranstaltung;
 import kreyj.vortragsmanager.service.*;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
-import java.awt.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.List;
 
 @ApplicationScoped
@@ -26,6 +26,9 @@ public class DevDataInit {
 
     @ConfigProperty(name = "vortragsmanager.dev-data.csv-path", defaultValue = "src/test/resources/csv_import/bo_26_09")
     String csvBasePath;
+
+    @Inject
+    AgroalDataSource datasource;
 
     @Inject
     TeilnehmerService teilnehmerService;
@@ -43,12 +46,12 @@ public class DevDataInit {
     ReferentService referentService;
 
     @Transactional
-    void onStart(@Observes StartupEvent ev) {
+    void onStart(@Observes StartupEvent ev) throws SQLException {
         if (!devInitEnabled) {
             return;
         }
 
-        LOG.info("Starte Dev-Daten-Initialisierung...");
+        LOG.info("Starte Dev-Daten-Initialisierung für " + datasource.getConnection().getMetaData().getURL() + " ...");
 
         try {
             Path basePath = Paths.get(csvBasePath);

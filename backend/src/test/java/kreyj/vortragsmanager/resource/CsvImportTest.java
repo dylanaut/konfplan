@@ -7,7 +7,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.entity.*;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.containsString;
 
 @QuarkusTest
@@ -61,10 +61,10 @@ class CsvImportTest {
     }
 
     private Long setupVeranstaltung(Admin admin, List<Gebaeude> gebaeudeList) {
-
         Veranstaltung v = new Veranstaltung();
         v.name = "Basis Event " + System.currentTimeMillis();
         v.beginntAm = LocalDateTime.of(2025, 10, 10, 9, 0);
+        v.endetAm = LocalDateTime.of(2025, 10, 10, 17, 0);
         v.gebaeude.addAll(gebaeudeList);
         v.persist();
 
@@ -77,7 +77,7 @@ class CsvImportTest {
     @Test
     void testImportVeranstaltungen() {
         String csv = "Name;Beginn;Ende;Organisator_Email;Gebaeude_Namen;Logo;Logo_link\n" +
-                "CSV Event;2026-10-01 10:00;2026-10-01 17:00;admin@test.de;RKS_LINZ;assets/RKS_Logo.png;https://realschuleplus-linz.de/home/home.html";
+                "CSV Event;2026-10-01 07:00;2026-10-01 17:00;admin@test.de;RKS_LINZ;assets/RKS_Logo.png;https://realschuleplus-linz.de/home/home.html";
 
         given()
                 .multiPart("file", "veranstaltungen.csv", csv.getBytes())
@@ -100,8 +100,8 @@ class CsvImportTest {
                 .body(containsString("Import erfolgreich"));
 
         Gebaeude g = Gebaeude.find("name", "Altbau").firstResult();
-        Assertions.assertNotNull(g);
-        Assertions.assertEquals(2, g.raeume.size(), "Anzahl Räume sollte 2 sein");
+        assertThat(g).isNotNull();
+        assertThat(g.raeume.size()).describedAs("Anzahl Räume sollte 2 sein").isEqualTo(2);
     }
 
     @Test
@@ -116,8 +116,8 @@ class CsvImportTest {
                 .statusCode(200);
 
         Admin organisator = (Admin) Nutzer.findByEmail("kathrin.jessen@rks-linz.de");
-        Assertions.assertNotNull(organisator);
-        Assertions.assertEquals("Kathrin", organisator.firstName);
+        assertThat(organisator).isNotNull();
+        assertThat(organisator.firstName).isEqualTo("Kathrin");
     }
 
     @Test
@@ -132,8 +132,9 @@ class CsvImportTest {
                 .statusCode(200);
 
         Referent r = (Referent) Nutzer.findByEmail("max@ref.de");
-        Assertions.assertNotNull(r);
-        Assertions.assertEquals("TechCorp", r.organisation);
+        assertThat(r).isNotNull();
+        
+        assertThat(r.organisation).isEqualTo("TechCorp");
     }
 
     @Test
@@ -148,8 +149,8 @@ class CsvImportTest {
                 .statusCode(200);
 
         Teilnehmer t = (Teilnehmer) Nutzer.findByEmail("tom@stud.de");
-        Assertions.assertNotNull(t);
-        Assertions.assertEquals("10b", t.gruppe);
+        assertThat(t).isNotNull();
+        assertThat(t.gruppe).isEqualTo("10b");
     }
 
     @Test
@@ -163,12 +164,12 @@ class CsvImportTest {
                 .then()
                 .statusCode(200);
 
-        Assertions.assertEquals(1, EventSlot.count());
+        assertThat(EventSlot.count()).isEqualTo(1);
     }
 
     @Test
     void testImportVortraege() {
-        QuarkusTransaction.run(() -> {
+        QuarkusTransaction.requiringNew().run(() -> {
             Referent r = new Referent();
             r.email = "vortrag@ref.de";
             r.firstName = "Max";
@@ -188,7 +189,7 @@ class CsvImportTest {
                 .statusCode(200);
 
         Wahlvortrag wv = Wahlvortrag.find("titel", "Java Kurs").firstResult();
-        Assertions.assertNotNull(wv, "Wahlvortrag sollte importiert worden sein");
-        Assertions.assertTrue(wv.wiederholbar);
+        assertThat(wv).describedAs("Wahlvortrag sollte importiert worden sein").isNotNull();
+        assertThat(wv.wiederholbar).isTrue();
     }
 }

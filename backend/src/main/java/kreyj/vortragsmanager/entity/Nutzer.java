@@ -57,6 +57,16 @@ public abstract class Nutzer extends VersionedEntity {
     @Column(name = "reset_token_expiry")
     public LocalDateTime resetTokenExpiry;
 
+    // Felder für E-Mail-Adressänderung
+    @Column(name = "new_email")
+    public String newEmail;
+
+    @Column(name = "email_change_token")
+    public String emailChangeToken;
+
+    @Column(name = "email_change_token_expiry")
+    public LocalDateTime emailChangeTokenExpiry;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "Nutzer_Veranstaltung",

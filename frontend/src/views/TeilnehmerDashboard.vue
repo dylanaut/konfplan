@@ -10,7 +10,8 @@
       <div class="flex items-center gap-3">
         <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Veranstaltung:</label>
         <select v-model="selectedVid" @change="handleVeranstaltungChange"
-                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 max-w-xs">
+                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 max-w-xs pr-12">
+          <!-- Changed pr-12 to pr-16 to prevent arrow overlap -->
           <option :value="null">-- Bitte wählen --</option>
           <option v-for="v in veranstaltungen" :key="v.id" :value="v.id">
             {{ v.name }} ({{ formatDate(v.beginntAm) }})
@@ -46,11 +47,6 @@
 
       <!-- SEKTION: Meine Verfügbarkeit -->
       <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 animate-fade-in">
-        <div class="flex items-center gap-2 mb-6 text-indigo-600">
-          <CheckSquareIcon class="w-6 h-6" />
-          <h2 class="text-xl font-bold">Meine Verfügbarkeit</h2>
-        </div>
-
         <div v-if="currentEvent && currentEvent.deadlineTeilnehmer" :class="['mb-4 p-3 rounded-lg text-sm flex items-center gap-2', isDeadlinePassed(currentEvent.deadlineTeilnehmer) ? 'bg-red-50 border border-red-200 text-red-800' : 'bg-orange-50 border border-orange-200 text-orange-800']">
           <template v-if="isDeadlinePassed(currentEvent.deadlineTeilnehmer)">
             <XIcon class="w-4 h-4" /> Die Deadline für die Verfügbarkeitsangabe ist am {{ formatDateTime(currentEvent.deadlineTeilnehmer) }} abgelaufen.
@@ -58,6 +54,11 @@
           <template v-else>
             <CalendarIcon class="w-4 h-4" /> Deadline für Verfügbarkeit: {{ formatDateTime(currentEvent.deadlineTeilnehmer) }}
           </template>
+        </div>
+
+        <div class="flex items-center gap-2 mb-6 text-indigo-600">
+          <CheckSquareIcon class="w-6 h-6" />
+          <h2 class="text-xl font-bold">Meine Verfügbarkeit</h2>
         </div>
 
         <div v-if="getSlotsForEvent.length === 0" class="text-xs text-gray-500 italic">

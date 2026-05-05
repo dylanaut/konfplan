@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
@@ -43,6 +44,7 @@ class SlotUndRaumTest {
         Veranstaltung v = new Veranstaltung();
         v.name = "Haupt Event";
         v.beginntAm = LocalDateTime.of(2025, 10, 1, 8, 0);
+        v.endetAm = LocalDateTime.of(2025, 10, 1, 18, 0);
         v.persist();
         vid = v.id;
 
@@ -50,6 +52,7 @@ class SlotUndRaumTest {
         Veranstaltung v2 = new Veranstaltung();
         v2.name = "Anderes Event";
         v2.beginntAm = LocalDateTime.of(2025, 10, 1, 8, 0);
+        v2.endetAm = LocalDateTime.of(2025, 10, 1, 18, 0);
         v2.persist();
         otherVid = v2.id;
 
@@ -181,7 +184,7 @@ class SlotUndRaumTest {
                 .filter(d -> d.slotId.equals(s1Id[0]))
                 .findFirst().orElseThrow();
 
-        Assertions.assertTrue(target.isBlockedByOtherEvent, "Raum sollte durch anderes Event blockiert sein");
-        Assertions.assertEquals("Anderes Event", target.blockingEventName);
+        assertThat(target.isBlockedByOtherEvent).describedAs("Raum sollte durch anderes Event blockiert sein").isTrue();
+        assertThat(target.blockingEventName).isEqualTo("Anderes Event");
     }
 }

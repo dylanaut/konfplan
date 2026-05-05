@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
@@ -62,7 +63,7 @@ class NutzerInheritanceTest extends ResourceTestBase {
 
         Referent ref = (Referent) Nutzer.findByEmail("expert@vortragsmanager.de");
         assertNotNull(ref, "Referent sollte in der DB existieren");
-        assertFalse(ref.veranstaltungen.isEmpty(), "Veranstaltung des Referenten sollte nicht leer sein");
+        assertThat(ref.veranstaltungen.isEmpty()).describedAs("Veranstaltung des Referenten sollte nicht leer sein").isFalse();
         assertEquals(testVid, ref.veranstaltungen.iterator().next().id);
     }
 

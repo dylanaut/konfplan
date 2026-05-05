@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
@@ -201,7 +202,7 @@ class AdminResourceTest extends ResourceTestBase {
             Referent r = Referent.findById(rid[0]);
             EventSlot s = EventSlot.findById(sid[0]);
             Verfuegbarkeit updated = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", r, s).firstResult();
-            Assertions.assertFalse(updated.isAvailable);
+            assertThat(updated.isAvailable).isFalse();
         });
     }
 

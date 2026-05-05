@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"user_id", "slot_id"})
+        @UniqueConstraint(columnNames = {"user_id", "slot_id"})
 })
 public class Verfuegbarkeit extends VersionedEntity {
 
@@ -18,5 +18,13 @@ public class Verfuegbarkeit extends VersionedEntity {
 
     public boolean isAvailable = true;
 
-    public Verfuegbarkeit() {}
+    public Verfuegbarkeit() {
+    }
+
+    @Override
+    public String toString() {
+        return nutzer + " ist in " + slot
+                + (isAvailable ? "" : " nicht")
+                + " verfügbar " + this.id;
+    }
 }

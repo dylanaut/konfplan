@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# BEST called with DB_HOST=localhost DB_NAME=vortragsmanager DB_USER=quarkus DB_PASSWORD=quarkus
+# BEST called with DB_HOST=localhost DB_NAME=vortragsmanager DB_USER=postgres DB_PASSWORD='vm4HjK$'
 
 # 'quarkus.http.port' in application.properties
 QUARKUS_DEV_PORT=9000

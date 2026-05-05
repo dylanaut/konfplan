@@ -16,6 +16,7 @@ import java.net.URL;
 import java.util.Objects;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.containsString;
 
 @QuarkusTest
@@ -145,7 +146,7 @@ class CsvFileImportTest {
         Assertions.assertEquals(16, Wahlvortrag.count());
         Wahlvortrag wv = Wahlvortrag.find("titel", "Traumberuf Polizei?").firstResult();
         Assertions.assertNotNull(wv, "Wahlvortrag sollte importiert worden sein");
-        Assertions.assertTrue(wv.wiederholbar);
+        assertThat(wv.wiederholbar).isTrue();
 
         Assertions.assertEquals(0, Pflichtvortrag.count());
 

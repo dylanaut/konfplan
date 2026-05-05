@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.matchesPattern;
 
@@ -115,7 +116,7 @@ class NutzerPersistenceTest extends ResourceTestBase {
         Teilnehmer teil = (Teilnehmer) Nutzer.findByEmail("schueler@test.de");
         Assertions.assertNotNull(teil);
         Assertions.assertEquals("10a", teil.gruppe);
-        Assertions.assertFalse(teil.veranstaltungen.isEmpty(), "Veranstaltung sollten nicht leer sein");
+        assertThat(teil.veranstaltungen.isEmpty()).describedAs("Veranstaltung sollten nicht leer sein").isFalse();
         Assertions.assertEquals(testVid, teil.veranstaltungen.iterator().next().id);
     }
 }

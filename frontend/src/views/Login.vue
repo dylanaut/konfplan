@@ -9,7 +9,7 @@
             Anmeldung/Registrierung
             <span class="text-gray-400 hover:text-gray-600 cursor-help"
                   title="Zur Registrierung bitte 'Passwort vergessen?' verwenden">
-              &#x2753; <!-- Unicode Fragezeichen -->
+              &#x1F6C8;
             </span>
           </h2>
           <p class="mt-2 text-sm text-gray-600 font-medium">Vortragsmanager Login</p>

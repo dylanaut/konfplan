@@ -93,6 +93,7 @@ public class AuthResource {
         if (nutzer != null && BcryptUtil.matches(loginRequest.password, nutzer.passwordHash) && nutzer.isActive) {
             String token = Jwt.issuer("https://vortragsmanager.kreyj")
                     .upn(nutzer.email)
+                    .subject(nutzer.email)
                     .groups(nutzer.role)
                     .expiresIn(Duration.ofHours(4))
                     .sign();

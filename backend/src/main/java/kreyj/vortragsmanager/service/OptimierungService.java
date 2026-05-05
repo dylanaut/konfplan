@@ -212,7 +212,7 @@ public class OptimierungService {
         int wvIdx = 0;
         sb.append("wahlvortraege = [");
 
-        // TODO remove
+        // TODO generierte SlotsId für Wahlvorträge entfernen
         String constantSlotIds = IntStream.rangeClosed(1, slots.size()).mapToObj(String::valueOf).collect(joining(","));
 
         for (Wahlvortrag wv : wahlvortraege) {
@@ -220,7 +220,7 @@ public class OptimierungService {
             String slot_ids /*= wv.wahlSlots.stream()
                     .map(slot -> String.valueOf(slots.indexOf(slot) + 1))
                     .collect(joining(","))*/;
-            slot_ids = constantSlotIds; // TODO entfernen
+            slot_ids = constantSlotIds; // TODO generierte SlotsId für Wahlvorträge entfernen
 
             sb.append(String.format("(oid: %d, referent_id: %d, belegbare_slots: [%s])", wv.id, refMap.get(wv.referent.id), slot_ids));
 

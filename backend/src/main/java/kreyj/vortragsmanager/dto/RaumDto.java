@@ -9,4 +9,6 @@ public class RaumDto extends AbstractVersionedDto {
     public int kapazitaet;
 
     public String etage;
+
+    public Long gebaeudeId;
 }

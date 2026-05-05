@@ -30,9 +30,12 @@ public class GebaeudeResource {
     // --- GEBÄUDE ---
 
     @GET
-    public List<GebaeudeSimpleDto> getAll() {
+    public List<GebaeudeSimpleDto> getAll(@QueryParam("sortByRooms") String sortByRooms,
+                                          @QueryParam("sortDirectionRooms") @DefaultValue("asc") String sortDirectionRooms) {
         return gebaeudeService.listAll()
-                .stream().map(GebaeudeResource::mapToDto).toList();
+                .stream()
+                .map(gebaeude -> mapToDto(gebaeude))
+                .toList();
     }
 
     @POST
@@ -51,7 +54,9 @@ public class GebaeudeResource {
     @Path("/{id}")
     public Response getOne(@PathParam("id") Long id) {
         Gebaeude g = gebaeudeService.findById(id);
-        if (g == null) return Response.status(Response.Status.NOT_FOUND).build();
+        if (g == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
         return Response.ok(g).build();
     }
 
@@ -66,7 +71,9 @@ public class GebaeudeResource {
     public Response update(@PathParam("id") Long id, Gebaeude g) {
         g.id = id;
         Gebaeude updated = gebaeudeService.save(g);
-        if (updated == null) return Response.status(Response.Status.NOT_FOUND).build();
+        if (updated == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
         return Response.ok(updated).build();
     }
 
@@ -74,7 +81,9 @@ public class GebaeudeResource {
     @Path("/{id}")
     public Response delete(@PathParam("id") Long id) {
         boolean deleted = gebaeudeService.delete(id);
-        if (!deleted) return Response.status(Response.Status.NOT_FOUND).build();
+        if (!deleted) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
         return Response.noContent().build();
     }
 
@@ -82,8 +91,8 @@ public class GebaeudeResource {
 
     @GET
     @Path("/{gid}/raeume")
-    public List<Raum> getRaeumeByGebaeude(@PathParam("gid") Long gid) {
-        return raumService.listByGebaeude(gid);
+    public List<RaumDto> getRaeumeByGebaeude(@PathParam("gid") Long gid) {
+        return raumService.listByGebaeude(gid).stream().map(GebaeudeResource::mapRaumToDto).toList();
     }
 
     @POST
@@ -103,7 +112,9 @@ public class GebaeudeResource {
         r.id = rid;
         try {
             Raum saved = raumService.save(r, gid);
-            if (saved == null) return Response.status(Response.Status.NOT_FOUND).build();
+            if (saved == null) {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
             return Response.ok(saved).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
@@ -114,7 +125,9 @@ public class GebaeudeResource {
     @Path("/{gid}/raeume/{rid}")
     public Response deleteRaum(@PathParam("gid") Long gid, @PathParam("rid") Long rid) {
         boolean deleted = raumService.delete(rid);
-        if (!deleted) return Response.status(Response.Status.NOT_FOUND).build();
+        if (!deleted) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
         return Response.noContent().build();
     }
 
@@ -146,10 +159,13 @@ public class GebaeudeResource {
         dto.postleitzahl = gebaeude.postleitzahl;
         dto.typ = gebaeude.typ;
 
-        dto.raeume = gebaeude.raeume.stream().map(GebaeudeResource::mapRaumToDto).toList();
+        dto.raeume = gebaeude.raeume.stream()
+                .map(GebaeudeResource::mapRaumToDto)
+                .toList();
 
         return dto;
     }
+
     public static RaumDto mapRaumToDto(Raum raum) {
         RaumDto dto = new RaumDto();
 
@@ -158,6 +174,8 @@ public class GebaeudeResource {
         dto.name = raum.name;
         dto.kapazitaet = raum.kapazitaet;
         dto.etage = raum.etage;
+
+        dto.gebaeudeId = raum.gebaeude.id;
 
         return dto;
     }

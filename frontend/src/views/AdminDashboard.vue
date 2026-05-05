@@ -9,8 +9,8 @@
         <div class="mt-2 flex items-center gap-3">
           <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Aktive Veranstaltung:</label>
           <select v-model="selectedVid" @change="handleVeranstaltungChange"
-                  class="input-field max-w-md border-indigo-200 focus:ring-indigo-500 py-1 text-xs pr-10">
-            <!-- Changed pr-8 to pr-10 -->
+                  class="input-field max-w-md border-indigo-200 focus:ring-indigo-500 py-1 text-xs pr-12">
+            <!-- Changed pr-10 to pr-12 to prevent arrow overlap -->
             <option :value="null">-- Bitte wählen / Keine Auswahl --</option>
             <option v-for="v in veranstaltungen" :key="v.id" :value="v.id">
               {{ v.name }} ({{ formatDate(v.beginntAm) }})
@@ -155,13 +155,6 @@
               @deleteSlot="deleteSlot"
     />
 
-    <RaeumeTab v-if="activeTab === 'raeume' && selectedVid"
-               :raeume="raeume"
-               :pageSize="pageSize"
-               @openRaumEditor="openRaumEditor"
-               @deleteRaum="deleteRaum"
-    />
-
     <PlanungTab v-if="activeTab === 'planung' && selectedVid"
                 :isOptimizing="isOptimizing"
                 @startOptimization="startOptimization"
@@ -240,7 +233,6 @@ import TeilnehmerTab from '../components/admin/tabs/TeilnehmerTab.vue';
 import ReferentenTab from '../components/admin/tabs/ReferentenTab.vue';
 import VortraegeTab from '../components/admin/tabs/VortraegeTab.vue';
 import SlotsTab from '../components/admin/tabs/SlotsTab.vue';
-import RaeumeTab from '../components/admin/tabs/RaeumeTab.vue';
 import PlanungTab from '../components/admin/tabs/PlanungTab.vue';
 import ProtokollTab from '../components/admin/tabs/ProtokollTab.vue';
 
@@ -263,7 +255,6 @@ const tabLabels = {
   referenten: 'Referenten',
   vortraege: 'Vorträge',
   slots: 'Zeit-Slots',
-  raeume: 'Räume',
   veranstaltungen: 'Veranstaltungen',
   gebaeude: 'Gebäude',
   administratoren: 'Organisatoren',
@@ -321,7 +312,7 @@ const csvFeedback = reactive({
 
 const visibleTabs = computed(() => {
   const base = ['veranstaltungen', 'gebaeude', 'administratoren', 'protokoll'];
-  if (selectedVid.value) return ['ergebnisse', 'planung', 'teilnehmer', 'referenten', 'vortraege', 'slots', 'raeume', ...base];
+  if (selectedVid.value) return ['ergebnisse', 'planung', 'teilnehmer', 'referenten', 'vortraege', 'slots', ...base];
   return base;
 });
 
@@ -434,14 +425,25 @@ const loadData = async () => {
   if (!selectedVid.value) return;
   const base = `/api/veranstaltungen/${selectedVid.value}`;
   try {
-    const [uRes, vRes, sRes, pRes, qRes, avRes] = await Promise.all([
-      api.get(`${base}/nutzer`), api.get(`${base}/vortraege`),
-      api.get(`${base}/slots`), api.get(`${base}/plan/details`), api.get(`${base}/plan/qualitaet`),
-      api.get(`/api/admin/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`)
+    const [eventSpecificUsersRes, vRes, sRes, pRes, qRes, avRes, allUsersRes] = await Promise.all([
+      api.get(`${base}/nutzer`), // 0: Benutzer spezifisch für die ausgewählte Veranstaltung (Referenten, Teilnehmer)
+      api.get(`${base}/vortraege`), // 1
+      api.get(`${base}/slots`), // 2
+      api.get(`${base}/plan/details`), // 3
+      api.get(`${base}/plan/qualitaet`), // 4
+      api.get(`/api/admin/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`), // 5
+      api.get('/api/admin/nutzer') // 6: Alle Benutzer (global, inkl. aller Admins)
     ]);
-    const localUsers = uRes.data;
-    const globalAdmins = users.value.filter(u => u.role === 'ADMIN');
-    users.value = [...globalAdmins, ...localUsers];
+
+    const eventSpecificUsers = eventSpecificUsersRes.data;
+    const allGlobalUsers = allUsersRes.data;
+
+    // Kombiniere alle eindeutigen Benutzer in einer Map, um Duplikate zu vermeiden
+    const combinedUsersMap = new Map();
+    allGlobalUsers.forEach(user => combinedUsersMap.set(user.id, user));
+    eventSpecificUsers.forEach(user => combinedUsersMap.set(user.id, user)); // Event-spezifische Benutzer überschreiben ggf. globale Einträge
+
+    users.value = Array.from(combinedUsersMap.values());
 
     vortraege.value = vRes.data;
     eventSlots.value = sRes.data;
@@ -451,17 +453,17 @@ const loadData = async () => {
 
     // Prioritäten initialisieren und Originalzustand speichern
     const prioMap = {};
-    const originalPrioMap = {}; // Neues Objekt für Originalzustand
-    localUsers.filter(u => u.role === 'TEILNEHMER').forEach(u => {
+    const originalPrioMap = {};
+    eventSpecificUsers.filter(u => u.role === 'TEILNEHMER').forEach(u => {
       prioMap[u.id] = {};
       originalPrioMap[u.id] = {};
       u.prioritaeten?.forEach(p => {
         prioMap[u.id][p.vortragId] = {prioWert: p.prioWert};
-        originalPrioMap[u.id][p.vortragId] = {prioWert: p.prioWert}; // Originalzustand speichern
+        originalPrioMap[u.id][p.vortragId] = {prioWert: p.prioWert};
       });
     });
     participantPriorities.value = prioMap;
-    originalParticipantPriorities.value = originalPrioMap; // Originalzustand zuweisen
+    originalParticipantPriorities.value = originalPrioMap;
     changedPriorities.value.clear();
 
     if (activeTab.value === 'protokoll') refreshProtokolle();

@@ -185,6 +185,67 @@ public class ReferentService {
     }
 
     @Transactional
+    public VortragDto cloneTalkForEvent(String email, Long sourceTalkId, Long targetEventId) {
+        Referent referent = Referent.find("email", email).firstResult();
+        if (referent == null) {
+            throw new WebApplicationException("Referent nicht gefunden.", Response.Status.NOT_FOUND);
+        }
+
+        Vortrag sourceTalk = Vortrag.findById(sourceTalkId);
+        if (sourceTalk == null) {
+            throw new WebApplicationException("Quell-Vortrag nicht gefunden.", Response.Status.NOT_FOUND);
+        }
+
+        Veranstaltung targetEvent = Veranstaltung.findById(targetEventId);
+        if (targetEvent == null) {
+            throw new WebApplicationException("Ziel-Veranstaltung nicht gefunden.", Response.Status.NOT_FOUND);
+        }
+
+        // Validierung: Gehört der Quell-Vortrag dem Referenten?
+        if (!sourceTalk.referent.id.equals(referent.id)) {
+            throw new WebApplicationException("Referent ist nicht der Eigentümer des Quell-Vortrags.", Response.Status.FORBIDDEN);
+        }
+
+        // Deadline für die Ziel-Veranstaltung prüfen
+        checkDeadline(targetEvent);
+
+        // Prüfen, ob bereits ein Vortrag mit demselben Titel in der Zielveranstaltung existiert
+        boolean exists = Vortrag.find("referent = ?1 and veranstaltung = ?2 and titel = ?3", referent, targetEvent, sourceTalk.titel).count() > 0;
+        if (exists) {
+            throw new WebApplicationException("Ein Vortrag mit demselben Titel existiert bereits für diesen Referenten in der Ziel-Veranstaltung.", Response.Status.CONFLICT);
+        }
+
+        Vortrag newTalk;
+        if (sourceTalk instanceof Wahlvortrag sw) {
+            Wahlvortrag nw = new Wahlvortrag();
+            nw.wiederholbar = sw.wiederholbar;
+            nw.maxWiederholungen = sw.maxWiederholungen;
+            // Wahl-Slots werden nicht kopiert, da sie veranstaltungsspezifisch sind.
+            newTalk = nw;
+        } else if (sourceTalk instanceof Pflichtvortrag) {
+            // Pflichtvorträge können nicht von Referenten geklont werden, da sie eine Admin-Konfiguration erfordern (Slots, Räume, Gruppen).
+            throw new WebApplicationException("Pflichtvorträge können nicht von Referenten geklont werden.", Response.Status.BAD_REQUEST);
+        } else {
+            throw new WebApplicationException("Unbekannter Vortragstyp.", Response.Status.INTERNAL_SERVER_ERROR);
+        }
+
+        newTalk.titel = sourceTalk.titel;
+        newTalk.inhalt = sourceTalk.inhalt; // AbstractText wird kopiert und kann angepasst werden
+        newTalk.referent = referent;
+        newTalk.veranstaltung = targetEvent;
+        newTalk.persist();
+
+        // Benachrichtigung senden, wenn die Veranstaltung in der Zukunft liegt
+        if (targetEvent.beginntAm.isAfter(LocalDateTime.now())) {
+            mailService.sendTalkRegistrationNotification(targetEvent, referent, newTalk, true);
+        }
+
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag geklont", "Referent '" + email + "' hat Vortrag '" + newTalk.titel + "' von Event '" + sourceTalk.veranstaltung.name + "' nach Event '" + targetEvent.name + "' geklont.", newTalk.id);
+
+        return ReferentResource.mapVortragToDto(newTalk);
+    }
+
+    @Transactional
     public void deregisterTalkFromEvent(String email, Long talkId, Long eventId) {
         Referent referent = Referent.find("email", email).firstResult();
         Vortrag talk = Vortrag.findById(talkId);

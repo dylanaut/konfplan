@@ -45,7 +45,7 @@ class VeranstaltungResourceTest extends ResourceTestBase {
 
     @Test
     void testGetVortraegeHierarchical() {
-        QuarkusTransaction.run(() -> {
+        QuarkusTransaction.requiringNew().run(() -> {
             createWahlvortrag("Test Vortrag");
         });
         
@@ -72,7 +72,7 @@ class VeranstaltungResourceTest extends ResourceTestBase {
 
     @Test
     void testGetSlotsHierarchical() {
-        QuarkusTransaction.run(() -> {
+        QuarkusTransaction.requiringNew().run(() -> {
             EventSlot s1 = new EventSlot();
             s1.description = "Slot A";
             s1.startTime = LocalDateTime.now();
@@ -91,7 +91,7 @@ class VeranstaltungResourceTest extends ResourceTestBase {
 
     @Test
     void testGetStatsHierarchical() {
-        QuarkusTransaction.run(() -> {
+        QuarkusTransaction.requiringNew().run(() -> {
             createWahlvortrag("Vortrag 1");
         });
 

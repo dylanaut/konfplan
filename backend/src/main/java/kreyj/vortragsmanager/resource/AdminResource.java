@@ -13,12 +13,12 @@ import kreyj.vortragsmanager.dto.UserDto;
 import kreyj.vortragsmanager.dto.VerfuegbarkeitDto;
 import kreyj.vortragsmanager.entity.*;
 import kreyj.vortragsmanager.service.AdminService;
+import kreyj.vortragsmanager.service.MailService; // Import hinzufügen
 import kreyj.vortragsmanager.service.PrioritaetService;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Path("/api/admin")
 @RolesAllowed("ADMIN")
@@ -32,6 +32,9 @@ public class AdminResource {
     @Inject
     PrioritaetService prioritaetService;
 
+    @Inject // MailService injizieren
+    MailService mailService;
+
     @GET
     @Path("/nutzer")
     public List<UserDto> getAllUsers() {
@@ -41,7 +44,13 @@ public class AdminResource {
     @POST
     @Path("/nutzer")
     public UserDto createUser(UserDto dto) {
-        return adminService.createUser(dto, dto.veranstaltungIds);
+        UserDto createdUserDto = adminService.createUser(dto, dto.veranstaltungIds);
+        // E-Mail nach erfolgreicher Erstellung senden
+        Nutzer createdNutzer = Nutzer.findById(createdUserDto.id);
+        if (createdNutzer != null) {
+            mailService.sendRegistrationConfirmation(createdNutzer);
+        }
+        return createdUserDto;
     }
 
     @PUT
@@ -53,7 +62,11 @@ public class AdminResource {
     @DELETE
     @Path("/nutzer/{id}")
     public void deleteUser(@PathParam("id") Long id) {
+        Nutzer nutzerToDelete = Nutzer.findById(id); // Nutzer vor dem Löschen abrufen
         adminService.deleteUser(id);
+        if (nutzerToDelete != null) {
+            mailService.sendUserDeletionNotification(nutzerToDelete);
+        }
     }
 
     @POST

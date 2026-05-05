@@ -9,6 +9,14 @@
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
+          <label class="block text-sm font-medium text-gray-700">Vorname</label>
+          <input v-model="referent.firstName" type="text" class="input-field" :disabled="isAnyDeadlinePassed" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Nachname</label>
+          <input v-model="referent.lastName" type="text" class="input-field" :disabled="isAnyDeadlinePassed" />
+        </div>
+        <div>
           <label class="block text-sm font-medium text-gray-700">Organisation</label>
           <input v-model="referent.organisation" type="text" class="input-field" :disabled="isAnyDeadlinePassed" />
         </div>
@@ -19,6 +27,14 @@
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700">E-Mail Adresse</label>
           <input v-model="referent.email" type="email" class="input-field" :disabled="isAnyDeadlinePassed" />
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700">Slogan</label>
+          <input v-model="referent.slogan" type="text" class="input-field" :disabled="isAnyDeadlinePassed" />
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700">Biografie</label>
+          <textarea v-model="referent.bio" rows="4" class="input-field" :disabled="isAnyDeadlinePassed"></textarea>
         </div>
       </div>
     </section>
@@ -55,7 +71,7 @@
                        isUserAvailable(event.id, slot.id) ? 'bg-indigo-600 text-white border-indigo-600 font-bold' : 'bg-gray-50 text-gray-400 border-gray-200',
                        isDeadlinePassed(event.deadlineReferenten) ? 'opacity-80 cursor-not-allowed' : 'hover:border-indigo-400']"
              >
-                {{ formatTime(slot.startTime) }} - {{ formatTime(slot.endTime) }}
+                {{ formatSlotTime(slot.startTime, slot.endTime) }}
              </button>
           </div>
         </div>
@@ -69,7 +85,7 @@
           <FileTextIcon class="w-6 h-6" />
           <h2 class="text-xl font-bold">Meine Vorträge</h2>
         </div>
-        <button v-if="!isAnyDeadlinePassed" @click="addNewTalk" class="btn-primary">
+        <button v-if="!isAnyDeadlinePassed && vortraege.length > 0" @click="addNewTalk" class="btn-primary">
           <PlusIcon class="w-5 h-5 mr-1" /> Neuer Vortrag
         </button>
       </div>
@@ -86,7 +102,7 @@
              :class="['flex items-center justify-between p-4 border rounded-lg',
                       selectedTalk && selectedTalk.id === t.id ? 'bg-indigo-50 border-indigo-300' : 'bg-gray-50 border-gray-200']">
           <div class="flex flex-col">
-            <span class="font-medium text-gray-800">{{ t.title || 'Unbenannter Vortrag' }}</span>
+            <span class="font-medium text-gray-800">{{ t.titel || 'Unbenannter Vortrag' }}</span>
             <div class="flex flex-col gap-1">
               <span class="text-xs text-gray-500">{{ t.veranstaltungName }}</span>
               <span v-if="getDeadlineForTalk(t)" :class="['text-[10px] font-bold', isDeadlinePassed(getDeadlineForTalk(t)) ? 'text-red-600' : 'text-orange-600']">
@@ -129,7 +145,7 @@
 
         <div>
           <label class="block text-sm font-medium text-gray-700">Titel des Vortrags</label>
-          <input v-model="selectedTalk.title" type="text" class="input-field" :disabled="isDeadlinePassedForTalk(selectedTalk)" />
+          <input v-model="selectedTalk.titel" type="text" class="input-field" :disabled="isDeadlinePassedForTalk(selectedTalk)" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Abstract (Kurzbeschreibung)</label>
@@ -162,7 +178,7 @@
              <div>
                <h3 class="font-bold text-lg text-gray-800">{{ event.name }}</h3>
                <p class="text-sm text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
-               <p v-if="event.deadlineReferenten" :class="['text-xs font-bold mt-1', isDeadlinePassed(event.deadlineReferenten) ? 'text-red-600' : 'text-orange-600']">
+               <p v-if="event.deadlineReferenten" :class="['text-[10px] font-bold mt-1', isDeadlinePassed(event.deadlineReferenten) ? 'text-red-600' : 'text-orange-600']">
                   Deadline für Referenten: {{ formatDateTime(event.deadlineReferenten) }}
                </p>
              </div>
@@ -175,7 +191,7 @@
             <!-- Schon angemeldete Vorträge -->
             <div v-for="talkItem in vortraege.filter(t => t.veranstaltungId === event.id)" :key="talkItem.id"
                  class="flex items-center justify-between p-3 bg-indigo-50 border border-indigo-100 rounded-md">
-              <span class="text-sm font-medium text-indigo-900">{{ talkItem.title }}</span>
+              <span class="text-sm font-medium text-indigo-900">{{ talkItem.titel }}</span>
               <button v-if="!isDeadlinePassed(event.deadlineReferenten) && isFutureEvent(event)" @click="deregisterTalkFromEvent(event.id, talkItem.id)" class="btn-danger-sm">
                 <XIcon class="w-4 h-4 mr-1" /> Zurückziehen
               </button>
@@ -185,7 +201,7 @@
             <template v-if="!isDeadlinePassed(event.deadlineReferenten) && isFutureEvent(event)">
                <div v-for="talkItem in getTalksFromOtherEvents(event.id)" :key="'other-'+talkItem.id"
                    class="flex items-center justify-between p-3 bg-gray-50 rounded-md opacity-75">
-                <span class="text-sm text-gray-600 italic">{{ talkItem.title }} (von {{ talkItem.veranstaltungName }})</span>
+                <span class="text-sm text-gray-600 italic">{{ talkItem.titel }} (von {{ talkItem.veranstaltungName }})</span>
                 <button @click="registerTalkForEvent(event.id, talkItem.id)" class="btn-primary-sm">
                   <PlusIcon class="w-4 h-4 mr-1" /> In dieses Event kopieren
                 </button>
@@ -214,7 +230,16 @@ import { ref, onMounted, computed, reactive } from 'vue';
 import api from '../api/axios';
 import { User as UserIcon, FileText as FileTextIcon, Calendar as CalendarIcon, Save as SaveIcon, Plus as PlusIcon, Edit as EditIcon, Trash2 as Trash2Icon, ListChecks as ListChecksIcon, Check as CheckIcon, X as XIcon } from 'lucide-vue-next';
 
-const referent = ref({});
+const referent = ref({
+  id: null,
+  firstName: '',
+  lastName: '',
+  organisation: '',
+  jobRole: '',
+  email: '',
+  slogan: '',
+  bio: '',
+});
 const allSlots = ref([]);
 const vortraege = ref([]);
 const selectedTalk = ref(null);
@@ -222,7 +247,7 @@ const isEditingNewTalk = ref(false);
 const events = ref([]);
 
 // Neue State für Verfügbarkeiten pro Event
-const eventAvailabilities = reactive({}); // Key: eventId, Value: Array von slotIds
+const eventverfuegIds = reactive({}); // Key: eventId, Value: Array von slotIds
 
 onMounted(async () => {
   await fetchReferentData();
@@ -234,6 +259,7 @@ onMounted(async () => {
 const fetchReferentData = async () => {
   try {
     const userRes = await api.get('/api/referenten/profile');
+    console.log("Referentenprofil vom Backend:", userRes.data); // <-- Diese Zeile wird hinzugefügt
     referent.value = userRes.data;
   } catch (error) {
     console.error("Fehler beim Laden des Referentenprofils:", error);
@@ -271,17 +297,17 @@ const fetchEventsForRegistration = async () => {
 
     // Verfügbarkeiten für alle Events laden
     for (const event of events.value) {
-       await fetchAvailabilitiesForEvent(event.id);
+       await fetchverfuegIdsForEvent(event.id);
     }
   } catch (error) {
     console.error("Fehler beim Laden der Veranstaltungen:", error);
   }
 };
 
-const fetchAvailabilitiesForEvent = async (vid) => {
+const fetchverfuegIdsForEvent = async (vid) => {
    try {
       const res = await api.get(`/api/referenten/veranstaltungen/${vid}/verfuegbarkeiten`);
-      eventAvailabilities[vid] = res.data.filter(v => v.isAvailable).map(v => v.slotId);
+      eventverfuegIds[vid] = res.data.filter(v => v.isAvailable).map(v => v.slotId);
    } catch (e) {
       console.error(`Fehler beim Laden der Verfügbarkeiten für Event ${vid}:`, e);
    }
@@ -292,7 +318,7 @@ const getSlotsForEvent = (eventId) => {
 };
 
 const isUserAvailable = (eventId, slotId) => {
-   return eventAvailabilities[eventId] && eventAvailabilities[eventId].includes(slotId);
+   return eventverfuegIds[eventId] && eventverfuegIds[eventId].includes(slotId);
 };
 
 const toggleEventAvailability = async (event, slotId) => {
@@ -310,10 +336,10 @@ const toggleEventAvailability = async (event, slotId) => {
 
       // Lokal aktualisieren
       if (newValue) {
-         if (!eventAvailabilities[event.id]) eventAvailabilities[event.id] = [];
-         eventAvailabilities[event.id].push(slotId);
+         if (!eventverfuegIds[event.id]) eventverfuegIds[event.id] = [];
+         eventverfuegIds[event.id].push(slotId);
       } else {
-         eventAvailabilities[event.id] = eventAvailabilities[event.id].filter(id => id !== slotId);
+         eventverfuegIds[event.id] = eventverfuegIds[event.id].filter(id => id !== slotId);
       }
    } catch (e) {
       alert("Fehler beim Aktualisieren der Verfügbarkeit: " + (e.response?.data || e.message));
@@ -333,10 +359,10 @@ const addNewTalk = () => {
       return;
   }
   selectedTalk.value = {
-    title: '',
+    titel: '',
     abstractText: '',
     wiederholbar: false,
-    availabilities: [],
+    verfuegIds: [],
     veranstaltungId: availableEvent.id
   };
   isEditingNewTalk.value = true;
@@ -395,16 +421,16 @@ const isDeadlinePassedForEventId = (eventId) => {
 const getTalksFromOtherEvents = (targetEventId) => {
     const existingTitles = vortraege.value
         .filter(t => t.veranstaltungId === targetEventId)
-        .map(t => t.title);
+        .map(t => t.titel);
 
     const otherTalks = vortraege.value.filter(t => t.veranstaltungId !== targetEventId);
     const uniqueOther = [];
     const seenTitles = new Set();
 
     for (const t of otherTalks) {
-        if (!existingTitles.includes(t.title) && !seenTitles.has(t.title)) {
+        if (!existingTitles.includes(t.titel) && !seenTitles.has(t.titel)) {
             uniqueOther.push(t);
-            seenTitles.add(t.title);
+            seenTitles.add(t.titel);
         }
     }
     return uniqueOther;
@@ -442,9 +468,9 @@ const deregisterTalkFromEvent = async (eventId, talkId) => {
 
 const saveAll = async () => {
   try {
-    if (!isAnyDeadlinePassed) {
-        await api.put('/api/referenten/profile', referent.value);
-    }
+    // Always attempt to save the profile data, regardless of deadlines
+    // The backend should handle if certain fields are not editable due to deadlines
+    await api.put('/api/referenten/profile', referent.value);
 
     if (selectedTalk.value) {
       if (isDeadlinePassedForTalk(selectedTalk.value)) {
@@ -462,12 +488,23 @@ const saveAll = async () => {
     alert("Gespeichert!");
   } catch (e) {
     console.error("Fehler beim Speichern:", e);
+    alert("Fehler beim Speichern: " + (e.response?.data?.message || e.message));
   }
 };
 
 const formatDate = (d) => new Date(d).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
 const formatDateTime = (d) => new Date(d).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 const formatTime = (t) => t.substring(11, 16);
+
+const formatSlotTime = (start, end) => {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  const weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  const day = weekdays[startDate.getDay()];
+  const startTime = startDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const endTime = endDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  return `${day} ${startTime} - ${endTime}`;
+};
 </script>
 
 <style scoped>

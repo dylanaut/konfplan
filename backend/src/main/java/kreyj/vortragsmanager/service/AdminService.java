@@ -42,11 +42,14 @@ public class AdminService {
         return Stream.concat(admins.stream(), vNutzers.stream())
                 .distinct()
                 .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<UserDto> getAllUsers() {
-        return Nutzer.<Nutzer>listAll().stream().map(this::mapToDto).collect(Collectors.toList());
+        return new HashSet<>(Nutzer.<Nutzer>listAll()) // Duplikate entfernen
+                .stream()
+                .map(this::mapToDto)
+                .toList();
     }
 
     @Transactional
@@ -92,6 +95,9 @@ public class AdminService {
             }
         }
 
+        // Send registration confirmation email
+        mailService.sendRegistrationConfirmation(nutzer);
+
         protokollService.log(ProtokollKategorie.NUTZER, "Nutzer erstellt", "Neuer Nutzer '" + nutzer.email + "' mit Rolle '" + nutzer.role + "' erstellt.", nutzer.id);
         return mapToDto(nutzer);
     }
@@ -101,6 +107,16 @@ public class AdminService {
         Nutzer nutzer = Nutzer.findById(id);
         if (nutzer == null) {
             return null;
+        }
+
+        // Check for email change
+        String oldEmail = nutzer.email;
+        if (!oldEmail.equals(dto.email)) {
+            // This is where the email change logic would go, including sending confirmation emails.
+            // For now, we just update it directly.
+            // A more robust solution would involve a pending email change state and confirmation token.
+            // mailService.sendEmailChangeNotificationOldAddress(nutzer, oldEmail, dto.email);
+            // mailService.sendEmailChangeConfirmationNewAddress(nutzer, dto.email, "confirmationLink");
         }
 
         nutzer.firstName = dto.firstName;
@@ -197,6 +213,9 @@ public class AdminService {
     public boolean deleteUser(Long id) {
         Nutzer nutzer = Nutzer.findById(id);
         if (nutzer != null) {
+            // Send user deletion notification email BEFORE deleting the user
+            mailService.sendUserDeletionNotification(nutzer);
+
             String email = nutzer.email;
             boolean deleted = Nutzer.deleteById(id);
             if (deleted) {
@@ -255,10 +274,11 @@ public class AdminService {
             }
 
             // Effekte anwenden
-            vortrag.persist(); // Persistieren, um ID zu erhalten
+            pv.persist(); // Persistieren, um ID zu erhalten
+
             updateRaumAvailability(pv.pflichtraum, pv.pflichtslot, true, pv.id);
             updateTeilnehmerAvailability(teilnehmerDerGruppe, pv.pflichtslot, false, pv.id);
-
+            showAvails("updated");
         } else {
             vortrag.persist();
         }
@@ -465,6 +485,10 @@ public class AdminService {
         if (slot.startTime.isBefore(v.beginntAm)) {
             throw new IllegalArgumentException("Der Slot darf nicht vor der Veranstaltung beginnen.");
         }
+        // NEUE PRÜFUNG: Slot darf nicht nach dem Ende der Veranstaltung enden.
+        if (slot.endTime.isAfter(v.endetAm)) {
+            throw new IllegalArgumentException("Der Slot darf nicht nach der Veranstaltung enden.");
+        }
 
         List<EventSlot> existing = EventSlot.find("veranstaltung = ?1", v).list();
         for (EventSlot other : existing) {
@@ -529,13 +553,17 @@ public class AdminService {
                     continue;
                 }
                 slot.veranstaltung = v;
-                slot.persist();
 
-                v.addSlot(slot);
-                v.persist();
-
-                count++;
-                protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot importiert", "Slot '" + slot.description + "' via CSV importiert.", slot.id);
+                try {
+                    validateSlot(slot, v, null); // Validate the slot before persisting
+                    slot.persist();
+                    v.addSlot(slot);
+                    // v.persist(); // No need to persist v here, as addSlot handles the relationship and slot.persist() is enough
+                    count++;
+                    protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot importiert", "Slot '" + slot.description + "' via CSV importiert.", slot.id);
+                } catch (IllegalArgumentException e) {
+                    LOG.warn("Slot '" + dto.description + "' übersprungen aufgrund von Validierungsfehler: " + e.getMessage());
+                }
             }
         } catch (Exception e) {
             LOG.error("Kritischer Fehler beim Importieren der Slots aus CSV: " + csvFilePath, e);
@@ -750,7 +778,7 @@ public class AdminService {
                     });
 
             if (available) {
-                // Bedingte Freigabe: Nur freigeben, wenn keine andere PV diesen TN im Slot belegt
+                // Bedingte Freigabe: Nur freigeben, wenn keine andere PV sie belegt
                 List<Pflichtvortrag> otherPvs = getOtherPflichtvortraegeForTeilnehmerGroupAndSlot(tn.gruppe, slot, excludePflichtvortragId);
                 if (otherPvs.isEmpty()) {
                     verfuegbarkeit.isAvailable = true;
@@ -869,5 +897,16 @@ public class AdminService {
         } else {
             return Pflichtvortrag.find(query, raum, slot).list();
         }
+    }
+
+    // -------------------------------------------------------------------
+    // helper methods
+    // -------------------------------------------------------------------
+
+
+    @Transactional
+    public void showAvails(String tag) {
+        System.out.println("### " + tag);
+        Verfuegbarkeit.listAll().forEach(System.out::println);
     }
 }
