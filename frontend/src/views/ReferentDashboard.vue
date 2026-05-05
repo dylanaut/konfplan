@@ -1,5 +1,9 @@
 <template>
   <div class="max-w-5xl mx-auto space-y-8 pb-20">
+    <!-- App Logo -->
+    <div class="flex justify-center py-4">
+      <img src="/logo/konfplan-light.svg" alt="Konfplan Logo" class="h-16" />
+    </div>
 
     <!-- Sektion 1: Profil & Organisation -->
     <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -259,7 +263,6 @@ onMounted(async () => {
 const fetchReferentData = async () => {
   try {
     const userRes = await api.get('/api/referenten/profile');
-    console.log("Referentenprofil vom Backend:", userRes.data); // <-- Diese Zeile wird hinzugefügt
     referent.value = userRes.data;
   } catch (error) {
     console.error("Fehler beim Laden des Referentenprofils:", error);

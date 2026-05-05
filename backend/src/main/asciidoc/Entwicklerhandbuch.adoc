@@ -1,0 +1,200 @@
+= Entwicklerhandbuch: Vortragsmanager
+
+:toc: left
+:toclevels: 2
+:sectnums:
+:sectnumlevels: 2
+:source-highlighter: highlight.js
+:icons: font
+
+Dieses Handbuch bietet einen Überblick über die Architektur, Technologien und Entwicklungspraktiken des Vortragsmanagers. Es richtet sich an Entwickler, die an diesem Projekt mitarbeiten.
+
+[[_projektuebersicht]]
+== 1. Projektübersicht
+
+Der *Vortragsmanager* ist eine Webanwendung zur Planung und Verwaltung von Veranstaltungen mit Vorträgen (z. B. Schulungstage). Er unterstützt drei Nutzerrollen: Admin, Referent und Teilnehmer. Ein zentrales Feature ist die automatische Optimierung der Teilnehmerzuweisung zu Wahlvorträgen via *MiniZinc*.
+
+[[_struktur]]
+== 2. Struktur
+
+Das Projekt ist ein Maven Multi-Module Projekt mit einem Backend (Quarkus) und einem Frontend (Vue.js).
+
+[source,bash]
+----
+vortragsmanager/
+├── backend/          # Quarkus 3.33.1, Java 21, PostgreSQL (Dev/Prod), H2 (Test)
+├── frontend/         # Vue 3 + Vite + Tailwind CSS
+└── pom.xml           # Maven Multi-Module Parent
+----
+
+[[_schluesseltechnologien]]
+== 3. Schlüsseltechnologien
+
+Die Anwendung setzt auf folgende Kerntechnologien:
+
+|===
+| Schicht | Technologie
+
+| Backend | Quarkus 3.33.1, Java 21, RESTEasy Reactive
+| ORM | Hibernate ORM Panache (Active Record Pattern)
+| Datenbank | PostgreSQL (Prod/Dev), H2 (Test)
+| Migration | Flyway
+| Security | JWT (SmallRye), BCrypt, `quarkus-security-jpa`
+| Optimierung | MiniZinc (externer Prozess via `OptimierungService`)
+| CSV-Import | OpenCSV 5.11.2
+| PDF-Export | OpenPDF 2.0.3
+| E-Mail | Quarkus Mailer (Mailpit für Dev)
+| Frontend | Vue 3, Vite, Tailwind CSS, Pinia, Vue Router
+| Integration | Quarkus Quinoa (Frontend-Build eingebettet)
+| E2E-Tests | Playwright
+|===
+
+[[_build_und_start]]
+== 4. Build & Start
+
+=== Alles bauen (Root-Verzeichnis)
+
+[source,bash]
+----
+./mvnw clean install -DskipTests
+----
+
+=== Backend starten (Dev-Modus mit Hot-Reload + Frontend via Quinoa)
+
+[source,bash]
+----
+cd backend && ../mvnw quarkus:dev
+----
+*   Backend: http://localhost:9000
+*   Frontend Dev-Server: http://localhost:5173 (wird automatisch gestartet)
+
+=== Nur Backend-Tests
+
+[source,bash]
+----
+cd backend && ../mvnw test
+----
+
+=== Nur Frontend
+
+[source,bash]
+----
+cd frontend && npm install && npm run dev
+----
+
+[[_backend_spezifika]]
+== 5. Backend-Spezifika
+
+Das Backend ist eine *Quarkus 3.33.1*-Anwendung (Java 21) mit RESTful API, JWT-Security und einer PostgreSQL-Datenbank für Dev/Prod sowie H2 für Tests. Es folgt einer klassischen Dreischicht-Architektur: `resource` → `service` → `entity`.
+
+=== Paketstruktur (`src/main/java/kreyj/vortragsmanager/`)
+
+*   `entity/`: JPA-Entitäten (Panache Active Record)
+*   `dto/`: Datentransferobjekte (Request/Response)
+*   `service/`: Geschäftslogik (`@ApplicationScoped`)
+*   `resource/`: JAX-RS REST-Endpunkte (`@Path`)
+*   `util/`: Querschnittsklassen (z. B. LoggingFilter)
+
+=== Konfiguration (`src/main/resources/application.properties`)
+
+Wichtige Konfigurationen:
+
+*   **Port:** 9000
+*   **CORS:** Für Frontend-Dev auf Port 5173 aktiviert.
+*   **Datenbank:** PostgreSQL (Docker Dev Services im Dev-Modus, konfiguriert für Prod), H2 In-Memory für Tests.
+*   **JWT:** RSA-Schlüsselpaar in `src/main/resources/` (PEM-Dateien).
+*   **Hibernate:** `drop-and-create` (Dev/Test) bzw. `update` (Prod).
+*   **Flyway:** Zur Schema-Migration genutzt.
+
+=== Architekturregeln
+
+1.  **Resource-Klassen** haben keine Geschäftslogik – nur HTTP-Mapping, Delegation an Services und Mapping zu DTOs.
+2.  **Service-Klassen** sind `@ApplicationScoped`; Transaktionen mit `@Transactional`.
+3.  **Entities** nutzen Panache Active Record (statische Finder-Methoden direkt auf der Klasse).
+4.  Neue Entitäten *müssen* von `VersionedEntity` erben.
+5.  Neue Entitäten *müssen* `@Version Long version` für Optimistic Locking enthalten.
+6.  Datums-/Zeitfelder: `LocalDateTime` + `@Convert(converter = LocalDateTimeConverter.class)`.
+
+=== Security
+
+*   **Rollen:** `ADMIN`, `REFERENT`, `TEILNEHMER`.
+*   Alle Endpunkte mit `@RolesAllowed` oder `@Authenticated` absichern.
+*   JWT-Token wird von `AuthResource` ausgestellt.
+*   Passwörter: BCrypt via `BcryptUtil.bcryptHash()`.
+
+=== Geschäftslogik-Highlights
+
+*   **Slot-Validierung**: Prüfung auf Überschneidungsfreiheit und zeitliche Korrektheit bei Erstellung/Update von EventSlots.
+*   **Verfügbarkeiten**: Automatische Erstellung von Standard-Verfügbarkeiten (true) beim Hinzufügen von Nutzern zu Veranstaltungen.
+*   **Raum-Management**: Veranstaltungsübergreifende Prüfung der Raumverfügbarkeit zur Vermeidung von Doppelbelegungen.
+*   **Deadlines**: Referenten und Teilnehmer können ihre Daten nur bis zu einem administrativ festgelegten Zeitpunkt ändern.
+*   **Prioritäten-Management (Admin)**: Admins können individuelle Prioritäten für Teilnehmer an Wahlvorträgen über den Endpunkt `/api/admin/veranstaltungen/{vid}/teilnehmer/{tid}/priorities` aktualisieren.
+
+=== MiniZinc-Optimierung
+
+Der `OptimierungService` ruft MiniZinc als externen Prozess auf:
+
+*   **Modell:** `src/main/resources/minizinc/vortragsplanung.mzn`
+*   Timeouts und Solver-Konfiguration (z.B. OR-Tools) über `SolverConfigDto`.
+
+[[_frontend_spezifika]]
+== 6. Frontend-Spezifika
+
+Das Frontend basiert auf Vue 3, Vite, Tailwind CSS, Pinia (State Management) und Vue Router.
+
+[[_domaenenmodell_kurzuebersicht]]
+== 7. Domänenmodell (Kurzübersicht)
+
+*   **Veranstaltung**:: Zentrale Entität; hat EventSlots, Gebäude, Nutzer; besitzt Deadlines für Referenten/Teilnehmer.
+*   **Nutzer**:: (SINGLE_TABLE) → Admin | Referent | Teilnehmer
+*   **Vortrag**:: (SINGLE_TABLE) → Pflichtvortrag | Wahlvortrag
+*   **EventSlot**:: Zeitfenster innerhalb einer Veranstaltung; mit Überschneidungsprüfung.
+*   **Zuweisung**:: Ordnet Teilnehmer einem Vortrag + Slot + Raum zu.
+*   **Prioritaet**:: Präferenz eines Teilnehmers für einen Wahlvortrag (Ranking 1-10).
+*   **Verfuegbarkeit**:: Gibt an, ob Nutzer in einem Slot verfügbar ist (Default: true bei Zuweisung).
+*   **RaumVerfuegbarkeit**:: Modelliert die Verfügbarkeit von Räumen pro Slot inklusive veranstaltungsübergreifender Prüfung.
+*   **AdminPrioritaetUpdateRequestDto**:: DTO für die Aktualisierung einer einzelnen Teilnehmerpriorität durch Administratoren.
+
+[[_wichtige_konventionen]]
+== 8. Wichtige Konventionen
+
+*   Alle Entitäten erben von `VersionedEntity` (Panache Active Record, `Long id`, `@Version Long version`).
+*   Polymorphe Typen nutzen `@Inheritance(SINGLE_TABLE)` + Jackson `@JsonSubTypes`.
+*   Datenbankfelder: Public Fields (kein Lombok), kein privater Getter/Setter-Boilerplate außer wo nötig.
+*   Datum/Zeit: `LocalDateTime` mit Custom `LocalDateTimeConverter`.
+*   Fehlerbehandlung: `CustomExceptionMapper` mappt Exceptions auf HTTP-Responses.
+*   Alle REST-Endpunkte unter `/api/...`; Security via `@RolesAllowed`.
+*   Neuer Admin-Endpunkt: `PUT /api/admin/veranstaltungen/{vid}/teilnehmer/{tid}/priorities` zur individuellen Aktualisierung von Teilnehmerprioritäten.
+
+[[_bekannte_besonderheiten]]
+== 9. Bekannte Besonderheiten
+
+*   **MiniZinc-Installation:** MiniZinc muss auf dem System installiert sein (`minizinc` im PATH) für `OptimierungService`.
+*   **Deadlines:** Deadlines verhindern Eingaben/Änderungen für Referenten und Teilnehmer nach Ablauf.
+*   **Raumprüfung:** Räume werden veranstaltungsübergreifend auf Überschneidungen geprüft.
+*   **Passwort-Reset:** Passwort-Reset per E-Mail (Mailpit-Credentials in `application.properties` setzen).
+*   **Standard-Passwort:** Standard-Passwort bei Erstellung/Import: `start123` (BCrypt-gehasht).
+
+== 10. MacOS Entwicklung
+
+colima statt docker desktop
+
+brew install docker colima
+
+----
+colima start -t vz --mount-type sshfs
+// reset mit
+colima stop
+colima delete
+----
+
+* mailpit als testcontainer in docker/colima schlägt fehl?
+* postgres:18 als testcontainer in docker/colima funktioniert
+** erfordert Anlagen einer DB instanz
+
+* Vorbereitung ryuk für arm64/M2 aarch
+
+----
+COPY /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt # buildkit
+
+----

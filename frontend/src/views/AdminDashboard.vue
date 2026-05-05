@@ -5,6 +5,7 @@
     <div
         class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
       <div class="flex-1">
+        <img class="h-12 w-auto mb-2" src="/logo/konfplan-light.svg" alt="Konfplan Logo"/>
         <h1 class="text-xl font-bold text-gray-900">Admin-Bereich</h1>
         <div class="mt-2 flex items-center gap-3">
           <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Aktive Veranstaltung:</label>

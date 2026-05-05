@@ -9,6 +9,7 @@ import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.PrioritaetRequest;
 import kreyj.vortragsmanager.entity.Prioritaet;
 import kreyj.vortragsmanager.service.PrioritaetService;
+import kreyj.vortragsmanager.util.JwtHelper;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.util.List;
@@ -25,13 +26,13 @@ public class TeilnehmerPrioritaetenResource {
 
     @GET
     public List<Prioritaet> getMyPriorities() {
-        String email = jwt.getSubject(); // Die Email aus dem JWT Token
+        String email = JwtHelper.getUserPrincipalName(jwt); // Die Email aus dem JWT Token
         return prioService.getPrioritaetenForUser(email);
     }
 
     @POST
     public Response updateMyPriorities(List<PrioritaetRequest> requests) {
-        String email = jwt.getSubject();
+        String email = JwtHelper.getUserPrincipalName(jwt);
         prioService.savePrioritaeten(email, requests);
         return Response.ok().build();
     }

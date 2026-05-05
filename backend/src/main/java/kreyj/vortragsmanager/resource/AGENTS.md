@@ -22,7 +22,7 @@ Resource-Klassen sind die **JAX-RS REST-Controller**. Sie empfangen HTTP-Anfrage
 
 - **Request-Mapping**: Nur Mapping von Pfad-/Query-Parametern und DTOs.
 - **DTO-Nutzung**: Zur Kommunikation mit dem Frontend werden fast ausschließlich DTOs verwendet (siehe Paket `dto`).
-- **Security**: Alle Klassen sind mit `@RolesAllowed` oder `@Authenticated` abgesichert. Nutzer-spezifische Daten werden über das `JsonWebToken` (`jwt.getSubject()`) identifiziert.
+- **Security**: Alle Klassen sind mit `@RolesAllowed` oder `@Authenticated` abgesichert. Nutzer-spezifische Daten werden über das `JsonWebToken` (`JwtHelper.getUPN(jwt)`) identifiziert.
 - **Deadline-Checks**: Operationen, die Daten verändern (POST, PUT, DELETE), prüfen in den Services die in der `Veranstaltung` hinterlegten Deadlines und geben bei Überschreitung `403 Forbidden` zurück.
 
 ## Wichtige Endpunkte (Beispiele)

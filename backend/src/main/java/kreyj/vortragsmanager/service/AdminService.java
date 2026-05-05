@@ -258,13 +258,13 @@ public class AdminService {
 
             // Vorbedingungen prüfen
             // 1. Raum darf für Slot nicht belegt sein
-            if (!checkRaumAvailability(pv.pflichtraum, pv.pflichtslot)) {
+            if (isRaumGebucht(pv.pflichtraum, pv.pflichtslot)) {
                 throw new IllegalArgumentException("Raum '" + pv.pflichtraum.name + "' ist im Slot '" + pv.pflichtslot.description + "' bereits belegt.");
             }
 
             // 2. Jeder TN der Gruppe muss für Slot verfügbar sein
             List<Teilnehmer> teilnehmerDerGruppe = getActiveTeilnehmerByGruppe(pv.pflichtgruppe, veranstaltungId);
-            if (!checkTeilnehmerAvailability(teilnehmerDerGruppe, pv.pflichtslot)) {
+            if (isTeilnehmerGebucht(teilnehmerDerGruppe, pv.pflichtslot)) {
                 throw new IllegalArgumentException("Nicht alle Teilnehmer der Gruppe '" + pv.pflichtgruppe + "' sind im Slot '" + pv.pflichtslot.description + "' verfügbar.");
             }
 
@@ -278,7 +278,6 @@ public class AdminService {
 
             updateRaumAvailability(pv.pflichtraum, pv.pflichtslot, true, pv.id);
             updateTeilnehmerAvailability(teilnehmerDerGruppe, pv.pflichtslot, false, pv.id);
-            showAvails("updated");
         } else {
             vortrag.persist();
         }
@@ -492,7 +491,7 @@ public class AdminService {
 
         List<EventSlot> existing = EventSlot.find("veranstaltung = ?1", v).list();
         for (EventSlot other : existing) {
-            if (excludeId != null && other.id.equals(excludeId)) {
+            if (other.id.equals(excludeId)) {
                 continue;
             }
             // Überschneidungsprüfung: (StartA < EndeB) AND (EndA > StartB)
@@ -609,11 +608,11 @@ public class AdminService {
                 // Vorbedingungen:
                 // * alle TN der Gruppe müssen im neuen Slot verfügbar sein
                 List<Teilnehmer> teilnehmerDerGruppe = getActiveTeilnehmerByGruppe(oldPv.pflichtgruppe, veranstaltungId);
-                if (!checkTeilnehmerAvailability(teilnehmerDerGruppe, oldPv.pflichtslot)) {
+                if (isTeilnehmerGebucht(teilnehmerDerGruppe, oldPv.pflichtslot)) {
                     throw new IllegalArgumentException("Nicht alle Teilnehmer der Gruppe '" + oldPv.pflichtgruppe + "' sind im neuen Slot '" + oldPv.pflichtslot.description + "' verfügbar.");
                 }
                 // * Raum ist im neuen Slot belegbar
-                if (!checkRaumAvailability(oldPv.pflichtraum, oldPv.pflichtslot)) {
+                if (isRaumGebucht(oldPv.pflichtraum, oldPv.pflichtslot)) {
                     throw new IllegalArgumentException("Raum '" + oldPv.pflichtraum.name + "' ist im neuen Slot '" + oldPv.pflichtslot.description + "' bereits belegt.");
                 }
 
@@ -632,7 +631,7 @@ public class AdminService {
             if (!Objects.equals(oldRaum, oldPv.pflichtraum)) {
                 // Vorbedingungen:
                 // * Raum ist im neuen Slot belegbar
-                if (!checkRaumAvailability(oldPv.pflichtraum, oldPv.pflichtslot)) {
+                if (isRaumGebucht(oldPv.pflichtraum, oldPv.pflichtslot)) {
                     throw new IllegalArgumentException("Neuer Raum '" + oldPv.pflichtraum.name + "' ist im Slot '" + oldPv.pflichtslot.description + "' bereits belegt.");
                 }
                 // * Raumkapazität reicht für Anzahl der Teilnehmer aus
@@ -656,7 +655,7 @@ public class AdminService {
                 }
                 // * alle TN der neuen Gruppe müssen im Slot verfügbar sein
                 List<Teilnehmer> neueTeilnehmerDerGruppe = getActiveTeilnehmerByGruppe(oldPv.pflichtgruppe, veranstaltungId);
-                if (!checkTeilnehmerAvailability(neueTeilnehmerDerGruppe, oldPv.pflichtslot)) {
+                if (isTeilnehmerGebucht(neueTeilnehmerDerGruppe, oldPv.pflichtslot)) {
                     throw new IllegalArgumentException("Nicht alle Teilnehmer der neuen Gruppe '" + oldPv.pflichtgruppe + "' sind im Slot '" + oldPv.pflichtslot.description + "' verfügbar.");
                 }
 
@@ -743,18 +742,18 @@ public class AdminService {
      * @param slot       Der EventSlot.
      * @return True, wenn alle verfügbar sind, sonst False.
      */
-    private boolean checkTeilnehmerAvailability(List<Teilnehmer> teilnehmer, EventSlot slot) {
+    private boolean isTeilnehmerGebucht(List<Teilnehmer> teilnehmer, EventSlot slot) {
         if (teilnehmer.isEmpty()) {
-            return true; // Keine Teilnehmer zu prüfen, also "verfügbar"
+            return false; // Keine Teilnehmer zu prüfen, also "verfügbar"
         }
         for (Teilnehmer tn : teilnehmer) {
             Optional<Verfuegbarkeit> verfuegbarkeit = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", tn, slot).firstResultOptional();
             if (verfuegbarkeit.isPresent() && !verfuegbarkeit.get().isAvailable) {
                 LOG.info(String.format("Teilnehmer %s ist in Slot %s nicht verfügbar.", tn.email, slot.description));
-                return false; // Mindestens ein Teilnehmer ist nicht verfügbar
+                return true; // Mindestens ein Teilnehmer ist nicht verfügbar
             }
         }
-        return true;
+        return false;
     }
 
     /**
@@ -798,9 +797,9 @@ public class AdminService {
      * @param slot Der EventSlot.
      * @return True, wenn der Raum verfügbar ist, sonst False.
      */
-    private boolean checkRaumAvailability(Raum raum, EventSlot slot) {
+    private boolean isRaumGebucht(Raum raum, EventSlot slot) {
         Optional<RaumBelegbarkeit> raumBelegbarkeit = RaumBelegbarkeit.find("raum = ?1 and slot = ?2", raum, slot).firstResultOptional();
-        return raumBelegbarkeit.isEmpty() || !raumBelegbarkeit.get().isBelegt;
+        return raumBelegbarkeit.isPresent() && raumBelegbarkeit.get().isBelegt;
     }
 
     /**
@@ -897,16 +896,5 @@ public class AdminService {
         } else {
             return Pflichtvortrag.find(query, raum, slot).list();
         }
-    }
-
-    // -------------------------------------------------------------------
-    // helper methods
-    // -------------------------------------------------------------------
-
-
-    @Transactional
-    public void showAvails(String tag) {
-        System.out.println("### " + tag);
-        Verfuegbarkeit.listAll().forEach(System.out::println);
     }
 }

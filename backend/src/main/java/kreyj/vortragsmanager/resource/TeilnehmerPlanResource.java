@@ -13,6 +13,7 @@ import kreyj.vortragsmanager.dto.ZuweisungDto;
 import kreyj.vortragsmanager.entity.*;
 import kreyj.vortragsmanager.service.PlanService;
 import kreyj.vortragsmanager.service.PrioritaetService;
+import kreyj.vortragsmanager.util.JwtHelper;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.time.LocalDateTime;
@@ -37,7 +38,7 @@ public class TeilnehmerPlanResource {
     @GET
     @Path("/veranstaltungen")
     public List<VeranstaltungDto> getMeineVeranstaltungen() {
-        String email = jwt.getSubject();
+        String email = JwtHelper.getUserPrincipalName(jwt);
         Teilnehmer t = Teilnehmer.find("email", email).firstResult();
         if (t == null) return List.of();
         return t.veranstaltungen.stream()
@@ -50,19 +51,19 @@ public class TeilnehmerPlanResource {
     public List<ZuweisungDto> getPlan(@QueryParam("vid") Long vid) {
         // Hinweis: Aktuell ignoriert PlanService vid und gibt alles zurück. 
         // Für Multi-Event-Support müsste PlanService angepasst werden.
-        return planService.getPlanFuerTeilnehmer(jwt.getSubject());
+        return planService.getPlanFuerTeilnehmer(JwtHelper.getUserPrincipalName(jwt));
     }
 
     @GET
     @Path("/prios")
     public List<Prioritaet> getPrios(@QueryParam("vid") Long vid) {
-        return prioritaetService.getPrioritaetenForUser(jwt.getSubject());
+        return prioritaetService.getPrioritaetenForUser(JwtHelper.getUserPrincipalName(jwt));
     }
 
     @POST
     @Path("/prios")
     public Response savePriorities(List<PrioritaetRequest> requests) {
-        prioritaetService.savePrioritaeten(jwt.getSubject(), requests);
+        prioritaetService.savePrioritaeten(JwtHelper.getUserPrincipalName(jwt), requests);
         return Response.ok().build();
     }
 
@@ -76,7 +77,7 @@ public class TeilnehmerPlanResource {
     @GET
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     public List<VerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
-        Nutzer nutzer = Nutzer.findByEmail(jwt.getSubject());
+        Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (!(nutzer instanceof Teilnehmer)) throw new WebApplicationException("Kein Teilnehmer", 403);
 
         return Verfuegbarkeit.find("nutzer = ?1 and slot.veranstaltung.id = ?2", nutzer, vid).stream()
@@ -91,7 +92,7 @@ public class TeilnehmerPlanResource {
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Transactional
     public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, VerfuegbarkeitDto dto) {
-        Nutzer nutzer = Nutzer.findByEmail(jwt.getSubject());
+        Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (!(nutzer instanceof Teilnehmer)) return Response.status(Response.Status.FORBIDDEN).build();
 
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);

@@ -42,8 +42,7 @@ public class ReferentService {
     @Transactional
     public void updateProfile(String email, RefProfilDto dto) {
         Nutzer nutzer = Nutzer.findByEmail(email);
-        if (nutzer instanceof Referent) {
-            Referent referent = (Referent) nutzer;
+        if (nutzer instanceof Referent referent) {
             referent.biography = dto.biography;
             referent.jobRole = dto.jobRole;
             referent.organisation = dto.organisation;

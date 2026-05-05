@@ -5,11 +5,12 @@
       <!-- Modus: LOGIN -->
       <div v-if="!isForgotMode">
         <div class="text-center">
-          <h2 class="text-3xl font-extrabold text-gray-900 flex items-center justify-center gap-2">
+          <img class="mx-auto h-24 w-auto" src="/logo/konfplan-light.svg" alt="Konfplan Logo"/>
+          <h2 class="text-2xl font-extrabold text-gray-900 flex items-center justify-center gap-2">
             Anmeldung/Registrierung
-            <span class="text-gray-400 hover:text-gray-600 cursor-help"
+            <span class="cursor-help text-xl text-gray-500"
                   title="Zur Registrierung bitte 'Passwort vergessen?' verwenden">
-              &#x1F6C8;
+             &nbsp;&#9432;
             </span>
           </h2>
           <p class="mt-2 text-sm text-gray-600 font-medium">Vortragsmanager Login</p>
@@ -40,6 +41,7 @@
       <!-- Modus: PASSWORT VERGESSEN -->
       <div v-else>
         <div class="text-center">
+          <img class="mx-auto h-24 w-auto" src="/logo/konfplan-light.svg" alt="Konfplan Logo"/>
           <h2 class="text-2xl font-bold text-gray-900">Passwort zurücksetzen</h2>
           <p class="mt-2 text-sm text-gray-600">
             Geben Sie Ihre E-Mail Adresse ein. Wir senden Ihnen einen Link zum Zurücksetzen.

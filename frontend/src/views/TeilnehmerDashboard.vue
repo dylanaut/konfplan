@@ -1,5 +1,9 @@
 <template>
   <div class="max-w-6xl mx-auto space-y-8 pb-20">
+    <!-- App Logo -->
+    <div class="flex justify-center py-4">
+      <img src="/logo/konfplan-light.svg" alt="Konfplan Logo" class="h-16" />
+    </div>
 
     <!-- VERANSTALTUNGS-AUSWAHL -->
     <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">

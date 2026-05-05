@@ -15,6 +15,7 @@ import kreyj.vortragsmanager.entity.*;
 import kreyj.vortragsmanager.service.MailService;
 import kreyj.vortragsmanager.service.PlanService;
 import kreyj.vortragsmanager.service.ReferentService;
+import kreyj.vortragsmanager.util.JwtHelper;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.net.URI;
@@ -46,7 +47,7 @@ public class ReferentResource {
     @GET
     @Path("/profile")
     public ReferentProfileResponseDto getProfile() { // Changed return type
-        Referent referent = referentService.getProfile(jwt.getClaim("upn"));
+        Referent referent = referentService.getProfile(JwtHelper.getUserPrincipalName(jwt));
         if (referent == null) {
             throw new WebApplicationException("Referent not found", Response.Status.NOT_FOUND);
         }
@@ -56,7 +57,7 @@ public class ReferentResource {
     @PUT
     @Path("/profile")
     public Response updateProfile(RefProfilDto dto) {
-        referentService.updateProfile(jwt.getSubject(), dto);
+        referentService.updateProfile(JwtHelper.getUserPrincipalName(jwt), dto);
         return Response.ok().build();
     }
 
@@ -64,7 +65,7 @@ public class ReferentResource {
     @Path("/email-change-request")
     @Transactional
     public Response requestEmailChange(EmailChangeRequestDto requestDto) {
-        Nutzer nutzer = Nutzer.findByEmail(jwt.getSubject());
+        Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (nutzer == null) {
             return Response.status(Response.Status.NOT_FOUND).entity("Nutzer nicht gefunden.").build();
         }
@@ -121,14 +122,14 @@ public class ReferentResource {
     @GET
     @Path("/vortraege")
     public List<VortragDto> getReferentenVortraege() {
-        return referentService.getReferentVortraege(jwt.getSubject());
+        return referentService.getReferentVortraege(JwtHelper.getUserPrincipalName(jwt));
     }
 
     @POST
     @Path("/vortraege")
     public Response createVortrag(VortragDto dto) {
         try {
-            VortragDto saved = referentService.createVortrag(jwt.getSubject(), dto);
+            VortragDto saved = referentService.createVortrag(JwtHelper.getUserPrincipalName(jwt), dto);
             return Response.ok(saved).build();
         } catch (Exception e) {
             return Response.status(Response.Status.FORBIDDEN)
@@ -140,7 +141,7 @@ public class ReferentResource {
     @Path("/vortraege/{vortragId}")
     public Response updateVortrag(@PathParam("vortragId") Long vortragId, VortragDto dto) {
         try {
-            VortragDto updated = referentService.updateVortrag(jwt.getSubject(), vortragId, dto);
+            VortragDto updated = referentService.updateVortrag(JwtHelper.getUserPrincipalName(jwt), vortragId, dto);
             if (updated == null) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
@@ -156,7 +157,7 @@ public class ReferentResource {
     @DELETE
     @Path("/vortraege/{vortragId}")
     public Response deleteVortrag(@PathParam("vortragId") Long vortragId) {
-        boolean deleted = referentService.deleteVortrag(jwt.getSubject(), vortragId);
+        boolean deleted = referentService.deleteVortrag(JwtHelper.getUserPrincipalName(jwt), vortragId);
         if (!deleted) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
@@ -167,7 +168,7 @@ public class ReferentResource {
     @Path("/veranstaltungen/{targetEventId}/vortraege/{sourceTalkId}/clone")
     public Response cloneTalkForEvent(@PathParam("targetEventId") Long targetEventId, @PathParam("sourceTalkId") Long sourceTalkId) {
         try {
-            VortragDto clonedTalk = referentService.cloneTalkForEvent(jwt.getSubject(), sourceTalkId, targetEventId);
+            VortragDto clonedTalk = referentService.cloneTalkForEvent(JwtHelper.getUserPrincipalName(jwt), sourceTalkId, targetEventId);
             return Response.status(Response.Status.CREATED).entity(clonedTalk).build();
         } catch (WebApplicationException e) {
             return e.getResponse();
@@ -180,33 +181,33 @@ public class ReferentResource {
     @GET
     @Path("/plaene")
     public List<ZuweisungDto> getMyPlan() {
-        return planService.getPlanFuerReferent(jwt.getSubject());
+        return planService.getPlanFuerReferent(JwtHelper.getUserPrincipalName(jwt));
     }
 
     @GET
     @Path("/veranstaltungen")
     public List<ReferentVeranstaltungDto> getReferentVeranstaltungen() {
-        return referentService.getReferentVeranstaltungen(jwt.getSubject());
+        return referentService.getReferentVeranstaltungen(JwtHelper.getUserPrincipalName(jwt));
     }
 
     @POST
     @Path("/veranstaltungen/{eventId}/vortraege/{talkId}/register")
     public Response registerTalkForEvent(@PathParam("eventId") Long eventId, @PathParam("talkId") Long talkId) {
-        referentService.registerTalkForEvent(jwt.getSubject(), talkId, eventId);
+        referentService.registerTalkForEvent(JwtHelper.getUserPrincipalName(jwt), talkId, eventId);
         return Response.ok().build();
     }
 
     @DELETE
     @Path("/veranstaltungen/{eventId}/vortraege/{talkId}/deregister")
     public Response deregisterTalkFromEvent(@PathParam("eventId") Long eventId, @PathParam("talkId") Long talkId) {
-        referentService.deregisterTalkFromEvent(jwt.getSubject(), talkId, eventId);
+        referentService.deregisterTalkFromEvent(JwtHelper.getUserPrincipalName(jwt), talkId, eventId);
         return Response.ok().build();
     }
 
     @GET
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     public List<VerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
-        Nutzer nutzer = Nutzer.findByEmail(jwt.getSubject());
+        Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (!(nutzer instanceof Referent)) {
             throw new WebApplicationException("Kein Referent", 403);
         }
@@ -223,7 +224,7 @@ public class ReferentResource {
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Transactional
     public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, VerfuegbarkeitDto dto) {
-        Nutzer nutzer = Nutzer.findByEmail(jwt.getSubject());
+        Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (!(nutzer instanceof Referent)) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
