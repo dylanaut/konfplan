@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 
 import static io.restassured.RestAssured.given;
+import static jakarta.ws.rs.core.Response.Status.CREATED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -59,7 +60,7 @@ class NutzerInheritanceTest extends ResourceTestBase {
                 .body(json)
                 .when().post("/api/veranstaltungen/{vid}/nutzer", testVid)
                 .then()
-                .statusCode(201);
+                .statusCode(CREATED.getStatusCode());
 
         Referent ref = (Referent) Nutzer.findByEmail("expert@vortragsmanager.de");
         assertNotNull(ref, "Referent sollte in der DB existieren");
@@ -86,7 +87,7 @@ class NutzerInheritanceTest extends ResourceTestBase {
                 .body(json)
                 .when().post("/api/veranstaltungen/{vid}/nutzer", testVid)
                 .then()
-                .statusCode(201);
+                .statusCode(CREATED.getStatusCode());
 
         Teilnehmer tn = (Teilnehmer) Nutzer.findByEmail("student@vortragsmanager.de");
         assertNotNull(tn, "Teilnehmer sollte in der DB existieren");

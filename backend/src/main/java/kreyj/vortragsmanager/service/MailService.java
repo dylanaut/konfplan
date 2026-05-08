@@ -1,15 +1,18 @@
 package kreyj.vortragsmanager.service;
 
 import io.quarkus.mailer.Mail;
+import io.quarkus.mailer.MailTemplate;
 import io.quarkus.mailer.Mailer;
 import io.quarkus.qute.Location;
-import io.quarkus.mailer.MailTemplate; // Import hinzufügen
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import kreyj.vortragsmanager.entity.*;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 @ApplicationScoped
 public class MailService {
+    @ConfigProperty(name = "app.mail.admin", defaultValue = "konfplan@yahoo.com")
+    String adminEmail;
 
     @Inject
     Mailer mailer;
@@ -30,48 +33,55 @@ public class MailService {
     @Location("emailChangeConfirmationNewAddress")
     MailTemplate emailChangeConfirmationNewAddressTemplate;
 
-    public void sendTalkRegistrationNotification(Veranstaltung v, Referent referent, Vortrag talk, boolean isAdded) {
-        v.organisatoren().forEach(admin -> sendTalkRegistrationNotification(admin, v, referent, talk, isAdded));
+    public void sendVortragsRegistrierung(Veranstaltung v, Referent referent, Vortrag vortrag, boolean isAdded) {
+        v.organisatoren().forEach(admin -> sendVortragsRegistrierung(admin, v, referent, vortrag, isAdded));
     }
 
-    public void sendTalkRegistrationNotification(Admin organisator, Veranstaltung v, Referent referent, Vortrag talk, boolean isAdded) {
+    public void sendVortragsRegistrierung(Admin organisator, Veranstaltung v, Referent referent, Vortrag vortrag, boolean isAdded) {
         String action = isAdded ? "angemeldet" : "abgemeldet / zurückgezogen";
         String subject = String.format("Vortrags-Update: %s für %s", action, v.name);
         String body = String.format(
                 "Hallo %s,\n\nder Referent %s %s hat den Vortrag '%s' für die Veranstaltung '%s' %s.\n\nDies ist eine automatische Benachrichtigung.",
                 organisator.lastName,
                 referent.firstName, referent.lastName,
-                talk.titel,
+                vortrag.titel,
                 v.name,
                 action
         );
 
-        mailer.send(Mail.withText(organisator.email, subject, body));
+        mailer.send(Mail.withText(organisator.email, subject, body)
+                .setFrom(senderEmail(v)));
     }
 
-    public void sendEventInvitation(Nutzer nutzer, Veranstaltung event) {
-        if (nutzer.email == null) return;
+    public void sendEinladungZuVeranstaltung(Nutzer nutzer, Veranstaltung v) {
+        if (nutzer.email == null) {
+            return;
+        }
 
-        String subject = "Einladung zur Veranstaltung: " + event.name;
+        String subject = "Einladung zur Veranstaltung: " + v.name;
         String body = String.format(
                 "Hallo %s %s,\n\nDu wurdest zur Veranstaltung '%s' eingeladen.\n" +
                         "Datum: %s\n\nWir freuen uns auf Deine Teilnahme!",
                 nutzer.firstName, nutzer.lastName,
-                event.name,
-                event.beginntAm.toString()
+                v.name, v.beginntAm.toString()
         );
 
-        mailer.send(Mail.withText(nutzer.email, subject, body));
+        mailer.send(Mail.withText(nutzer.email, subject, body)
+                .setFrom(senderEmail(v)));
     }
 
     /**
      * Sendet eine Bestätigungs-E-Mail nach der Registrierung.
+     *
      * @param nutzer Der neu registrierte Nutzer.
      */
     public void sendRegistrationConfirmation(Nutzer nutzer) {
-        if (nutzer.email == null) return;
+        if (nutzer.email == null) {
+            return;
+        }
         registrationConfirmationTemplate.to(nutzer.email)
-                .subject("Willkommen beim Vortragsmanager!")
+                .from(adminEmail)
+                .subject("Willkommen bei KonfPlan!")
                 .data("firstName", nutzer.firstName)
                 .data("lastName", nutzer.lastName)
                 .data("email", nutzer.email)
@@ -84,11 +94,15 @@ public class MailService {
 
     /**
      * Sendet eine Benachrichtigung, wenn ein Nutzer-Account gelöscht oder abgemeldet wurde.
+     *
      * @param nutzer Der gelöschte oder abgemeldete Nutzer.
      */
     public void sendUserDeletionNotification(Nutzer nutzer) {
-        if (nutzer.email == null) return;
+        if (nutzer.email == null) {
+            return;
+        }
         deregistrationNotificationTemplate.to(nutzer.email)
+                .from(adminEmail)
                 .subject("Dein Account beim Vortragsmanager wurde gelöscht/abgemeldet")
                 .data("firstName", nutzer.firstName)
                 .data("lastName", nutzer.lastName)
@@ -102,14 +116,18 @@ public class MailService {
 
     /**
      * Sendet eine Benachrichtigung an die alte E-Mail-Adresse, dass diese geändert wurde.
-     * @param nutzer Der Nutzer, dessen E-Mail geändert wurde.
+     *
+     * @param nutzer   Der Nutzer, dessen E-Mail geändert wurde.
      * @param oldEmail Die alte E-Mail-Adresse.
      * @param newEmail Die neue E-Mail-Adresse.
      */
     public void sendEmailChangeNotificationOldAddress(Nutzer nutzer, String oldEmail, String newEmail) {
-        if (oldEmail == null) return;
+        if (oldEmail == null) {
+            return;
+        }
         emailChangeNotificationOldAddressTemplate.to(oldEmail)
                 .subject("Wichtige Information: Deine E-Mail-Adresse wurde geändert")
+                .from(adminEmail)
                 .data("firstName", nutzer.firstName)
                 .data("lastName", nutzer.lastName)
                 .data("oldEmail", oldEmail)
@@ -123,14 +141,18 @@ public class MailService {
 
     /**
      * Sendet eine Bestätigungs-E-Mail an die neue E-Mail-Adresse.
-     * @param nutzer Der Nutzer, dessen E-Mail geändert wird.
-     * @param newEmail Die neue E-Mail-Adresse.
+     *
+     * @param nutzer           Der Nutzer, dessen E-Mail geändert wird.
+     * @param newEmail         Die neue E-Mail-Adresse.
      * @param confirmationLink Der Link zur Bestätigung der neuen E-Mail-Adresse.
      */
     public void sendEmailChangeConfirmationNewAddress(Nutzer nutzer, String newEmail, String confirmationLink) {
-        if (newEmail == null) return;
+        if (newEmail == null) {
+            return;
+        }
         emailChangeConfirmationNewAddressTemplate.to(newEmail)
                 .subject("Bitte bestätige deine neue E-Mail-Adresse für den Vortragsmanager")
+                .from(adminEmail)
                 .data("firstName", nutzer.firstName)
                 .data("lastName", nutzer.lastName)
                 .data("newEmail", newEmail)
@@ -140,5 +162,14 @@ public class MailService {
                         success -> System.out.println("Email change confirmation (new address) mail sent to " + newEmail),
                         failure -> System.err.println("Failed to send email change confirmation (new address) mail: " + failure.getMessage())
                 );
+    }
+
+    // -------------------------------------------------------------------
+    // Helper methods
+    // -------------------------------------------------------------------
+
+
+    private static String senderEmail(Veranstaltung v) {
+        return v.organisatoren().iterator().next().email;
     }
 }

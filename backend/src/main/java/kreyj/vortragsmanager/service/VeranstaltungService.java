@@ -3,17 +3,15 @@ package kreyj.vortragsmanager.service;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import kreyj.vortragsmanager.dto.VeranstaltungDto;
 import kreyj.vortragsmanager.dto.csv.VeranstaltungCsvDto;
-import kreyj.vortragsmanager.entity.Admin;
-import kreyj.vortragsmanager.entity.Gebaeude;
-import kreyj.vortragsmanager.entity.Nutzer;
-import kreyj.vortragsmanager.entity.Veranstaltung;
-import kreyj.vortragsmanager.entity.ProtokollKategorie; // Import ProtokollKategorie
+import kreyj.vortragsmanager.entity.*;
 import kreyj.vortragsmanager.resource.VeranstaltungResource;
+import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
-import jakarta.inject.Inject; // Import Inject
 
 import java.io.FileReader;
 import java.nio.file.Path;
@@ -45,7 +43,15 @@ public class VeranstaltungService {
 
         if (dto.id != null) {
             entity = Veranstaltung.findById(dto.id);
-            if (entity == null) return null;
+            if (entity == null) {
+                return null;
+            }
+            
+            // Optimistic Locking Prüfung
+            if (dto.version != null && !entity.version.equals(dto.version)) {
+                throw new OptimisticLockException("Die Veranstaltung wurde in der Zwischenzeit von einem anderen Benutzer geändert.");
+            }
+
             aktion = "aktualisiert";
         } else {
             entity = new Veranstaltung();
@@ -65,7 +71,9 @@ public class VeranstaltungService {
         if (dto.gebaeude != null) {
             for (var gDto : dto.gebaeude) {
                 Gebaeude g = Gebaeude.findById(gDto.id);
-                if (g != null) entity.gebaeude.add(g);
+                if (g != null) {
+                    entity.gebaeude.add(g);
+                }
             }
         }
 
@@ -74,7 +82,9 @@ public class VeranstaltungService {
             entity.nutzer.removeIf(u -> u instanceof Admin);
             for (Long aid : dto.organisatorIds) {
                 Admin a = Admin.findById(aid);
-                if (a != null) entity.addNutzer(a);
+                if (a != null) {
+                    entity.addNutzer(a);
+                }
             }
         }
 
@@ -82,6 +92,9 @@ public class VeranstaltungService {
             entity.persist();
             protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung erstellt", "Neue Veranstaltung '" + entity.name + "' erstellt.", entity.id);
         } else {
+            // ZWINGEND ERFORDERLICH FÜR OPTIMISTIC LOCKING RESPONSE:
+            // Hibernate zwingen, das Update jetzt durchzuführen, damit entity.version hochgezählt wird.
+            entity.flush();
             protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung aktualisiert", "Veranstaltung '" + entity.name + "' aktualisiert.", entity.id);
         }
         return VeranstaltungResource.mapVeranstaltungToDto(entity);
@@ -110,40 +123,44 @@ public class VeranstaltungService {
                     continue;
                 }
 
-                Nutzer admin = Nutzer.findByEmail(dto.organisatorEmail);
-                if (admin instanceof Admin) {
-                    Veranstaltung v = new Veranstaltung();
-                    v.name = dto.name;
-                    try {
-                        v.beginntAm = LocalDateTime.parse(dto.beginntAm, DATE_FORMAT);
-                        if (dto.endetAm != null && !dto.endetAm.isEmpty()) {
-                            v.endetAm = LocalDateTime.parse(dto.endetAm, DATE_FORMAT);
-                        }
-                    } catch (Exception e) {
-                        LOG.error("Fehler beim Parsen des Datums für Veranstaltung '" + dto.name + "': " + e.getMessage());
-                        continue;
-                    }
-                    v.logo = dto.logo;
-                    v.logo_link = dto.logo_link;
-                    v.persist();
+                String[] organisatorenEmails = StringUtils.split(dto.organisatorenEmails, ",");
+                for (String organisatorenEmail : organisatorenEmails) {
+                    Nutzer admin = Nutzer.findByEmail(organisatorenEmail.trim());
 
-                    // Admin verknüpfen
-                    admin.veranstaltungen.add(v);
-
-                    if (dto.gebaeudeNamen != null && !dto.gebaeudeNamen.isEmpty()) {
-                        Arrays.stream(dto.gebaeudeNamen.split("\\|")).map(String::trim).forEach(name -> {
-                            Gebaeude g = Gebaeude.find("name", name).firstResult();
-                            if (g != null) {
-                                v.gebaeude.add(g);
-                            } else {
-                                LOG.warn("Veranstaltung '" + dto.name + "': Gebäude nicht gefunden: '" + name + "'");
+                    if (admin instanceof Admin) {
+                        Veranstaltung v = new Veranstaltung();
+                        v.name = dto.name;
+                        try {
+                            v.beginntAm = LocalDateTime.parse(dto.beginntAm, DATE_FORMAT);
+                            if (dto.endetAm != null && !dto.endetAm.isEmpty()) {
+                                v.endetAm = LocalDateTime.parse(dto.endetAm, DATE_FORMAT);
                             }
-                        });
+                        } catch (Exception e) {
+                            LOG.error("Fehler beim Parsen des Datums für Veranstaltung '" + dto.name + "': " + e.getMessage());
+                            continue;
+                        }
+                        v.logo = dto.logo;
+                        v.logo_link = dto.logo_link;
+                        v.persist();
+
+                        // Admin verknüpfen
+                        admin.addVeranstaltung(v);
+
+                        if (dto.gebaeudeNamen != null && !dto.gebaeudeNamen.isEmpty()) {
+                            Arrays.stream(dto.gebaeudeNamen.split("\\|")).map(String::trim).forEach(name -> {
+                                Gebaeude g = Gebaeude.find("name", name).firstResult();
+                                if (g != null) {
+                                    v.gebaeude.add(g);
+                                } else {
+                                    LOG.warn("Veranstaltung '" + dto.name + "': Gebäude nicht gefunden: '" + name + "'");
+                                }
+                            });
+                        }
+                        count++;
+                        protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung importiert", "Veranstaltung '" + v.name + "' via CSV importiert.", v.id);
+                    } else {
+                        LOG.warn("Veranstaltung '" + dto.name + "' übersprungen: Organisator (Admin) mit Email " + organisatorenEmail + " nicht gefunden.");
                     }
-                    count++;
-                    protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung importiert", "Veranstaltung '" + v.name + "' via CSV importiert.", v.id);
-                } else {
-                    LOG.warn("Veranstaltung '" + dto.name + "' übersprungen: Organisator (Admin) mit Email " + dto.organisatorEmail + " nicht gefunden.");
                 }
             }
         } catch (Exception e) {

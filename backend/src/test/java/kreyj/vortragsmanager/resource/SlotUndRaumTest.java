@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
+import static jakarta.ws.rs.core.Response.Status.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
@@ -90,7 +91,7 @@ class SlotUndRaumTest {
                 .body(jsonInvalid)
                 .when().post("/api/veranstaltungen/{vid}/slots", vid)
                 .then()
-                .statusCode(400);
+                .statusCode(BAD_REQUEST.getStatusCode());
 
         // 2. Vor Veranstaltungsbeginn
         String jsonEarly = """
@@ -105,7 +106,7 @@ class SlotUndRaumTest {
                 .body(jsonEarly)
                 .when().post("/api/veranstaltungen/{vid}/slots", vid)
                 .then()
-                .statusCode(400);
+                .statusCode(BAD_REQUEST.getStatusCode());
 
         // 3. Korrekter Slot
         String jsonOk = """
@@ -120,7 +121,7 @@ class SlotUndRaumTest {
                 .body(jsonOk)
                 .when().post("/api/veranstaltungen/{vid}/slots", vid)
                 .then()
-                .statusCode(201)
+                .statusCode(CREATED.getStatusCode())
                 .extract().path("id");
 
         // 4. Überschneidung
@@ -136,7 +137,7 @@ class SlotUndRaumTest {
                 .body(jsonOverlap)
                 .when().post("/api/veranstaltungen/{vid}/slots", vid)
                 .then()
-                .statusCode(400);
+                .statusCode(BAD_REQUEST.getStatusCode());
     }
 
     @Test
@@ -177,7 +178,7 @@ class SlotUndRaumTest {
         List<RaumBelegbarkeitDto> dtos = given()
                 .when().get("/api/admin/veranstaltungen/{vid}/raeume/verfuegbarkeiten", vid)
                 .then()
-                .statusCode(200)
+                .statusCode(OK.getStatusCode())
                 .extract().body().jsonPath().getList(".", RaumBelegbarkeitDto.class);
 
         RaumBelegbarkeitDto target = dtos.stream()

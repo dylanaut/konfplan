@@ -4,7 +4,7 @@
     <nav v-if="auth.isAuthenticated" class="bg-indigo-600 text-white p-4 shadow-lg sticky top-0 z-50">
       <div class="container mx-auto flex justify-between items-center">
         <div class="flex items-center gap-4 overflow-hidden">
-          <h1 class="font-bold text-xl whitespace-nowrap">Vortragsmanager</h1>
+          <h1 class="font-bold text-xl whitespace-nowrap">KonfPlan</h1>
 
           <!-- EVENT CONTEXT UI -->
           <div v-if="eventContext.selectedEvent" class="flex items-center gap-3 border-l border-indigo-500 pl-4 animate-fade-in overflow-hidden">

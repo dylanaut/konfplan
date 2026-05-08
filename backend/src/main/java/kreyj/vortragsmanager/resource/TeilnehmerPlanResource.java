@@ -20,6 +20,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
+
 @Path("/api/teilnehmer")
 @RolesAllowed({"TEILNEHMER", "ADMIN"})
 @Produces(MediaType.APPLICATION_JSON)
@@ -78,7 +80,7 @@ public class TeilnehmerPlanResource {
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     public List<VerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
-        if (!(nutzer instanceof Teilnehmer)) throw new WebApplicationException("Kein Teilnehmer", 403);
+        if (!(nutzer instanceof Teilnehmer)) throw new WebApplicationException("Nutzer ist kein Teilnehmer", FORBIDDEN.getStatusCode());
 
         return Verfuegbarkeit.find("nutzer = ?1 and slot.veranstaltung.id = ?2", nutzer, vid).stream()
                 .map(v -> {
@@ -93,14 +95,14 @@ public class TeilnehmerPlanResource {
     @Transactional
     public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, VerfuegbarkeitDto dto) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
-        if (!(nutzer instanceof Teilnehmer)) return Response.status(Response.Status.FORBIDDEN).build();
+        if (!(nutzer instanceof Teilnehmer)) return Response.status(FORBIDDEN).build();
 
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (veranstaltung == null) return Response.status(Response.Status.NOT_FOUND).build();
 
         // Deadline Check
         if (veranstaltung.deadlineTeilnehmer != null && veranstaltung.deadlineTeilnehmer.isBefore(LocalDateTime.now())) {
-            return Response.status(Response.Status.FORBIDDEN)
+            return Response.status(FORBIDDEN)
                     .entity("Die Deadline für Teilnehmer ist bereits abgelaufen.").build();
         }
 

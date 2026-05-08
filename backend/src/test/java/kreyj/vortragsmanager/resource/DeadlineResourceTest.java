@@ -9,10 +9,12 @@ import io.quarkus.test.security.jwt.Claim;
 import io.quarkus.test.security.jwt.JwtSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.PrioritaetRequest;
 import kreyj.vortragsmanager.dto.VortragDto;
 import kreyj.vortragsmanager.dto.VeranstaltungDto;
 import kreyj.vortragsmanager.entity.*;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -20,6 +22,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
+import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
+import static jakarta.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
@@ -79,7 +83,7 @@ class DeadlineResourceTest {
     @Test
     @TestSecurity(user = "referent@test.de", roles = "REFERENT")
     @JwtSecurity(claims = {
-            @Claim(key = "sub", value = "referent@test.de")
+            @Claim(key = "upn", value = "referent@test.de")
     })
     void testReferentDeadlineExceeded() {
         VortragDto dto = new VortragDto();
@@ -92,28 +96,29 @@ class DeadlineResourceTest {
                 .body(dto)
                 .when().post("/api/referenten/vortraege")
                 .then()
-                .statusCode(403);
+                .statusCode(FORBIDDEN.getStatusCode());
 
         // Update verboten
         dto.titel = "Geänderter Titel";
+        dto.version = 0L;
         given()
                 .contentType(ContentType.JSON)
                 .body(dto)
                 .when().put("/api/referenten/vortraege/{id}", wahlvortragId)
                 .then()
-                .statusCode(403);
+                .statusCode(FORBIDDEN.getStatusCode());
 
         // Löschen verboten
         given()
                 .when().delete("/api/referenten/vortraege/{id}", wahlvortragId)
                 .then()
-                .statusCode(403);
+                .statusCode(FORBIDDEN.getStatusCode());
     }
 
     @Test
     @TestSecurity(user = "teilnehmer@test.de", roles = "TEILNEHMER")
     @JwtSecurity(claims = {
-            @Claim(key = "sub", value = "teilnehmer@test.de")
+            @Claim(key = "upn", value = "teilnehmer@test.de")
     })
     void testTeilnehmerDeadlineExceeded() {
         PrioritaetRequest req = new PrioritaetRequest();
@@ -125,7 +130,7 @@ class DeadlineResourceTest {
                 .body(List.of(req))
                 .when().post("/api/teilnehmer/prios")
                 .then()
-                .statusCode(403);
+                .statusCode(FORBIDDEN.getStatusCode());
     }
 
     @Test
@@ -143,7 +148,7 @@ class DeadlineResourceTest {
                 .body(dto)
                 .when().put("/api/veranstaltungen/{id}", pastEventId)
                 .then()
-                .statusCode(200)
+                .statusCode(OK.getStatusCode())
                 .body("name", is("Abgelaufenes Event (Admin Update)"));
     }
 }

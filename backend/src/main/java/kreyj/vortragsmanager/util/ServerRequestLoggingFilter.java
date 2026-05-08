@@ -12,7 +12,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 //@Provider // Registers the filter with JAX-RS
-public class ServerRequestLoggingFilter implements ContainerRequestFilter {
+public class ServerRequestLoggingFilter extends LoggingFilterHelper implements ContainerRequestFilter {
     private static final Logger LOG = Logger.getLogger(ServerRequestLoggingFilter.class);
 
     @Override
@@ -32,21 +32,6 @@ public class ServerRequestLoggingFilter implements ContainerRequestFilter {
             context.setEntityStream(new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8)));
             LOG.debug("Request Body: " + body);
         }
-    }
-
-    // Check if media type is text-based (e.g., JSON, XML)
-    private boolean isTextualMediaType(MediaType mediaType) {
-        if (mediaType != null) {
-            if (mediaType.getType().equals("text")) {
-                return true;
-            }
-
-            if (null != mediaType.getSubtype()) {
-                return mediaType.getSubtype().endsWith("json")
-                        || mediaType.getSubtype().endsWith("xml");
-            }
-        }
-        return false;
     }
 
     // Read the request body from the input stream

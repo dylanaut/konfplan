@@ -177,24 +177,17 @@ Das Frontend basiert auf Vue 3, Vite, Tailwind CSS, Pinia (State Management) und
 
 == 10. MacOS Entwicklung
 
-colima statt docker desktop
+docker desktop für MacOS mit M2 (silicon chip / aarch) verwenden
 
-brew install docker colima
 
-----
-colima start -t vz --mount-type sshfs
-// reset mit
-colima stop
-colima delete
-----
+== Image-Download mit
 
-* mailpit als testcontainer in docker/colima schlägt fehl?
-* postgres:18 als testcontainer in docker/colima funktioniert
-** erfordert Anlagen einer DB instanz
+=== 1. Corporate Proxy / SSL-Inspektion (häufigste Ursache)
 
-* Vorbereitung ryuk für arm64/M2 aarch
-
-----
-COPY /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt # buildkit
-
-----
+Wenn Sie hinter einem Unternehmensproxy arbeiten, müssen Sie das Root-CA-Zertifikat Ihres Unternehmens in die Colima-VM importieren und Docker anweisen, diesem zu vertrauen.
+=== Schritt 1: Beschaffen Sie das Root-CA-Zertifikat Ihres Unternehmens
+•
+Fragen Sie Ihre IT-Abteilung nach dem Root-CA-Zertifikat Ihres Unternehmens. Es sollte eine .crt- oder .pem-Datei sein.
+•
+Speichern Sie diese Datei an einem leicht zugänglichen Ort auf Ihrem Host-System (z.B. ~/my-corp-ca.crt).
+=== Schritt 2: Fügen Sie das CA-Zertifikat zu Docker hinzu

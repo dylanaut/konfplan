@@ -5,14 +5,16 @@ import com.opencsv.bean.CsvToBeanBuilder;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
-import kreyj.vortragsmanager.dto.UserDto;
+import kreyj.vortragsmanager.dto.NutzerDto;
 import kreyj.vortragsmanager.dto.VortragStatDto;
 import kreyj.vortragsmanager.dto.csv.AdminCsvDto;
 import kreyj.vortragsmanager.dto.csv.EventSlotCsvDto;
 import kreyj.vortragsmanager.dto.csv.VortragCsvDto;
 import kreyj.vortragsmanager.entity.*;
+import kreyj.vortragsmanager.resource.AdminResource;
 import org.jboss.logging.Logger;
 
 import java.io.FileReader;
@@ -35,25 +37,29 @@ public class AdminService {
     @Inject
     ProtokollService protokollService;
 
-    public List<UserDto> getAllUsers(Long veranstaltungId) {
+    public List<NutzerDto> getAllUsers() {
+        return new HashSet<>(Nutzer.<Nutzer>listAll()) // Duplikate entfernen
+                .stream()
+                .map(AdminResource::mapNutzerToDto)
+                .toList();
+    }
+
+    public List<NutzerDto> getAllUsers(Long veranstaltungId) {
         List<Nutzer> admins = Nutzer.list("role = 'ADMIN'");
         List<Nutzer> vNutzers = Nutzer.find("SELECT u FROM Nutzer u JOIN u.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
 
         return Stream.concat(admins.stream(), vNutzers.stream())
                 .distinct()
-                .map(this::mapToDto)
+                .map(AdminResource::mapNutzerToDto)
                 .toList();
     }
 
-    public List<UserDto> getAllUsers() {
-        return new HashSet<>(Nutzer.<Nutzer>listAll()) // Duplikate entfernen
-                .stream()
-                .map(this::mapToDto)
-                .toList();
+    public Nutzer findNutzer(Long id) {
+        return Nutzer.findById(id);
     }
 
     @Transactional
-    public UserDto createUser(UserDto dto, List<Long> veranstaltungsIds) {
+    public NutzerDto createUser(NutzerDto dto, List<Long> veranstaltungsIds) {
         Nutzer nutzer;
         if ("REFERENT".equals(dto.role)) {
             nutzer = new Referent();
@@ -99,14 +105,18 @@ public class AdminService {
         mailService.sendRegistrationConfirmation(nutzer);
 
         protokollService.log(ProtokollKategorie.NUTZER, "Nutzer erstellt", "Neuer Nutzer '" + nutzer.email + "' mit Rolle '" + nutzer.role + "' erstellt.", nutzer.id);
-        return mapToDto(nutzer);
+        return AdminResource.mapNutzerToDto(nutzer);
     }
 
     @Transactional
-    public UserDto updateUser(Long id, UserDto dto, List<Long> vUpdateIds) {
+    public NutzerDto updateUser(Long id, NutzerDto dto, List<Long> vUpdateIds) {
         Nutzer nutzer = Nutzer.findById(id);
         if (nutzer == null) {
             return null;
+        }
+
+        if (!Objects.equals(nutzer.version, dto.version)) {
+            throw new OptimisticLockException("Der Nutzer wurde zwischenzeitlich von Dritten geändert. Bitte aktualisieren Sie die Daten und versuchen Sie es erneut.");
         }
 
         // Check for email change
@@ -138,7 +148,6 @@ public class AdminService {
                 }
             }
 
-
             Set<Long> toAdds = difference(vNewIdSet, oldVIds).toSet();
             for (Long toAdd : toAdds) {
                 Veranstaltung v = Veranstaltung.findById(toAdd);
@@ -159,8 +168,10 @@ public class AdminService {
             t.gruppe = dto.gruppe;
         }
 
+        nutzer.persistAndFlush();
+
         protokollService.log(ProtokollKategorie.NUTZER, "Nutzer aktualisiert", "Nutzer '" + nutzer.email + "' aktualisiert.", nutzer.id);
-        return mapToDto(nutzer);
+        return AdminResource.mapNutzerToDto(nutzer);
     }
 
     @Transactional
@@ -180,33 +191,12 @@ public class AdminService {
 
         if (!nutzer.veranstaltungen.contains(event)) {
             nutzer.addVeranstaltung(event);
-            mailService.sendEventInvitation(nutzer, event);
+            mailService.sendEinladungZuVeranstaltung(nutzer, event);
             LOG.info("Nutzer " + nutzer.email + " zu Veranstaltung " + event.name + " eingeladen.");
             protokollService.log(ProtokollKategorie.SECURITY, "Nutzer zu Event eingeladen", "Nutzer '" + nutzer.email + "' zu '" + event.name + "' eingeladen.", event.id);
         } else {
             LOG.info("Nutzer " + nutzer.email + " ist bereits für Veranstaltung " + event.name + " registriert.");
         }
-    }
-
-    private UserDto mapToDto(Nutzer u) {
-        UserDto dto = new UserDto();
-        dto.id = u.id;
-        dto.email = u.email;
-        dto.firstName = u.firstName;
-        dto.lastName = u.lastName;
-        dto.role = u.role;
-        dto.isActive = u.isActive;
-        dto.veranstaltungIds = null != u.veranstaltungen ? u.veranstaltungen.stream().map(v -> v.id).toList() : Collections.emptyList();
-
-        if (u instanceof Referent r) {
-            dto.biography = r.biography;
-            dto.jobRole = r.jobRole;
-            dto.organisation = r.organisation;
-            dto.slogan = r.slogan;
-        } else if (u instanceof Teilnehmer t) {
-            dto.gruppe = t.gruppe;
-        }
-        return dto;
     }
 
     @Transactional
@@ -237,6 +227,10 @@ public class AdminService {
 
     public List<Vortrag> getAllVortraege(Long veranstaltungId) {
         return Vortrag.find("veranstaltung.id", veranstaltungId).list();
+    }
+
+    public Vortrag getVeranstaltungsVortrag(Long veranstaltungId, Long vortragId) {
+        return Vortrag.find("veranstaltung.id = ?1 and id = ?2", veranstaltungId, vortragId).firstResult();
     }
 
     public List<Nutzer> getAllReferenten(Long veranstaltungId) {
@@ -460,8 +454,16 @@ public class AdminService {
     @Transactional
     public EventSlot updateEventSlot(Long id, EventSlot updated, Long veranstaltungId) {
         EventSlot entity = EventSlot.findById(id);
+
+        if (null == entity) {
+            return null;
+        }
+
+        if (!Objects.equals(entity.version, updated.version)) {
+            throw new OptimisticLockException("Der Slot wurde zwischenzeitlich von Dritten geändert. Bitte aktualisieren Sie die Daten und versuchen Sie es erneut.");
+        }
         Veranstaltung v = Veranstaltung.findById(veranstaltungId);
-        if (entity != null && entity.veranstaltung.id.equals(veranstaltungId)) {
+        if (entity.veranstaltung.id.equals(veranstaltungId)) {
             validateSlot(updated, v, id);
             entity.description = updated.description;
             entity.startTime = updated.startTime;
@@ -573,10 +575,14 @@ public class AdminService {
     }
 
     @Transactional
-    public Vortrag updateVortrag(Long id, Vortrag updated, Long veranstaltungId) {
-        Vortrag entity = Vortrag.findById(id);
+    public Vortrag updateVortrag(Long veranstaltungId, Long talkId, Vortrag updated) {
+        Vortrag entity = Vortrag.findById(talkId);
         if (entity == null || !entity.veranstaltung.id.equals(veranstaltungId)) {
             return null;
+        }
+
+        if (!Objects.equals(entity.version, updated.version)) {
+            throw new OptimisticLockException("Der Vortrag wurde zwischenzeitlich von Dritten geändert. Bitte aktualisieren Sie die Daten und versuchen Sie es erneut.");
         }
 
         // Check if type changes (e.g., Wahlvortrag to Pflichtvortrag or vice versa)

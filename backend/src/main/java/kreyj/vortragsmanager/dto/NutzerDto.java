@@ -1,11 +1,12 @@
 package kreyj.vortragsmanager.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import java.util.List;
+
 import java.util.ArrayList;
+import java.util.List;
 
 @RegisterForReflection
-public class UserDto extends AbstractVersionedDto {
+public class NutzerDto extends AbstractVersionedDto {
     public String email;
     public String firstName;
     public String lastName;
@@ -21,7 +22,4 @@ public class UserDto extends AbstractVersionedDto {
 
     // Teilnehmer-spezifisch
     public String gruppe;
-
-    public UserDto() {
-    }
 }

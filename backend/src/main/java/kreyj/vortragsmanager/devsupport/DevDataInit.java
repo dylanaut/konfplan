@@ -87,6 +87,7 @@ public class DevDataInit {
             adminService.importVortraegeFromCsv(basePath.resolve("wahl_vortraege.csv"), vid);
 
             LOG.info("Dev-Daten-Initialisierung erfolgreich abgeschlossen.");
+            LOG.info("###\n### Mailpit: http://localhost:9000/q/dev-ui/quarkus-mailpit/mailpit-ui");
         } catch (Exception e) {
             LOG.error("Fehler bei der Dev-Daten-Initialisierung", e);
         }

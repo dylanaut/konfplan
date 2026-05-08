@@ -4,22 +4,25 @@ import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
+import kreyj.vortragsmanager.dto.NutzerDto;
 import kreyj.vortragsmanager.dto.VortragPrioDto;
 import kreyj.vortragsmanager.dto.csv.TeilnehmerCsvDto;
 import kreyj.vortragsmanager.entity.*;
 import org.jboss.logging.Logger;
-import jakarta.inject.Inject;
 
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class TeilnehmerService {
@@ -29,12 +32,19 @@ public class TeilnehmerService {
     @Inject
     ProtokollService protokollService;
 
-    public List<Nutzer> findAll(Long veranstaltungId) {
+    public List<Teilnehmer> findAll(Long veranstaltungId) {
         return Nutzer.find("role = 'TEILNEHMER' and veranstaltung.id = ?1", veranstaltungId).list();
     }
 
-    public Nutzer findById(Long id) {
+    public Teilnehmer findById(Long id) {
         return Nutzer.findById(id);
+    }
+
+    public Teilnehmer findByEmail(String email) {
+        if (null == email) {
+            return null;
+        }
+        return Teilnehmer.find("email", email.trim().toLowerCase()).firstResult();
     }
 
     @Transactional
@@ -44,7 +54,7 @@ public class TeilnehmerService {
             return null;
         }
 
-        Nutzer existing = Nutzer.findByEmail(user.email.trim().toLowerCase());
+        Teilnehmer existing = findByEmail(user.email.trim().toLowerCase());
         if (existing != null) {
             LOG.warn("Teilnehmer konnte nicht erstellt werden: Email " + user.email + " bereits vergeben.");
             protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Erstellung fehlgeschlagen", "E-Mail bereits vergeben: " + user.email);
@@ -146,7 +156,30 @@ public class TeilnehmerService {
     }
 
     @Transactional
-    public Teilnehmer updateTeilnehmer(Long id, Teilnehmer teilnehmer, Long veranstaltungId) {
+    public Teilnehmer updateTeilnehmerProfile(Teilnehmer teilnehmer, NutzerDto dto) {
+        if (teilnehmer == null) {
+            throw new WebApplicationException("Teilnehmer nicht gefunden", Response.Status.NOT_FOUND);
+        }
+        if (!teilnehmer.email.equals(dto.email)) {
+            throw new WebApplicationException("E-Mail kann nicht geändert werden", Response.Status.BAD_REQUEST);
+        }
+        
+        if (dto.version != null && !teilnehmer.version.equals(dto.version)) {
+            throw new OptimisticLockException("Das Profil wurde in der Zwischenzeit von einem anderen Benutzer geändert.");
+        }
+
+        teilnehmer.firstName = dto.firstName;
+        teilnehmer.lastName = dto.lastName;
+        teilnehmer.gruppe = dto.gruppe;
+        teilnehmer.isActive = dto.isActive;
+
+        teilnehmer.persistAndFlush();
+
+        return teilnehmer;
+    }
+
+    @Transactional
+    public Teilnehmer updateTeilnehmer(Long id, NutzerDto teilnehmer, Long veranstaltungId) {
         Nutzer existing = Nutzer.findById(id);
         if (existing == null || !(existing instanceof Teilnehmer)) {
             protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Update fehlgeschlagen", "Teilnehmer mit ID " + id + " nicht gefunden oder falscher Typ.");
@@ -154,6 +187,11 @@ public class TeilnehmerService {
         }
 
         Teilnehmer tn = (Teilnehmer) existing;
+        
+        if (teilnehmer.version != null && !tn.version.equals(teilnehmer.version)) {
+            throw new OptimisticLockException("Der Teilnehmer wurde in der Zwischenzeit von einem anderen Benutzer geändert.");
+        }
+        
         String oldEmail = tn.email;
         tn.firstName = teilnehmer.firstName;
         tn.lastName = teilnehmer.lastName;
@@ -165,6 +203,9 @@ public class TeilnehmerService {
         if (null != veranstaltung) {
             tn.addVeranstaltung(veranstaltung);
         }
+        
+        tn.persistAndFlush();
+        
         protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer aktualisiert", "Teilnehmer " + oldEmail + " (ID: " + tn.id + ") aktualisiert. Neue E-Mail: " + tn.email + ".", tn.id);
         return tn;
     }

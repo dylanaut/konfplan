@@ -20,8 +20,8 @@ public class VeranstaltungCsvDto {
     public String logo_link;
 
 
-    @CsvBindByName(column = "Organisator_Email", required = true)
-    public String organisatorEmail;
+    @CsvBindByName(column = "Organisatoren_Emails", required = true)
+    public String organisatorenEmails;
 
     @CsvBindByName(column = "Gebaeude_Namen") // Pipe-getrennte Liste von Gebaeude-Namen
     public String gebaeudeNamen;

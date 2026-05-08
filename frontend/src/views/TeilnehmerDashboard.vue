@@ -77,7 +77,7 @@
                        isUserAvailable(slot.id) ? 'bg-indigo-600 text-white border-indigo-600 font-bold' : 'bg-gray-50 text-gray-400 border-gray-200',
                        isDeadlinePassed(currentEvent?.deadlineTeilnehmer) ? 'opacity-80 cursor-not-allowed' : 'hover:border-indigo-400']"
           >
-            {{ formatTime(slot.startTime) }} - {{ formatTime(slot.endTime) }}
+            {{ formatSlotTime(slot.startTime, slot.endTime) }}
           </button>
         </div>
       </section>
@@ -101,57 +101,39 @@
         </header>
 
         <!-- Legende der Wahlvorträge (wie im Admin-Bereich) -->
-        <div v-if="electiveTalks.length > 0" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 animate-fade-in">
-          <h3 class="font-black text-indigo-900 uppercase text-xs mb-4 flex items-center gap-2">
-            <InfoIcon class="w-4 h-4" /> Übersicht der verfügbaren Wahlvorträge
+        <div v-if="electiveTalks.length > 0" class="bg-indigo-50 p-3 rounded-xl border border-indigo-100 text-[10px] animate-fade-in">
+          <h3 class="font-black text-indigo-900 uppercase mb-2 flex items-center gap-2">
+            <InfoIcon class="w-3.5 h-3.5" /> Übersicht der verfügbaren Wahlvorträge
           </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-2">
-            <div v-for="(talk, index) in electiveTalks" :key="'legende-'+talk.id" class="flex gap-3 items-start group">
-              <span class="font-black text-indigo-600 shrink-0 w-5 text-right text-sm">{{ index + 1 }}:</span>
-              <div class="min-w-0">
-                <span class="text-gray-800 text-sm font-bold block truncate group-hover:text-indigo-600 transition-colors"
-                      :title="`Referent: ${talk.referent?.lastName || 'N/A'}${talk.referent?.organisation ? ' (' + talk.referent.organisation + ')' : ''}`">
-                  {{ talk.titel }}
-                </span>
-                <p class="text-[10px] text-gray-500 italic truncate">{{ talk.referent?.firstName }} {{ talk.referent?.lastName }}</p>
-              </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1">
+            <div v-for="(talk, index) in electiveTalks" :key="'legende-'+talk.id" class="flex gap-2 items-start">
+              <span class="font-black text-indigo-600 shrink-0 w-4 text-right">{{ index + 1 }}:</span>
+              <span class="text-gray-700 truncate"
+                    :title="`Referent: ${talk.referent?.lastName || 'N/A'}${talk.referent?.organisation ? ' (' + talk.referent.organisation : ')'}`">
+                {{ talk.titel }}
+              </span>
             </div>
           </div>
         </div>
 
-        <!-- Kompakte Prioritäten-Tabelle -->
-        <div v-if="electiveTalks.length > 0" class="bg-white shadow rounded-xl border border-gray-100 overflow-hidden animate-fade-in">
-          <table class="min-w-full divide-y divide-gray-200 text-xs table-fixed">
-            <thead class="bg-gray-50 text-[10px] uppercase font-black text-gray-500">
-            <tr>
-              <th class="px-6 py-3 text-left w-64 border-r border-gray-100">Info</th>
-              <th v-for="(talk, index) in electiveTalks" :key="'header-'+talk.id"
-                  class="px-1 py-3 text-center text-[10px] font-black text-indigo-600 w-14 min-w-[56px] border-r border-gray-100 bg-indigo-50/30"
-                  :title="talk.titel">
-                {{ index + 1 }}
-              </th>
-              <th class="w-auto bg-gray-50"></th>
-            </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-            <tr class="hover:bg-gray-50/50 transition-colors">
-              <td class="px-6 py-4 border-r border-gray-100 bg-gray-50/30">
-                <div class="flex flex-col">
-                  <span class="font-black text-indigo-900 uppercase text-[10px]">Meine Wahl</span>
-                  <span class="text-gray-500 text-[9px]">Geben Sie hier Ihre Prioritäten (1-10) ein</span>
-                </div>
-              </td>
-              <td v-for="talk in electiveTalks" :key="'cell-'+talk.id" class="px-1 py-4 text-center border-r border-gray-50">
-                <input type="number" min="1" max="10"
-                       :value="getCurrentPriority(talk.id) || ''"
-                       @input="updatePriority(talk.id, $event.target.value)"
-                       :disabled="zuweisungen.length > 0 || isDeadlinePassed(currentEvent?.deadlineTeilnehmer)"
-                       class="w-12 mx-auto text-center border rounded-lg py-1.5 text-xs font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 border-gray-200 bg-white transition-all disabled:bg-gray-100 disabled:text-gray-300" />
-              </td>
-              <td class="bg-gray-50/10"></td>
-            </tr>
-            </tbody>
-          </table>
+        <!-- Neue Struktur für Prioritäten-Eingabe -->
+        <div v-if="electiveTalks.length > 0" class="bg-white shadow rounded-xl border border-gray-100 p-6 animate-fade-in">
+          <h3 class="font-black text-indigo-900 uppercase text-xs mb-4 flex items-center gap-2">
+            <StarIcon class="w-4 h-4" /> Meine Prioritäten für Wahlvorträge
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+            <div v-for="talk in electiveTalks" :key="'prio-input-'+talk.id" class="flex items-center gap-4">
+              <div class="flex-grow">
+                <span class="font-bold text-gray-800 block">{{ talk.titel }}</span>
+                <p class="text-xs text-gray-500">{{ talk.referent?.firstName }} {{ talk.referent?.lastName }}</p>
+              </div>
+              <input type="number" min="1" max="10"
+                     :value="getCurrentPriority(talk.id) || ''"
+                     @input="updatePriority(talk.id, $event.target.value)"
+                     :disabled="zuweisungen.length > 0 || isDeadlinePassed(currentEvent?.deadlineTeilnehmer)"
+                     class="w-16 text-center border rounded-lg py-1.5 text-sm font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 border-gray-200 bg-white transition-all disabled:bg-gray-100 disabled:text-gray-300" />
+            </div>
+          </div>
         </div>
 
         <!-- Save Button -->
@@ -307,13 +289,23 @@ const toggleAvailability = async (slotId) => {
 };
 
 const isDeadlinePassed = (deadline) => {
-    if (!deadline) return false;
-    return new Date(deadline) < new Date();
+  if (!deadline) return false;
+  return new Date(deadline) < new Date();
 };
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('de-DE') : '';
 const formatDateTime = (dt) => dt ? new Date(dt).toLocaleTimeString('de-DE', {weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'}) : '';
 const formatTime = (t) => t ? new Date(t).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'}) : '';
+
+const formatSlotTime = (start, end) => {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  const weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  const day = weekdays[startDate.getDay()];
+  const startTime = startDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const endTime = endDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  return `${day} ${startTime} - ${endTime}`;
+};
 </script>
 
 <style scoped>

@@ -10,11 +10,14 @@ import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.LoginRequest;
 import kreyj.vortragsmanager.dto.ResetRequest;
 import kreyj.vortragsmanager.entity.Admin;
 import kreyj.vortragsmanager.entity.Nutzer;
 import kreyj.vortragsmanager.entity.Teilnehmer;
+import kreyj.vortragsmanager.service.MailService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -23,9 +26,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static jakarta.ws.rs.core.Response.Status.ACCEPTED;
+import static jakarta.ws.rs.core.Response.Status.OK;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
@@ -34,9 +40,38 @@ class AuthResourceTest {
     @Inject
     MockMailbox mailbox;
 
+    @Inject
+    MailService mailService;
+
     @BeforeEach
     void setup() {
         PanacheMock.mock(Nutzer.class);
+    }
+
+    @AfterEach
+    public void afterEach() {
+        // clear the mailbox after each test run if you prefer
+        mailbox.clear();
+    }
+
+    @Test
+    void shouldSendRegistrationConfirmation() {
+        Teilnehmer tn = new Teilnehmer();
+        tn.email = "max@example.com";
+        tn.firstName = "Max";
+        tn.lastName = "Mustermann";
+        tn.role = "TEILNEHMER";
+
+        mailService.sendRegistrationConfirmation(tn);
+
+        // erste Mail an diese Adresse finden
+        List<Mail> mails = mailbox.getMailsSentTo("max@example.com");
+        assertThat(mails).hasSize(1);
+        Mail message = mails.getFirst();
+
+        assertThat(message.getSubject()).isEqualTo("Willkommen bei KonfPlan!");
+        assertThat(message.getTo().getFirst()).isEqualTo("max@example.com");
+        assertThat(message.getHtml()).contains("Hallo Max");
     }
 
     @Test
@@ -55,12 +90,13 @@ class AuthResourceTest {
                 .queryParam("email", "test@example.com")
                 .when().post("/api/auth/forgot-password")
                 .then()
-                .statusCode(202);
+                .statusCode(ACCEPTED.getStatusCode());
 
-        List<Mail> mails = mailbox.getMailsSentTo("test@example.com");
+        List<Mail> mailList = mailbox.getMailsSentTo("test@example.com");
 
-        assertThat(mails.size(), is(1));
-        assertThat(mails.getFirst().getSubject(), is("Passwort zurücksetzen - Vortragsmanager"));
+        assertThat(mailList).hasSize(1);
+
+        assertThat(mailList.getFirst().getSubject()).isEqualTo("Passwort zurücksetzen - KonfPlan");
     }
 
     @Test
@@ -71,7 +107,7 @@ class AuthResourceTest {
                 .queryParam("email", "unknown@example.com")
                 .when().post("/api/auth/forgot-password")
                 .then()
-                .statusCode(202);
+                .statusCode(ACCEPTED.getStatusCode());
     }
 
     @Test
@@ -92,7 +128,7 @@ class AuthResourceTest {
                 .body(req)
                 .when().post("/api/auth/reset-password")
                 .then()
-                .statusCode(200);
+                .statusCode(OK.getStatusCode());
     }
 
     @Test
@@ -112,7 +148,7 @@ class AuthResourceTest {
                 .body(loginReq)
                 .when().post("/api/auth/login")
                 .then()
-                .statusCode(200)
+                .statusCode(OK.getStatusCode())
                 .body("token", notNullValue())
                 .body("role", is("TEILNEHMER"));
     }

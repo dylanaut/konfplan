@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
+import static jakarta.ws.rs.core.Response.Status.CREATED;
 import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
@@ -69,7 +70,7 @@ class VerfuegbarkeitTest {
                 .body(jsonReferent)
                 .when().post("/api/veranstaltungen/{vid}/nutzer", testVid)
                 .then()
-                .statusCode(201);
+                .statusCode(CREATED.getStatusCode());
 
         Nutzer ref = Nutzer.findByEmail("referent@verf.de");
         long countRef = Verfuegbarkeit.count("nutzer = ?1 and slot.id = ?2", ref, slotId);
@@ -90,7 +91,7 @@ class VerfuegbarkeitTest {
                 .body(jsonTeilnehmer)
                 .when().post("/api/veranstaltungen/{vid}/nutzer", testVid)
                 .then()
-                .statusCode(201);
+                .statusCode(CREATED.getStatusCode());
 
         Nutzer teil = Nutzer.findByEmail("schueler@verf.de");
         long countTeil = Verfuegbarkeit.count("nutzer = ?1 and slot.id = ?2", teil, slotId);

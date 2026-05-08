@@ -4,16 +4,18 @@ import com.opencsv.bean.CsvToBeanBuilder;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import kreyj.vortragsmanager.dto.RefProfilDto;
-import kreyj.vortragsmanager.dto.VortragDto;
+import kreyj.vortragsmanager.dto.NutzerDto;
 import kreyj.vortragsmanager.dto.ReferentVeranstaltungDto;
+import kreyj.vortragsmanager.dto.VortragDto;
 import kreyj.vortragsmanager.dto.csv.ReferentCsvDto;
 import kreyj.vortragsmanager.entity.*;
 import kreyj.vortragsmanager.resource.ReferentResource;
 import org.jboss.logging.Logger;
+import org.jetbrains.annotations.UnknownNullability;
 
 import java.io.FileReader;
 import java.nio.file.Path;
@@ -40,8 +42,16 @@ public class ReferentService {
     }
 
     @Transactional
-    public void updateProfile(String email, RefProfilDto dto) {
+    public void updateProfile(String email, NutzerDto dto) {
+        if (null == dto) {
+            return;
+        }
+
         Nutzer nutzer = Nutzer.findByEmail(email);
+
+        if (!Objects.equals(nutzer.version, dto.version)) {
+            throw new OptimisticLockException("Der Nutzer wurde zwischenzeitlich von Dritten geändert. Bitte aktualisieren Sie die Daten und versuchen Sie es erneut.");
+        }
         if (nutzer instanceof Referent referent) {
             referent.biography = dto.biography;
             referent.jobRole = dto.jobRole;
@@ -114,7 +124,7 @@ public class ReferentService {
         vortrag.persist();
 
         if (vortrag.veranstaltung.beginntAm.isAfter(LocalDateTime.now())) {
-            mailService.sendTalkRegistrationNotification(vortrag.veranstaltung, referent, vortrag, true);
+            mailService.sendVortragsRegistrierung(vortrag.veranstaltung, referent, vortrag, true);
         }
 
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent erstellt", "Referent '" + email + "' hat Vortrag '" + vortrag.titel + "' für Event '" + veranstaltung.name + "' erstellt.", vortrag.id);
@@ -128,6 +138,10 @@ public class ReferentService {
 
         if (vortrag == null || !vortrag.referent.id.equals(referent.id)) {
             return null;
+        }
+
+        if (!Objects.equals(vortrag.version, dto.version)) {
+            throw new OptimisticLockException("Der Vortrag wurde zwischenzeitlich von Dritten geändert. Bitte aktualisieren Sie die Daten und versuchen Sie es erneut.");
         }
 
         checkDeadline(vortrag.veranstaltung);
@@ -178,7 +192,7 @@ public class ReferentService {
         newTalk.persist();
 
         if (targetEvent.beginntAm.isAfter(LocalDateTime.now())) {
-            mailService.sendTalkRegistrationNotification(targetEvent, referent, newTalk, true);
+            mailService.sendVortragsRegistrierung(targetEvent, referent, newTalk, true);
         }
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag für weiteres Event registriert", "Referent '" + email + "' hat Vortrag '" + newTalk.titel + "' für Event '" + targetEvent.name + "' registriert.", newTalk.id);
     }
@@ -236,7 +250,7 @@ public class ReferentService {
 
         // Benachrichtigung senden, wenn die Veranstaltung in der Zukunft liegt
         if (targetEvent.beginntAm.isAfter(LocalDateTime.now())) {
-            mailService.sendTalkRegistrationNotification(targetEvent, referent, newTalk, true);
+            mailService.sendVortragsRegistrierung(targetEvent, referent, newTalk, true);
         }
 
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag geklont", "Referent '" + email + "' hat Vortrag '" + newTalk.titel + "' von Event '" + sourceTalk.veranstaltung.name + "' nach Event '" + targetEvent.name + "' geklont.", newTalk.id);
@@ -263,7 +277,7 @@ public class ReferentService {
         talk.delete();
 
         if (event.beginntAm.isAfter(LocalDateTime.now())) {
-            mailService.sendTalkRegistrationNotification(event, referent, talk, false);
+            mailService.sendVortragsRegistrierung(event, referent, talk, false);
         }
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag von Event abgemeldet", "Referent '" + email + "' hat Vortrag '" + titel + "' von Event '" + event.name + "' abgemeldet.", talkId);
     }
@@ -314,7 +328,7 @@ public class ReferentService {
         vortrag.delete();
 
         if (event.beginntAm.isAfter(LocalDateTime.now())) {
-            mailService.sendTalkRegistrationNotification(event, referent, vortrag, false);
+            mailService.sendVortragsRegistrierung(event, referent, vortrag, false);
         }
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent gelöscht", "Referent '" + email + "' hat Vortrag '" + titel + "' gelöscht.", vortragId);
 

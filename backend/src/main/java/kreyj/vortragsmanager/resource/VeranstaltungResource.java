@@ -2,6 +2,7 @@ package kreyj.vortragsmanager.resource;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -83,6 +84,8 @@ public class VeranstaltungResource {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
             return Response.ok(updated).build();
+        } catch (OptimisticLockException e) {
+            return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
         } catch (IllegalArgumentException e) {
             LOG.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
@@ -116,25 +119,31 @@ public class VeranstaltungResource {
 
     @GET
     @Path("/{vid}/nutzer")
-    public List<UserDto> getNutzer(@PathParam("vid") Long vid) {
+    public List<NutzerDto> getNutzer(@PathParam("vid") Long vid) {
         return adminService.getAllUsers(vid);
     }
 
     @POST
     @Path("/{vid}/nutzer")
-    public Response createNutzer(@PathParam("vid") Long vid, UserDto userDto) {
-        UserDto created = adminService.createUser(userDto, List.of(vid));
+    public Response createNutzer(@PathParam("vid") Long vid, NutzerDto nutzerDto) {
+        NutzerDto created = adminService.createUser(nutzerDto, List.of(vid));
         return Response.status(Response.Status.CREATED).entity(created).build();
     }
 
     @PUT
     @Path("/{vid}/nutzer/{id}")
-    public Response updateNutzer(@PathParam("vid") Long vid, @PathParam("id") Long id, UserDto userDto) {
-        UserDto updated = adminService.updateUser(id, userDto, List.of(vid));
-        if (updated == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+    public Response updateNutzer(@PathParam("vid") Long vid, @PathParam("id") Long id, NutzerDto nutzerDto) {
+        try {
+            NutzerDto updated = adminService.updateUser(id, nutzerDto, List.of(vid));
+
+            if (updated == null) {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
+
+            return Response.ok(updated).build();
+        } catch (OptimisticLockException e) {
+            return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
         }
-        return Response.ok(updated).build();
     }
 
     @DELETE
@@ -198,6 +207,16 @@ public class VeranstaltungResource {
         return allVortraege.stream().map(ReferentResource::mapVortragToDto).toList();
     }
 
+    @GET
+    @Path("/{vid}/vortraege/{tid}")
+    public Response getVeranstaltungsVortrag(@PathParam("vid") Long vid, @PathParam("tid") Long tid) {
+        Vortrag vortrag = adminService.getVeranstaltungsVortrag(vid, tid);
+        if (null == vortrag) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(ReferentResource.mapVortragToDto(vortrag)).build();
+    }
+
     @POST
     @Path("/{vid}/vortraege")
     public Response createVortrag(@PathParam("vid") Long vid, Vortrag vortrag) {
@@ -206,9 +225,14 @@ public class VeranstaltungResource {
     }
 
     @PUT
-    @Path("/{vid}/vortraege/{id}")
-    public Response updateVortrag(@PathParam("vid") Long vid, @PathParam("id") Long id, Vortrag vortrag) {
-        Vortrag updated = adminService.updateVortrag(id, vortrag, vid);
+    @Path("/{vid}/vortraege/{tid}")
+    public Response updateVortrag(@PathParam("vid") Long vid, @PathParam("tid") Long talkId, VortragDto vortragDto) {
+        Vortrag updated = null;
+        try {
+            updated = adminService.updateVortrag(vid, talkId, ReferentResource.mapDtoToVortrag(vortragDto));
+        } catch (OptimisticLockException e) {
+            return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
+        }
         if (updated == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
@@ -268,6 +292,8 @@ public class VeranstaltungResource {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
             return Response.ok(SlotResource.mapSlotToDto(updated)).build();
+        } catch (OptimisticLockException e) {
+            return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
         } catch (IllegalArgumentException e) {
             LOG.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();

@@ -1,10 +1,9 @@
 package kreyj.vortragsmanager.resource;
 
-import io.quarkus.security.Authenticated;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.PrioritaetRequest;
 import kreyj.vortragsmanager.entity.Prioritaet;
@@ -14,8 +13,8 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.util.List;
 
-@Path("/api/teilnehmer/priorities")
-@Authenticated
+@Path("/api/teilnehmer/prios")
+@RolesAllowed({"TEILNEHMER"})
 public class TeilnehmerPrioritaetenResource {
 
     @Inject
@@ -25,13 +24,15 @@ public class TeilnehmerPrioritaetenResource {
     PrioritaetService prioService;
 
     @GET
-    public List<Prioritaet> getMyPriorities() {
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Prioritaet> getPrioritaeten() {
         String email = JwtHelper.getUserPrincipalName(jwt); // Die Email aus dem JWT Token
         return prioService.getPrioritaetenForUser(email);
     }
 
     @POST
-    public Response updateMyPriorities(List<PrioritaetRequest> requests) {
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response updatePrioritaeten(List<PrioritaetRequest> requests) {
         String email = JwtHelper.getUserPrincipalName(jwt);
         prioService.savePrioritaeten(email, requests);
         return Response.ok().build();

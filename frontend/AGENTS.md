@@ -42,6 +42,8 @@ Die Verfügbarkeiten von Referenten und Teilnehmern sind als interaktive Checkbo
 
 ## Entwicklung & Build
 
+Alle Bezeichner für Klassen, Interfaces, Methoden, Attribute müssen in deutscher Sprache geschrieben werden.
+
 ```bash
 # Abhängigkeiten installieren
 cd frontend && npm install

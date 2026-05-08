@@ -4,6 +4,7 @@ import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
@@ -23,6 +24,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 
 @Path("/api/referenten")
 @RolesAllowed({"ADMIN", "REFERENT"})
@@ -46,18 +49,22 @@ public class ReferentResource {
 
     @GET
     @Path("/profile")
-    public ReferentProfileResponseDto getProfile() { // Changed return type
+    public NutzerDto getReferent() { // Changed return type
         Referent referent = referentService.getProfile(JwtHelper.getUserPrincipalName(jwt));
         if (referent == null) {
             throw new WebApplicationException("Referent not found", Response.Status.NOT_FOUND);
         }
-        return mapReferentToProfileResponseDto(referent); // Use mapper
+        return mapReferentToNutzerDto(referent); // Use mapper
     }
 
     @PUT
     @Path("/profile")
-    public Response updateProfile(RefProfilDto dto) {
-        referentService.updateProfile(JwtHelper.getUserPrincipalName(jwt), dto);
+    public Response updateProfile(NutzerDto dto) {
+        try {
+            referentService.updateProfile(JwtHelper.getUserPrincipalName(jwt), dto);
+        } catch (OptimisticLockException e) {
+            return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
+        }
         return Response.ok().build();
     }
 
@@ -132,7 +139,7 @@ public class ReferentResource {
             VortragDto saved = referentService.createVortrag(JwtHelper.getUserPrincipalName(jwt), dto);
             return Response.ok(saved).build();
         } catch (Exception e) {
-            return Response.status(Response.Status.FORBIDDEN)
+            return Response.status(FORBIDDEN)
                     .entity(e.getMessage()).build();
         }
     }
@@ -209,7 +216,7 @@ public class ReferentResource {
     public List<VerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (!(nutzer instanceof Referent)) {
-            throw new WebApplicationException("Kein Referent", 403);
+            throw new WebApplicationException("Nutzer ist kein Referent", FORBIDDEN.getStatusCode());
         }
 
         return Verfuegbarkeit.find("nutzer = ?1 and slot.veranstaltung.id = ?2", nutzer, vid).stream()
@@ -226,7 +233,7 @@ public class ReferentResource {
     public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, VerfuegbarkeitDto dto) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (!(nutzer instanceof Referent)) {
-            return Response.status(Response.Status.FORBIDDEN).build();
+            return Response.status(FORBIDDEN).build();
         }
 
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
@@ -236,7 +243,7 @@ public class ReferentResource {
 
         // Deadline Check
         if (veranstaltung.deadlineReferenten != null && veranstaltung.deadlineReferenten.isBefore(LocalDateTime.now())) {
-            return Response.status(Response.Status.FORBIDDEN)
+            return Response.status(FORBIDDEN)
                     .entity("Die Deadline für Referenten ist bereits abgelaufen.").build();
         }
 
@@ -262,9 +269,10 @@ public class ReferentResource {
 
 
     // New mapper method
-    public static ReferentProfileResponseDto mapReferentToProfileResponseDto(Referent referent) {
-        ReferentProfileResponseDto dto = new ReferentProfileResponseDto();
+    public static NutzerDto mapReferentToNutzerDto(Referent referent) {
+        NutzerDto dto = new NutzerDto();
         dto.id = referent.id;
+        dto.version = referent.version;
         dto.email = referent.email;
         dto.firstName = referent.firstName;
         dto.lastName = referent.lastName;
@@ -303,5 +311,26 @@ public class ReferentResource {
         }
 
         return dto;
+    }
+
+    public static Vortrag mapDtoToVortrag(VortragDto dto) {
+        Vortrag vortrag = dto.istPflicht ? new Pflichtvortrag() : new Wahlvortrag();
+
+        vortrag.id = dto.id;
+        vortrag.version = dto.version;
+        vortrag.titel = dto.titel;
+        vortrag.inhalt = dto.abstractText;
+        vortrag.veranstaltung = Veranstaltung.findById(dto.veranstaltungId);
+        vortrag.referent = Referent.findById(dto.referentId);
+        if (vortrag instanceof Wahlvortrag wahlvortrag) {
+            wahlvortrag.wiederholbar = dto.wiederholbar;
+            wahlvortrag.maxWiederholungen = dto.maxWiederholungen;
+        } else {
+            Pflichtvortrag pflichtvortrag = (Pflichtvortrag) vortrag;
+            pflichtvortrag.pflichtgruppe = dto.pflichtgruppe;
+        }
+
+        return vortrag;
+
     }
 }

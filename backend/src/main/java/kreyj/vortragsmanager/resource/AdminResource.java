@@ -9,15 +9,16 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.vortragsmanager.dto.AdminPrioritaetUpdateRequestDto;
 import kreyj.vortragsmanager.dto.RaumBelegbarkeitDto;
-import kreyj.vortragsmanager.dto.UserDto;
+import kreyj.vortragsmanager.dto.NutzerDto;
 import kreyj.vortragsmanager.dto.VerfuegbarkeitDto;
 import kreyj.vortragsmanager.entity.*;
 import kreyj.vortragsmanager.service.AdminService;
-import kreyj.vortragsmanager.service.MailService; // Import hinzufügen
+import kreyj.vortragsmanager.service.MailService;
 import kreyj.vortragsmanager.service.PrioritaetService;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
+import java.util.Collections;
 import java.util.List;
 
 @Path("/api/admin")
@@ -35,28 +36,67 @@ public class AdminResource {
     @Inject // MailService injizieren
     MailService mailService;
 
+    public static NutzerDto mapNutzerToDto(Nutzer u) {
+        NutzerDto dto = new NutzerDto();
+        dto.id = u.id;
+        dto.version = u.version;
+        dto.email = u.email;
+        dto.firstName = u.firstName;
+        dto.lastName = u.lastName;
+        dto.role = u.role;
+        dto.isActive = u.isActive;
+        dto.veranstaltungIds = null != u.veranstaltungen ? u.veranstaltungen.stream().map(v -> v.id).toList() : Collections.emptyList();
+
+        if (u instanceof Referent r) {
+            dto.biography = r.biography;
+            dto.jobRole = r.jobRole;
+            dto.organisation = r.organisation;
+            dto.slogan = r.slogan;
+        } else if (u instanceof Teilnehmer t) {
+            dto.gruppe = t.gruppe;
+        }
+        return dto;
+    }
+
     @GET
     @Path("/nutzer")
-    public List<UserDto> getAllUsers() {
+    public List<NutzerDto> getAllUsers() {
         return adminService.getAllUsers();
     }
 
     @POST
     @Path("/nutzer")
-    public UserDto createUser(UserDto dto) {
-        UserDto createdUserDto = adminService.createUser(dto, dto.veranstaltungIds);
+    public NutzerDto createUser(NutzerDto dto) {
+        NutzerDto createdNutzerDto = adminService.createUser(dto, dto.veranstaltungIds);
         // E-Mail nach erfolgreicher Erstellung senden
-        Nutzer createdNutzer = Nutzer.findById(createdUserDto.id);
+        Nutzer createdNutzer = Nutzer.findById(createdNutzerDto.id);
         if (createdNutzer != null) {
             mailService.sendRegistrationConfirmation(createdNutzer);
         }
-        return createdUserDto;
+        return createdNutzerDto;
+    }
+
+    @GET
+    @Path("/nutzer/{id}")
+    public Response getUser(@PathParam("id") Long id) {
+            Nutzer nutzer =  adminService.findNutzer(id);
+
+            if (null == nutzer) {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
+
+            return Response.ok().entity(mapNutzerToDto(nutzer)).build();
     }
 
     @PUT
     @Path("/nutzer/{id}")
-    public UserDto updateUser(@PathParam("id") Long id, UserDto dto) {
-        return adminService.updateUser(id, dto, dto.veranstaltungIds);
+    public Response updateUser(@PathParam("id") Long id, NutzerDto dto) {
+        try {
+            NutzerDto updateUser = adminService.updateUser(id, dto, dto.veranstaltungIds);
+            return Response.ok().entity(updateUser).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
+        }
     }
 
     @DELETE
@@ -111,7 +151,9 @@ public class AdminResource {
     public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, VerfuegbarkeitDto dto) {
         Nutzer nutzer = Nutzer.findById(dto.userId);
         EventSlot slot = EventSlot.findById(dto.slotId);
-        if (nutzer == null || slot == null) return Response.status(Response.Status.NOT_FOUND).build();
+        if (nutzer == null || slot == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
 
         // Validierung: Gehört der Slot zur angegebenen Veranstaltung?
         if (!slot.veranstaltung.id.equals(vid)) {
@@ -134,7 +176,9 @@ public class AdminResource {
     @Path("/veranstaltungen/{vid}/raeume/verfuegbarkeiten")
     public List<RaumBelegbarkeitDto> getRaumVerfuegbarkeiten(@PathParam("vid") Long vid) {
         Veranstaltung event = Veranstaltung.findById(vid);
-        if (event == null) throw new NotFoundException();
+        if (event == null) {
+            throw new NotFoundException();
+        }
 
         List<EventSlot> slots = EventSlot.find("veranstaltung.id", vid).list();
         List<Raum> raeume = event.gebaeude.stream().flatMap(g -> g.raeume.stream()).toList();
@@ -162,7 +206,9 @@ public class AdminResource {
     public Response updateRaumVerfuegbarkeit(@PathParam("vid") Long vid, RaumBelegbarkeitDto dto) {
         Raum raum = Raum.findById(dto.raumId);
         EventSlot slot = EventSlot.findById(dto.slotId);
-        if (raum == null || slot == null) return Response.status(Response.Status.NOT_FOUND).build();
+        if (raum == null || slot == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
 
         RaumBelegbarkeit rv = RaumBelegbarkeit.find("raum = ?1 and slot = ?2", raum, slot).firstResult();
         if (rv == null) {

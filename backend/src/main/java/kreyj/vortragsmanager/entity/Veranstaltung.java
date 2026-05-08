@@ -2,6 +2,7 @@ package kreyj.vortragsmanager.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotEmpty;
 import kreyj.vortragsmanager.entity.converter.LocalDateTimeConverter;
 
 import java.time.LocalDateTime;
@@ -55,6 +56,7 @@ public class Veranstaltung extends VersionedEntity {
     @JsonIgnoreProperties("veranstaltungen")
     public Set<Nutzer> nutzer = new HashSet<>();
 
+    @NotEmpty(message = "Veranstaltung muss mindestens eine/n Organisator/in haben")
     public Set<Admin> organisatoren() {
         return nutzer.stream().filter(u -> u instanceof Admin)
                 .map(u -> (Admin) u)

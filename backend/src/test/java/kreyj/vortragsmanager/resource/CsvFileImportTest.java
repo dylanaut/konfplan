@@ -16,6 +16,7 @@ import java.net.URL;
 import java.util.Objects;
 
 import static io.restassured.RestAssured.given;
+import static jakarta.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.containsString;
 
@@ -61,7 +62,7 @@ class CsvFileImportTest {
                 .multiPart("file", getCsvFile("test-organisatoren.csv"))
                 .when().post("/api/admin/admins/import")
                 .then()
-                .statusCode(200);
+                .statusCode(OK.getStatusCode());
 
         Admin organisator = (Admin) Nutzer.findByEmail("test.admin@rks-linz.de");
         Assertions.assertNotNull(organisator);
@@ -74,7 +75,7 @@ class CsvFileImportTest {
                 .multiPart("file", getCsvFile("test-gebaeude.csv"))
                 .when().post("/api/gebaeude/import")
                 .then()
-                .statusCode(200)
+                .statusCode(OK.getStatusCode())
                 .body(containsString("Import erfolgreich"));
 
         Gebaeude g = Gebaeude.find("name", "TestGebäude").firstResult();
@@ -87,7 +88,7 @@ class CsvFileImportTest {
                 .multiPart("file", getCsvFile("test-veranstaltungen.csv"))
                 .when().post("/api/veranstaltungen/import")
                 .then()
-                .statusCode(200)
+                .statusCode(OK.getStatusCode())
                 .body(containsString("2 Veranstaltung(en) angelegt"));
 
         Veranstaltung v = Veranstaltung.find("name", "TV_1").firstResult();
@@ -101,7 +102,7 @@ class CsvFileImportTest {
                 .multiPart("file", getCsvFile("referenten.csv"))
                 .when().post("/api/veranstaltungen/{vid}/referenten/import", testVid)
                 .then()
-                .statusCode(200);
+                .statusCode(OK.getStatusCode());
 
         Referent r = (Referent) Nutzer.findByEmail("juergenkreyalias-ref@yahoo.com");
         Assertions.assertNotNull(r);
@@ -114,7 +115,7 @@ class CsvFileImportTest {
                 .multiPart("file", getCsvFile("teilnehmer_9.1.csv"))
                 .when().post("/api/veranstaltungen/{vid}/teilnehmer/import", testVid)
                 .then()
-                .statusCode(200);
+                .statusCode(OK.getStatusCode());
 
         Teilnehmer t = (Teilnehmer) Nutzer.findByEmail("hayal.yaldir@rks-linz.de");
         Assertions.assertNotNull(t);
@@ -127,7 +128,7 @@ class CsvFileImportTest {
                 .multiPart("file", getCsvFile("slots.csv"))
                 .when().post("/api/veranstaltungen/{vid}/slots/import", testVid)
                 .then()
-                .statusCode(200);
+                .statusCode(OK.getStatusCode());
 
         Assertions.assertEquals(12, EventSlot.count());
     }
@@ -141,7 +142,7 @@ class CsvFileImportTest {
                 .multiPart("file", getCsvFile("wahl_vortraege.csv"))
                 .when().post("/api/veranstaltungen/{vid}/vortraege/import", testVid)
                 .then()
-                .statusCode(200);
+                .statusCode(OK.getStatusCode());
 
         Assertions.assertEquals(16, Wahlvortrag.count());
         Wahlvortrag wv = Wahlvortrag.find("titel", "Traumberuf Polizei?").firstResult();
@@ -154,7 +155,7 @@ class CsvFileImportTest {
                 .multiPart("file", getCsvFile("pflicht_vortraege.csv"))
                 .when().post("/api/veranstaltungen/{vid}/vortraege/import", testVid)
                 .then()
-                .statusCode(200);
+                .statusCode(OK.getStatusCode());
 
         Assertions.assertEquals(18, Pflichtvortrag.count());
         Pflichtvortrag pv = Pflichtvortrag.find("titel", "Vortrag Arbeitsagentur für 10.5").firstResult();

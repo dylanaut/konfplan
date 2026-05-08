@@ -15,6 +15,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
+import static jakarta.ws.rs.core.Response.Status.CREATED;
+import static jakarta.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.matchesPattern;
@@ -59,7 +61,7 @@ class NutzerPersistenceTest extends ResourceTestBase {
         given()
                 .when().get("/api/veranstaltungen/{vid}", testVid)
                 .then()
-                .statusCode(200)
+                .statusCode(OK.getStatusCode())
                 .body("name", matchesPattern(TEST_VERANSTALTUNG + "_\\d+"))
                 .log().all();
     }
@@ -83,7 +85,7 @@ class NutzerPersistenceTest extends ResourceTestBase {
                 .body(json)
                 .when().post("/api/veranstaltungen/{vid}/nutzer", testVid)
                 .then()
-                .statusCode(201)
+                .statusCode(CREATED.getStatusCode())
                 .body("role", is("REFERENT"));
 
         Referent ref = (Referent) Nutzer.findByEmail("referent@test.de");
@@ -110,7 +112,7 @@ class NutzerPersistenceTest extends ResourceTestBase {
                 .body(json)
                 .when().post("/api/veranstaltungen/{vid}/nutzer", testVid)
                 .then()
-                .statusCode(201)
+                .statusCode(CREATED.getStatusCode())
                 .body("role", is("TEILNEHMER"));
 
         Teilnehmer teil = (Teilnehmer) Nutzer.findByEmail("schueler@test.de");

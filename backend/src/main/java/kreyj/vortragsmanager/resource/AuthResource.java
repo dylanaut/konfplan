@@ -17,6 +17,7 @@ import kreyj.vortragsmanager.dto.TokenResponse;
 import kreyj.vortragsmanager.entity.Nutzer;
 import kreyj.vortragsmanager.entity.ProtokollKategorie;
 import kreyj.vortragsmanager.service.ProtokollService;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.time.Duration;
@@ -25,6 +26,9 @@ import java.util.UUID;
 
 @Path("/api/auth")
 public class AuthResource {
+    @ConfigProperty(name = "app.mail.admin", defaultValue = "konfplan@yahoo.com")
+    String adminEmail;
+
     @Inject
     @Location("passwordReset")
     MailTemplate passwordResetTemplate;
@@ -51,7 +55,8 @@ public class AuthResource {
             String resetUrl = "http://localhost:5173/reset-password?token=" + token;
 
             passwordResetTemplate.to(nutzer.email)
-                    .subject("Passwort zurücksetzen - Vortragsmanager")
+                    .from(adminEmail)
+                    .subject("Passwort zurücksetzen - KonfPlan")
                     .data("firstName", nutzer.firstName)
                     .data("resetLink", resetUrl)
                     .send()
@@ -61,7 +66,7 @@ public class AuthResource {
                     );
             protokollService.log(ProtokollKategorie.SECURITY, "Passwort-Reset angefordert", "Nutzer: " + email, nutzer.id);
         } else {
-             protokollService.log(ProtokollKategorie.SECURITY, "Passwort-Reset für unbekannte E-Mail", "Email: " + email);
+            protokollService.log(ProtokollKategorie.SECURITY, "Passwort-Reset für unbekannte E-Mail", "Email: " + email);
         }
 
         return Response.accepted().build();
@@ -91,7 +96,7 @@ public class AuthResource {
         Nutzer nutzer = Nutzer.findByEmail(loginRequest.email);
 
         if (nutzer != null && BcryptUtil.matches(loginRequest.password, nutzer.passwordHash) && nutzer.isActive) {
-            String token = Jwt.issuer("https://vortragsmanager.kreyj")
+            String token = Jwt.issuer("https://konfplan.kreyj")
                     .upn(nutzer.email)
                     .subject(nutzer.email)
                     .groups(nutzer.role)

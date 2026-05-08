@@ -333,8 +333,9 @@ public class PflichtvortragServiceTest {
         updatedPv.pflichtgruppe = "Gruppe A";
         updatedPv.pflichtraum = raum2;
         updatedPv.pflichtslot = slot2;
+        updatedPv.version = 0L;
 
-        adminService.updateVortrag(initialPv.id, updatedPv, veranstaltung.id);
+        adminService.updateVortrag(veranstaltung.id, initialPv.id, updatedPv);
 
         // Verify new state
         assertThat(isTeilnehmerAvailable(teilnehmer1, slot1)).isTrue(); // Old slot freed
@@ -370,9 +371,10 @@ public class PflichtvortragServiceTest {
         updatedPv.pflichtgruppe = "Gruppe A";
         updatedPv.pflichtraum = raum2;
         updatedPv.pflichtslot = slot2;
+        updatedPv.version = 0L;
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
-            adminService.updateVortrag(initialPv.id, updatedPv, veranstaltung.id);
+            adminService.updateVortrag(veranstaltung.id, initialPv.id, updatedPv);
         });
         assertThat(thrown.getMessage().contains("Nicht alle Teilnehmer der Gruppe 'Gruppe A' sind im neuen Slot 'Slot 2' verfügbar.")).isTrue();
 
@@ -405,8 +407,9 @@ public class PflichtvortragServiceTest {
         updatedPv.pflichtgruppe = "Gruppe A";
         updatedPv.pflichtraum = raum2; // Kapazität 10
         updatedPv.pflichtslot = slot1;
+        updatedPv.version = 0L;
 
-        adminService.updateVortrag(initialPv.id, updatedPv, veranstaltung.id);
+        adminService.updateVortrag(veranstaltung.id, initialPv.id, updatedPv);
 
         // Verify new state
         assertThat(isRaumAvailable(raum1, slot1)).isTrue(); // Old room freed
@@ -441,9 +444,10 @@ public class PflichtvortragServiceTest {
         updatedPv.pflichtgruppe = "Gruppe A";
         updatedPv.pflichtraum = raum2;
         updatedPv.pflichtslot = slot1;
+        updatedPv.version = 0L;
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
-            adminService.updateVortrag(initialPv.id, updatedPv, veranstaltung.id);
+            adminService.updateVortrag(veranstaltung.id, initialPv.id, updatedPv);
         });
         assertThat(thrown.getMessage().contains("Neuer Raum 'Raum B' ist im Slot 'Slot 1' bereits belegt.")).isTrue();
 
@@ -479,9 +483,10 @@ public class PflichtvortragServiceTest {
         updatedPv1.pflichtgruppe = "Gruppe A";
         updatedPv1.pflichtraum = raum2; // Try to change to raum2
         updatedPv1.pflichtslot = slot1;
+        updatedPv1.version = 0L;
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
-            adminService.updateVortrag(createdPv1.id, updatedPv1, veranstaltung.id);
+            adminService.updateVortrag(veranstaltung.id, createdPv1.id, updatedPv1);
         });
         assertThat(thrown.getMessage().contains("Neuer Raum 'Raum B' ist im Slot 'Slot 1' bereits belegt.")).isTrue();
 
@@ -513,8 +518,9 @@ public class PflichtvortragServiceTest {
         updatedPv.pflichtgruppe = "Gruppe B";
         updatedPv.pflichtraum = raum2;
         updatedPv.pflichtslot = slot1;
+        updatedPv.version = 0L;
 
-        adminService.updateVortrag(initialPv.id, updatedPv, veranstaltung.id);
+        adminService.updateVortrag(veranstaltung.id, initialPv.id, updatedPv);
 
         // Verify new state
         assertThat(isTeilnehmerAvailable(teilnehmer1, slot1)).isTrue(); // Old group freed
@@ -550,9 +556,10 @@ public class PflichtvortragServiceTest {
         updatedPv.pflichtgruppe = "Gruppe B";
         updatedPv.pflichtraum = raum2;
         updatedPv.pflichtslot = slot1;
+        updatedPv.version = 0L;
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
-            adminService.updateVortrag(initialPv.id, updatedPv, veranstaltung.id);
+            adminService.updateVortrag(veranstaltung.id, initialPv.id, updatedPv);
         });
         assertThat(thrown.getMessage().contains("Nicht alle Teilnehmer der neuen Gruppe 'Gruppe B' sind im Slot 'Slot 1' verfügbar.")).isTrue();
 
@@ -588,9 +595,10 @@ public class PflichtvortragServiceTest {
         updatedPv1.pflichtgruppe = "Gruppe B"; // Try to change to Gruppe B
         updatedPv1.pflichtraum = raum2;
         updatedPv1.pflichtslot = slot1;
+        updatedPv1.version = 0L;
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
-            adminService.updateVortrag(createdPv1.id, updatedPv1, veranstaltung.id);
+            adminService.updateVortrag(veranstaltung.id, createdPv1.id, updatedPv1);
         });
         assertThat(thrown.getMessage().contains("Nicht alle Teilnehmer der neuen Gruppe 'Gruppe B' sind im Slot 'Slot 1' verfügbar.")).isTrue();
 

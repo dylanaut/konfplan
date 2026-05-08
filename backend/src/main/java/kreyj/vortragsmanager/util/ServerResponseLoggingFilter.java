@@ -12,12 +12,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
+import static kreyj.vortragsmanager.util.LoggingFilterHelper.isTextualMediaType;
+
 //@Provider
 public class ServerResponseLoggingFilter implements ContainerResponseFilter {
     private static final Logger LOG = Logger.getLogger(ServerResponseLoggingFilter.class);
 
     @Override
-    public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) throws IOException {
+    public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) {
         // Log status and headers
         LOG.debugf("Outgoing Response: Status %d", responseContext.getStatus());
         LOG.debug("Response Headers: " + responseContext.getHeaders());
@@ -45,11 +47,5 @@ public class ServerResponseLoggingFilter implements ContainerResponseFilter {
                 }
             });
         }
-    }
-
-    private boolean isTextualMediaType(MediaType mediaType) {
-        return mediaType != null && mediaType.getType().equals("text")
-                || mediaType.getSubtype().endsWith("json")
-                || mediaType.getSubtype().endsWith("xml");
     }
 }
