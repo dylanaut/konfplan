@@ -21,14 +21,13 @@
         <quarkus-quinoa.version>2.8.1</quarkus-quinoa.version>
         <assertj.version>3.27.7</assertj.version>
         <quarkus-mailpit.version>2.0.0</quarkus-mailpit.version>
-        <gatling.version>3.11.5</gatling.version>
-        <gatling-maven-plugin.version>4.11.0</gatling-maven-plugin.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>kreyj.vortragsmanager</groupId>
             <artifactId>vortragsmanager-frontend</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -152,6 +151,13 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <version>1.4.2</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Added H2 for testing -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -161,27 +167,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-h2</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- just for debugging purposes-->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-orm-deployment</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- Gatling -->
-        <dependency>
-            <groupId>io.gatling.highcharts</groupId>
-            <artifactId>gatling-charts-highcharts</artifactId>
-            <version>${gatling.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.gatling</groupId>
-            <artifactId>gatling-recorder</artifactId>
-            <version>${gatling.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -213,7 +198,8 @@
                         </java.util.logging.manager>
                     </systemPropertyVariables>
                 </configuration>
-            </plugin> <!-- Falls Sie Integration Tests mit Failsafe haben -->
+            </plugin>
+
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>${surefire-plugin.version}</version>
@@ -228,23 +214,6 @@
     </build>
 
     <profiles>
-        <profile>
-            <id>performance-test</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>io.gatling</groupId>
-                        <artifactId>gatling-maven-plugin</artifactId>
-                        <version>${gatling-maven-plugin.version}</version>
-                        <configuration>
-                            <simulationClass>kreyj.vortragsmanager.performancetest.TeilnehmerSimulation</simulationClass>
-                            <resourcesFolder>${project.basedir}/src/test/gatling/resources</resourcesFolder>
-                            <resultsFolder>${project.basedir}/target/gatling</resultsFolder>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
         <profile>
             <id>generate-docs</id>
             <build>
