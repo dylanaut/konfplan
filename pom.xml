@@ -21,6 +21,7 @@
     <modules>
         <module>backend</module>
         <module>frontend</module>
+        <module>vortragsmanager-performancetest</module>
     </modules>
 
     <dependencyManagement>
@@ -31,12 +32,6 @@
                 <version>${quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-            <!-- Frontend-Modul als Dependency für Backend -->
-            <dependency>
-                <groupId>kreyj.vortragsmanager</groupId>
-                <artifactId>vortragsmanager-frontend</artifactId>
-                <version>${project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

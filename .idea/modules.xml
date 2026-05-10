@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/backend/vortragsmanager-backend.iml" filepath="$PROJECT_DIR$/backend/vortragsmanager-backend.iml" />
       <module fileurl="file://$PROJECT_DIR$/frontend/vortragsmanager-frontend.iml" filepath="$PROJECT_DIR$/frontend/vortragsmanager-frontend.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vortragsmanager-parent.iml" filepath="$PROJECT_DIR$/vortragsmanager-parent.iml" />
     </modules>
   </component>
 </project>

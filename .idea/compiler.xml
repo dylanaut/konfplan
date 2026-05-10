@@ -7,6 +7,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="vortragsmanager-frontend" />
+        <module name="vortragsmanager-performancetest" />
         <module name="vortragsmanager-backend" />
       </profile>
     </annotationProcessing>
