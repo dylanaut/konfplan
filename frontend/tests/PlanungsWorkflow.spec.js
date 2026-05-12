@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Vortragsmanager Planungs-Workflow', () => {
+test.describe('KonfPlan Planungs-Workflow', () => {
 
   test('Vollständiger Workflow: Veranstaltung -> Gebäude -> Slots -> Personen -> Vorträge', async ({ page }) => {
     // 1. LOGIN

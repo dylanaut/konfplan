@@ -11,7 +11,6 @@
           <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Aktive Veranstaltung:</label>
           <select v-model="selectedVid" @change="handleVeranstaltungChange"
                   class="input-field max-w-md border-indigo-200 focus:ring-indigo-500 py-1 text-xs pr-12">
-            <!-- Changed pr-10 to pr-12 to prevent arrow overlap -->
             <option :value="null">-- Bitte wählen / Keine Auswahl --</option>
             <option v-for="v in veranstaltungen" :key="v.id" :value="v.id">
               {{ v.name }} ({{ formatDate(v.beginntAm) }})
@@ -111,6 +110,8 @@
                    :electiveTalks="electiveTalks"
                    :participantPriorities="participantPriorities"
                    :changedPriorities="changedPriorities"
+                   :changedAvailabilities="changedAvailabilities"
+                   :hasDirtyAvailabilities="hasDirtyAvailabilities"
                    @triggerUpload="triggerUpload"
                    @openUserModal="openUserModal"
                    @deleteUser="deleteUser"
@@ -121,6 +122,8 @@
                    @openInviteModal="openInviteModal"
                    @toggleAvailability="toggleAvailability"
                    @saveParticipantPriorities="saveParticipantPriorities"
+                   @saveAllAvailabilities="saveAllAvailabilities"
+                   @saveAllParticipantPriorities="saveAllParticipantPriorities"
     />
 
     <ReferentenTab v-if="activeTab === 'referenten' && selectedVid"
@@ -158,6 +161,15 @@
 
     <PlanungTab v-if="activeTab === 'planung' && selectedVid"
                 :isOptimizing="isOptimizing"
+                :veranstaltung="eventContext.selectedEvent"
+                :organisatoren="organisatoren"
+                :eventSlotsCount="eventSlots.length"
+                :gebaeudeDetails="gebaeudeDetails"
+                :referentenDetails="referentenDetails"
+                :teilnehmerCount="teilnehmer.length"
+                :wahlvortraegeCount="wahlvortraegeCount"
+                :pflichtvortraegeCount="pflichtvortraegeCount"
+                :teilnehmerMitPrioritaetenCount="teilnehmerMitPrioritaetenCount"
                 @startOptimization="startOptimization"
     />
 
@@ -248,7 +260,6 @@ import InviteUserModal from '../components/InviteUserModal.vue';
 
 const eventContext = useEventContextStore();
 
-// --- Konfigurierbare Tab-Labels (Dictionary) ---
 const tabLabels = {
   ergebnisse: 'Ergebnisse',
   planung: 'Optimierung',
@@ -275,12 +286,12 @@ const belegungsPlan = ref([]);
 const qualitaet = ref({});
 const verfuegbarkeiten = ref([]);
 const protokolle = ref([]);
-const participantPriorities = ref({}); // { userId: { talkId: { prioWert: number } } }
-const originalParticipantPriorities = ref({}); // { userId: { talkId: { prioWert: number } } }
-const changedPriorities = ref(new Set()); // Set of userIds with changes
+const participantPriorities = ref({});
+const originalParticipantPriorities = ref({});
+const changedPriorities = ref(new Set());
+const changedAvailabilities = ref(new Set());
 
 const isGlobalLoading = ref(false);
-
 const pageSize = 15;
 
 const showVeranstaltungModal = ref(false);
@@ -293,7 +304,7 @@ const showUserModal = ref(false);
 const selectedUser = ref(null);
 const showVortragModal = ref(false);
 const selectedVortrag = ref(null);
-const vortragModalError = ref(''); // New ref for error message
+const vortragModalError = ref('');
 const showSlotModal = ref(false);
 const selectedSlot = ref(null);
 const showInviteModal = ref(false);
@@ -303,7 +314,6 @@ const isOptimizing = ref(false);
 const fileInput = ref(null);
 const currentUploadEndpoint = ref('');
 
-// CSV Feedback Modal State
 const showCsvFeedbackModal = ref(false);
 const csvFeedback = reactive({
   successCount: 0,
@@ -343,10 +353,7 @@ const participantGroups = computed(() => {
 });
 
 const sortedSlots = computed(() => {
-  return [...eventSlots.value].sort((a, b) => {
-    const cmp = new Date(a.startTime) - new Date(b.startTime);
-    return cmp; // Default to asc
-  });
+  return [...eventSlots.value].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 });
 
 const electiveTalks = computed(() => {
@@ -355,6 +362,45 @@ const electiveTalks = computed(() => {
 
 const canImportVeranstaltung = computed(() => admins.value.length > 0 && gebaeude.value.length > 0);
 const canImportVortraege = computed(() => eventSlots.value.length > 0);
+
+const organisatoren = computed(() => {
+  if (!eventContext.selectedEvent || !eventContext.selectedEvent.organisatorIds || users.value.length === 0) return [];
+  return eventContext.selectedEvent.organisatorIds
+      .map(orgId => users.value.find(u => u.id === orgId))
+      .filter(Boolean)
+      .map(u => `${u.firstName} ${u.lastName}`);
+});
+
+const gebaeudeDetails = computed(() => {
+  if (!eventContext.selectedEvent || !eventContext.selectedEvent.gebaeude || gebaeude.value.length === 0) return [];
+  return eventContext.selectedEvent.gebaeude.map(eventGebaeude => {
+    const fullGebaeude = gebaeude.value.find(g => g.id === eventGebaeude.id);
+    if (!fullGebaeude) return null;
+    const raumCount = fullGebaeude.raeume ? fullGebaeude.raeume.length : 0;
+    const kapazitaetSum = fullGebaeude.raeume ? fullGebaeude.raeume.reduce((sum, r) => sum + (r.kapazitaet || 0), 0) : 0;
+    return {
+      name: fullGebaeude.name,
+      raumCount,
+      kapazitaetSum
+    };
+  }).filter(Boolean);
+});
+
+const referentenDetails = computed(() => {
+  return referenten.value.map(r => ({
+    name: `${r.firstName} ${r.lastName}`,
+    organisation: r.organisation || 'N/A'
+  }));
+});
+
+const wahlvortraegeCount = computed(() => vortraege.value.filter(v => !v.istPflicht).length);
+const pflichtvortraegeCount = computed(() => vortraege.value.filter(v => v.istPflicht).length);
+
+const teilnehmerMitPrioritaetenCount = computed(() => {
+  return Object.values(participantPriorities.value).filter(prios => Object.values(prios).some(p => p.prioWert > 0)).length;
+});
+
+const hasDirtyAvailabilities = computed(() => changedAvailabilities.value.size > 0);
 
 onMounted(async () => {
   await refreshVeranstaltungen();
@@ -406,7 +452,6 @@ const handleVeranstaltungChange = () => {
   const ev = veranstaltungen.value.find(v => v.id === selectedVid.value);
   if (ev) eventContext.setEvent(ev);
   else eventContext.clearEvent();
-
   loadData();
 };
 
@@ -427,23 +472,18 @@ const loadData = async () => {
   const base = `/api/veranstaltungen/${selectedVid.value}`;
   try {
     const [eventSpecificUsersRes, vRes, sRes, pRes, qRes, avRes, allUsersRes] = await Promise.all([
-      api.get(`${base}/nutzer`), // 0: Benutzer spezifisch für die ausgewählte Veranstaltung (Referenten, Teilnehmer)
-      api.get(`${base}/vortraege`), // 1
-      api.get(`${base}/slots`), // 2
-      api.get(`${base}/plan/details`), // 3
-      api.get(`${base}/plan/qualitaet`), // 4
-      api.get(`/api/admin/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`), // 5
-      api.get('/api/admin/nutzer') // 6: Alle Benutzer (global, inkl. aller Admins)
+      api.get(`${base}/nutzer`),
+      api.get(`${base}/vortraege`),
+      api.get(`${base}/slots`),
+      api.get(`${base}/plan/details`),
+      api.get(`${base}/plan/qualitaet`),
+      api.get(`/api/admin/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`),
+      api.get('/api/admin/nutzer')
     ]);
 
-    const eventSpecificUsers = eventSpecificUsersRes.data;
-    const allGlobalUsers = allUsersRes.data;
-
-    // Kombiniere alle eindeutigen Benutzer in einer Map, um Duplikate zu vermeiden
     const combinedUsersMap = new Map();
-    allGlobalUsers.forEach(user => combinedUsersMap.set(user.id, user));
-    eventSpecificUsers.forEach(user => combinedUsersMap.set(user.id, user)); // Event-spezifische Benutzer überschreiben ggf. globale Einträge
-
+    allUsersRes.data.forEach(user => combinedUsersMap.set(user.id, user));
+    eventSpecificUsersRes.data.forEach(user => combinedUsersMap.set(user.id, user));
     users.value = Array.from(combinedUsersMap.values());
 
     vortraege.value = vRes.data;
@@ -452,10 +492,9 @@ const loadData = async () => {
     qualitaet.value = qRes.data;
     verfuegbarkeiten.value = avRes.data;
 
-    // Prioritäten initialisieren und Originalzustand speichern
     const prioMap = {};
     const originalPrioMap = {};
-    eventSpecificUsers.filter(u => u.role === 'TEILNEHMER').forEach(u => {
+    eventSpecificUsersRes.data.filter(u => u.role === 'TEILNEHMER').forEach(u => {
       prioMap[u.id] = {};
       originalPrioMap[u.id] = {};
       u.prioritaeten?.forEach(p => {
@@ -466,6 +505,7 @@ const loadData = async () => {
     participantPriorities.value = prioMap;
     originalParticipantPriorities.value = originalPrioMap;
     changedPriorities.value.clear();
+    changedAvailabilities.value.clear();
 
     if (activeTab.value === 'protokoll') refreshProtokolle();
 
@@ -474,15 +514,8 @@ const loadData = async () => {
   }
 };
 
-// --- CRUD ACTIONS ---
 const openVeranstaltungEditor = (v) => {
-  selectedVeranstaltung.value = v || {
-    name: '',
-    beginntAm: '',
-    endetAm: '',
-    gebaeude: [],
-    organisatorIds: []
-  };
+  selectedVeranstaltung.value = v || { name: '', beginntAm: '', endetAm: '', gebaeude: [], organisatorIds: [] };
   showVeranstaltungModal.value = true;
 };
 const handleSaveVeranstaltung = async (v) => {
@@ -673,7 +706,7 @@ const handleInviteUser = async ({userId, eventId}) => {
 };
 
 const openVortragEditor = (v) => {
-  vortragModalError.value = ''; // Clear previous errors
+  vortragModalError.value = '';
   selectedVortrag.value = v?.id ? {...v} : {
     titel: '',
     inhalt: '',
@@ -689,7 +722,7 @@ const openVortragEditor = (v) => {
 
 const closeVortragModal = () => {
   showVortragModal.value = false;
-  vortragModalError.value = ''; // Clear error when closing
+  vortragModalError.value = '';
 };
 
 const handleSaveVortrag = async (v) => {
@@ -697,7 +730,7 @@ const handleSaveVortrag = async (v) => {
   try {
     if (v.id) await api.put(`${base}/${v.id}`, v); else await api.post(base, v);
     showVortragModal.value = false;
-    vortragModalError.value = ''; // Clear error on success
+    vortragModalError.value = '';
     await loadData();
   } catch (e) {
     console.error('Fehler beim Speichern des Vortrags:', e);
@@ -741,50 +774,56 @@ const deleteSlot = async (id) => {
   }
 };
 
-const isAvailable = (userId, slotId) => {
-  return verfuegbarkeiten.value.some(v => v.userId === userId && v.slotId === slotId && v.isAvailable);
+const toggleAvailability = (userId, slotId, isAvailable) => {
+  const key = `${userId}-${slotId}`;
+  if (changedAvailabilities.value.has(key)) {
+    changedAvailabilities.value.delete(key);
+  } else {
+    changedAvailabilities.value.add(key);
+  }
+
+  const idx = verfuegbarkeiten.value.findIndex(v => v.userId === userId && v.slotId === slotId);
+  if (idx !== -1) {
+    verfuegbarkeiten.value[idx].isAvailable = isAvailable;
+  } else {
+    verfuegbarkeiten.value.push({userId, slotId, isAvailable});
+  }
 };
 
-const toggleAvailability = async (userId, slotId, isAvailable) => {
-  try {
-    await api.post(`/api/admin/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`, {userId, slotId, isAvailable});
-    // Lokalen State aktualisieren
-    const idx = verfuegbarkeiten.value.findIndex(v => v.userId === userId && v.slotId === slotId);
-    if (idx !== -1) {
-      verfuegbarkeiten.value[idx].isAvailable = isAvailable;
-    } else {
-      verfuegbarkeiten.value.push({userId, slotId, isAvailable});
+const saveAllAvailabilities = async () => {
+  const promises = [];
+  for (const key of changedAvailabilities.value) {
+    const [userId, slotId] = key.split('-').map(Number);
+    const availability = verfuegbarkeiten.value.find(v => v.userId === userId && v.slotId === slotId);
+    if (availability) {
+      promises.push(api.post(`/api/admin/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`, availability));
     }
+  }
+  try {
+    await Promise.all(promises);
+    changedAvailabilities.value.clear();
+    alert('Alle Verfügbarkeiten gespeichert!');
   } catch (e) {
-    console.error('Fehler beim Aktualisieren der Verfügbarkeit:', e);
+    console.error('Fehler beim Speichern aller Verfügbarkeiten:', e);
+    alert('Ein Fehler ist aufgetreten.');
   }
 };
 
 const saveParticipantPriorities = async (userId) => {
   const currentUserPrios = participantPriorities.value[userId];
   const originalUserPrios = originalParticipantPriorities.value[userId] || {};
-
   const changedPayload = [];
 
-  // Check for changed or new priorities
   for (const talkId in currentUserPrios) {
     const currentPrio = currentUserPrios[talkId].prioWert;
     const originalPrio = originalUserPrios[talkId]?.prioWert;
-
-    // Only add if priority changed or if it's a new priority (originalPrio is undefined/null)
     if (currentPrio !== originalPrio) {
       changedPayload.push({vortragId: parseInt(talkId), prioWert: currentPrio});
     }
   }
 
-  // Check for removed priorities (if a talk had a priority originally but not anymore, or set to 0)
   for (const talkId in originalUserPrios) {
-    const currentPrio = currentUserPrios[talkId]?.prioWert; // Will be 0 if cleared, or undefined if entry removed
-    const originalPrio = originalUserPrios[talkId].prioWert;
-
-    // If a priority existed originally and is now 0 or completely removed from current, and original was not 0
-    if (originalPrio !== 0 && (currentPrio === undefined || currentPrio === 0)) {
-      // Ensure it's not already in changedPayload from the above loop (e.g., if changed from 5 to 0)
+    if (!(talkId in currentUserPrios) || currentUserPrios[talkId].prioWert === 0 && originalUserPrios[talkId].prioWert !== 0) {
       if (!changedPayload.some(item => item.vortragId === parseInt(talkId))) {
         changedPayload.push({vortragId: parseInt(talkId), prioWert: 0});
       }
@@ -793,19 +832,29 @@ const saveParticipantPriorities = async (userId) => {
 
   if (changedPayload.length === 0) {
     changedPriorities.value.delete(userId);
-    return; // No changes to save
+    return;
   }
 
   try {
     await api.put(`/api/admin/veranstaltungen/${selectedVid.value}/teilnehmer/${userId}/priorities`, changedPayload);
-    // After successful save, update the original priorities for this user
     originalParticipantPriorities.value[userId] = JSON.parse(JSON.stringify(currentUserPrios));
     changedPriorities.value.delete(userId);
-    // No need to loadData() for the whole event, as only one user's priorities were changed
-    // await loadData(); // Refresh data after successful save
   } catch (e) {
-    console.error("Fehler beim Speichern der Prioritäten: vid=" + selectedVid.value  + ", userId=" + userId, e);
+    console.error("Fehler beim Speichern der Prioritäten:", e);
     alert("Fehler beim Speichern der Prioritäten.");
+  }
+};
+
+const saveAllParticipantPriorities = async () => {
+  const promises = [];
+  for (const userId of changedPriorities.value) {
+    promises.push(saveParticipantPriorities(userId));
+  }
+  try {
+    await Promise.all(promises);
+    alert('Alle geänderten Prioritäten gespeichert!');
+  } catch (e) {
+    console.error('Fehler beim Speichern aller Prioritäten:', e);
   }
 };
 

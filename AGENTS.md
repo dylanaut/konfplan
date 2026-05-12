@@ -1,14 +1,14 @@
-# AGENTS.md – Vortragsmanager (Root)
+# AGENTS.md – KonfPlan (Root)
 
 ## Projektübersicht
 
-Der **Vortragsmanager** ist eine Webanwendung zur Planung und Verwaltung von Veranstaltungen mit Vorträgen (z. B. Schulungstage). Er unterstützt drei Nutzerrollen: Admin, Referent und Teilnehmer. Ein zentrales Feature ist die automatische Optimierung der Teilnehmerzuweisung zu Wahlvorträgen via **MiniZinc**.
+Der **KonfPlan** ist eine Webanwendung zur Planung und Verwaltung von Veranstaltungen mit Vorträgen (z. B. Schulungstage). Er unterstützt drei Nutzerrollen: Admin, Referent und Teilnehmer. Ein zentrales Feature ist die automatische Optimierung der Teilnehmerzuweisung zu Wahlvorträgen via **MiniZinc**.
 
 ## Struktur
 
 ```
-vortragsmanager/
-├── backend/          # Quarkus 3.33.1, Java 21, PostgreSQL (Dev/Prod), H2 (Test)
+konfplan/
+├── backend/          # Quarkus 3.35.1, Java 21, PostgreSQL (Dev/Prod), H2 (Test)
 ├── frontend/         # Vue 3 + Vite + Tailwind CSS
 └── pom.xml           # Maven Multi-Module Parent
 ```
@@ -35,7 +35,7 @@ cd frontend && npm install && npm run dev
 
 | Schicht      | Technologie                                       |
 |--------------|---------------------------------------------------|
-| Backend      | Quarkus 3.33.1, Java 21, RESTEasy Reactive        |
+| Backend      | Quarkus 3.35.1, Java 21, RESTEasy Reactive        |
 | ORM          | Hibernate ORM Panache (Active Record Pattern)     |
 | Datenbank    | PostgreSQL (Prod/Dev), H2 (Test)                  |
 | Migration    | Flyway                                            |

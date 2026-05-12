@@ -6,10 +6,15 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="vortragsmanager-frontend" />
-        <module name="vortragsmanager-performancetest" />
         <module name="vortragsmanager-backend" />
+        <module name="backend" />
+        <module name="vortragsmanager-frontend" />
+        <module name="frontend" />
+        <module name="performancetest" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="vortragsmanager-performancetest" target="21" />
+    </bytecodeTargetLevel>
   </component>
 </project>

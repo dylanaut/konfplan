@@ -1,4 +1,4 @@
-= Steckbrief Vortragsmanager
+= Steckbrief KonfPlan
 Jürgen Krey <juergen.krey@msg.group>
 
 :toc!:
@@ -9,7 +9,7 @@ Jürgen Krey <juergen.krey@msg.group>
 
 == Einleitung
 
-Die Vortragsmanager-App dient der Organisation von Veranstaltungen, die im Wesentlichen aus Vorträgen für die Teilnehmern besteht.
+Die KonfPlan-App dient der Organisation von Veranstaltungen, die im Wesentlichen aus Vorträgen für die Teilnehmern besteht.
 
 Der Veranstalter gibt der organisatorischen Rahmen der Veranstaltung vor: Zeiten, Räume, Referenten, Vorträge, etc.
 

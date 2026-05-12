@@ -5,6 +5,7 @@
       <!-- Modus: LOGIN -->
       <div v-if="!isForgotMode">
         <div class="text-center">
+          <p class="mt-2 text-base text-gray-600 font-medium">KonfPlan - Ihr Konferenzplaner</p>
           <img class="mx-auto h-24 w-auto" src="/logo/konfplan-light.svg" alt="Konfplan Logo"/>
           <h2 class="text-2xl font-extrabold text-gray-900 flex items-center justify-center gap-2">
             Anmeldung/Registrierung
@@ -13,7 +14,6 @@
              &nbsp;&#9432;
             </span>
           </h2>
-          <p class="mt-2 text-sm text-gray-600 font-medium">Vortragsmanager Login</p>
         </div>
 
         <form class="mt-8 space-y-6" @submit.prevent="handleLogin">

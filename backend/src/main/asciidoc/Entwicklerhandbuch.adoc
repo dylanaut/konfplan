@@ -1,4 +1,4 @@
-= Entwicklerhandbuch: Vortragsmanager
+= Entwicklerhandbuch: KonfPlan
 
 :toc: left
 :toclevels: 2
@@ -12,7 +12,7 @@ Dieses Handbuch bietet einen Überblick über die Architektur, Technologien und 
 [[_projektuebersicht]]
 == 1. Projektübersicht
 
-Der *Vortragsmanager* ist eine Webanwendung zur Planung und Verwaltung von Veranstaltungen mit Vorträgen (z. B. Schulungstage). Er unterstützt drei Nutzerrollen: Admin, Referent und Teilnehmer. Ein zentrales Feature ist die automatische Optimierung der Teilnehmerzuweisung zu Wahlvorträgen via *MiniZinc*.
+Der *KonfPlan* ist eine Webanwendung zur Planung und Verwaltung von Veranstaltungen mit Vorträgen (z. B. Schulungstage). Er unterstützt drei Nutzerrollen: Admin, Referent und Teilnehmer. Ein zentrales Feature ist die automatische Optimierung der Teilnehmerzuweisung zu Wahlvorträgen via *MiniZinc*.
 
 [[_struktur]]
 == 2. Struktur
@@ -21,7 +21,7 @@ Das Projekt ist ein Maven Multi-Module Projekt mit einem Backend (Quarkus) und e
 
 [source,bash]
 ----
-vortragsmanager/
+konfplan/
 ├── backend/          # Quarkus 3.33.1, Java 21, PostgreSQL (Dev/Prod), H2 (Test)
 ├── frontend/         # Vue 3 + Vite + Tailwind CSS
 └── pom.xml           # Maven Multi-Module Parent
@@ -85,9 +85,9 @@ cd frontend && npm install && npm run dev
 [[_backend_spezifika]]
 == 5. Backend-Spezifika
 
-Das Backend ist eine *Quarkus 3.33.1*-Anwendung (Java 21) mit RESTful API, JWT-Security und einer PostgreSQL-Datenbank für Dev/Prod sowie H2 für Tests. Es folgt einer klassischen Dreischicht-Architektur: `resource` → `service` → `entity`.
+Das Backend ist eine *Quarkus 3.33.1*-Anwendung (Java 21) mit RESTful API, JWT-Security und einer PostgreSQL-Datenbank für Dev/Prod sowie H2 für Tests. Es folgt einer klassischen Dreischicht-Architektur: `resource` → `service` → `persistence`.
 
-=== Paketstruktur (`src/main/java/kreyj/vortragsmanager/`)
+=== Paketstruktur (`src/main/java/kreyj/konfplan/`)
 
 *   `entity/`: JPA-Entitäten (Panache Active Record)
 *   `dto/`: Datentransferobjekte (Request/Response)

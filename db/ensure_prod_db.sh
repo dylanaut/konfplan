@@ -4,7 +4,7 @@ set -euo pipefail
 # Konfiguration
 LABEL="vm_prod"
 IMAGE="postgres:18"
-DB_NAME="vortragsmanager"
+DB_NAME="konfplan"
 CONTAINER_NAME="vortragsmanager_prod"
 DB_PORT=5432
 
@@ -19,7 +19,7 @@ CONTAINER_ID=$(docker ps -a --filter "label=$LABEL" --format "{{.ID}}")
 if [[ -z "$CONTAINER_ID" ]]; then
     echo "✨ Kein passender Container gefunden. Erstelle neuen Container '$CONTAINER_NAME'..."
     
-    # Erstellt den Container und legt die DB 'vortragsmanager' automatisch an
+    # Erstellt den Container und legt die DB 'konfplan' automatisch an
     docker run -d \
         --name "$CONTAINER_NAME" \
         --label "$LABEL" \

@@ -14,6 +14,10 @@ export default defineConfig({
         strictPort: true, // Wichtig, damit Vite nicht auf 5174 ausweicht
     },
     build: {
+        sourcemap: true,
       outDir: 'dist'
+    },
+    css: {
+        devSourcemap: true
     }
 })

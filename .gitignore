@@ -38,7 +38,7 @@ build/
 ### Mac OS ###
 .DS_Store
 /frontend/node_modules/
-/backend/vortragsmanager.db
+/backend/konfplan.db
 /.idea/httpRequests/
 /.idea/workspace.xml
 /.idea/dataSources.local.xml
@@ -2310,7 +2310,7 @@ build/
 /.idea/dataSources/
 /frontend/dist/
 /.idea/active-tab-highlighter.xml
-/vortragsmanager.db
+/konfplan.db
 /.todo/
 /backend/node/node_modules/corepack/dist/lib/corepack.cjs
 /backend/node/node_modules/corepack/dist/corepack.js

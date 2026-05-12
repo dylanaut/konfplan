@@ -1,0 +1,14 @@
+package kreyj.konfplan.persistence;
+
+public enum ProtokollKategorie {
+    LOGIN,
+    PLANUNG,
+    STAMMDATEN,
+    SECURITY,
+    SYSTEM,
+    VERANSTALTUNG,
+    NUTZER,
+    VORTRAEGE,
+    RAUM,
+    GEBAEUDE
+}

@@ -1,4 +1,4 @@
-= Vortragsmanager: Produktions-Workflow mit Native Image
+= KonfPlan: Produktions-Workflow mit Native Image
 :toc: left
 :icons: font
 :source-highlighter: highlightjs
@@ -41,7 +41,7 @@ Nach dem Build findest du im Verzeichnis `backend/target/` kein JAR-File, sonder
 === Ausführung
 [source,bash]
 ----
-./backend/target/vortragsmanager-backend-1.0.0-SNAPSHOT-runner
+./backend/target/konfplan-backend-1.0.0-SNAPSHOT-runner
 ----
 
 * Die Anwendung ist sofort unter `http://localhost:9000` erreichbar.
@@ -53,11 +53,11 @@ Da im Native Mode die `application.properties` fest in das Binary kompilliert we
 
 [source,bash]
 ----
-export QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://prod-db:5432/vortragsmanager
+export QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://prod-db:5432/konfplan
 export QUARKUS_DATASOURCE_USERNAME=admin
 export QUARKUS_DATASOURCE_PASSWORD=geheim
-export TEMPLATES_DIR=/opt/vortragsmanager/templates
-./backend/target/vortragsmanager-backend-1.0.0-SNAPSHOT-runner
+export TEMPLATES_DIR=/opt/konfplan/templates
+./backend/target/konfplan-backend-1.0.0-SNAPSHOT-runner
 ----
 
 == 5. Besonderheiten & Einschränkungen
@@ -75,5 +75,5 @@ Oft wird das native Executable direkt in ein minimales Docker-Image (z.B. `ubi-m
 
 [source,bash]
 ----
-docker build -f backend/src/main/docker/Dockerfile.native -t vortragsmanager/backend-native .
+docker build -f backend/src/main/docker/Dockerfile.native -t konfplan/backend-native .
 ----

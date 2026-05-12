@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# BEST called with DB_HOST=localhost DB_NAME=vortragsmanager DB_USER=postgres DB_PASSWORD='vm4HjK$'
+# BEST called with DB_HOST=localhost DB_NAME=konfplan DB_USER=postgres DB_PASSWORD='vm4HjK$'
 
 # 'quarkus.http.port' in application.properties
 QUARKUS_DEV_PORT=9000
 
-PROJECT_DIR=~/Java/berufsorientierung/vortragsmanager
-DB_SCHEMA=vortragsmanager
+PROJECT_DIR=~/Java/berufsorientierung/konfplan
+DB_SCHEMA=konfplan
 SCRIPT_DIR=$PROJECT_DIR/backend/src/main/resources/db/migration
 ENV="${1:-}"  # erstes Argument, optional
 

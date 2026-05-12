@@ -1,5 +1,5 @@
 {
-  "name": "vortragsmanager-frontend",
+  "name": "konfplan-frontend",
   "version": "1.0.0",
   "scripts": {
     "dev": "vite",

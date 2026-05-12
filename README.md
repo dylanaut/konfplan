@@ -1,4 +1,4 @@
-# vortragsmanager
+# konfplan
 
 
 
@@ -15,14 +15,14 @@ Already a pro? Just edit this README.md and make it your own. Want to make it ea
 
 ```
 cd existing_repo
-git remote add origin https://gitlab.zt.msg.team/kreyj/vortragsmanager.git
+git remote add origin https://gitlab.zt.msg.team/kreyj/konfplan.git
 git branch -M main
 git push -uf origin main
 ```
 
 ## Integrate with your tools
 
-- [ ] [Set up project integrations](https://gitlab.zt.msg.team/kreyj/vortragsmanager/-/settings/integrations)
+- [ ] [Set up project integrations](https://gitlab.zt.msg.team/kreyj/konfplan/-/settings/integrations)
 
 ## Collaborate with your team
 

@@ -4,8 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>kreyj.vortragsmanager</groupId>
-    <artifactId>vortragsmanager</artifactId>
+    <groupId>kreyj.konfplan</groupId>
+    <artifactId>konfplan</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
@@ -21,7 +21,7 @@
     <modules>
         <module>backend</module>
         <module>frontend</module>
-        <module>vortragsmanager-performancetest</module>
+        <module>performancetest</module>
     </modules>
 
     <dependencyManagement>

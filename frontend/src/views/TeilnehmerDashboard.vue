@@ -15,7 +15,6 @@
         <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Veranstaltung:</label>
         <select v-model="selectedVid" @change="handleVeranstaltungChange"
                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 max-w-xs pr-12">
-          <!-- Changed pr-12 to pr-16 to prevent arrow overlap -->
           <option :value="null">-- Bitte wählen --</option>
           <option v-for="v in veranstaltungen" :key="v.id" :value="v.id">
             {{ v.name }} ({{ formatDate(v.beginntAm) }})
@@ -51,12 +50,12 @@
 
       <!-- SEKTION: Meine Verfügbarkeit -->
       <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 animate-fade-in">
-        <div v-if="currentEvent && currentEvent.deadlineTeilnehmer" :class="['mb-4 p-3 rounded-lg text-sm flex items-center gap-2', isDeadlinePassed(currentEvent.deadlineTeilnehmer) ? 'bg-red-50 border border-red-200 text-red-800' : 'bg-orange-50 border border-orange-200 text-orange-800']">
-          <template v-if="isDeadlinePassed(currentEvent.deadlineTeilnehmer)">
-            <XIcon class="w-4 h-4" /> Die Deadline für die Verfügbarkeitsangabe ist am {{ formatDateTime(currentEvent.deadlineTeilnehmer) }} abgelaufen.
+        <div v-if="selectedEvent && selectedEvent.deadlineTeilnehmer" :class="['mb-4 p-3 rounded-lg text-sm flex items-center gap-2', isDeadlinePassed(selectedEvent.deadlineTeilnehmer) ? 'bg-red-50 border border-red-200 text-red-800' : 'bg-orange-50 border border-orange-200 text-orange-800']">
+          <template v-if="isDeadlinePassed(selectedEvent.deadlineTeilnehmer)">
+            <XIcon class="w-4 h-4" /> Die Deadline für die Verfügbarkeitsangabe ist am {{ formatDateTime(selectedEvent.deadlineTeilnehmer) }} abgelaufen.
           </template>
           <template v-else>
-            <CalendarIcon class="w-4 h-4" /> Deadline für Verfügbarkeit: {{ formatDateTime(currentEvent.deadlineTeilnehmer) }}
+            <CalendarIcon class="w-4 h-4" /> Deadline für Verfügbarkeit: {{ formatDateTime(selectedEvent.deadlineTeilnehmer) }}
           </template>
         </div>
 
@@ -72,17 +71,17 @@
           <button
               v-for="slot in getSlotsForEvent" :key="slot.id"
               @click="toggleAvailability(slot.id)"
-              :disabled="isDeadlinePassed(currentEvent?.deadlineTeilnehmer)"
+              :disabled="isDeadlinePassed(selectedEvent?.deadlineTeilnehmer)"
               :class="['p-2 rounded-lg border text-[10px] transition-all text-center',
                        isUserAvailable(slot.id) ? 'bg-indigo-600 text-white border-indigo-600 font-bold' : 'bg-gray-50 text-gray-400 border-gray-200',
-                       isDeadlinePassed(currentEvent?.deadlineTeilnehmer) ? 'opacity-80 cursor-not-allowed' : 'hover:border-indigo-400']"
+                       isDeadlinePassed(selectedEvent?.deadlineTeilnehmer) ? 'opacity-80 cursor-not-allowed' : 'hover:border-indigo-400']"
           >
             {{ formatSlotTime(slot.startTime, slot.endTime) }}
           </button>
         </div>
       </section>
 
-      <!-- WAHL-MODUS MIT KOMPAKTER DARSTELLUNG -->
+      <!-- WAHL-MODUS MIT NEUER UI -->
       <div class="space-y-6">
         <header class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
           <div>
@@ -100,10 +99,10 @@
           </div>
         </header>
 
-        <!-- Legende der Wahlvorträge (wie im Admin-Bereich) -->
-        <div v-if="electiveTalks.length > 0" class="bg-indigo-50 p-3 rounded-xl border border-indigo-100 text-[10px] animate-fade-in">
+        <!-- Legende der Wahlvorträge -->
+        <div v-if="electiveTalks.length > 0" class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 text-[10px] animate-fade-in">
           <h3 class="font-black text-indigo-900 uppercase mb-2 flex items-center gap-2">
-            <InfoIcon class="w-3.5 h-3.5" /> Übersicht der verfügbaren Wahlvorträge
+            <InfoIcon class="w-3.5 h-3.5" /> Legende der Wahlvorträge
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1">
             <div v-for="(talk, index) in electiveTalks" :key="'legende-'+talk.id" class="flex gap-2 items-start">
@@ -116,30 +115,36 @@
           </div>
         </div>
 
-        <!-- Neue Struktur für Prioritäten-Eingabe -->
-        <div v-if="electiveTalks.length > 0" class="bg-white shadow rounded-xl border border-gray-100 p-6 animate-fade-in">
-          <h3 class="font-black text-indigo-900 uppercase text-xs mb-4 flex items-center gap-2">
-            <StarIcon class="w-4 h-4" /> Meine Prioritäten für Wahlvorträge
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-            <div v-for="talk in electiveTalks" :key="'prio-input-'+talk.id" class="flex items-center gap-4">
-              <div class="flex-grow">
-                <span class="font-bold text-gray-800 block">{{ talk.titel }}</span>
-                <p class="text-xs text-gray-500">{{ talk.referent?.firstName }} {{ talk.referent?.lastName }}</p>
-              </div>
-              <input type="number" min="1" max="10"
-                     :value="getCurrentPriority(talk.id) || ''"
-                     @input="updatePriority(talk.id, $event.target.value)"
-                     :disabled="zuweisungen.length > 0 || isDeadlinePassed(currentEvent?.deadlineTeilnehmer)"
-                     class="w-16 text-center border rounded-lg py-1.5 text-sm font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 border-gray-200 bg-white transition-all disabled:bg-gray-100 disabled:text-gray-300" />
-            </div>
-          </div>
+        <!-- Prioritäten-Tabelle (Single Row) -->
+        <div v-if="electiveTalks.length > 0" class="bg-white shadow rounded-xl border border-gray-100 overflow-x-auto animate-fade-in">
+          <table class="min-w-full divide-y divide-gray-200 text-xs">
+            <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
+            <tr>
+              <th v-for="(talk, index) in electiveTalks" :key="'header-'+talk.id" class="px-1 py-2 text-center text-[9px] font-black text-indigo-600 w-14 min-w-[56px] border-r border-gray-100" :title="talk.titel">
+                {{ index + 1 }}
+              </th>
+              <th class="w-auto"></th> <!-- Spacer column -->
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+            <tr class="hover:bg-gray-50">
+              <td v-for="talk in electiveTalks" :key="'prio-input-'+talk.id" class="px-1 py-1 text-center border-r border-gray-50">
+                <input type="number" min="1" max="10"
+                       :value="getCurrentPriority(talk.id) || ''"
+                       @input="updatePriority(talk.id, $event.target.value)"
+                       :disabled="zuweisungen.length > 0 || isDeadlinePassed(selectedEvent?.deadlineTeilnehmer)"
+                       class="w-12 text-center border rounded py-0.5 text-[10px] focus:ring-indigo-500 focus:border-indigo-500 border-gray-100" />
+              </td>
+              <td></td>
+            </tr>
+            </tbody>
+          </table>
         </div>
 
         <!-- Save Button -->
-        <div v-if="zuweisungen.length === 0" class="flex justify-end mt-8">
+        <div v-if="zuweisungen.length === 0 && electiveTalks.length > 0" class="flex justify-end mt-8">
           <button @click="saveAllPriorities"
-                  :disabled="isDeadlinePassed(currentEvent?.deadlineTeilnehmer)"
+                  :disabled="isDeadlinePassed(selectedEvent?.deadlineTeilnehmer)"
                   class="bg-green-600 hover:bg-green-700 text-white px-10 py-4 rounded-2xl shadow-xl font-black uppercase tracking-widest text-xs flex items-center gap-3 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100">
             <SaveIcon class="w-5 h-5" /> Auswahl jetzt speichern
           </button>
@@ -169,13 +174,12 @@ const zuweisungen = ref([]);
 const allSlots = ref([]);
 const teilnehmerAvailabilities = ref([]);
 
-const currentEvent = computed(() => {
+const selectedEvent = computed(() => {
   return veranstaltungen.value.find(v => v.id === selectedVid.value);
 });
 
-// Filter elective talks from all talks
 const electiveTalks = computed(() => {
-  return vortraege.value.filter(v => !v.istPflicht);
+  return vortraege.value.filter(v => !v.istPflicht).sort((a, b) => a.titel.localeCompare(b.titel));
 });
 
 onMounted(async () => {
@@ -209,17 +213,24 @@ const handleVeranstaltungChange = async () => {
 
     const [zuweisungenRes, vortragRes, prioRes, slotsRes, availabilitiesRes] = await Promise.all([
       api.get(`/api/teilnehmer/zuweisungen?vid=${selectedVid.value}`),
-      api.get(`/api/teilnehmer/vortraege?vid=${selectedVid.value}`),
+      api.get(`/api/veranstaltungen/${selectedVid.value}/vortraege`),
       api.get(`/api/teilnehmer/prios?vid=${selectedVid.value}`),
       api.get(`/api/veranstaltungen/${selectedVid.value}/slots`),
       api.get(`/api/teilnehmer/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`)
     ]);
 
-    zuweisungen.value = zuweisungenRes.data;
-    vortraege.value = vortragRes.data;
-    prios.value = prioRes.data.map(p => ({ vortragId: p.vortrag.id, prioWert: p.prioWert }));
-    allSlots.value = slotsRes.data;
-    teilnehmerAvailabilities.value = availabilitiesRes.data.filter(v => v.isAvailable).map(v => v.slotId);
+    zuweisungen.value = Array.isArray(zuweisungenRes.data) ? zuweisungenRes.data : [];
+    vortraege.value = Array.isArray(vortragRes.data) ? vortragRes.data : [];
+    prios.value = Array.isArray(prioRes.data) ? prioRes.data.map(p => ({ vortragId: p.vortrag.id, prioWert: p.prioWert })) : [];
+    allSlots.value = Array.isArray(slotsRes.data) ? slotsRes.data : [];
+
+    if (availabilitiesRes.data.length === 0 && slotsRes.data.length > 0) {
+      await api.post(`/api/teilnehmer/veranstaltungen/${selectedVid.value}/verfuegbarkeiten/init`);
+      const newAvailabilitiesRes = await api.get(`/api/teilnehmer/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`);
+      teilnehmerAvailabilities.value = newAvailabilitiesRes.data.filter(v => v.isAvailable).map(v => v.slotId);
+    } else {
+      teilnehmerAvailabilities.value = availabilitiesRes.data.filter(v => v.isAvailable).map(v => v.slotId);
+    }
 
   } catch (err) {
     console.error("Fehler beim Laden der Veranstaltungsdaten:", err);
@@ -230,21 +241,19 @@ const getCurrentPriority = (vortragId) => prios.value.find(p => p.vortragId === 
 const isRankTaken = (rank) => prios.value.some(p => p.prioWert == rank);
 
 const updatePriority = (vortragId, value) => {
-  if (zuweisungen.value.length > 0 || isDeadlinePassed(currentEvent.value?.deadlineTeilnehmer)) return;
+  if (zuweisungen.value.length > 0 || isDeadlinePassed(selectedEvent.value?.deadlineTeilnehmer)) return;
 
-  // Remove old priority for this talk
   prios.value = prios.value.filter(p => p.vortragId !== vortragId);
 
-  if (value !== "") {
+  if (value !== "" && value > 0) {
     const val = parseInt(value);
-    // If another talk has this priority, clear it (enforce unique ranks 1-10)
     prios.value = prios.value.filter(p => p.prioWert !== val);
     prios.value.push({ vortragId, prioWert: val });
   }
 };
 
 const saveAllPriorities = async () => {
-  if (isDeadlinePassed(currentEvent.value?.deadlineTeilnehmer)) {
+  if (isDeadlinePassed(selectedEvent.value?.deadlineTeilnehmer)) {
     alert("Die Deadline für die Prioritätenangabe ist abgelaufen. Speichern nicht möglich.");
     return;
   }
@@ -267,7 +276,7 @@ const isUserAvailable = (slotId) => {
 };
 
 const toggleAvailability = async (slotId) => {
-  if (isDeadlinePassed(currentEvent.value?.deadlineTeilnehmer)) return;
+  if (isDeadlinePassed(selectedEvent.value?.deadlineTeilnehmer)) return;
 
   const current = isUserAvailable(slotId);
   const newValue = !current;
@@ -311,16 +320,4 @@ const formatSlotTime = (start, end) => {
 <style scoped>
 .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-/* Chrome, Safari, Edge, Opera */
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* Firefox */
-input[type=number] {
-  -moz-appearance: textfield;
-}
 </style>

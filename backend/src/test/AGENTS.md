@@ -8,7 +8,7 @@ Tests sind **Quarkus-Integrationstests** die eine vollständige Anwendungsinstan
 
 ```
 src/test/
-├── java/kreyj/vortragsmanager/resource/
+├── java/kreyj/konfplan/resource/
 │   ├── AuthResourceTest.java          # Login, Token-Validierung
 │   ├── AdminResourceTest.java         # Admin-CRUD
 │   ├── UserPersistenceTest.java       # User-Vererbungshierarchie + Persistenz

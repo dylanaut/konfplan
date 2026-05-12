@@ -58,12 +58,14 @@
                         <tr>
                           <th @click="toggleSort('v_vortraege', 'titel')" class="px-3 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition">Titel <ArrowUpDownIcon class="w-2.5 h-2.5 inline ml-0.5"/></th>
                           <th @click="toggleSort('v_vortraege', 'referentName')" class="px-3 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition">Referent <ArrowUpDownIcon class="w-2.5 h-2.5 inline ml-0.5"/></th>
+                          <th @click="toggleSort('v_vortraege', 'referentOrganisation')" class="px-3 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition">Organisation <ArrowUpDownIcon class="w-2.5 h-2.5 inline ml-0.5"/></th>
                         </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                         <tr v-for="talk in paginatedVSubVortraege" :key="talk.id" class="hover:bg-indigo-50/30 transition">
                           <td class="px-3 py-1.5 font-semibold text-gray-800">{{ talk.titel }}</td>
                           <td class="px-3 py-1.5 text-gray-600">{{ talk.referentName }}</td>
+                          <td class="px-3 py-1.5 text-gray-600">{{ talk.referentOrganisation }}</td>
                         </tr>
                         </tbody>
                       </table>
@@ -171,6 +173,10 @@ watch(() => filters.veranstaltungen, () => { pages.veranstaltungen = 1; });
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('de-DE') : '';
 
+const getNestedValue = (obj, path) => {
+  return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+};
+
 const processList = (list, filterText, sortConfig) => {
   let result = [...list];
   if (filterText) {
@@ -181,8 +187,8 @@ const processList = (list, filterText, sortConfig) => {
     });
   }
   result.sort((a, b) => {
-    const valA = a[sortConfig.key] || '';
-    const valB = b[sortConfig.key] || '';
+    const valA = getNestedValue(a, sortConfig.key) || '';
+    const valB = getNestedValue(b, sortConfig.key) || '';
     if (typeof valA === 'number' && typeof valB === 'number') {
       return sortConfig.dir === 'asc' ? valA - valB : valB - valA;
     }
@@ -210,11 +216,7 @@ const filteredVeranstaltungen = computed(() => processList(props.veranstaltungen
 const paginatedVeranstaltungen = computed(() => paginate(filteredVeranstaltungen.value, pages.veranstaltungen));
 
 const filteredVSubVortraege = computed(() => {
-  const list = props.vortraege.map(v => ({
-    ...v,
-    referentName: v.referent ? `${v.referent.lastName}, ${v.referent.firstName}` : ''
-  }));
-  return processList(list, '', sorts.v_vortraege);
+  return processList(props.vortraege, '', sorts.v_vortraege);
 });
 const paginatedVSubVortraege = computed(() => paginate(filteredVSubVortraege.value, pages.v_vortraege));
 

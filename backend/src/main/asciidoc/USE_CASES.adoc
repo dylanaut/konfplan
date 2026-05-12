@@ -8,7 +8,7 @@
 ----
 @startuml
 left to right direction
-package "Vortragsmanager API" {
+package "KonfPlan API" {
 }
 @enduml
 ----

@@ -1,4 +1,4 @@
-= Anwendungsfalldokumentation Vortragsmanager
+= Anwendungsfalldokumentation KonfPlan
 :toc: left
 :sectnums:
 :icons: font
@@ -18,7 +18,7 @@ actor "Administrator" as Admin
 actor "Referent" as Ref
 actor "Teilnehmer" as User
 
-package "Vortragsmanager System" {
+package "KonfPlan System" {
   (Veranstaltungen verwalten) as UC1
   (Gebäude & Räume verwalten) as UC2
   (Nutzerkonten verwalten) as UC3

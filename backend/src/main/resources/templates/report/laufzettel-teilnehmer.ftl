@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Laufzettel für ${teilnehmer.firstName} ${teilnehmer.lastName}</title>
+    <style>
+        body { font-family: sans-serif; }
+        h1, h2 { color: #333; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>Laufzettel für ${teilnehmer.firstName} ${teilnehmer.lastName}</h1>
+    <h2>Veranstaltung: ${veranstaltung.name}</h2>
+
+    <#if plan?has_content>
+        <table>
+            <thead>
+                <tr>
+                    <th>Zeit</th>
+                    <th>Vortrag</th>
+                    <th>Raum</th>
+                    <th>Gebäude</th>
+                </tr>
+            </thead>
+            <tbody>
+                <#list plan as zuweisung>
+                    <tr>
+                        <td>${zuweisung.slotZeit}</td>
+                        <td>${zuweisung.vortragTitel}</td>
+                        <td>${zuweisung.raumName}</td>
+                        <td>${zuweisung.gebaeudeName}</td>
+                    </tr>
+                </#list>
+            </tbody>
+        </table>
+    <#else>
+        <p>Für Sie wurde noch kein Plan erstellt.</p>
+    </#if>
+</body>
+</html>

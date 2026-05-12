@@ -3,12 +3,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>kreyj.vortragsmanager</groupId>
-        <artifactId>vortragsmanager</artifactId>
+        <groupId>kreyj.konfplan</groupId>
+        <artifactId>konfplan</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>vortragsmanager-frontend</artifactId>
+    <artifactId>frontend</artifactId>
     <packaging>jar</packaging>
 
     <build>

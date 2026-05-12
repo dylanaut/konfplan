@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Full stack debug" type="CompoundRunConfigurationType">
+    <toRun name="frontend" type="JavascriptDebugType" />
+    <toRun name="backend dev" type="QuarkusRunConfigurationType" />
+    <method v="2" />
+  </configuration>
+</component>

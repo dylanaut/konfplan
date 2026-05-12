@@ -10,6 +10,5 @@
     <circle cx="-55" cy="10" r="6.5" fill="white"/>
     <circle cx="55" cy="10" r="16" fill="#FBBC05"/>
     <circle cx="55" cy="10" r="6.5" fill="white"/>
-    <text x="0" y="65" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#333333" font-weight="500" letter-spacing="1">KonfPlan</text>
   </g>
 </svg>

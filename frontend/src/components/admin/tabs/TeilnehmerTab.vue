@@ -31,14 +31,18 @@
 
     <!-- Verfügbarkeits-Matrix (Collapsible) -->
     <div class="space-y-2">
-      <button @click="expandedSections.teilnehmerVerfuegbarkeit = !expandedSections.teilnehmerVerfuegbarkeit"
-              class="w-full flex items-center gap-3 text-[10px] font-black text-indigo-700 uppercase tracking-widest bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:bg-indigo-50 transition-colors">
-        <ChevronDownIcon v-if="!expandedSections.teilnehmerVerfuegbarkeit" class="w-3.5 h-3.5 shrink-0"/>
-        <ChevronUpIcon v-else class="w-3.5 h-3.5 shrink-0"/>
-        <div class="flex items-center gap-2">
-          <CheckSquareIcon class="w-4 h-4"/> Verfügbarkeiten verwalten
-        </div>
-      </button>
+      <div class="w-full flex items-center justify-between gap-3 text-[10px] font-black text-indigo-700 uppercase tracking-widest bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+        <button @click="expandedSections.teilnehmerVerfuegbarkeit = !expandedSections.teilnehmerVerfuegbarkeit" class="flex items-center gap-3 hover:text-indigo-500">
+          <ChevronDownIcon v-if="!expandedSections.teilnehmerVerfuegbarkeit" class="w-3.5 h-3.5 shrink-0"/>
+          <ChevronUpIcon v-else class="w-3.5 h-3.5 shrink-0"/>
+          <div class="flex items-center gap-2">
+            <CheckSquareIcon class="w-4 h-4"/> Verfügbarkeiten verwalten
+          </div>
+        </button>
+        <button v-if="hasDirtyAvailabilities" @click="emit('saveAllAvailabilities')" :disabled="isEventFinished" class="btn-save-all">
+          <SaveAllIcon class="w-3.5 h-3.5"/> Alle Änderungen speichern
+        </button>
+      </div>
 
       <div v-if="expandedSections.teilnehmerVerfuegbarkeit" class="animate-fade-in">
         <div v-if="filteredParticipants.length > 0" class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
@@ -58,7 +62,7 @@
             </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-            <tr v-for="u in paginatedParticipants" :key="u.id" :class="['hover:bg-gray-50', selectedParticipantIds.includes(u.id) ? 'bg-indigo-50/50' : '']">
+            <tr v-for="u in paginatedParticipants" :key="u.id" :class="['hover:bg-gray-50', selectedParticipantIds.includes(u.id) ? 'bg-indigo-50/50' : '', isAvailabilityChanged(u.id) ? 'bg-orange-50/50' : '']">
               <td class="px-4 py-2">
                 <input type="checkbox" :value="u.id" v-model="selectedParticipantIds" class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3" />
               </td>
@@ -98,14 +102,18 @@
 
     <!-- Prioritäten-Matrix (Collapsible) -->
     <div class="space-y-2">
-      <button @click="expandedSections.teilnehmerPrioritaeten = !expandedSections.teilnehmerPrioritaeten"
-              class="w-full flex items-center gap-3 text-[10px] font-black text-indigo-700 uppercase tracking-widest bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:bg-indigo-50 transition-colors">
-        <ChevronDownIcon v-if="!expandedSections.teilnehmerPrioritaeten" class="w-3.5 h-3.5 shrink-0"/>
-        <ChevronUpIcon v-else class="w-3.5 h-3.5 shrink-0"/>
-        <div class="flex items-center gap-2">
-          <StarIcon class="w-4 h-4"/> Wahl-Prioritäten verwalten
-        </div>
-      </button>
+      <div class="w-full flex items-center justify-between gap-3 text-[10px] font-black text-indigo-700 uppercase tracking-widest bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+        <button @click="expandedSections.teilnehmerPrioritaeten = !expandedSections.teilnehmerPrioritaeten" class="flex items-center gap-3 hover:text-indigo-500">
+          <ChevronDownIcon v-if="!expandedSections.teilnehmerPrioritaeten" class="w-3.5 h-3.5 shrink-0"/>
+          <ChevronUpIcon v-else class="w-3.5 h-3.5 shrink-0"/>
+          <div class="flex items-center gap-2">
+            <StarIcon class="w-4 h-4"/> Wahl-Prioritäten verwalten
+          </div>
+        </button>
+        <button v-if="changedPriorities.size > 0" @click="emit('saveAllParticipantPriorities')" :disabled="isEventFinished" class="btn-save-all">
+          <SaveAllIcon class="w-3.5 h-3.5"/> Alle Änderungen speichern
+        </button>
+      </div>
 
       <div v-if="expandedSections.teilnehmerPrioritaeten" class="animate-fade-in space-y-4">
         <!-- Legende für Wahlvorträge -->
@@ -117,7 +125,7 @@
             <div v-for="(talk, index) in electiveTalks" :key="'legende-'+talk.id" class="flex gap-2 items-start">
               <span class="font-black text-indigo-600 shrink-0 w-4 text-right">{{ index + 1 }}:</span>
               <span class="text-gray-700 truncate"
-                    :title="`Referent: ${talk.referent?.lastName || 'N/A'}${talk.referent?.organisation ? ' (' + talk.referent.organisation : ')'}`">
+                    :title="`${talk.referentName || 'N/A'}${talk.referentOrganisation ? ' [' + talk.referentOrganisation + ']' : ''}`">
                 {{ talk.titel }}
               </span>
             </div>
@@ -181,6 +189,7 @@ import {
   Mail as MailIcon,
   Pencil as PencilIcon,
   Save as SaveIcon,
+  SaveAll as SaveAllIcon,
   Star as StarIcon,
   Trash2 as Trash2Icon,
   Users as UsersIcon,
@@ -197,13 +206,16 @@ const props = defineProps({
   isEventFinished: Boolean,
   electiveTalks: Array,
   participantPriorities: Object,
-  changedPriorities: Set
+  changedPriorities: Set,
+  changedAvailabilities: Set,
+  hasDirtyAvailabilities: Boolean,
 });
 
 const emit = defineEmits([
   'triggerUpload', 'openUserModal', 'deleteUser', 'toggleParticipantActive',
   'batchDeactivateParticipants', 'batchDeleteParticipants', 'batchEmailParticipants',
-  'openInviteModal', 'toggleAvailability', 'saveParticipantPriorities'
+  'openInviteModal', 'toggleAvailability', 'saveParticipantPriorities',
+  'saveAllAvailabilities', 'saveAllParticipantPriorities'
 ]);
 
 const pages = reactive({
@@ -305,6 +317,15 @@ const isAvailable = (userId, slotId) => {
   return props.verfuegbarkeiten.some(v => v.userId === userId && v.slotId === slotId && v.isAvailable);
 };
 
+const isAvailabilityChanged = (userId) => {
+  for (const key of props.changedAvailabilities) {
+    if (key.startsWith(`${userId}-`)) {
+      return true;
+    }
+  }
+  return false;
+};
+
 const getParticipantPrio = (userId, talkId) => {
   if (!props.participantPriorities[userId]) props.participantPriorities[userId] = {};
   if (!props.participantPriorities[userId][talkId]) props.participantPriorities[userId][talkId] = { prioWert: 0 };
@@ -323,6 +344,7 @@ const formatTime = (t) => t ? new Date(t).toLocaleTimeString('de-DE', {hour: '2-
 <style scoped>
 .btn-primary { @apply rounded-lg bg-indigo-600 px-3 py-1.5 text-white font-bold hover:bg-indigo-700 transition shadow-sm border-none cursor-pointer disabled:opacity-50; }
 .btn-secondary { @apply bg-white text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 font-bold border border-gray-200 transition shadow-sm cursor-pointer disabled:opacity-50; }
+.btn-save-all { @apply bg-orange-500 text-white text-[10px] px-3 py-1 rounded-md shadow-sm transition-all flex items-center gap-2 hover:bg-orange-600 disabled:opacity-50; }
 .input-field { @apply rounded-lg border border-gray-300 px-2 py-1 text-gray-900 focus:ring-2 focus:ring-indigo-500 bg-white; }
 .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }

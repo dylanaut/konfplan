@@ -2,12 +2,12 @@
 
 ## Überblick
 
-Das Backend ist eine **Quarkus 3.33.1**-Anwendung (Java 21) mit RESTful API, JWT-Security und einer PostgreSQL-Datenbank für Dev/Prod sowie H2 für Tests. Es folgt einer klassischen Dreischicht-Architektur: `resource` → `service` → `entity`.
+Das Backend ist eine **Quarkus 3.35.1**-Anwendung (Java 21) mit RESTful API, JWT-Security und einer PostgreSQL-Datenbank für Dev/Prod sowie H2 für Tests. Es folgt einer klassischen Dreischicht-Architektur: `resource` → `service` → `entity`.
 
 ## Paketstruktur
 
 ```
-src/main/java/kreyj/vortragsmanager/
+src/main/java/kreyj/konfplan/
 ├── entity/       # JPA-Entitäten (Panache Active Record)
 ├── dto/          # Datentransferobjekte (Request/Response)
 ├── service/      # Geschäftslogik (@ApplicationScoped)

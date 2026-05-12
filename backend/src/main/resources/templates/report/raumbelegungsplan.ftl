@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Raumbelegungsplan für ${raum.name}</title>
+    <style>
+        body { font-family: sans-serif; }
+        h1, h2 { color: #333; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>Raumbelegungsplan für ${raum.name}</h1>
+    <h2>Veranstaltung: ${veranstaltung.name}</h2>
+
+    <#if belegung?has_content>
+        <table>
+            <thead>
+                <tr>
+                    <th>Zeit</th>
+                    <th>Vortrag</th>
+                    <th>Referent</th>
+                    <th>Typ</th>
+                    <th>Teilnehmer</th>
+                </tr>
+            </thead>
+            <tbody>
+                <#list belegung?keys as slotId>
+                    <#assign eintrag = belegung[slotId]>
+                    <tr>
+                        <td>${eintrag.slotZeit}</td>
+                        <td>${eintrag.vortragTitel}</td>
+                        <td>${eintrag.referentName}</td>
+                        <td>${eintrag.vortragTyp}</td>
+                        <td>${eintrag.anzahlTeilnehmer}</td>
+                    </tr>
+                </#list>
+            </tbody>
+        </table>
+    <#else>
+        <p>Für diesen Raum sind keine Belegungen geplant.</p>
+    </#if>
+</body>
+</html>

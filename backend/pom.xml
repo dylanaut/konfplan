@@ -3,12 +3,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>kreyj.vortragsmanager</groupId>
-        <artifactId>vortragsmanager</artifactId>
+        <groupId>kreyj.konfplan</groupId>
+        <artifactId>konfplan</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>vortragsmanager-backend</artifactId>
+    <artifactId>backend</artifactId>
 
     <properties>
         <opencsv.version>5.11.2</opencsv.version>
@@ -25,8 +25,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>kreyj.vortragsmanager</groupId>
-            <artifactId>vortragsmanager-frontend</artifactId>
+            <groupId>kreyj.konfplan</groupId>
+            <artifactId>frontend</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -48,6 +48,11 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-validator</artifactId>
         </dependency>
 
         <dependency>
@@ -197,6 +202,11 @@
                         <java.util.logging.manager>org.jboss.logmanager.LogManager
                         </java.util.logging.manager>
                     </systemPropertyVariables>
+                    <excludedGroups>architecture</excludedGroups>
+                    <excludes>
+                        <exclude>**/ArchitectureRulesTest.java</exclude>
+                        <exclude>**/*IT.java</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
 
@@ -235,7 +245,7 @@
                                     </outputFilename>
                                     <scanPackages>
                                         <scanPackage>
-                                            kreyj.vortragsmanager.entity
+                                            kreyj.konfplan.persistence
                                         </scanPackage>
                                     </scanPackages>
                                 </configuration>
@@ -256,7 +266,7 @@
                                     <goal>java</goal>
                                 </goals>
                                 <configuration>
-                                    <mainClass>kreyj.vortragsmanager.util.UseCaseScanner</mainClass>
+                                    <mainClass>kreyj.konfplan.util.UseCaseScanner</mainClass>
                                     <classpathScope>test</classpathScope>
                                     <arguments>
                                         <argument>${project.basedir}/src/main/asciidoc/USE_CASES.adoc</argument>

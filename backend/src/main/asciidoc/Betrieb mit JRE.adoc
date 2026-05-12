@@ -1,4 +1,4 @@
-= Vortragsmanager: Entwicklungs- und Produktions-Workflow
+= KonfPlan: Entwicklungs- und Produktions-Workflow
 :toc: left
 :icons: font
 :source-highlighter: highlightjs
@@ -71,7 +71,7 @@ java -jar backend/target/quarkus-app/quarkus-run.jar
 
 == 3. Relevante Konfiguration
 
-Die Steuerung erfolgt in der Datei `/Users/kreyj/Java/berufsorientierung/vortragsmanager/backend/src/main/resources/application.properties`:
+Die Steuerung erfolgt in der Datei `/Users/kreyj/Java/berufsorientierung/konfplan/backend/src/main/resources/application.properties`:
 
 [source,properties]
 ----
