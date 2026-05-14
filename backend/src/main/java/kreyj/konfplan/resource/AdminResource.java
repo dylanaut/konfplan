@@ -11,6 +11,7 @@ import kreyj.konfplan.dto.AdminPrioritaetUpdateRequestDto;
 import kreyj.konfplan.dto.RaumBelegbarkeitDto;
 import kreyj.konfplan.dto.NutzerDto;
 import kreyj.konfplan.dto.VerfuegbarkeitDto;
+import kreyj.konfplan.dto.VortragPrioDto;
 import kreyj.konfplan.persistence.*;
 import kreyj.konfplan.service.AdminService;
 import kreyj.konfplan.service.MailService;
@@ -54,6 +55,9 @@ public class AdminResource {
             dto.slogan = r.slogan;
         } else if (u instanceof Teilnehmer t) {
             dto.gruppe = t.gruppe;
+            if (t.prioritaeten != null) {
+                dto.prioritaeten = t.prioritaeten.stream().map(VortragPrioDto::from).toList();
+            }
         }
         return dto;
     }
@@ -78,6 +82,7 @@ public class AdminResource {
 
     @GET
     @Path("/nutzer/{id}")
+    @Transactional
     public Response getUser(@PathParam("id") Long id) {
             Nutzer nutzer =  adminService.findNutzer(id);
 

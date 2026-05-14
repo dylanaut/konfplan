@@ -32,9 +32,14 @@
     <template v-else>
       <!-- MODUS: MEIN PLAN -->
       <section v-if="zuweisungen.length > 0" class="bg-indigo-900 text-white p-8 rounded-2xl shadow-2xl animate-fade-in">
-        <div class="flex items-center gap-3 mb-6">
-          <CalendarCheckIcon class="w-8 h-8 text-indigo-300" />
-          <h2 class="text-3xl font-black">Mein Vortragsplan</h2>
+        <div class="flex justify-between items-start mb-6">
+          <div class="flex items-center gap-3">
+            <CalendarCheckIcon class="w-8 h-8 text-indigo-300" />
+            <h2 class="text-3xl font-black">Mein Vortragsplan</h2>
+          </div>
+          <button @click="viewMySchedule" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition">
+            <PrinterIcon class="w-4 h-4" /> Druckansicht
+          </button>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div v-for="z in zuweisungen" :key="z.id" class="bg-white/10 border border-white/20 p-5 rounded-xl backdrop-blur-sm">
@@ -158,14 +163,16 @@
 import { ref, onMounted, computed } from 'vue';
 import api from '../api/axios';
 import { useEventContextStore } from '../stores/eventContext';
+import { useAuthStore } from '../stores/auth';
 import {
   User as UserIcon, Save as SaveIcon,
   CalendarCheck as CalendarCheckIcon, MapPin as MapPinIcon,
   Calendar as CalendarIcon, CheckSquare as CheckSquareIcon, X as XIcon,
-  Star as StarIcon, Info as InfoIcon
+  Star as StarIcon, Info as InfoIcon, Printer as PrinterIcon
 } from 'lucide-vue-next';
 
 const eventContext = useEventContextStore();
+const authStore = useAuthStore();
 const veranstaltungen = ref([]);
 const selectedVid = ref(null);
 const vortraege = ref([]);
@@ -235,6 +242,11 @@ const handleVeranstaltungChange = async () => {
   } catch (err) {
     console.error("Fehler beim Laden der Veranstaltungsdaten:", err);
   }
+};
+
+const viewMySchedule = () => {
+  if (!selectedVid.value || !authStore.user) return;
+  window.open(`/api/reports/veranstaltung/${selectedVid.value}/teilnehmer/${authStore.user.id}/laufzettel`, '_blank');
 };
 
 const getCurrentPriority = (vortragId) => prios.value.find(p => p.vortragId === vortragId)?.prioWert;

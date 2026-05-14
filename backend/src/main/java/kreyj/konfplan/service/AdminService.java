@@ -31,6 +31,7 @@ import static org.apache.commons.collections4.SetUtils.difference;
 @ApplicationScoped
 public class AdminService {
     private static final Logger LOG = Logger.getLogger(AdminService.class);
+    public static final String CSV_PRIO_HEADER = "Teilnehmer E-Mail;Prioritäten";
 
     @Inject
     MailService mailService;
@@ -38,6 +39,7 @@ public class AdminService {
     @Inject
     ProtokollService protokollService;
 
+    @Transactional
     public List<NutzerDto> getAllUsers() {
         return new HashSet<>(Nutzer.<Nutzer>listAll()) // Duplikate entfernen
                 .stream()
@@ -45,6 +47,7 @@ public class AdminService {
                 .toList();
     }
 
+    @Transactional
     public List<NutzerDto> getAllUsers(Long veranstaltungId) {
         List<Nutzer> admins = Nutzer.list("role = 'ADMIN'");
         List<Nutzer> vNutzers = Nutzer.find("SELECT u FROM Nutzer u JOIN u.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
@@ -55,6 +58,7 @@ public class AdminService {
                 .toList();
     }
 
+    @Transactional
     public Nutzer findNutzer(Long id) {
         return Nutzer.findById(id);
     }
@@ -76,6 +80,7 @@ public class AdminService {
         nutzer.isActive = dto.isActive;
 
         if (dto.email != null) {
+            // todo replace with uuid string for PROD
             nutzer.passwordHash = BcryptUtil.bcryptHash("start123");
         }
 
@@ -449,7 +454,7 @@ public class AdminService {
             throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
         }
 
-        String headerLine = null;
+        boolean headerLineFound = false;
 
         try (BufferedReader reader = new BufferedReader(new FileReader(csvFilePath.toFile()))) {
             String line;
@@ -460,9 +465,14 @@ public class AdminService {
                     continue;
                 }
 
-                if (null == headerLine) {
-                    headerLine = line;
-                    continue;
+                if (!headerLineFound) {
+                    if (CSV_PRIO_HEADER.equals(line)) {
+                        headerLineFound = true;
+                        continue;
+                    } else {
+                        LOG.error("CSV-Import (Prioritäten) abgebrochen: Ungültiger Header");
+                        throw new IllegalArgumentException("Ungültiger Header für Prio-Import in " + csvFilePath.getFileName());
+                    }
                 }
 
                 String[] lineItems = line.split(";");

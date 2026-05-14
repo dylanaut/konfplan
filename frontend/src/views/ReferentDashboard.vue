@@ -43,6 +43,27 @@
       </div>
     </section>
 
+    <!-- NEUE Sektion: Mein Zeitplan -->
+    <section v-if="events.length > 0" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <div class="flex items-center justify-between mb-6 text-indigo-600">
+        <div class="flex items-center gap-2">
+          <CalendarCheckIcon class="w-6 h-6" />
+          <h2 class="text-xl font-bold">Mein Zeitplan</h2>
+        </div>
+      </div>
+      <div class="space-y-4">
+        <div v-for="event in events" :key="'schedule-' + event.id" class="border border-gray-200 rounded-lg p-4 flex justify-between items-center">
+          <div>
+            <h3 class="font-bold text-lg text-gray-800">{{ event.name }}</h3>
+            <p class="text-xs text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
+          </div>
+          <button @click="viewMySchedule(event.id)" class="btn-primary">
+            <PrinterIcon class="w-4 h-4 mr-2" /> Druckansicht
+          </button>
+        </div>
+      </div>
+    </section>
+
     <!-- NEUE Sektion: Meine Verfügbarkeit (pro Veranstaltung) -->
     <section v-if="events.length > 0" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       <div class="flex items-center gap-2 mb-6 text-indigo-600">
@@ -232,8 +253,10 @@
 <script setup>
 import { ref, onMounted, computed, reactive } from 'vue';
 import api from '../api/axios';
-import { User as UserIcon, FileText as FileTextIcon, Calendar as CalendarIcon, Save as SaveIcon, Plus as PlusIcon, Edit as EditIcon, Trash2 as Trash2Icon, ListChecks as ListChecksIcon, Check as CheckIcon, X as XIcon } from 'lucide-vue-next';
+import { useAuthStore } from '../stores/auth';
+import { User as UserIcon, FileText as FileTextIcon, Calendar as CalendarIcon, Save as SaveIcon, Plus as PlusIcon, Edit as EditIcon, Trash2 as Trash2Icon, ListChecks as ListChecksIcon, Check as CheckIcon, X as XIcon, CalendarCheck as CalendarCheckIcon, Printer as PrinterIcon } from 'lucide-vue-next';
 
+const authStore = useAuthStore();
 const referent = ref({
   id: null,
   firstName: '',
@@ -493,6 +516,11 @@ const saveAll = async () => {
     console.error("Fehler beim Speichern:", e);
     alert("Fehler beim Speichern: " + (e.response?.data?.message || e.message));
   }
+};
+
+const viewMySchedule = (vid) => {
+  if (!vid || !authStore.user) return;
+  window.open(`/api/reports/veranstaltung/${vid}/referent/${authStore.user.id}/laufzettel`, '_blank');
 };
 
 const formatDate = (d) => new Date(d).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });

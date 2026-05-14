@@ -15,7 +15,7 @@ export default defineConfig({
     },
     build: {
         sourcemap: true,
-      outDir: 'dist'
+        outDir: 'dist'
     },
     css: {
         devSourcemap: true

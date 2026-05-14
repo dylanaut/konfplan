@@ -22,4 +22,5 @@ public class NutzerDto extends AbstractVersionedDto {
 
     // Teilnehmer-spezifisch
     public String gruppe;
+    public List<VortragPrioDto> prioritaeten = new ArrayList<>();
 }

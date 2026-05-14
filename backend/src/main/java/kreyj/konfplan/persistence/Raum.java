@@ -28,6 +28,16 @@ public class Raum extends VersionedEntity {
     )
     public Set<EventSlot> verfuegbareSlots = new HashSet<>();
 
+    public Raum() {
+    }
+
+    public Raum(String name, int kapazitaet, Gebaeude gebaeude) {
+        super();
+        this.name = name;
+        this.kapazitaet = kapazitaet;
+        this.gebaeude = gebaeude;
+    }
+
     public Gebaeude getGebaeude() {
         return gebaeude;
     }

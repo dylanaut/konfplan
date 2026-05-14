@@ -67,6 +67,10 @@
     <ErgebnisseTab v-if="activeTab === 'ergebnisse' && selectedVid"
                    :belegungsPlan="belegungsPlan"
                    :qualitaet="qualitaet"
+                   :eventSlots="eventSlots"
+                   :raeume="raeume"
+                   @downloadStundenplan="downloadStundenplan"
+                   @downloadRaumschilder="downloadRaumschilder"
     />
 
     <VeranstaltungenTab v-if="activeTab === 'veranstaltungen'"
@@ -868,6 +872,34 @@ const startOptimization = async (solverConfig) => {
     console.error('Fehler bei der Optimierung:', e);
   } finally {
     isOptimizing.value = false;
+  }
+};
+
+const downloadStundenplan = async () => {
+  try {
+    const res = await api.get(`/api/veranstaltungen/${selectedVid.value}/export/stundenplan`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'stundenplan.pdf');
+    document.body.appendChild(link);
+    link.click();
+  } catch (e) {
+    console.error('Fehler beim Download des Stundenplans:', e);
+  }
+};
+
+const downloadRaumschilder = async () => {
+  try {
+    const res = await api.get(`/api/veranstaltungen/${selectedVid.value}/export/raumschilder`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'raumschilder.pdf');
+    document.body.appendChild(link);
+    link.click();
+  } catch (e) {
+    console.error('Fehler beim Download der Raumschilder:', e);
   }
 };
 

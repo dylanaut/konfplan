@@ -16,4 +16,11 @@ public class Prioritaet extends IdEntity {
     public LocalDateTime lastUpdated;
 
     public Prioritaet() {}
+
+    public Prioritaet(Teilnehmer teilnehmer, Wahlvortrag wahlvortrag, int prio) {
+        this.teilnehmer = teilnehmer;
+        this.vortrag = wahlvortrag;
+        this.prioWert = prio;
+        this.lastUpdated = LocalDateTime.now();
+    }
 }

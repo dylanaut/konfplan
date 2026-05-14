@@ -1,6 +1,7 @@
 package kreyj.konfplan.persistence;
 
 import jakarta.persistence.*;
+import kreyj.konfplan.service.OptimierungService;
 
 @Entity
 public class Planungsergebnis extends VersionedEntity {
@@ -11,10 +12,11 @@ public class Planungsergebnis extends VersionedEntity {
 
     @Lob
     @Column(nullable = false)
+    @Basic(fetch = FetchType.EAGER) // Ensure eager loading of the LOB
     public String jsonErgebnis;
 
     @Column(nullable = false)
-    public String solver;
+    public OptimierungService.SOLVER_TYP solver;
 
     @Column(nullable = false)
     public int timeout;

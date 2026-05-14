@@ -338,5 +338,61 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <id>site</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-site-plugin</artifactId>
+                        <version>3.21.0</version>
+                    </plugin>
+                </plugins>
+            </build>
+
+            <reporting>
+                <plugins>
+                    <!-- Projektinfos & LOC -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-project-info-reports-plugin</artifactId>
+                        <version>3.9.0</version>
+                    </plugin>
+
+                    <!-- Code Coverage -->
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>0.8.14</version>
+                    </plugin>
+
+                    <!-- Testergebnisse -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-report-plugin</artifactId>
+                        <version>3.5.5</version>
+                    </plugin>
+
+                    <!-- Zyklomatische Komplexität, LOC -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-pmd-plugin</artifactId>
+                        <version>3.28.0</version>
+                    </plugin>
+
+                    <!-- Weitere Metriken: LOC, Methoden, Klassen -->
+                    <plugin>
+                        <groupId>com.github.spotbugs</groupId>
+                        <artifactId>spotbugs-maven-plugin</artifactId>
+                        <version>4.9.8.3</version>
+                    </plugin>
+                </plugins>
+            </reporting>
+        </profile>
     </profiles>
 </project>

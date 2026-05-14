@@ -82,8 +82,9 @@ public class DevDataInit {
             teilnehmerService.importFromCsv(basePath.resolve("teilnehmer_9.1.csv"), vid);
 
             // 7. Vorträge (Pflicht & Wahl)
-            adminService.importVortraegeFromCsv(basePath.resolve("pflicht_vortraege.csv"), vid);
             adminService.importVortraegeFromCsv(basePath.resolve("wahl_vortraege.csv"), vid);
+            adminService.importVortraegeFromCsv(basePath.resolve("pflicht_vortraege.csv"), vid);
+            adminService.importPrioritaetenFromCsv(basePath.resolve("tn_9.1_prios.csv"), vid);
 
             LOG.info("Dev-Daten-Initialisierung erfolgreich abgeschlossen.");
             LOG.info("###\n### Mailpit: http://localhost:9000/q/dev-ui/quarkus-mailpit/mailpit-ui");

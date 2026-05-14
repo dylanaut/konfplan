@@ -4,6 +4,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.*;
+import kreyj.konfplan.service.AdminService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -82,9 +83,8 @@ public class PrioritaetImportTest {
 
     @Test
     void testImportPrioritaeten() {
-        // New CSV format
         String csv = String.format("# Legende: %d=%s, %d=%s\n", wv1Id, "Wahlvortrag 1", wv2Id, "Wahlvortrag 2") +
-                "Teilnehmer E-Mail;Prioritäten\n" +
+                AdminService.CSV_PRIO_HEADER + "\n" +
                 String.format("teilnehmer1@test.de;%d :5,%d: 3 \n", wv1Id, wv2Id);
 
         given()

@@ -3,6 +3,7 @@ package kreyj.konfplan.resource;
 import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -13,6 +14,7 @@ import kreyj.konfplan.dto.RaumBelegungUebersichtDto;
 import kreyj.konfplan.dto.RaumplanEintragDto;
 import kreyj.konfplan.persistence.*;
 import kreyj.konfplan.service.PlanService;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.util.Collections;
 import java.util.List;
@@ -23,6 +25,9 @@ public class ReportResource {
 
     @Inject
     PlanService planService;
+
+    @Inject
+    JsonWebToken jwt;
 
     @Inject
     @Location("report/laufzettel-teilnehmer.ftl")
@@ -51,12 +56,17 @@ public class ReportResource {
     @GET
     @Path("/veranstaltung/{vid}/teilnehmer/{tid}/laufzettel")
     @Produces(MediaType.TEXT_HTML)
+    @RolesAllowed({"TEILNEHMER", "ADMIN"})
     public TemplateInstance getLaufzettelTeilnehmer(@PathParam("vid") Long vid, @PathParam("tid") Long tid) {
         Teilnehmer teilnehmer = Teilnehmer.findById(tid);
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
 
         if (teilnehmer == null || veranstaltung == null) {
             return laufzettelTeilnehmer.data("error", "Teilnehmer oder Veranstaltung nicht gefunden.");
+        }
+
+        if (!jwt.getGroups().contains("ADMIN") && !teilnehmer.email.equals(jwt.getName())) {
+            return laufzettelTeilnehmer.data("error", "Zugriff verweigert.");
         }
 
         return laufzettelTeilnehmer.data(
@@ -69,12 +79,17 @@ public class ReportResource {
     @GET
     @Path("/veranstaltung/{vid}/referent/{rid}/laufzettel")
     @Produces(MediaType.TEXT_HTML)
+    @RolesAllowed({"REFERENT", "ADMIN"})
     public TemplateInstance getLaufzettelReferent(@PathParam("vid") Long vid, @PathParam("rid") Long rid) {
         Referent referent = Referent.findById(rid);
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
 
         if (referent == null || veranstaltung == null) {
             return laufzettelReferent.data("error", "Referent oder Veranstaltung nicht gefunden.");
+        }
+
+        if (!jwt.getGroups().contains("ADMIN") && !referent.email.equals(jwt.getName())) {
+            return laufzettelReferent.data("error", "Zugriff verweigert.");
         }
 
         return laufzettelReferent.data(
@@ -87,6 +102,7 @@ public class ReportResource {
     @GET
     @Path("/veranstaltung/{vid}/raum/{rid}/belegungsplan")
     @Produces(MediaType.TEXT_HTML)
+    @RolesAllowed("ADMIN")
     public TemplateInstance getRaumbelegungsplan(@PathParam("vid") Long vid, @PathParam("rid") Long rid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         Raum raum = Raum.findById(rid);
@@ -108,6 +124,7 @@ public class ReportResource {
     @GET
     @Path("/veranstaltung/{vid}/uebersicht/raeume")
     @Produces(MediaType.TEXT_HTML)
+    @RolesAllowed("ADMIN")
     public TemplateInstance getUebersichtRaeume(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (veranstaltung == null) {
@@ -120,6 +137,7 @@ public class ReportResource {
     @GET
     @Path("/veranstaltung/{vid}/uebersicht/freie-slots-referenten")
     @Produces(MediaType.TEXT_HTML)
+    @RolesAllowed("ADMIN")
     public TemplateInstance getFreieSlotsReferenten(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (veranstaltung == null) {
@@ -135,6 +153,7 @@ public class ReportResource {
     @GET
     @Path("/veranstaltung/{vid}/uebersicht/freie-slots-teilnehmer")
     @Produces(MediaType.TEXT_HTML)
+    @RolesAllowed("ADMIN")
     public TemplateInstance getFreieSlotsTeilnehmer(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (veranstaltung == null) {

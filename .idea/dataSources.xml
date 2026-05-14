@@ -13,13 +13,5 @@
       </jdbc-additional-properties>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
-    <data-source source="LOCAL" name="vortragsmanager@localhost" uuid="dd2282af-3f22-4102-844e-c65a1884d73c">
-      <driver-ref>postgresql</driver-ref>
-      <synchronize>true</synchronize>
-      <remarks>prod db für vortragsmanager</remarks>
-      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
-      <jdbc-url>jdbc:postgresql://localhost:5432/vortragsmanager</jdbc-url>
-      <working-dir>$ProjectFileDir$</working-dir>
-    </data-source>
   </component>
 </project>

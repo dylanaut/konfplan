@@ -1,6 +1,9 @@
 package kreyj.konfplan.persistence;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import kreyj.konfplan.persistence.converter.LocalDateTimeConverter;
 
 import java.time.LocalDateTime;
@@ -16,4 +19,14 @@ public class EventSlot extends VersionedEntity {
     @ManyToOne(optional = false)
     @JoinColumn(name = "veranstaltung_id")
     public Veranstaltung veranstaltung;
+
+    public EventSlot() {
+    }
+
+    public EventSlot(String description, LocalDateTime startTime, LocalDateTime endTime, Veranstaltung veranstaltung) {
+        this.description = description;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.veranstaltung = veranstaltung;
+    }
 }

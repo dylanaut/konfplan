@@ -10,6 +10,7 @@ import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import kreyj.konfplan.dto.*;
 import kreyj.konfplan.persistence.*;
 import org.jboss.logging.Logger;
@@ -27,11 +28,12 @@ import java.util.stream.StreamSupport;
 public class PlanService {
 
     private static final Logger LOG = Logger.getLogger(PlanService.class);
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
+    public static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm"); // Made public for testing
 
     @Inject
     ObjectMapper objectMapper;
 
+    @Transactional
     public List<ZuweisungDto> getGesamtplan(Long veranstaltungId) {
         Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.id", veranstaltungId).firstResult();
         if (planungsergebnis == null) {
@@ -139,6 +141,7 @@ public class PlanService {
         }
     }
 
+    @Transactional
     public List<RaumBelegungUebersichtDto> getDetaillierterPlan(Long veranstaltungId) {
         Map<Long, Map<Long, RaumplanEintragDto>> raumplan = getRaumbelegungsplan(veranstaltungId);
         List<RaumBelegungUebersichtDto> detaillierterPlan = new ArrayList<>();
@@ -158,6 +161,10 @@ public class PlanService {
                 }
 
                 if (eintrag != null) {
+                    List<String> tnNamen = eintrag.teilnehmer != null ?
+                            eintrag.teilnehmer.stream().map(t -> t.firstName + " " + t.lastName).collect(Collectors.toList()) :
+                            new ArrayList<>();
+
                     detaillierterPlan.add(new RaumBelegungUebersichtDto(
                             slot.id,
                             slot.startTime.format(TIME_FORMAT),
@@ -165,7 +172,9 @@ public class PlanService {
                             raum.name,
                             eintrag.vortragTitel,
                             eintrag.referentName,
-                            eintrag.vortragTyp
+                            eintrag.vortragTyp,
+                            tnNamen,
+                            raum.kapazitaet
                     ));
                 } else {
                     detaillierterPlan.add(new RaumBelegungUebersichtDto(
@@ -175,7 +184,9 @@ public class PlanService {
                             raum.name,
                             "Frei",
                             null,
-                            "FREI"
+                            "FREI",
+                            new ArrayList<>(),
+                            raum.kapazitaet
                     ));
                 }
             }
@@ -183,6 +194,7 @@ public class PlanService {
         return detaillierterPlan;
     }
 
+    @Transactional
     public PlanQualitaetDto getPlanQualitaet(Long veranstaltungId) {
         Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.id", veranstaltungId).firstResult();
         if (planungsergebnis == null) {
@@ -202,6 +214,7 @@ public class PlanService {
         }
     }
 
+    @Transactional
     public List<ZuweisungDto> getPlanFuerTeilnehmer(String email, Long veranstaltungId) {
         Teilnehmer teilnehmer = Teilnehmer.find("email", email).firstResult();
         if (teilnehmer == null) {
@@ -302,6 +315,7 @@ public class PlanService {
         }
     }
 
+    @Transactional
     public List<ReferentVortragDto> getPlanFuerReferent(String email, Long veranstaltungId) {
         Referent referent = Referent.find("email", email).firstResult();
         if (referent == null) {
@@ -388,6 +402,7 @@ public class PlanService {
         }
     }
 
+    @Transactional
     public Map<Long, Map<Long, RaumplanEintragDto>> getRaumbelegungsplan(Long veranstaltungId) {
         Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.id", veranstaltungId).firstResult();
         if (planungsergebnis == null) {
@@ -395,7 +410,9 @@ public class PlanService {
         }
 
         try {
-            JsonNode root = objectMapper.readTree(planungsergebnis.jsonErgebnis);
+            // Explicitly materialize the String from the LOB to avoid issues with deferred access
+            String jsonContent = planungsergebnis.jsonErgebnis;
+            JsonNode root = objectMapper.readTree(jsonContent);
             JsonNode instanzSlot = root.get("instanz_slot");
             JsonNode instanzRaum = root.get("instanz_raum");
             JsonNode besucht = root.get("besucht");
@@ -503,6 +520,7 @@ public class PlanService {
         }
     }
 
+    @Transactional
     public Map<Long, List<EventSlot>> getFreieSlotsReferenten(Long veranstaltungId) {
         Map<Long, List<EventSlot>> freieSlotsReferenten = new HashMap<>();
         Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.id", veranstaltungId).firstResult();
@@ -564,6 +582,7 @@ public class PlanService {
         return freieSlotsReferenten;
     }
 
+    @Transactional
     public Map<Long, List<EventSlot>> getFreieSlotsTeilnehmer(Long veranstaltungId) {
         Map<Long, List<EventSlot>> freieSlotsTeilnehmer = new HashMap<>();
         Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.id", veranstaltungId).firstResult();
@@ -627,6 +646,7 @@ public class PlanService {
         return freieSlotsTeilnehmer;
     }
 
+    @Transactional
     public byte[] generiereTuerschilderPdf(Long veranstaltungId) throws Exception {
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
         Map<Long, Map<Long, RaumplanEintragDto>> raumplan = getRaumbelegungsplan(veranstaltungId);

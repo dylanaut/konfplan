@@ -1,6 +1,7 @@
 package kreyj.konfplan.persistence;
 
 import jakarta.persistence.*;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +32,17 @@ public class Gebaeude extends VersionedEntity {
     @ManyToMany(mappedBy = "gebaeude")
     public List<Veranstaltung> veranstaltungen = new ArrayList<>();
 
+    public Gebaeude() {
+    }
+
+    public Gebaeude(String name, String ort, String strasse, String plz, Gebaeudetyp gebaeudetyp) {
+        super();
+        this.name = name;
+        this.ort = ort;
+        this.strasse = strasse;
+        this.postleitzahl = plz;
+        this.typ = gebaeudetyp;
+    }
 
     public void addVeranstaltung(Veranstaltung v) {
         if (this.veranstaltungen.contains(v)) {
@@ -48,3 +60,5 @@ public class Gebaeude extends VersionedEntity {
         SCHULE, KINO, SPORTHALLE, SAAL, EXTERN
     }
 }
+
+

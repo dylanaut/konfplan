@@ -1,0 +1,14 @@
+{
+    "openFiles": [
+        "konfplan.mzn",
+        "generated_mini.dzn"
+    ],
+    "openTab": 1,
+    "projectFiles": [
+        "generated_mini.dzn",
+        "konfplan.mpc",
+        "konfplan.mzn"
+    ],
+    "selectedSolverConfigFile": "konfplan.mpc",
+    "version": 106
+}

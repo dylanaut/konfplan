@@ -191,3 +191,63 @@ Fragen Sie Ihre IT-Abteilung nach dem Root-CA-Zertifikat Ihres Unternehmens. Es 
 •
 Speichern Sie diese Datei an einem leicht zugänglichen Ort auf Ihrem Host-System (z.B. ~/my-corp-ca.crt).
 === Schritt 2: Fügen Sie das CA-Zertifikat zu Docker hinzu
+
+== Mobile App bauen
+
+=== Variante 1: mit Capacitor
+
+==== Installation von Capacitor
+
+[source,bash]
+----
+cd frontend
+npm i @capacitor/core
+npm i -D @capacitor/cli
+# und initialisieren
+npx cap init
+----
+
+==== Installation der Plattformen
+
+[source,bash]
+----
+npm i @capacitor/android @capacitor/ios
+----
+
+
+=== Variante 2: mit Quarkus Mobile (KI-generiert)
+
+Quarkus Mobile ermöglicht die Erstellung von nativen mobilen Apps mit Quarkus. Hier sind die Schritte, um eine mobile App mit Quarkus Mobile zu bauen:
+1.  **Quarkus Mobile Plugin hinzufügen**: Fügen Sie das Quarkus Mobile Plugin zu Ihrem Maven-Projekt hinzu.
+```xml
+<build>
+    <plugins>
+        <plugin>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-mobile-plugin</artifactId>
+            <version>${quarkus.version}</version>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>build</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+```
+2.  **Mobile App Code schreiben**: Erstellen Sie Ihre mobile App Logik in Ihren Quarkus Services und Ressourcen. Sie können REST-Endpunkte erstellen, die von der mobilen App konsumiert werden können.
+3.  **Mobile App bauen**: Führen Sie den folgenden Befehl aus, um Ihre mobile App zu bauen:
+```bash./mvnw quarkus:build -Dquarkus.package.type=mobile
+```
+4.  **Mobile App testen**: Sie können die gebaute mobile App auf einem Emulator oder einem physischen Gerät testen. Verwenden Sie den folgenden Befehl, um die App auf einem Emulator zu starten:
+```bash./mvnw quarkus:mobile -Dquarkus.mobile.target=emulator
+```
+5.  **Mobile App bereitstellen**: Sobald Ihre mobile App fertig ist, können Sie sie auf den entsprechenden App-Stores (Google Play Store, Apple App Store) bereitstellen. Befolgen Sie die jeweiligen Richtlinien und Anforderungen der App-Stores für die Veröffentlichung Ihrer App.
+
+==== Weiterführende Ressourcen
+*   [Quarkus Mobile Documentation](https://quarkus.io/guides/mobile)
+*   [Quarkus Mobile GitHub Repository](https://github.com/quarkusio/quarkus-mobile)
+
+==

@@ -57,6 +57,10 @@
             <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">Timeout (Sek.)</label>
             <input v-model.number="solverConfig.timeout" type="number" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
           </div>
+          <div>
+            <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">max. Instanzen</label>
+            <input v-model.number="solverConfig.maxInstanzen" type="number" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
+          </div>
         </div>
       </div>
       <div class="text-right">
@@ -92,7 +96,7 @@ const props = defineProps({
 
 const emit = defineEmits(['startOptimization']);
 
-const solverConfig = reactive({ solver: 'cp-sat', timeout: 120 });
+const solverConfig = reactive({ solver: 'cp-sat', timeout: 120, maxInstanzen: 2 });
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('de-DE') : '';
 </script>

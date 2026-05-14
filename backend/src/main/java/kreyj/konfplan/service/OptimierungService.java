@@ -3,6 +3,8 @@ package kreyj.konfplan.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.json.Json;
+import jakarta.json.JsonException;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.dto.SolverConfigDto;
 import kreyj.konfplan.persistence.*;
@@ -11,9 +13,11 @@ import org.jboss.logging.Logger;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
@@ -28,7 +32,7 @@ import static java.util.stream.Collectors.joining;
 public class OptimierungService {
 
     private static final Logger LOG = Logger.getLogger(OptimierungService.class);
-    private static final String MZN_MODEL_PATH = "src/main/resources/minizinc/vortragsplanung.mzn";
+    private static final String MZN_MODEL_PATH = "src/main/resources/minizinc/konfplan.mzn";
     private static final DateTimeFormatter WEEKDAY_TIME_FORMAT = DateTimeFormatter.ofPattern("EE,HH:mm");
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -60,17 +64,16 @@ public class OptimierungService {
                 return;
             }
 
-            String dznContent = generiereDzn(teilnehmer, wahlvortraege, slots, raeume, pflichtvortraege);
-            LOG.info("MiniZinc Datendatei generiert.");
-            LOG.trace("DZN Content:\n" + dznContent);
-
+            String dznContent = generiereDzn(teilnehmer, wahlvortraege, slots, raeume,
+                    pflichtvortraege, config.maxInstanzen);
             Path tempDzn = Files.createTempFile("planung_", ".dzn");
             Files.writeString(tempDzn, dznContent, StandardCharsets.UTF_8);
+            LOG.info("MiniZinc Datendatei:\n" + dznContent);
 
             try {
                 String resultJson = rufeMiniZincAuf(tempDzn, config.solver, config.timeout, config.numThreads);
 
-                if (resultJson != null && !resultJson.isEmpty() && resultJson.contains("instanz_slot")) {
+                if (resultJson.contains("instanz_slot") && isValidJson(resultJson)) {
                     speicherePlanungsergebnis(veranstaltung, resultJson, config);
                     protokollService.log(ProtokollKategorie.PLANUNG, "Optimierung erfolgreich",
                             "Optimierung für '" + vName + "' abgeschlossen. Ergebnis wurde gespeichert.", veranstaltungId);
@@ -87,9 +90,10 @@ public class OptimierungService {
         }
     }
 
-    private String rufeMiniZincAuf(Path dznPath, String solver, int timeoutSeconds, int numThreads) throws IOException, InterruptedException {
+    private String rufeMiniZincAuf(Path dznPath, SOLVER_TYP solver,
+                                   int timeoutSeconds, int numThreads) throws IOException, InterruptedException {
         ProcessBuilder pb = new ProcessBuilder(
-                "minizinc", "--solver", solver, "--json-output",
+                "minizinc", "--solver", solver.getName(),
                 "--time-limit", String.valueOf(timeoutSeconds * 1000),
                 "--parallel", String.valueOf(numThreads),
                 MZN_MODEL_PATH, dznPath.toAbsolutePath().toString()
@@ -98,24 +102,28 @@ public class OptimierungService {
         pb.redirectErrorStream(true);
         Process process = pb.start();
 
-        StringBuilder output = new StringBuilder();
+        String output;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.trim().startsWith("{")) {
-                    output.append(line);
-                }
-                LOG.debug("MZN: " + line);
-            }
+            output = reader.lines()
+                    .filter(line -> !line.matches(".*(Reading|Solving|----------|==========).*"))
+                    .collect(Collectors.joining(System.lineSeparator()));
         }
 
-        process.waitFor(timeoutSeconds + 5, TimeUnit.SECONDS);
-        return output.toString();
+        if (!process.waitFor(timeoutSeconds + 5, TimeUnit.SECONDS)) {
+            process.destroy();
+            LOG.warn("MiniZinc process timed out after " + (timeoutSeconds + 5) + " seconds.");
+        }
+
+        LOG.info("MiniZinc output: " + output);
+        return output;
     }
 
-    private String generiereDzn(List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege, List<EventSlot> slots, List<Raum> raeume, List<Pflichtvortrag> pflichtvortraege) {
+    private String generiereDzn(List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege,
+                                List<EventSlot> slots, List<Raum> raeume, List<Pflichtvortrag> pflichtvortraege,
+                                int maxInstanzen) {
         StringBuilder sb = new StringBuilder();
-        sb.append("max_instanzen = 6;\n");
+        sb.append("%Generiert am: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))).append(",Version: 1.0;\n");
+        sb.append("max_instanzen = ").append(maxInstanzen).append(";\n");
         sb.append("opt_referent_raumtreue = true;\n\n");
 
         appendSlots(slots, sb);
@@ -130,7 +138,7 @@ public class OptimierungService {
         return sb.toString();
     }
 
-    private void appendOidArrays(List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege, List<EventSlot> slots, List<Raum> raeume, StringBuilder sb) {
+    private static void appendOidArrays(List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege, List<EventSlot> slots, List<Raum> raeume, StringBuilder sb) {
         sb.append("teilnehmer_oids = [").append(teilnehmer.stream().map(t -> String.valueOf(t.id)).collect(joining(","))).append("];\n");
         sb.append("wahlvortrag_oids = [").append(wahlvortraege.stream().map(v -> String.valueOf(v.id)).collect(joining(","))).append("];\n");
         sb.append("slot_oids = [").append(slots.stream().map(s -> String.valueOf(s.id)).collect(joining(","))).append("];\n");
@@ -203,8 +211,7 @@ public class OptimierungService {
 
         for (Wahlvortrag wv : wahlvortraege) {
             sb.append("\n");
-            String slot_ids = constantSlotIds;
-            sb.append(String.format("(oid: %d, referent_id: %d, belegbare_slots: [%s])", wv.id, refMap.get(wv.referent.id), slot_ids));
+            sb.append(String.format("(oid: %d, referent_id: %d, belegbare_slots: [%s])", wv.id, refMap.get(wv.referent.id), constantSlotIds));
             if (++wvIdx < nWVs) {
                 sb.append(",");
             }
@@ -300,5 +307,29 @@ public class OptimierungService {
         ergebnis.timeout = config.timeout;
         ergebnis.persist();
         LOG.info("Planungsergebnis für Veranstaltung '" + veranstaltung.name + "' wurde gespeichert/aktualisiert.");
+    }
+
+    public static boolean isValidJson(String json) {
+        if (json == null || json.isBlank()) return false;
+        try (var reader = Json.createReader(new StringReader(json))) {
+            reader.readObject();
+            return true;
+        } catch (JsonException | ClassCastException e) {
+            return false;
+        }
+    }
+
+    public enum SOLVER_TYP {
+        CP_SAT("cp-sat");
+
+        private final String name;
+
+        SOLVER_TYP(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 }
