@@ -25,7 +25,7 @@ public class IdEntity extends PanacheEntityBase {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        VersionedEntity that = (VersionedEntity) o;
+        IdEntity that = (IdEntity) o;
         // For persisted entities, compare by ID.
         // For unpersisted entities (id == null), they are only equal if they are the same instance (handled by this == o).
         // This prevents two different new entities from being considered equal based on null ID.

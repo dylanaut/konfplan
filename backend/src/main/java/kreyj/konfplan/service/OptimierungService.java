@@ -1,6 +1,10 @@
 package kreyj.konfplan.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.json.Json;
@@ -10,41 +14,45 @@ import kreyj.konfplan.dto.SolverConfigDto;
 import kreyj.konfplan.persistence.*;
 import org.jboss.logging.Logger;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.StringReader;
+import java.io.*;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import java.util.*;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.joining;
 
 @ApplicationScoped
 public class OptimierungService {
-
     private static final Logger LOG = Logger.getLogger(OptimierungService.class);
-    private static final String MZN_MODEL_PATH = "src/main/resources/minizinc/konfplan.mzn";
+    private static final String MZN_MODEL_FILE = "konfplan.mzn";
     private static final DateTimeFormatter WEEKDAY_TIME_FORMAT = DateTimeFormatter.ofPattern("EE,HH:mm");
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     @Inject
-    ObjectMapper objectMapper;
-
-    @Inject
     ProtokollService protokollService;
 
-    @Transactional
+    @Inject
+    ObjectMapper objectMapper;
+
     public void starteOptimierung(Long veranstaltungId, SolverConfigDto config) throws Exception {
+        starteOptimierung(veranstaltungId, config, MZN_MODEL_FILE);
+    }
+
+    @Transactional
+    public void starteOptimierung(Long veranstaltungId, SolverConfigDto config, String modelName) throws Exception {
         LOG.info("Starte Optimierung für Veranstaltung: " + veranstaltungId);
+
+        URL modelUrl = getClass().getClassLoader().getResource("minizinc/" + modelName);
+        if (modelUrl == null) {
+            throw new FileNotFoundException("MiniZinc model not found: " + modelName);
+        }
+
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
         String vName = veranstaltung != null ? veranstaltung.name : "ID: " + veranstaltungId;
 
@@ -71,7 +79,7 @@ public class OptimierungService {
             LOG.info("MiniZinc Datendatei:\n" + dznContent);
 
             try {
-                String resultJson = rufeMiniZincAuf(tempDzn, config.solver, config.timeout, config.numThreads);
+                String resultJson = rufeMiniZincAuf(Paths.get(modelUrl.toURI()), tempDzn, config.solver, config.timeout, config.numThreads);
 
                 if (resultJson.contains("instanz_slot") && isValidJson(resultJson)) {
                     speicherePlanungsergebnis(veranstaltung, resultJson, config);
@@ -79,7 +87,6 @@ public class OptimierungService {
                             "Optimierung für '" + vName + "' abgeschlossen. Ergebnis wurde gespeichert.", veranstaltungId);
                 } else {
                     protokollService.log(ProtokollKategorie.PLANUNG, "Optimierung fehlgeschlagen", "MiniZinc konnte keine Lösung finden.", veranstaltungId);
-                    throw new RuntimeException("MiniZinc konnte keine Lösung für die Wahlvorträge finden.");
                 }
             } finally {
                 Files.deleteIfExists(tempDzn);
@@ -90,32 +97,71 @@ public class OptimierungService {
         }
     }
 
-    private String rufeMiniZincAuf(Path dznPath, SOLVER_TYP solver,
-                                   int timeoutSeconds, int numThreads) throws IOException, InterruptedException {
-        ProcessBuilder pb = new ProcessBuilder(
+    String rufeMiniZincAuf(Path modelPath, Path dznPath, SOLVER_TYP solver,
+                           int timeoutSeconds, int numThreads) throws IOException, InterruptedException {
+        List<String> command = new ArrayList<>(Arrays.asList(
                 "minizinc", "--solver", solver.getName(),
                 "--time-limit", String.valueOf(timeoutSeconds * 1000),
-                "--parallel", String.valueOf(numThreads),
-                MZN_MODEL_PATH, dznPath.toAbsolutePath().toString()
-        );
+                "--parallel", String.valueOf(numThreads)
+        ));
+        // Für Optimierungsprobleme sorgt dieses Flag dafür, dass Zwischenlösungen ausgegeben werden.
+        command.add("--intermediate");
+        command.add(modelPath.toAbsolutePath().toString());
+        command.add(dznPath.toAbsolutePath().toString());
+
+        ProcessBuilder pb = new ProcessBuilder(command);
 
         pb.redirectErrorStream(true);
         Process process = pb.start();
 
-        String output;
+        String lastJsonSolution = "";
+        StringBuilder fullLog = new StringBuilder();
+        String delimiter = System.lineSeparator();
+
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-            output = reader.lines()
-                    .filter(line -> !line.matches(".*(Reading|Solving|----------|==========).*"))
-                    .collect(Collectors.joining(System.lineSeparator()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                fullLog.append(line).append(delimiter);
+                // Eine einfache Prüfung, ob die Zeile ein JSON-Objekt sein könnte.
+                // Unsere Modelle sind so konfiguriert, dass sie JSON in einer einzigen Zeile ausgeben.
+                if (line.trim().startsWith("{") && isValidJson(line)) {
+                    lastJsonSolution = line;
+                    LOG.debugf("Zwischenlösung gefunden: %s", line);
+                }
+            }
         }
 
-        if (!process.waitFor(timeoutSeconds + 5, TimeUnit.SECONDS)) {
-            process.destroy();
-            LOG.warn("MiniZinc process timed out after " + (timeoutSeconds + 5) + " seconds.");
+        // Warten, bis der Prozess beendet ist und den Exit-Code abrufen.
+        // Der Prozess wird durch das --time-limit von selbst beendet.
+        int exitCode = process.waitFor();
+        LOG.info("MiniZinc-Prozess beendet mit Exit-Code: " + exitCode);
+
+        String output = fullLog.toString();
+        LOG.info("Vollständige MiniZinc-Ausgabe:\n" + output);
+
+        // Fehlerbehandlung basierend auf der vollständigen Ausgabe.
+        if (output.contains("=====UNSATISFIABLE=====")) {
+            throw new MinizincException(MinizincException.MZ_Exception.UNSATISFIABLE);
         }
 
-        LOG.info("MiniZinc output: " + output);
-        return output;
+        if (output.contains("Error:")) {
+            // Fängt MiniZinc-Modellfehler, nicht gefundene Solver usw. ab.
+            throw new MinizincException(MinizincException.MZ_Exception.INVOCATION_ERROR, output);
+        }
+
+        // Wenn wir eine Lösung haben, geben wir sie zurück. Dies ist der Erfolgsfall.
+        if (!lastJsonSolution.isEmpty()) {
+            return lastJsonSolution;
+        }
+
+        // Wenn wir hier sind, wurde kein JSON gefunden.
+        if (output.contains("=====UNSATISFIABLE=====")) {
+            // Dies ist für `solve satisfy`-Probleme, für die bewiesen wurde, dass sie keine Lösung haben.
+            throw new MinizincException(MinizincException.MZ_Exception.UNSATISFIABLE);
+        }
+
+        // Gibt einen leeren String zurück, wenn keine Lösung gefunden wurde, aber kein expliziter Fehler aufgetreten ist.
+        return "";
     }
 
     private String generiereDzn(List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege,
@@ -254,8 +300,9 @@ public class OptimierungService {
         for (Teilnehmer tn : teilnehmer) {
             sb.append("\n");
             int sIdx = 0;
+            Set<EventSlot> tnSlots = new HashSet<>(tn.verfuegbareSlots);
             for (EventSlot s : slots) {
-                sb.append("true");
+                sb.append(tnSlots.contains(s) ? "true" : "false");
                 if (++sIdx < slotSize) {
                     sb.append(",");
                 } else {
@@ -302,7 +349,22 @@ public class OptimierungService {
             ergebnis = new Planungsergebnis();
             ergebnis.veranstaltung = veranstaltung;
         }
-        ergebnis.jsonErgebnis = jsonErgebnis;
+
+        try {
+            ObjectNode root = (ObjectNode) objectMapper.readTree(jsonErgebnis);
+            JsonNode inputData = root.get("input_data");
+            int tnSize = inputData.get("teilnehmer_oids").size();
+            int wvSize = inputData.get("wahlvortrag_oids").size();
+
+            fixflatArrays(root, tnSize, wvSize, config.maxInstanzen);
+
+            String fixedJson = objectMapper.writeValueAsString(root);
+            LOG.info("Result (fixed):\n" + fixedJson);
+            ergebnis.jsonErgebnis = fixedJson;
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
         ergebnis.solver = config.solver;
         ergebnis.timeout = config.timeout;
         ergebnis.persist();
@@ -310,7 +372,9 @@ public class OptimierungService {
     }
 
     public static boolean isValidJson(String json) {
-        if (json == null || json.isBlank()) return false;
+        if (json == null || json.isBlank()) {
+            return false;
+        }
         try (var reader = Json.createReader(new StringReader(json))) {
             reader.readObject();
             return true;
@@ -331,5 +395,64 @@ public class OptimierungService {
         public String getName() {
             return name;
         }
+    }
+
+    // -------------------------------------------------------------------
+    // Helper methods
+    // -------------------------------------------------------------------
+
+    public void restructure2DArray(ObjectNode root, String fieldName,
+                                   int rows, int cols) {
+        JsonNode flat = root.get(fieldName);
+        if (flat == null || !flat.isArray()) {
+            return;
+        }
+
+        // Flaches Array → 2D Array
+        ArrayNode matrix = objectMapper.createArrayNode();
+
+        for (int i = 0; i < rows; i++) {
+            ArrayNode row = objectMapper.createArrayNode();
+            for (int j = 0; j < cols; j++) {
+                row.add(flat.get(i * cols + j));
+            }
+            matrix.add(row);
+        }
+
+        root.set(fieldName, matrix);
+    }
+
+    public void restructure3DArray(ObjectNode root, String fieldName,
+                                   int dim1, int dim2, int dim3) {
+        JsonNode flat = root.get(fieldName);
+        if (flat == null || !flat.isArray()) {
+            return;
+        }
+
+        // Flaches Array → 3D Array [dim1][dim2][dim3]
+        ArrayNode matrix3D = objectMapper.createArrayNode();
+
+        for (int i = 0; i < dim1; i++) {
+            ArrayNode matrix2D = objectMapper.createArrayNode();
+            for (int j = 0; j < dim2; j++) {
+                ArrayNode row = objectMapper.createArrayNode();
+                for (int k = 0; k < dim3; k++) {
+                    int flatIndex = i * (dim2 * dim3) + j * dim3 + k;
+                    row.add(flat.get(flatIndex));
+                }
+                matrix2D.add(row);
+            }
+            matrix3D.add(matrix2D);
+        }
+
+        root.set(fieldName, matrix3D);
+    }
+
+    private JsonNode fixflatArrays(ObjectNode root, int nTNs, int nWVs, int maxInstanzen) {
+        restructure2DArray(root, "instanz_slot", nWVs, maxInstanzen);
+        restructure2DArray(root, "instanz_raum", nWVs, maxInstanzen);
+        restructure3DArray(root, "besucht", nTNs, nWVs, maxInstanzen);
+
+        return root;
     }
 }

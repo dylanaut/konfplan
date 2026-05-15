@@ -44,7 +44,7 @@
     <div class="bg-indigo-900 text-white p-6 rounded-2xl shadow-xl flex flex-col md:flex-row items-end justify-between gap-6">
       <div class="space-y-3 flex-1 w-full">
         <h2 class="text-2xl font-black">Planung & Optimierung</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white/10 p-3 rounded-xl border border-white/10">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-white/10 p-3 rounded-xl border border-white/10">
           <div>
             <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">MiniZinc Solver</label>
             <select v-model="solverConfig.solver" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1">
@@ -60,6 +60,10 @@
           <div>
             <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">max. Instanzen</label>
             <input v-model.number="solverConfig.maxInstanzen" type="number" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
+          </div>
+          <div>
+            <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">Threads</label>
+            <input v-model.number="solverConfig.numThreads" type="number" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
           </div>
         </div>
       </div>
@@ -96,7 +100,7 @@ const props = defineProps({
 
 const emit = defineEmits(['startOptimization']);
 
-const solverConfig = reactive({ solver: 'cp-sat', timeout: 120, maxInstanzen: 2 });
+const solverConfig = reactive({ solver: 'cp-sat', timeout: 120, maxInstanzen: 2, numThreads: 4 });
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('de-DE') : '';
 </script>

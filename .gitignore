@@ -4429,3 +4429,5 @@ build/
 /backend/node/npx.cmd
 /backend/result_log.txt
 /backend/logs/
+/node_modules/
+/package-lock.json

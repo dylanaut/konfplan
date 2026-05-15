@@ -39,16 +39,12 @@ public class RaumBelegungUebersichtDto {
 
     @Override
     public String toString() {
-        return "RaumBelegungUebersichtDto{" +
-                "slotId=" + slotId +
-                ", slotZeit='" + slotZeit + '\'' +
-                ", raumId=" + raumId +
-                ", raumName='" + raumName + '\'' +
-                ", vortragTitel='" + vortragTitel + '\'' +
-                ", referentName='" + referentName + '\'' +
+        return slotZeit + '(' + slotId +
+                ") @ " + raumName + '(' + raumId +
+                "): titel='" + vortragTitel + '\'' +
+                ", ref='" + referentName + '\'' +
                 ", vortragTyp='" + vortragTyp + '\'' +
-                ", teilnehmerNamen=" + teilnehmerNamen +
-                ", kapazitaet=" + kapazitaet +
-                '}';
+                ", tn=" + teilnehmerNamen +
+                ", kapazitaet=" + kapazitaet;
     }
 }

@@ -2,6 +2,7 @@ package kreyj.konfplan.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.lowagie.text.*;
 import com.lowagie.text.Font;
 import com.lowagie.text.Image;
@@ -24,6 +25,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static java.util.stream.Collectors.toMap;
+
 @ApplicationScoped
 public class PlanService {
 
@@ -39,6 +42,7 @@ public class PlanService {
         if (planungsergebnis == null) {
             return Collections.emptyList();
         }
+
 
         try {
             JsonNode root = objectMapper.readTree(planungsergebnis.jsonErgebnis);
@@ -56,10 +60,10 @@ public class PlanService {
             List<EventSlot> alleSlots = EventSlot.find("veranstaltung.id", veranstaltungId).list();
             List<Raum> alleRaeume = Raum.listAll();
 
-            Map<Long, Teilnehmer> teilnehmerMap = alleTeilnehmer.stream().collect(Collectors.toMap(t -> t.id, t -> t));
-            Map<Long, Vortrag> vortragMap = alleVortraege.stream().collect(Collectors.toMap(v -> v.id, v -> v));
-            Map<Long, EventSlot> slotMap = alleSlots.stream().collect(Collectors.toMap(s -> s.id, s -> s));
-            Map<Long, Raum> raumMap = alleRaeume.stream().collect(Collectors.toMap(r -> r.id, r -> r));
+            Map<Long, Teilnehmer> teilnehmerMap = alleTeilnehmer.stream().collect(toMap(t -> t.id, t -> t));
+            Map<Long, Vortrag> vortragMap = alleVortraege.stream().collect(toMap(v -> v.id, v -> v));
+            Map<Long, EventSlot> slotMap = alleSlots.stream().collect(toMap(s -> s.id, s -> s));
+            Map<Long, Raum> raumMap = alleRaeume.stream().collect(toMap(r -> r.id, r -> r));
 
             List<ZuweisungDto> zuweisungen = new ArrayList<>();
 
@@ -247,9 +251,9 @@ public class PlanService {
             List<Long> raumOids = StreamSupport.stream(inputData.get("raum_oids").spliterator(), false)
                     .map(JsonNode::asLong).toList();
 
-            Map<Long, Vortrag> vortragMap = Vortrag.find("veranstaltung.id", veranstaltungId).<Vortrag>list().stream().collect(Collectors.toMap(v -> v.id, v -> v));
-            Map<Long, EventSlot> slotMap = EventSlot.find("veranstaltung.id", veranstaltungId).<EventSlot>list().stream().collect(Collectors.toMap(s -> s.id, s -> s));
-            Map<Long, Raum> raumMap = Raum.<Raum>listAll().stream().collect(Collectors.toMap(r -> r.id, r -> r));
+            Map<Long, Vortrag> vortragMap = Vortrag.find("veranstaltung.id", veranstaltungId).<Vortrag>list().stream().collect(toMap(v -> v.id, v -> v));
+            Map<Long, EventSlot> slotMap = EventSlot.find("veranstaltung.id", veranstaltungId).<EventSlot>list().stream().collect(toMap(s -> s.id, s -> s));
+            Map<Long, Raum> raumMap = Raum.<Raum>listAll().stream().collect(toMap(r -> r.id, r -> r));
 
             int pIdx = tnOids.indexOf(teilnehmer.id);
             if (pIdx == -1) {
@@ -344,9 +348,9 @@ public class PlanService {
             List<Long> slotOids = StreamSupport.stream(inputData.get("slot_oids").spliterator(), false).map(JsonNode::asLong).toList();
             List<Long> raumOids = StreamSupport.stream(inputData.get("raum_oids").spliterator(), false).map(JsonNode::asLong).toList();
 
-            Map<Long, Teilnehmer> teilnehmerMap = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", veranstaltungId).<Teilnehmer>list().stream().collect(Collectors.toMap(t -> t.id, t -> t));
-            Map<Long, EventSlot> slotMap = EventSlot.find("veranstaltung.id", veranstaltungId).<EventSlot>list().stream().collect(Collectors.toMap(s -> s.id, s -> s));
-            Map<Long, Raum> raumMap = Raum.<Raum>listAll().stream().collect(Collectors.toMap(r -> r.id, r -> r));
+            Map<Long, Teilnehmer> teilnehmerMap = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", veranstaltungId).<Teilnehmer>list().stream().collect(toMap(t -> t.id, t -> t));
+            Map<Long, EventSlot> slotMap = EventSlot.find("veranstaltung.id", veranstaltungId).<EventSlot>list().stream().collect(toMap(s -> s.id, s -> s));
+            Map<Long, Raum> raumMap = Raum.<Raum>listAll().stream().collect(toMap(r -> r.id, r -> r));
 
             List<ReferentVortragDto> referentPlan = new ArrayList<>();
 
@@ -413,6 +417,7 @@ public class PlanService {
             // Explicitly materialize the String from the LOB to avoid issues with deferred access
             String jsonContent = planungsergebnis.jsonErgebnis;
             JsonNode root = objectMapper.readTree(jsonContent);
+
             JsonNode instanzSlot = root.get("instanz_slot");
             JsonNode instanzRaum = root.get("instanz_raum");
             JsonNode besucht = root.get("besucht");
@@ -422,15 +427,16 @@ public class PlanService {
                 return Collections.emptyMap();
             }
 
+
             List<Teilnehmer> alleTeilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
             List<Vortrag> alleVortraege = Vortrag.find("veranstaltung.id", veranstaltungId).list();
             List<EventSlot> alleSlots = EventSlot.find("veranstaltung.id", veranstaltungId).list();
             List<Raum> alleRaeume = Raum.listAll();
 
-            Map<Long, Teilnehmer> teilnehmerMap = alleTeilnehmer.stream().collect(Collectors.toMap(t -> t.id, t -> t));
-            Map<Long, Vortrag> vortragMap = alleVortraege.stream().collect(Collectors.toMap(v -> v.id, v -> v));
-            Map<Long, EventSlot> slotMap = alleSlots.stream().collect(Collectors.toMap(s -> s.id, s -> s));
-            Map<Long, Raum> raumMap = alleRaeume.stream().collect(Collectors.toMap(r -> r.id, r -> r));
+            Map<Long, Teilnehmer> teilnehmerMap = alleTeilnehmer.stream().collect(toMap(t -> t.id, t -> t));
+            Map<Long, Vortrag> vortragMap = alleVortraege.stream().collect(toMap(v -> v.id, v -> v));
+            Map<Long, EventSlot> slotMap = alleSlots.stream().collect(toMap(s -> s.id, s -> s));
+            Map<Long, Raum> raumMap = alleRaeume.stream().collect(toMap(r -> r.id, r -> r));
 
             JsonNode inputData = root.get("input_data");
             if (inputData == null) {
@@ -450,24 +456,24 @@ public class PlanService {
             for (Pflichtvortrag pv : pflichtvortraege) {
                 Raum raum = pv.pflichtraum;
                 EventSlot slot = pv.pflichtslot;
-                Vortrag vortrag = pv;
 
                 List<Teilnehmer> gruppenTeilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1 AND t.gruppe = ?2", veranstaltungId, pv.pflichtgruppe).list();
                 List<TeilnehmerSimpleDto> teilnehmerDtos = gruppenTeilnehmer.stream()
                         .map(tn -> new TeilnehmerSimpleDto(tn.id, tn.firstName, tn.lastName, tn.gruppe))
-                        .collect(Collectors.toList());
+                        .toList();
 
                 RaumplanEintragDto eintrag = new RaumplanEintragDto(
                         slot.id,
                         slot.startTime.format(TIME_FORMAT),
-                        vortrag.titel,
-                        vortrag.referent.firstName + " " + vortrag.referent.lastName,
+                        pv.titel,
+                        ((Vortrag) pv).referent.firstName + " " + ((Vortrag) pv).referent.lastName,
                         "PFLICHT",
                         teilnehmerDtos.size(),
                         teilnehmerDtos
                 );
                 raumplan.computeIfAbsent(raum.id, k -> new HashMap<>()).put(slot.id, eintrag);
             }
+
 
             // Wahlvorträge aus MiniZinc-Ergebnis hinzufügen
             for (int wIdx = 0; wIdx < wvOids.size(); wIdx++) {
@@ -541,8 +547,8 @@ public class PlanService {
             List<Vortrag> alleVortraege = Vortrag.find("veranstaltung.id", veranstaltungId).list();
             List<EventSlot> alleSlots = EventSlot.find("veranstaltung.id", veranstaltungId).list();
 
-            Map<Long, Vortrag> vortragMap = alleVortraege.stream().collect(Collectors.toMap(v -> v.id, v -> v));
-            Map<Long, EventSlot> slotMap = alleSlots.stream().collect(Collectors.toMap(s -> s.id, s -> s));
+            Map<Long, Vortrag> vortragMap = alleVortraege.stream().collect(toMap(v -> v.id, v -> v));
+            Map<Long, EventSlot> slotMap = alleSlots.stream().collect(toMap(s -> s.id, s -> s));
 
             for (Referent referent : alleReferenten) {
                 Set<Long> belegteSlotIds = new HashSet<>();
@@ -604,7 +610,7 @@ public class PlanService {
             List<Teilnehmer> alleTeilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
             List<EventSlot> alleSlots = EventSlot.find("veranstaltung.id", veranstaltungId).list();
 
-            Map<Long, EventSlot> slotMap = alleSlots.stream().collect(Collectors.toMap(s -> s.id, s -> s));
+            Map<Long, EventSlot> slotMap = alleSlots.stream().collect(toMap(s -> s.id, s -> s));
 
             for (Teilnehmer teilnehmer : alleTeilnehmer) {
                 Set<Long> belegteSlotIds = new HashSet<>();
