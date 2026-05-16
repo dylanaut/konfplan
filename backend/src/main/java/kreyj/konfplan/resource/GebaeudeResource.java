@@ -12,6 +12,9 @@ import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.service.GebaeudeService;
 import kreyj.konfplan.service.RaumService;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
 
@@ -19,6 +22,7 @@ import java.util.List;
 @RolesAllowed("ADMIN")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "Gebäude & Räume", description = "Verwaltung von Gebäuden und den zugehörigen Räumen")
 public class GebaeudeResource {
 
     @Inject
@@ -30,6 +34,7 @@ public class GebaeudeResource {
     // --- GEBÄUDE ---
 
     @GET
+    @Operation(summary = "Alle Gebäude abrufen", description = "Gibt eine Liste aller Gebäude zurück.")
     public List<GebaeudeSimpleDto> getAll(@QueryParam("sortByRooms") String sortByRooms,
                                           @QueryParam("sortDirectionRooms") @DefaultValue("asc") String sortDirectionRooms) {
         return gebaeudeService.listAll()
@@ -41,6 +46,7 @@ public class GebaeudeResource {
     @POST
     @Path("/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Operation(summary = "Gebäude importieren", description = "Importiert Gebäude und Räume aus einer CSV-Datei.")
     public Response importGebaeude(FileUploadDto data) {
         try {
             int count = gebaeudeService.importGebaeudeWithRaeumeFromCsv(data.file.uploadedFile().toFile().toPath());
@@ -52,6 +58,7 @@ public class GebaeudeResource {
 
     @GET
     @Path("/{id}")
+    @Operation(summary = "Ein Gebäude abrufen", description = "Ruft ein einzelnes Gebäude anhand seiner ID ab.")
     public Response getOne(@PathParam("id") Long id) {
         Gebaeude g = gebaeudeService.findById(id);
         if (g == null) {
@@ -61,14 +68,16 @@ public class GebaeudeResource {
     }
 
     @POST
-    public Response create(Gebaeude g) {
+    @Operation(summary = "Neues Gebäude erstellen", description = "Erstellt ein neues Gebäude.")
+    public Response create(@RequestBody(description = "Das zu erstellende Gebäude", required = true) Gebaeude g) {
         Gebaeude saved = gebaeudeService.save(g);
         return Response.status(Response.Status.CREATED).entity(saved).build();
     }
 
     @PUT
     @Path("/{id}")
-    public Response update(@PathParam("id") Long id, Gebaeude g) {
+    @Operation(summary = "Gebäude aktualisieren", description = "Aktualisiert ein bestehendes Gebäude.")
+    public Response update(@PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Gebäudedaten", required = true) Gebaeude g) {
         g.id = id;
         Gebaeude updated = gebaeudeService.save(g);
         if (updated == null) {
@@ -79,6 +88,7 @@ public class GebaeudeResource {
 
     @DELETE
     @Path("/{id}")
+    @Operation(summary = "Gebäude löschen", description = "Löscht ein Gebäude.")
     public Response delete(@PathParam("id") Long id) {
         boolean deleted = gebaeudeService.delete(id);
         if (!deleted) {
@@ -91,13 +101,15 @@ public class GebaeudeResource {
 
     @GET
     @Path("/{gid}/raeume")
+    @Operation(summary = "Räume eines Gebäudes abrufen", description = "Ruft alle Räume ab, die zu einem bestimmten Gebäude gehören.")
     public List<RaumDto> getRaeumeByGebaeude(@PathParam("gid") Long gid) {
         return raumService.listByGebaeude(gid).stream().map(GebaeudeResource::mapRaumToDto).toList();
     }
 
     @POST
     @Path("/{gid}/raeume")
-    public Response createRaum(@PathParam("gid") Long gid, Raum r) {
+    @Operation(summary = "Neuen Raum in einem Gebäude erstellen", description = "Erstellt einen neuen Raum innerhalb eines Gebäudes.")
+    public Response createRaum(@PathParam("gid") Long gid, @RequestBody(description = "Der zu erstellende Raum", required = true) Raum r) {
         try {
             Raum saved = raumService.save(r, gid);
             return Response.status(Response.Status.CREATED).entity(saved).build();
@@ -108,7 +120,8 @@ public class GebaeudeResource {
 
     @PUT
     @Path("/{gid}/raeume/{rid}")
-    public Response updateRaum(@PathParam("gid") Long gid, @PathParam("rid") Long rid, Raum r) {
+    @Operation(summary = "Raum aktualisieren", description = "Aktualisiert einen bestehenden Raum.")
+    public Response updateRaum(@PathParam("gid") Long gid, @PathParam("rid") Long rid, @RequestBody(description = "Die aktualisierten Raumdaten", required = true) Raum r) {
         r.id = rid;
         try {
             Raum saved = raumService.save(r, gid);
@@ -123,6 +136,7 @@ public class GebaeudeResource {
 
     @DELETE
     @Path("/{gid}/raeume/{rid}")
+    @Operation(summary = "Raum löschen", description = "Löscht einen Raum.")
     public Response deleteRaum(@PathParam("gid") Long gid, @PathParam("rid") Long rid) {
         boolean deleted = raumService.delete(rid);
         if (!deleted) {
@@ -134,6 +148,7 @@ public class GebaeudeResource {
     @POST
     @Path("/{gid}/raeume/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Operation(summary = "Räume importieren", description = "Importiert Räume für ein Gebäude aus einer CSV-Datei.")
     public Response importRaeume(@PathParam("gid") Long gid, FileUploadDto data) {
         try {
             int count = raumService.importFromCsv(data.file.uploadedFile().toFile().toPath(), gid);

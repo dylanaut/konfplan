@@ -15,6 +15,9 @@ import kreyj.konfplan.service.PlanService;
 import kreyj.konfplan.service.PrioritaetService;
 import kreyj.konfplan.util.JwtHelper;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,6 +29,7 @@ import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 @RolesAllowed({"TEILNEHMER", "ADMIN"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "Teilnehmer-Planung", description = "Endpunkte für Teilnehmer zur Ansicht ihres Plans und zur Verwaltung von Prioritäten")
 public class TeilnehmerPlanResource {
 
     @Inject
@@ -39,6 +43,7 @@ public class TeilnehmerPlanResource {
 
     @GET
     @Path("/veranstaltungen")
+    @Operation(summary = "Meine Veranstaltungen abrufen", description = "Ruft die Veranstaltungen ab, für die der Teilnehmer registriert ist.")
     public List<VeranstaltungDto> getMeineVeranstaltungen() {
         String email = JwtHelper.getUserPrincipalName(jwt);
         Teilnehmer t = Teilnehmer.find("email", email).firstResult();
@@ -50,6 +55,7 @@ public class TeilnehmerPlanResource {
 
     @GET
     @Path("/zuweisungen")
+    @Operation(summary = "Persönlichen Plan abrufen", description = "Ruft den persönlichen Vortragsplan (Zuweisungen) für eine Veranstaltung ab.")
     public List<ZuweisungDto> getPlan(@QueryParam("vid") Long vid) {
         // Hinweis: Aktuell ignoriert PlanService vid und gibt alles zurück. 
         // Für Multi-Event-Support müsste PlanService angepasst werden.
@@ -58,19 +64,22 @@ public class TeilnehmerPlanResource {
 
     @GET
     @Path("/prios")
+    @Operation(summary = "Meine Prioritäten abrufen", description = "Ruft die vom Teilnehmer gesetzten Prioritäten für Wahlvorträge ab.")
     public List<Prioritaet> getPrios(@QueryParam("vid") Long vid) {
         return prioritaetService.getPrioritaetenForUser(JwtHelper.getUserPrincipalName(jwt));
     }
 
     @POST
     @Path("/prios")
-    public Response savePriorities(List<PrioritaetRequest> requests) {
+    @Operation(summary = "Prioritäten speichern", description = "Speichert eine Liste von Prioritäten für den Teilnehmer.")
+    public Response savePriorities(@RequestBody(description = "Liste der Prioritäts-Anfragen", required = true) List<PrioritaetRequest> requests) {
         prioritaetService.savePrioritaeten(JwtHelper.getUserPrincipalName(jwt), requests);
         return Response.ok().build();
     }
 
     @GET
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
+    @Operation(summary = "Meine Verfügbarkeiten abrufen", description = "Ruft die persönlichen Verfügbarkeiten des Teilnehmers für eine Veranstaltung ab.")
     public List<VerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (!(nutzer instanceof Teilnehmer)) throw new WebApplicationException("Nutzer ist kein Teilnehmer", FORBIDDEN.getStatusCode());
@@ -86,7 +95,8 @@ public class TeilnehmerPlanResource {
     @POST
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Transactional
-    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, VerfuegbarkeitDto dto) {
+    @Operation(summary = "Verfügbarkeit aktualisieren", description = "Aktualisiert die persönliche Verfügbarkeit des Teilnehmers für einen bestimmten Slot.")
+    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten", required = true) VerfuegbarkeitDto dto) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (!(nutzer instanceof Teilnehmer)) return Response.status(FORBIDDEN).build();
 

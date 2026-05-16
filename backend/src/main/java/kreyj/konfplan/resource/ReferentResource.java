@@ -18,6 +18,9 @@ import kreyj.konfplan.service.PlanService;
 import kreyj.konfplan.service.ReferentService;
 import kreyj.konfplan.util.JwtHelper;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.net.URI;
 import java.time.LocalDateTime;
@@ -31,6 +34,7 @@ import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 @RolesAllowed({"ADMIN", "REFERENT"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "Referenten", description = "Endpunkte für Referenten zur Verwaltung ihres Profils und ihrer Vorträge")
 public class ReferentResource {
     @Context
     UriInfo uriInfo;
@@ -49,6 +53,7 @@ public class ReferentResource {
 
     @GET
     @Path("/profile")
+    @Operation(summary = "Referentenprofil abrufen", description = "Ruft das Profil des aktuell angemeldeten Referenten ab.")
     public NutzerDto getReferent() { // Changed return type
         Referent referent = referentService.getProfile(JwtHelper.getUserPrincipalName(jwt));
         if (referent == null) {
@@ -59,7 +64,8 @@ public class ReferentResource {
 
     @PUT
     @Path("/profile")
-    public Response updateProfile(NutzerDto dto) {
+    @Operation(summary = "Referentenprofil aktualisieren", description = "Aktualisiert das Profil des aktuell angemeldeten Referenten.")
+    public Response updateProfile(@RequestBody(description = "Die aktualisierten Profildaten", required = true) NutzerDto dto) {
         try {
             referentService.updateProfile(JwtHelper.getUserPrincipalName(jwt), dto);
         } catch (OptimisticLockException e) {
@@ -71,7 +77,8 @@ public class ReferentResource {
     @POST
     @Path("/email-change-request")
     @Transactional
-    public Response requestEmailChange(EmailChangeRequestDto requestDto) {
+    @Operation(summary = "E-Mail-Änderung anfordern", description = "Fordert eine Änderung der E-Mail-Adresse an und sendet Bestätigungs-E-Mails.")
+    public Response requestEmailChange(@RequestBody(description = "Anfrage zur E-Mail-Änderung", required = true) EmailChangeRequestDto requestDto) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (nutzer == null) {
             return Response.status(Response.Status.NOT_FOUND).entity("Nutzer nicht gefunden.").build();
@@ -108,6 +115,7 @@ public class ReferentResource {
     @Path("/email-change-confirm")
     @PermitAll // Dieser Endpunkt muss ohne Authentifizierung erreichbar sein
     @Transactional
+    @Operation(summary = "E-Mail-Änderung bestätigen", description = "Bestätigt die Änderung der E-Mail-Adresse mit einem Token.")
     public Response confirmEmailChange(@QueryParam("token") String token) {
         Nutzer nutzer = Nutzer.find("emailChangeToken", token).firstResult();
 
@@ -128,13 +136,15 @@ public class ReferentResource {
 
     @GET
     @Path("/vortraege")
+    @Operation(summary = "Vorträge des Referenten abrufen", description = "Ruft alle Vorträge ab, die dem aktuell angemeldeten Referenten zugeordnet sind.")
     public List<VortragDto> getReferentenVortraege() {
         return referentService.getReferentVortraege(JwtHelper.getUserPrincipalName(jwt));
     }
 
     @POST
     @Path("/vortraege")
-    public Response createVortrag(VortragDto dto) {
+    @Operation(summary = "Neuen Vortrag erstellen", description = "Erstellt einen neuen Vortrag für den aktuell angemeldeten Referenten.")
+    public Response createVortrag(@RequestBody(description = "Die Daten des neuen Vortrags", required = true) VortragDto dto) {
         try {
             VortragDto saved = referentService.createVortrag(JwtHelper.getUserPrincipalName(jwt), dto);
             return Response.ok(saved).build();
@@ -146,7 +156,8 @@ public class ReferentResource {
 
     @PUT
     @Path("/vortraege/{vortragId}")
-    public Response updateVortrag(@PathParam("vortragId") Long vortragId, VortragDto dto) {
+    @Operation(summary = "Vortrag aktualisieren", description = "Aktualisiert einen bestehenden Vortrag des Referenten.")
+    public Response updateVortrag(@PathParam("vortragId") Long vortragId, @RequestBody(description = "Die aktualisierten Vortragsdaten", required = true) VortragDto dto) {
         try {
             VortragDto updated = referentService.updateVortrag(JwtHelper.getUserPrincipalName(jwt), vortragId, dto);
             if (updated == null) {
@@ -163,6 +174,7 @@ public class ReferentResource {
 
     @DELETE
     @Path("/vortraege/{vortragId}")
+    @Operation(summary = "Vortrag löschen", description = "Löscht einen Vortrag des Referenten.")
     public Response deleteVortrag(@PathParam("vortragId") Long vortragId) {
         boolean deleted = referentService.deleteVortrag(JwtHelper.getUserPrincipalName(jwt), vortragId);
         if (!deleted) {
@@ -173,6 +185,7 @@ public class ReferentResource {
 
     @POST
     @Path("/veranstaltungen/{targetEventId}/vortraege/{sourceTalkId}/clone")
+    @Operation(summary = "Vortrag für eine andere Veranstaltung klonen", description = "Klont einen bestehenden Vortrag für eine neue Veranstaltung.")
     public Response cloneTalkForEvent(@PathParam("targetEventId") Long targetEventId, @PathParam("sourceTalkId") Long sourceTalkId) {
         try {
             VortragDto clonedTalk = referentService.cloneTalkForEvent(JwtHelper.getUserPrincipalName(jwt), sourceTalkId, targetEventId);
@@ -187,6 +200,7 @@ public class ReferentResource {
 
     @GET
     @Path("/plaene")
+    @Operation(summary = "Persönlichen Plan abrufen", description = "Ruft den persönlichen Vortragsplan des Referenten für eine Veranstaltung ab.")
     public List<ReferentVortragDto> getMyPlan(@QueryParam("vid") Long vid) {
         if (vid == null) {
             throw new BadRequestException("Veranstaltungs-ID (vid) ist erforderlich.");
@@ -196,12 +210,14 @@ public class ReferentResource {
 
     @GET
     @Path("/veranstaltungen")
+    @Operation(summary = "Veranstaltungen des Referenten abrufen", description = "Ruft alle Veranstaltungen ab, bei denen der Referent registriert ist.")
     public List<ReferentVeranstaltungDto> getReferentVeranstaltungen() {
         return referentService.getReferentVeranstaltungen(JwtHelper.getUserPrincipalName(jwt));
     }
 
     @POST
     @Path("/veranstaltungen/{eventId}/vortraege/{talkId}/register")
+    @Operation(summary = "Vortrag für Veranstaltung registrieren", description = "Registriert einen Vortrag des Referenten für eine Veranstaltung.")
     public Response registerTalkForEvent(@PathParam("eventId") Long eventId, @PathParam("talkId") Long talkId) {
         referentService.registerTalkForEvent(JwtHelper.getUserPrincipalName(jwt), talkId, eventId);
         return Response.ok().build();
@@ -209,6 +225,7 @@ public class ReferentResource {
 
     @DELETE
     @Path("/veranstaltungen/{eventId}/vortraege/{talkId}/deregister")
+    @Operation(summary = "Vortrag von Veranstaltung deregistrieren", description = "Entfernt die Registrierung eines Vortrags von einer Veranstaltung.")
     public Response deregisterTalkFromEvent(@PathParam("eventId") Long eventId, @PathParam("talkId") Long talkId) {
         referentService.deregisterTalkFromEvent(JwtHelper.getUserPrincipalName(jwt), talkId, eventId);
         return Response.ok().build();
@@ -216,6 +233,7 @@ public class ReferentResource {
 
     @GET
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
+    @Operation(summary = "Verfügbarkeiten für eine Veranstaltung abrufen", description = "Ruft die persönlichen Verfügbarkeiten des Referenten für eine Veranstaltung ab.")
     public List<VerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (!(nutzer instanceof Referent)) {
@@ -233,7 +251,8 @@ public class ReferentResource {
     @POST
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Transactional
-    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, VerfuegbarkeitDto dto) {
+    @Operation(summary = "Verfügbarkeit für einen Slot aktualisieren", description = "Aktualisiert die persönliche Verfügbarkeit des Referenten für einen bestimmten Slot.")
+    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten", required = true) VerfuegbarkeitDto dto) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (!(nutzer instanceof Referent)) {
             return Response.status(FORBIDDEN).build();

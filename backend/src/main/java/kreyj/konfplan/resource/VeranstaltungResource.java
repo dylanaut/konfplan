@@ -12,6 +12,9 @@ import kreyj.konfplan.persistence.EventSlot;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.service.*;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
@@ -23,6 +26,7 @@ import java.util.stream.Collectors;
 @RolesAllowed("ADMIN")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "Veranstaltungen", description = "Zentrale Endpunkte für die Verwaltung von Veranstaltungen und deren Inhalten")
 public class VeranstaltungResource {
     private static final Logger LOG = Logger.getLogger(VeranstaltungResource.class);
 
@@ -47,6 +51,7 @@ public class VeranstaltungResource {
     // --- BASIS: VERANSTALTUNGEN ---
 
     @GET
+    @Operation(summary = "Alle Veranstaltungen abrufen", description = "Gibt eine Liste aller Veranstaltungen zurück.")
     public List<VeranstaltungDto> getAll() {
         return veranstaltungService.listAll().stream()
                 .map(VeranstaltungResource::mapVeranstaltungToDto)
@@ -55,6 +60,7 @@ public class VeranstaltungResource {
 
     @GET
     @Path("/{vid}")
+    @Operation(summary = "Eine Veranstaltung abrufen", description = "Ruft eine einzelne Veranstaltung anhand ihrer ID ab.")
     public Response getOne(@PathParam("vid") Long vid) {
         Veranstaltung vEntity = veranstaltungService.findById(vid);
         if (vEntity == null) {
@@ -64,7 +70,8 @@ public class VeranstaltungResource {
     }
 
     @POST
-    public Response create(VeranstaltungDto vDto) {
+    @Operation(summary = "Neue Veranstaltung erstellen", description = "Erstellt eine neue Veranstaltung.")
+    public Response create(@RequestBody(description = "Die zu erstellende Veranstaltung", required = true) VeranstaltungDto vDto) {
         try {
             VeranstaltungDto saved = veranstaltungService.save(vDto);
             return Response.status(Response.Status.CREATED).entity(saved).build();
@@ -76,7 +83,8 @@ public class VeranstaltungResource {
 
     @PUT
     @Path("/{id}")
-    public Response update(@PathParam("id") Long id, VeranstaltungDto vDto) {
+    @Operation(summary = "Veranstaltung aktualisieren", description = "Aktualisiert eine bestehende Veranstaltung.")
+    public Response update(@PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Veranstaltungsdaten", required = true) VeranstaltungDto vDto) {
         vDto.id = id;
         try {
             VeranstaltungDto updated = veranstaltungService.save(vDto);
@@ -94,6 +102,7 @@ public class VeranstaltungResource {
 
     @DELETE
     @Path("/{id}")
+    @Operation(summary = "Veranstaltung löschen", description = "Löscht eine Veranstaltung.")
     public Response delete(@PathParam("id") Long id) {
         boolean deleted = veranstaltungService.delete(id);
         if (!deleted) {
@@ -105,6 +114,7 @@ public class VeranstaltungResource {
     @POST
     @Path("/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Operation(summary = "Veranstaltungen importieren", description = "Importiert Veranstaltungen aus einer CSV-Datei.")
     public Response importVeranstaltungen(@RestForm("file") FileUpload file) {
         try {
             int count = veranstaltungService.importFromCsv(file.uploadedFile().toFile().toPath());
@@ -119,20 +129,23 @@ public class VeranstaltungResource {
 
     @GET
     @Path("/{vid}/nutzer")
+    @Operation(summary = "Nutzer einer Veranstaltung abrufen", description = "Ruft alle Nutzer (Admins, Referenten, Teilnehmer) einer Veranstaltung ab.")
     public List<NutzerDto> getNutzer(@PathParam("vid") Long vid) {
         return adminService.getAllUsers(vid);
     }
 
     @POST
     @Path("/{vid}/nutzer")
-    public Response createNutzer(@PathParam("vid") Long vid, NutzerDto nutzerDto) {
+    @Operation(summary = "Neuen Nutzer zu Veranstaltung hinzufügen", description = "Erstellt einen neuen Nutzer und fügt ihn direkt zu einer Veranstaltung hinzu.")
+    public Response createNutzer(@PathParam("vid") Long vid, @RequestBody(description = "Die Daten des neuen Nutzers", required = true) NutzerDto nutzerDto) {
         NutzerDto created = adminService.createUser(nutzerDto, List.of(vid));
         return Response.status(Response.Status.CREATED).entity(created).build();
     }
 
     @PUT
     @Path("/{vid}/nutzer/{id}")
-    public Response updateNutzer(@PathParam("vid") Long vid, @PathParam("id") Long id, NutzerDto nutzerDto) {
+    @Operation(summary = "Nutzer in Veranstaltung aktualisieren", description = "Aktualisiert die Daten eines Nutzers im Kontext einer Veranstaltung.")
+    public Response updateNutzer(@PathParam("vid") Long vid, @PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Nutzerdaten", required = true) NutzerDto nutzerDto) {
         try {
             NutzerDto updated = adminService.updateUser(id, nutzerDto, List.of(vid));
 
@@ -148,6 +161,7 @@ public class VeranstaltungResource {
 
     @DELETE
     @Path("/{vid}/nutzer/{id}")
+    @Operation(summary = "Nutzer aus Veranstaltung entfernen", description = "Entfernt einen Nutzer aus einer Veranstaltung (löscht ihn aber nicht global).")
     public Response deleteNutzer(@PathParam("vid") Long vid, @PathParam("id") Long id) {
         boolean deleted = adminService.deleteUser(id);
         if (!deleted) {
@@ -159,6 +173,7 @@ public class VeranstaltungResource {
     @POST
     @Path("/{vid}/referenten/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Operation(summary = "Referenten für Veranstaltung importieren", description = "Importiert Referenten aus einer CSV-Datei und fügt sie zur Veranstaltung hinzu.")
     public Response importReferenten(@PathParam("vid") Long vid, @RestForm("file") FileUpload file) {
         try {
             int count = referentService.importFromCsv(file.uploadedFile().toFile().toPath(), vid);
@@ -172,6 +187,7 @@ public class VeranstaltungResource {
     @POST
     @Path("/{vid}/teilnehmer/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Operation(summary = "Teilnehmer für Veranstaltung importieren", description = "Importiert Teilnehmer aus einer CSV-Datei und fügt sie zur Veranstaltung hinzu.")
     public Response uploadTeilnehmerCsv(@PathParam("vid") Long vid, @RestForm("file") FileUpload file) {
         try {
             int count = teilnehmerService.importFromCsv(file.uploadedFile().toFile().toPath(), vid);
@@ -184,7 +200,8 @@ public class VeranstaltungResource {
 
     @PUT
     @Path("/{vid}/teilnehmer/{userId}/prioritaeten")
-    public Response saveTeilnehmerPrioritaeten(@PathParam("vid") Long vid, @PathParam("userId") Long userId, List<VortragPrioDto> priorityDtos) {
+    @Operation(summary = "Prioritäten eines Teilnehmers speichern", description = "Speichert die Vortragsprioritäten für einen Teilnehmer in einer Veranstaltung.")
+    public Response saveTeilnehmerPrioritaeten(@PathParam("vid") Long vid, @PathParam("userId") Long userId, @RequestBody(description = "Liste der Prioritäten", required = true) List<VortragPrioDto> priorityDtos) {
         try {
             teilnehmerService.savePriorities(userId, vid, priorityDtos);
             return Response.noContent().build();
@@ -203,6 +220,7 @@ public class VeranstaltungResource {
     @GET
     @RolesAllowed({"ADMIN", "TEILNEHMER"})
     @Path("/{vid}/vortraege")
+    @Operation(summary = "Vorträge einer Veranstaltung abrufen", description = "Ruft alle Vorträge ab, die zu einer Veranstaltung gehören.")
     public List<VortragDto> getVortraege(@PathParam("vid") Long vid) {
         List<Vortrag> allVortraege = adminService.getAllVortraege(vid);
         return allVortraege.stream().map(ReferentResource::mapVortragToDto).toList();
@@ -210,6 +228,7 @@ public class VeranstaltungResource {
 
     @GET
     @Path("/{vid}/vortraege/{tid}")
+    @Operation(summary = "Einen Vortrag einer Veranstaltung abrufen", description = "Ruft einen einzelnen Vortrag einer Veranstaltung ab.")
     public Response getVeranstaltungsVortrag(@PathParam("vid") Long vid, @PathParam("tid") Long tid) {
         Vortrag vortrag = adminService.getVeranstaltungsVortrag(vid, tid);
         if (null == vortrag) {
@@ -220,14 +239,16 @@ public class VeranstaltungResource {
 
     @POST
     @Path("/{vid}/vortraege")
-    public Response createVortrag(@PathParam("vid") Long vid, Vortrag vortrag) {
+    @Operation(summary = "Neuen Vortrag in Veranstaltung erstellen", description = "Erstellt einen neuen Vortrag innerhalb einer Veranstaltung.")
+    public Response createVortrag(@PathParam("vid") Long vid, @RequestBody(description = "Der zu erstellende Vortrag", required = true) Vortrag vortrag) {
         Vortrag created = adminService.createVortrag(vortrag, vid);
         return Response.status(Response.Status.CREATED).entity(created).build();
     }
 
     @PUT
     @Path("/{vid}/vortraege/{tid}")
-    public Response updateVortrag(@PathParam("vid") Long vid, @PathParam("tid") Long talkId, VortragDto vortragDto) {
+    @Operation(summary = "Vortrag in Veranstaltung aktualisieren", description = "Aktualisiert einen bestehenden Vortrag innerhalb einer Veranstaltung.")
+    public Response updateVortrag(@PathParam("vid") Long vid, @PathParam("tid") Long talkId, @RequestBody(description = "Die aktualisierten Vortragsdaten", required = true) VortragDto vortragDto) {
         Vortrag updated = null;
         try {
             updated = adminService.updateVortrag(vid, talkId, ReferentResource.mapDtoToVortrag(vortragDto));
@@ -242,6 +263,7 @@ public class VeranstaltungResource {
 
     @DELETE
     @Path("/{vid}/vortraege/{id}")
+    @Operation(summary = "Vortrag aus Veranstaltung löschen", description = "Löscht einen Vortrag aus einer Veranstaltung.")
     public Response deleteVortrag(@PathParam("vid") Long vid, @PathParam("id") Long id) {
         boolean deleted = adminService.deleteVortrag(id, vid);
         if (!deleted) {
@@ -253,6 +275,7 @@ public class VeranstaltungResource {
     @POST
     @Path("/{vid}/vortraege/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Operation(summary = "Vorträge für Veranstaltung importieren", description = "Importiert Vorträge aus einer CSV-Datei und fügt sie zur Veranstaltung hinzu.")
     public Response importVortraege(@PathParam("vid") Long vid, @RestForm("file") FileUpload file) {
         try {
             int count = adminService.importVortraegeFromCsv(file.uploadedFile().toFile().toPath(), vid);
@@ -266,6 +289,7 @@ public class VeranstaltungResource {
     @GET
     @RolesAllowed({"ADMIN", "TEILNEHMER", "REFERENT"})
     @Path("/{vid}/slots")
+    @Operation(summary = "Slots einer Veranstaltung abrufen", description = "Ruft alle Zeit-Slots ab, die zu einer Veranstaltung gehören.")
     public List<EventSlotDto> getSlots(@PathParam("vid") Long vid) {
         return adminService.getAllEventSlots(vid)
                 .stream()
@@ -275,7 +299,8 @@ public class VeranstaltungResource {
 
     @POST
     @Path("/{vid}/slots")
-    public Response createSlot(@PathParam("vid") Long vid, EventSlot slot) {
+    @Operation(summary = "Neuen Slot in Veranstaltung erstellen", description = "Erstellt einen neuen Zeit-Slot innerhalb einer Veranstaltung.")
+    public Response createSlot(@PathParam("vid") Long vid, @RequestBody(description = "Der zu erstellende Slot", required = true) EventSlot slot) {
         try {
             EventSlot created = adminService.createEventSlot(slot, vid);
             return Response.status(Response.Status.CREATED).entity(SlotResource.mapSlotToDto(created)).build();
@@ -287,7 +312,8 @@ public class VeranstaltungResource {
 
     @PUT
     @Path("/{vid}/slots/{id}")
-    public Response updateSlot(@PathParam("vid") Long vid, @PathParam("id") Long id, EventSlot slot) {
+    @Operation(summary = "Slot in Veranstaltung aktualisieren", description = "Aktualisiert einen bestehenden Zeit-Slot innerhalb einer Veranstaltung.")
+    public Response updateSlot(@PathParam("vid") Long vid, @PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Slot-Daten", required = true) EventSlot slot) {
         try {
             EventSlot updated = adminService.updateEventSlot(id, slot, vid);
             if (updated == null) {
@@ -304,6 +330,7 @@ public class VeranstaltungResource {
 
     @DELETE
     @Path("/{vid}/slots/{id}")
+    @Operation(summary = "Slot aus Veranstaltung löschen", description = "Löscht einen Zeit-Slot aus einer Veranstaltung.")
     public Response deleteSlot(@PathParam("vid") Long vid, @PathParam("id") Long id) {
         boolean deleted = adminService.deleteEventSlot(id, vid);
         if (!deleted) {
@@ -315,6 +342,7 @@ public class VeranstaltungResource {
     @POST
     @Path("/{vid}/slots/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Operation(summary = "Slots für Veranstaltung importieren", description = "Importiert Zeit-Slots aus einer CSV-Datei und fügt sie zur Veranstaltung hinzu.")
     public Response importSlots(@PathParam("vid") Long vid, @RestForm("file") FileUpload file) {
         try {
             int count = adminService.importSlotsFromCsv(file.uploadedFile().toFile().toPath(), vid);
@@ -327,6 +355,7 @@ public class VeranstaltungResource {
 
     @GET
     @Path("/{vid}/stats")
+    @Operation(summary = "Statistiken für eine Veranstaltung abrufen", description = "Ruft Statistiken zu den Vorträgen einer Veranstaltung ab (z.B. Anzahl der Priorisierungen).")
     public List<VortragStatDto> getStats(@PathParam("vid") Long vid) {
         return adminService.getStats(vid);
     }
@@ -335,25 +364,29 @@ public class VeranstaltungResource {
 
     @GET
     @Path("/{vid}/plan/details")
+    @Operation(summary = "Detaillierten Plan abrufen", description = "Ruft einen detaillierten Belegungsplan für alle Räume und Slots der Veranstaltung ab.")
     public List<RaumBelegungUebersichtDto> getDetaillierterPlan(@PathParam("vid") Long vid) {
         return planService.getDetaillierterPlan(vid);
     }
 
     @GET
     @Path("/{vid}/plan/qualitaet")
+    @Operation(summary = "Qualität des Plans abrufen", description = "Ruft Kennzahlen zur Qualität der aktuellen Zuweisungsplanung ab.")
     public PlanQualitaetDto getPlanQualitaet(@PathParam("vid") Long vid) {
         return planService.getPlanQualitaet(vid);
     }
 
     @GET
     @Path("/{vid}/plan")
+    @Operation(summary = "Gesamtplan (Zuweisungen) abrufen", description = "Ruft die vollständige Liste aller Zuweisungen (Teilnehmer zu Vorträgen) ab.")
     public List<ZuweisungDto> getGesamtplan(@PathParam("vid") Long vid) {
         return planService.getGesamtplan(vid);
     }
 
     @POST
     @Path("/{vid}/optimierung/start")
-    public Response starteOptimierung(@PathParam("vid") Long vid, SolverConfigDto config) {
+    @Operation(summary = "Optimierung starten", description = "Startet den Optimierungsprozess (MiniZinc), um die Teilnehmer den Vorträgen zuzuordnen.")
+    public Response starteOptimierung(@PathParam("vid") Long vid, @RequestBody(description = "Konfiguration für den Solver", required = true) SolverConfigDto config) {
         try {
             optimierungService.starteOptimierung(vid, config);
             return Response.ok("Optimierung erfolgreich abgeschlossen.").build();

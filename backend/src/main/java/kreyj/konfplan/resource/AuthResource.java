@@ -19,12 +19,16 @@ import kreyj.konfplan.persistence.ProtokollKategorie;
 import kreyj.konfplan.service.ProtokollService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Path("/api/auth")
+@Tag(name = "Authentifizierung", description = "Endpunkte für Login und Passwort-Reset")
 public class AuthResource {
     @ConfigProperty(name = "app.mail.admin", defaultValue = "konfplan@yahoo.com")
     String adminEmail;
@@ -43,6 +47,7 @@ public class AuthResource {
     @Path("/forgot-password")
     @PermitAll
     @Transactional
+    @Operation(summary = "Passwort vergessen", description = "Fordert eine E-Mail zum Zurücksetzen des Passworts an.")
     public Response forgotPassword(@QueryParam("email") String email) {
         Nutzer nutzer = Nutzer.findByEmail(email);
 
@@ -76,7 +81,8 @@ public class AuthResource {
     @Path("/reset-password")
     @PermitAll
     @Transactional
-    public Response resetPassword(ResetRequest req) {
+    @Operation(summary = "Passwort zurücksetzen", description = "Setzt das Passwort mit einem gültigen Token zurück.")
+    public Response resetPassword(@RequestBody(description = "Das Reset-Anfrage-Objekt", required = true) ResetRequest req) {
         Nutzer nutzer = Nutzer.find("resetToken", req.token).firstResult();
         if (nutzer != null && nutzer.resetTokenExpiry.isAfter(LocalDateTime.now())) {
             nutzer.passwordHash = BcryptUtil.bcryptHash(req.newPassword);
@@ -92,7 +98,8 @@ public class AuthResource {
     @Path("/login")
     @PermitAll
     @Transactional
-    public Response login(LoginRequest loginRequest) {
+    @Operation(summary = "Login", description = "Authentifiziert einen Nutzer und gibt einen JWT-Token zurück.")
+    public Response login(@RequestBody(description = "Die Login-Anmeldeinformationen", required = true) LoginRequest loginRequest) {
         Nutzer nutzer = Nutzer.findByEmail(loginRequest.email);
 
         if (nutzer != null && BcryptUtil.matches(loginRequest.password, nutzer.passwordHash)
