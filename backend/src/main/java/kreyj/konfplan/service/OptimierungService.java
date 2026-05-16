@@ -97,10 +97,10 @@ public class OptimierungService {
         }
     }
 
-    String rufeMiniZincAuf(Path modelPath, Path dznPath, SOLVER_TYP solver,
+    String rufeMiniZincAuf(Path modelPath, Path dznPath, String solver,
                            int timeoutSeconds, int numThreads) throws IOException, InterruptedException {
         List<String> command = new ArrayList<>(Arrays.asList(
-                "minizinc", "--solver", solver.getName(),
+                "minizinc", "--solver", solver,
                 "--time-limit", String.valueOf(timeoutSeconds * 1000),
                 "--parallel", String.valueOf(numThreads)
         ));
@@ -152,12 +152,6 @@ public class OptimierungService {
         // Wenn wir eine Lösung haben, geben wir sie zurück. Dies ist der Erfolgsfall.
         if (!lastJsonSolution.isEmpty()) {
             return lastJsonSolution;
-        }
-
-        // Wenn wir hier sind, wurde kein JSON gefunden.
-        if (output.contains("=====UNSATISFIABLE=====")) {
-            // Dies ist für `solve satisfy`-Probleme, für die bewiesen wurde, dass sie keine Lösung haben.
-            throw new MinizincException(MinizincException.MZ_Exception.UNSATISFIABLE);
         }
 
         // Gibt einen leeren String zurück, wenn keine Lösung gefunden wurde, aber kein expliziter Fehler aufgetreten ist.
@@ -380,20 +374,6 @@ public class OptimierungService {
             return true;
         } catch (JsonException | ClassCastException e) {
             return false;
-        }
-    }
-
-    public enum SOLVER_TYP {
-        CP_SAT("cp-sat");
-
-        private final String name;
-
-        SOLVER_TYP(String name) {
-            this.name = name;
-        }
-
-        public String getName() {
-            return name;
         }
     }
 

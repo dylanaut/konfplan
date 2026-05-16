@@ -150,13 +150,13 @@ const belegungsplanProTag = computed(() => {
 
 const preview = (report) => {
   const vid = eventContext.selectedEvent.id;
-  window.open(`/api/reports/veranstaltung/${vid}/${report}`, '_blank');
+  window.open(`/api/reports/${vid}/${report}`, '_blank');
 };
 
 const download = async (artifact) => {
   try {
     const vid = eventContext.selectedEvent.id;
-    const response = await api.get(`/api/veranstaltungen/${vid}/export/${artifact}`, { responseType: 'blob' });
+    const response = await api.get(`/api/reports/${vid}/${artifact}-pdf`, { responseType: 'blob' });
     const file = new Blob([response.data], { type: 'application/pdf' });
     const fileURL = URL.createObjectURL(file);
     const link = document.createElement('a');

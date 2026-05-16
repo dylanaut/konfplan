@@ -36,7 +36,7 @@ public class PlanServiceTest {
 
         Planungsergebnis ergebnis = new Planungsergebnis();
         ergebnis.veranstaltung = veranstaltung;
-        ergebnis.solver = OptimierungService.SOLVER_TYP.CP_SAT;
+        ergebnis.solver = "cp-sat";
         ergebnis.timeout = 60;
         // Simulate a minimal valid JSON structure to avoid NullPointerExceptions during parsing
         ergebnis.jsonErgebnis = """

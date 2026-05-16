@@ -57,9 +57,14 @@
             <h3 class="font-bold text-lg text-gray-800">{{ event.name }}</h3>
             <p class="text-xs text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
           </div>
-          <button @click="viewMySchedule(event.id)" class="btn-primary">
-            <PrinterIcon class="w-4 h-4 mr-2" /> Druckansicht
-          </button>
+          <div class="flex gap-2">
+            <button @click="viewMySchedule(event.id)" class="btn-secondary">
+              <PrinterIcon class="w-4 h-4 mr-2" /> Druckansicht
+            </button>
+            <button @click="downloadMySchedule(event.id)" class="btn-primary">
+              <DownloadIcon class="w-4 h-4 mr-2" /> PDF
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -254,7 +259,7 @@
 import { ref, onMounted, computed, reactive } from 'vue';
 import api from '../api/axios';
 import { useAuthStore } from '../stores/auth';
-import { User as UserIcon, FileText as FileTextIcon, Calendar as CalendarIcon, Save as SaveIcon, Plus as PlusIcon, Edit as EditIcon, Trash2 as Trash2Icon, ListChecks as ListChecksIcon, Check as CheckIcon, X as XIcon, CalendarCheck as CalendarCheckIcon, Printer as PrinterIcon } from 'lucide-vue-next';
+import { User as UserIcon, FileText as FileTextIcon, Calendar as CalendarIcon, Save as SaveIcon, Plus as PlusIcon, Edit as EditIcon, Trash2 as Trash2Icon, ListChecks as ListChecksIcon, Check as CheckIcon, X as XIcon, CalendarCheck as CalendarCheckIcon, Printer as PrinterIcon, Download as DownloadIcon } from 'lucide-vue-next';
 
 const authStore = useAuthStore();
 const referent = ref({
@@ -520,7 +525,22 @@ const saveAll = async () => {
 
 const viewMySchedule = (vid) => {
   if (!vid || !authStore.user) return;
-  window.open(`/api/reports/veranstaltung/${vid}/referent/${authStore.user.id}/laufzettel`, '_blank');
+  window.open(`/api/reports/${vid}/referent/${authStore.user.id}/laufzettel`, '_blank');
+};
+
+const downloadMySchedule = async (vid) => {
+  if (!vid || !authStore.user) return;
+  try {
+    const res = await api.get(`/api/reports/${vid}/referent/${authStore.user.id}/laufzettel-pdf`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'mein-zeitplan.pdf');
+    document.body.appendChild(link);
+    link.click();
+  } catch (e) {
+    console.error('Fehler beim Download des Zeitplans:', e);
+  }
 };
 
 const formatDate = (d) => new Date(d).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' });
@@ -544,6 +564,9 @@ const formatSlotTime = (start, end) => {
 }
 .btn-primary {
   @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50;
+}
+.btn-secondary {
+  @apply inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500;
 }
 .btn-primary-sm {
   @apply inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500;

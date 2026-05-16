@@ -424,7 +424,7 @@ const openParticipantPlan = async (participant) => {
   }
   planOverlayTitle.value = `Belegungsplan für ${participant.firstName} ${participant.lastName}`;
   try {
-    const response = await api.get(`/api/reports/veranstaltung/${props.selectedVid}/teilnehmer/${participant.id}/laufzettel`, {
+    const response = await api.get(`/api/reports/${props.selectedVid}/teilnehmer/${participant.id}/laufzettel`, {
       headers: { 'Accept': 'text/html' }
     });
     planHtmlContent.value = response.data;

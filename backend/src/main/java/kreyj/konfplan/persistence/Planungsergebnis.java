@@ -16,7 +16,7 @@ public class Planungsergebnis extends VersionedEntity {
     public String jsonErgebnis;
 
     @Column(nullable = false)
-    public OptimierungService.SOLVER_TYP solver;
+    public String solver;
 
     @Column(nullable = false)
     public int timeout;

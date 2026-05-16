@@ -183,7 +183,7 @@ public class OptimierungServiceIntegrationTest {
         Veranstaltung veranstaltung = simpleSetup(true);
 
         // 1. Optimierung durchführen
-        SolverConfigDto config = new SolverConfigDto(OptimierungService.SOLVER_TYP.CP_SAT, 10, 4, 1);
+        SolverConfigDto config = new SolverConfigDto("cp-sat", 10, 4, 1);
         optimierungService.starteOptimierung(veranstaltung.id, config);
 
         // 2. Ergebnis prüfen
@@ -216,7 +216,7 @@ public class OptimierungServiceIntegrationTest {
         tn.persistAndFlush();
 
         // 1. Optimierung durchführen
-        SolverConfigDto config = new SolverConfigDto(OptimierungService.SOLVER_TYP.CP_SAT, 60, 4, 1);
+        SolverConfigDto config = new SolverConfigDto("cp-sat", 60, 4, 1);
         optimierungService.starteOptimierung(veranstaltung.id, config);
 
         // 2. Ergebnis prüfen
@@ -263,7 +263,7 @@ public class OptimierungServiceIntegrationTest {
         tn.persistAndFlush();
 
         // 1. Optimierung durchführen
-        SolverConfigDto config = new SolverConfigDto(OptimierungService.SOLVER_TYP.CP_SAT, 60, 4, 1);
+        SolverConfigDto config = new SolverConfigDto("cp-sat", 60, 4, 1);
         optimierungService.starteOptimierung(veranstaltung.id, config);
 
         // 2. Ergebnis prüfen
@@ -305,7 +305,7 @@ public class OptimierungServiceIntegrationTest {
     public void testOptimierungslauf_withComplexSetup() throws Exception {
         Veranstaltung veranstaltung = complexSetup();
         // 1. Optimierung durchführen
-        SolverConfigDto config = new SolverConfigDto(OptimierungService.SOLVER_TYP.CP_SAT, 60, 4, 2);
+        SolverConfigDto config = new SolverConfigDto("cp-sat", 60, 4, 2);
         optimierungService.starteOptimierung(veranstaltung.id, config);
 
         // 2. Ergebnis prüfen
@@ -344,7 +344,7 @@ public class OptimierungServiceIntegrationTest {
 
     @Test
     public void testOptimierung_withUnsatisfiableModel() {
-        SolverConfigDto config = new SolverConfigDto(OptimierungService.SOLVER_TYP.CP_SAT, 5, 1, 1);
+        SolverConfigDto config = new SolverConfigDto("cp-sat", 5, 1, 1);
 
         assertThatExceptionOfType(MinizincException.class)
                 .isThrownBy(() -> starteTestOptimierung(config, "unsatisfiable.mzn"));
@@ -353,7 +353,7 @@ public class OptimierungServiceIntegrationTest {
     @Test
     public void testOptimierung_withIntermediateResult() throws Exception {
         // Kurzer Timeout, um sicher eine Zwischenlösung zu erhalten
-        SolverConfigDto config = new SolverConfigDto(OptimierungService.SOLVER_TYP.CP_SAT, 1, 1, 1);
+        SolverConfigDto config = new SolverConfigDto("cp-sat", 1, 1, 1);
 
         String resultJson = starteTestOptimierung(config, "intermediate.mzn");
 
@@ -366,7 +366,7 @@ public class OptimierungServiceIntegrationTest {
     @Test
     public void testOptimierung_withNoSolutionInTime() throws Exception {
         // Sehr kurzer Timeout, damit garantiert keine Lösung gefunden wird
-        SolverConfigDto config = new SolverConfigDto(OptimierungService.SOLVER_TYP.CP_SAT, 1, 1, 1);
+        SolverConfigDto config = new SolverConfigDto("cp-sat", 1, 1, 1);
 
         assertThatExceptionOfType(MinizincException.class)
                 .isThrownBy(() -> starteTestOptimierung(config, "no-solution-in-time.mzn"));

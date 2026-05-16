@@ -14,6 +14,7 @@ import kreyj.konfplan.dto.RaumBelegungUebersichtDto;
 import kreyj.konfplan.dto.RaumplanEintragDto;
 import kreyj.konfplan.persistence.*;
 import kreyj.konfplan.service.PlanService;
+import kreyj.konfplan.service.PdfService;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.util.Collections;
@@ -25,6 +26,9 @@ public class ReportResource {
 
     @Inject
     PlanService planService;
+
+    @Inject
+    PdfService pdfService;
 
     @Inject
     JsonWebToken jwt;
@@ -54,7 +58,7 @@ public class ReportResource {
     Template freieSlotsTeilnehmer;
 
     @GET
-    @Path("/veranstaltung/{vid}/teilnehmer/{tid}/laufzettel")
+    @Path("/{vid}/teilnehmer/{tid}/laufzettel")
     @Produces(MediaType.TEXT_HTML)
     @RolesAllowed({"TEILNEHMER", "ADMIN"})
     public TemplateInstance getLaufzettelTeilnehmer(@PathParam("vid") Long vid, @PathParam("tid") Long tid) {
@@ -77,7 +81,32 @@ public class ReportResource {
     }
 
     @GET
-    @Path("/veranstaltung/{vid}/referent/{rid}/laufzettel")
+    @Path("/{vid}/teilnehmer/{tid}/laufzettel-pdf")
+    @Produces("application/pdf")
+    @RolesAllowed({"TEILNEHMER", "ADMIN"})
+    public byte[] getLaufzettelTeilnehmerPdf(@PathParam("vid") Long vid, @PathParam("tid") Long tid) {
+        Teilnehmer teilnehmer = Teilnehmer.findById(tid);
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+
+        if (teilnehmer == null || veranstaltung == null) {
+            throw new RuntimeException("Teilnehmer oder Veranstaltung nicht gefunden.");
+        }
+
+        if (!jwt.getGroups().contains("ADMIN") && !teilnehmer.email.equals(jwt.getName())) {
+            throw new RuntimeException("Zugriff verweigert.");
+        }
+
+        TemplateInstance templateInstance = laufzettelTeilnehmer.data(
+                "veranstaltung", veranstaltung,
+                "teilnehmer", teilnehmer,
+                "plan", planService.getPlanFuerTeilnehmer(teilnehmer.email, vid)
+        );
+
+        return pdfService.generatePdf(templateInstance);
+    }
+
+    @GET
+    @Path("/{vid}/referent/{rid}/laufzettel")
     @Produces(MediaType.TEXT_HTML)
     @RolesAllowed({"REFERENT", "ADMIN"})
     public TemplateInstance getLaufzettelReferent(@PathParam("vid") Long vid, @PathParam("rid") Long rid) {
@@ -100,7 +129,32 @@ public class ReportResource {
     }
 
     @GET
-    @Path("/veranstaltung/{vid}/raum/{rid}/belegungsplan")
+    @Path("/{vid}/referent/{rid}/laufzettel-pdf")
+    @Produces("application/pdf")
+    @RolesAllowed({"REFERENT", "ADMIN"})
+    public byte[] getLaufzettelReferentPdf(@PathParam("vid") Long vid, @PathParam("rid") Long rid) {
+        Referent referent = Referent.findById(rid);
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+
+        if (referent == null || veranstaltung == null) {
+            throw new RuntimeException("Referent oder Veranstaltung nicht gefunden.");
+        }
+
+        if (!jwt.getGroups().contains("ADMIN") && !referent.email.equals(jwt.getName())) {
+            throw new RuntimeException("Zugriff verweigert.");
+        }
+
+        TemplateInstance templateInstance = laufzettelReferent.data(
+                "veranstaltung", veranstaltung,
+                "referent", referent,
+                "plan", planService.getPlanFuerReferent(referent.email, vid)
+        );
+
+        return pdfService.generatePdf(templateInstance);
+    }
+
+    @GET
+    @Path("/{vid}/raum/{rid}/belegungsplan")
     @Produces(MediaType.TEXT_HTML)
     @RolesAllowed("ADMIN")
     public TemplateInstance getRaumbelegungsplan(@PathParam("vid") Long vid, @PathParam("rid") Long rid) {
@@ -122,7 +176,31 @@ public class ReportResource {
     }
 
     @GET
-    @Path("/veranstaltung/{vid}/uebersicht/raeume")
+    @Path("/{vid}/raum/{rid}/belegungsplan-pdf")
+    @Produces("application/pdf")
+    @RolesAllowed("ADMIN")
+    public byte[] getRaumbelegungsplanPdf(@PathParam("vid") Long vid, @PathParam("rid") Long rid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        Raum raum = Raum.findById(rid);
+
+        if (raum == null || veranstaltung == null) {
+            throw new RuntimeException("Raum oder Veranstaltung nicht gefunden.");
+        }
+
+        Map<Long, Map<Long, RaumplanEintragDto>> raumplan = planService.getRaumbelegungsplan(vid);
+        Map<Long, RaumplanEintragDto> belegungFuerRaum = raumplan.getOrDefault(rid, Collections.emptyMap());
+
+        TemplateInstance templateInstance = raumbelegungsplan.data(
+                "veranstaltung", veranstaltung,
+                "raum", raum,
+                "belegung", belegungFuerRaum
+        );
+
+        return pdfService.generatePdf(templateInstance);
+    }
+
+    @GET
+    @Path("/{vid}/raeume")
     @Produces(MediaType.TEXT_HTML)
     @RolesAllowed("ADMIN")
     public TemplateInstance getUebersichtRaeume(@PathParam("vid") Long vid) {
@@ -135,7 +213,21 @@ public class ReportResource {
     }
 
     @GET
-    @Path("/veranstaltung/{vid}/uebersicht/freie-slots-referenten")
+    @Path("/{vid}/raeume-pdf")
+    @Produces("application/pdf")
+    @RolesAllowed("ADMIN")
+    public byte[] getUebersichtRaeumePdf(@PathParam("vid") Long vid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (veranstaltung == null) {
+            throw new RuntimeException("Veranstaltung nicht gefunden.");
+        }
+        List<RaumBelegungUebersichtDto> plan = planService.getDetaillierterPlan(vid);
+        TemplateInstance templateInstance = uebersichtRaeume.data("veranstaltung", veranstaltung).data("plan", plan);
+        return pdfService.generatePdf(templateInstance);
+    }
+
+    @GET
+    @Path("/{vid}/freie-slots-referenten")
     @Produces(MediaType.TEXT_HTML)
     @RolesAllowed("ADMIN")
     public TemplateInstance getFreieSlotsReferenten(@PathParam("vid") Long vid) {
@@ -151,7 +243,24 @@ public class ReportResource {
     }
 
     @GET
-    @Path("/veranstaltung/{vid}/uebersicht/freie-slots-teilnehmer")
+    @Path("/{vid}/freie-slots-referenten-pdf")
+    @Produces("application/pdf")
+    @RolesAllowed("ADMIN")
+    public byte[] getFreieSlotsReferentenPdf(@PathParam("vid") Long vid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (veranstaltung == null) {
+            throw new RuntimeException("Veranstaltung nicht gefunden.");
+        }
+        Map<Long, List<EventSlot>> freieSlots = planService.getFreieSlotsReferenten(vid);
+        List<Referent> referenten = Referent.find("SELECT r FROM Referent r JOIN r.veranstaltungen v WHERE v.id = ?1", vid).list();
+        TemplateInstance templateInstance = freieSlotsReferenten.data("veranstaltung", veranstaltung)
+                .data("freieSlots", freieSlots)
+                .data("referenten", referenten);
+        return pdfService.generatePdf(templateInstance);
+    }
+
+    @GET
+    @Path("/{vid}/freie-slots-teilnehmer")
     @Produces(MediaType.TEXT_HTML)
     @RolesAllowed("ADMIN")
     public TemplateInstance getFreieSlotsTeilnehmer(@PathParam("vid") Long vid) {
@@ -164,5 +273,22 @@ public class ReportResource {
         return freieSlotsTeilnehmer.data("veranstaltung", veranstaltung)
                 .data("freieSlots", freieSlots)
                 .data("teilnehmer", teilnehmer);
+    }
+
+    @GET
+    @Path("/{vid}/freie-slots-teilnehmer-pdf")
+    @Produces("application/pdf")
+    @RolesAllowed("ADMIN")
+    public byte[] getFreieSlotsTeilnehmerPdf(@PathParam("vid") Long vid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (veranstaltung == null) {
+            throw new RuntimeException("Veranstaltung nicht gefunden.");
+        }
+        Map<Long, List<EventSlot>> freieSlots = planService.getFreieSlotsTeilnehmer(vid);
+        List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", vid).list();
+        TemplateInstance templateInstance = freieSlotsTeilnehmer.data("veranstaltung", veranstaltung)
+                .data("freieSlots", freieSlots)
+                .data("teilnehmer", teilnehmer);
+        return pdfService.generatePdf(templateInstance);
     }
 }

@@ -24,11 +24,6 @@
           <FileTextIcon class="w-3.5 h-3.5"/>
           Türschilder
         </button>
-        <button @click="downloadExport"
-                class="flex items-center gap-2 bg-gray-800 text-white px-3 py-1.5 rounded-lg hover:bg-gray-700 transition shadow-md text-xs font-bold">
-          <DownloadIcon class="w-3.5 h-3.5"/>
-          CSV Export
-        </button>
       </div>
     </div>
 
@@ -235,7 +230,6 @@ import api from '../api/axios';
 import {useEventContextStore} from '../stores/eventContext';
 import {
   Calendar as CalendarIcon,
-  Download as DownloadIcon,
   FileText as FileTextIcon,
   Loader as LoaderIcon,
   PlusCircle as PlusCircleIcon,
@@ -877,7 +871,8 @@ const startOptimization = async (solverConfig) => {
 
 const downloadStundenplan = async () => {
   try {
-    const res = await api.get(`/api/veranstaltungen/${selectedVid.value}/export/stundenplan`, { responseType: 'blob' });
+    alert("Download des Stundenplans nicht implementiert"); // TODO Download des Stundenplans implementieren
+    const res = await api.get(`/api/reports/${selectedVid.value}/raeume-pdf`, { responseType: 'blob' });
     const url = window.URL.createObjectURL(new Blob([res.data]));
     const link = document.createElement('a');
     link.href = url;
@@ -891,7 +886,7 @@ const downloadStundenplan = async () => {
 
 const downloadRaumschilder = async () => {
   try {
-    const res = await api.get(`/api/veranstaltungen/${selectedVid.value}/export/raumschilder`, { responseType: 'blob' });
+    const res = await api.get(`/api/reports/${selectedVid.value}/raeume-pdf`, { responseType: 'blob' });
     const url = window.URL.createObjectURL(new Blob([res.data]));
     const link = document.createElement('a');
     link.href = url;
@@ -905,7 +900,7 @@ const downloadRaumschilder = async () => {
 
 const downloadTuerschilder = async () => {
   try {
-    const res = await api.get(`/api/veranstaltungen/${selectedVid.value}/export/tuerschilder`, {responseType: 'blob'});
+    const res = await api.get(`/api/reports/${selectedVid.value}/freie-slots-referenten-pdf`, {responseType: 'blob'});
     const url = window.URL.createObjectURL(new Blob([res.data]));
     const link = document.createElement('a');
     link.href = url;
@@ -913,20 +908,7 @@ const downloadTuerschilder = async () => {
     document.body.appendChild(link);
     link.click();
   } catch (e) {
-    console.error('Fehler beim Download der Tuerschilder:', e);
-  }
-};
-const downloadExport = async () => {
-  try {
-    const res = await api.get(`/api/veranstaltungen/${selectedVid.value}/export/csv`, {responseType: 'blob'});
-    const url = window.URL.createObjectURL(new Blob([res.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'planung.csv');
-    document.body.appendChild(link);
-    link.click();
-  } catch (e) {
-    console.error('Fehler beim Download des Export:', e);
+    console.error('Fehler beim Download der Türschilder:', e);
   }
 };
 

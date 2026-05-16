@@ -95,7 +95,8 @@ public class AuthResource {
     public Response login(LoginRequest loginRequest) {
         Nutzer nutzer = Nutzer.findByEmail(loginRequest.email);
 
-        if (nutzer != null && BcryptUtil.matches(loginRequest.password, nutzer.passwordHash) && nutzer.isActive) {
+        if (nutzer != null && BcryptUtil.matches(loginRequest.password, nutzer.passwordHash)
+                && nutzer.isActive) {
             String token = Jwt.issuer("https://konfplan.kreyj")
                     .upn(nutzer.email)
                     .subject(nutzer.email)
