@@ -311,7 +311,7 @@ public class ReferentResource {
         dto.id = v.id;
         dto.version = v.version;
         dto.titel = v.titel;
-        dto.abstractText = v.inhalt;
+        dto.inhalt = v.inhalt;
         dto.veranstaltungId = v.veranstaltung.id;
         dto.veranstaltungName = v.veranstaltung.name;
         dto.referentId = v.referent.id;
@@ -321,14 +321,14 @@ public class ReferentResource {
         if (v instanceof Wahlvortrag wahlvortrag) {
             dto.wiederholbar = wahlvortrag.wiederholbar;
             dto.maxWiederholungen = wahlvortrag.maxWiederholungen;
-            dto.verfuegIds = wahlvortrag.wahlSlots.stream()
+            dto.verfuegbareSlotIds = wahlvortrag.getVerfuegbareSlots().stream()
                     .map(s -> s.id)
                     .collect(Collectors.toList());
         } else if (v instanceof Pflichtvortrag pflichtvortrag) {
             dto.istPflicht = true;
             dto.pflichtgruppe = pflichtvortrag.pflichtgruppe;
             if (pflichtvortrag.pflichtslot != null) {
-                dto.verfuegIds = List.of(pflichtvortrag.pflichtslot.id);
+                dto.verfuegbareSlotIds = List.of(pflichtvortrag.pflichtslot.id);
             }
         }
 
@@ -341,7 +341,7 @@ public class ReferentResource {
         vortrag.id = dto.id;
         vortrag.version = dto.version;
         vortrag.titel = dto.titel;
-        vortrag.inhalt = dto.abstractText;
+        vortrag.inhalt = dto.inhalt;
         vortrag.veranstaltung = Veranstaltung.findById(dto.veranstaltungId);
         vortrag.referent = Referent.findById(dto.referentId);
         if (vortrag instanceof Wahlvortrag wahlvortrag) {

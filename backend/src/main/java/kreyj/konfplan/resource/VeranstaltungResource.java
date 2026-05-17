@@ -251,7 +251,7 @@ public class VeranstaltungResource {
     public Response updateVortrag(@PathParam("vid") Long vid, @PathParam("tid") Long talkId, @RequestBody(description = "Die aktualisierten Vortragsdaten", required = true) VortragDto vortragDto) {
         Vortrag updated = null;
         try {
-            updated = adminService.updateVortrag(vid, talkId, ReferentResource.mapDtoToVortrag(vortragDto));
+            updated = adminService.updateVortrag(vid, talkId, vortragDto);
         } catch (OptimisticLockException e) {
             return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
         }

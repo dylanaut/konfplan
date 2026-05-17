@@ -9,6 +9,7 @@ import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.dto.NutzerDto;
+import kreyj.konfplan.dto.VortragDto;
 import kreyj.konfplan.dto.VortragStatDto;
 import kreyj.konfplan.dto.csv.AdminCsvDto;
 import kreyj.konfplan.dto.csv.EventSlotCsvDto;
@@ -737,7 +738,7 @@ public class AdminService {
     }
 
     @Transactional
-    public Vortrag updateVortrag(Long veranstaltungId, Long talkId, Vortrag updated) {
+    public Vortrag updateVortrag(Long veranstaltungId, Long talkId, VortragDto updated) {
         Vortrag entity = Vortrag.findById(talkId);
         if (entity == null || !entity.veranstaltung.id.equals(veranstaltungId)) {
             return null;
@@ -748,23 +749,23 @@ public class AdminService {
         }
 
         // Check if type changes (e.g., Wahlvortrag to Pflichtvortrag or vice versa)
-        if (entity.istPflicht() != updated.istPflicht()) {
+        if (entity.istPflicht() != updated.istPflicht) {
             throw new IllegalArgumentException("Der Vortragstyp kann nicht geändert werden.");
         }
 
         entity.titel = updated.titel;
         entity.inhalt = updated.inhalt;
 
-        if (entity instanceof Pflichtvortrag oldPv && updated instanceof Pflichtvortrag newPv) {
+        if (entity instanceof Pflichtvortrag oldPv && updated.istPflicht) {
             // Store old values for comparison
             String oldGruppe = oldPv.pflichtgruppe;
             EventSlot oldSlot = oldPv.pflichtslot;
             Raum oldRaum = oldPv.pflichtraum;
 
             // Update persistence with new values
-            oldPv.pflichtgruppe = newPv.pflichtgruppe;
-            oldPv.pflichtslot = newPv.pflichtslot;
-            oldPv.pflichtraum = newPv.pflichtraum;
+            oldPv.pflichtgruppe = updated.pflichtgruppe;
+            oldPv.pflichtslot = EventSlot.findById(updated.pflichtSlotId);
+            oldPv.pflichtraum = Raum.findById(updated.pflichtRaumId);
 
             // Use the updated persistence for validations
             if (oldPv.pflichtslot == null || oldPv.pflichtraum == null || oldPv.pflichtgruppe == null || oldPv.pflichtgruppe.isBlank()) {
@@ -844,10 +845,16 @@ public class AdminService {
                 updateTeilnehmerAvailability(teilnehmerDerGruppe, oldPv.pflichtslot, false, oldPv.id);
             }
 
-        } else if (entity instanceof Wahlvortrag wv && updated instanceof Wahlvortrag updatedWv) {
-            wv.wiederholbar = updatedWv.wiederholbar;
-            wv.maxWiederholungen = updatedWv.maxWiederholungen;
-            wv.wahlSlots = updatedWv.wahlSlots; // Assuming this is a collection and handled by JPA
+        } else if (entity instanceof Wahlvortrag wv && ! updated.istPflicht ) {
+            wv.wiederholbar = updated.wiederholbar;
+            wv.maxWiederholungen = updated.maxWiederholungen;
+            wv.clearVerfuegbareSlots();
+            updated.verfuegbareSlotIds.forEach(slotId -> {
+                EventSlot slot = EventSlot.findById(slotId);
+                if (slot != null && slot.veranstaltung.id.equals(veranstaltungId)) {
+                    wv.addVerfuegbarenSlot(slot);
+                }
+            });
         }
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag aktualisiert", "Vortrag '" + entity.titel + "' aktualisiert.", entity.id);
         return entity;

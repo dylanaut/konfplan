@@ -7,6 +7,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.dto.VortragDto;
 import kreyj.konfplan.persistence.*;
 import kreyj.konfplan.service.AdminService;
 import org.junit.jupiter.api.Assertions;
@@ -327,15 +328,16 @@ public class PflichtvortragServiceTest {
         assertThat(isRaumAvailable(raum2, slot2)).isTrue();
 
         // Update PV to change slot to slot2
-        Pflichtvortrag updatedPv = new Pflichtvortrag();
-        updatedPv.titel = "PV Updated Slot";
-        updatedPv.referent = referent;
-        updatedPv.pflichtgruppe = "Gruppe A";
-        updatedPv.pflichtraum = raum2;
-        updatedPv.pflichtslot = slot2;
-        updatedPv.version = 0L;
+        VortragDto updatedPvDto = new VortragDto();
+        updatedPvDto.istPflicht = true;
+        updatedPvDto.titel = "PV Updated Slot";
+        updatedPvDto.referentId = referent.id;
+        updatedPvDto.pflichtgruppe = "Gruppe A";
+        updatedPvDto.pflichtRaumId = raum2.id;
+        updatedPvDto.pflichtSlotId = slot2.id;
+        updatedPvDto.version = 0L;
 
-        adminService.updateVortrag(veranstaltung.id, initialPv.id, updatedPv);
+        adminService.updateVortrag(veranstaltung.id, initialPv.id, updatedPvDto);
 
         // Verify new state
         assertThat(isTeilnehmerAvailable(teilnehmer1, slot1)).isTrue(); // Old slot freed
@@ -365,12 +367,13 @@ public class PflichtvortragServiceTest {
         });
 
         // Attempt to update PV to change slot to slot2
-        Pflichtvortrag updatedPv = new Pflichtvortrag();
+        VortragDto updatedPv = new VortragDto();
+        updatedPv.istPflicht = true;
         updatedPv.titel = "PV Updated Slot";
-        updatedPv.referent = referent;
+        updatedPv.referentId = referent.id;
         updatedPv.pflichtgruppe = "Gruppe A";
-        updatedPv.pflichtraum = raum2;
-        updatedPv.pflichtslot = slot2;
+        updatedPv.pflichtRaumId = raum2.id;
+        updatedPv.pflichtSlotId = slot2.id;
         updatedPv.version = 0L;
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
@@ -401,12 +404,15 @@ public class PflichtvortragServiceTest {
         assertThat(isRaumAvailable(raum2, slot1)).isTrue();
 
         // Update PV to change room to raum2
-        Pflichtvortrag updatedPv = new Pflichtvortrag();
+        VortragDto updatedPv = new VortragDto();
+        updatedPv.istPflicht = true;
         updatedPv.titel = "PV Updated Raum";
-        updatedPv.referent = referent;
+        updatedPv.referentId = referent.id;
+        ;
         updatedPv.pflichtgruppe = "Gruppe A";
-        updatedPv.pflichtraum = raum2; // Kapazität 10
-        updatedPv.pflichtslot = slot1;
+        updatedPv.pflichtRaumId = raum2.id;
+        ; // Kapazität 10
+        updatedPv.pflichtSlotId = slot1.id;
         updatedPv.version = 0L;
 
         adminService.updateVortrag(veranstaltung.id, initialPv.id, updatedPv);
@@ -438,12 +444,15 @@ public class PflichtvortragServiceTest {
         });
 
         // Attempt to update PV to change room to raum2
-        Pflichtvortrag updatedPv = new Pflichtvortrag();
+        VortragDto updatedPv = new VortragDto();
+        updatedPv.istPflicht = true;
         updatedPv.titel = "PV Updated Raum";
-        updatedPv.referent = referent;
+        updatedPv.referentId = referent.id;
+        ;
         updatedPv.pflichtgruppe = "Gruppe A";
-        updatedPv.pflichtraum = raum2;
-        updatedPv.pflichtslot = slot1;
+        updatedPv.pflichtRaumId = raum2.id;
+        ;
+        updatedPv.pflichtSlotId = slot1.id;
         updatedPv.version = 0L;
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
@@ -477,12 +486,13 @@ public class PflichtvortragServiceTest {
         adminService.createVortrag(pv2, veranstaltung.id);
 
         // Attempt to update PV1 to use raum2 (which is occupied by PV2)
-        Pflichtvortrag updatedPv1 = new Pflichtvortrag();
+        VortragDto updatedPv1 = new VortragDto();
+        updatedPv1.istPflicht = true;
         updatedPv1.titel = "PV1 Updated Raum";
-        updatedPv1.referent = referent;
+        updatedPv1.referentId = referent.id;
         updatedPv1.pflichtgruppe = "Gruppe A";
-        updatedPv1.pflichtraum = raum2; // Try to change to raum2
-        updatedPv1.pflichtslot = slot1;
+        updatedPv1.pflichtRaumId = raum2.id; // Try to change to raum2
+        updatedPv1.pflichtSlotId = slot1.id;
         updatedPv1.version = 0L;
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
@@ -512,12 +522,13 @@ public class PflichtvortragServiceTest {
         assertThat(isTeilnehmerAvailable(teilnehmer3, slot1)).isTrue(); // Gruppe B
 
         // Update PV to change group to Gruppe B
-        Pflichtvortrag updatedPv = new Pflichtvortrag();
+        VortragDto updatedPv = new VortragDto();
+        updatedPv.istPflicht = true;
         updatedPv.titel = "PV Updated Gruppe";
-        updatedPv.referent = referent;
+        updatedPv.referentId = referent.id;
         updatedPv.pflichtgruppe = "Gruppe B";
-        updatedPv.pflichtraum = raum2;
-        updatedPv.pflichtslot = slot1;
+        updatedPv.pflichtRaumId = raum2.id;
+        updatedPv.pflichtSlotId = slot1.id;
         updatedPv.version = 0L;
 
         adminService.updateVortrag(veranstaltung.id, initialPv.id, updatedPv);
@@ -550,12 +561,13 @@ public class PflichtvortragServiceTest {
         });
 
         // Attempt to update PV to change group to Gruppe B
-        Pflichtvortrag updatedPv = new Pflichtvortrag();
+        VortragDto updatedPv = new VortragDto();
+        updatedPv.istPflicht = true;
         updatedPv.titel = "PV Updated Gruppe";
-        updatedPv.referent = referent;
+        updatedPv.referentId = referent.id;
         updatedPv.pflichtgruppe = "Gruppe B";
-        updatedPv.pflichtraum = raum2;
-        updatedPv.pflichtslot = slot1;
+        updatedPv.pflichtRaumId = raum2.id;
+        updatedPv.pflichtSlotId = slot1.id;
         updatedPv.version = 0L;
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
@@ -589,12 +601,13 @@ public class PflichtvortragServiceTest {
         adminService.createVortrag(pv2, veranstaltung.id);
 
         // Attempt to update PV1 to use Gruppe B (which is occupied by PV2)
-        Pflichtvortrag updatedPv1 = new Pflichtvortrag();
+        VortragDto updatedPv1 = new VortragDto();
+        updatedPv1.istPflicht = true;
         updatedPv1.titel = "PV1 Updated Gruppe";
-        updatedPv1.referent = referent;
+        updatedPv1.referentId = referent.id;
         updatedPv1.pflichtgruppe = "Gruppe B"; // Try to change to Gruppe B
-        updatedPv1.pflichtraum = raum2;
-        updatedPv1.pflichtslot = slot1;
+        updatedPv1.pflichtRaumId = raum2.id;
+        updatedPv1.pflichtSlotId = slot1.id;
         updatedPv1.version = 0L;
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {

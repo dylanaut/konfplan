@@ -169,8 +169,8 @@ class VeranstaltungResourceTest extends ResourceTestBase {
                 .extract().as(VortragDto.class);
 
         // Ensure versions are the same initially
-        assertThat(adminFetchedVortrag.version).isEqualTo(referentFetchedVortrag.version);
         assertThat(adminFetchedVortrag.version).isNotNull();
+        assertThat(adminFetchedVortrag.version).isEqualTo(referentFetchedVortrag.version);
 
         // 4. Admin updates vortrag title (successful, increments version)
         adminFetchedVortrag.titel = "Admin Updated Vortrag Titel";
@@ -179,7 +179,6 @@ class VeranstaltungResourceTest extends ResourceTestBase {
                 .body(adminFetchedVortrag)
                 .when().put("/api/veranstaltungen/{vid}/vortraege/{vortragId}", testVid, talkId)
                 .then()
-                .log().everything()
                 .statusCode(OK.getStatusCode())
                 .body("titel", is("Admin Updated Vortrag Titel"))
                 .body("version", is(adminFetchedVortrag.version.intValue() + 1)); // Version should increment

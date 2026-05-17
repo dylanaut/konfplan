@@ -283,27 +283,27 @@ public class ReferentService {
 
     private void updateVortragFromDto(Vortrag vortrag, VortragDto dto) {
         vortrag.titel = dto.titel;
-        vortrag.inhalt = dto.abstractText;
+        vortrag.inhalt = dto.inhalt;
 
         if (vortrag instanceof Wahlvortrag wahlvortrag) {
             wahlvortrag.wiederholbar = dto.wiederholbar;
             if (dto.maxWiederholungen > 0) {
                 wahlvortrag.maxWiederholungen = dto.maxWiederholungen;
             }
-            if (dto.verfuegIds != null) {
-                wahlvortrag.wahlSlots.clear();
-                for (Long sid : dto.verfuegIds) {
+            if (dto.verfuegbareSlotIds != null) {
+                wahlvortrag.clearVerfuegbareSlots();
+                for (Long sid : dto.verfuegbareSlotIds) {
                     EventSlot slot = EventSlot.findById(sid);
                     // Validierung: Slot muss zur Veranstaltung des Vortrags gehören
                     if (slot != null && slot.veranstaltung.id.equals(vortrag.veranstaltung.id)) {
-                        wahlvortrag.wahlSlots.add(slot);
+                        wahlvortrag.addVerfuegbarenSlot(slot);
                     }
                 }
             }
         } else if (vortrag instanceof Pflichtvortrag pflichtvortrag) {
             pflichtvortrag.pflichtgruppe = dto.pflichtgruppe;
-            if (dto.verfuegIds != null && !dto.verfuegIds.isEmpty()) {
-                EventSlot slot = EventSlot.findById(dto.verfuegIds.get(0));
+            if (dto.verfuegbareSlotIds != null && !dto.verfuegbareSlotIds.isEmpty()) {
+                EventSlot slot = EventSlot.findById(dto.verfuegbareSlotIds.get(0));
                 if (slot != null && slot.veranstaltung.id.equals(vortrag.veranstaltung.id)) {
                     pflichtvortrag.pflichtslot = slot;
                 }

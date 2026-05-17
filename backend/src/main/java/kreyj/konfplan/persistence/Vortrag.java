@@ -6,6 +6,11 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @Table(name = "Vortrag")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
@@ -31,9 +36,32 @@ public abstract class Vortrag extends VersionedEntity {
     @JoinColumn(name = "veranstaltung_id")
     @JsonIgnoreProperties({"vortraege", "nutzer", "gebaeude", "eventSlots"})
     public Veranstaltung veranstaltung;
+    @ManyToMany
+    @JoinTable(name = "Vortrag_EventSlot",
+            joinColumns = @JoinColumn(name = "vortrag_id"),
+            inverseJoinColumns = @JoinColumn(name = "eventslot_id"))
+    private Set<EventSlot> verfuegbareSlots = new HashSet<>();
 
     @JsonProperty("istPflicht")
     public abstract boolean istPflicht();
 
     public Vortrag() {}
+
+    public Set<EventSlot> getVerfuegbareSlots() {
+        return Collections.unmodifiableSet(verfuegbareSlots);
+    }
+
+    public void addVerfuegbarenSlot(EventSlot slot) {
+        verfuegbareSlots.add(slot);
+    }
+
+    public void removeVerfuegbarenSlot(EventSlot slot) {
+        verfuegbareSlots.remove(slot);
+    }
+
+    public void clearVerfuegbareSlots() {
+        for (EventSlot eventSlot : new ArrayList<>(verfuegbareSlots)) {
+            removeVerfuegbarenSlot(eventSlot);
+        }
+    }
 }

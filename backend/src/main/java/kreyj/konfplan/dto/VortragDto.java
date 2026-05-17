@@ -9,12 +9,14 @@ import java.util.List;
 public class VortragDto extends AbstractVersionedDto {
     public Long id;
     public String titel;
-    public String abstractText;
+    public String inhalt;
     public boolean istPflicht;
     public boolean wiederholbar;
-    public List<Long> verfuegIds = new ArrayList<>();
+    public List<Long> verfuegbareSlotIds = new ArrayList<>();
 
     public String pflichtgruppe;
+    public Long pflichtSlotId;
+    public Long pflichtRaumId;
     public int maxWiederholungen;
     public Long veranstaltungId;
     public String veranstaltungName;
