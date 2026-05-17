@@ -23,6 +23,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.joining;
@@ -270,7 +271,7 @@ public class OptimierungService {
             int wvIdx = 0;
             for (Wahlvortrag v : wahlvortraege) {
                 Prioritaet p = Prioritaet.find("teilnehmer = ?1 and vortrag = ?2", tn, v).firstResult();
-                sb.append(p != null ? p.prioWert : wvIdx + 1);
+                sb.append(p != null ? p.prioWert : 0);
                 if (++wvIdx < wvSize) {
                     sb.append(",");
                 } else {
@@ -294,9 +295,9 @@ public class OptimierungService {
         for (Teilnehmer tn : teilnehmer) {
             sb.append("\n");
             int sIdx = 0;
-            Set<EventSlot> tnSlots = new HashSet<>(tn.verfuegbareSlots);
+            Set<Long> verfSlotIds = tn.getVerfuegbareSlots().stream().map(s -> s.id).collect(Collectors.toSet());
             for (EventSlot s : slots) {
-                sb.append(tnSlots.contains(s) ? "true" : "false");
+                sb.append(verfSlotIds.contains(s.id) ? "true" : "false");
                 if (++sIdx < slotSize) {
                     sb.append(",");
                 } else {

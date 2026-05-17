@@ -6,10 +6,7 @@ import jakarta.validation.constraints.NotEmpty;
 import kreyj.konfplan.persistence.converter.LocalDateTimeConverter;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Entity
@@ -44,17 +41,35 @@ public class Veranstaltung extends VersionedEntity {
             joinColumns = @JoinColumn(name = "veranstaltung_id"),
             inverseJoinColumns = @JoinColumn(name = "gebaeude_id")
     )
-    public List<Gebaeude> gebaeude = new ArrayList<>();
+    private List<Gebaeude> gebaeude = new ArrayList<>();
+
+    public List<Gebaeude> getGebaeude() {
+        return Collections.unmodifiableList(gebaeude);
+    }
+
 
     @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL)
-    public Set<EventSlot> eventSlots = new HashSet<>();
+    private Set<EventSlot> eventSlots = new HashSet<>();
+
+    public Set<EventSlot> getEventSlots() {
+        return Collections.unmodifiableSet(eventSlots);
+    }
 
     @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL)
-    public Set<Vortrag> vortraege = new HashSet<>();
+    private Set<Vortrag> vortraege = new HashSet<>();
+
+
+    public Set<Vortrag> getVortraege() {
+        return Collections.unmodifiableSet(vortraege);
+    }
 
     @ManyToMany(mappedBy = "veranstaltungen")
     @JsonIgnoreProperties("veranstaltungen")
-    public Set<Nutzer> nutzer = new HashSet<>();
+    private Set<Nutzer> nutzer = new HashSet<>();
+
+    public Set<Nutzer> getNutzer() {
+        return Collections.unmodifiableSet(nutzer);
+    }
 
     @NotEmpty(message = "Veranstaltung muss mindestens eine/n Organisator/in haben")
     public Set<Admin> organisatoren() {
@@ -83,12 +98,26 @@ public class Veranstaltung extends VersionedEntity {
         slot.veranstaltung = this;
     }
 
+    public void removeSlot(EventSlot slot) {
+        if (this.eventSlots.contains(slot)) {
+            this.eventSlots.remove(slot);
+            slot.veranstaltung = null;
+        }
+    }
+
     public void addVortrag(Vortrag vortrag) {
         if (this.vortraege.contains(vortrag)) {
             return;
         }
         this.vortraege.add(vortrag);
         vortrag.veranstaltung = this;
+    }
+
+    public void removeVortrag(Vortrag vortrag) {
+        if (this.vortraege.contains(vortrag)) {
+            this.vortraege.remove(vortrag);
+            vortrag.veranstaltung = null;
+        }
     }
 
     public void addNutzer(Nutzer nutzer) {
@@ -99,11 +128,26 @@ public class Veranstaltung extends VersionedEntity {
         nutzer.addVeranstaltung(this);
     }
 
+    public void removeNutzer(Nutzer nutzer) {
+        this.nutzer.remove(nutzer);
+
+        if (nutzer.getVeranstaltungen().contains(this)) {
+            nutzer.removeVeranstaltung(this);
+        }
+    }
+
     public void addGebaeude(Gebaeude gebaeude) {
         if (this.gebaeude.contains(gebaeude)) {
             return;
         }
         this.gebaeude.add(gebaeude);
         gebaeude.veranstaltungen.add(this);
+    }
+
+    public void clearGebaeude() {
+        for (Gebaeude g : this.gebaeude) {
+            g.veranstaltungen.remove(this);
+        }
+        this.gebaeude.clear();
     }
 }

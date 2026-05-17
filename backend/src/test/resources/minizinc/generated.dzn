@@ -1,4 +1,5 @@
-max_instanzen = 6;
+%Generiert am: 17.05.2026 11:15,Version: 1.0;
+max_instanzen = 2;
 opt_referent_raumtreue = true;
 
 n_slots = 12;
@@ -74,39 +75,39 @@ wahlvortraege = [
 ];
 
 prioritaeten = [|
-2,2,1,4,5,6,7,8,9,10,11,12,13,14,15,16 | % 26: janet.ahmad@rks-linz.de
-4,2,3,4,1,6,7,8,9,10,11,12,13,14,15,16 | % 27: osama.amer@rks-linz.de
-6,2,3,4,5,6,1,8,9,10,11,12,13,14,15,16 | % 28: michele.chmiel@rks-linz.de
-3,2,3,1,5,6,7,8,9,10,11,12,13,14,15,16 | % 29: sarina.golmohamadi@rks-linz.de
-7,2,3,4,5,6,7,1,9,10,11,12,13,14,15,16 | % 30: inas.hajoula@rks-linz.de
-2,2,1,4,5,6,7,8,9,10,11,12,13,14,15,16 | % 31: luca.henseler@rks-linz.de
-4,2,3,4,1,6,7,8,9,10,11,12,13,14,15,16 | % 32: fabrice.koechy@rks-linz.de
-8,2,3,4,5,6,7,8,1,10,11,12,13,14,15,16 | % 33: amelie.kroener@rks-linz.de
-8,2,3,4,5,6,7,8,1,10,11,12,13,14,15,16 | % 34: lual.lual@rks-linz.de
-3,2,3,1,5,6,7,8,9,10,11,12,13,14,15,16 | % 35: lena.mertensacker@rks-linz.de
-4,2,3,4,1,6,7,8,9,10,11,12,13,14,15,16 | % 36: amy.sander@rks-linz.de
-5,2,3,4,5,1,7,8,9,10,11,12,13,14,15,16 | % 37: emely.schmitz@rks-linz.de
-2,2,1,4,5,6,7,8,9,10,11,12,13,14,15,16 | % 38: sofiia.trufanova@rks-linz.de
-3,2,3,1,5,6,7,8,9,10,11,12,13,14,15,16 | % 39: hayal.yaldir@rks-linz.de
-2,2,1,4,5,6,7,8,9,10,11,12,13,14,15,16 |]; % 40: scalanaut@gmail.com
+2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0 | % 26: janet.ahmad@rks-linz.de
+4,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0 | % 27: osama.amer@rks-linz.de
+6,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0 | % 28: michele.chmiel@rks-linz.de
+3,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0 | % 29: sarina.golmohamadi@rks-linz.de
+7,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0 | % 30: inas.hajoula@rks-linz.de
+2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0 | % 31: luca.henseler@rks-linz.de
+4,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0 | % 32: fabrice.koechy@rks-linz.de
+8,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0 | % 33: amelie.kroener@rks-linz.de
+8,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0 | % 34: lual.lual@rks-linz.de
+3,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0 | % 35: lena.mertensacker@rks-linz.de
+4,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0 | % 36: amy.sander@rks-linz.de
+5,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0 | % 37: emely.schmitz@rks-linz.de
+2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0 | % 38: sofiia.trufanova@rks-linz.de
+3,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0 | % 39: hayal.yaldir@rks-linz.de
+2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0 |]; % 40: scalanaut@gmail.com
 
 %In welchen Slots jeder Teilnehmer für Wahlvorträge planbar ist:
 tn_verfuegbar = [| %% Slot 1..12
-true,true,true,true,true,true,true,true,true,true,true,true | % 26: janet.ahmad@rks-linz.de
-true,true,true,true,true,true,true,true,true,true,true,true | % 27: osama.amer@rks-linz.de
-true,true,true,true,true,true,true,true,true,true,true,true | % 28: michele.chmiel@rks-linz.de
-true,true,true,true,true,true,true,true,true,true,true,true | % 29: sarina.golmohamadi@rks-linz.de
-true,true,true,true,true,true,true,true,true,true,true,true | % 30: inas.hajoula@rks-linz.de
-true,true,true,true,true,true,true,true,true,true,true,true | % 31: luca.henseler@rks-linz.de
-true,true,true,true,true,true,true,true,true,true,true,true | % 32: fabrice.koechy@rks-linz.de
-true,true,true,true,true,true,true,true,true,true,true,true | % 33: amelie.kroener@rks-linz.de
-true,true,true,true,true,true,true,true,true,true,true,true | % 34: lual.lual@rks-linz.de
-true,true,true,true,true,true,true,true,true,true,true,true | % 35: lena.mertensacker@rks-linz.de
-true,true,true,true,true,true,true,true,true,true,true,true | % 36: amy.sander@rks-linz.de
-true,true,true,true,true,true,true,true,true,true,true,true | % 37: emely.schmitz@rks-linz.de
-true,true,true,true,true,true,true,true,true,true,true,true | % 38: sofiia.trufanova@rks-linz.de
-true,true,true,true,true,true,true,true,true,true,true,true | % 39: hayal.yaldir@rks-linz.de
-true,true,true,true,true,true,true,true,true,true,true,true |]; % 40: scalanaut@gmail.com
+false,false,false,false,false,false,false,false,false,false,false,false | % 26: janet.ahmad@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 27: osama.amer@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 28: michele.chmiel@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 29: sarina.golmohamadi@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 30: inas.hajoula@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 31: luca.henseler@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 32: fabrice.koechy@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 33: amelie.kroener@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 34: lual.lual@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 35: lena.mertensacker@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 36: amy.sander@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 37: emely.schmitz@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 38: sofiia.trufanova@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 39: hayal.yaldir@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false |]; % 40: scalanaut@gmail.com
 
 %In welchen Slots Räume für Wahlvorträge planbar ist:
 raum_belegbar = [| %% Slot 1..12

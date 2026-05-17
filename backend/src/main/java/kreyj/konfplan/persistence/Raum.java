@@ -31,11 +31,10 @@ public class Raum extends VersionedEntity {
     public Raum() {
     }
 
-    public Raum(String name, int kapazitaet, Gebaeude gebaeude) {
+    public Raum(String name, int kapazitaet) {
         super();
         this.name = name;
         this.kapazitaet = kapazitaet;
-        this.gebaeude = gebaeude;
     }
 
     public Gebaeude getGebaeude() {
@@ -44,5 +43,6 @@ public class Raum extends VersionedEntity {
 
     public void setGebaeude(Gebaeude gebaeude) {
         this.gebaeude = gebaeude;
+        gebaeude.addRaum(this);
     }
 }

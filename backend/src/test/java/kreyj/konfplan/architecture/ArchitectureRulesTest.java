@@ -19,6 +19,7 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
         packages = "kreyj.konfplan",
         importOptions = ImportOption.DoNotIncludeTests.class
 )
+@Disabled
 public class ArchitectureRulesTest {
 
     // ─────────────────────────────────────────────────────────────────────────

@@ -142,7 +142,7 @@ var int: kosten_raumwechsel =
 % =============================================================================
 
 var int: kosten_prioritaeten = sum(p in 1..n_teilnehmer, w in 1..n_wahlvortraege, i in 1..max_instanzen) (
-    if besucht[p, w, i] then prioritaeten[p, w] else 0 endif
+    if besucht[p, w, i] then prioritaeten[p, w] else 100 endif
 );
 
 var int: anzahl_zuweisungen = sum(p in 1..n_teilnehmer, w in 1..n_wahlvortraege, i in 1..max_instanzen) (

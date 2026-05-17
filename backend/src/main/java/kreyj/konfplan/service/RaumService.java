@@ -45,7 +45,7 @@ public class RaumService {
 
         if (r.id == null) {
             r.persist();
-            gebaeude.raeume.add(r);
+            gebaeude.addRaum(r);
             gebaeude.persist();
             protokollService.log(ProtokollKategorie.RAUM, "Raum erstellt", "Raum '" + r.name + "' im Gebäude '" + gebaeude.name + "' erstellt.", r.id);
             return r;
@@ -102,7 +102,7 @@ public class RaumService {
                 r.gebaeude = gebaeude;
                 r.persist();
 
-                gebaeude.raeume.add(r);
+                gebaeude.addRaum(r);
                 count++;
                 protokollService.log(ProtokollKategorie.RAUM, "Raum importiert", "Raum '" + r.name + "' für Gebäude '" + gebaeude.name + "' importiert.", r.id);
             }

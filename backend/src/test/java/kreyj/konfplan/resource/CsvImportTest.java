@@ -66,7 +66,7 @@ class CsvImportTest {
         v.name = "Basis Event " + System.currentTimeMillis();
         v.beginntAm = LocalDateTime.of(2025, 10, 10, 9, 0);
         v.endetAm = LocalDateTime.of(2025, 10, 10, 17, 0);
-        v.gebaeude.addAll(gebaeudeList);
+        gebaeudeList.forEach(v::addGebaeude);
         v.persist();
 
         admin.addVeranstaltung(v);
@@ -102,7 +102,7 @@ class CsvImportTest {
 
         Gebaeude g = Gebaeude.find("name", "Altbau").firstResult();
         assertThat(g).isNotNull();
-        assertThat(g.raeume.size()).describedAs("Anzahl Räume sollte 2 sein").isEqualTo(2);
+        assertThat(g.getRaeume().size()).describedAs("Anzahl Räume sollte 2 sein").isEqualTo(2);
     }
 
     @Test

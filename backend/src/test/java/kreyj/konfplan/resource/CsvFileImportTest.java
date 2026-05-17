@@ -80,7 +80,7 @@ class CsvFileImportTest {
 
         Gebaeude g = Gebaeude.find("name", "TestGebäude").firstResult();
         Assertions.assertNotNull(g);
-        Assertions.assertEquals(12, g.raeume.size(), "Anzahl Räume sollte sein");
+        Assertions.assertEquals(12, g.getRaeume().size(), "Anzahl Räume sollte sein");
     }
 
     private void setupVeranstaltungen() {

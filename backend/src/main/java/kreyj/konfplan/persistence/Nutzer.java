@@ -12,8 +12,7 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.NaturalId;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
@@ -74,7 +73,18 @@ public abstract class Nutzer extends VersionedEntity {
             inverseJoinColumns = @JoinColumn(name = "veranstaltung_id")
     )
     @JsonIgnoreProperties({"nutzer", "gebaeude", "eventSlots"})
-    public Set<Veranstaltung> veranstaltungen = new HashSet<>();
+    private Set<Veranstaltung> veranstaltungen = new HashSet<>();
+    @ManyToMany
+    @JoinTable(
+            name = "Teilnehmer_EventSlot",
+            joinColumns = @JoinColumn(name = "teilnehmer_id"),
+            inverseJoinColumns = @JoinColumn(name = "eventslot_id")
+    )
+    private List<EventSlot> verfuegbareSlots = new ArrayList<>();
+
+    public Set<Veranstaltung> getVeranstaltungen() {
+        return Collections.unmodifiableSet(veranstaltungen);
+    }
 
     public Nutzer() {
     }
@@ -88,16 +98,18 @@ public abstract class Nutzer extends VersionedEntity {
             return;
         }
         this.veranstaltungen.add(v);
-        v.nutzer.add(this);
+        v.addNutzer(this);
 
         if (this instanceof Referent || this instanceof Teilnehmer) {
-            for (EventSlot slot : v.eventSlots) {
+            for (EventSlot slot : v.getEventSlots()) {
                 if (Verfuegbarkeit.count("nutzer = ?1 and slot = ?2", this, slot) == 0) {
                     Verfuegbarkeit verfuegbarkeit = new Verfuegbarkeit();
                     verfuegbarkeit.nutzer = this;
                     verfuegbarkeit.slot = slot;
                     verfuegbarkeit.isAvailable = true;
                     verfuegbarkeit.persist();
+
+                    this.addVerfuegbarenSlot(slot);
                 }
             }
         }
@@ -105,12 +117,46 @@ public abstract class Nutzer extends VersionedEntity {
 
     public void removeVeranstaltung(Veranstaltung v) {
         this.veranstaltungen.remove(v);
-        v.nutzer.remove(this);
+
+        if (v.getNutzer().contains(this)) {
+            v.removeNutzer(this);
+        }
 
         if (this instanceof Referent || this instanceof Teilnehmer) {
-            for (EventSlot slot : v.eventSlots) {
+            for (EventSlot slot : v.getEventSlots()) {
                 Verfuegbarkeit.delete("nutzer = ?1 and slot = ?2", this, slot);
             }
+        }
+    }
+
+    public List<EventSlot> getVerfuegbareSlots() {
+        return Collections.unmodifiableList(verfuegbareSlots);
+    }
+
+    public void addVerfuegbarenSlot(EventSlot slot) {
+        if (!this.getVeranstaltungen().contains(slot.veranstaltung)) {
+            throw new IllegalArgumentException("Der Teilnehmer ist nicht für die Veranstaltung des EventSlots angemeldet.");
+        }
+
+        if (!verfuegbareSlots.contains(slot)) {
+            verfuegbareSlots.add(slot);
+            slot.addNutzer(this);
+        }
+    }
+
+    public void removeVerfuegbarenSlot(EventSlot eventSlot) {
+        if (verfuegbareSlots.contains(eventSlot)) {
+            this.verfuegbareSlots.remove(eventSlot);
+        }
+
+        if (eventSlot.getNutzer().contains(this)) {
+            eventSlot.removeNutzer(this);
+        }
+    }
+
+    public void clearVerfuegbareSlots() {
+        for (EventSlot slot : new ArrayList<>(verfuegbareSlots)) {
+            removeVerfuegbarenSlot(slot);
         }
     }
 }

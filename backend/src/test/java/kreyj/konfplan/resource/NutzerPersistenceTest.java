@@ -47,7 +47,7 @@ class NutzerPersistenceTest extends ResourceTestBase {
         Veranstaltung v = new Veranstaltung();
         v.name = TEST_VERANSTALTUNG + "_" + System.currentTimeMillis();
         v.beginntAm = LocalDateTime.now();
-        v.gebaeude = List.of(g);
+        v.addGebaeude(g);
         v.persist();
         testVid = v.id;
 
@@ -90,8 +90,8 @@ class NutzerPersistenceTest extends ResourceTestBase {
 
         Referent ref = (Referent) Nutzer.findByEmail("referent@test.de");
         Assertions.assertNotNull(ref);
-        Assertions.assertNotNull(ref.veranstaltungen, "Veranstaltungen sollten nicht leer sein");
-        Assertions.assertEquals(testVid, ref.veranstaltungen.iterator().next().id);
+        Assertions.assertNotNull(ref.getVeranstaltungen(), "Veranstaltungen sollten nicht leer sein");
+        Assertions.assertEquals(testVid, ref.getVeranstaltungen().iterator().next().id);
     }
 
     @Test
@@ -118,7 +118,7 @@ class NutzerPersistenceTest extends ResourceTestBase {
         Teilnehmer teil = (Teilnehmer) Nutzer.findByEmail("schueler@test.de");
         Assertions.assertNotNull(teil);
         Assertions.assertEquals("10a", teil.gruppe);
-        assertThat(teil.veranstaltungen.isEmpty()).describedAs("Veranstaltung sollten nicht leer sein").isFalse();
-        Assertions.assertEquals(testVid, teil.veranstaltungen.iterator().next().id);
+        assertThat(teil.getVeranstaltungen().isEmpty()).describedAs("Veranstaltung sollten nicht leer sein").isFalse();
+        Assertions.assertEquals(testVid, teil.getVeranstaltungen().iterator().next().id);
     }
 }

@@ -266,7 +266,7 @@ public class TeilnehmerService {
             throw new NotFoundException("Veranstaltung nicht gefunden.");
         }
 
-        Set<EventSlot> slots = veranstaltung.eventSlots;
+        Set<EventSlot> slots = veranstaltung.getEventSlots();
         if (slots == null || slots.isEmpty()) {
             return; // Nichts zu tun
         }

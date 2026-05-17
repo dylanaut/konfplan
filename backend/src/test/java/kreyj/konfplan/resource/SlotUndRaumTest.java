@@ -64,7 +64,7 @@ class SlotUndRaumTest {
         g.strasse = "Wallroth";
         g.ort = "Buchholz";
         g.persist();
-        v.gebaeude = List.of(g);
+        v.addGebaeude(g);
         v.persist();
 
         Raum r = new Raum();

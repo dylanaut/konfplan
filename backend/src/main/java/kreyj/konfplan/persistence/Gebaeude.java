@@ -3,6 +3,7 @@ package kreyj.konfplan.persistence;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Entity
@@ -27,7 +28,7 @@ public class Gebaeude extends VersionedEntity {
     public String ort;
 
     @OneToMany(mappedBy = "gebaeude", cascade = CascadeType.ALL)
-    public List<Raum> raeume = new ArrayList<>();
+    private List<Raum> raeume = new ArrayList<>();
 
     @ManyToMany(mappedBy = "gebaeude")
     public List<Veranstaltung> veranstaltungen = new ArrayList<>();
@@ -50,6 +51,18 @@ public class Gebaeude extends VersionedEntity {
         }
         this.veranstaltungen.add(v);
         v.addGebaeude(this);
+    }
+
+    public List<Raum> getRaeume() {
+        return Collections.unmodifiableList(raeume);
+    }
+
+    public void addRaum(Raum raum) {
+        if (this.raeume.contains(raum)) {
+            return;
+        }
+        this.raeume.add(raum);
+        raum.setGebaeude(this);
     }
 
     // -------------------------------------------------------------------

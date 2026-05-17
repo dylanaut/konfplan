@@ -80,7 +80,7 @@ public class ReferentService {
         }
 
         // Alle Veranstaltungen, bei denen der Referent gelistet ist
-        Set<Veranstaltung> events = new HashSet<>(referent.veranstaltungen);
+        Set<Veranstaltung> events = new HashSet<>(referent.getVeranstaltungen());
 
         // Und alle Veranstaltungen, für die er bereits einen Vortrag hat
         List<Vortrag> vortraege = Vortrag.find("referent", referent).list();

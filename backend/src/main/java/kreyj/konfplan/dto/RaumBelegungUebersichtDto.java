@@ -3,6 +3,9 @@ package kreyj.konfplan.dto;
 import java.util.List;
 
 public class RaumBelegungUebersichtDto {
+    public static final String VORTRAG_TYP_FREI = "FREI";
+    public static final String VORTRAG_TITEL_FREI = "Frei";
+
     public Long slotId;
     public String slotZeit;
     public Long raumId;

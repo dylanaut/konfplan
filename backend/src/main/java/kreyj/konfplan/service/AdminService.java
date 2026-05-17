@@ -129,20 +129,32 @@ public class AdminService {
         // Check for email change
         String oldEmail = nutzer.email;
         if (!oldEmail.equals(dto.email)) {
-            // TODO: This is where the email change logic would go, including sending confirmation emails.
-            // For now, we just update it directly.
-            // A more robust solution would involve a pending email change state and confirmation token.
-            // mailService.sendEmailChangeNotificationOldAddress(nutzer, oldEmail, dto.email);
-            // mailService.sendEmailChangeConfirmationNewAddress(nutzer, dto.email, "confirmationLink");
+            // Check if the new email is already in use
+            if (Nutzer.findByEmail(dto.email) != null) {
+                throw new IllegalArgumentException("Die neue E-Mail-Adresse wird bereits verwendet.");
+            }
+
+            // Generate a confirmation token
+            String token = UUID.randomUUID().toString();
+            nutzer.newEmail = dto.email;
+            nutzer.emailChangeToken = token;
+            nutzer.emailChangeTokenExpiry = LocalDateTime.now().plusHours(24); // Token is valid for 24 hours
+
+            // Send confirmation email to the new address
+            mailService.sendEmailChangeConfirmationNewAddress(nutzer, dto.email, token);
+            // Notify the user at their old address
+            mailService.sendEmailChangeNotificationOldAddress(nutzer, oldEmail, dto.email);
+
+            protokollService.log(ProtokollKategorie.NUTZER, "E-Mail-Änderung eingeleitet",
+                    "E-Mail-Änderung für Nutzer '" + oldEmail + "' zu '" + dto.email + "' eingeleitet.", nutzer.id);
         }
 
         nutzer.firstName = dto.firstName;
         nutzer.lastName = dto.lastName;
-        nutzer.email = dto.email;
         nutzer.isActive = dto.isActive;
 
         if (null != vUpdateIds) {
-            Set<Long> oldVIds = nutzer.veranstaltungen.stream().map(v -> v.id).collect(Collectors.toSet());
+            Set<Long> oldVIds = nutzer.getVeranstaltungen().stream().map(v -> v.id).collect(Collectors.toSet());
             Set<Long> vNewIdSet = new HashSet<>(vUpdateIds);
 
             Set<Long> toRemoves = difference(oldVIds, vNewIdSet).toSet();
@@ -173,13 +185,49 @@ public class AdminService {
             r.organisation = dto.organisation;
             r.slogan = dto.slogan;
         } else if (nutzer instanceof Teilnehmer t) {
-            t.gruppe = dto.gruppe;
+            String oldGruppe = t.gruppe;
+            String newGruppe = dto.gruppe;
+            t.gruppe = newGruppe;
+
+            // Logic for group change
+            if (!Objects.equals(oldGruppe, newGruppe)) {
+                handleGroupChange(t, oldGruppe, newGruppe);
+            }
         }
 
         nutzer.persistAndFlush();
 
         protokollService.log(ProtokollKategorie.NUTZER, "Nutzer aktualisiert", "Nutzer '" + nutzer.email + "' aktualisiert.", nutzer.id);
         return AdminResource.mapNutzerToDto(nutzer);
+    }
+
+    @Transactional
+    public boolean confirmEmailChange(String token) {
+        Nutzer nutzer = Nutzer.find("emailChangeToken", token).firstResult();
+
+        if (nutzer == null) {
+            LOG.warn("Ungültiger Token für E-Mail-Änderung: " + token);
+            return false;
+        }
+
+        if (nutzer.emailChangeTokenExpiry.isBefore(LocalDateTime.now())) {
+            LOG.warn("Abgelaufener Token für E-Mail-Änderung für Nutzer: " + nutzer.email);
+            nutzer.emailChangeToken = null;
+            nutzer.emailChangeTokenExpiry = null;
+            nutzer.newEmail = null;
+            return false;
+        }
+
+        String oldEmail = nutzer.email;
+        nutzer.email = nutzer.newEmail;
+        nutzer.newEmail = null;
+        nutzer.emailChangeToken = null;
+        nutzer.emailChangeTokenExpiry = null;
+
+        protokollService.log(ProtokollKategorie.NUTZER, "E-Mail-Adresse bestätigt",
+                "E-Mail-Adresse für Nutzer von '" + oldEmail + "' zu '" + nutzer.email + "' geändert.", nutzer.id);
+
+        return true;
     }
 
     @Transactional
@@ -197,7 +245,7 @@ public class AdminService {
             throw new IllegalArgumentException("Die Veranstaltung '" + event.name + "' ist bereits beendet.");
         }
 
-        if (!nutzer.veranstaltungen.contains(event)) {
+        if (!nutzer.getVeranstaltungen().contains(event)) {
             nutzer.addVeranstaltung(event);
             erstelleVerfuegbarkeitenFuerNutzerInVeranstaltung(nutzer, event);
             mailService.sendEinladungZuVeranstaltung(nutzer, event);
@@ -345,8 +393,8 @@ public class AdminService {
             LOG.error("CSV-Import (Vorträge) abgebrochen: Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
             throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
         }
-        var v_raeume = veranstaltung.gebaeude.stream()
-                .flatMap(g -> g.raeume.stream())
+        var v_raeume = veranstaltung.getGebaeude().stream()
+                .flatMap(g -> g.getRaeume().stream())
                 .toList();
 
         Map<String, Map<Gebaeude, Raum>> raeumeByName = new HashMap<>();
@@ -357,7 +405,7 @@ public class AdminService {
             raeumeByName.get(r.name).put(r.gebaeude, r);
         }
 
-        Map<String, EventSlot> slotsByName = veranstaltung.eventSlots.stream().collect(Collectors.toMap(s -> s.description, s -> s));
+        Map<String, EventSlot> slotsByName = veranstaltung.getEventSlots().stream().collect(Collectors.toMap(s -> s.description, s -> s));
 
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             CsvToBean<VortragCsvDto> csvToBean = new CsvToBeanBuilder<VortragCsvDto>(reader)
@@ -398,7 +446,7 @@ public class AdminService {
                             }
                             continue;
                         } else {
-                            Set<Gebaeude> gebaeudeSet = veranstaltung.gebaeude.stream()
+                            Set<Gebaeude> gebaeudeSet = veranstaltung.getGebaeude().stream()
                                     .filter(gebaeudeRaumMap::containsKey)
                                     .collect(Collectors.toSet());
 
@@ -484,7 +532,7 @@ public class AdminService {
                     continue;
                 }
 
-                if (teilnehmer.veranstaltungen.stream().noneMatch(v -> v.id.equals(veranstaltungId))) {
+                if (teilnehmer.getVeranstaltungen().stream().noneMatch(v -> v.id.equals(veranstaltungId))) {
                     LOG.warn("Priorität für '" + teilnehmerEmail + "' übersprungen: Teilnehmer gehört nicht zur Veranstaltung.");
                     continue;
                 }
@@ -548,6 +596,18 @@ public class AdminService {
         slot.veranstaltung = v;
         slot.persist();
         v.addSlot(slot);
+
+        // Create availability for all participants of the event
+        for (Nutzer nutzer : v.getNutzer()) {
+            if (nutzer instanceof Teilnehmer || nutzer instanceof Referent) {
+                Verfuegbarkeit verfuegbarkeit = new Verfuegbarkeit();
+                verfuegbarkeit.nutzer = nutzer;
+                verfuegbarkeit.slot = slot;
+                verfuegbarkeit.isAvailable = true;
+                verfuegbarkeit.persist();
+            }
+        }
+
         protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot erstellt", "Slot '" + slot.description + "' für '" + v.name + "' erstellt.", slot.id);
         return slot;
     }
@@ -607,9 +667,13 @@ public class AdminService {
     @Transactional
     public boolean deleteEventSlot(Long id, Long veranstaltungId) {
         EventSlot slot = EventSlot.findById(id);
-        if (slot != null) {
+        if (slot != null && slot.veranstaltung.id.equals(veranstaltungId)) {
             String desc = slot.description;
-            long count = EventSlot.delete("id = ?1 and veranstaltung.id = ?2", id, veranstaltungId);
+
+            // Delete all availabilities associated with this slot
+            Verfuegbarkeit.delete("slot.id", id);
+
+            long count = EventSlot.delete("id = ?1", id);
             if (count > 0) {
                 protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot gelöscht", "Slot '" + desc + "' gelöscht.", id);
                 return true;
@@ -657,10 +721,7 @@ public class AdminService {
                 slot.veranstaltung = v;
 
                 try {
-                    validateSlot(slot, v, null); // Validate the slot before persisting
-                    slot.persist();
-                    v.addSlot(slot);
-                    // v.persist(); // No need to persist v here, as addSlot handles the relationship and slot.persist() is enough
+                    createEventSlot(slot, veranstaltungId); // Use createEventSlot to also create availabilities
                     count++;
                     protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot importiert", "Slot '" + slot.description + "' via CSV importiert.", slot.id);
                 } catch (IllegalArgumentException e) {
@@ -830,7 +891,7 @@ public class AdminService {
     // #################################################################################################################
 
     private void erstelleVerfuegbarkeitenFuerNutzerInVeranstaltung(Nutzer nutzer, Veranstaltung veranstaltung) {
-        Set<EventSlot> slots = veranstaltung.eventSlots;
+        Set<EventSlot> slots = veranstaltung.getEventSlots();
         if (slots == null || slots.isEmpty()) {
             LOG.infof("Keine Slots für Veranstaltung '%s' gefunden. Es werden keine Verfügbarkeiten angelegt.", veranstaltung.name);
             return;
@@ -845,6 +906,28 @@ public class AdminService {
                 verfuegbarkeit.slot = slot;
                 verfuegbarkeit.isAvailable = true; // Standardmäßig verfügbar
                 verfuegbarkeit.persist();
+            }
+        }
+    }
+
+    private void handleGroupChange(Teilnehmer teilnehmer, String oldGruppe, String newGruppe) {
+        // Reset availability for old group's mandatory lectures
+        if (oldGruppe != null && !oldGruppe.isEmpty()) {
+            List<Pflichtvortrag> oldPflichtvortraege = Pflichtvortrag.find("pflichtgruppe", oldGruppe).list();
+            for (Pflichtvortrag pv : oldPflichtvortraege) {
+                if (pv.pflichtslot != null) {
+                    updateTeilnehmerAvailability(List.of(teilnehmer), pv.pflichtslot, true, pv.id);
+                }
+            }
+        }
+
+        // Set unavailability for new group's mandatory lectures
+        if (newGruppe != null && !newGruppe.isEmpty()) {
+            List<Pflichtvortrag> newPflichtvortraege = Pflichtvortrag.find("pflichtgruppe", newGruppe).list();
+            for (Pflichtvortrag pv : newPflichtvortraege) {
+                if (pv.pflichtslot != null) {
+                    updateTeilnehmerAvailability(List.of(teilnehmer), pv.pflichtslot, false, pv.id);
+                }
             }
         }
     }

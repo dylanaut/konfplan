@@ -174,7 +174,7 @@ public class GebaeudeResource {
         dto.postleitzahl = gebaeude.postleitzahl;
         dto.typ = gebaeude.typ;
 
-        dto.raeume = gebaeude.raeume.stream()
+        dto.raeume = gebaeude.getRaeume().stream()
                 .map(GebaeudeResource::mapRaumToDto)
                 .toList();
 

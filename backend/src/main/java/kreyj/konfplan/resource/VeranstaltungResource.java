@@ -415,8 +415,8 @@ public class VeranstaltungResource {
         dto.logo_link = v.logo_link;
 
         // Organisatoren filtern und hinzufügen
-        if (v.nutzer != null) {
-            v.nutzer.stream()
+        if (v.getNutzer() != null) {
+            v.getNutzer().stream()
                     .filter(u -> u instanceof Admin)
                     .forEach(u -> {
                         dto.organisatorIds.add(u.id);
@@ -424,7 +424,7 @@ public class VeranstaltungResource {
                     });
         }
 
-        dto.gebaeude = v.gebaeude.stream().map(GebaeudeResource::mapToDto).toList();
+        dto.gebaeude = v.getGebaeude().stream().map(GebaeudeResource::mapToDto).toList();
 
         return dto;
     }

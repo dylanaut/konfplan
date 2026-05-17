@@ -113,7 +113,7 @@ public class GebaeudeService {
                                 }
                                 r.gebaeude = g;
                                 r.persist();
-                                g.raeume.add(r);
+                                g.addRaum(r);
                                 protokollService.log(ProtokollKategorie.RAUM, "Raum importiert (via Gebäude-Import)", "Raum '" + r.name + "' für Gebäude '" + g.name + "' importiert.", r.id);
                             } catch (NumberFormatException e) {
                                 LOG.warn("Gebäude '" + gebaeudeName + "': Raum '" + rs + "' übersprungen: Ungültige Kapazität. " + e.getMessage());

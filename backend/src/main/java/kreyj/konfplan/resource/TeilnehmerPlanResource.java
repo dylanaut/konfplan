@@ -48,9 +48,9 @@ public class TeilnehmerPlanResource {
         String email = JwtHelper.getUserPrincipalName(jwt);
         Teilnehmer t = Teilnehmer.find("email", email).firstResult();
         if (t == null) return List.of();
-        return t.veranstaltungen.stream()
+        return t.getVeranstaltungen().stream()
                 .map(VeranstaltungResource::mapVeranstaltungToDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @GET

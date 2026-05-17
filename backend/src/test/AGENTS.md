@@ -93,6 +93,7 @@ class MeineResourceTest {
 - **RestAssured** für HTTP-Tests: `given().when().then()`-Pattern
 - Für Transaktionen außerhalb von `@Transactional`: `QuarkusTransaction.begin()` + `.commit()`
 - Assertions: JUnit 5 `Assertions.*` + Hamcrest `CoreMatchers.*`
+- Please write a test for each new feature. Remember to carefully check and initialize all mandatory fields and relations for any persistent entities you create.
 
 ## CSV-Import-Tests
 

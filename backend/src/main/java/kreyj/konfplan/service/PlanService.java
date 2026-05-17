@@ -2,7 +2,6 @@ package kreyj.konfplan.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.lowagie.text.*;
 import com.lowagie.text.Font;
 import com.lowagie.text.Image;
@@ -26,11 +25,13 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.toMap;
+import static kreyj.konfplan.dto.RaumBelegungUebersichtDto.VORTRAG_TITEL_FREI;
+import static kreyj.konfplan.dto.RaumBelegungUebersichtDto.VORTRAG_TYP_FREI;
 
 @ApplicationScoped
 public class PlanService {
-
     private static final Logger LOG = Logger.getLogger(PlanService.class);
+
     public static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm"); // Made public for testing
 
     @Inject
@@ -186,9 +187,9 @@ public class PlanService {
                             slot.startTime.format(TIME_FORMAT),
                             raum.id,
                             raum.name,
-                            "Frei",
+                            VORTRAG_TITEL_FREI,
                             null,
-                            "FREI",
+                            VORTRAG_TYP_FREI,
                             new ArrayList<>(),
                             raum.kapazitaet
                     ));

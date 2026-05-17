@@ -20,8 +20,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static java.util.stream.Collectors.joining;
+import static kreyj.konfplan.dto.RaumBelegungUebersichtDto.VORTRAG_TITEL_FREI;
+import static kreyj.konfplan.dto.RaumBelegungUebersichtDto.VORTRAG_TYP_FREI;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
 public class OptimierungServiceIntegrationTest {
@@ -43,6 +45,7 @@ public class OptimierungServiceIntegrationTest {
         Planungsergebnis.deleteAll();
         Wahlvortrag.deleteAll();
         Pflichtvortrag.deleteAll();
+        Verfuegbarkeit.deleteAll();
         Teilnehmer.deleteAll();
         Referent.deleteAll();
         EventSlot.deleteAll();
@@ -58,10 +61,12 @@ public class OptimierungServiceIntegrationTest {
                 Gebaeude.Gebaeudetyp.SCHULE);
         schule.persistAndFlush();
 
-        Raum raum1 = new Raum("Raum 1", 1, schule);
+        Raum raum1 = new Raum("Raum 1", 1);
         raum1.persist();
-        Raum raum2 = new Raum("Raum 2", 2, schule);
+        Raum raum2 = new Raum("Raum 2", 2);
         raum2.persist();
+        schule.addRaum(raum1);
+        schule.addRaum(raum2);
     }
 
     @Transactional
@@ -70,10 +75,11 @@ public class OptimierungServiceIntegrationTest {
         Veranstaltung veranstaltung = new Veranstaltung();
         veranstaltung.name = (satisfiable ? "E" : "Une") + "rfüllbarer Testlauf";
         veranstaltung.beginntAm = LocalDateTime.now();
-        veranstaltung.gebaeude.add(schule);
+        veranstaltung.addGebaeude(schule);
         veranstaltung.persistAndFlush();
 
-        EventSlot slot1 = new EventSlot("Slot 1", LocalDateTime.now().plusHours(1), LocalDateTime.now().plusHours(2), veranstaltung);
+        EventSlot slot1 = new EventSlot("Slot 1", LocalDateTime.now().plusHours(1), LocalDateTime.now().plusHours(2));
+        veranstaltung.addSlot(slot1);
         slot1.persistAndFlush();
 
         // 3. Referent und Vorträge
@@ -81,8 +87,8 @@ public class OptimierungServiceIntegrationTest {
         referent.email = "referent@test.com";
         referent.firstName = "Max";
         referent.lastName = "Mustermann";
-        referent.veranstaltungen.add(veranstaltung);
         referent.persistAndFlush();
+        referent.addVeranstaltung(veranstaltung);
 
         Wahlvortrag wahlvortrag1 = new Wahlvortrag();
         wahlvortrag1.titel = "Wahlvortrag 1";
@@ -96,11 +102,12 @@ public class OptimierungServiceIntegrationTest {
         teilnehmer1.firstName = "Peter";
         teilnehmer1.lastName = "Pan";
         teilnehmer1.gruppe = "A";
-        teilnehmer1.veranstaltungen.add(veranstaltung);
         teilnehmer1.persistAndFlush();
+        teilnehmer1.addVeranstaltung(veranstaltung);
 
         // Prioritäten für Teilnehmer 1
-        new Prioritaet(teilnehmer1, wahlvortrag1, 1).persistAndFlush();
+        new Prioritaet(teilnehmer1, wahlvortrag1, 1)
+                .persistAndFlush();
 
         return veranstaltung;
     }
@@ -111,14 +118,19 @@ public class OptimierungServiceIntegrationTest {
         Veranstaltung veranstaltung = new Veranstaltung();
         veranstaltung.name = "Komplexer Testlauf";
         veranstaltung.beginntAm = LocalDateTime.now();
-        veranstaltung.gebaeude.add(schule);
+        veranstaltung.addGebaeude(schule);
         veranstaltung.persistAndFlush();
 
-        EventSlot slot1 = new EventSlot("Slot 1", LocalDateTime.now().plusHours(1), LocalDateTime.now().plusHours(2), veranstaltung);
+        EventSlot slot1 = new EventSlot("Slot 1", LocalDateTime.now().plusHours(1), LocalDateTime.now().plusHours(2));
+        veranstaltung.addSlot(slot1);
         slot1.persistAndFlush();
-        EventSlot slot2 = new EventSlot("Slot 2", LocalDateTime.now().plusHours(2), LocalDateTime.now().plusHours(3), veranstaltung);
+
+        EventSlot slot2 = new EventSlot("Slot 2", LocalDateTime.now().plusHours(2), LocalDateTime.now().plusHours(3));
+        veranstaltung.addSlot(slot2);
         slot2.persistAndFlush();
-        EventSlot slot3 = new EventSlot("Slot 3", LocalDateTime.now().plusHours(3), LocalDateTime.now().plusHours(4), veranstaltung);
+
+        EventSlot slot3 = new EventSlot("Slot 3", LocalDateTime.now().plusHours(3), LocalDateTime.now().plusHours(4));
+        veranstaltung.addSlot(slot3);
         slot3.persistAndFlush();
 
         // 3. Referent und Vorträge
@@ -126,8 +138,8 @@ public class OptimierungServiceIntegrationTest {
         referent.email = "referent@test.com";
         referent.firstName = "Max";
         referent.lastName = "Mustermann";
-        referent.veranstaltungen.add(veranstaltung);
         referent.persistAndFlush();
+        referent.addVeranstaltung(veranstaltung);
 
         Wahlvortrag wahlvortrag1 = new Wahlvortrag();
         wahlvortrag1.titel = "Wahlvortrag 1";
@@ -146,7 +158,7 @@ public class OptimierungServiceIntegrationTest {
         pflichtvortrag.referent = referent;
         pflichtvortrag.veranstaltung = veranstaltung;
         pflichtvortrag.pflichtslot = slot3;
-        pflichtvortrag.pflichtraum = schule.raeume.getFirst();
+        pflichtvortrag.pflichtraum = schule.getRaeume().getFirst();
         pflichtvortrag.pflichtgruppe = "A";
         pflichtvortrag.persistAndFlush();
 
@@ -156,23 +168,26 @@ public class OptimierungServiceIntegrationTest {
         teilnehmer1.firstName = "Peter";
         teilnehmer1.lastName = "Pan";
         teilnehmer1.gruppe = "A";
-        teilnehmer1.veranstaltungen.add(veranstaltung);
         teilnehmer1.persistAndFlush();
+        teilnehmer1.addVeranstaltung(veranstaltung);
 
         Teilnehmer teilnehmer2 = new Teilnehmer();
         teilnehmer2.email = "tn2@test.com";
         teilnehmer2.firstName = "Wendy";
         teilnehmer2.lastName = "Darling";
         teilnehmer2.gruppe = "A";
-        teilnehmer2.veranstaltungen.add(veranstaltung);
         teilnehmer2.persistAndFlush();
+        teilnehmer2.addVeranstaltung(veranstaltung);
 
         // Prioritäten für TN 1
-        new Prioritaet(teilnehmer1, wahlvortrag1, 1).persistAndFlush();
-        new Prioritaet(teilnehmer1, wahlvortrag2, 2).persistAndFlush();
+        new Prioritaet(teilnehmer1, wahlvortrag1, 1)
+                .persistAndFlush();
+        new Prioritaet(teilnehmer1, wahlvortrag2, 2)
+                .persistAndFlush();
 
         // Priorität für TN 2
-        new Prioritaet(teilnehmer2, wahlvortrag2, 1).persistAndFlush();
+        new Prioritaet(teilnehmer2, wahlvortrag2, 1)
+                .persistAndFlush();
 
         return veranstaltung;
     }
@@ -188,31 +203,31 @@ public class OptimierungServiceIntegrationTest {
 
         // 2. Ergebnis prüfen
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
-        assertNotNull(ergebnis, "Planungsergebnis sollte nach der Optimierung vorhanden sein.");
-        assertNotNull(ergebnis.jsonErgebnis, "Das JSON-Ergebnis im Planungsergebnis darf nicht null sein.");
-        assertTrue(ergebnis.jsonErgebnis.contains("instanz_slot"), "Das JSON-Ergebnis sollte den Schlüssel 'instanz_slot' enthalten.");
+        assertThat(ergebnis).describedAs("Planungsergebnis sollte nach der Optimierung vorhanden sein.").isNotNull();
+        assertThat(ergebnis.jsonErgebnis).describedAs("Das JSON-Ergebnis im Planungsergebnis darf nicht null sein.").isNotNull();
+        assertThat(ergebnis.jsonErgebnis.contains("instanz_slot")).describedAs("Das JSON-Ergebnis sollte den Schlüssel 'instanz_slot' enthalten.").isTrue();
 
         // 3. Belegungsplan abrufen und prüfen
         List<RaumBelegungUebersichtDto> belegungsplan = planService.getDetaillierterPlan(veranstaltung.id);
         LOG.info("# Belegungsplan:\n  " + belegungsplan.stream().map(Object::toString).collect(joining("\n  ")));
 
-        assertNotNull(belegungsplan, "Der Belegungsplan darf nicht null sein.");
-        assertFalse(belegungsplan.isEmpty(), "Der Belegungsplan darf nicht leer sein.");
+        assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht null sein.").isNotNull();
+        assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht leer sein.").isNotEmpty();
 
         // Konkrete Zuweisungen prüfen
         // Teilnehmer 1 sollte Wahlvortrag 1 bekommen (Prio 1)
         boolean tn1InWahlvortrag1 = belegungsplan.stream()
                 .anyMatch(b -> "Wahlvortrag 1".equals(b.getVortragTitel()) && b.getTeilnehmerNamen().contains("Peter Pan"));
-        assertTrue(tn1InWahlvortrag1, "Teilnehmer 1 sollte dem Wahlvortrag 1 zugewiesen sein.");
+        assertThat(tn1InWahlvortrag1).describedAs("Teilnehmer 1 sollte dem Wahlvortrag 1 zugewiesen sein.").isTrue();
     }
 
     @Test
     @Transactional
-    public void testOptimierungslauf_withNoVisits() throws Exception {
+    public void testOptimierungslauf_noAvailabilities() throws Exception {
         Veranstaltung veranstaltung = simpleSetup(false);
         Teilnehmer tn = Teilnehmer.<Teilnehmer>listAll().getFirst();
         // tn ist nicht verfügbar für Wahlvorträge
-        tn.verfuegbareSlots.clear();
+        tn.clearVerfuegbareSlots();
         tn.persistAndFlush();
 
         // 1. Optimierung durchführen
@@ -221,36 +236,18 @@ public class OptimierungServiceIntegrationTest {
 
         // 2. Ergebnis prüfen
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
-        assertNotNull(ergebnis, "Planungsergebnis sollte nach der Optimierung vorhanden sein.");
-        assertNotNull(ergebnis.jsonErgebnis, "Das JSON-Ergebnis im Planungsergebnis darf nicht null sein.");
-        assertTrue(ergebnis.jsonErgebnis.contains("instanz_slot"), "Das JSON-Ergebnis sollte den Schlüssel 'instanz_slot' enthalten.");
+        assertThat(ergebnis).describedAs("Planungsergebnis sollte nach der Optimierung vorhanden sein.").isNotNull();
+        assertThat(ergebnis.jsonErgebnis).describedAs("Das JSON-Ergebnis im Planungsergebnis darf nicht null sein.").isNotNull();
+        assertThat(ergebnis.jsonErgebnis.contains("instanz_slot")).describedAs("Das JSON-Ergebnis sollte den Schlüssel 'instanz_slot' enthalten.").isTrue();
 
-        // 3. Belegungsplan abrufen und prüfen
         List<RaumBelegungUebersichtDto> belegungsplan = planService.getDetaillierterPlan(veranstaltung.id);
-        LOG.info("belegungsplan: " + belegungsplan);
-
-        assertNotNull(belegungsplan, "Der Belegungsplan darf nicht null sein.");
-        assertFalse(belegungsplan.isEmpty(), "Der Belegungsplan darf nicht leer sein.");
-
-        // Konkrete Zuweisungen prüfen
-        // Teilnehmer 1 sollte Wahlvortrag 1 bekommen (Prio 1)
-        boolean tn1InWahlvortrag1 = belegungsplan.stream()
-                .anyMatch(b -> "Wahlvortrag 1".equals(b.getVortragTitel()) && b.getTeilnehmerNamen().contains("Peter Pan"));
-        assertTrue(tn1InWahlvortrag1, "Teilnehmer 1 sollte dem Wahlvortrag 1 zugewiesen sein.");
-
-        // Teilnehmer 2 sollte Wahlvortrag 2 bekommen (Prio 1)
-        boolean tn2InWahlvortrag2 = belegungsplan.stream()
-                .anyMatch(b -> "Wahlvortrag 2".equals(b.getVortragTitel()) && b.getTeilnehmerNamen().contains("Wendy Darling"));
-        assertTrue(tn2InWahlvortrag2, "Teilnehmer 2 sollte dem Wahlvortrag 2 zugewiesen sein.");
-
-        // Beide Teilnehmer sollten im Pflichtvortrag sein
-        long anzahltnImPflichtvortrag = belegungsplan.stream()
-                .filter(b -> "Pflichtvortrag".equals(b.getVortragTitel()))
-                .map(RaumBelegungUebersichtDto::getTeilnehmerNamen)
-                .flatMap(List::stream)
-                .distinct()
-                .count();
-        assertEquals(2, anzahltnImPflichtvortrag, "Beide Teilnehmer sollten dem Pflichtvortrag zugewiesen sein.");
+        assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht leer sein.").isNotEmpty();
+        assertThat(belegungsplan).hasSize(veranstaltung.getEventSlots().size()
+                * veranstaltung.getGebaeude().stream().mapToInt(g -> g.getRaeume().size()).sum());
+        assertThat(belegungsplan)
+                .allMatch(b ->
+                        VORTRAG_TITEL_FREI.equals(b.vortragTitel)
+                                && VORTRAG_TYP_FREI.equals(b.vortragTyp));
     }
 
     @Test
@@ -259,7 +256,7 @@ public class OptimierungServiceIntegrationTest {
         Veranstaltung veranstaltung = simpleSetup(false);
         Teilnehmer tn = Teilnehmer.<Teilnehmer>listAll().getFirst();
         // tn ist nicht verfügbar für Wahlvorträge
-        tn.verfuegbareSlots.clear();
+        tn.clearVerfuegbareSlots();
         tn.persistAndFlush();
 
         // 1. Optimierung durchführen
@@ -268,36 +265,20 @@ public class OptimierungServiceIntegrationTest {
 
         // 2. Ergebnis prüfen
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
-        assertNotNull(ergebnis, "Planungsergebnis sollte nach der Optimierung vorhanden sein.");
-        assertNotNull(ergebnis.jsonErgebnis, "Das JSON-Ergebnis im Planungsergebnis darf nicht null sein.");
-        assertTrue(ergebnis.jsonErgebnis.contains("instanz_slot"), "Das JSON-Ergebnis sollte den Schlüssel 'instanz_slot' enthalten.");
+        assertThat(ergebnis).describedAs("Planungsergebnis sollte nach der Optimierung vorhanden sein.").isNotNull();
+        assertThat(ergebnis.jsonErgebnis).describedAs("Das JSON-Ergebnis im Planungsergebnis darf nicht null sein.").isNotNull();
+        assertThat(ergebnis.jsonErgebnis.contains("instanz_slot")).describedAs("Das JSON-Ergebnis sollte den Schlüssel 'instanz_slot' enthalten.").isTrue();
 
         // 3. Belegungsplan abrufen und prüfen
         List<RaumBelegungUebersichtDto> belegungsplan = planService.getDetaillierterPlan(veranstaltung.id);
-        LOG.info("belegungsplan: " + belegungsplan);
 
-        assertNotNull(belegungsplan, "Der Belegungsplan darf nicht null sein.");
-        assertFalse(belegungsplan.isEmpty(), "Der Belegungsplan darf nicht leer sein.");
-
-        // Konkrete Zuweisungen prüfen
-        // Teilnehmer 1 sollte Wahlvortrag 1 bekommen (Prio 1)
-        boolean tn1InWahlvortrag1 = belegungsplan.stream()
-                .anyMatch(b -> "Wahlvortrag 1".equals(b.getVortragTitel()) && b.getTeilnehmerNamen().contains("Peter Pan"));
-        assertTrue(tn1InWahlvortrag1, "Teilnehmer 1 sollte dem Wahlvortrag 1 zugewiesen sein.");
-
-        // Teilnehmer 2 sollte Wahlvortrag 2 bekommen (Prio 1)
-        boolean tn2InWahlvortrag2 = belegungsplan.stream()
-                .anyMatch(b -> "Wahlvortrag 2".equals(b.getVortragTitel()) && b.getTeilnehmerNamen().contains("Wendy Darling"));
-        assertTrue(tn2InWahlvortrag2, "Teilnehmer 2 sollte dem Wahlvortrag 2 zugewiesen sein.");
-
-        // Beide Teilnehmer sollten im Pflichtvortrag sein
-        long anzahltnImPflichtvortrag = belegungsplan.stream()
-                .filter(b -> "Pflichtvortrag".equals(b.getVortragTitel()))
-                .map(RaumBelegungUebersichtDto::getTeilnehmerNamen)
-                .flatMap(List::stream)
-                .distinct()
-                .count();
-        assertEquals(2, anzahltnImPflichtvortrag, "Beide Teilnehmer sollten dem Pflichtvortrag zugewiesen sein.");
+        assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht leer sein.").isNotEmpty();
+        assertThat(belegungsplan).hasSize(veranstaltung.getEventSlots().size()
+                * veranstaltung.getGebaeude().stream().mapToInt(g -> g.getRaeume().size()).sum());
+        assertThat(belegungsplan)
+                .allMatch(b ->
+                        VORTRAG_TITEL_FREI.equals(b.vortragTitel)
+                                && VORTRAG_TYP_FREI.equals(b.vortragTyp));
     }
 
     @Test
@@ -310,27 +291,27 @@ public class OptimierungServiceIntegrationTest {
 
         // 2. Ergebnis prüfen
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
-        assertNotNull(ergebnis, "Planungsergebnis sollte nach der Optimierung vorhanden sein.");
-        assertNotNull(ergebnis.jsonErgebnis, "Das JSON-Ergebnis im Planungsergebnis darf nicht null sein.");
-        assertTrue(ergebnis.jsonErgebnis.contains("instanz_slot"), "Das JSON-Ergebnis sollte den Schlüssel 'instanz_slot' enthalten.");
+        assertThat(ergebnis).describedAs("Planungsergebnis sollte nach der Optimierung vorhanden sein.").isNotNull();
+        assertThat(ergebnis.jsonErgebnis).describedAs("Das JSON-Ergebnis im Planungsergebnis darf nicht null sein.").isNotNull();
+        assertThat(ergebnis.jsonErgebnis.contains("instanz_slot")).describedAs("Das JSON-Ergebnis sollte den Schlüssel 'instanz_slot' enthalten.").isTrue();
 
         // 3. Belegungsplan abrufen und prüfen
         List<RaumBelegungUebersichtDto> belegungsplan = planService.getDetaillierterPlan(veranstaltung.id);
         LOG.info("belegungsplan: " + belegungsplan);
 
-        assertNotNull(belegungsplan, "Der Belegungsplan darf nicht null sein.");
-        assertFalse(belegungsplan.isEmpty(), "Der Belegungsplan darf nicht leer sein.");
+        assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht null sein.").isNotNull();
+        assertThat(belegungsplan.isEmpty()).describedAs("Der Belegungsplan darf nicht leer sein.").isFalse();
 
         // Konkrete Zuweisungen prüfen
         // Teilnehmer 1 sollte Wahlvortrag 1 bekommen (Prio 1)
         boolean tn1InWahlvortrag1 = belegungsplan.stream()
                 .anyMatch(b -> "Wahlvortrag 1".equals(b.getVortragTitel()) && b.getTeilnehmerNamen().contains("Peter Pan"));
-        assertTrue(tn1InWahlvortrag1, "Teilnehmer 1 sollte dem Wahlvortrag 1 zugewiesen sein.");
+        assertThat(tn1InWahlvortrag1).describedAs("Teilnehmer 1 sollte dem Wahlvortrag 1 zugewiesen sein.").isTrue();
 
         // Teilnehmer 2 sollte Wahlvortrag 2 bekommen (Prio 1)
         boolean tn2InWahlvortrag2 = belegungsplan.stream()
                 .anyMatch(b -> "Wahlvortrag 2".equals(b.getVortragTitel()) && b.getTeilnehmerNamen().contains("Wendy Darling"));
-        assertTrue(tn2InWahlvortrag2, "Teilnehmer 2 sollte dem Wahlvortrag 2 zugewiesen sein.");
+        assertThat(tn2InWahlvortrag2).describedAs("Teilnehmer 2 sollte dem Wahlvortrag 2 zugewiesen sein.").isTrue();
 
         // Beide Teilnehmer sollten im Pflichtvortrag sein
         long anzahltnImPflichtvortrag = belegungsplan.stream()
@@ -339,7 +320,9 @@ public class OptimierungServiceIntegrationTest {
                 .flatMap(List::stream)
                 .distinct()
                 .count();
-        assertEquals(2, anzahltnImPflichtvortrag, "Beide Teilnehmer sollten dem Pflichtvortrag zugewiesen sein.");
+        assertThat(anzahltnImPflichtvortrag)
+                .describedAs("Beide Teilnehmer sollten dem Pflichtvortrag zugewiesen sein.")
+                .isEqualTo(2);
     }
 
     @Test
@@ -357,14 +340,14 @@ public class OptimierungServiceIntegrationTest {
 
         String resultJson = starteTestOptimierung(config, "intermediate.mzn");
 
-        assertNotNull(resultJson, "Sollte ein Ergebnis (letzte Zwischenlösung) zurückgeben.");
-        assertFalse(resultJson.isEmpty(), "Das Ergebnis-JSON sollte nicht leer sein.");
-        assertTrue(OptimierungService.isValidJson(resultJson), "Das Ergebnis sollte valides JSON sein.");
-        assertTrue(resultJson.contains("total_value"), "Das Ergebnis-JSON sollte 'total_value' enthalten.");
+        assertThat(resultJson).describedAs("Sollte ein Ergebnis (letzte Zwischenlösung) zurückgeben.").isNotNull();
+        assertThat(resultJson.isEmpty()).describedAs("Das Ergebnis-JSON sollte nicht leer sein.").isFalse();
+        assertThat(OptimierungService.isValidJson(resultJson)).describedAs("Das Ergebnis sollte valides JSON sein.").isTrue();
+        assertThat(resultJson.contains("total_value")).describedAs("Das Ergebnis-JSON sollte 'total_value' enthalten.").isTrue();
     }
 
     @Test
-    public void testOptimierung_withNoSolutionInTime() throws Exception {
+    public void testOptimierung_withNoSolutionInTime() {
         // Sehr kurzer Timeout, damit garantiert keine Lösung gefunden wird
         SolverConfigDto config = new SolverConfigDto("cp-sat", 1, 1, 1);
 

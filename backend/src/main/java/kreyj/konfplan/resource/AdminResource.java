@@ -50,7 +50,7 @@ public class AdminResource {
         dto.lastName = u.lastName;
         dto.role = u.role;
         dto.isActive = u.isActive;
-        dto.veranstaltungIds = null != u.veranstaltungen ? u.veranstaltungen.stream().map(v -> v.id).toList() : Collections.emptyList();
+        dto.veranstaltungIds = null != u.getVeranstaltungen() ? u.getVeranstaltungen().stream().map(v -> v.id).toList() : Collections.emptyList();
 
         if (u instanceof Referent r) {
             dto.biography = r.biography;
@@ -214,7 +214,7 @@ public class AdminResource {
         }
 
         List<EventSlot> slots = EventSlot.find("veranstaltung.id", vid).list();
-        List<Raum> raeume = event.gebaeude.stream().flatMap(g -> g.raeume.stream()).toList();
+        List<Raum> raeume = event.getGebaeude().stream().flatMap(g -> g.getRaeume().stream()).toList();
 
         return raeume.stream().flatMap(r -> slots.stream().map(s -> {
             RaumBelegbarkeit rv = RaumBelegbarkeit.find("raum = ?1 and slot = ?2", r, s).firstResult();
@@ -269,7 +269,7 @@ public class AdminResource {
             return Response.status(Response.Status.NOT_FOUND).entity("Teilnehmer nicht gefunden.").build();
         }
 
-        if (teilnehmer.veranstaltungen.stream().noneMatch(v -> v.id.equals(vid))) {
+        if (teilnehmer.getVeranstaltungen().stream().noneMatch(v -> v.id.equals(vid))) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Teilnehmer gehört nicht zu dieser Veranstaltung.").build();
         }
 

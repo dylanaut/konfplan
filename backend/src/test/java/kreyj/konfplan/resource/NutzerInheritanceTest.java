@@ -64,8 +64,8 @@ class NutzerInheritanceTest extends ResourceTestBase {
 
         Referent ref = (Referent) Nutzer.findByEmail("expert@konfplan.de");
         assertNotNull(ref, "Referent sollte in der DB existieren");
-        assertThat(ref.veranstaltungen.isEmpty()).describedAs("Veranstaltung des Referenten sollte nicht leer sein").isFalse();
-        assertEquals(testVid, ref.veranstaltungen.iterator().next().id);
+        assertThat(ref.getVeranstaltungen().isEmpty()).describedAs("Veranstaltung des Referenten sollte nicht leer sein").isFalse();
+        assertEquals(testVid, ref.getVeranstaltungen().iterator().next().id);
     }
 
     @Test
@@ -92,8 +92,8 @@ class NutzerInheritanceTest extends ResourceTestBase {
         Teilnehmer tn = (Teilnehmer) Nutzer.findByEmail("student@konfplan.de");
         assertNotNull(tn, "Teilnehmer sollte in der DB existieren");
         assertNotNull(Veranstaltung.findById(testVid), "Veranstaltung %d sollte in der DB existieren".formatted(testVid));
-        assertNotNull(tn.veranstaltungen, "Veranstaltung des Teilnehmers sollte nicht leer sein");
-        assertEquals(testVid, tn.veranstaltungen.iterator().next().id);
+        assertNotNull(tn.getVeranstaltungen(), "Veranstaltung des Teilnehmers sollte nicht leer sein");
+        assertEquals(testVid, tn.getVeranstaltungen().iterator().next().id);
         assertEquals("10.3", tn.gruppe);
     }
 }

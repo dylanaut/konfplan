@@ -17,14 +17,6 @@ public class Teilnehmer extends Nutzer {
     @OneToMany(mappedBy = "teilnehmer", cascade = CascadeType.ALL)
     public List<Prioritaet> prioritaeten = new ArrayList<>();
 
-    @ManyToMany
-    @JoinTable(
-            name = "Teilnehmer_EventSlot",
-            joinColumns = @JoinColumn(name = "teilnehmer_id"),
-            inverseJoinColumns = @JoinColumn(name = "eventslot_id")
-    )
-    public List<EventSlot> verfuegbareSlots = new ArrayList<>();
-
     public Teilnehmer() {
         this.role = "TEILNEHMER";
     }

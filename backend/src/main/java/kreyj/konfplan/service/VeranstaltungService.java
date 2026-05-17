@@ -38,66 +38,67 @@ public class VeranstaltungService {
 
     @Transactional
     public VeranstaltungDto save(VeranstaltungDto dto) {
-        Veranstaltung entity;
+        Veranstaltung v;
         String aktion;
 
         if (dto.id != null) {
-            entity = Veranstaltung.findById(dto.id);
-            if (entity == null) {
+            v = Veranstaltung.findById(dto.id);
+            if (v == null) {
                 return null;
             }
             
             // Optimistic Locking Prüfung
-            if (dto.version != null && !entity.version.equals(dto.version)) {
+            if (dto.version != null && !v.version.equals(dto.version)) {
                 throw new OptimisticLockException("Die Veranstaltung wurde in der Zwischenzeit von einem anderen Benutzer geändert.");
             }
 
             aktion = "aktualisiert";
         } else {
-            entity = new Veranstaltung();
+            v = new Veranstaltung();
             aktion = "erstellt";
         }
 
-        entity.name = dto.name;
-        entity.beginntAm = dto.beginntAm;
-        entity.endetAm = dto.endetAm;
-        entity.deadlineReferenten = dto.deadlineReferenten;
-        entity.deadlineTeilnehmer = dto.deadlineTeilnehmer;
-        entity.logo = dto.logo;
-        entity.logo_link = dto.logo_link;
+        v.name = dto.name;
+        v.beginntAm = dto.beginntAm;
+        v.endetAm = dto.endetAm;
+        v.deadlineReferenten = dto.deadlineReferenten;
+        v.deadlineTeilnehmer = dto.deadlineTeilnehmer;
+        v.logo = dto.logo;
+        v.logo_link = dto.logo_link;
 
         // Gebäude zuweisen
-        entity.gebaeude.clear();
+        v.clearGebaeude();
         if (dto.gebaeude != null) {
             for (var gDto : dto.gebaeude) {
                 Gebaeude g = Gebaeude.findById(gDto.id);
                 if (g != null) {
-                    entity.gebaeude.add(g);
+                    v.addGebaeude(g);
                 }
             }
         }
 
         // Organisatoren zuweisen
         if (dto.organisatorIds != null) {
-            entity.nutzer.removeIf(u -> u instanceof Admin);
+            v.getNutzer().stream().filter(u -> u instanceof Admin)
+                    .forEach(v::removeNutzer);
             for (Long aid : dto.organisatorIds) {
                 Admin a = Admin.findById(aid);
                 if (a != null) {
-                    entity.addNutzer(a);
+                    v.addNutzer(a);
                 }
             }
         }
 
         if (dto.id == null) {
-            entity.persist();
-            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung erstellt", "Neue Veranstaltung '" + entity.name + "' erstellt.", entity.id);
+            v.persist();
+            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung erstellt", "Neue Veranstaltung '" + v.name + "' erstellt.", v.id);
         } else {
             // ZWINGEND ERFORDERLICH FÜR OPTIMISTIC LOCKING RESPONSE:
             // Hibernate zwingen, das Update jetzt durchzuführen, damit persistence.version hochgezählt wird.
-            entity.flush();
-            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung aktualisiert", "Veranstaltung '" + entity.name + "' aktualisiert.", entity.id);
+            v.flush();
+            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung aktualisiert", "Veranstaltung '" + v.name + "' aktualisiert.", v.id);
         }
-        return VeranstaltungResource.mapVeranstaltungToDto(entity);
+        return VeranstaltungResource.mapVeranstaltungToDto(v);
     }
 
     @Transactional
@@ -150,7 +151,7 @@ public class VeranstaltungService {
                             Arrays.stream(dto.gebaeudeNamen.split("\\|")).map(String::trim).forEach(name -> {
                                 Gebaeude g = Gebaeude.find("name", name).firstResult();
                                 if (g != null) {
-                                    v.gebaeude.add(g);
+                                    v.addGebaeude(g);
                                 } else {
                                     LOG.warn("Veranstaltung '" + dto.name + "': Gebäude nicht gefunden: '" + name + "'");
                                 }

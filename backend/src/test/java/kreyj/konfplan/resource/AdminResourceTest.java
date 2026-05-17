@@ -28,7 +28,6 @@ import static org.hamcrest.CoreMatchers.is;
 @QuarkusTestResource(H2DatabaseTestResource.class)
 class AdminResourceTest extends ResourceTestBase {
 
-
     Long adminId;
 
     @BeforeEach
@@ -80,15 +79,18 @@ class AdminResourceTest extends ResourceTestBase {
     @Test
     void testUpdateUser() {
         final Long[] userId = new Long[1];
+        final String oldEmail = "old@test.de";
+        final String newEmail = "updated@test.de";
+
         QuarkusTransaction.requiringNew().run(() -> {
             Teilnehmer t = new Teilnehmer();
-            t.email = "old@test.de";
+            t.email = oldEmail;
             t.persist();
             userId[0] = t.id;
         });
 
         NutzerDto dto = new NutzerDto();
-        dto.email = "updated@test.de";
+        dto.email = newEmail;
         dto.role = "TEILNEHMER";
         dto.firstName = "Max";
         dto.lastName = "Mustermann";
@@ -100,9 +102,14 @@ class AdminResourceTest extends ResourceTestBase {
                 .when().put("/api/admin/nutzer/{id}", userId[0])
                 .then()
                 .statusCode(OK.getStatusCode())
-                .body("email", is("updated@test.de"));
+                .body("email", is(oldEmail)); // Email should not have changed yet
 
-        Assertions.assertNotNull(Nutzer.findByEmail("updated@test.de"));
+        QuarkusTransaction.requiringNew().run(() -> {
+            Nutzer user = Nutzer.findById(userId[0]);
+            assertThat(user.email).isEqualTo(oldEmail);
+            assertThat(user.newEmail).isEqualTo(newEmail);
+            assertThat(user.emailChangeToken).isNotNull();
+        });
     }
 
     @Test
@@ -152,7 +159,7 @@ class AdminResourceTest extends ResourceTestBase {
 
         QuarkusTransaction.requiringNew().run(() -> {
             Teilnehmer t = Teilnehmer.findById(userId[0]);
-            Assertions.assertEquals(1, t.veranstaltungen.size());
+            Assertions.assertEquals(1, t.getVeranstaltungen().size());
         });
     }
 
