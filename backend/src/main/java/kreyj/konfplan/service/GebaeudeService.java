@@ -32,20 +32,20 @@ public class GebaeudeService {
 
     @Transactional
     public Gebaeude save(Gebaeude g) {
-        if (g.id == null) {
+        if (g.getId() == null) {
             g.persist();
-            protokollService.log(ProtokollKategorie.GEBAEUDE, "Gebäude erstellt", "Gebäude '" + g.name + "' erstellt.", g.id);
+            protokollService.log(ProtokollKategorie.GEBAEUDE, "Gebäude erstellt", "Gebäude '" + g.getName() + "' erstellt.", g.getId());
             return g;
         } else {
-            Gebaeude entity = Gebaeude.findById(g.id);
+            Gebaeude entity = Gebaeude.findById(g.getId());
             if (entity == null) return null;
-            entity.name = g.name;
-            entity.typ = g.typ;
-            entity.strasse = g.strasse;
-            entity.hausnummer = g.hausnummer;
-            entity.postleitzahl = g.postleitzahl;
-            entity.ort = g.ort;
-            protokollService.log(ProtokollKategorie.GEBAEUDE, "Gebäude aktualisiert", "Gebäude '" + entity.name + "' aktualisiert.", entity.id);
+            entity.setName(g.getName());
+            entity.setTyp(g.getTyp());
+            entity.setStrasse(g.getStrasse());
+            entity.setHausnummer(g.getHausnummer());
+            entity.setPostleitzahl(g.getPostleitzahl());
+            entity.setOrt(g.getOrt());
+            protokollService.log(ProtokollKategorie.GEBAEUDE, "Gebäude aktualisiert", "Gebäude '" + entity.getName() + "' aktualisiert.", entity.getId());
             return entity;
         }
     }
@@ -84,18 +84,18 @@ public class GebaeudeService {
                 }
 
                 Gebaeude g = new Gebaeude();
-                g.name = gebaeudeName;
+                g.setName(gebaeudeName);
                 try {
-                    g.typ = Gebaeude.Gebaeudetyp.valueOf(dto.typ.toUpperCase());
+                    g.setTyp(Gebaeude.Gebaeudetyp.valueOf(dto.typ.toUpperCase()));
                 } catch (IllegalArgumentException e) {
                     LOG.warn("Gebäude '" + gebaeudeName + "' übersprungen: Ungültiger Gebäudetyp '" + dto.typ + "'.");
                     protokollService.log(ProtokollKategorie.GEBAEUDE, "Gebäude-Import übersprungen", "Gebäude '" + gebaeudeName + "': Ungültiger Gebäudetyp '" + dto.typ + "'.");
                     continue;
                 }
-                g.strasse = dto.strasse;
-                g.hausnummer = dto.hausnummer;
-                g.postleitzahl = dto.plz;
-                g.ort = dto.ort;
+                g.setStrasse(dto.strasse);
+                g.setHausnummer(dto.hausnummer);
+                g.setPostleitzahl(dto.plz);
+                g.setOrt(dto.ort);
                 g.persist();
 
                 // Räume parsen und zuweisen
@@ -106,15 +106,15 @@ public class GebaeudeService {
                         if (parts.length >= 2) {
                             try {
                                 Raum r = new Raum();
-                                r.name = parts[0].trim();
-                                r.kapazitaet = Integer.parseInt(parts[1].trim());
+                                r.setName(parts[0].trim());
+                                r.setKapazitaet(Integer.parseInt(parts[1].trim()));
                                 if (parts.length >= 3) {
-                                    r.etage = parts[2].trim();
+                                    r.setEtage(parts[2].trim());
                                 }
-                                r.gebaeude = g;
+                                r.setGebaeude(g);
                                 r.persist();
                                 g.addRaum(r);
-                                protokollService.log(ProtokollKategorie.RAUM, "Raum importiert (via Gebäude-Import)", "Raum '" + r.name + "' für Gebäude '" + g.name + "' importiert.", r.id);
+                                protokollService.log(ProtokollKategorie.RAUM, "Raum importiert (via Gebäude-Import)", "Raum '" + r.getName() + "' für Gebäude '" + g.getName() + "' importiert.", r.getId());
                             } catch (NumberFormatException e) {
                                 LOG.warn("Gebäude '" + gebaeudeName + "': Raum '" + rs + "' übersprungen: Ungültige Kapazität. " + e.getMessage());
                                 protokollService.log(ProtokollKategorie.RAUM, "Raum-Import übersprungen (via Gebäude-Import)", "Gebäude '" + gebaeudeName + "': Raum '" + rs + "' ungültige Kapazität.");
@@ -127,7 +127,7 @@ public class GebaeudeService {
                     g.persist();
                 }
                 count++;
-                protokollService.log(ProtokollKategorie.GEBAEUDE, "Gebäude importiert", "Gebäude '" + g.name + "' via CSV importiert.", g.id);
+                protokollService.log(ProtokollKategorie.GEBAEUDE, "Gebäude importiert", "Gebäude '" + g.getName() + "' via CSV importiert.", g.getId());
             }
         } catch (Exception e) {
             LOG.error("Kritischer Fehler beim Importieren der Gebäude und Räume aus CSV: " + csvFilePath, e);
@@ -143,7 +143,7 @@ public class GebaeudeService {
     public boolean delete(Long id) {
         Gebaeude gebaeude = Gebaeude.findById(id);
         if (gebaeude != null) {
-            String name = gebaeude.name;
+            String name = gebaeude.getName();
             boolean deleted = Gebaeude.deleteById(id);
             if (deleted) {
                 protokollService.log(ProtokollKategorie.GEBAEUDE, "Gebäude gelöscht", "Gebäude '" + name + "' gelöscht.", id);

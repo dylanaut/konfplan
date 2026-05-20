@@ -73,14 +73,14 @@ public class ReportResource {
             return laufzettelTeilnehmer.data("error", "Teilnehmer oder Veranstaltung nicht gefunden.");
         }
 
-        if (!jwt.getGroups().contains("ADMIN") && !teilnehmer.email.equals(jwt.getName())) {
+        if (!jwt.getGroups().contains("ADMIN") && !teilnehmer.getEmail().equals(jwt.getName())) {
             return laufzettelTeilnehmer.data("error", "Zugriff verweigert.");
         }
 
         return laufzettelTeilnehmer.data(
                 "veranstaltung", veranstaltung,
                 "teilnehmer", teilnehmer,
-                "plan", planService.getPlanFuerTeilnehmer(teilnehmer.email, vid)
+                "plan", planService.getPlanFuerTeilnehmer(teilnehmer.getEmail(), vid)
         );
     }
 
@@ -97,14 +97,14 @@ public class ReportResource {
             throw new RuntimeException("Teilnehmer oder Veranstaltung nicht gefunden.");
         }
 
-        if (!jwt.getGroups().contains("ADMIN") && !teilnehmer.email.equals(jwt.getName())) {
+        if (!jwt.getGroups().contains("ADMIN") && !teilnehmer.getEmail().equals(jwt.getName())) {
             throw new RuntimeException("Zugriff verweigert.");
         }
 
         TemplateInstance templateInstance = laufzettelTeilnehmer.data(
                 "veranstaltung", veranstaltung,
                 "teilnehmer", teilnehmer,
-                "plan", planService.getPlanFuerTeilnehmer(teilnehmer.email, vid)
+                "plan", planService.getPlanFuerTeilnehmer(teilnehmer.getEmail(), vid)
         );
 
         return pdfService.generatePdf(templateInstance);
@@ -123,14 +123,14 @@ public class ReportResource {
             return laufzettelReferent.data("error", "Referent oder Veranstaltung nicht gefunden.");
         }
 
-        if (!jwt.getGroups().contains("ADMIN") && !referent.email.equals(jwt.getName())) {
+        if (!jwt.getGroups().contains("ADMIN") && !referent.getEmail().equals(jwt.getName())) {
             return laufzettelReferent.data("error", "Zugriff verweigert.");
         }
 
         return laufzettelReferent.data(
                 "veranstaltung", veranstaltung,
                 "referent", referent,
-                "plan", planService.getPlanFuerReferent(referent.email, vid)
+                "plan", planService.getPlanFuerReferent(referent.getEmail(), vid)
         );
     }
 
@@ -147,14 +147,14 @@ public class ReportResource {
             throw new RuntimeException("Referent oder Veranstaltung nicht gefunden.");
         }
 
-        if (!jwt.getGroups().contains("ADMIN") && !referent.email.equals(jwt.getName())) {
+        if (!jwt.getGroups().contains("ADMIN") && !referent.getEmail().equals(jwt.getName())) {
             throw new RuntimeException("Zugriff verweigert.");
         }
 
         TemplateInstance templateInstance = laufzettelReferent.data(
                 "veranstaltung", veranstaltung,
                 "referent", referent,
-                "plan", planService.getPlanFuerReferent(referent.email, vid)
+                "plan", planService.getPlanFuerReferent(referent.getEmail(), vid)
         );
 
         return pdfService.generatePdf(templateInstance);
@@ -248,7 +248,7 @@ public class ReportResource {
             return freieSlotsReferenten.data("error", "Veranstaltung nicht gefunden.");
         }
         Map<Long, List<EventSlot>> freieSlots = planService.getFreieSlotsReferenten(vid);
-        List<Referent> referenten = Referent.find("SELECT r FROM Referent r JOIN r.veranstaltungen v WHERE v.id = ?1", vid).list();
+        List<Referent> referenten = Referent.find("SELECT r FROM Referent r JOIN r.veranstaltungen v WHERE v.getId() = ?1", vid).list();
         return freieSlotsReferenten.data("veranstaltung", veranstaltung)
                 .data("freieSlots", freieSlots)
                 .data("referenten", referenten);
@@ -265,7 +265,7 @@ public class ReportResource {
             throw new RuntimeException("Veranstaltung nicht gefunden.");
         }
         Map<Long, List<EventSlot>> freieSlots = planService.getFreieSlotsReferenten(vid);
-        List<Referent> referenten = Referent.find("SELECT r FROM Referent r JOIN r.veranstaltungen v WHERE v.id = ?1", vid).list();
+        List<Referent> referenten = Referent.find("SELECT r FROM Referent r JOIN r.veranstaltungen v WHERE v.getId() = ?1", vid).list();
         TemplateInstance templateInstance = freieSlotsReferenten.data("veranstaltung", veranstaltung)
                 .data("freieSlots", freieSlots)
                 .data("referenten", referenten);
@@ -283,7 +283,7 @@ public class ReportResource {
             return freieSlotsTeilnehmer.data("error", "Veranstaltung nicht gefunden.");
         }
         Map<Long, List<EventSlot>> freieSlots = planService.getFreieSlotsTeilnehmer(vid);
-        List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", vid).list();
+        List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.getId() = ?1", vid).list();
         return freieSlotsTeilnehmer.data("veranstaltung", veranstaltung)
                 .data("freieSlots", freieSlots)
                 .data("teilnehmer", teilnehmer);
@@ -300,7 +300,7 @@ public class ReportResource {
             throw new RuntimeException("Veranstaltung nicht gefunden.");
         }
         Map<Long, List<EventSlot>> freieSlots = planService.getFreieSlotsTeilnehmer(vid);
-        List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", vid).list();
+        List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.getId() = ?1", vid).list();
         TemplateInstance templateInstance = freieSlotsTeilnehmer.data("veranstaltung", veranstaltung)
                 .data("freieSlots", freieSlots)
                 .data("teilnehmer", teilnehmer);

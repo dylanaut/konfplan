@@ -39,34 +39,34 @@ public class MailService {
 
     public void sendVortragsRegistrierung(Admin organisator, Veranstaltung v, Referent referent, Vortrag vortrag, boolean isAdded) {
         String action = isAdded ? "angemeldet" : "abgemeldet / zurückgezogen";
-        String subject = String.format("Vortrags-Update: %s für %s", action, v.name);
+        String subject = String.format("Vortrags-Update: %s für %s", action, v.getName());
         String body = String.format(
                 "Hallo %s,\n\nder Referent %s %s hat den Vortrag '%s' für die Veranstaltung '%s' %s.\n\nDies ist eine automatische Benachrichtigung.",
-                organisator.lastName,
-                referent.firstName, referent.lastName,
-                vortrag.titel,
-                v.name,
+                organisator.getLastName(),
+                referent.getFirstName(), referent.getLastName(),
+                vortrag.getTitel(),
+                v.getName(),
                 action
         );
 
-        mailer.send(Mail.withText(organisator.email, subject, body)
+        mailer.send(Mail.withText(organisator.getEmail(), subject, body)
                 .setFrom(senderEmail(v)));
     }
 
     public void sendEinladungZuVeranstaltung(Nutzer nutzer, Veranstaltung v) {
-        if (nutzer.email == null) {
+        if (nutzer.getEmail() == null) {
             return;
         }
 
-        String subject = "Einladung zur Veranstaltung: " + v.name;
+        String subject = "Einladung zur Veranstaltung: " + v.getName();
         String body = String.format(
                 "Hallo %s %s,\n\nDu wurdest zur Veranstaltung '%s' eingeladen.\n" +
                         "Datum: %s\n\nWir freuen uns auf Deine Teilnahme!",
-                nutzer.firstName, nutzer.lastName,
-                v.name, v.beginntAm.toString()
+                nutzer.getFirstName(), nutzer.getLastName(),
+                v.getName(), v.getBeginntAm().toString()
         );
 
-        mailer.send(Mail.withText(nutzer.email, subject, body)
+        mailer.send(Mail.withText(nutzer.getEmail(), subject, body)
                 .setFrom(senderEmail(v)));
     }
 
@@ -76,40 +76,40 @@ public class MailService {
      * @param nutzer Der neu registrierte Nutzer.
      */
     public void sendRegistrationConfirmation(Nutzer nutzer) {
-        if (nutzer.email == null) {
+        if (nutzer.getEmail() == null) {
             return;
         }
-        registrationConfirmationTemplate.to(nutzer.email)
+        registrationConfirmationTemplate.to(nutzer.getEmail())
                 .from(adminEmail)
                 .subject("Willkommen bei KonfPlan!")
-                .data("firstName", nutzer.firstName)
-                .data("lastName", nutzer.lastName)
-                .data("email", nutzer.email)
+                .data("firstName", nutzer.getFirstName())
+                .data("lastName", nutzer.getLastName())
+                .data("email", nutzer.getEmail())
                 .send()
                 .subscribe().with(
-                        success -> System.out.println("Registration confirmation mail sent to " + nutzer.email),
+                        success -> System.out.println("Registration confirmation mail sent to " + nutzer.getEmail()),
                         failure -> System.err.println("Failed to send registration confirmation mail: " + failure.getMessage())
                 );
     }
 
     /**
-     * Sendet eine Benachrichtigung, wenn ein Nutzer-Account gelöscht oder abgemeldet wurde.
+     * Sendet eine Benachrichtigung, wenn ein Nutzer-Profil gelöscht oder abgemeldet wurde.
      *
      * @param nutzer Der gelöschte oder abgemeldete Nutzer.
      */
     public void sendUserDeletionNotification(Nutzer nutzer) {
-        if (nutzer.email == null) {
+        if (nutzer.getEmail() == null) {
             return;
         }
-        deregistrationNotificationTemplate.to(nutzer.email)
+        deregistrationNotificationTemplate.to(nutzer.getEmail())
                 .from(adminEmail)
-                .subject("Dein Account beim KonfPlan wurde gelöscht/abgemeldet")
-                .data("firstName", nutzer.firstName)
-                .data("lastName", nutzer.lastName)
-                .data("email", nutzer.email)
+                .subject("Dein Profil beim KonfPlan wurde gelöscht/abgemeldet")
+                .data("firstName", nutzer.getFirstName())
+                .data("lastName", nutzer.getLastName())
+                .data("email", nutzer.getEmail())
                 .send()
                 .subscribe().with(
-                        success -> System.out.println("Deregistration notification mail sent to " + nutzer.email),
+                        success -> System.out.println("Deregistration notification mail sent to " + nutzer.getEmail()),
                         failure -> System.err.println("Failed to send deregistration notification mail: " + failure.getMessage())
                 );
     }
@@ -128,8 +128,8 @@ public class MailService {
         emailChangeNotificationOldAddressTemplate.to(oldEmail)
                 .subject("Wichtige Information: Deine E-Mail-Adresse wurde geändert")
                 .from(adminEmail)
-                .data("firstName", nutzer.firstName)
-                .data("lastName", nutzer.lastName)
+                .data("firstName", nutzer.getFirstName())
+                .data("lastName", nutzer.getLastName())
                 .data("oldEmail", oldEmail)
                 .data("newEmail", newEmail)
                 .send()
@@ -153,8 +153,8 @@ public class MailService {
         emailChangeConfirmationNewAddressTemplate.to(newEmail)
                 .subject("Bitte bestätige deine neue E-Mail-Adresse für den KonfPlan")
                 .from(adminEmail)
-                .data("firstName", nutzer.firstName)
-                .data("lastName", nutzer.lastName)
+                .data("firstName", nutzer.getFirstName())
+                .data("lastName", nutzer.getLastName())
                 .data("newEmail", newEmail)
                 .data("confirmationLink", confirmationLink)
                 .send()
@@ -170,6 +170,6 @@ public class MailService {
 
 
     private static String senderEmail(Veranstaltung v) {
-        return v.organisatoren().iterator().next().email;
+        return v.organisatoren().iterator().next().getEmail();
     }
 }

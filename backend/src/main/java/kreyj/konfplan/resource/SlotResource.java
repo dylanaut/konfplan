@@ -34,13 +34,13 @@ public class SlotResource {
     public static EventSlotDto mapSlotToDto(EventSlot eventSlot) {
         EventSlotDto dto = new EventSlotDto();
 
-        dto.id = eventSlot.id;
-        dto.version = eventSlot.version;
+        dto.id = eventSlot.getId();
+        dto.version = eventSlot.getVersion();
 
-        dto.description = eventSlot.description;
-        dto.startTime = eventSlot.startTime;
-        dto.endTime = eventSlot.endTime;
-        dto.veranstaltungId = eventSlot.veranstaltung.id;
+        dto.description = eventSlot.getDescription();
+        dto.startTime = eventSlot.getStartTime();
+        dto.endTime = eventSlot.getEndTime();
+        dto.veranstaltungId = eventSlot.getVeranstaltung().getId();
 
         return dto;
     }

@@ -1,25 +1,32 @@
 package kreyj.konfplan.persistence;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
+@Getter
+@Setter
 public class Zuweisung extends VersionedEntity {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "teilnehmer_id")
-    public Teilnehmer teilnehmer;
+    private Teilnehmer teilnehmer;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "vortrag_id")
-    public Vortrag vortrag;
+    private Vortrag vortrag;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "eventslot_id")
-    public EventSlot slot;
+    private EventSlot slot;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "raum_id")
-    public Raum raum;
+    private Raum raum;
 
-    public Zuweisung() {}
+    public Zuweisung() {
+    }
 }

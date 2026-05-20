@@ -1,8 +1,11 @@
 package kreyj.konfplan.service;
 
+import lombok.Getter;
+
 import java.util.EnumMap;
 import java.util.Map;
 
+@Getter
 public class MinizincException extends RuntimeException {
 
     private final MZ_Exception exceptionType;
@@ -29,9 +32,6 @@ public class MinizincException extends RuntimeException {
         return message;
     }
 
-    public MZ_Exception getExceptionType() {
-        return exceptionType;
-    }
 
     public enum MZ_Exception {
         NO_SOLUTION,

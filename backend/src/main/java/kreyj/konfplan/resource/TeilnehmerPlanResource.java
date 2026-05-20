@@ -3,14 +3,26 @@ package kreyj.konfplan.resource;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.dto.PrioritaetRequest;
 import kreyj.konfplan.dto.VeranstaltungDto;
 import kreyj.konfplan.dto.VerfuegbarkeitDto;
 import kreyj.konfplan.dto.ZuweisungDto;
-import kreyj.konfplan.persistence.*;
+import kreyj.konfplan.persistence.EventSlot;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Prioritaet;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Verfuegbarkeit;
 import kreyj.konfplan.service.PlanService;
 import kreyj.konfplan.service.PrioritaetService;
 import kreyj.konfplan.util.JwtHelper;
@@ -47,7 +59,9 @@ public class TeilnehmerPlanResource {
     public List<VeranstaltungDto> getMeineVeranstaltungen() {
         String email = JwtHelper.getUserPrincipalName(jwt);
         Teilnehmer t = Teilnehmer.find("email", email).firstResult();
-        if (t == null) return List.of();
+        if (t == null) {
+            return List.of();
+        }
         return t.getVeranstaltungen().stream()
                 .map(VeranstaltungResource::mapVeranstaltungToDto)
                 .toList();
@@ -82,12 +96,14 @@ public class TeilnehmerPlanResource {
     @Operation(summary = "Meine Verfügbarkeiten abrufen", description = "Ruft die persönlichen Verfügbarkeiten des Teilnehmers für eine Veranstaltung ab.")
     public List<VerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
-        if (!(nutzer instanceof Teilnehmer)) throw new WebApplicationException("Nutzer ist kein Teilnehmer", FORBIDDEN.getStatusCode());
+        if (!(nutzer instanceof Teilnehmer)) {
+            throw new WebApplicationException("Nutzer ist kein Teilnehmer", FORBIDDEN.getStatusCode());
+        }
 
-        return Verfuegbarkeit.find("nutzer = ?1 and slot.veranstaltung.id = ?2", nutzer, vid).stream()
+        return Verfuegbarkeit.find("nutzer = ?1 and slot.veranstaltung.getId() = ?2", nutzer, vid).stream()
                 .map(v -> {
                     Verfuegbarkeit vf = (Verfuegbarkeit) v;
-                    return new VerfuegbarkeitDto(vf.nutzer.id, vf.slot.id, vf.isAvailable);
+                    return new VerfuegbarkeitDto(vf.getNutzer().getId(), vf.getSlot().getId(), vf.isAvailable());
                 })
                 .collect(Collectors.toList());
     }
@@ -98,27 +114,34 @@ public class TeilnehmerPlanResource {
     @Operation(summary = "Verfügbarkeit aktualisieren", description = "Aktualisiert die persönliche Verfügbarkeit des Teilnehmers für einen bestimmten Slot.")
     public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten", required = true) VerfuegbarkeitDto dto) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
-        if (!(nutzer instanceof Teilnehmer)) return Response.status(FORBIDDEN).build();
+        if (!(nutzer instanceof Teilnehmer)) {
+            return Response.status(FORBIDDEN).build();
+        }
 
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (veranstaltung == null) return Response.status(Response.Status.NOT_FOUND).build();
+        if (veranstaltung == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
 
         // Deadline Check
-        if (veranstaltung.deadlineTeilnehmer != null && veranstaltung.deadlineTeilnehmer.isBefore(LocalDateTime.now())) {
+        if (veranstaltung.getDeadlineTeilnehmer() != null && veranstaltung.getDeadlineTeilnehmer().isBefore(LocalDateTime.now())) {
             return Response.status(FORBIDDEN)
                     .entity("Die Deadline für Teilnehmer ist bereits abgelaufen.").build();
         }
 
         EventSlot slot = EventSlot.findById(dto.slotId);
-        if (slot == null || !slot.veranstaltung.id.equals(vid)) return Response.status(Response.Status.BAD_REQUEST).build();
+        if (slot == null || !slot.getVeranstaltung().getId().equals(vid)) {
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
 
         Verfuegbarkeit v = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", nutzer, slot).firstResult();
         if (v == null) {
-            v = new Verfuegbarkeit();
-            v.nutzer = nutzer;
-            v.slot = slot;
+            v = new Verfuegbarkeit(nutzer, slot, dto.isAvailable);
+            v.setNutzer(nutzer);
+            v.setSlot(slot);
+        } else {
+            v.setAvailable(dto.isAvailable);
         }
-        v.isAvailable = dto.isAvailable;
         v.persist();
         return Response.ok().build();
     }

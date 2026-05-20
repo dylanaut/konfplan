@@ -39,8 +39,8 @@ class CsvImportTest {
         Veranstaltung.deleteAll();
 
         Admin admin = new Admin();
-        admin.email = "admin@test.de";
-        admin.passwordHash = "hash";
+        admin.setEmail("admin@test.de");
+        admin.setPasswordHash("hash");
         admin.persist();
 
         Gebaeude gebaeude = setupGebaeude("RKS_LINZ");
@@ -50,12 +50,12 @@ class CsvImportTest {
     private Gebaeude setupGebaeude(String gebaeudeName) {
         Gebaeude gebaeude = new Gebaeude();
 
-        gebaeude.name = gebaeudeName;
-        gebaeude.typ = Gebaeude.Gebaeudetyp.SCHULE;
-        gebaeude.strasse = "Alte Str.";
-        gebaeude.hausnummer = "10";
-        gebaeude.postleitzahl = "12345";
-        gebaeude.ort = "Stadt";
+        gebaeude.setName(gebaeudeName);
+        gebaeude.setTyp(Gebaeude.Gebaeudetyp.SCHULE);
+        gebaeude.setStrasse("Alte Str.");
+        gebaeude.setHausnummer("10");
+        gebaeude.setPostleitzahl("12345");
+        gebaeude.setOrt("Stadt");
         gebaeude.persist();
 
         return gebaeude;
@@ -63,16 +63,16 @@ class CsvImportTest {
 
     private Long setupVeranstaltung(Admin admin, List<Gebaeude> gebaeudeList) {
         Veranstaltung v = new Veranstaltung();
-        v.name = "Basis Event " + System.currentTimeMillis();
-        v.beginntAm = LocalDateTime.of(2025, 10, 10, 9, 0);
-        v.endetAm = LocalDateTime.of(2025, 10, 10, 17, 0);
+        v.setName("Basis Event " + System.currentTimeMillis());
+        v.setBeginntAm(LocalDateTime.of(2025, 10, 10, 9, 0));
+        v.setEndetAm(LocalDateTime.of(2025, 10, 10, 17, 0));
         gebaeudeList.forEach(v::addGebaeude);
         v.persist();
 
         admin.addVeranstaltung(v);
         admin.persist();
 
-        return v.id;
+        return v.getId();
     }
 
     @Test
@@ -118,7 +118,7 @@ class CsvImportTest {
 
         Admin organisator = (Admin) Nutzer.findByEmail("kathrin.jessen@rks-linz.de");
         assertThat(organisator).isNotNull();
-        assertThat(organisator.firstName).isEqualTo("Kathrin");
+        assertThat(organisator.getFirstName()).isEqualTo("Kathrin");
     }
 
     @Test
@@ -135,7 +135,7 @@ class CsvImportTest {
         Referent r = (Referent) Nutzer.findByEmail("max@ref.de");
         assertThat(r).isNotNull();
         
-        assertThat(r.organisation).isEqualTo("TechCorp");
+        assertThat(r.getOrganisation()).isEqualTo("TechCorp");
     }
 
     @Test
@@ -151,7 +151,7 @@ class CsvImportTest {
 
         Teilnehmer t = (Teilnehmer) Nutzer.findByEmail("tom@stud.de");
         assertThat(t).isNotNull();
-        assertThat(t.gruppe).isEqualTo("10b");
+        assertThat(t.getGruppe()).isEqualTo("10b");
     }
 
     @Test
@@ -172,10 +172,10 @@ class CsvImportTest {
     void testImportVortraege() {
         QuarkusTransaction.requiringNew().run(() -> {
             Referent r = new Referent();
-            r.email = "vortrag@ref.de";
-            r.firstName = "Max";
-            r.lastName = "Ref";
-            r.passwordHash = "hash";
+            r.setEmail("vortrag@ref.de");
+            r.setFirstName("Max");
+            r.setLastName("Ref");
+            r.setPasswordHash("hash");
             r.addVeranstaltung(Veranstaltung.findById(testVid));
             r.persist();
         });
@@ -191,6 +191,6 @@ class CsvImportTest {
 
         Wahlvortrag wv = Wahlvortrag.find("titel", "Java Kurs").firstResult();
         assertThat(wv).describedAs("Wahlvortrag sollte importiert worden sein").isNotNull();
-        assertThat(wv.wiederholbar).isTrue();
+        assertThat(wv.isWiederholbar()).isTrue();
     }
 }

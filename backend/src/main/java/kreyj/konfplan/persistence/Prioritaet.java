@@ -1,21 +1,28 @@
 package kreyj.konfplan.persistence;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.ManyToOne;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
+@Setter
 public class Prioritaet extends IdEntity {
     @ManyToOne
-    public Teilnehmer teilnehmer;
+    private Teilnehmer teilnehmer;
 
     @ManyToOne
-    public Vortrag vortrag;
+    private Vortrag vortrag;
 
-    public int prioWert;
+    private int prioWert;
 
-    public LocalDateTime lastUpdated;
+    private LocalDateTime lastUpdated;
 
-    public Prioritaet() {}
+    public Prioritaet() {
+    }
 
     public Prioritaet(Teilnehmer teilnehmer, Wahlvortrag wahlvortrag, int prio) {
         this.teilnehmer = teilnehmer;

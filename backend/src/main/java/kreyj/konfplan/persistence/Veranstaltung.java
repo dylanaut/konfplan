@@ -1,39 +1,56 @@
 package kreyj.konfplan.persistence;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotEmpty;
 import kreyj.konfplan.persistence.converter.LocalDateTimeConverter;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Entity
+@Getter
+@Setter
 @Table(uniqueConstraints = {
         @UniqueConstraint(columnNames = {"name", "beginntAm"})
 })
 public class Veranstaltung extends VersionedEntity {
 
     @Column(nullable = false)
-    public String name;
+    private String name;
 
     @Column(nullable = false)
     @Convert(converter = LocalDateTimeConverter.class)
-    public LocalDateTime beginntAm;
+    private LocalDateTime beginntAm;
 
     @Convert(converter = LocalDateTimeConverter.class)
-    public LocalDateTime endetAm;
+    private LocalDateTime endetAm;
 
     @Convert(converter = LocalDateTimeConverter.class)
-    public LocalDateTime deadlineReferenten;
+    private LocalDateTime deadlineReferenten;
 
     @Convert(converter = LocalDateTimeConverter.class)
-    public LocalDateTime deadlineTeilnehmer;
+    private LocalDateTime deadlineTeilnehmer;
 
-    public String logo;
+    private String logo;
 
-    public String logo_link;
+    private String logo_link;
 
     @ManyToMany
     @JoinTable(
@@ -95,13 +112,13 @@ public class Veranstaltung extends VersionedEntity {
             return;
         }
         this.eventSlots.add(slot);
-        slot.veranstaltung = this;
+        slot.setVeranstaltung(this);
     }
 
     public void removeSlot(EventSlot slot) {
         if (this.eventSlots.contains(slot)) {
             this.eventSlots.remove(slot);
-            slot.veranstaltung = null;
+            slot.setVeranstaltung(null);
         }
     }
 
@@ -110,13 +127,13 @@ public class Veranstaltung extends VersionedEntity {
             return;
         }
         this.vortraege.add(vortrag);
-        vortrag.veranstaltung = this;
+        vortrag.setVeranstaltung(this);
     }
 
     public void removeVortrag(Vortrag vortrag) {
         if (this.vortraege.contains(vortrag)) {
             this.vortraege.remove(vortrag);
-            vortrag.veranstaltung = null;
+            vortrag.setVeranstaltung(null);
         }
     }
 
@@ -141,12 +158,12 @@ public class Veranstaltung extends VersionedEntity {
             return;
         }
         this.gebaeude.add(gebaeude);
-        gebaeude.veranstaltungen.add(this);
+        gebaeude.getVeranstaltungen().add(this);
     }
 
     public void clearGebaeude() {
         for (Gebaeude g : this.gebaeude) {
-            g.veranstaltungen.remove(this);
+            g.getVeranstaltungen().remove(this);
         }
         this.gebaeude.clear();
     }

@@ -39,46 +39,46 @@ public class PrioritaetImportTest {
         Gebaeude.deleteAll();
 
         Admin admin = new Admin();
-        admin.email = "admin@test.de";
-        admin.passwordHash = "hash";
+        admin.setEmail("admin@test.de");
+        admin.setPasswordHash("hash");
         admin.persist();
 
         Veranstaltung v = new Veranstaltung();
-        v.name = "Test Event " + System.currentTimeMillis();
-        v.beginntAm = LocalDateTime.of(2025, 10, 10, 9, 0);
-        v.endetAm = LocalDateTime.of(2025, 10, 10, 17, 0);
+        v.setName("Test Event " + System.currentTimeMillis());
+        v.setBeginntAm(LocalDateTime.of(2025, 10, 10, 9, 0));
+        v.setEndetAm(LocalDateTime.of(2025, 10, 10, 17, 0));
         v.persist();
-        testVid = v.id;
+        testVid = v.getId();
 
         admin.addVeranstaltung(v);
         admin.persist();
 
         Teilnehmer t1 = new Teilnehmer();
-        t1.email = "teilnehmer1@test.de";
-        t1.passwordHash = "hash";
+        t1.setEmail("teilnehmer1@test.de");
+        t1.setPasswordHash("hash");
         t1.addVeranstaltung(v);
         t1.persist();
-        teilnehmer1Id = t1.id;
+        teilnehmer1Id = t1.getId();
 
         Referent r1 = new Referent();
-        r1.email = "referent1@test.de";
-        r1.passwordHash = "hash";
+        r1.setEmail( "referent1@test.de");
+        r1.setPasswordHash("hash");
         r1.addVeranstaltung(v);
         r1.persist();
 
         Wahlvortrag wv1 = new Wahlvortrag();
-        wv1.titel = "Wahlvortrag 1";
-        wv1.veranstaltung = v;
-        wv1.referent = r1;
+        wv1.setTitel( "Wahlvortrag 1");
+        wv1.setVeranstaltung(v);
+        wv1.setReferent(r1);
         wv1.persist();
-        wv1Id = wv1.id;
+        wv1Id = wv1.getId();
 
         Wahlvortrag wv2 = new Wahlvortrag();
-        wv2.titel = "Wahlvortrag 2";
-        wv2.veranstaltung = v;
-        wv2.referent = r1; // same referent for simplicity
+        wv2.setTitel("Wahlvortrag 2");
+        wv2.setVeranstaltung(v);
+        wv2.setReferent(r1); // same referent for simplicity
         wv2.persist();
-        wv2Id = wv2.id;
+        wv2Id = wv2.getId();
     }
 
     @Test
@@ -97,12 +97,12 @@ public class PrioritaetImportTest {
 
         assertEquals(2, Prioritaet.count());
 
-        Prioritaet p1 = Prioritaet.find("teilnehmer.id = ?1 and vortrag.id = ?2", teilnehmer1Id, wv1Id).firstResult();
+        Prioritaet p1 = Prioritaet.find("teilnehmer.getId() = ?1 and vortrag.getId() = ?2", teilnehmer1Id, wv1Id).firstResult();
         assertNotNull(p1);
-        assertEquals(5, p1.prioWert);
+        assertEquals(5, p1.getPrioWert());
 
-        Prioritaet p2 = Prioritaet.find("teilnehmer.id = ?1 and vortrag.id = ?2", teilnehmer1Id, wv2Id).firstResult();
+        Prioritaet p2 = Prioritaet.find("teilnehmer.getId() = ?1 and vortrag.getId() = ?2", teilnehmer1Id, wv2Id).firstResult();
         assertNotNull(p2);
-        assertEquals(3, p2.prioWert);
+        assertEquals(3, p2.getPrioWert());
     }
 }

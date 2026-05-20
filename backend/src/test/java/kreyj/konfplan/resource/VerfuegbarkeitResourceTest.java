@@ -15,11 +15,12 @@ import java.time.LocalDateTime;
 
 import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.Response.Status.CREATED;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
-class VerfuegbarkeitTest {
+class VerfuegbarkeitResourceTest {
 
     Long testVid;
     Long slotId;
@@ -35,18 +36,18 @@ class VerfuegbarkeitTest {
         Veranstaltung.deleteAll();
 
         Veranstaltung v = new Veranstaltung();
-        v.name = "Test Event";
-        v.beginntAm = LocalDateTime.now();
+        v.setName("Test Event");
+        v.setBeginntAm(LocalDateTime.now());
         v.persist();
-        testVid = v.id;
+        testVid = v.getId();
 
         EventSlot s = new EventSlot();
-        s.description = "Slot 1";
-        s.startTime = LocalDateTime.now();
-        s.endTime = LocalDateTime.now().plusHours(1);
-        s.veranstaltung = v;
+        s.setDescription("Slot 1");
+        s.setStartTime(LocalDateTime.now());
+        s.setEndTime(LocalDateTime.now().plusHours(1));
+        s.setVeranstaltung(v);
         s.persist();
-        slotId = s.id;
+        slotId = s.getId();
 
         v.addSlot(s);
     }
@@ -72,8 +73,8 @@ class VerfuegbarkeitTest {
                 .statusCode(CREATED.getStatusCode());
 
         Nutzer ref = Nutzer.findByEmail("referent@verf.de");
-        long countRef = Verfuegbarkeit.count("nutzer = ?1 and slot.id = ?2", ref, slotId);
-        Assertions.assertEquals(1, countRef, "Verfügbarkeit für Referent sollte erstellt worden sein");
+        long countRef = Verfuegbarkeit.count("nutzer = ?1 and slot.getId() = ?2", ref, slotId);
+        assertThat(1).isEqualTo(countRef).describedAs("Verfügbarkeit für Referent sollte erstellt worden sein");
 
         String jsonTeilnehmer = """
                 {
@@ -93,8 +94,8 @@ class VerfuegbarkeitTest {
                 .statusCode(CREATED.getStatusCode());
 
         Nutzer teil = Nutzer.findByEmail("schueler@verf.de");
-        long countTeil = Verfuegbarkeit.count("nutzer = ?1 and slot.id = ?2", teil, slotId);
-        Assertions.assertEquals(1, countTeil, "Verfügbarkeit für Teilnehmer sollte erstellt worden sein");
+        long countTeil = Verfuegbarkeit.count("nutzer = ?1 and slot.getId() = ?2", teil, slotId);
+        assertThat(1).isEqualTo(countTeil).describedAs("Verfügbarkeit für Teilnehmer sollte erstellt worden sein");
     }
 
     @Test
@@ -103,17 +104,17 @@ class VerfuegbarkeitTest {
         Veranstaltung v = Veranstaltung.findById(testVid);
         
         Referent r = new Referent();
-        r.email = "del@verf.de";
+        r.setEmail("del@verf.de");
         r.persist();
         
         r.addVeranstaltung(v);
         
         long countBefore = Verfuegbarkeit.count("nutzer = ?1", r);
-        Assertions.assertEquals(1, countBefore);
+        assertThat(1).isEqualTo(countBefore);
         
         r.removeVeranstaltung(v);
         
         long countAfter = Verfuegbarkeit.count("nutzer = ?1", r);
-        Assertions.assertEquals(0, countAfter, "Verfügbarkeit sollte nach Entfernen des Nutzers gelöscht worden sein");
+        assertThat(0).isEqualTo(countAfter).describedAs("Verfügbarkeit sollte nach Entfernen des Nutzers gelöscht worden sein");
     }
 }

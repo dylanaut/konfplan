@@ -39,14 +39,14 @@ public class PlanService {
 
     @Transactional
     public List<ZuweisungDto> getGesamtplan(Long veranstaltungId) {
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.id", veranstaltungId).firstResult();
+        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.getId()", veranstaltungId).firstResult();
         if (planungsergebnis == null) {
             return Collections.emptyList();
         }
 
 
         try {
-            JsonNode root = objectMapper.readTree(planungsergebnis.jsonErgebnis);
+            JsonNode root = objectMapper.readTree(planungsergebnis.getJsonErgebnis());
             JsonNode instanzSlot = root.get("instanz_slot");
             JsonNode instanzRaum = root.get("instanz_raum");
             JsonNode besucht = root.get("besucht");
@@ -56,15 +56,15 @@ public class PlanService {
                 return Collections.emptyList();
             }
 
-            List<Teilnehmer> alleTeilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
-            List<Vortrag> alleVortraege = Vortrag.find("veranstaltung.id", veranstaltungId).list();
-            List<EventSlot> alleSlots = EventSlot.find("veranstaltung.id", veranstaltungId).list();
+            List<Teilnehmer> alleTeilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.getId() = ?1", veranstaltungId).list();
+            List<Vortrag> alleVortraege = Vortrag.find("veranstaltung.getId()", veranstaltungId).list();
+            List<EventSlot> alleSlots = EventSlot.find("veranstaltung.getId()", veranstaltungId).list();
             List<Raum> alleRaeume = Raum.listAll();
 
-            Map<Long, Teilnehmer> teilnehmerMap = alleTeilnehmer.stream().collect(toMap(t -> t.id, t -> t));
-            Map<Long, Vortrag> vortragMap = alleVortraege.stream().collect(toMap(v -> v.id, v -> v));
-            Map<Long, EventSlot> slotMap = alleSlots.stream().collect(toMap(s -> s.id, s -> s));
-            Map<Long, Raum> raumMap = alleRaeume.stream().collect(toMap(r -> r.id, r -> r));
+            Map<Long, Teilnehmer> teilnehmerMap = alleTeilnehmer.stream().collect(toMap(IdEntity::getId, t -> t));
+            Map<Long, Vortrag> vortragMap = alleVortraege.stream().collect(toMap(IdEntity::getId, v -> v));
+            Map<Long, EventSlot> slotMap = alleSlots.stream().collect(toMap(IdEntity::getId, s -> s));
+            Map<Long, Raum> raumMap = alleRaeume.stream().collect(toMap(IdEntity::getId, r -> r));
 
             List<ZuweisungDto> zuweisungen = new ArrayList<>();
 
@@ -83,16 +83,16 @@ public class PlanService {
             List<Long> raumOids = StreamSupport.stream(inputData.get("raum_oids").spliterator(), false)
                     .map(JsonNode::asLong).toList();
 
-            List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.id", veranstaltungId).list();
+            List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.getId()", veranstaltungId).list();
             for (Pflichtvortrag pv : pflichtvortraege) {
                 for (Teilnehmer tn : alleTeilnehmer) {
                     zuweisungen.add(new ZuweisungDto(
                             null,
-                            tn.lastName,
-                            pv.titel,
-                            pv.pflichtslot.startTime.format(TIME_FORMAT),
-                            pv.pflichtraum.name,
-                            pv.pflichtraum.gebaeude.name
+                            tn.getLastName(),
+                            pv.getTitel(),
+                            pv.getPflichtslot().getStartTime().format(TIME_FORMAT),
+                            pv.getPflichtraum().getName(),
+                            pv.getPflichtraum().getGebaeude().getName()
                     ));
                 }
             }
@@ -126,11 +126,11 @@ public class PlanService {
                                 if (slot != null && raum != null) {
                                     zuweisungen.add(new ZuweisungDto(
                                             null,
-                                            teilnehmer.lastName,
-                                            vortrag.titel,
-                                            slot.startTime.format(TIME_FORMAT),
-                                            raum.name,
-                                            raum.gebaeude.name
+                                            teilnehmer.getLastName(),
+                                            vortrag.getTitel(),
+                                            slot.getStartTime().format(TIME_FORMAT),
+                                            raum.getName(),
+                                            raum.getGebaeude().getName()
                                     ));
                                 }
                             }
@@ -151,18 +151,18 @@ public class PlanService {
         Map<Long, Map<Long, RaumplanEintragDto>> raumplan = getRaumbelegungsplan(veranstaltungId);
         List<RaumBelegungUebersichtDto> detaillierterPlan = new ArrayList<>();
 
-        List<EventSlot> alleSlots = EventSlot.find("veranstaltung.id", veranstaltungId).list();
+        List<EventSlot> alleSlots = EventSlot.find("veranstaltung.getId()", veranstaltungId).list();
         List<Raum> alleRaeume = Raum.listAll();
 
         // Sortiere Slots und Räume für konsistente Ausgabe
-        alleSlots.sort(Comparator.comparing(s -> s.startTime));
-        alleRaeume.sort(Comparator.comparing(r -> r.name));
+        alleSlots.sort(Comparator.comparing(EventSlot::getStartTime));
+        alleRaeume.sort(Comparator.comparing(Raum::getName));
 
         for (EventSlot slot : alleSlots) {
             for (Raum raum : alleRaeume) {
                 RaumplanEintragDto eintrag = null;
-                if (raumplan.containsKey(raum.id)) {
-                    eintrag = raumplan.get(raum.id).get(slot.id);
+                if (raumplan.containsKey(raum.getId())) {
+                    eintrag = raumplan.get(raum.getId()).get(slot.getId());
                 }
 
                 if (eintrag != null) {
@@ -171,27 +171,27 @@ public class PlanService {
                             new ArrayList<>();
 
                     detaillierterPlan.add(new RaumBelegungUebersichtDto(
-                            slot.id,
-                            slot.startTime.format(TIME_FORMAT),
-                            raum.id,
-                            raum.name,
+                            slot.getId(),
+                            slot.getStartTime().format(TIME_FORMAT),
+                            raum.getId(),
+                            raum.getName(),
                             eintrag.vortragTitel,
                             eintrag.referentName,
                             eintrag.vortragTyp,
                             tnNamen,
-                            raum.kapazitaet
+                            raum.getKapazitaet()
                     ));
                 } else {
                     detaillierterPlan.add(new RaumBelegungUebersichtDto(
-                            slot.id,
-                            slot.startTime.format(TIME_FORMAT),
-                            raum.id,
-                            raum.name,
+                            slot.getId(),
+                            slot.getStartTime().format(TIME_FORMAT),
+                            raum.getId(),
+                            raum.getName(),
                             VORTRAG_TITEL_FREI,
                             null,
                             VORTRAG_TYP_FREI,
                             new ArrayList<>(),
-                            raum.kapazitaet
+                            raum.getKapazitaet()
                     ));
                 }
             }
@@ -201,13 +201,13 @@ public class PlanService {
 
     @Transactional
     public PlanQualitaetDto getPlanQualitaet(Long veranstaltungId) {
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.id", veranstaltungId).firstResult();
+        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.getId()", veranstaltungId).firstResult();
         if (planungsergebnis == null) {
             return new PlanQualitaetDto(0, 0, "Kein Ergebnis vorhanden");
         }
 
         try {
-            JsonNode root = objectMapper.readTree(planungsergebnis.jsonErgebnis);
+            JsonNode root = objectMapper.readTree(planungsergebnis.getJsonErgebnis());
             int kosten = root.has("kosten") ? root.get("kosten").asInt() : 0;
             int anzahlZuweisungen = root.has("zuweisungen") ? root.get("zuweisungen").asInt() : 0;
             String status = "Optimierung abgeschlossen";
@@ -226,13 +226,13 @@ public class PlanService {
             return Collections.emptyList();
         }
 
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.id", veranstaltungId).firstResult();
+        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.getId()", veranstaltungId).firstResult();
         if (planungsergebnis == null) {
             return Collections.emptyList();
         }
 
         try {
-            JsonNode root = objectMapper.readTree(planungsergebnis.jsonErgebnis);
+            JsonNode root = objectMapper.readTree(planungsergebnis.getJsonErgebnis());
             JsonNode inputData = root.get("input_data");
             JsonNode instanzSlot = root.get("instanz_slot");
             JsonNode instanzRaum = root.get("instanz_raum");
@@ -252,27 +252,28 @@ public class PlanService {
             List<Long> raumOids = StreamSupport.stream(inputData.get("raum_oids").spliterator(), false)
                     .map(JsonNode::asLong).toList();
 
-            Map<Long, Vortrag> vortragMap = Vortrag.find("veranstaltung.id", veranstaltungId).<Vortrag>list().stream().collect(toMap(v -> v.id, v -> v));
-            Map<Long, EventSlot> slotMap = EventSlot.find("veranstaltung.id", veranstaltungId).<EventSlot>list().stream().collect(toMap(s -> s.id, s -> s));
-            Map<Long, Raum> raumMap = Raum.<Raum>listAll().stream().collect(toMap(r -> r.id, r -> r));
+            Map<Long, Vortrag> vortragMap = Vortrag.find("veranstaltung.getId()", veranstaltungId).<Vortrag>list().stream().collect(toMap(IdEntity::getId, v -> v));
+            Map<Long, EventSlot> slotMap = EventSlot.find("veranstaltung.getId()", veranstaltungId).<EventSlot>list().stream().collect(toMap(IdEntity::getId, s -> s));
+            Map<Long, Raum> raumMap = Raum.<Raum>listAll().stream().collect(toMap(IdEntity::getId, r -> r));
 
-            int pIdx = tnOids.indexOf(teilnehmer.id);
+            int pIdx = tnOids.indexOf(teilnehmer.getId());
             if (pIdx == -1) {
                 return Collections.emptyList();
             }
 
             List<ZuweisungDto> zuweisungen = new ArrayList<>();
 
-            List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.id", veranstaltungId).list();
+            List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.getId()", veranstaltungId).list();
             for (Pflichtvortrag pv : pflichtvortraege) {
-                if (teilnehmer.gruppe != null && teilnehmer.gruppe.equals(pv.pflichtgruppe)) {
+                String tnGruppe = teilnehmer.getGruppe();
+                if (tnGruppe != null && tnGruppe.equals(pv.getPflichtgruppe())) {
                     zuweisungen.add(new ZuweisungDto(
                             null,
-                            teilnehmer.lastName,
-                            pv.titel,
-                            pv.pflichtslot.startTime.format(TIME_FORMAT),
-                            pv.pflichtraum.name,
-                            pv.pflichtraum.gebaeude.name
+                            teilnehmer.getLastName(),
+                            pv.getTitel(),
+                            pv.getPflichtslot().getStartTime().format(TIME_FORMAT),
+                            pv.getPflichtraum().getName(),
+                            pv.getPflichtraum().getGebaeude().getName()
                     ));
                 }
             }
@@ -299,11 +300,11 @@ public class PlanService {
                             if (slot != null && raum != null) {
                                 zuweisungen.add(new ZuweisungDto(
                                         null,
-                                        teilnehmer.lastName,
-                                        vortrag.titel,
-                                        slot.startTime.format(TIME_FORMAT),
-                                        raum.name,
-                                        raum.gebaeude.name
+                                        teilnehmer.getLastName(),
+                                        vortrag.getTitel(),
+                                        slot.getStartTime().format(TIME_FORMAT),
+                                        raum.getName(),
+                                        raum.getGebaeude().getName()
                                 ));
                             }
                         }
@@ -327,13 +328,13 @@ public class PlanService {
             return Collections.emptyList();
         }
 
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.id", veranstaltungId).firstResult();
+        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.getId()", veranstaltungId).firstResult();
         if (planungsergebnis == null) {
             return Collections.emptyList();
         }
 
         try {
-            JsonNode root = objectMapper.readTree(planungsergebnis.jsonErgebnis);
+            JsonNode root = objectMapper.readTree(planungsergebnis.getJsonErgebnis());
             JsonNode inputData = root.get("input_data");
             JsonNode instanzSlot = root.get("instanz_slot");
             JsonNode instanzRaum = root.get("instanz_raum");
@@ -349,24 +350,25 @@ public class PlanService {
             List<Long> slotOids = StreamSupport.stream(inputData.get("slot_oids").spliterator(), false).map(JsonNode::asLong).toList();
             List<Long> raumOids = StreamSupport.stream(inputData.get("raum_oids").spliterator(), false).map(JsonNode::asLong).toList();
 
-            Map<Long, Teilnehmer> teilnehmerMap = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", veranstaltungId).<Teilnehmer>list().stream().collect(toMap(t -> t.id, t -> t));
-            Map<Long, EventSlot> slotMap = EventSlot.find("veranstaltung.id", veranstaltungId).<EventSlot>list().stream().collect(toMap(s -> s.id, s -> s));
-            Map<Long, Raum> raumMap = Raum.<Raum>listAll().stream().collect(toMap(r -> r.id, r -> r));
+            Map<Long, Teilnehmer> teilnehmerMap = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.getId() = ?1",
+                    veranstaltungId).<Teilnehmer>list().stream().collect(toMap(IdEntity::getId, t -> t));
+            Map<Long, EventSlot> slotMap = EventSlot.find("veranstaltung.getId()", veranstaltungId).<EventSlot>list().stream().collect(toMap(IdEntity::getId, s -> s));
+            Map<Long, Raum> raumMap = Raum.<Raum>listAll().stream().collect(toMap(IdEntity::getId, r -> r));
 
             List<ReferentVortragDto> referentPlan = new ArrayList<>();
 
-            List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.id = ?1 and referent.id = ?2", veranstaltungId, referent.id).list();
+            List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.getId() = ?1 and referent.getId() = ?2", veranstaltungId, referent.getId()).list();
             for (Pflichtvortrag pv : pflichtvortraege) {
-                List<Teilnehmer> gruppenTeilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1 AND t.gruppe = ?2", veranstaltungId, pv.pflichtgruppe).list();
+                List<Teilnehmer> gruppenTeilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.getId() = ?1 AND t.gruppe = ?2", veranstaltungId, pv.getPflichtgruppe()).list();
                 List<TeilnehmerSimpleDto> teilnehmerDtos = gruppenTeilnehmer.stream()
-                        .map(tn -> new TeilnehmerSimpleDto(tn.id, tn.firstName, tn.lastName, tn.gruppe))
+                        .map(tn -> new TeilnehmerSimpleDto(tn.getId(), tn.getFirstName(), tn.getLastName(), tn.getGruppe()))
                         .collect(Collectors.toList());
-                referentPlan.add(new ReferentVortragDto(pv.titel, pv.pflichtslot.startTime.format(TIME_FORMAT), pv.pflichtraum.name, pv.pflichtraum.gebaeude.name, teilnehmerDtos));
+                referentPlan.add(new ReferentVortragDto(pv.getTitel(), pv.getPflichtslot().getStartTime().format(TIME_FORMAT), pv.getPflichtraum().getName(), pv.getPflichtraum().getGebaeude().getName(), teilnehmerDtos));
             }
 
-            List<Wahlvortrag> referentenWahlvortraege = Wahlvortrag.find("veranstaltung.id = ?1 and referent.id = ?2", veranstaltungId, referent.id).list();
+            List<Wahlvortrag> referentenWahlvortraege = Wahlvortrag.find("veranstaltung.getId() = ?1 and referent.getId() = ?2", veranstaltungId, referent.getId()).list();
             for (Wahlvortrag wv : referentenWahlvortraege) {
-                int wIdx = wvOids.indexOf(wv.id);
+                int wIdx = wvOids.indexOf(wv.getId());
                 if (wIdx == -1) {
                     continue;
                 }
@@ -389,11 +391,11 @@ public class PlanService {
                             if (besucht.get(pIdx).get(wIdx).get(iIdx).asBoolean()) {
                                 Teilnehmer tn = teilnehmerMap.get(tnOids.get(pIdx));
                                 if (tn != null) {
-                                    zugewieseneTeilnehmer.add(new TeilnehmerSimpleDto(tn.id, tn.firstName, tn.lastName, tn.gruppe));
+                                    zugewieseneTeilnehmer.add(new TeilnehmerSimpleDto(tn.getId(), tn.getFirstName(), tn.getLastName(), tn.getGruppe()));
                                 }
                             }
                         }
-                        referentPlan.add(new ReferentVortragDto(wv.titel, slot.startTime.format(TIME_FORMAT), raum.name, raum.gebaeude.name, zugewieseneTeilnehmer));
+                        referentPlan.add(new ReferentVortragDto(wv.getTitel(), slot.getStartTime().format(TIME_FORMAT), raum.getName(), raum.getGebaeude().getName(), zugewieseneTeilnehmer));
                     }
                 }
             }
@@ -409,14 +411,14 @@ public class PlanService {
 
     @Transactional
     public Map<Long, Map<Long, RaumplanEintragDto>> getRaumbelegungsplan(Long veranstaltungId) {
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.id", veranstaltungId).firstResult();
+        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.getId()", veranstaltungId).firstResult();
         if (planungsergebnis == null) {
             return Collections.emptyMap();
         }
 
         try {
             // Explicitly materialize the String from the LOB to avoid issues with deferred access
-            String jsonContent = planungsergebnis.jsonErgebnis;
+            String jsonContent = planungsergebnis.getJsonErgebnis();
             JsonNode root = objectMapper.readTree(jsonContent);
 
             JsonNode instanzSlot = root.get("instanz_slot");
@@ -429,15 +431,15 @@ public class PlanService {
             }
 
 
-            List<Teilnehmer> alleTeilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
-            List<Vortrag> alleVortraege = Vortrag.find("veranstaltung.id", veranstaltungId).list();
-            List<EventSlot> alleSlots = EventSlot.find("veranstaltung.id", veranstaltungId).list();
+            List<Teilnehmer> alleTeilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.getId() = ?1", veranstaltungId).list();
+            List<Vortrag> alleVortraege = Vortrag.find("veranstaltung.getId()", veranstaltungId).list();
+            List<EventSlot> alleSlots = EventSlot.find("veranstaltung.getId()", veranstaltungId).list();
             List<Raum> alleRaeume = Raum.listAll();
 
-            Map<Long, Teilnehmer> teilnehmerMap = alleTeilnehmer.stream().collect(toMap(t -> t.id, t -> t));
-            Map<Long, Vortrag> vortragMap = alleVortraege.stream().collect(toMap(v -> v.id, v -> v));
-            Map<Long, EventSlot> slotMap = alleSlots.stream().collect(toMap(s -> s.id, s -> s));
-            Map<Long, Raum> raumMap = alleRaeume.stream().collect(toMap(r -> r.id, r -> r));
+            Map<Long, Teilnehmer> teilnehmerMap = alleTeilnehmer.stream().collect(toMap(IdEntity::getId, t -> t));
+            Map<Long, Vortrag> vortragMap = alleVortraege.stream().collect(toMap(IdEntity::getId, v -> v));
+            Map<Long, EventSlot> slotMap = alleSlots.stream().collect(toMap(IdEntity::getId, s -> s));
+            Map<Long, Raum> raumMap = alleRaeume.stream().collect(toMap(IdEntity::getId, r -> r));
 
             JsonNode inputData = root.get("input_data");
             if (inputData == null) {
@@ -453,26 +455,26 @@ public class PlanService {
             Map<Long, Map<Long, RaumplanEintragDto>> raumplan = new HashMap<>();
 
             // Pflichtvorträge hinzufügen
-            List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.id", veranstaltungId).list();
+            List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.getId()", veranstaltungId).list();
             for (Pflichtvortrag pv : pflichtvortraege) {
-                Raum raum = pv.pflichtraum;
-                EventSlot slot = pv.pflichtslot;
+                Raum raum = pv.getPflichtraum();
+                EventSlot slot = pv.getPflichtslot();
 
-                List<Teilnehmer> gruppenTeilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1 AND t.gruppe = ?2", veranstaltungId, pv.pflichtgruppe).list();
+                List<Teilnehmer> gruppenTeilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.getId() = ?1 AND t.gruppe = ?2", veranstaltungId, pv.getPflichtgruppe()).list();
                 List<TeilnehmerSimpleDto> teilnehmerDtos = gruppenTeilnehmer.stream()
-                        .map(tn -> new TeilnehmerSimpleDto(tn.id, tn.firstName, tn.lastName, tn.gruppe))
+                        .map(tn -> new TeilnehmerSimpleDto(tn.getId(), tn.getFirstName(), tn.getLastName(), tn.getGruppe()))
                         .toList();
 
                 RaumplanEintragDto eintrag = new RaumplanEintragDto(
-                        slot.id,
-                        slot.startTime.format(TIME_FORMAT),
-                        pv.titel,
-                        ((Vortrag) pv).referent.firstName + " " + ((Vortrag) pv).referent.lastName,
+                        slot.getId(),
+                        slot.getStartTime().format(TIME_FORMAT),
+                        pv.getTitel(),
+                        ((Vortrag) pv).getReferent().getFirstName() + " " + ((Vortrag) pv).getReferent().getLastName(),
                         "PFLICHT",
                         teilnehmerDtos.size(),
                         teilnehmerDtos
                 );
-                raumplan.computeIfAbsent(raum.id, k -> new HashMap<>()).put(slot.id, eintrag);
+                raumplan.computeIfAbsent(raum.getId(), k -> new HashMap<>()).put(slot.getId(), eintrag);
             }
 
 
@@ -502,20 +504,20 @@ public class PlanService {
                             if (besucht.get(pIdx).get(wIdx).get(iIdx).asBoolean()) {
                                 Teilnehmer tn = teilnehmerMap.get(tnOids.get(pIdx));
                                 if (tn != null) {
-                                    zugewieseneTeilnehmer.add(new TeilnehmerSimpleDto(tn.id, tn.firstName, tn.lastName, tn.gruppe));
+                                    zugewieseneTeilnehmer.add(new TeilnehmerSimpleDto(tn.getId(), tn.getFirstName(), tn.getLastName(), tn.getGruppe()));
                                 }
                             }
                         }
                         RaumplanEintragDto eintrag = new RaumplanEintragDto(
-                                slot.id,
-                                slot.startTime.format(TIME_FORMAT),
-                                vortrag.titel,
-                                vortrag.referent.firstName + " " + vortrag.referent.lastName,
+                                slot.getId(),
+                                slot.getStartTime().format(TIME_FORMAT),
+                                vortrag.getTitel(),
+                                vortrag.getReferent().getFirstName() + " " + vortrag.getReferent().getLastName(),
                                 "WAHL",
                                 zugewieseneTeilnehmer.size(),
                                 zugewieseneTeilnehmer
                         );
-                        raumplan.computeIfAbsent(raum.id, k -> new HashMap<>()).put(slot.id, eintrag);
+                        raumplan.computeIfAbsent(raum.getId(), k -> new HashMap<>()).put(slot.getId(), eintrag);
                     }
                 }
             }
@@ -530,13 +532,13 @@ public class PlanService {
     @Transactional
     public Map<Long, List<EventSlot>> getFreieSlotsReferenten(Long veranstaltungId) {
         Map<Long, List<EventSlot>> freieSlotsReferenten = new HashMap<>();
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.id", veranstaltungId).firstResult();
+        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.getId()", veranstaltungId).firstResult();
         if (planungsergebnis == null) {
             return Collections.emptyMap();
         }
 
         try {
-            JsonNode root = objectMapper.readTree(planungsergebnis.jsonErgebnis);
+            JsonNode root = objectMapper.readTree(planungsergebnis.getJsonErgebnis());
             JsonNode instanzSlot = root.get("instanz_slot");
             JsonNode wvOidsNode = root.get("input_data").get("wahlvortrag_oids");
             JsonNode slotOidsNode = root.get("input_data").get("slot_oids");
@@ -544,26 +546,26 @@ public class PlanService {
             List<Long> wvOids = StreamSupport.stream(wvOidsNode.spliterator(), false).map(JsonNode::asLong).toList();
             List<Long> slotOids = StreamSupport.stream(slotOidsNode.spliterator(), false).map(JsonNode::asLong).toList();
 
-            List<Referent> alleReferenten = Referent.find("SELECT r FROM Referent r JOIN r.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
-            List<Vortrag> alleVortraege = Vortrag.find("veranstaltung.id", veranstaltungId).list();
-            List<EventSlot> alleSlots = EventSlot.find("veranstaltung.id", veranstaltungId).list();
+            List<Referent> alleReferenten = Referent.find("SELECT r FROM Referent r JOIN r.veranstaltungen v WHERE v.getId() = ?1", veranstaltungId).list();
+            List<Vortrag> alleVortraege = Vortrag.find("veranstaltung.getId()", veranstaltungId).list();
+            List<EventSlot> alleSlots = EventSlot.find("veranstaltung.getId()", veranstaltungId).list();
 
-            Map<Long, Vortrag> vortragMap = alleVortraege.stream().collect(toMap(v -> v.id, v -> v));
-            Map<Long, EventSlot> slotMap = alleSlots.stream().collect(toMap(s -> s.id, s -> s));
+            Map<Long, Vortrag> vortragMap = alleVortraege.stream().collect(toMap(IdEntity::getId, v -> v));
+            Map<Long, EventSlot> slotMap = alleSlots.stream().collect(toMap(IdEntity::getId, s -> s));
 
             for (Referent referent : alleReferenten) {
                 Set<Long> belegteSlotIds = new HashSet<>();
 
                 // Pflichtvorträge des Referenten
-                List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.id = ?1 and referent.id = ?2", veranstaltungId, referent.id).list();
+                List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.getId() = ?1 and referent.getId() = ?2", veranstaltungId, referent.getId()).list();
                 for (Pflichtvortrag pv : pflichtvortraege) {
-                    belegteSlotIds.add(pv.pflichtslot.id);
+                    belegteSlotIds.add(pv.getPflichtslot().getId());
                 }
 
                 // Wahlvorträge des Referenten aus dem Planungsergebnis
-                List<Wahlvortrag> referentenWahlvortraege = Wahlvortrag.find("veranstaltung.id = ?1 and referent.id = ?2", veranstaltungId, referent.id).list();
+                List<Wahlvortrag> referentenWahlvortraege = Wahlvortrag.find("veranstaltung.getId() = ?1 and referent.getId() = ?2", veranstaltungId, referent.getId()).list();
                 for (Wahlvortrag wv : referentenWahlvortraege) {
-                    int wIdx = wvOids.indexOf(wv.id);
+                    int wIdx = wvOids.indexOf(wv.getId());
                     if (wIdx == -1) {
                         continue;
                     }
@@ -577,10 +579,10 @@ public class PlanService {
                 }
 
                 List<EventSlot> freieSlots = alleSlots.stream()
-                        .filter(slot -> !belegteSlotIds.contains(slot.id))
-                        .sorted(Comparator.comparing(s -> s.startTime))
+                        .filter(slot -> !belegteSlotIds.contains(slot.getId()))
+                        .sorted(Comparator.comparing(EventSlot::getStartTime))
                         .collect(Collectors.toList());
-                freieSlotsReferenten.put(referent.id, freieSlots);
+                freieSlotsReferenten.put(referent.getId(), freieSlots);
             }
 
         } catch (Exception e) {
@@ -592,13 +594,13 @@ public class PlanService {
     @Transactional
     public Map<Long, List<EventSlot>> getFreieSlotsTeilnehmer(Long veranstaltungId) {
         Map<Long, List<EventSlot>> freieSlotsTeilnehmer = new HashMap<>();
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.id", veranstaltungId).firstResult();
+        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.getId()", veranstaltungId).firstResult();
         if (planungsergebnis == null) {
             return Collections.emptyMap();
         }
 
         try {
-            JsonNode root = objectMapper.readTree(planungsergebnis.jsonErgebnis);
+            JsonNode root = objectMapper.readTree(planungsergebnis.getJsonErgebnis());
             JsonNode besucht = root.get("besucht");
             JsonNode tnOidsNode = root.get("input_data").get("teilnehmer_oids");
             JsonNode wvOidsNode = root.get("input_data").get("wahlvortrag_oids");
@@ -608,24 +610,25 @@ public class PlanService {
             List<Long> wvOids = StreamSupport.stream(wvOidsNode.spliterator(), false).map(JsonNode::asLong).toList();
             List<Long> slotOids = StreamSupport.stream(slotOidsNode.spliterator(), false).map(JsonNode::asLong).toList();
 
-            List<Teilnehmer> alleTeilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
-            List<EventSlot> alleSlots = EventSlot.find("veranstaltung.id", veranstaltungId).list();
+            List<Teilnehmer> alleTeilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.getId() = ?1", veranstaltungId).list();
+            List<EventSlot> alleSlots = EventSlot.find("veranstaltung.getId()", veranstaltungId).list();
 
-            Map<Long, EventSlot> slotMap = alleSlots.stream().collect(toMap(s -> s.id, s -> s));
+            Map<Long, EventSlot> slotMap = alleSlots.stream().collect(toMap(IdEntity::getId, s -> s));
 
             for (Teilnehmer teilnehmer : alleTeilnehmer) {
                 Set<Long> belegteSlotIds = new HashSet<>();
 
                 // Pflichtvorträge des Teilnehmers
-                List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.id", veranstaltungId).list();
+                List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.getId()", veranstaltungId).list();
                 for (Pflichtvortrag pv : pflichtvortraege) {
-                    if (teilnehmer.gruppe != null && teilnehmer.gruppe.equals(pv.pflichtgruppe)) {
-                        belegteSlotIds.add(pv.pflichtslot.id);
+                    String tnGruppe = teilnehmer.getGruppe();
+                    if (tnGruppe != null && tnGruppe.equals(pv.getPflichtgruppe())) {
+                        belegteSlotIds.add(pv.getPflichtslot().getId());
                     }
                 }
 
                 // Wahlvorträge des Teilnehmers aus dem Planungsergebnis
-                int pIdx = tnOids.indexOf(teilnehmer.id);
+                int pIdx = tnOids.indexOf(teilnehmer.getId());
                 if (pIdx != -1) {
                     for (int wIdx = 0; wIdx < wvOids.size(); wIdx++) {
                         for (int iIdx = 0; iIdx < besucht.get(pIdx).get(wIdx).size(); iIdx++) {
@@ -641,10 +644,10 @@ public class PlanService {
                 }
 
                 List<EventSlot> freieSlots = alleSlots.stream()
-                        .filter(slot -> !belegteSlotIds.contains(slot.id))
-                        .sorted(Comparator.comparing(s -> s.startTime))
+                        .filter(slot -> !belegteSlotIds.contains(slot.getId()))
+                        .sorted(Comparator.comparing(EventSlot::getStartTime))
                         .collect(Collectors.toList());
-                freieSlotsTeilnehmer.put(teilnehmer.id, freieSlots);
+                freieSlotsTeilnehmer.put(teilnehmer.getId(), freieSlots);
             }
 
         } catch (Exception e) {
@@ -654,7 +657,7 @@ public class PlanService {
     }
 
     @Transactional
-    public byte[] generiereTuerschilderPdf(Long veranstaltungId) throws Exception {
+    public byte[] generiereTuerschilderPdf(Long veranstaltungId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
         Map<Long, Map<Long, RaumplanEintragDto>> raumplan = getRaumbelegungsplan(veranstaltungId);
 
@@ -672,19 +675,19 @@ public class PlanService {
 
         // Sortiere Räume nach Namen
         List<Raum> alleRaeume = Raum.<Raum>listAll().stream()
-                .sorted(Comparator.comparing(r -> r.name))
+                .sorted(Comparator.comparing(Raum::getName))
                 .toList();
 
         for (Raum raum : alleRaeume) {
-            Map<Long, RaumplanEintragDto> belegungFuerRaum = raumplan.get(raum.id);
+            Map<Long, RaumplanEintragDto> belegungFuerRaum = raumplan.get(raum.getId());
             if (belegungFuerRaum == null || belegungFuerRaum.isEmpty()) {
                 continue; // Raum ist nicht belegt, kein Türschild
             }
 
             // 1. Logo & Header
-            if (veranstaltung.logo != null && !veranstaltung.logo.isEmpty()) {
+            if (veranstaltung.getLogo() != null && !veranstaltung.getLogo().isEmpty()) {
                 try {
-                    Image logo = Image.getInstance(new URI(veranstaltung.logo).toURL());
+                    Image logo = Image.getInstance(new URI(veranstaltung.getLogo()).toURL());
                     logo.scaleToFit(100, 100);
                     logo.setAlignment(Element.ALIGN_RIGHT);
                     document.add(logo);
@@ -693,10 +696,10 @@ public class PlanService {
                 }
             }
 
-            Paragraph pVeranstaltung = new Paragraph(veranstaltung.name, fontSubtitle);
+            Paragraph pVeranstaltung = new Paragraph(veranstaltung.getName(), fontSubtitle);
             document.add(pVeranstaltung);
 
-            Paragraph pRaum = new Paragraph("Raum: " + raum.name, fontTitle);
+            Paragraph pRaum = new Paragraph("Raum: " + raum.getName(), fontTitle);
             pRaum.setSpacingAfter(20);
             document.add(pRaum);
 
@@ -715,19 +718,19 @@ public class PlanService {
             }
 
             // Zeilen
-            List<EventSlot> sortedSlots = EventSlot.<EventSlot>list("veranstaltung.id", veranstaltungId).stream().toList().stream()
-                    .sorted(Comparator.comparing(s -> s.startTime))
+            List<EventSlot> sortedSlots = EventSlot.<EventSlot>list("veranstaltung.getId()", veranstaltungId).stream().toList().stream()
+                    .sorted(Comparator.comparing(EventSlot::getStartTime))
                     .toList();
 
             for (EventSlot slot : sortedSlots) {
-                RaumplanEintragDto eintrag = belegungFuerRaum.get(slot.id);
+                RaumplanEintragDto eintrag = belegungFuerRaum.get(slot.getId());
                 if (eintrag != null) {
-                    table.addCell(new PdfPCell(new Phrase(slot.startTime.format(TIME_FORMAT) + " - " + slot.endTime.format(TIME_FORMAT), fontTableCell)));
+                    table.addCell(new PdfPCell(new Phrase(slot.getStartTime().format(TIME_FORMAT) + " - " + slot.getEndTime().format(TIME_FORMAT), fontTableCell)));
                     table.addCell(new PdfPCell(new Phrase(eintrag.vortragTitel, fontTableCell)));
                     table.addCell(new PdfPCell(new Phrase(eintrag.referentName, fontTableCell)));
                 } else {
                     // Leere Zeile für unbelegte Slots
-                    table.addCell(new PdfPCell(new Phrase(slot.startTime.format(TIME_FORMAT) + " - " + slot.endTime.format(TIME_FORMAT), fontTableCell)));
+                    table.addCell(new PdfPCell(new Phrase(slot.getStartTime().format(TIME_FORMAT) + " - " + slot.getEndTime().format(TIME_FORMAT), fontTableCell)));
                     table.addCell(new PdfPCell(new Phrase("Frei", fontTableCell)));
                     table.addCell(new PdfPCell(new Phrase("", fontTableCell)));
                 }
@@ -737,7 +740,7 @@ public class PlanService {
             // Teilnehmerliste (optional, für jeden Vortrag)
             document.add(new Paragraph("\n")); // Abstand
             for (EventSlot slot : sortedSlots) {
-                RaumplanEintragDto eintrag = belegungFuerRaum.get(slot.id);
+                RaumplanEintragDto eintrag = belegungFuerRaum.get(slot.getId());
                 if (eintrag != null && eintrag.teilnehmer != null && !eintrag.teilnehmer.isEmpty()) {
                     document.add(new Paragraph(eintrag.vortragTitel + " (" + eintrag.slotZeit + ") - Teilnehmer:", fontTableCell));
                     List<String> teilnehmerNamen = eintrag.teilnehmer.stream()
@@ -758,6 +761,6 @@ public class PlanService {
     }
 
     private ZuweisungDto mapToDto(Zuweisung z) {
-        return new ZuweisungDto(z.id, z.teilnehmer.lastName, z.vortrag.titel, z.slot.startTime.format(TIME_FORMAT), z.raum.name, z.raum.gebaeude.name);
+        return new ZuweisungDto(z.getId(), z.getTeilnehmer().getLastName(), z.getVortrag().getTitel(), z.getSlot().getStartTime().format(TIME_FORMAT), z.getRaum().getName(), z.getRaum().getGebaeude().getName());
     }
 }

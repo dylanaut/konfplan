@@ -47,35 +47,35 @@ class DeadlineResourceTest {
 
         // Veranstaltung mit abgelaufenen Deadlines
         Veranstaltung v = new Veranstaltung();
-        v.name = "Abgelaufenes Event";
-        v.beginntAm = LocalDateTime.now().plusDays(10);
-        v.deadlineReferenten = LocalDateTime.now().minusDays(1);
-        v.deadlineTeilnehmer = LocalDateTime.now().minusDays(1);
+        v.setName("Abgelaufenes Event");
+        v.setBeginntAm(LocalDateTime.now().plusDays(10));
+        v.setDeadlineReferenten(LocalDateTime.now().minusDays(1));
+        v.setDeadlineTeilnehmer(LocalDateTime.now().minusDays(1));
         v.persist();
-        pastEventId = v.id;
+        pastEventId = v.getId();
 
         // Referent
         Referent r = new Referent();
-        r.email = "referent@test.de";
-        r.passwordHash = BcryptUtil.bcryptHash("test");
+        r.setEmail("referent@test.de");
+        r.setPasswordHash(BcryptUtil.bcryptHash("test"));
         r.persist();
-        refId = r.id;
+        refId = r.getId();
 
         // Teilnehmer
         Teilnehmer t = new Teilnehmer();
-        t.email = "teilnehmer@test.de";
-        t.passwordHash = BcryptUtil.bcryptHash("test");
+        t.setEmail("teilnehmer@test.de");
+        t.setPasswordHash(BcryptUtil.bcryptHash("test"));
         t.addVeranstaltung(v);
         t.persist();
-        tnId = t.id;
+        tnId = t.getId();
 
         // Vortrag für das Event (damit man was ändern/löschen könnte)
         Wahlvortrag wv = new Wahlvortrag();
-        wv.titel = "Testvortrag";
-        wv.veranstaltung = v;
-        wv.referent = r;
+        wv.setTitel("Testvortrag");
+        wv.setVeranstaltung(v);
+        wv.setReferent(r);
         wv.persist();
-        wahlvortragId = wv.id;
+        wahlvortragId = wv.getId();
     }
 
     @Test

@@ -28,7 +28,7 @@ public class RaumService {
     }
 
     public List<Raum> listByGebaeude(Long gebaeudeId) {
-        return Raum.list("gebaeude.id", gebaeudeId);
+        return Raum.list("gebaeude.getId()", gebaeudeId);
     }
 
     public Raum findById(Long id) {
@@ -43,22 +43,22 @@ public class RaumService {
             throw new IllegalArgumentException("Gebäude mit ID " + gebaeudeId + " nicht gefunden.");
         }
 
-        if (r.id == null) {
+        if (r.getId() == null) {
             r.persist();
             gebaeude.addRaum(r);
             gebaeude.persist();
-            protokollService.log(ProtokollKategorie.RAUM, "Raum erstellt", "Raum '" + r.name + "' im Gebäude '" + gebaeude.name + "' erstellt.", r.id);
+            protokollService.log(ProtokollKategorie.RAUM, "Raum erstellt", "Raum '" + r.getName() + "' im Gebäude '" + gebaeude.getName() + "' erstellt.", r.getId());
             return r;
         } else {
-            Raum raum = Raum.findById(r.id);
+            Raum raum = Raum.findById(r.getId());
             if (raum == null) return null;
             
-            raum.name = r.name;
-            raum.kapazitaet = r.kapazitaet;
-            raum.etage = r.etage;
+            raum.setName(r.getName());
+            raum.setKapazitaet(r.getKapazitaet());
+            raum.setEtage(r.getEtage());
 
             raum.persist();
-            protokollService.log(ProtokollKategorie.RAUM, "Raum aktualisiert", "Raum '" + raum.name + "' im Gebäude '" + gebaeude.name + "' aktualisiert.", raum.id);
+            protokollService.log(ProtokollKategorie.RAUM, "Raum aktualisiert", "Raum '" + raum.getName() + "' im Gebäude '" + gebaeude.getName() + "' aktualisiert.", raum.getId());
             return raum;
         }
     }
@@ -96,15 +96,15 @@ public class RaumService {
                 }
 
                 Raum r = new Raum();
-                r.name = dto.name;
-                r.kapazitaet = dto.kapazitaet;
-                r.etage = dto.etage;
-                r.gebaeude = gebaeude;
+                r.setName(dto.name);
+                r.setKapazitaet(dto.kapazitaet);
+                r.setEtage(dto.etage);
+                r.setGebaeude(gebaeude);
                 r.persist();
 
                 gebaeude.addRaum(r);
                 count++;
-                protokollService.log(ProtokollKategorie.RAUM, "Raum importiert", "Raum '" + r.name + "' für Gebäude '" + gebaeude.name + "' importiert.", r.id);
+                protokollService.log(ProtokollKategorie.RAUM, "Raum importiert", "Raum '" + r.getName() + "' für Gebäude '" + gebaeude.getName() + "' importiert.", r.getId());
             }
 
             gebaeude.persist();
@@ -113,8 +113,8 @@ public class RaumService {
             protokollService.log(ProtokollKategorie.SYSTEM, "Kritischer Fehler beim Raum-Import", e.getMessage());
             throw e;
         }
-        LOG.info("Raum-Import abgeschlossen: " + count + " Räume für Gebäude '" + gebaeude.name + "' importiert.");
-        protokollService.log(ProtokollKategorie.RAUM, "Raum-Import abgeschlossen", count + " Räume für Gebäude '" + gebaeude.name + "' importiert.");
+        LOG.info("Raum-Import abgeschlossen: " + count + " Räume für Gebäude '" + gebaeude.getName() + "' importiert.");
+        protokollService.log(ProtokollKategorie.RAUM, "Raum-Import abgeschlossen", count + " Räume für Gebäude '" + gebaeude.getName() + "' importiert.");
         return count;
     }
 
@@ -122,8 +122,8 @@ public class RaumService {
     public boolean delete(Long id) {
         Raum raum = Raum.findById(id);
         if (raum != null) {
-            String name = raum.name;
-            String gName = raum.gebaeude != null ? raum.gebaeude.name : "unbekannt";
+            String name = raum.getName();
+            String gName = raum.getGebaeude() != null ? raum.getGebaeude().getName() : "unbekannt";
             boolean deleted = Raum.deleteById(id);
             if (deleted) {
                 protokollService.log(ProtokollKategorie.RAUM, "Raum gelöscht", "Raum '" + name + "' aus Gebäude '" + gName + "' gelöscht.", id);

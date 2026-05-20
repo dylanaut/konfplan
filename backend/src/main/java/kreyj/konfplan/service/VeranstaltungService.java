@@ -48,7 +48,7 @@ public class VeranstaltungService {
             }
             
             // Optimistic Locking Prüfung
-            if (dto.version != null && !v.version.equals(dto.version)) {
+            if (dto.version != null && !v.getVersion().equals(dto.version)) {
                 throw new OptimisticLockException("Die Veranstaltung wurde in der Zwischenzeit von einem anderen Benutzer geändert.");
             }
 
@@ -58,13 +58,13 @@ public class VeranstaltungService {
             aktion = "erstellt";
         }
 
-        v.name = dto.name;
-        v.beginntAm = dto.beginntAm;
-        v.endetAm = dto.endetAm;
-        v.deadlineReferenten = dto.deadlineReferenten;
-        v.deadlineTeilnehmer = dto.deadlineTeilnehmer;
-        v.logo = dto.logo;
-        v.logo_link = dto.logo_link;
+        v.setName(dto.name);
+        v.setBeginntAm(dto.beginntAm);
+        v.setEndetAm(dto.endetAm);
+        v.setDeadlineReferenten(dto.deadlineReferenten);
+        v.setDeadlineTeilnehmer(dto.deadlineTeilnehmer);
+        v.setLogo(dto.logo);
+        v.setLogo_link(dto.logo_link);
 
         // Gebäude zuweisen
         v.clearGebaeude();
@@ -91,12 +91,12 @@ public class VeranstaltungService {
 
         if (dto.id == null) {
             v.persist();
-            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung erstellt", "Neue Veranstaltung '" + v.name + "' erstellt.", v.id);
+            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung erstellt", "Neue Veranstaltung '" + v.getName() + "' erstellt.", v.getId());
         } else {
             // ZWINGEND ERFORDERLICH FÜR OPTIMISTIC LOCKING RESPONSE:
-            // Hibernate zwingen, das Update jetzt durchzuführen, damit persistence.version hochgezählt wird.
+            // Hibernate zwingen, das Update jetzt durchzuführen, damit persistence.getVersion() hochgezählt wird.
             v.flush();
-            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung aktualisiert", "Veranstaltung '" + v.name + "' aktualisiert.", v.id);
+            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung aktualisiert", "Veranstaltung '" + v.getName() + "' aktualisiert.", v.getId());
         }
         return VeranstaltungResource.mapVeranstaltungToDto(v);
     }
@@ -130,18 +130,18 @@ public class VeranstaltungService {
 
                     if (admin instanceof Admin) {
                         Veranstaltung v = new Veranstaltung();
-                        v.name = dto.name;
+                        v.setName(dto.name);
                         try {
-                            v.beginntAm = LocalDateTime.parse(dto.beginntAm, DATE_FORMAT);
+                            v.setBeginntAm(LocalDateTime.parse(dto.beginntAm, DATE_FORMAT));
                             if (dto.endetAm != null && !dto.endetAm.isEmpty()) {
-                                v.endetAm = LocalDateTime.parse(dto.endetAm, DATE_FORMAT);
+                                v.setEndetAm(LocalDateTime.parse(dto.endetAm, DATE_FORMAT));
                             }
                         } catch (Exception e) {
                             LOG.error("Fehler beim Parsen des Datums für Veranstaltung '" + dto.name + "': " + e.getMessage());
                             continue;
                         }
-                        v.logo = dto.logo;
-                        v.logo_link = dto.logo_link;
+                        v.setLogo(dto.logo);
+                        v.setLogo_link(dto.logo_link);
                         v.persist();
 
                         // Admin verknüpfen
@@ -158,7 +158,7 @@ public class VeranstaltungService {
                             });
                         }
                         count++;
-                        protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung importiert", "Veranstaltung '" + v.name + "' via CSV importiert.", v.id);
+                        protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung importiert", "Veranstaltung '" + v.getName() + "' via CSV importiert.", v.getId());
                     } else {
                         LOG.warn("Veranstaltung '" + dto.name + "' übersprungen: Organisator (Admin) mit Email " + organisatorenEmail + " nicht gefunden.");
                     }
@@ -178,7 +178,7 @@ public class VeranstaltungService {
         if (veranstaltung != null) {
             boolean deleted = Veranstaltung.deleteById(id);
             if (deleted) {
-                protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung gelöscht", "Veranstaltung '" + veranstaltung.name + "' gelöscht.", veranstaltung.id);
+                protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung gelöscht", "Veranstaltung '" + veranstaltung.getName() + "' gelöscht.", veranstaltung.getId());
             }
             return deleted;
         }

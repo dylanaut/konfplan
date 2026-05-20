@@ -23,12 +23,12 @@ public class ProtokollService {
     @Transactional
     public void log(ProtokollKategorie kategorie, String ereignis, String details, Long referenzId) {
         Protokoll p = new Protokoll();
-        p.zeitpunkt = LocalDateTime.now();
-        p.akteur = getAkteur();
-        p.kategorie = kategorie;
-        p.ereignis = ereignis;
-        p.details = details;
-        p.referenzId = referenzId;
+        p.setZeitpunkt(LocalDateTime.now());
+        p.setAkteur(getAkteur());
+        p.setKategorie(kategorie);
+        p.setEreignis(ereignis);
+        p.setDetails(details);
+        p.setReferenzId(referenzId);
         p.persist();
     }
 

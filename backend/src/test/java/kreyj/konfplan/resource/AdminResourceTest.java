@@ -10,7 +10,13 @@ import jakarta.transaction.Transactional;
 import kreyj.konfplan.dto.NutzerDto;
 import kreyj.konfplan.dto.VeranstaltungDto;
 import kreyj.konfplan.dto.VerfuegbarkeitDto;
-import kreyj.konfplan.persistence.*;
+import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.EventSlot;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Verfuegbarkeit;
 import kreyj.konfplan.util.JwtHelper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,7 +25,10 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 
 import static io.restassured.RestAssured.given;
-import static jakarta.ws.rs.core.Response.Status.*;
+import static jakarta.ws.rs.core.Response.Status.CONFLICT;
+import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
+import static jakarta.ws.rs.core.Response.Status.NO_CONTENT;
+import static jakarta.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 
@@ -34,18 +43,18 @@ class AdminResourceTest extends ResourceTestBase {
     @Transactional
     void setup() {
         Admin admin = new Admin();
-        admin.email = "admin@example.com";
-        admin.passwordHash = "hash";
+        admin.setEmail("admin@example.com");
+        admin.setPasswordHash("hash");
         admin.persist();
 
-        adminId = admin.id;
+        adminId = admin.getId();
     }
 
     @Test
     void testGetAllUsersGlobal() {
         QuarkusTransaction.requiringNew().run(() -> {
             Admin a = new Admin();
-            a.email = "admin1@example.com";
+            a.setEmail("admin1@example.com");
             a.persist();
         });
 
@@ -73,7 +82,7 @@ class AdminResourceTest extends ResourceTestBase {
                 .statusCode(OK.getStatusCode())
                 .body("email", is("new@test.de"));
 
-        Assertions.assertNotNull(Nutzer.findByEmail("new@test.de"));
+        assertThat(Nutzer.findByEmail("new@test.de")).isNotNull();
     }
 
     @Test
@@ -84,9 +93,9 @@ class AdminResourceTest extends ResourceTestBase {
 
         QuarkusTransaction.requiringNew().run(() -> {
             Teilnehmer t = new Teilnehmer();
-            t.email = oldEmail;
+            t.setEmail(oldEmail);
             t.persist();
-            userId[0] = t.id;
+            userId[0] = t.getId();
         });
 
         NutzerDto dto = new NutzerDto();
@@ -106,9 +115,9 @@ class AdminResourceTest extends ResourceTestBase {
 
         QuarkusTransaction.requiringNew().run(() -> {
             Nutzer user = Nutzer.findById(userId[0]);
-            assertThat(user.email).isEqualTo(oldEmail);
-            assertThat(user.newEmail).isEqualTo(newEmail);
-            assertThat(user.emailChangeToken).isNotNull();
+            assertThat(user.getEmail()).isEqualTo(oldEmail);
+            assertThat(user.getNewEmail()).isEqualTo(newEmail);
+            assertThat(user.getEmailChangeToken()).isNotNull();
         });
     }
 
@@ -117,9 +126,9 @@ class AdminResourceTest extends ResourceTestBase {
         final Long[] userId = new Long[1];
         QuarkusTransaction.requiringNew().run(() -> {
             Teilnehmer t = new Teilnehmer();
-            t.email = "todelete@test.de";
+            t.setEmail("todelete@test.de");
             t.persist();
-            userId[0] = t.id;
+            userId[0] = t.getId();
         });
 
         given()
@@ -137,15 +146,15 @@ class AdminResourceTest extends ResourceTestBase {
 
         QuarkusTransaction.requiringNew().run(() -> {
             Teilnehmer t = new Teilnehmer();
-            t.email = "invite@test.de";
+            t.setEmail("invite@test.de");
             t.persist();
-            userId[0] = t.id;
+            userId[0] = t.getId();
 
             Veranstaltung v = new Veranstaltung();
-            v.name = "Invite Event";
-            v.beginntAm = LocalDateTime.now().plusDays(1);
+            v.setName("Invite Event");
+            v.setBeginntAm(LocalDateTime.now().plusDays(1));
             v.persist();
-            eventId[0] = v.id;
+            eventId[0] = v.getId();
 
             Admin orga = Admin.findById(adminId);
             orga.addVeranstaltung(v);
@@ -159,7 +168,7 @@ class AdminResourceTest extends ResourceTestBase {
 
         QuarkusTransaction.requiringNew().run(() -> {
             Teilnehmer t = Teilnehmer.findById(userId[0]);
-            Assertions.assertEquals(1, t.getVeranstaltungen().size());
+            assertThat(1).isEqualTo(t.getVeranstaltungen().size());
         });
     }
 
@@ -171,30 +180,27 @@ class AdminResourceTest extends ResourceTestBase {
 
         QuarkusTransaction.requiringNew().run(() -> {
             Veranstaltung v = new Veranstaltung();
-            v.name = "Event " + System.currentTimeMillis();
-            v.beginntAm = LocalDateTime.now();
+            v.setName("Event " + System.currentTimeMillis());
+            v.setBeginntAm(LocalDateTime.now());
             v.persist();
-            vid[0] = v.id;
+            vid[0] = v.getId();
 
             EventSlot slot = new EventSlot();
-            slot.description = "Slot 1";
-            slot.startTime = LocalDateTime.now();
-            slot.endTime = LocalDateTime.now().plusHours(1);
-            slot.veranstaltung = v;
+            slot.setDescription("Slot 1");
+            slot.setStartTime(LocalDateTime.now());
+            slot.setEndTime(LocalDateTime.now().plusHours(1));
+            slot.setVeranstaltung(v);
             slot.persist();
-            sid[0] = slot.id;
+            sid[0] = slot.getId();
 
             Referent r = new Referent();
-            r.email = "ref@test.de";
-            r.passwordHash = "hash";
+            r.setEmail("ref@test.de");
+            r.setPasswordHash("hash");
             r.addVeranstaltung(v);
             r.persist();
-            rid[0] = r.id;
+            rid[0] = r.getId();
 
-            Verfuegbarkeit vf = new Verfuegbarkeit();
-            vf.nutzer = r;
-            vf.slot = slot;
-            vf.isAvailable = true;
+            Verfuegbarkeit vf = new Verfuegbarkeit(r, slot, true);
             vf.persist();
         });
 
@@ -221,7 +227,7 @@ class AdminResourceTest extends ResourceTestBase {
             Referent r = Referent.findById(rid[0]);
             EventSlot s = EventSlot.findById(sid[0]);
             Verfuegbarkeit updated = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", r, s).firstResult();
-            assertThat(updated.isAvailable).isFalse();
+            assertThat(updated.isAvailable()).isFalse();
         });
     }
 
@@ -234,12 +240,12 @@ class AdminResourceTest extends ResourceTestBase {
         // 1. Create a teilnehmer
         QuarkusTransaction.requiringNew().run(() -> {
             Teilnehmer t = new Teilnehmer();
-            t.email = teilnehmerEmail;
-            t.passwordHash = teilnehmerPassword;
-            t.firstName = "Original";
-            t.lastName = "Name";
+            t.setEmail(teilnehmerEmail);
+            t.setPasswordHash(teilnehmerPassword);
+            t.setFirstName("Original");
+            t.setLastName("Name");
             t.persist();
-            teilnehmerId[0] = t.id;
+            teilnehmerId[0] = t.getId();
         });
 
         // 2. Admin 1 fetches teilnehmer data (initial version)
@@ -304,15 +310,15 @@ class AdminResourceTest extends ResourceTestBase {
         // 1. Create a Veranstaltung
         QuarkusTransaction.requiringNew().run(() -> {
             Veranstaltung v = new Veranstaltung();
-            v.name = "Original Event Name";
-            v.beginntAm = LocalDateTime.now().plusDays(1);
-            v.endetAm = LocalDateTime.now().plusDays(2);
+            v.setName ("Original Event Name");
+            v.setBeginntAm(LocalDateTime.now().plusDays(1));
+            v.setEndetAm(LocalDateTime.now().plusDays(2));
             v.persist();
-            veranstaltungId[0] = v.id;
+            veranstaltungId[0] = v.getId();
 
             Admin admin2 = new Admin();
-            admin2.email = admin2Email;
-            admin2.passwordHash = "hash";
+            admin2.setEmail(admin2Email);
+            admin2.setPasswordHash("hash");
             admin2.persist();
         });
 

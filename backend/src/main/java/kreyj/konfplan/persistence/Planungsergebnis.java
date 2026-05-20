@@ -1,23 +1,32 @@
 package kreyj.konfplan.persistence;
 
-import jakarta.persistence.*;
-import kreyj.konfplan.service.OptimierungService;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
+import jakarta.persistence.OneToOne;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
+@Getter
+@Setter
 public class Planungsergebnis extends VersionedEntity {
 
     @OneToOne
     @JoinColumn(name = "veranstaltung_id", nullable = false, unique = true)
-    public Veranstaltung veranstaltung;
+    private Veranstaltung veranstaltung;
 
     @Lob
     @Column(nullable = false)
     @Basic(fetch = FetchType.EAGER) // Ensure eager loading of the LOB
-    public String jsonErgebnis;
+    private String jsonErgebnis;
 
     @Column(nullable = false)
-    public String solver;
+    private String solver;
 
     @Column(nullable = false)
-    public int timeout;
+    private int timeout;
 }

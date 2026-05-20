@@ -32,24 +32,24 @@ class NutzerPersistenceTest extends ResourceTestBase {
     @Transactional
     void setup() {
         Gebaeude g = new Gebaeude();
-        g.name = "Test Gebäude";
-        g.strasse = "Teststraße";
-        g.ort = "Testort";
-        g.postleitzahl = "12345";
-        g.typ = Gebaeude.Gebaeudetyp.SCHULE;
+        g.setName("Test Gebäude");
+        g.setStrasse("Teststraße");
+        g.setOrt("Testort");
+        g.setPostleitzahl("12345");
+        g.setTyp(Gebaeude.Gebaeudetyp.SCHULE);
         g.persist();
 
         Admin admin = new Admin();
-        admin.email = "organisator@test.de";
-        admin.passwordHash = "hash";
+        admin.setEmail("organisator@test.de");
+        admin.setPasswordHash("hash");
         admin.persist();
 
         Veranstaltung v = new Veranstaltung();
-        v.name = TEST_VERANSTALTUNG + "_" + System.currentTimeMillis();
-        v.beginntAm = LocalDateTime.now();
+        v.setName(TEST_VERANSTALTUNG + "_" + System.currentTimeMillis());
+        v.setBeginntAm(LocalDateTime.now());
         v.addGebaeude(g);
         v.persist();
-        testVid = v.id;
+        testVid = v.getId();
 
         admin.addVeranstaltung(v);
         admin.persist();
@@ -89,9 +89,9 @@ class NutzerPersistenceTest extends ResourceTestBase {
                 .body("role", is("REFERENT"));
 
         Referent ref = (Referent) Nutzer.findByEmail("referent@test.de");
-        Assertions.assertNotNull(ref);
-        Assertions.assertNotNull(ref.getVeranstaltungen(), "Veranstaltungen sollten nicht leer sein");
-        Assertions.assertEquals(testVid, ref.getVeranstaltungen().iterator().next().id);
+        assertThat(ref).isNotNull();
+        assertThat(ref.getVeranstaltungen()).describedAs("Veranstaltungen sollten nicht leer sein").isNotNull();
+        assertThat(testVid).isEqualTo(ref.getVeranstaltungen().iterator().next().getId());
     }
 
     @Test
@@ -116,9 +116,9 @@ class NutzerPersistenceTest extends ResourceTestBase {
                 .body("role", is("TEILNEHMER"));
 
         Teilnehmer teil = (Teilnehmer) Nutzer.findByEmail("schueler@test.de");
-        Assertions.assertNotNull(teil);
-        Assertions.assertEquals("10a", teil.gruppe);
+        assertThat(teil).isNotNull();
+        assertThat("10a").isEqualTo(teil.getGruppe());
         assertThat(teil.getVeranstaltungen().isEmpty()).describedAs("Veranstaltung sollten nicht leer sein").isFalse();
-        Assertions.assertEquals(testVid, teil.getVeranstaltungen().iterator().next().id);
+        assertThat(testVid).isEqualTo(teil.getVeranstaltungen().iterator().next().getId());
     }
 }

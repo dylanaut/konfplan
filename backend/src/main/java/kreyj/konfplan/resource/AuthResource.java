@@ -53,23 +53,23 @@ public class AuthResource {
 
         if (nutzer != null) {
             String token = UUID.randomUUID().toString();
-            nutzer.resetToken = token;
-            nutzer.resetTokenExpiry = LocalDateTime.now().plusHours(2);
+            nutzer.setResetToken(token);
+            nutzer.setResetTokenExpiry(LocalDateTime.now().plusHours(2));
             nutzer.persist();
 
             String resetUrl = "http://localhost:5173/reset-password?token=" + token;
 
-            passwordResetTemplate.to(nutzer.email)
+            passwordResetTemplate.to(nutzer.getEmail())
                     .from(adminEmail)
                     .subject("Passwort zurücksetzen - KonfPlan")
-                    .data("firstName", nutzer.firstName)
+                    .data("firstName", nutzer.getFirstName())
                     .data("resetLink", resetUrl)
                     .send()
                     .subscribe().with(
-                            success -> System.out.println("Mail gesendet an " + nutzer.email),
+                            success -> System.out.println("Mail gesendet an " + nutzer.getEmail()),
                             failure -> System.err.println("Mail-Fehler: " + failure.getMessage())
                     );
-            protokollService.log(ProtokollKategorie.SECURITY, "Passwort-Reset angefordert", "Nutzer: " + email, nutzer.id);
+            protokollService.log(ProtokollKategorie.SECURITY, "Passwort-Reset angefordert", "Nutzer: " + email, nutzer.getId());
         } else {
             protokollService.log(ProtokollKategorie.SECURITY, "Passwort-Reset für unbekannte E-Mail", "Email: " + email);
         }
@@ -84,10 +84,10 @@ public class AuthResource {
     @Operation(summary = "Passwort zurücksetzen", description = "Setzt das Passwort mit einem gültigen Token zurück.")
     public Response resetPassword(@RequestBody(description = "Das Reset-Anfrage-Objekt", required = true) ResetRequest req) {
         Nutzer nutzer = Nutzer.find("resetToken", req.token).firstResult();
-        if (nutzer != null && nutzer.resetTokenExpiry.isAfter(LocalDateTime.now())) {
-            nutzer.passwordHash = BcryptUtil.bcryptHash(req.newPassword);
-            nutzer.resetToken = null;
-            protokollService.log(ProtokollKategorie.SECURITY, "Passwort erfolgreich zurückgesetzt", "Nutzer: " + nutzer.email, nutzer.id);
+        if (nutzer != null && nutzer.getResetTokenExpiry().isAfter(LocalDateTime.now())) {
+            nutzer.setPasswordHash(BcryptUtil.bcryptHash(req.newPassword));
+            nutzer.setResetToken(null);
+            protokollService.log(ProtokollKategorie.SECURITY, "Passwort erfolgreich zurückgesetzt", "Nutzer: " + nutzer.getEmail(), nutzer.getId());
             return Response.ok().build();
         }
         protokollService.log(ProtokollKategorie.SECURITY, "Passwort-Reset fehlgeschlagen (Token ungültig/abgelaufen)");
@@ -102,16 +102,16 @@ public class AuthResource {
     public Response login(@RequestBody(description = "Die Login-Anmeldeinformationen", required = true) LoginRequest loginRequest) {
         Nutzer nutzer = Nutzer.findByEmail(loginRequest.email);
 
-        if (nutzer != null && BcryptUtil.matches(loginRequest.password, nutzer.passwordHash)
-                && nutzer.isActive) {
+        if (nutzer != null && BcryptUtil.matches(loginRequest.password, nutzer.getPasswordHash())
+                && nutzer.isActive()) {
             String token = Jwt.issuer("https://konfplan.kreyj")
-                    .upn(nutzer.email)
-                    .subject(nutzer.email)
-                    .groups(nutzer.role)
+                    .upn(nutzer.getEmail())
+                    .subject(nutzer.getEmail())
+                    .groups(nutzer.getRole())
                     .expiresIn(Duration.ofHours(4))
                     .sign();
-            protokollService.log(ProtokollKategorie.LOGIN, "Erfolgreicher Login", "Rolle: " + nutzer.role, nutzer.id);
-            return Response.ok(new TokenResponse(token, nutzer.role)).build();
+            protokollService.log(ProtokollKategorie.LOGIN, "Erfolgreicher Login", "Rolle: " + nutzer.getRole(), nutzer.getId());
+            return Response.ok(new TokenResponse(token, nutzer.getRole())).build();
         }
         protokollService.log(ProtokollKategorie.SECURITY, "Fehlgeschlagener Login-Versuch", "E-Mail: " + loginRequest.email);
         return Response.status(Response.Status.UNAUTHORIZED).build();

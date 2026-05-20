@@ -1,34 +1,43 @@
 package kreyj.konfplan.persistence;
 
 import com.opencsv.bean.CsvBindByName;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import jakarta.persistence.OneToMany;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Getter
+@Setter
 @DiscriminatorValue("REFERENT")
 public class Referent extends Nutzer {
 
     @Column(name = "job_role")
     @CsvBindByName(column = "Position")
-    public String jobRole;
+    private String jobRole;
 
     @Column(name = "organisation")
     @CsvBindByName(column = "Organisation")
-    public String organisation;
+    private String organisation;
 
     @Column(name = "slogan")
     @CsvBindByName(column = "Slogan")
-    public String slogan;
+    private String slogan;
 
     @Column(name = "biography", columnDefinition = "TEXT")
     @CsvBindByName(column = "Biografie")
-    public String biography;
+    private String biography;
 
     @OneToMany(mappedBy = "referent", cascade = CascadeType.ALL)
-    public List<Vortrag> vortraege = new ArrayList<>();
+    private List<Vortrag> vortraege = new ArrayList<>();
 
     public Referent() {
-        this.role = "REFERENT";
+        this.setRole("REFERENT");
     }
 }

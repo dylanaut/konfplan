@@ -56,10 +56,10 @@ class AuthResourceTest {
     @Test
     void shouldSendRegistrationConfirmation() {
         Teilnehmer tn = new Teilnehmer();
-        tn.email = "max@example.com";
-        tn.firstName = "Max";
-        tn.lastName = "Mustermann";
-        tn.role = "TEILNEHMER";
+        tn.setEmail("max@example.com");
+        tn.setFirstName("Max");
+        tn.setLastName("Mustermann");
+        tn.setRole("TEILNEHMER");
 
         mailService.sendRegistrationConfirmation(tn);
 
@@ -76,10 +76,10 @@ class AuthResourceTest {
     @Test
     void testForgotPassword_UserExists() {
         Nutzer nutzer = new Admin();
-        nutzer.email = "test@example.com";
-        nutzer.firstName = "Test";
-        nutzer.role = "ADMIN";
-        nutzer.passwordHash = "some-dummy-hash"; // Passwort setzen, um NOT NULL constraint zu erfüllen
+        nutzer.setEmail("test@example.com");
+        nutzer.setFirstName("Test");
+        nutzer.setRole("ADMIN");
+        nutzer.setPasswordHash("some-dummy-hash"); // Passwort setzen, um NOT NULL constraint zu erfüllen
 
         Mockito.when(Nutzer.findByEmail("test@example.com")).thenReturn(nutzer);
         // Wir müssen sicherstellen, dass persist() auf dem Mock-Nutzer nichts tut
@@ -112,9 +112,9 @@ class AuthResourceTest {
     @Test
     void testResetPassword_Success() {
         Nutzer nutzer = new Teilnehmer();
-        nutzer.resetToken = "valid-token";
-        nutzer.resetTokenExpiry = LocalDateTime.now().plusHours(1);
-        nutzer.passwordHash = BcryptUtil.bcryptHash("oldSecretPassword");
+        nutzer.setResetToken("valid-token");
+        nutzer.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
+        nutzer.setPasswordHash(BcryptUtil.bcryptHash("oldSecretPassword"));
 
         PanacheQuery query = Mockito.mock(PanacheQuery.class);
         Mockito.when(Nutzer.find("resetToken", "valid-token")).thenReturn(query);
@@ -133,10 +133,10 @@ class AuthResourceTest {
     @Test
     void testLogin_Success() {
         Nutzer nutzer = new Teilnehmer();
-        nutzer.email = "nutzer@example.com";
-        nutzer.passwordHash = BcryptUtil.bcryptHash("correctPassword");
-        nutzer.role = "TEILNEHMER";
-        nutzer.isActive = true;
+        nutzer.setEmail("nutzer@example.com");
+        nutzer.setPasswordHash(BcryptUtil.bcryptHash("correctPassword"));
+        nutzer.setRole("TEILNEHMER");
+        nutzer.setActive(true);
 
         Mockito.when(Nutzer.findByEmail("nutzer@example.com")).thenReturn(nutzer);
 

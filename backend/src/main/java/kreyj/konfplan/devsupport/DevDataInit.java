@@ -70,7 +70,7 @@ public class DevDataInit {
                 LOG.error("Keine Veranstaltung importiert. Breche Dev-Daten-Initialisierung ab.");
                 return;
             }
-            Long vid = veranstaltungen.getFirst().id;
+            Long vid = veranstaltungen.getFirst().getId();
 
             // 4. Slots
             adminService.importSlotsFromCsv(basePath.resolve("slots.csv"), vid);

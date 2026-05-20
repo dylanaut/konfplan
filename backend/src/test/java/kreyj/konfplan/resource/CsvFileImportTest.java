@@ -5,8 +5,20 @@ import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.persistence.*;
-import org.junit.jupiter.api.Assertions;
+import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.EventSlot;
+import kreyj.konfplan.persistence.Gebaeude;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Pflichtvortrag;
+import kreyj.konfplan.persistence.Raum;
+import kreyj.konfplan.persistence.RaumBelegbarkeit;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Verfuegbarkeit;
+import kreyj.konfplan.persistence.Vortrag;
+import kreyj.konfplan.persistence.Wahlvortrag;
+import kreyj.konfplan.persistence.Zuweisung;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.commons.util.ClassLoaderUtils;
@@ -43,8 +55,8 @@ class CsvFileImportTest {
         Veranstaltung.deleteAll();
 
         Admin admin = new Admin();
-        admin.email = "admin@test.de";
-        admin.passwordHash = "hash";
+        admin.setEmail("admin@test.de");
+        admin.setPasswordHash("hash");
         admin.persist();
     }
 
@@ -65,9 +77,9 @@ class CsvFileImportTest {
                 .statusCode(OK.getStatusCode());
 
         Admin organisator = (Admin) Nutzer.findByEmail("test.admin@rks-linz.de");
-        Assertions.assertNotNull(organisator);
-        Assertions.assertEquals("Admin", organisator.firstName);
-        orgEmail = organisator.email;
+        assertThat(organisator).isNotNull();
+        assertThat("Admin").isEqualTo(organisator.getFirstName());
+        orgEmail = organisator.getEmail();
     }
 
     private static void setupGebaeude() {
@@ -79,8 +91,8 @@ class CsvFileImportTest {
                 .body(containsString("Import erfolgreich"));
 
         Gebaeude g = Gebaeude.find("name", "TestGebäude").firstResult();
-        Assertions.assertNotNull(g);
-        Assertions.assertEquals(12, g.getRaeume().size(), "Anzahl Räume sollte sein");
+        assertThat(g).isNotNull();
+        assertThat(12).isEqualTo(g.getRaeume().size()).describedAs("Anzahl Räume sollte sein");
     }
 
     private void setupVeranstaltungen() {
@@ -92,8 +104,8 @@ class CsvFileImportTest {
                 .body(containsString("2 Veranstaltung(en) angelegt"));
 
         Veranstaltung v = Veranstaltung.find("name", "TV_1").firstResult();
-        Assertions.assertNotNull(v);
-        testVid = v.id;
+        assertThat(v).isNotNull();
+        testVid = v.getId();
     }
 
     @Test
@@ -105,8 +117,8 @@ class CsvFileImportTest {
                 .statusCode(OK.getStatusCode());
 
         Referent r = (Referent) Nutzer.findByEmail("juergenkreyalias-ref@yahoo.com");
-        Assertions.assertNotNull(r);
-        Assertions.assertEquals("msg systems", r.organisation);
+        assertThat(r).isNotNull();
+        assertThat("msg systems").isEqualTo(r.getOrganisation());
     }
 
     @Test
@@ -118,8 +130,8 @@ class CsvFileImportTest {
                 .statusCode(OK.getStatusCode());
 
         Teilnehmer t = (Teilnehmer) Nutzer.findByEmail("hayal.yaldir@rks-linz.de");
-        Assertions.assertNotNull(t);
-        Assertions.assertEquals("9.1", t.gruppe);
+        assertThat(t).isNotNull();
+        assertThat("9.1").isEqualTo(t.getGruppe());
     }
 
     @Test
@@ -130,7 +142,7 @@ class CsvFileImportTest {
                 .then()
                 .statusCode(OK.getStatusCode());
 
-        Assertions.assertEquals(12, EventSlot.count());
+        assertThat(12).isEqualTo(EventSlot.count());
     }
 
     @Test
@@ -144,12 +156,12 @@ class CsvFileImportTest {
                 .then()
                 .statusCode(OK.getStatusCode());
 
-        Assertions.assertEquals(16, Wahlvortrag.count());
+        assertThat(16).isEqualTo(Wahlvortrag.count());
         Wahlvortrag wv = Wahlvortrag.find("titel", "Traumberuf Polizei?").firstResult();
-        Assertions.assertNotNull(wv, "Wahlvortrag sollte importiert worden sein");
-        assertThat(wv.wiederholbar).isTrue();
+        assertThat(wv).describedAs("Wahlvortrag sollte importiert worden sein").isNotNull();
+        assertThat(wv.isWiederholbar()).isTrue();
 
-        Assertions.assertEquals(0, Pflichtvortrag.count());
+        assertThat(0).isEqualTo(Pflichtvortrag.count());
 
         given()
                 .multiPart("file", getCsvFile("pflicht_vortraege.csv"))
@@ -157,11 +169,11 @@ class CsvFileImportTest {
                 .then()
                 .statusCode(OK.getStatusCode());
 
-        Assertions.assertEquals(18, Pflichtvortrag.count());
+        assertThat(18).isEqualTo(Pflichtvortrag.count());
         Pflichtvortrag pv = Pflichtvortrag.find("titel", "Vortrag Arbeitsagentur für 10.5").firstResult();
-        Assertions.assertNotNull(pv, "Pflichtvortrag sollte importiert worden sein");
-        Assertions.assertEquals(pv.pflichtraum.name, "A-2.04");
-        Assertions.assertEquals(pv.pflichtslot.description, "9");
+        assertThat(pv).describedAs("Pflichtvortrag sollte importiert worden sein").isNotNull();
+        assertThat("A-2.04").isEqualTo(pv.getPflichtraum().getName());
+        assertThat("9").isEqualTo(pv.getPflichtslot().getDescription());
     }
 
     private static File getCsvFile(String fileName) {

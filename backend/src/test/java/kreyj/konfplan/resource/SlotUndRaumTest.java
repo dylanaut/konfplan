@@ -1,14 +1,23 @@
 package kreyj.konfplan.resource;
 
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
-import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.dto.RaumBelegbarkeitDto;
-import kreyj.konfplan.persistence.*;
+import kreyj.konfplan.persistence.EventSlot;
+import kreyj.konfplan.persistence.Gebaeude;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Prioritaet;
+import kreyj.konfplan.persistence.Raum;
+import kreyj.konfplan.persistence.RaumBelegbarkeit;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Verfuegbarkeit;
+import kreyj.konfplan.persistence.Vortrag;
+import kreyj.konfplan.persistence.Zuweisung;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +25,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
-import static jakarta.ws.rs.core.Response.Status.*;
+import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
+import static jakarta.ws.rs.core.Response.Status.CREATED;
+import static jakarta.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
@@ -43,36 +54,36 @@ class SlotUndRaumTest {
 
         // Hauptveranstaltung
         Veranstaltung v = new Veranstaltung();
-        v.name = "Haupt Event";
-        v.beginntAm = LocalDateTime.of(2025, 10, 1, 8, 0);
-        v.endetAm = LocalDateTime.of(2025, 10, 1, 18, 0);
+        v.setName("Haupt Event");
+        v.setBeginntAm(LocalDateTime.of(2025, 10, 1, 8, 0));
+        v.setEndetAm(LocalDateTime.of(2025, 10, 1, 18, 0));
         v.persist();
-        vid = v.id;
+        vid = v.getId();
 
         // Andere Veranstaltung (zeitgleich)
         Veranstaltung v2 = new Veranstaltung();
-        v2.name = "Anderes Event";
-        v2.beginntAm = LocalDateTime.of(2025, 10, 1, 8, 0);
-        v2.endetAm = LocalDateTime.of(2025, 10, 1, 18, 0);
+        v2.setName("Anderes Event");
+        v2.setBeginntAm(LocalDateTime.of(2025, 10, 1, 8, 0));
+        v2.setEndetAm(LocalDateTime.of(2025, 10, 1, 18, 0));
         v2.persist();
-        otherVid = v2.id;
+        otherVid = v2.getId();
 
         Gebaeude g = new Gebaeude();
-        g.name = "G1";
-        g.typ = Gebaeude.Gebaeudetyp.EXTERN;
-        g.postleitzahl = "53567";
-        g.strasse = "Wallroth";
-        g.ort = "Buchholz";
+        g.setName("G1");
+        g.setTyp(Gebaeude.Gebaeudetyp.EXTERN);
+        g.setPostleitzahl("53567");
+        g.setStrasse("Wallroth");
+        g.setOrt("Buchholz");
         g.persist();
         v.addGebaeude(g);
         v.persist();
 
         Raum r = new Raum();
-        r.name = "R1";
-        r.kapazitaet = 20;
-        r.gebaeude = g;
+        r.setName("R1");
+        r.setKapazitaet(20);
+        r.setGebaeude(g);
         r.persist();
-        raumId = r.id;
+        raumId = r.getId();
     }
 
     @Test
@@ -149,28 +160,26 @@ class SlotUndRaumTest {
         QuarkusTransaction.requiringNew().run(() -> {
             // Slot in Event 1
             EventSlot s1 = new EventSlot();
-            s1.description = "Slot E1";
-            s1.startTime = LocalDateTime.of(2025, 10, 1, 9, 0);
-            s1.endTime = LocalDateTime.of(2025, 10, 1, 10, 0);
-            s1.veranstaltung = Veranstaltung.findById(vid);
+            s1.setDescription("Slot E1");
+            s1.setStartTime(LocalDateTime.of(2025, 10, 1, 9, 0));
+            s1.setEndTime(LocalDateTime.of(2025, 10, 1, 10, 0));
+            s1.setVeranstaltung(Veranstaltung.findById(vid));
             s1.persist();
-            s1Id[0] = s1.id;
+            s1Id[0] = s1.getId();
 
             // Slot in Event 2 (zeitlich überschneidend)
             EventSlot s2 = new EventSlot();
-            s2.description = "Slot E2";
-            s2.startTime = LocalDateTime.of(2025, 10, 1, 9, 30);
-            s2.endTime = LocalDateTime.of(2025, 10, 1, 10, 30);
-            s2.veranstaltung = Veranstaltung.findById(otherVid);
+            s2.setDescription("Slot E2");
+            s2.setStartTime(LocalDateTime.of(2025, 10, 1, 9, 30));
+            s2.setEndTime(LocalDateTime.of(2025, 10, 1, 10, 30));
+            s2.setVeranstaltung(Veranstaltung.findById(otherVid));
             s2.persist();
 
             Raum r = Raum.findById(raumId);
 
             // Raum in Event 2 als belegt markieren
-            RaumBelegbarkeit rv2 = new RaumBelegbarkeit();
-            rv2.raum = r;
-            rv2.slot = s2;
-            rv2.isBelegt = true;
+            RaumBelegbarkeit rv2 = new RaumBelegbarkeit(r, s2, true);
+
             rv2.persist();
         });
 

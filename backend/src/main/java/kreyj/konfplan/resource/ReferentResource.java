@@ -6,13 +6,35 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
-import kreyj.konfplan.dto.*;
-import kreyj.konfplan.persistence.*;
+import kreyj.konfplan.dto.EmailChangeRequestDto;
+import kreyj.konfplan.dto.NutzerDto;
+import kreyj.konfplan.dto.ReferentVeranstaltungDto;
+import kreyj.konfplan.dto.ReferentVortragDto;
+import kreyj.konfplan.dto.VerfuegbarkeitDto;
+import kreyj.konfplan.dto.VortragDto;
+import kreyj.konfplan.persistence.EventSlot;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Pflichtvortrag;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Verfuegbarkeit;
+import kreyj.konfplan.persistence.Vortrag;
+import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.service.MailService;
 import kreyj.konfplan.service.PlanService;
 import kreyj.konfplan.service.ReferentService;
@@ -85,7 +107,7 @@ public class ReferentResource {
         }
 
         // Passwort validieren
-        if (!BcryptUtil.matches(requestDto.currentPassword, nutzer.passwordHash)) {
+        if (!BcryptUtil.matches(requestDto.currentPassword, nutzer.getPasswordHash())) {
             return Response.status(Response.Status.UNAUTHORIZED).entity("Aktuelles Passwort ist falsch.").build();
         }
 
@@ -94,11 +116,11 @@ public class ReferentResource {
             return Response.status(Response.Status.CONFLICT).entity("Die neue E-Mail-Adresse wird bereits verwendet.").build();
         }
 
-        String oldEmail = nutzer.email;
+        String oldEmail = nutzer.getEmail();
         String token = UUID.randomUUID().toString();
-        nutzer.newEmail = requestDto.newEmail;
-        nutzer.emailChangeToken = token;
-        nutzer.emailChangeTokenExpiry = LocalDateTime.now().plusHours(2); // Token 2 Stunden gültig
+        nutzer.setNewEmail(requestDto.newEmail);
+        nutzer.setEmailChangeToken(token);
+        nutzer.setEmailChangeTokenExpiry(LocalDateTime.now().plusHours(2)); // Token 2 Stunden gültig
         nutzer.persist();
 
         // E-Mails senden
@@ -119,16 +141,16 @@ public class ReferentResource {
     public Response confirmEmailChange(@QueryParam("token") String token) {
         Nutzer nutzer = Nutzer.find("emailChangeToken", token).firstResult();
 
-        if (nutzer == null || nutzer.emailChangeTokenExpiry == null || nutzer.emailChangeTokenExpiry.isBefore(LocalDateTime.now())) {
+        if (nutzer == null || nutzer.getEmailChangeTokenExpiry() == null || nutzer.getEmailChangeTokenExpiry().isBefore(LocalDateTime.now())) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Ungültiger oder abgelaufener Bestätigungslink.").build();
         }
 
         // E-Mail aktualisieren
-        nutzer.email = nutzer.newEmail;
+        nutzer.setEmail(nutzer.getNewEmail());
         // Temporäre Felder löschen
-        nutzer.newEmail = null;
-        nutzer.emailChangeToken = null;
-        nutzer.emailChangeTokenExpiry = null;
+        nutzer.setNewEmail(null);
+        nutzer.setEmailChangeToken(null);
+        nutzer.setEmailChangeTokenExpiry(null);
         nutzer.persist();
 
         return Response.ok("Ihre E-Mail-Adresse wurde erfolgreich geändert.").build();
@@ -240,10 +262,10 @@ public class ReferentResource {
             throw new WebApplicationException("Nutzer ist kein Referent", FORBIDDEN.getStatusCode());
         }
 
-        return Verfuegbarkeit.find("nutzer = ?1 and slot.veranstaltung.id = ?2", nutzer, vid).stream()
+        return Verfuegbarkeit.find("nutzer = ?1 and slot.veranstaltung.getId() = ?2", nutzer, vid).stream()
                 .map(v -> {
                     Verfuegbarkeit vf = (Verfuegbarkeit) v;
-                    return new VerfuegbarkeitDto(vf.nutzer.id, vf.slot.id, vf.isAvailable);
+                    return new VerfuegbarkeitDto(vf.getNutzer().getId(), vf.getSlot().getId(), vf.isAvailable());
                 })
                 .collect(Collectors.toList());
     }
@@ -264,23 +286,24 @@ public class ReferentResource {
         }
 
         // Deadline Check
-        if (veranstaltung.deadlineReferenten != null && veranstaltung.deadlineReferenten.isBefore(LocalDateTime.now())) {
+        if (veranstaltung.getDeadlineReferenten() != null && veranstaltung.getDeadlineReferenten().isBefore(LocalDateTime.now())) {
             return Response.status(FORBIDDEN)
                     .entity("Die Deadline für Referenten ist bereits abgelaufen.").build();
         }
 
         EventSlot slot = EventSlot.findById(dto.slotId);
-        if (slot == null || !slot.veranstaltung.id.equals(vid)) {
+        if (slot == null || !slot.getVeranstaltung().getId().equals(vid)) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
 
         Verfuegbarkeit v = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", nutzer, slot).firstResult();
         if (v == null) {
-            v = new Verfuegbarkeit();
-            v.nutzer = nutzer;
-            v.slot = slot;
+            v = new Verfuegbarkeit(nutzer, slot, dto.isAvailable);
+            v.setNutzer(nutzer);
+            v.setSlot(slot);
+        } else {
+            v.setAvailable(dto.isAvailable);
         }
-        v.isAvailable = dto.isAvailable;
         v.persist();
         return Response.ok().build();
     }
@@ -293,42 +316,42 @@ public class ReferentResource {
     // New mapper method
     public static NutzerDto mapReferentToNutzerDto(Referent referent) {
         NutzerDto dto = new NutzerDto();
-        dto.id = referent.id;
-        dto.version = referent.version;
-        dto.email = referent.email;
-        dto.firstName = referent.firstName;
-        dto.lastName = referent.lastName;
-        dto.jobRole = referent.jobRole;
-        dto.organisation = referent.organisation;
-        dto.slogan = referent.slogan;
-        dto.biography = referent.biography;
-        dto.role = referent.role;
+        dto.id = referent.getId();
+        dto.version = referent.getVersion();
+        dto.email = referent.getEmail();
+        dto.firstName = referent.getFirstName();
+        dto.lastName = referent.getLastName();
+        dto.jobRole = referent.getJobRole();
+        dto.organisation = referent.getOrganisation();
+        dto.slogan = referent.getSlogan();
+        dto.biography = referent.getBiography();
+        dto.role = referent.getRole();
         return dto;
     }
 
     public static VortragDto mapVortragToDto(Vortrag v) {
         VortragDto dto = new VortragDto();
-        dto.id = v.id;
-        dto.version = v.version;
-        dto.titel = v.titel;
-        dto.inhalt = v.inhalt;
-        dto.veranstaltungId = v.veranstaltung.id;
-        dto.veranstaltungName = v.veranstaltung.name;
-        dto.referentId = v.referent.id;
-        dto.referentName = v.referent.lastName + ", " + v.referent.firstName;
-        dto.referentOrganisation = v.referent.organisation;
+        dto.id = v.getId();
+        dto.version = v.getVersion();
+        dto.titel = v.getTitel();
+        dto.inhalt = v.getInhalt();
+        dto.veranstaltungId = v.getVeranstaltung().getId();
+        dto.veranstaltungName = v.getVeranstaltung().getName();
+        dto.referentId = v.getReferent().getId();
+        dto.referentName = v.getReferent().getLastName() + ", " + v.getReferent().getFirstName();
+        dto.referentOrganisation = v.getReferent().getOrganisation();
 
         if (v instanceof Wahlvortrag wahlvortrag) {
-            dto.wiederholbar = wahlvortrag.wiederholbar;
-            dto.maxWiederholungen = wahlvortrag.maxWiederholungen;
+            dto.wiederholbar = wahlvortrag.isWiederholbar();
+            dto.maxWiederholungen = wahlvortrag.getMaxWiederholungen();
             dto.verfuegbareSlotIds = wahlvortrag.getVerfuegbareSlots().stream()
-                    .map(s -> s.id)
+                    .map(s -> s.getId())
                     .collect(Collectors.toList());
         } else if (v instanceof Pflichtvortrag pflichtvortrag) {
             dto.istPflicht = true;
-            dto.pflichtgruppe = pflichtvortrag.pflichtgruppe;
-            if (pflichtvortrag.pflichtslot != null) {
-                dto.verfuegbareSlotIds = List.of(pflichtvortrag.pflichtslot.id);
+            dto.pflichtgruppe = pflichtvortrag.getPflichtgruppe();
+            if (pflichtvortrag.getPflichtslot() != null) {
+                dto.verfuegbareSlotIds = List.of(pflichtvortrag.getPflichtslot().getId());
             }
         }
 
@@ -338,18 +361,18 @@ public class ReferentResource {
     public static Vortrag mapDtoToVortrag(VortragDto dto) {
         Vortrag vortrag = dto.istPflicht ? new Pflichtvortrag() : new Wahlvortrag();
 
-        vortrag.id = dto.id;
-        vortrag.version = dto.version;
-        vortrag.titel = dto.titel;
-        vortrag.inhalt = dto.inhalt;
-        vortrag.veranstaltung = Veranstaltung.findById(dto.veranstaltungId);
-        vortrag.referent = Referent.findById(dto.referentId);
+        vortrag.setId(dto.id);
+        vortrag.setVersion(dto.version);
+        vortrag.setTitel(dto.titel);
+        vortrag.setInhalt(dto.inhalt);
+        vortrag.setVeranstaltung(Veranstaltung.findById(dto.veranstaltungId));
+        vortrag.setReferent(Referent.findById(dto.referentId));
         if (vortrag instanceof Wahlvortrag wahlvortrag) {
-            wahlvortrag.wiederholbar = dto.wiederholbar;
-            wahlvortrag.maxWiederholungen = dto.maxWiederholungen;
+            wahlvortrag.setWiederholbar(dto.wiederholbar);
+            wahlvortrag.setMaxWiederholungen(dto.maxWiederholungen);
         } else {
             Pflichtvortrag pflichtvortrag = (Pflichtvortrag) vortrag;
-            pflichtvortrag.pflichtgruppe = dto.pflichtgruppe;
+            pflichtvortrag.setPflichtgruppe(dto.pflichtgruppe);
         }
 
         return vortrag;

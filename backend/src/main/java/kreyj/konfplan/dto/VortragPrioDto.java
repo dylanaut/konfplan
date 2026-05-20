@@ -10,8 +10,8 @@ public class VortragPrioDto {
 
     public static VortragPrioDto from(Prioritaet p) {
         VortragPrioDto dto = new VortragPrioDto();
-        dto.vortragId = p.vortrag.id;
-        dto.prioWert = p.prioWert;
+        dto.vortragId = p.getVortrag().getId();
+        dto.prioWert = p.getPrioWert();
         return dto;
     }
 }

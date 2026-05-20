@@ -1,16 +1,24 @@
 package kreyj.konfplan.persistence;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.Objects;
 
 @MappedSuperclass
+@Getter
+@Setter
 public class IdEntity extends PanacheEntityBase {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(columnDefinition = "INTEGER") // Explizite Definition für den Validator
-    public Long id;
+    private Long id;
 
     @Override
     public String toString() {

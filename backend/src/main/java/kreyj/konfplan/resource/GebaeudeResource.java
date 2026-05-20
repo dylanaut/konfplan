@@ -78,7 +78,7 @@ public class GebaeudeResource {
     @Path("/{id}")
     @Operation(summary = "Gebäude aktualisieren", description = "Aktualisiert ein bestehendes Gebäude.")
     public Response update(@PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Gebäudedaten", required = true) Gebaeude g) {
-        g.id = id;
+        g.setId(id);
         Gebaeude updated = gebaeudeService.save(g);
         if (updated == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -122,7 +122,7 @@ public class GebaeudeResource {
     @Path("/{gid}/raeume/{rid}")
     @Operation(summary = "Raum aktualisieren", description = "Aktualisiert einen bestehenden Raum.")
     public Response updateRaum(@PathParam("gid") Long gid, @PathParam("rid") Long rid, @RequestBody(description = "Die aktualisierten Raumdaten", required = true) Raum r) {
-        r.id = rid;
+        r.setId(rid);
         try {
             Raum saved = raumService.save(r, gid);
             if (saved == null) {
@@ -164,15 +164,15 @@ public class GebaeudeResource {
 
     public static GebaeudeSimpleDto mapToDto(Gebaeude gebaeude) {
         GebaeudeSimpleDto dto = new GebaeudeSimpleDto();
-        dto.id = gebaeude.id;
-        dto.version = gebaeude.version;
+        dto.id = gebaeude.getId();
+        dto.version = gebaeude.getVersion();
 
-        dto.name = gebaeude.name;
-        dto.strasse = gebaeude.strasse;
-        dto.hausnummer = gebaeude.hausnummer;
-        dto.ort = gebaeude.ort;
-        dto.postleitzahl = gebaeude.postleitzahl;
-        dto.typ = gebaeude.typ;
+        dto.name = gebaeude.getName();
+        dto.strasse = gebaeude.getStrasse();
+        dto.hausnummer = gebaeude.getHausnummer();
+        dto.ort = gebaeude.getOrt();
+        dto.postleitzahl = gebaeude.getPostleitzahl();
+        dto.typ = gebaeude.getTyp();
 
         dto.raeume = gebaeude.getRaeume().stream()
                 .map(GebaeudeResource::mapRaumToDto)
@@ -184,13 +184,13 @@ public class GebaeudeResource {
     public static RaumDto mapRaumToDto(Raum raum) {
         RaumDto dto = new RaumDto();
 
-        dto.id = raum.id;
-        dto.version = raum.version;
-        dto.name = raum.name;
-        dto.kapazitaet = raum.kapazitaet;
-        dto.etage = raum.etage;
+        dto.id = raum.getId();
+        dto.version = raum.getVersion();
+        dto.name = raum.getName();
+        dto.kapazitaet = raum.getKapazitaet();
+        dto.etage = raum.getEtage();
 
-        dto.gebaeudeId = raum.gebaeude.id;
+        dto.gebaeudeId = raum.getGebaeude().getId();
 
         return dto;
     }

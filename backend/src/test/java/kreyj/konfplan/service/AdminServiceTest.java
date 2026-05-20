@@ -29,11 +29,11 @@ public class AdminServiceTest {
 
         // Create a test user
         Nutzer user = new Admin();
-        user.email = "test@example.com";
-        user.firstName = "Test";
-        user.lastName = "User";
+        user.setEmail("test@example.com");
+        user.setFirstName("Test");
+        user.setLastName("User");
         user.persist();
-        testUserId = user.id;
+        testUserId = user.getId();
     }
 
     @Test
@@ -43,9 +43,9 @@ public class AdminServiceTest {
         String newEmail = "new.email@example.com";
         String token = UUID.randomUUID().toString();
         Nutzer testUser = Nutzer.findById(testUserId);
-        testUser.newEmail = newEmail;
-        testUser.emailChangeToken = token;
-        testUser.emailChangeTokenExpiry = LocalDateTime.now().plusHours(1);
+        testUser.setNewEmail(newEmail);
+        testUser.setEmailChangeToken(token);
+        testUser.setEmailChangeTokenExpiry(LocalDateTime.now().plusHours(1));
 
         // 2. Confirm email change
         boolean result = adminService.confirmEmailChange(token);
@@ -53,10 +53,10 @@ public class AdminServiceTest {
         // 3. Verify the change
         assertTrue(result);
         Nutzer updatedUser = Nutzer.findById(testUserId);
-        assertEquals(newEmail, updatedUser.email);
-        assertNull(updatedUser.newEmail);
-        assertNull(updatedUser.emailChangeToken);
-        assertNull(updatedUser.emailChangeTokenExpiry);
+        assertEquals(newEmail, updatedUser.getEmail());
+        assertNull(updatedUser.getNewEmail());
+        assertNull(updatedUser.getEmailChangeToken());
+        assertNull(updatedUser.getEmailChangeTokenExpiry());
     }
 
     @Test
@@ -65,9 +65,9 @@ public class AdminServiceTest {
         // 1. Initiate email change
         String newEmail = "new.email@example.com";
         Nutzer testUser = Nutzer.findById(testUserId);
-        testUser.newEmail = newEmail;
-        testUser.emailChangeToken = UUID.randomUUID().toString();
-        testUser.emailChangeTokenExpiry = LocalDateTime.now().plusHours(1);
+        testUser.setNewEmail(newEmail);
+        testUser.setEmailChangeToken(UUID.randomUUID().toString());
+        testUser.setEmailChangeTokenExpiry(LocalDateTime.now().plusHours(1));
 
         // 2. Attempt to confirm with an invalid token
         boolean result = adminService.confirmEmailChange("invalid-token");
@@ -75,8 +75,8 @@ public class AdminServiceTest {
         // 3. Verify that the change did not happen
         assertFalse(result);
         Nutzer user = Nutzer.findById(testUserId);
-        assertEquals("test@example.com", user.email);
-        assertEquals(newEmail, user.newEmail); // The pending email should still be there
+        assertEquals("test@example.com", user.getEmail());
+        assertEquals(newEmail, user.getNewEmail()); // The pending email should still be there
     }
 
     @Test
@@ -86,9 +86,9 @@ public class AdminServiceTest {
         String newEmail = "new.email@example.com";
         String token = UUID.randomUUID().toString();
         Nutzer testUser = Nutzer.findById(testUserId);
-        testUser.newEmail = newEmail;
-        testUser.emailChangeToken = token;
-        testUser.emailChangeTokenExpiry = LocalDateTime.now().minusHours(1); // Token is already expired
+        testUser.setNewEmail(newEmail);
+        testUser.setEmailChangeToken(token);
+        testUser.setEmailChangeTokenExpiry(LocalDateTime.now().minusHours(1)); // Token is already expired
 
         // 2. Attempt to confirm with the expired token
         boolean result = adminService.confirmEmailChange(token);
@@ -96,10 +96,10 @@ public class AdminServiceTest {
         // 3. Verify that the change did not happen and the token fields are cleared
         assertFalse(result);
         Nutzer user = Nutzer.findById(testUserId);
-        assertEquals("test@example.com", user.email);
-        assertNull(user.newEmail);
-        assertNull(user.emailChangeToken);
-        assertNull(user.emailChangeTokenExpiry);
+        assertEquals("test@example.com", user.getEmail());
+        assertNull(user.getNewEmail());
+        assertNull(user.getEmailChangeToken());
+        assertNull(user.getEmailChangeTokenExpiry());
     }
 
     @Test
@@ -109,9 +109,9 @@ public class AdminServiceTest {
         String newEmail = "new.email@example.com";
         String token = UUID.randomUUID().toString();
         Nutzer testUser = Nutzer.findById(testUserId);
-        testUser.newEmail = newEmail;
-        testUser.emailChangeToken = token;
-        testUser.emailChangeTokenExpiry = LocalDateTime.now().plusHours(1);
+        testUser.setNewEmail(newEmail);
+        testUser.setEmailChangeToken(token);
+        testUser.setEmailChangeTokenExpiry(LocalDateTime.now().plusHours(1));
 
         // 2. Confirm email change for the first time
         boolean firstResult = adminService.confirmEmailChange(token);
@@ -123,6 +123,6 @@ public class AdminServiceTest {
 
         // 4. Verify that the email remains the new email
         Nutzer updatedUser = Nutzer.findById(testUserId);
-        assertEquals(newEmail, updatedUser.email);
+        assertEquals(newEmail, updatedUser.getEmail());
     }
 }

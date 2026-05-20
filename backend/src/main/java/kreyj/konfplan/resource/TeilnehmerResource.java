@@ -49,7 +49,7 @@ public class TeilnehmerResource {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        if (!nutzer.email.equals(JwtHelper.getUserPrincipalName(jwt)) && !jwt.getGroups().contains("ADMIN")) {
+        if (!nutzer.getEmail().equals(JwtHelper.getUserPrincipalName(jwt)) && !jwt.getGroups().contains("ADMIN")) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
         return Response.ok(AdminResource.mapNutzerToDto(nutzer)).build();
@@ -168,7 +168,7 @@ public class TeilnehmerResource {
             return Response.status(Response.Status.NOT_FOUND).entity("Teilnehmer nicht gefunden.").build();
         }
         try {
-            teilnehmerService.createInitialAvailabilities(teilnehmer.id, vid);
+            teilnehmerService.createInitialAvailabilities(teilnehmer.getId(), vid);
             return Response.ok().build();
         } catch (NotFoundException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();

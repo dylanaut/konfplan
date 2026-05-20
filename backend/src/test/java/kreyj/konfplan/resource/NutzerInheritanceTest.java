@@ -27,15 +27,15 @@ class NutzerInheritanceTest extends ResourceTestBase {
     @Transactional
     void setup() {
         Admin admin = new Admin();
-        admin.email = "org@test.de";
-        admin.passwordHash = "hash";
+        admin.setEmail("org@test.de");
+        admin.setPasswordHash("hash");
         admin.persist();
 
         Veranstaltung v = new Veranstaltung();
-        v.name = "Inheritance Test Event " + System.currentTimeMillis();
-        v.beginntAm = LocalDateTime.now();
+        v.setName("Inheritance Test Event " + System.currentTimeMillis());
+        v.setBeginntAm(LocalDateTime.now());
         v.persist();
-        testVid = v.id;
+        testVid = v.getId();
 
         admin.addVeranstaltung(v);
         admin.persist();
@@ -65,7 +65,7 @@ class NutzerInheritanceTest extends ResourceTestBase {
         Referent ref = (Referent) Nutzer.findByEmail("expert@konfplan.de");
         assertNotNull(ref, "Referent sollte in der DB existieren");
         assertThat(ref.getVeranstaltungen().isEmpty()).describedAs("Veranstaltung des Referenten sollte nicht leer sein").isFalse();
-        assertEquals(testVid, ref.getVeranstaltungen().iterator().next().id);
+        assertEquals(testVid, ref.getVeranstaltungen().iterator().next().getId());
     }
 
     @Test
@@ -93,7 +93,7 @@ class NutzerInheritanceTest extends ResourceTestBase {
         assertNotNull(tn, "Teilnehmer sollte in der DB existieren");
         assertNotNull(Veranstaltung.findById(testVid), "Veranstaltung %d sollte in der DB existieren".formatted(testVid));
         assertNotNull(tn.getVeranstaltungen(), "Veranstaltung des Teilnehmers sollte nicht leer sein");
-        assertEquals(testVid, tn.getVeranstaltungen().iterator().next().id);
-        assertEquals("10.3", tn.gruppe);
+        assertEquals(testVid, tn.getVeranstaltungen().iterator().next().getId());
+        assertEquals("10.3", tn.getGruppe());
     }
 }

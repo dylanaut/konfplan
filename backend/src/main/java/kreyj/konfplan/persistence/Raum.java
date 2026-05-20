@@ -1,32 +1,42 @@
 package kreyj.konfplan.persistence;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
+@Getter
+@Setter
 public class Raum extends VersionedEntity {
 
     @Column(nullable = false)
-    public String name;
+    private String name;
 
     @Column(nullable = false)
-    public Integer kapazitaet;
+    private Integer kapazitaet;
 
-    public String etage;
+    private String etage;
 
     @ManyToOne
     @JoinColumn(name = "gebaeude_id")
-    public Gebaeude gebaeude;
+    private Gebaeude gebaeude;
 
     @ManyToMany
     @JoinTable(
-        name = "Raum_EventSlot",
-        joinColumns = @JoinColumn(name = "raum_id"),
-        inverseJoinColumns = @JoinColumn(name = "eventslot_id")
+            name = "Raum_EventSlot",
+            joinColumns = @JoinColumn(name = "raum_id"),
+            inverseJoinColumns = @JoinColumn(name = "eventslot_id")
     )
-    public Set<EventSlot> verfuegbareSlots = new HashSet<>();
+    private Set<EventSlot> verfuegbareSlots = new HashSet<>();
 
     public Raum() {
     }
@@ -37,12 +47,12 @@ public class Raum extends VersionedEntity {
         this.kapazitaet = kapazitaet;
     }
 
-    public Gebaeude getGebaeude() {
-        return gebaeude;
-    }
-
     public void setGebaeude(Gebaeude gebaeude) {
         this.gebaeude = gebaeude;
         gebaeude.addRaum(this);
+    }
+
+    public Set<EventSlot> getVerfuegbareSlots() {
+        return Collections.unmodifiableSet(verfuegbareSlots);
     }
 }

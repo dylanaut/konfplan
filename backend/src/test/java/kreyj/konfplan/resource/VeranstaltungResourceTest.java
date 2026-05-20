@@ -34,15 +34,15 @@ class VeranstaltungResourceTest extends ResourceTestBase {
     @Transactional
     void setup() {
         Admin admin = new Admin();
-        admin.email = "admin@test.de";
-        admin.passwordHash = "hash";
+        admin.setEmail("admin@test.de");
+        admin.setPasswordHash("hash");
         admin.persist();
 
         Veranstaltung v = new Veranstaltung();
-        v.name = "Test Event " + System.currentTimeMillis();
-        v.beginntAm = LocalDateTime.now();
+        v.setName("Test Event " + System.currentTimeMillis());
+        v.setBeginntAm(LocalDateTime.now());
         v.persist();
-        testVid = v.id;
+        testVid = v.getId();
 
         admin.addVeranstaltung(v);
         admin.persist();
@@ -59,19 +59,19 @@ class VeranstaltungResourceTest extends ResourceTestBase {
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("size()", is(1))
-                .body("[0].titel", is("Test Vortrag"));
+                .body("[0].getTitel()", is("Test Vortrag"));
     }
 
     private void createWahlvortrag(String titel) {
         Referent r = new Referent();
-        r.email = "ref-" + System.currentTimeMillis() + "@vresource.de";
-        r.lastName = "Mustermann";
+        r.setEmail("ref-" + System.currentTimeMillis() + "@vresource.de");
+        r.setLastName("Mustermann");
         r.persist();
 
         Wahlvortrag v = new Wahlvortrag();
-        v.titel = titel;
-        v.referent = r;
-        v.veranstaltung = Veranstaltung.findById(testVid);
+        v.setTitel(titel);
+        v.setReferent(r);
+        v.setVeranstaltung(Veranstaltung.findById(testVid));
         v.persist();
     }
 
@@ -79,10 +79,10 @@ class VeranstaltungResourceTest extends ResourceTestBase {
     void testGetSlotsHierarchical() {
         QuarkusTransaction.requiringNew().run(() -> {
             EventSlot s1 = new EventSlot();
-            s1.description = "Slot A";
-            s1.startTime = LocalDateTime.now();
-            s1.endTime = LocalDateTime.now().plusHours(1);
-            s1.veranstaltung = Veranstaltung.findById(testVid);
+            s1.setDescription("Slot A");
+            s1.setStartTime(LocalDateTime.now());
+            s1.setEndTime(LocalDateTime.now().plusHours(1));
+            s1.setVeranstaltung(Veranstaltung.findById(testVid));
             s1.persist();
         });
 
@@ -91,7 +91,7 @@ class VeranstaltungResourceTest extends ResourceTestBase {
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("size()", is(1))
-                .body("[0].description", is("Slot A"));
+                .body("[0].getDescription()", is("Slot A"));
     }
 
     @Test
@@ -105,7 +105,7 @@ class VeranstaltungResourceTest extends ResourceTestBase {
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("size()", is(1))
-                .body("[0].titel", is("Vortrag 1"));
+                .body("[0].getTitel()", is("Vortrag 1"));
     }
 
     @Test
@@ -125,7 +125,7 @@ class VeranstaltungResourceTest extends ResourceTestBase {
                 .statusCode(CREATED.getStatusCode())
                 .body("email", is("new@test.de"));
 
-        Assertions.assertNotNull(Nutzer.findByEmail("new@test.de"));
+        assertThat(Nutzer.findByEmail("new@test.de")).isNotNull();
     }
 
     @Test
@@ -137,18 +137,18 @@ class VeranstaltungResourceTest extends ResourceTestBase {
         // 1. Create a Referent and a Wahlvortrag
         QuarkusTransaction.requiringNew().run(() -> {
             Referent r = new Referent();
-            r.email = referentEmail;
-            r.passwordHash = referentPassword;
-            r.firstName = "Referent";
-            r.lastName = "Test";
+            r.setEmail(referentEmail);
+            r.setPasswordHash(referentPassword);
+            r.setFirstName("Referent");
+            r.setLastName("Test");
             r.persist();
 
             Wahlvortrag w = new Wahlvortrag();
-            w.titel = "Original Vortrag Titel";
-            w.referent = r;
-            w.veranstaltung = Veranstaltung.findById(testVid);
+            w.setTitel("Original Vortrag Titel");
+            w.setReferent(r);
+            w.setVeranstaltung(Veranstaltung.findById(testVid));
             w.persist();
-            vortragId[0] = w.id;
+            vortragId[0] = w.getId();
         });
 
         // 2. Admin (via @TestSecurity) fetches vortrag data

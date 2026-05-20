@@ -19,12 +19,12 @@ public class ProtokollDto extends AbstractIdDto {
     }
 
     public ProtokollDto(Protokoll protokoll) {
-        this.id = protokoll.id;
-        this.zeitpunkt = protokoll.zeitpunkt;
-        this.akteur = protokoll.akteur;
-        this.kategorie = protokoll.kategorie;
-        this.ereignis = protokoll.ereignis;
-        this.details = protokoll.details;
-        this.referenzId = protokoll.referenzId;
+        this.id = protokoll.getId();
+        this.zeitpunkt = protokoll.getZeitpunkt();
+        this.akteur = protokoll.getAkteur();
+        this.kategorie = protokoll.getKategorie();
+        this.ereignis = protokoll.getEreignis();
+        this.details = protokoll.getDetails();
+        this.referenzId = protokoll.getReferenzId();
     }
 }

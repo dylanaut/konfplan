@@ -26,32 +26,35 @@ public class PlanServiceTest {
     public void setup() {
         // Clear existing data to ensure a clean slate for each test
         Planungsergebnis.deleteAll();
+        Verfuegbarkeit.deleteAll();
         EventSlot.deleteAll();
+        Prioritaet.deleteAll();
+        Vortrag.deleteAll();
         Veranstaltung.deleteAll();
 
         veranstaltung = new Veranstaltung();
-        veranstaltung.name = "Test Event";
-        veranstaltung.beginntAm = LocalDateTime.now();
+        veranstaltung.setName("Test Event");
+        veranstaltung.setBeginntAm(LocalDateTime.now());
         veranstaltung.persist();
 
         Planungsergebnis ergebnis = new Planungsergebnis();
-        ergebnis.veranstaltung = veranstaltung;
-        ergebnis.solver = "cp-sat";
-        ergebnis.timeout = 60;
+        ergebnis.setVeranstaltung(veranstaltung);
+        ergebnis.setSolver("cp-sat");
+        ergebnis.setTimeout(60);
         // Simulate a minimal valid JSON structure to avoid NullPointerExceptions during parsing
-        ergebnis.jsonErgebnis = """
-        {
-          "input_data": {
-            "teilnehmer_oids": [],
-            "wahlvortrag_oids": [],
-            "slot_oids": [],
-            "raum_oids": []
-          },
-          "instanz_slot": [],
-          "instanz_raum": [],
-          "besucht": []
-        }
-        """;
+        ergebnis.setJsonErgebnis("""
+                {
+                  "input_data": {
+                    "teilnehmer_oids": [],
+                    "wahlvortrag_oids": [],
+                    "slot_oids": [],
+                    "raum_oids": []
+                  },
+                  "instanz_slot": [],
+                  "instanz_raum": [],
+                  "besucht": []
+                }
+                """);
         ergebnis.persist();
     }
 
@@ -64,7 +67,7 @@ public class PlanServiceTest {
         // when getDetaillierterPlan is called, which is the context of the original problem.
         
         // We expect this call to succeed without a HibernateException
-        var detaillierterPlan = planService.getDetaillierterPlan(veranstaltung.id);
+        var detaillierterPlan = planService.getDetaillierterPlan(veranstaltung.getId());
 
         // A simple assertion to verify that the method ran and returned a (potentially empty) list.
         assertThat(detaillierterPlan).describedAs("The returned plan should not be null.")

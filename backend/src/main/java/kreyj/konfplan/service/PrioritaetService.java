@@ -24,10 +24,10 @@ public class PrioritaetService {
 
         // Deadline Check
         if (!requests.isEmpty()) {
-            Vortrag v1 = Vortrag.findById(requests.get(0).vortragId);
+            Vortrag v1 = Vortrag.findById(requests.getFirst().vortragId);
             if (v1 != null) {
-                Veranstaltung v = v1.veranstaltung;
-                if (v.deadlineTeilnehmer != null && v.deadlineTeilnehmer.isBefore(LocalDateTime.now())) {
+                Veranstaltung v = v1.getVeranstaltung();
+                if (v.getDeadlineTeilnehmer() != null && v.getDeadlineTeilnehmer().isBefore(LocalDateTime.now())) {
                     throw new WebApplicationException("Die Deadline für Teilnehmer für diese Veranstaltung ist bereits abgelaufen.", FORBIDDEN.getStatusCode());
                 }
             }
@@ -57,10 +57,10 @@ public class PrioritaetService {
             Vortrag vortrag = Vortrag.findById(req.vortragId);
             if (vortrag != null) {
                 Prioritaet entity = new Prioritaet();
-                entity.teilnehmer = teilnehmer;
-                entity.vortrag = vortrag;
-                entity.prioWert = req.prioWert; // Hier umbenannt
-                entity.lastUpdated = LocalDateTime.now();
+                entity.setTeilnehmer(teilnehmer);
+                entity.setVortrag(vortrag);
+                entity.setPrioWert(req.prioWert); // Hier umbenannt
+                entity.setLastUpdated(LocalDateTime.now());
                 entity.persist();
             }
         }
@@ -93,11 +93,11 @@ public class PrioritaetService {
 
         if (p == null) {
             p = new Prioritaet();
-            p.teilnehmer = teilnehmer;
-            p.vortrag = vortrag;
+            p.setTeilnehmer(teilnehmer);
+            p.setVortrag(vortrag);
         }
-        p.prioWert = prioWert;
-        p.lastUpdated = LocalDateTime.now();
+        p.setPrioWert(prioWert);
+        p.setLastUpdated(LocalDateTime.now());
         p.persist();
 
         return p;

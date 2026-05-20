@@ -4,15 +4,33 @@ import io.quarkus.logging.Log;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.dto.AdminPrioritaetUpdateRequestDto;
-import kreyj.konfplan.dto.RaumBelegbarkeitDto;
 import kreyj.konfplan.dto.NutzerDto;
+import kreyj.konfplan.dto.RaumBelegbarkeitDto;
 import kreyj.konfplan.dto.VerfuegbarkeitDto;
 import kreyj.konfplan.dto.VortragPrioDto;
-import kreyj.konfplan.persistence.*;
+import kreyj.konfplan.persistence.EventSlot;
+import kreyj.konfplan.persistence.IdEntity;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Raum;
+import kreyj.konfplan.persistence.RaumBelegbarkeit;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Verfuegbarkeit;
+import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.service.AdminService;
 import kreyj.konfplan.service.MailService;
 import kreyj.konfplan.service.PrioritaetService;
@@ -43,24 +61,24 @@ public class AdminResource {
 
     public static NutzerDto mapNutzerToDto(Nutzer u) {
         NutzerDto dto = new NutzerDto();
-        dto.id = u.id;
-        dto.version = u.version;
-        dto.email = u.email;
-        dto.firstName = u.firstName;
-        dto.lastName = u.lastName;
-        dto.role = u.role;
-        dto.isActive = u.isActive;
-        dto.veranstaltungIds = null != u.getVeranstaltungen() ? u.getVeranstaltungen().stream().map(v -> v.id).toList() : Collections.emptyList();
+        dto.id = u.getId();
+        dto.version = u.getVersion();
+        dto.email = u.getEmail();
+        dto.firstName = u.getFirstName();
+        dto.lastName = u.getLastName();
+        dto.role = u.getRole();
+        dto.isActive = u.isActive();
+        dto.veranstaltungIds = null != u.getVeranstaltungen() ? u.getVeranstaltungen().stream().map(IdEntity::getId).toList() : Collections.emptyList();
 
         if (u instanceof Referent r) {
-            dto.biography = r.biography;
-            dto.jobRole = r.jobRole;
-            dto.organisation = r.organisation;
-            dto.slogan = r.slogan;
-        } else if (u instanceof Teilnehmer t) {
-            dto.gruppe = t.gruppe;
-            if (t.prioritaeten != null) {
-                dto.prioritaeten = t.prioritaeten.stream().map(VortragPrioDto::from).toList();
+            dto.biography = r.getBiography();
+            dto.jobRole = r.getJobRole();
+            dto.organisation = r.getOrganisation();
+            dto.slogan = r.getSlogan();
+        } else if (u instanceof Teilnehmer tn) {
+            dto.gruppe = tn.getGruppe();
+            if (tn.getPrioritaeten() != null) {
+                dto.prioritaeten = tn.getPrioritaeten().stream().map(VortragPrioDto::from).toList();
             }
         }
         return dto;
@@ -91,13 +109,13 @@ public class AdminResource {
     @Transactional
     @Operation(summary = "Einen Nutzer abrufen", description = "Ruft einen einzelnen Nutzer anhand seiner ID ab.")
     public Response getUser(@PathParam("id") Long id) {
-            Nutzer nutzer =  adminService.findNutzer(id);
+        Nutzer nutzer = adminService.findNutzer(id);
 
-            if (null == nutzer) {
-                return Response.status(Response.Status.NOT_FOUND).build();
-            }
+        if (null == nutzer) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
 
-            return Response.ok().entity(mapNutzerToDto(nutzer)).build();
+        return Response.ok().entity(mapNutzerToDto(nutzer)).build();
     }
 
     @PUT
@@ -168,10 +186,10 @@ public class AdminResource {
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Operation(summary = "Verfügbarkeiten abrufen", description = "Ruft die Verfügbarkeiten aller Nutzer für eine Veranstaltung ab.")
     public List<VerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
-        return Verfuegbarkeit.find("select v from Verfuegbarkeit v join v.nutzer u join u.veranstaltungen va where va.id = ?1", vid).stream()
+        return Verfuegbarkeit.find("select v from Verfuegbarkeit v join v.nutzer u join u.veranstaltungen va where va.getId() = ?1", vid).stream()
                 .map(v -> {
                     Verfuegbarkeit vf = (Verfuegbarkeit) v;
-                    return new VerfuegbarkeitDto(vf.nutzer.id, vf.slot.id, vf.isAvailable);
+                    return new VerfuegbarkeitDto(vf.getNutzer().getId(), vf.getSlot().getId(), vf.isAvailable());
                 })
                 .toList();
     }
@@ -188,18 +206,17 @@ public class AdminResource {
         }
 
         // Validierung: Gehört der Slot zur angegebenen Veranstaltung?
-        if (!slot.veranstaltung.id.equals(vid)) {
+        if (!slot.getVeranstaltung().getId().equals(vid)) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Slot gehört nicht zur angegebenen Veranstaltung.").build();
         }
 
         Verfuegbarkeit v = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", nutzer, slot).firstResult();
         if (v == null) {
-            v = new Verfuegbarkeit();
-            v.nutzer = nutzer;
-            v.slot = slot;
+            v = new Verfuegbarkeit(nutzer, slot, dto.isAvailable);
+        } else {
+            v.setAvailable(dto.isAvailable);
         }
-        v.isAvailable = dto.isAvailable;
         v.persist();
         return Response.ok().build();
     }
@@ -213,19 +230,20 @@ public class AdminResource {
             throw new NotFoundException();
         }
 
-        List<EventSlot> slots = EventSlot.find("veranstaltung.id", vid).list();
+        List<EventSlot> slots = EventSlot.find("veranstaltung.getId()", vid).list();
         List<Raum> raeume = event.getGebaeude().stream().flatMap(g -> g.getRaeume().stream()).toList();
 
         return raeume.stream().flatMap(r -> slots.stream().map(s -> {
             RaumBelegbarkeit rv = RaumBelegbarkeit.find("raum = ?1 and slot = ?2", r, s).firstResult();
-            RaumBelegbarkeitDto dto = new RaumBelegbarkeitDto(r.id, s.id, rv != null && rv.isBelegt);
+            RaumBelegbarkeitDto dto = new RaumBelegbarkeitDto(r.getId(), s.getId(), rv != null && rv.isBelegt());
 
             // Cross-event check: Is this room busy in ANY other event at a time that overlaps with this slot?
-            List<RaumBelegbarkeit> otherRvs = RaumBelegbarkeit.find("raum = ?1 and isBelegt = true and slot.veranstaltung.id != ?2", r, vid).list();
+            List<RaumBelegbarkeit> otherRvs = RaumBelegbarkeit.find("raum = ?1 and isBelegt = true and slot.veranstaltung.getId() != ?2", r, vid).list();
             for (RaumBelegbarkeit otherRv : otherRvs) {
-                if (otherRv.slot.startTime.isBefore(s.endTime) && otherRv.slot.endTime.isAfter(s.startTime)) {
+                EventSlot otherSlot = otherRv.getSlot();
+                if (otherSlot.getStartTime().isBefore(s.getEndTime()) && otherSlot.getEndTime().isAfter(s.getStartTime())) {
                     dto.isBlockedByOtherEvent = true;
-                    dto.blockingEventName = otherRv.slot.veranstaltung.name;
+                    dto.blockingEventName = otherSlot.getVeranstaltung().getName();
                     break;
                 }
             }
@@ -246,11 +264,8 @@ public class AdminResource {
 
         RaumBelegbarkeit rv = RaumBelegbarkeit.find("raum = ?1 and slot = ?2", raum, slot).firstResult();
         if (rv == null) {
-            rv = new RaumBelegbarkeit();
-            rv.raum = raum;
-            rv.slot = slot;
+            rv = new RaumBelegbarkeit(raum, slot, true);
         }
-        rv.isBelegt = dto.isBelegt;
         rv.persist();
         return Response.ok().build();
     }
@@ -269,7 +284,7 @@ public class AdminResource {
             return Response.status(Response.Status.NOT_FOUND).entity("Teilnehmer nicht gefunden.").build();
         }
 
-        if (teilnehmer.getVeranstaltungen().stream().noneMatch(v -> v.id.equals(vid))) {
+        if (teilnehmer.getVeranstaltungen().stream().noneMatch(v -> v.getId().equals(vid))) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Teilnehmer gehört nicht zu dieser Veranstaltung.").build();
         }
 
@@ -279,7 +294,7 @@ public class AdminResource {
                 if (vortrag == null) {
                     return Response.status(Response.Status.NOT_FOUND).entity("Vortrag mit ID " + dto.vortragId + " nicht gefunden.").build();
                 }
-                if (!vortrag.veranstaltung.id.equals(vid)) {
+                if (!vortrag.getVeranstaltung().getId().equals(vid)) {
                     return Response.status(Response.Status.BAD_REQUEST).entity("Vortrag mit ID " + dto.vortragId + " gehört nicht zu dieser Veranstaltung.").build();
                 }
                 prioritaetService.updateSinglePrioritaet(tid, dto.vortragId, dto.prioWert);

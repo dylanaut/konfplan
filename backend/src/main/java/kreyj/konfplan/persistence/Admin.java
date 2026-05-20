@@ -9,6 +9,6 @@ public class Admin extends Nutzer {
     // Hier können später spezifische Admin-Rechte oder Logging-Felder rein.
 
     public Admin() {
-        this.role = "ADMIN";
+        this.setRole("ADMIN");
     }
 }

@@ -11,10 +11,23 @@ import jakarta.json.Json;
 import jakarta.json.JsonException;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.dto.SolverConfigDto;
-import kreyj.konfplan.persistence.*;
+import kreyj.konfplan.persistence.EventSlot;
+import kreyj.konfplan.persistence.IdEntity;
+import kreyj.konfplan.persistence.Pflichtvortrag;
+import kreyj.konfplan.persistence.Planungsergebnis;
+import kreyj.konfplan.persistence.Prioritaet;
+import kreyj.konfplan.persistence.ProtokollKategorie;
+import kreyj.konfplan.persistence.Raum;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Wahlvortrag;
 import org.jboss.logging.Logger;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -22,7 +35,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -55,16 +73,16 @@ public class OptimierungService {
         }
 
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        String vName = veranstaltung != null ? veranstaltung.name : "ID: " + veranstaltungId;
+        String vName = veranstaltung != null ? veranstaltung.getName() : "ID: " + veranstaltungId;
 
         protokollService.log(ProtokollKategorie.PLANUNG, "Optimierung gestartet",
                 "Optimierung für '" + vName + "' mit Solver '" + config.solver + "' gestartet.", veranstaltungId);
 
         try {
-            List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
-            List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.id", veranstaltungId).list();
-            List<Wahlvortrag> wahlvortraege = Wahlvortrag.find("veranstaltung.id", veranstaltungId).list();
-            List<EventSlot> slots = EventSlot.find("veranstaltung.id", veranstaltungId).list();
+            List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.getId() = ?1", veranstaltungId).list();
+            List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.getId()", veranstaltungId).list();
+            List<Wahlvortrag> wahlvortraege = Wahlvortrag.find("veranstaltung.getId()", veranstaltungId).list();
+            List<EventSlot> slots = EventSlot.find("veranstaltung.getId()", veranstaltungId).list();
             List<Raum> raeume = Raum.listAll();
 
             if (slots.isEmpty() || teilnehmer.isEmpty() || wahlvortraege.isEmpty()) {
@@ -180,10 +198,10 @@ public class OptimierungService {
     }
 
     private static void appendOidArrays(List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege, List<EventSlot> slots, List<Raum> raeume, StringBuilder sb) {
-        sb.append("teilnehmer_oids = [").append(teilnehmer.stream().map(t -> String.valueOf(t.id)).collect(joining(","))).append("];\n");
-        sb.append("wahlvortrag_oids = [").append(wahlvortraege.stream().map(v -> String.valueOf(v.id)).collect(joining(","))).append("];\n");
-        sb.append("slot_oids = [").append(slots.stream().map(s -> String.valueOf(s.id)).collect(joining(","))).append("];\n");
-        sb.append("raum_oids = [").append(raeume.stream().map(r -> String.valueOf(r.id)).collect(joining(","))).append("];\n");
+        sb.append("teilnehmer_oids = [").append(teilnehmer.stream().map(t -> String.valueOf(t.getId())).collect(joining(","))).append("];\n");
+        sb.append("wahlvortrag_oids = [").append(wahlvortraege.stream().map(v -> String.valueOf(v.getId())).collect(joining(","))).append("];\n");
+        sb.append("slot_oids = [").append(slots.stream().map(s -> String.valueOf(s.getId())).collect(joining(","))).append("];\n");
+        sb.append("raum_oids = [").append(raeume.stream().map(r -> String.valueOf(r.getId())).collect(joining(","))).append("];\n");
     }
 
 
@@ -193,11 +211,11 @@ public class OptimierungService {
         sb.append("slots = [");
         int sIdx = 0;
         for (EventSlot s : slots) {
-            sb.append(String.format("\n(oid: %d)", s.id));
+            sb.append(String.format("\n(oid: %d)", s.getId()));
             if (++sIdx < nSlots) {
                 sb.append(",");
             }
-            sb.append(String.format(" %% %d: %s - %s", sIdx, s.startTime.format(WEEKDAY_TIME_FORMAT), s.endTime.format(TIME_FORMAT)));
+            sb.append(String.format(" %% %d: %s - %s", sIdx, s.getStartTime().format(WEEKDAY_TIME_FORMAT), s.getEndTime().format(TIME_FORMAT)));
         }
         sb.append("\n];\n\n");
     }
@@ -209,11 +227,11 @@ public class OptimierungService {
 
         int rIdx = 0;
         for (Raum raum : raeume) {
-            sb.append(String.format("\n(oid: %d, kapazitaet: %d)", raum.id, raum.kapazitaet));
+            sb.append(String.format("\n(oid: %d, kapazitaet: %d)", raum.getId(), raum.getKapazitaet()));
             if (++rIdx < nRaeume) {
                 sb.append(",");
             }
-            sb.append(String.format(" %% %d: %s, %d", rIdx, raum.name, raum.kapazitaet));
+            sb.append(String.format(" %% %d: %s, %d", rIdx, raum.getName(), raum.getKapazitaet()));
         }
         sb.append("\n];\n\n");
     }
@@ -225,11 +243,11 @@ public class OptimierungService {
 
         int pIdx = 0;
         for (Teilnehmer tn : teilnehmer) {
-            sb.append(String.format("\n(oid: %d)", tn.id));
+            sb.append(String.format("\n(oid: %d)", tn.getId()));
             if (++pIdx < nTNs) {
                 sb.append(",");
             }
-            sb.append(String.format(" %% %d: %s (%s)", pIdx, tn.email, tn.gruppe));
+            sb.append(String.format(" %% %d: %s (%s)", pIdx, tn.getEmail(), tn.getGruppe()));
         }
 
         sb.append("\n];\n\n");
@@ -241,8 +259,8 @@ public class OptimierungService {
         Map<Long, Integer> refMap = new HashMap<>();
         int refCounter = 1;
         for (Wahlvortrag v : wahlvortraege) {
-            if (!refMap.containsKey(v.referent.id)) {
-                refMap.put(v.referent.id, refCounter++);
+            if (!refMap.containsKey(v.getReferent().getId())) {
+                refMap.put(v.getReferent().getId(), refCounter++);
             }
         }
 
@@ -252,11 +270,11 @@ public class OptimierungService {
 
         for (Wahlvortrag wv : wahlvortraege) {
             sb.append("\n");
-            sb.append(String.format("(oid: %d, referent_id: %d, belegbare_slots: [%s])", wv.id, refMap.get(wv.referent.id), constantSlotIds));
+            sb.append(String.format("(oid: %d, referent_id: %d, belegbare_slots: [%s])", wv.getId(), refMap.get(wv.getReferent().getId()), constantSlotIds));
             if (++wvIdx < nWVs) {
                 sb.append(",");
             }
-            sb.append(String.format(" %% %d: %s", wvIdx, wv.titel.substring(0, Math.min(25, wv.titel.length()))));
+            sb.append(String.format(" %% %d: %s", wvIdx, wv.getTitel().substring(0, Math.min(25, wv.getTitel().length()))));
         }
         sb.append("\n];\n\n");
     }
@@ -271,7 +289,7 @@ public class OptimierungService {
             int wvIdx = 0;
             for (Wahlvortrag v : wahlvortraege) {
                 Prioritaet p = Prioritaet.find("teilnehmer = ?1 and vortrag = ?2", tn, v).firstResult();
-                sb.append(p != null ? p.prioWert : 0);
+                sb.append(p != null ? p.getPrioWert() : 0);
                 if (++wvIdx < wvSize) {
                     sb.append(",");
                 } else {
@@ -281,7 +299,7 @@ public class OptimierungService {
             if (++tnIdx == tnSize) {
                 sb.append("];");
             }
-            sb.append(String.format(" %% %d: %s", tn.id, tn.email));
+            sb.append(String.format(" %% %d: %s", tn.getId(), tn.getEmail()));
         }
         sb.append("\n\n");
     }
@@ -295,9 +313,9 @@ public class OptimierungService {
         for (Teilnehmer tn : teilnehmer) {
             sb.append("\n");
             int sIdx = 0;
-            Set<Long> verfSlotIds = tn.getVerfuegbareSlots().stream().map(s -> s.id).collect(Collectors.toSet());
+            Set<Long> verfSlotIds = tn.getVerfuegbareSlots().stream().map(IdEntity::getId).collect(Collectors.toSet());
             for (EventSlot s : slots) {
-                sb.append(verfSlotIds.contains(s.id) ? "true" : "false");
+                sb.append(verfSlotIds.contains(s.getId()) ? "true" : "false");
                 if (++sIdx < slotSize) {
                     sb.append(",");
                 } else {
@@ -307,7 +325,7 @@ public class OptimierungService {
             if (++tnIdx == tnSize) {
                 sb.append("];");
             }
-            sb.append(String.format(" %% %d: %s", tn.id, tn.email));
+            sb.append(String.format(" %% %d: %s", tn.getId(), tn.getEmail()));
         }
         sb.append("\n\n");
     }
@@ -332,7 +350,7 @@ public class OptimierungService {
             if (++raumIdx == raeumeSize) {
                 sb.append("];");
             }
-            sb.append(String.format(" %% %d: %s", raum.id, raum.name));
+            sb.append(String.format(" %% %d: %s", raum.getId(), raum.getName()));
         }
         sb.append("\n\n");
     }
@@ -342,7 +360,7 @@ public class OptimierungService {
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
         if (ergebnis == null) {
             ergebnis = new Planungsergebnis();
-            ergebnis.veranstaltung = veranstaltung;
+            ergebnis.setVeranstaltung(veranstaltung);
         }
 
         try {
@@ -355,15 +373,15 @@ public class OptimierungService {
 
             String fixedJson = objectMapper.writeValueAsString(root);
             LOG.info("Result (fixed):\n" + fixedJson);
-            ergebnis.jsonErgebnis = fixedJson;
+            ergebnis.setJsonErgebnis(fixedJson);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
 
-        ergebnis.solver = config.solver;
-        ergebnis.timeout = config.timeout;
+        ergebnis.setSolver(config.solver);
+        ergebnis.setTimeout(config.timeout);
         ergebnis.persist();
-        LOG.info("Planungsergebnis für Veranstaltung '" + veranstaltung.name + "' wurde gespeichert/aktualisiert.");
+        LOG.info("Planungsergebnis für Veranstaltung '" + veranstaltung.getName() + "' wurde gespeichert/aktualisiert.");
     }
 
     public static boolean isValidJson(String json) {
@@ -429,11 +447,9 @@ public class OptimierungService {
         root.set(fieldName, matrix3D);
     }
 
-    private JsonNode fixflatArrays(ObjectNode root, int nTNs, int nWVs, int maxInstanzen) {
+    private void fixflatArrays(ObjectNode root, int nTNs, int nWVs, int maxInstanzen) {
         restructure2DArray(root, "instanz_slot", nWVs, maxInstanzen);
         restructure2DArray(root, "instanz_raum", nWVs, maxInstanzen);
         restructure3DArray(root, "besucht", nTNs, nWVs, maxInstanzen);
-
-        return root;
     }
 }

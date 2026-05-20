@@ -1,5 +1,6 @@
 package kreyj.konfplan.persistence;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -8,13 +9,30 @@ import io.quarkus.security.jpa.Password;
 import io.quarkus.security.jpa.Roles;
 import io.quarkus.security.jpa.UserDefinition;
 import io.quarkus.security.jpa.Username;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorColumn;
+import jakarta.persistence.DiscriminatorType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.NaturalId;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Entity
+@Getter
+@Setter
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "role", discriminatorType = DiscriminatorType.STRING)
 @UserDefinition
@@ -29,42 +47,42 @@ public abstract class Nutzer extends VersionedEntity {
     @Column(unique = true)
     @Username
     @CsvBindByName(column = "Email")
-    public String email;
+    private String email;
 
     @Password
     @Column(name = "password_hash")
-    public String passwordHash;
+    private String passwordHash;
 
     @Roles
     @Column(name = "role", insertable = false, updatable = false)
-    public String role;
+    private String role;
 
     @Column(name = "first_name")
     @CsvBindByName(column = "Vorname")
-    public String firstName;
+    private String firstName;
 
     @Column(name = "last_name")
     @CsvBindByName(column = "Nachname")
-    public String lastName;
+    private String lastName;
 
     @Column(name = "is_active")
-    public boolean isActive = true;
+    private boolean isActive = true;
 
     @Column(name = "reset_token")
-    public String resetToken;
+    private String resetToken;
 
     @Column(name = "reset_token_expiry")
-    public LocalDateTime resetTokenExpiry;
+    private LocalDateTime resetTokenExpiry;
 
     // Felder für E-Mail-Adressänderung
     @Column(name = "new_email")
-    public String newEmail;
+    private String newEmail;
 
     @Column(name = "email_change_token")
-    public String emailChangeToken;
+    private String emailChangeToken;
 
     @Column(name = "email_change_token_expiry")
-    public LocalDateTime emailChangeTokenExpiry;
+    private LocalDateTime emailChangeTokenExpiry;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -80,6 +98,7 @@ public abstract class Nutzer extends VersionedEntity {
             joinColumns = @JoinColumn(name = "teilnehmer_id"),
             inverseJoinColumns = @JoinColumn(name = "eventslot_id")
     )
+    @JsonIgnore // Add this annotation to ignore during JSON serialization
     private List<EventSlot> verfuegbareSlots = new ArrayList<>();
 
     public Set<Veranstaltung> getVeranstaltungen() {
@@ -103,11 +122,7 @@ public abstract class Nutzer extends VersionedEntity {
         if (this instanceof Referent || this instanceof Teilnehmer) {
             for (EventSlot slot : v.getEventSlots()) {
                 if (Verfuegbarkeit.count("nutzer = ?1 and slot = ?2", this, slot) == 0) {
-                    Verfuegbarkeit verfuegbarkeit = new Verfuegbarkeit();
-                    verfuegbarkeit.nutzer = this;
-                    verfuegbarkeit.slot = slot;
-                    verfuegbarkeit.isAvailable = true;
-                    verfuegbarkeit.persist();
+                    new Verfuegbarkeit(this, slot, true).persist();
 
                     this.addVerfuegbarenSlot(slot);
                 }
@@ -134,7 +149,7 @@ public abstract class Nutzer extends VersionedEntity {
     }
 
     public void addVerfuegbarenSlot(EventSlot slot) {
-        if (!this.getVeranstaltungen().contains(slot.veranstaltung)) {
+        if (!this.getVeranstaltungen().contains(slot.getVeranstaltung())) {
             throw new IllegalArgumentException("Der Teilnehmer ist nicht für die Veranstaltung des EventSlots angemeldet.");
         }
 

@@ -14,7 +14,22 @@ import kreyj.konfplan.dto.VortragStatDto;
 import kreyj.konfplan.dto.csv.AdminCsvDto;
 import kreyj.konfplan.dto.csv.EventSlotCsvDto;
 import kreyj.konfplan.dto.csv.VortragCsvDto;
-import kreyj.konfplan.persistence.*;
+import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.EventSlot;
+import kreyj.konfplan.persistence.Gebaeude;
+import kreyj.konfplan.persistence.IdEntity;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Pflichtvortrag;
+import kreyj.konfplan.persistence.Prioritaet;
+import kreyj.konfplan.persistence.ProtokollKategorie;
+import kreyj.konfplan.persistence.Raum;
+import kreyj.konfplan.persistence.RaumBelegbarkeit;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Verfuegbarkeit;
+import kreyj.konfplan.persistence.Vortrag;
+import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.resource.AdminResource;
 import org.jboss.logging.Logger;
 
@@ -22,7 +37,15 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -51,7 +74,7 @@ public class AdminService {
     @Transactional
     public List<NutzerDto> getAllUsers(Long veranstaltungId) {
         List<Nutzer> admins = Nutzer.list("role = 'ADMIN'");
-        List<Nutzer> vNutzers = Nutzer.find("SELECT u FROM Nutzer u JOIN u.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
+        List<Nutzer> vNutzers = Nutzer.find("SELECT u FROM Nutzer u JOIN u.veranstaltungen v WHERE v.setId(?1", veranstaltungId).list();
 
         return Stream.concat(admins.stream(), vNutzers.stream())
                 .distinct()
@@ -75,23 +98,23 @@ public class AdminService {
             nutzer = new Admin();
         }
 
-        nutzer.email = dto.email;
-        nutzer.firstName = dto.firstName;
-        nutzer.lastName = dto.lastName;
-        nutzer.isActive = dto.isActive;
+        nutzer.setEmail(dto.email);
+        nutzer.setFirstName(dto.firstName);
+        nutzer.setLastName(dto.lastName);
+        nutzer.setActive(dto.isActive);
 
         if (dto.email != null) {
             // todo replace with uuid string for PROD
-            nutzer.passwordHash = BcryptUtil.bcryptHash("start123");
+            nutzer.setPasswordHash(BcryptUtil.bcryptHash("start123"));
         }
 
         if (nutzer instanceof Referent r) {
-            r.biography = dto.biography;
-            r.jobRole = dto.jobRole;
-            r.organisation = dto.organisation;
-            r.slogan = dto.slogan;
+            r.setBiography(dto.biography);
+            r.setJobRole(dto.jobRole);
+            r.setOrganisation(dto.organisation);
+            r.setSlogan(dto.slogan);
         } else if (nutzer instanceof Teilnehmer t) {
-            t.gruppe = dto.gruppe;
+            t.setGruppe(dto.gruppe);
         }
 
         nutzer.persist();
@@ -112,7 +135,7 @@ public class AdminService {
         // Send registration confirmation email
         mailService.sendRegistrationConfirmation(nutzer);
 
-        protokollService.log(ProtokollKategorie.NUTZER, "Nutzer erstellt", "Neuer Nutzer '" + nutzer.email + "' mit Rolle '" + nutzer.role + "' erstellt.", nutzer.id);
+        protokollService.log(ProtokollKategorie.NUTZER, "Nutzer erstellt", "Neuer Nutzer '" + nutzer.getEmail() + "' mit Rolle '" + nutzer.getRole() + "' erstellt.", nutzer.getId());
         return AdminResource.mapNutzerToDto(nutzer);
     }
 
@@ -123,12 +146,12 @@ public class AdminService {
             return null;
         }
 
-        if (!Objects.equals(nutzer.version, dto.version)) {
+        if (!Objects.equals(nutzer.getVersion(), dto.version)) {
             throw new OptimisticLockException("Der Nutzer wurde zwischenzeitlich von Dritten geändert. Bitte aktualisieren Sie die Daten und versuchen Sie es erneut.");
         }
 
         // Check for email change
-        String oldEmail = nutzer.email;
+        String oldEmail = nutzer.getEmail();
         if (!oldEmail.equals(dto.email)) {
             // Check if the new email is already in use
             if (Nutzer.findByEmail(dto.email) != null) {
@@ -137,9 +160,9 @@ public class AdminService {
 
             // Generate a confirmation token
             String token = UUID.randomUUID().toString();
-            nutzer.newEmail = dto.email;
-            nutzer.emailChangeToken = token;
-            nutzer.emailChangeTokenExpiry = LocalDateTime.now().plusHours(24); // Token is valid for 24 hours
+            nutzer.setNewEmail(dto.email);
+            nutzer.setEmailChangeToken(token);
+            nutzer.setEmailChangeTokenExpiry(LocalDateTime.now().plusHours(24)); // Token is valid for 24 hours
 
             // Send confirmation email to the new address
             mailService.sendEmailChangeConfirmationNewAddress(nutzer, dto.email, token);
@@ -147,15 +170,15 @@ public class AdminService {
             mailService.sendEmailChangeNotificationOldAddress(nutzer, oldEmail, dto.email);
 
             protokollService.log(ProtokollKategorie.NUTZER, "E-Mail-Änderung eingeleitet",
-                    "E-Mail-Änderung für Nutzer '" + oldEmail + "' zu '" + dto.email + "' eingeleitet.", nutzer.id);
+                    "E-Mail-Änderung für Nutzer '" + oldEmail + "' zu '" + dto.email + "' eingeleitet.", nutzer.getId());
         }
 
-        nutzer.firstName = dto.firstName;
-        nutzer.lastName = dto.lastName;
-        nutzer.isActive = dto.isActive;
+        nutzer.setFirstName(dto.firstName);
+        nutzer.setLastName(dto.lastName);
+        nutzer.setActive(dto.isActive);
 
         if (null != vUpdateIds) {
-            Set<Long> oldVIds = nutzer.getVeranstaltungen().stream().map(v -> v.id).collect(Collectors.toSet());
+            Set<Long> oldVIds = nutzer.getVeranstaltungen().stream().map(IdEntity::getId).collect(Collectors.toSet());
             Set<Long> vNewIdSet = new HashSet<>(vUpdateIds);
 
             Set<Long> toRemoves = difference(oldVIds, vNewIdSet).toSet();
@@ -181,14 +204,14 @@ public class AdminService {
         }
 
         if (nutzer instanceof Referent r) {
-            r.biography = dto.biography;
-            r.jobRole = dto.jobRole;
-            r.organisation = dto.organisation;
-            r.slogan = dto.slogan;
+            r.setBiography(dto.biography);
+            r.setJobRole(dto.jobRole);
+            r.setOrganisation(dto.organisation);
+            r.setSlogan(dto.slogan);
         } else if (nutzer instanceof Teilnehmer t) {
-            String oldGruppe = t.gruppe;
+            String oldGruppe = t.getGruppe();
             String newGruppe = dto.gruppe;
-            t.gruppe = newGruppe;
+            t.setGruppe(newGruppe);
 
             // Logic for group change
             if (!Objects.equals(oldGruppe, newGruppe)) {
@@ -198,7 +221,7 @@ public class AdminService {
 
         nutzer.persistAndFlush();
 
-        protokollService.log(ProtokollKategorie.NUTZER, "Nutzer aktualisiert", "Nutzer '" + nutzer.email + "' aktualisiert.", nutzer.id);
+        protokollService.log(ProtokollKategorie.NUTZER, "Nutzer aktualisiert", "Nutzer '" + nutzer.getEmail() + "' aktualisiert.", nutzer.getId());
         return AdminResource.mapNutzerToDto(nutzer);
     }
 
@@ -211,22 +234,22 @@ public class AdminService {
             return false;
         }
 
-        if (nutzer.emailChangeTokenExpiry.isBefore(LocalDateTime.now())) {
-            LOG.warn("Abgelaufener Token für E-Mail-Änderung für Nutzer: " + nutzer.email);
-            nutzer.emailChangeToken = null;
-            nutzer.emailChangeTokenExpiry = null;
-            nutzer.newEmail = null;
+        if (nutzer.getEmailChangeTokenExpiry().isBefore(LocalDateTime.now())) {
+            LOG.warn("Abgelaufener Token für E-Mail-Änderung für Nutzer: " + nutzer.getEmail());
+            nutzer.setEmailChangeToken(null);
+            nutzer.setEmailChangeTokenExpiry(null);
+            nutzer.setNewEmail(null);
             return false;
         }
 
-        String oldEmail = nutzer.email;
-        nutzer.email = nutzer.newEmail;
-        nutzer.newEmail = null;
-        nutzer.emailChangeToken = null;
-        nutzer.emailChangeTokenExpiry = null;
+        String oldEmail = nutzer.getEmail();
+        nutzer.setEmail(nutzer.getNewEmail());
+        nutzer.setNewEmail(null);
+        nutzer.setEmailChangeToken(null);
+        nutzer.setEmailChangeTokenExpiry(null);
 
         protokollService.log(ProtokollKategorie.NUTZER, "E-Mail-Adresse bestätigt",
-                "E-Mail-Adresse für Nutzer von '" + oldEmail + "' zu '" + nutzer.email + "' geändert.", nutzer.id);
+                "E-Mail-Adresse für Nutzer von '" + oldEmail + "' zu '" + nutzer.getEmail() + "' geändert.", nutzer.getId());
 
         return true;
     }
@@ -242,18 +265,18 @@ public class AdminService {
 
         // Validierung: Veranstaltung darf nicht in der Vergangenheit liegen (Enddatum prüfen)
         LocalDateTime now = LocalDateTime.now();
-        if (event.endetAm != null && event.endetAm.isBefore(now)) {
-            throw new IllegalArgumentException("Die Veranstaltung '" + event.name + "' ist bereits beendet.");
+        if (event.getEndetAm() != null && event.getEndetAm().isBefore(now)) {
+            throw new IllegalArgumentException("Die Veranstaltung '" + event.getName() + "' ist bereits beendet.");
         }
 
         if (!nutzer.getVeranstaltungen().contains(event)) {
             nutzer.addVeranstaltung(event);
             erstelleVerfuegbarkeitenFuerNutzerInVeranstaltung(nutzer, event);
             mailService.sendEinladungZuVeranstaltung(nutzer, event);
-            LOG.info("Nutzer " + nutzer.email + " zu Veranstaltung " + event.name + " eingeladen.");
-            protokollService.log(ProtokollKategorie.SECURITY, "Nutzer zu Event eingeladen", "Nutzer '" + nutzer.email + "' zu '" + event.name + "' eingeladen.", event.id);
+            LOG.info("Nutzer " + nutzer.getEmail() + " zu Veranstaltung " + event.getName() + " eingeladen.");
+            protokollService.log(ProtokollKategorie.SECURITY, "Nutzer zu Event eingeladen", "Nutzer '" + nutzer.getEmail() + "' zu '" + event.getName() + "' eingeladen.", event.getId());
         } else {
-            LOG.info("Nutzer " + nutzer.email + " ist bereits für Veranstaltung " + event.name + " registriert.");
+            LOG.info("Nutzer " + nutzer.getEmail() + " ist bereits für Veranstaltung " + event.getName() + " registriert.");
         }
     }
 
@@ -264,7 +287,7 @@ public class AdminService {
             // Send user deletion notification email BEFORE deleting the user
             mailService.sendUserDeletionNotification(nutzer);
 
-            String email = nutzer.email;
+            String email = nutzer.getEmail();
             boolean deleted = Nutzer.deleteById(id);
             if (deleted) {
                 protokollService.log(ProtokollKategorie.NUTZER, "Nutzer gelöscht", "Nutzer '" + email + "' gelöscht.", id);
@@ -278,21 +301,22 @@ public class AdminService {
     public void toggleUserStatus(Long id) {
         Nutzer entity = Nutzer.findById(id);
         if (entity != null) {
-            entity.isActive = !entity.isActive;
-            protokollService.log(ProtokollKategorie.NUTZER, "Nutzer-Status geändert", "Status von '" + entity.email + "' auf " + (entity.isActive ? "aktiv" : "inaktiv") + " geändert.", id);
+            entity.setActive(!entity.isActive());
+            protokollService.log(ProtokollKategorie.NUTZER, "Nutzer-Status geändert", "Status von '" + entity.getEmail() + "' auf " + (entity.isActive() ?
+                    "aktiv" : "inaktiv") + " geändert.", id);
         }
     }
 
     public List<Vortrag> getAllVortraege(Long veranstaltungId) {
-        return Vortrag.find("veranstaltung.id", veranstaltungId).list();
+        return Vortrag.find("veranstaltung.getId()", veranstaltungId).list();
     }
 
     public Vortrag getVeranstaltungsVortrag(Long veranstaltungId, Long vortragId) {
-        return Vortrag.find("veranstaltung.id = ?1 and id = ?2", veranstaltungId, vortragId).firstResult();
+        return Vortrag.find("veranstaltung.setId(?1 and id = ?2", veranstaltungId, vortragId).firstResult();
     }
 
     public List<Nutzer> getAllReferenten(Long veranstaltungId) {
-        return Nutzer.find("role = 'REFERENT' and veranstaltung.id = ?1", veranstaltungId).list();
+        return Nutzer.find("role = 'REFERENT' and veranstaltung.setId(?1", veranstaltungId).list();
     }
 
     @Transactional
@@ -301,35 +325,35 @@ public class AdminService {
         if (veranstaltung == null) {
             throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
         }
-        vortrag.veranstaltung = veranstaltung;
+        vortrag.setVeranstaltung(veranstaltung);
 
         if (vortrag instanceof Pflichtvortrag pv) {
-            if (pv.pflichtslot == null || pv.pflichtraum == null || pv.pflichtgruppe == null || pv.pflichtgruppe.isBlank()) {
+            if (pv.getPflichtslot() == null || pv.getPflichtraum() == null || pv.getPflichtgruppe() == null || pv.getPflichtgruppe().isBlank()) {
                 throw new IllegalArgumentException("Für Pflichtvorträge müssen Slot, Raum und Gruppe angegeben werden.");
             }
 
             // Vorbedingungen prüfen
             // 1. Raum darf für Slot nicht belegt sein
-            if (isRaumGebucht(pv.pflichtraum, pv.pflichtslot)) {
-                throw new IllegalArgumentException("Raum '" + pv.pflichtraum.name + "' ist im Slot '" + pv.pflichtslot.description + "' bereits belegt.");
-            }
+//            if (isRaumGebucht(pv.getPflichtraum(), pv.getPflichtslot())) {
+//                throw new IllegalArgumentException("Raum '" + pv.getPflichtraum().getName() + "' ist im Slot '" + pv.getPflichtslot().getDescription() + "' bereits belegt.");
+//            }
 
             // 2. Jeder TN der Gruppe muss für Slot verfügbar sein
-            List<Teilnehmer> teilnehmerDerGruppe = getActiveTeilnehmerByGruppe(pv.pflichtgruppe, veranstaltungId);
-            if (isTeilnehmerGebucht(teilnehmerDerGruppe, pv.pflichtslot)) {
-                throw new IllegalArgumentException("Nicht alle Teilnehmer der Gruppe '" + pv.pflichtgruppe + "' sind im Slot '" + pv.pflichtslot.description + "' verfügbar.");
+            List<Teilnehmer> teilnehmerDerGruppe = getActiveTeilnehmerByGruppe(pv.getPflichtgruppe(), veranstaltungId);
+            if (isTeilnehmerGebucht(teilnehmerDerGruppe, pv.getPflichtslot())) {
+                throw new IllegalArgumentException("Nicht alle Teilnehmer der Gruppe '" + pv.getPflichtgruppe() + "' sind im Slot '" + pv.getPflichtslot().getDescription() + "' verfügbar.");
             }
 
             // 3. Raumkapazität muss ausreichen
-            if (!checkRaumCapacity(pv.pflichtraum, pv.pflichtgruppe, veranstaltungId)) {
-                throw new IllegalArgumentException("Raumkapazität von '" + pv.pflichtraum.name + "' reicht für die Gruppe '" + pv.pflichtgruppe + "' nicht aus.");
+            if (kapazitaetZuGering(pv.getPflichtraum(), pv.getPflichtgruppe(), veranstaltungId)) {
+                throw new IllegalArgumentException("Raumkapazität von '" + pv.getPflichtraum().getName() + "' reicht für die Gruppe '" + pv.getPflichtgruppe() + "' nicht aus.");
             }
 
             // Effekte anwenden
             pv.persist(); // Persistieren, um ID zu erhalten
 
-            updateRaumAvailability(pv.pflichtraum, pv.pflichtslot, true, pv.id);
-            updateTeilnehmerAvailability(teilnehmerDerGruppe, pv.pflichtslot, false, pv.id);
+            updateRaumAvailability(pv.getPflichtraum(), pv.getPflichtslot(), true, pv.getId());
+            updateTeilnehmerAvailability(teilnehmerDerGruppe, pv.getPflichtslot(), false, pv.getId());
         } else {
             vortrag.persist();
         }
@@ -337,7 +361,7 @@ public class AdminService {
         veranstaltung.addVortrag(vortrag); // Assuming addVortrag handles duplicates or is idempotent
         veranstaltung.persist(); // Persist veranstaltung to update relationship
 
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag erstellt", "Vortrag '" + vortrag.titel + "' (" + (vortrag.istPflicht() ? "Pflicht" : "Wahl") + ") erstellt.", vortrag.id);
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag erstellt", "Vortrag '" + vortrag.getTitel() + "' (" + (vortrag.istPflicht() ? "Pflicht" : "Wahl") + ") erstellt.", vortrag.getId());
         return vortrag;
     }
 
@@ -367,13 +391,13 @@ public class AdminService {
                 Nutzer byEmail = Nutzer.findByEmail(email);
                 if (byEmail == null) {
                     Admin a = new Admin();
-                    a.email = email;
-                    a.firstName = dto.firstName;
-                    a.lastName = dto.lastName;
-                    a.passwordHash = BcryptUtil.bcryptHash(UUID.randomUUID().toString());
+                    a.setEmail(email);
+                    a.setFirstName(dto.firstName);
+                    a.setLastName(dto.lastName);
+                    a.setPasswordHash(BcryptUtil.bcryptHash(UUID.randomUUID().toString()));
                     a.persist();
                     count++;
-                    protokollService.log(ProtokollKategorie.NUTZER, "Admin importiert", "Admin '" + email + "' via CSV importiert.", a.id);
+                    protokollService.log(ProtokollKategorie.NUTZER, "Admin importiert", "Admin '" + email + "' via CSV importiert.", a.getId());
                 } else {
                     LOG.warn("Admin '" + email + "' übersprungen: Existiert bereits.");
                 }
@@ -400,13 +424,13 @@ public class AdminService {
 
         Map<String, Map<Gebaeude, Raum>> raeumeByName = new HashMap<>();
         for (Raum r : v_raeume) {
-            if (!raeumeByName.containsKey(r.name)) {
-                raeumeByName.put(r.name, new HashMap<>());
+            if (!raeumeByName.containsKey(r.getName())) {
+                raeumeByName.put(r.getName(), new HashMap<>());
             }
-            raeumeByName.get(r.name).put(r.gebaeude, r);
+            raeumeByName.get(r.getName()).put(r.getGebaeude(), r);
         }
 
-        Map<String, EventSlot> slotsByName = veranstaltung.getEventSlots().stream().collect(Collectors.toMap(s -> s.description, s -> s));
+        Map<String, EventSlot> slotsByName = veranstaltung.getEventSlots().stream().collect(Collectors.toMap(EventSlot::getDescription, s -> s));
 
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             CsvToBean<VortragCsvDto> csvToBean = new CsvToBeanBuilder<VortragCsvDto>(reader)
@@ -433,9 +457,9 @@ public class AdminService {
                     Vortrag newVortrag;
                     if (dto.istPflicht) {
                         Pflichtvortrag pv = new Pflichtvortrag();
-                        pv.pflichtgruppe = dto.pflichtGruppe;
-                        pv.pflichtslot = slotsByName.get(dto.pflichtSlot);
-                        if (pv.pflichtslot == null && dto.pflichtSlot != null && !dto.pflichtSlot.isBlank()) {
+                        pv.setPflichtgruppe(dto.pflichtGruppe);
+                        pv.setPflichtslot(slotsByName.get(dto.pflichtSlot));
+                        if (pv.getPflichtslot() == null && dto.pflichtSlot != null && !dto.pflichtSlot.isBlank()) {
                             LOG.warn("Vortrag '" + dto.titel + "': Slot '" + dto.pflichtSlot + "' nicht gefunden. Pflichtvortrag kann nicht erstellt werden.");
                             continue;
                         }
@@ -455,7 +479,7 @@ public class AdminService {
                                 LOG.warn("Vortrag '" + dto.titel + "': Raum '" + dto.pflichtRaum + "' nicht gefunden in Veranstaltungsgebäuden. Pflichtvortrag kann nicht erstellt werden.");
                                 continue;
                             } else if (gebaeudeSet.size() == 1) {
-                                pv.pflichtraum = gebaeudeRaumMap.get(gebaeudeSet.iterator().next());
+                                pv.setPflichtraum(gebaeudeRaumMap.get(gebaeudeSet.iterator().next()));
                             } else {
                                 LOG.warn("Vortrag '" + dto.titel + "': Raum '" + dto.pflichtRaum + "' nicht eindeutig in Veranstaltungsgebäuden. Pflichtvortrag kann nicht erstellt werden.");
                                 continue;
@@ -464,20 +488,20 @@ public class AdminService {
                         newVortrag = pv;
                     } else {
                         Wahlvortrag wv = new Wahlvortrag();
-                        wv.wiederholbar = dto.wiederholbar;
-                        wv.maxWiederholungen = dto.maxWiederholungen;
+                        wv.setWiederholbar(dto.wiederholbar);
+                        wv.setMaxWiederholungen(dto.maxWiederholungen);
                         newVortrag = wv;
                     }
 
-                    newVortrag.titel = dto.titel;
-                    newVortrag.inhalt = dto.inhalt;
-                    newVortrag.referent = (Referent) referent;
-                    newVortrag.veranstaltung = veranstaltung;
+                    newVortrag.setTitel(dto.titel);
+                    newVortrag.setInhalt(dto.inhalt);
+                    newVortrag.setReferent((Referent) referent);
+                    newVortrag.setVeranstaltung(veranstaltung);
 
                     try {
                         createVortrag(newVortrag, veranstaltungId); // Use the new createVortrag logic
                         count++;
-                        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag importiert", "Vortrag '" + newVortrag.titel + "' via CSV importiert.", newVortrag.id);
+                        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag importiert", "Vortrag '" + newVortrag.getTitel() + "' via CSV importiert.", newVortrag.getId());
                     } catch (IllegalArgumentException e) {
                         LOG.warn("Vortrag '" + dto.titel + "' übersprungen aufgrund von Validierungsfehler: " + e.getMessage());
                     }
@@ -533,7 +557,7 @@ public class AdminService {
                     continue;
                 }
 
-                if (teilnehmer.getVeranstaltungen().stream().noneMatch(v -> v.id.equals(veranstaltungId))) {
+                if (teilnehmer.getVeranstaltungen().stream().noneMatch(v -> v.getId().equals(veranstaltungId))) {
                     LOG.warn("Priorität für '" + teilnehmerEmail + "' übersprungen: Teilnehmer gehört nicht zur Veranstaltung.");
                     continue;
                 }
@@ -552,7 +576,7 @@ public class AdminService {
                         Long vortragId = Long.parseLong(data[0].trim());
                         Vortrag vortrag = Vortrag.findById(vortragId);
 
-                        if (!(vortrag instanceof Wahlvortrag) || !vortrag.veranstaltung.id.equals(veranstaltungId)) {
+                        if (!(vortrag instanceof Wahlvortrag) || !vortrag.getVeranstaltung().getId().equals(veranstaltungId)) {
                             LOG.warn("Priorität für '" + teilnehmerEmail + "' übersprungen: Vortrag mit ID " + vortragId + " ist ungültig oder kein Wahlvortrag dieser Veranstaltung.");
                             continue;
                         }
@@ -563,14 +587,14 @@ public class AdminService {
                             Prioritaet prioritaet = Prioritaet.find("teilnehmer = ?1 and vortrag = ?2", teilnehmer, vortrag).firstResult();
                             if (prioritaet == null) {
                                 prioritaet = new Prioritaet();
-                                prioritaet.teilnehmer = teilnehmer;
-                                prioritaet.vortrag = vortrag;
+                                prioritaet.setTeilnehmer(teilnehmer);
+                                prioritaet.setVortrag(vortrag);
                             }
 
-                            prioritaet.prioWert = prioWert;
+                            prioritaet.setPrioWert(prioWert);
                             prioritaet.persist();
                             count++;
-                            protokollService.log(ProtokollKategorie.VORTRAEGE, "Priorität importiert", "Priorität für '" + teilnehmer.email + "' für Vortrag '" + vortrag.titel + "' auf " + prioWert + " gesetzt.", vortrag.id);
+                            protokollService.log(ProtokollKategorie.VORTRAEGE, "Priorität importiert", "Priorität für '" + teilnehmer.getEmail() + "' für Vortrag '" + vortrag.getTitel() + "' auf " + prioWert + " gesetzt.", vortrag.getId());
                         } catch (NumberFormatException e) {
                             LOG.warn("Ungültiger Prioritätswert für Teilnehmer " + teilnehmerEmail + " und Vortrag " + vortragId);
                         }
@@ -587,29 +611,25 @@ public class AdminService {
 
 
     public List<EventSlot> getAllEventSlots(Long veranstaltungId) {
-        return EventSlot.find("veranstaltung.id", veranstaltungId).list();
+        return EventSlot.find("veranstaltung.getId()", veranstaltungId).list();
     }
 
     @Transactional
     public EventSlot createEventSlot(EventSlot slot, Long veranstaltungId) {
         Veranstaltung v = Veranstaltung.findById(veranstaltungId);
         validateSlot(slot, v, null);
-        slot.veranstaltung = v;
+        slot.setVeranstaltung(v);
         slot.persist();
         v.addSlot(slot);
 
         // Create availability for all participants of the event
         for (Nutzer nutzer : v.getNutzer()) {
             if (nutzer instanceof Teilnehmer || nutzer instanceof Referent) {
-                Verfuegbarkeit verfuegbarkeit = new Verfuegbarkeit();
-                verfuegbarkeit.nutzer = nutzer;
-                verfuegbarkeit.slot = slot;
-                verfuegbarkeit.isAvailable = true;
-                verfuegbarkeit.persist();
+                new Verfuegbarkeit(nutzer, slot, true).persist();
             }
         }
 
-        protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot erstellt", "Slot '" + slot.description + "' für '" + v.name + "' erstellt.", slot.id);
+        protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot erstellt", "Slot '" + slot.getDescription() + "' für '" + v.getName() + "' erstellt.", slot.getId());
         return slot;
     }
 
@@ -621,16 +641,16 @@ public class AdminService {
             return null;
         }
 
-        if (!Objects.equals(entity.version, updated.version)) {
+        if (!Objects.equals(entity.getVersion(), updated.getVersion())) {
             throw new OptimisticLockException("Der Slot wurde zwischenzeitlich von Dritten geändert. Bitte aktualisieren Sie die Daten und versuchen Sie es erneut.");
         }
         Veranstaltung v = Veranstaltung.findById(veranstaltungId);
-        if (entity.veranstaltung.id.equals(veranstaltungId)) {
+        if (entity.getVeranstaltung().getId().equals(veranstaltungId)) {
             validateSlot(updated, v, id);
-            entity.description = updated.description;
-            entity.startTime = updated.startTime;
-            entity.endTime = updated.endTime;
-            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot aktualisiert", "Slot '" + entity.description + "' aktualisiert.", entity.id);
+            entity.setDescription(updated.getDescription());
+            entity.setStartTime(updated.getStartTime());
+            entity.setEndTime(updated.getEndTime());
+            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot aktualisiert", "Slot '" + entity.getDescription() + "' aktualisiert.", entity.getId());
         }
         return entity;
     }
@@ -639,28 +659,28 @@ public class AdminService {
         if (v == null) {
             throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
         }
-        if (slot.startTime == null || slot.endTime == null) {
+        if (slot.getStartTime() == null || slot.getEndTime() == null) {
             throw new IllegalArgumentException("Beginn und Ende müssen gesetzt sein.");
         }
-        if (!slot.endTime.isAfter(slot.startTime)) {
+        if (!slot.getEndTime().isAfter(slot.getStartTime())) {
             throw new IllegalArgumentException("Das Ende muss nach dem Beginn liegen.");
         }
-        if (slot.startTime.isBefore(v.beginntAm)) {
+        if (slot.getStartTime().isBefore(v.getBeginntAm())) {
             throw new IllegalArgumentException("Der Slot darf nicht vor der Veranstaltung beginnen.");
         }
         // NEUE PRÜFUNG: Slot darf nicht nach dem Ende der Veranstaltung enden.
-        if (slot.endTime.isAfter(v.endetAm)) {
+        if (slot.getEndTime().isAfter(v.getEndetAm())) {
             throw new IllegalArgumentException("Der Slot darf nicht nach der Veranstaltung enden.");
         }
 
         List<EventSlot> existing = EventSlot.find("veranstaltung = ?1", v).list();
         for (EventSlot other : existing) {
-            if (other.id.equals(excludeId)) {
+            if (other.getId().equals(excludeId)) {
                 continue;
             }
             // Überschneidungsprüfung: (StartA < EndeB) AND (EndA > StartB)
-            if (slot.startTime.isBefore(other.endTime) && slot.endTime.isAfter(other.startTime)) {
-                throw new IllegalArgumentException("Der Zeit-Slot überschneidet sich mit einem vorhandenen Intervall (" + other.description + ").");
+            if (slot.getStartTime().isBefore(other.getEndTime()) && slot.getEndTime().isAfter(other.getStartTime())) {
+                throw new IllegalArgumentException("Der Zeit-Slot überschneidet sich mit einem vorhandenen Intervall (" + other.getDescription() + ").");
             }
         }
     }
@@ -668,11 +688,11 @@ public class AdminService {
     @Transactional
     public boolean deleteEventSlot(Long id, Long veranstaltungId) {
         EventSlot slot = EventSlot.findById(id);
-        if (slot != null && slot.veranstaltung.id.equals(veranstaltungId)) {
-            String desc = slot.description;
+        if (slot != null && slot.getVeranstaltung().getId().equals(veranstaltungId)) {
+            String desc = slot.getDescription();
 
             // Delete all availabilities associated with this slot
-            Verfuegbarkeit.delete("slot.id", id);
+            Verfuegbarkeit.delete("slot.getId()", id);
 
             long count = EventSlot.delete("id = ?1", id);
             if (count > 0) {
@@ -711,20 +731,20 @@ public class AdminService {
                     continue;
                 }
                 EventSlot slot = new EventSlot();
-                slot.description = dto.description;
+                slot.setDescription(dto.description);
                 try {
-                    slot.startTime = LocalDateTime.parse(dto.day + " " + dto.startTime, DATE_FORMAT);
-                    slot.endTime = LocalDateTime.parse(dto.day + " " + dto.endTime, DATE_FORMAT);
+                    slot.setStartTime(LocalDateTime.parse(dto.day + " " + dto.startTime, DATE_FORMAT));
+                    slot.setEndTime(LocalDateTime.parse(dto.day + " " + dto.endTime, DATE_FORMAT));
                 } catch (Exception e) {
                     LOG.error("Fehler beim Parsen der Zeit für Slot '" + dto.description + "': " + e.getMessage());
                     continue;
                 }
-                slot.veranstaltung = v;
+                slot.setVeranstaltung(v);
 
                 try {
                     createEventSlot(slot, veranstaltungId); // Use createEventSlot to also create availabilities
                     count++;
-                    protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot importiert", "Slot '" + slot.description + "' via CSV importiert.", slot.id);
+                    protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot importiert", "Slot '" + slot.getDescription() + "' via CSV importiert.", slot.getId());
                 } catch (IllegalArgumentException e) {
                     LOG.warn("Slot '" + dto.description + "' übersprungen aufgrund von Validierungsfehler: " + e.getMessage());
                 }
@@ -740,11 +760,11 @@ public class AdminService {
     @Transactional
     public Vortrag updateVortrag(Long veranstaltungId, Long talkId, VortragDto updated) {
         Vortrag entity = Vortrag.findById(talkId);
-        if (entity == null || !entity.veranstaltung.id.equals(veranstaltungId)) {
+        if (entity == null || !entity.getVeranstaltung().getId().equals(veranstaltungId)) {
             return null;
         }
 
-        if (!Objects.equals(entity.version, updated.version)) {
+        if (!Objects.equals(entity.getVersion(), updated.version)) {
             throw new OptimisticLockException("Der Vortrag wurde zwischenzeitlich von Dritten geändert. Bitte aktualisieren Sie die Daten und versuchen Sie es erneut.");
         }
 
@@ -753,128 +773,128 @@ public class AdminService {
             throw new IllegalArgumentException("Der Vortragstyp kann nicht geändert werden.");
         }
 
-        entity.titel = updated.titel;
-        entity.inhalt = updated.inhalt;
+        entity.setTitel(updated.titel);
+        entity.setInhalt(updated.inhalt);
 
         if (entity instanceof Pflichtvortrag oldPv && updated.istPflicht) {
             // Store old values for comparison
-            String oldGruppe = oldPv.pflichtgruppe;
-            EventSlot oldSlot = oldPv.pflichtslot;
-            Raum oldRaum = oldPv.pflichtraum;
+            String oldGruppe = oldPv.getPflichtgruppe();
+            EventSlot oldSlot = oldPv.getPflichtslot();
+            Raum oldRaum = oldPv.getPflichtraum();
 
             // Update persistence with new values
-            oldPv.pflichtgruppe = updated.pflichtgruppe;
-            oldPv.pflichtslot = EventSlot.findById(updated.pflichtSlotId);
-            oldPv.pflichtraum = Raum.findById(updated.pflichtRaumId);
+            oldPv.setPflichtgruppe(updated.pflichtgruppe);
+            oldPv.setPflichtslot(EventSlot.findById(updated.pflichtSlotId));
+            oldPv.setPflichtraum(Raum.findById(updated.pflichtRaumId));
 
             // Use the updated persistence for validations
-            if (oldPv.pflichtslot == null || oldPv.pflichtraum == null || oldPv.pflichtgruppe == null || oldPv.pflichtgruppe.isBlank()) {
+            if (oldPv.getPflichtslot() == null || oldPv.getPflichtraum() == null || oldPv.getPflichtgruppe() == null || oldPv.getPflichtgruppe().isBlank()) {
                 throw new IllegalArgumentException("Für Pflichtvorträge müssen Slot, Raum und Gruppe angegeben werden.");
             }
 
             // Use Case 1: Slot ändern
-            if (!Objects.equals(oldSlot, oldPv.pflichtslot)) {
+            if (!Objects.equals(oldSlot, oldPv.getPflichtslot())) {
                 // Vorbedingungen:
                 // * alle TN der Gruppe müssen im neuen Slot verfügbar sein
-                List<Teilnehmer> teilnehmerDerGruppe = getActiveTeilnehmerByGruppe(oldPv.pflichtgruppe, veranstaltungId);
-                if (isTeilnehmerGebucht(teilnehmerDerGruppe, oldPv.pflichtslot)) {
-                    throw new IllegalArgumentException("Nicht alle Teilnehmer der Gruppe '" + oldPv.pflichtgruppe + "' sind im neuen Slot '" + oldPv.pflichtslot.description + "' verfügbar.");
+                List<Teilnehmer> teilnehmerDerGruppe = getActiveTeilnehmerByGruppe(oldPv.getPflichtgruppe(), veranstaltungId);
+                if (isTeilnehmerGebucht(teilnehmerDerGruppe, oldPv.getPflichtslot())) {
+                    throw new IllegalArgumentException("Nicht alle Teilnehmer der Gruppe '" + oldPv.getPflichtgruppe() + "' sind im neuen Slot '" + oldPv.getPflichtslot().getDescription() + "' verfügbar.");
                 }
                 // * Raum ist im neuen Slot belegbar
-                if (isRaumGebucht(oldPv.pflichtraum, oldPv.pflichtslot)) {
-                    throw new IllegalArgumentException("Raum '" + oldPv.pflichtraum.name + "' ist im neuen Slot '" + oldPv.pflichtslot.description + "' bereits belegt.");
+                if (isRaumGebucht(oldPv.getPflichtraum(), oldPv.getPflichtslot())) {
+                    throw new IllegalArgumentException("Raum '" + oldPv.getPflichtraum().getName() + "' ist im neuen Slot '" + oldPv.getPflichtslot().getDescription() + "' bereits belegt.");
                 }
 
                 // Effekte:
                 // * Raum wird für alten Slot wieder belegbar
-                updateRaumAvailability(oldRaum, oldSlot, false, oldPv.id);
+                updateRaumAvailability(oldRaum, oldSlot, false, oldPv.getId());
                 // * alle TN der Gruppe sind im alten Slot wieder verfügbar
-                updateTeilnehmerAvailability(teilnehmerDerGruppe, oldSlot, true, oldPv.id);
+                updateTeilnehmerAvailability(teilnehmerDerGruppe, oldSlot, true, oldPv.getId());
                 // * Raum ist für neuen Slot belegt
-                updateRaumAvailability(oldPv.pflichtraum, oldPv.pflichtslot, true, oldPv.id);
+                updateRaumAvailability(oldPv.getPflichtraum(), oldPv.getPflichtslot(), true, oldPv.getId());
                 // * alle TN der Gruppe sind im neuen Slot nicht verfügbar
-                updateTeilnehmerAvailability(teilnehmerDerGruppe, oldPv.pflichtslot, false, oldPv.id);
+                updateTeilnehmerAvailability(teilnehmerDerGruppe, oldPv.getPflichtslot(), false, oldPv.getId());
             }
 
             // Use Case 2: Raum ändern
-            if (!Objects.equals(oldRaum, oldPv.pflichtraum)) {
+            if (!Objects.equals(oldRaum, oldPv.getPflichtraum())) {
                 // Vorbedingungen:
                 // * Raum ist im neuen Slot belegbar
-                if (isRaumGebucht(oldPv.pflichtraum, oldPv.pflichtslot)) {
-                    throw new IllegalArgumentException("Neuer Raum '" + oldPv.pflichtraum.name + "' ist im Slot '" + oldPv.pflichtslot.description + "' bereits belegt.");
+                if (isRaumGebucht(oldPv.getPflichtraum(), oldPv.getPflichtslot())) {
+                    throw new IllegalArgumentException("Neuer Raum '" + oldPv.getPflichtraum().getName() + "' ist im Slot '" + oldPv.getPflichtslot().getDescription() + "' bereits belegt.");
                 }
                 // * Raumkapazität reicht für Anzahl der Teilnehmer aus
-                if (!checkRaumCapacity(oldPv.pflichtraum, oldPv.pflichtgruppe, veranstaltungId)) {
-                    throw new IllegalArgumentException("Raumkapazität von '" + oldPv.pflichtraum.name + "' reicht für die Gruppe '" + oldPv.pflichtgruppe + "' nicht aus.");
+                if (kapazitaetZuGering(oldPv.getPflichtraum(), oldPv.getPflichtgruppe(), veranstaltungId)) {
+                    throw new IllegalArgumentException("Raumkapazität von '" + oldPv.getPflichtraum().getName() + "' reicht für die Gruppe '" + oldPv.getPflichtgruppe() + "' nicht aus.");
                 }
 
                 // Effekte:
                 // * Alter Raum wird für Slot wieder belegbar
-                updateRaumAvailability(oldRaum, oldPv.pflichtslot, false, oldPv.id);
+                updateRaumAvailability(oldRaum, oldPv.getPflichtslot(), false, oldPv.getId());
                 // * Neuer Raum ist für Slot belegt
-                updateRaumAvailability(oldPv.pflichtraum, oldPv.pflichtslot, true, oldPv.id);
+                updateRaumAvailability(oldPv.getPflichtraum(), oldPv.getPflichtslot(), true, oldPv.getId());
             }
 
             // Use Case 3: Gruppe ändern
-            if (!Objects.equals(oldGruppe, oldPv.pflichtgruppe)) {
+            if (!Objects.equals(oldGruppe, oldPv.getPflichtgruppe())) {
                 // Vorbedingungen:
                 // * Raumkapazität für Slot reicht für Anzahl der Teilnehmer aus (für neue Gruppe)
-                if (!checkRaumCapacity(oldPv.pflichtraum, oldPv.pflichtgruppe, veranstaltungId)) {
-                    throw new IllegalArgumentException("Raumkapazität von '" + oldPv.pflichtraum.name + "' reicht für die neue Gruppe '" + oldPv.pflichtgruppe + "' nicht aus.");
+                if (kapazitaetZuGering(oldPv.getPflichtraum(), oldPv.getPflichtgruppe(), veranstaltungId)) {
+                    throw new IllegalArgumentException("Raumkapazität von '" + oldPv.getPflichtraum().getName() + "' reicht für die neue Gruppe '" + oldPv.getPflichtgruppe() + "' nicht aus.");
                 }
                 // * alle TN der neuen Gruppe müssen im Slot verfügbar sein
-                List<Teilnehmer> neueTeilnehmerDerGruppe = getActiveTeilnehmerByGruppe(oldPv.pflichtgruppe, veranstaltungId);
-                if (isTeilnehmerGebucht(neueTeilnehmerDerGruppe, oldPv.pflichtslot)) {
-                    throw new IllegalArgumentException("Nicht alle Teilnehmer der neuen Gruppe '" + oldPv.pflichtgruppe + "' sind im Slot '" + oldPv.pflichtslot.description + "' verfügbar.");
+                List<Teilnehmer> neueTeilnehmerDerGruppe = getActiveTeilnehmerByGruppe(oldPv.getPflichtgruppe(), veranstaltungId);
+                if (isTeilnehmerGebucht(neueTeilnehmerDerGruppe, oldPv.getPflichtslot())) {
+                    throw new IllegalArgumentException("Nicht alle Teilnehmer der neuen Gruppe '" + oldPv.getPflichtgruppe() + "' sind im Slot '" + oldPv.getPflichtslot().getDescription() + "' verfügbar.");
                 }
 
                 // Effekte:
                 // * alle TN der alten Gruppe sind im Slot wieder verfügbar
-                List<Teilnehmer> alteTeilnehmerDerGruppe = getActiveTeilnehmerByGruppe(oldGruppe, veranstaltungId);
-                updateTeilnehmerAvailability(alteTeilnehmerDerGruppe, oldPv.pflichtslot, true, oldPv.id);
+                List<Teilnehmer> alteTeilnehmerDerGruppe = getActiveTeilnehmerByGruppe(oldPv.getPflichtgruppe(), veranstaltungId);
+                updateTeilnehmerAvailability(alteTeilnehmerDerGruppe, oldPv.getPflichtslot(), true, oldPv.getId());
                 // * alle TN der neuen Gruppe sind im Slot nicht mehr verfügbar
-                updateTeilnehmerAvailability(neueTeilnehmerDerGruppe, oldPv.pflichtslot, false, oldPv.id);
+                updateTeilnehmerAvailability(neueTeilnehmerDerGruppe, oldPv.getPflichtslot(), false, oldPv.getId());
             }
 
             // If no specific change, but still a Pflichtvortrag, ensure consistency
             // This handles cases where only titel/inhalt change, but also ensures initial state if no change was detected above
-            if (Objects.equals(oldSlot, oldPv.pflichtslot) && Objects.equals(oldRaum, oldPv.pflichtraum) && Objects.equals(oldGruppe, oldPv.pflichtgruppe)) {
+            if (Objects.equals(oldSlot, oldPv.getPflichtslot()) && Objects.equals(oldRaum, oldPv.getPflichtraum()) && Objects.equals(oldGruppe, oldPv.getPflichtgruppe())) {
                 // No change in PV specific fields, but ensure availability is set if it wasn't before
-                List<Teilnehmer> teilnehmerDerGruppe = getActiveTeilnehmerByGruppe(oldPv.pflichtgruppe, veranstaltungId);
-                updateRaumAvailability(oldPv.pflichtraum, oldPv.pflichtslot, true, oldPv.id);
-                updateTeilnehmerAvailability(teilnehmerDerGruppe, oldPv.pflichtslot, false, oldPv.id);
+                List<Teilnehmer> teilnehmerDerGruppe = getActiveTeilnehmerByGruppe(oldPv.getPflichtgruppe(), veranstaltungId);
+                updateRaumAvailability(oldPv.getPflichtraum(), oldPv.getPflichtslot(), true, oldPv.getId());
+                updateTeilnehmerAvailability(teilnehmerDerGruppe, oldPv.getPflichtslot(), false, oldPv.getId());
             }
 
-        } else if (entity instanceof Wahlvortrag wv && ! updated.istPflicht ) {
-            wv.wiederholbar = updated.wiederholbar;
-            wv.maxWiederholungen = updated.maxWiederholungen;
+        } else if (entity instanceof Wahlvortrag wv && !updated.istPflicht) {
+            wv.setWiederholbar(updated.wiederholbar);
+            wv.setMaxWiederholungen(updated.maxWiederholungen);
             wv.clearVerfuegbareSlots();
             updated.verfuegbareSlotIds.forEach(slotId -> {
                 EventSlot slot = EventSlot.findById(slotId);
-                if (slot != null && slot.veranstaltung.id.equals(veranstaltungId)) {
+                if (slot != null && slot.getVeranstaltung().getId().equals(veranstaltungId)) {
                     wv.addVerfuegbarenSlot(slot);
                 }
             });
         }
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag aktualisiert", "Vortrag '" + entity.titel + "' aktualisiert.", entity.id);
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag aktualisiert", "Vortrag '" + entity.getTitel() + "' aktualisiert.", entity.getId());
         return entity;
     }
 
     @Transactional
     public boolean deleteVortrag(Long id, Long veranstaltungId) {
         Vortrag entity = Vortrag.findById(id);
-        if (entity == null || !entity.veranstaltung.id.equals(veranstaltungId)) {
+        if (entity == null || !entity.getVeranstaltung().getId().equals(veranstaltungId)) {
             return false;
         }
 
-        String titel = entity.titel;
+        String titel = entity.getTitel();
         if (entity instanceof Pflichtvortrag pv) {
             // Effekte:
             // * alle Teilnehmer der Gruppe sind für Slot wieder verfügbar
-            List<Teilnehmer> teilnehmerDerGruppe = getActiveTeilnehmerByGruppe(pv.pflichtgruppe, veranstaltungId);
-            updateTeilnehmerAvailability(teilnehmerDerGruppe, pv.pflichtslot, true, pv.id); // pv.id als excludeId
+            List<Teilnehmer> teilnehmerDerGruppe = getActiveTeilnehmerByGruppe(pv.getPflichtgruppe(), veranstaltungId);
+            updateTeilnehmerAvailability(teilnehmerDerGruppe, pv.getPflichtslot(), true, pv.getId()); // pv.getId() als excludeId
             // * Raum ist in Slot wieder belegbar
-            updateRaumAvailability(pv.pflichtraum, pv.pflichtslot, false, pv.id); // pv.id als excludeId
+            updateRaumAvailability(pv.getPflichtraum(), pv.getPflichtslot(), false, pv.getId()); // pv.getId() als excludeId
         }
 
         boolean deleted = Vortrag.deleteById(id);
@@ -885,8 +905,8 @@ public class AdminService {
     }
 
     public List<VortragStatDto> getStats(Long veranstaltungId) {
-        List<Vortrag> all = Vortrag.find("veranstaltung.id", veranstaltungId).list();
-        return all.stream().map(v -> new VortragStatDto(v.titel, 0, 0, 0, 0, 0)).collect(Collectors.toList());
+        List<Vortrag> all = Vortrag.find("veranstaltung.getId()", veranstaltungId).list();
+        return all.stream().map(v -> new VortragStatDto(v.getTitel(), 0, 0, 0, 0, 0)).collect(Collectors.toList());
     }
 
     public Response exportCsv(Long vid) {
@@ -900,7 +920,7 @@ public class AdminService {
     private void erstelleVerfuegbarkeitenFuerNutzerInVeranstaltung(Nutzer nutzer, Veranstaltung veranstaltung) {
         Set<EventSlot> slots = veranstaltung.getEventSlots();
         if (slots == null || slots.isEmpty()) {
-            LOG.infof("Keine Slots für Veranstaltung '%s' gefunden. Es werden keine Verfügbarkeiten angelegt.", veranstaltung.name);
+            LOG.infof("Keine Slots für Veranstaltung '%s' gefunden. Es werden keine Verfügbarkeiten angelegt.", veranstaltung.getName());
             return;
         }
 
@@ -908,11 +928,7 @@ public class AdminService {
             // Prüfen, ob bereits eine Verfügbarkeit existiert
             long count = Verfuegbarkeit.count("nutzer = ?1 and slot = ?2", nutzer, slot);
             if (count == 0) {
-                Verfuegbarkeit verfuegbarkeit = new Verfuegbarkeit();
-                verfuegbarkeit.nutzer = nutzer;
-                verfuegbarkeit.slot = slot;
-                verfuegbarkeit.isAvailable = true; // Standardmäßig verfügbar
-                verfuegbarkeit.persist();
+                new Verfuegbarkeit(nutzer, slot, true).persist();
             }
         }
     }
@@ -922,8 +938,8 @@ public class AdminService {
         if (oldGruppe != null && !oldGruppe.isEmpty()) {
             List<Pflichtvortrag> oldPflichtvortraege = Pflichtvortrag.find("pflichtgruppe", oldGruppe).list();
             for (Pflichtvortrag pv : oldPflichtvortraege) {
-                if (pv.pflichtslot != null) {
-                    updateTeilnehmerAvailability(List.of(teilnehmer), pv.pflichtslot, true, pv.id);
+                if (pv.getPflichtslot() != null) {
+                    updateTeilnehmerAvailability(List.of(teilnehmer), pv.getPflichtslot(), true, pv.getId());
                 }
             }
         }
@@ -932,8 +948,8 @@ public class AdminService {
         if (newGruppe != null && !newGruppe.isEmpty()) {
             List<Pflichtvortrag> newPflichtvortraege = Pflichtvortrag.find("pflichtgruppe", newGruppe).list();
             for (Pflichtvortrag pv : newPflichtvortraege) {
-                if (pv.pflichtslot != null) {
-                    updateTeilnehmerAvailability(List.of(teilnehmer), pv.pflichtslot, false, pv.id);
+                if (pv.getPflichtslot() != null) {
+                    updateTeilnehmerAvailability(List.of(teilnehmer), pv.getPflichtslot(), false, pv.getId());
                 }
             }
         }
@@ -947,7 +963,7 @@ public class AdminService {
      * @return Eine Liste von Teilnehmern.
      */
     private List<Teilnehmer> getActiveTeilnehmerByGruppe(String gruppe, Long veranstaltungId) {
-        return Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE t.gruppe = ?1 AND v.id = ?2 AND t.isActive = true",
+        return Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE t.setGruppe(?1 AND v.getId() = ?2 AND t.setIsActive(true",
                         gruppe, veranstaltungId)
                 .list();
     }
@@ -965,8 +981,8 @@ public class AdminService {
         }
         for (Teilnehmer tn : teilnehmer) {
             Optional<Verfuegbarkeit> verfuegbarkeit = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", tn, slot).firstResultOptional();
-            if (verfuegbarkeit.isPresent() && !verfuegbarkeit.get().isAvailable) {
-                LOG.info(String.format("Teilnehmer %s ist in Slot %s nicht verfügbar.", tn.email, slot.description));
+            if (verfuegbarkeit.isPresent() && !verfuegbarkeit.get().isAvailable()) {
+                LOG.info(String.format("Teilnehmer %s ist in Slot %s nicht verfügbar.", tn.getEmail(), slot.getDescription()));
                 return true; // Mindestens ein Teilnehmer ist nicht verfügbar
             }
         }
@@ -986,22 +1002,17 @@ public class AdminService {
         for (Teilnehmer tn : teilnehmer) {
             Verfuegbarkeit verfuegbarkeit = (Verfuegbarkeit) Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", tn, slot)
                     .firstResultOptional()
-                    .orElseGet(() -> {
-                        Verfuegbarkeit newV = new Verfuegbarkeit();
-                        newV.nutzer = tn;
-                        newV.slot = slot;
-                        return newV;
-                    });
+                    .orElseGet(() -> new Verfuegbarkeit(tn, slot, available));
 
             if (available) {
                 // Bedingte Freigabe: Nur freigeben, wenn keine andere PV sie belegt
-                List<Pflichtvortrag> otherPvs = getOtherPflichtvortraegeForTeilnehmerGroupAndSlot(tn.gruppe, slot, excludePflichtvortragId);
+                List<Pflichtvortrag> otherPvs = getOtherPflichtvortraegeForTeilnehmerGroupAndSlot(tn.getGruppe(), slot, excludePflichtvortragId);
                 if (otherPvs.isEmpty()) {
-                    verfuegbarkeit.isAvailable = true;
+                    verfuegbarkeit.setAvailable(true);
                 }
             } else {
                 // Belegung: Immer auf false setzen
-                verfuegbarkeit.isAvailable = false;
+                verfuegbarkeit.setAvailable(false);
             }
             verfuegbarkeit.persist();
         }
@@ -1016,7 +1027,7 @@ public class AdminService {
      */
     private boolean isRaumGebucht(Raum raum, EventSlot slot) {
         Optional<RaumBelegbarkeit> raumBelegbarkeit = RaumBelegbarkeit.find("raum = ?1 and slot = ?2", raum, slot).firstResultOptional();
-        return raumBelegbarkeit.isPresent() && raumBelegbarkeit.get().isBelegt;
+        return raumBelegbarkeit.isPresent() && raumBelegbarkeit.get().isBelegt();
     }
 
     /**
@@ -1031,22 +1042,17 @@ public class AdminService {
     private void updateRaumAvailability(Raum raum, EventSlot slot, boolean belegt, Long excludePflichtvortragId) {
         RaumBelegbarkeit raumBelegbarkeit = (RaumBelegbarkeit) RaumBelegbarkeit.find("raum = ?1 and slot = ?2", raum, slot)
                 .firstResultOptional()
-                .orElseGet(() -> {
-                    RaumBelegbarkeit newRb = new RaumBelegbarkeit();
-                    newRb.raum = raum;
-                    newRb.slot = slot;
-                    return newRb;
-                });
+                .orElseGet(() -> new RaumBelegbarkeit(raum, slot, true));
 
         if (!belegt) {
             // Bedingte Freigabe: Nur freigeben, wenn keine andere PV diesen Raum im Slot belegt
             List<Pflichtvortrag> otherPvs = getOtherPflichtvortraegeForRaumAndSlot(raum, slot, excludePflichtvortragId);
             if (otherPvs.isEmpty()) {
-                raumBelegbarkeit.isBelegt = false;
+                raumBelegbarkeit.setBelegt(false);
             }
         } else {
             // Belegung: Immer auf true setzen
-            raumBelegbarkeit.isBelegt = true;
+            raumBelegbarkeit.setBelegt(true);
         }
         raumBelegbarkeit.persist();
     }
@@ -1059,13 +1065,13 @@ public class AdminService {
      * @param veranstaltungId Die ID der Veranstaltung.
      * @return True, wenn die Kapazität ausreicht, sonst False.
      */
-    private boolean checkRaumCapacity(Raum raum, String gruppe, Long veranstaltungId) {
-        if (raum == null || raum.kapazitaet == null) {
+    private boolean kapazitaetZuGering(Raum raum, String gruppe, Long veranstaltungId) {
+        if (raum == null || raum.getKapazitaet() == null) {
             // Wenn keine Kapazität definiert ist, gehen wir davon aus, dass sie ausreicht.
-            return true;
+            return false;
         }
         long activeTeilnehmerCount = getActiveTeilnehmerByGruppe(gruppe, veranstaltungId).size();
-        return raum.kapazitaet >= activeTeilnehmerCount;
+        return raum.getKapazitaet() < activeTeilnehmerCount;
     }
 
     /**
@@ -1082,10 +1088,10 @@ public class AdminService {
             return Collections.emptyList();
         }
 
-        String query = "SELECT pv FROM Pflichtvortrag pv WHERE pv.pflichtgruppe = ?1 AND pv.pflichtslot = ?2";
+        String query = "SELECT pv FROM Pflichtvortrag pv WHERE pv.setPflichtgruppe(?1 AND pv.pflichtslot = ?2";
 
         if (excludePflichtvortragId != null) {
-            query += " AND pv.id != ?3";
+            query += " AND pv.getId() != ?3";
             return Pflichtvortrag.find(query, gruppe, slot, excludePflichtvortragId).list();
         } else {
             return Pflichtvortrag.find(query, gruppe, slot).list();
@@ -1106,9 +1112,9 @@ public class AdminService {
             return Collections.emptyList();
         }
         // Using JPQL for more robust querying with null excludeId handling
-        String query = "SELECT pv FROM Pflichtvortrag pv WHERE pv.pflichtraum = ?1 AND pv.pflichtslot = ?2";
+        String query = "SELECT pv FROM Pflichtvortrag pv WHERE pv.setPflichtraum(?1 AND pv.pflichtslot = ?2";
         if (excludePflichtvortragId != null) {
-            query += " AND pv.id != ?3";
+            query += " AND pv.getId() != ?3";
             return Pflichtvortrag.find(query, raum, slot, excludePflichtvortragId).list();
         } else {
             return Pflichtvortrag.find(query, raum, slot).list();

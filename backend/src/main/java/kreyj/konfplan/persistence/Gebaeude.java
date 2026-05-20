@@ -1,37 +1,47 @@
 package kreyj.konfplan.persistence;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 @Entity
+@Getter
+@Setter
 public class Gebaeude extends VersionedEntity {
 
     @Column(nullable = false, unique = true)
-    public String name;
+    private String name;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    public Gebaeudetyp typ;
+    private Gebaeudetyp typ;
 
     @Column(nullable = false)
-    public String strasse;
+    private String strasse;
 
-    public String hausnummer;
-
-    @Column(nullable = false)
-    public String postleitzahl;
+    private String hausnummer;
 
     @Column(nullable = false)
-    public String ort;
+    private String postleitzahl;
+
+    @Column(nullable = false)
+    private String ort;
 
     @OneToMany(mappedBy = "gebaeude", cascade = CascadeType.ALL)
     private List<Raum> raeume = new ArrayList<>();
 
     @ManyToMany(mappedBy = "gebaeude")
-    public List<Veranstaltung> veranstaltungen = new ArrayList<>();
+    private List<Veranstaltung> veranstaltungen = new ArrayList<>();
 
     public Gebaeude() {
     }
@@ -73,5 +83,3 @@ public class Gebaeude extends VersionedEntity {
         SCHULE, KINO, SPORTHALLE, SAAL, EXTERN
     }
 }
-
-

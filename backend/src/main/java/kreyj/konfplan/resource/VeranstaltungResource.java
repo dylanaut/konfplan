@@ -246,9 +246,9 @@ public class VeranstaltungResource {
     }
 
     @PUT
-    @Path("/{vid}/vortraege/{tid}")
+    @Path("/{vid}/vortraege/{talkId}")
     @Operation(summary = "Vortrag in Veranstaltung aktualisieren", description = "Aktualisiert einen bestehenden Vortrag innerhalb einer Veranstaltung.")
-    public Response updateVortrag(@PathParam("vid") Long vid, @PathParam("tid") Long talkId, @RequestBody(description = "Die aktualisierten Vortragsdaten", required = true) VortragDto vortragDto) {
+    public Response updateVortrag(@PathParam("vid") Long vid, @PathParam("talkId") Long talkId, @RequestBody(description = "Die aktualisierten Vortragsdaten", required = true) VortragDto vortragDto) {
         Vortrag updated = null;
         try {
             updated = adminService.updateVortrag(vid, talkId, vortragDto);
@@ -403,24 +403,24 @@ public class VeranstaltungResource {
 
     public static VeranstaltungDto mapVeranstaltungToDto(Veranstaltung v) {
         VeranstaltungDto dto = new VeranstaltungDto();
-        dto.id = v.id;
-        dto.version = v.version;
+        dto.id = v.getId();
+        dto.version = v.getVersion();
 
-        dto.name = v.name;
-        dto.beginntAm = v.beginntAm;
-        dto.endetAm = v.endetAm;
-        dto.deadlineReferenten = v.deadlineReferenten;
-        dto.deadlineTeilnehmer = v.deadlineTeilnehmer;
-        dto.logo = v.logo;
-        dto.logo_link = v.logo_link;
+        dto.name = v.getName();
+        dto.beginntAm = v.getBeginntAm();
+        dto.endetAm = v.getEndetAm();
+        dto.deadlineReferenten = v.getDeadlineReferenten();
+        dto.deadlineTeilnehmer = v.getDeadlineTeilnehmer();
+        dto.logo = v.getLogo();
+        dto.logo_link = v.getLogo_link();
 
         // Organisatoren filtern und hinzufügen
         if (v.getNutzer() != null) {
             v.getNutzer().stream()
                     .filter(u -> u instanceof Admin)
                     .forEach(u -> {
-                        dto.organisatorIds.add(u.id);
-                        dto.organisatorNamen.add(u.lastName);
+                        dto.organisatorIds.add(u.getId());
+                        dto.organisatorNamen.add(u.getLastName());
                     });
         }
 

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="JPA Conventions"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0
+                             https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+  <description>JPA-Konventionen für Entity-Klassen</description>
+
+  <!-- ── Allgemeine Java-Qualität (für alle Entity-Klassen relevant) ─────── -->
+
+  <!-- Keine öffentlichen Felder in Entities -->
+  <rule ref="category/java/design.xml/ImmutableField"/>
+
+  <!-- Keine unnötigen null-Checks bei primitiven Typen -->
+  <rule ref="category/java/errorprone.xml/NullAssignment"/>
+
+  <!-- Warnt vor Collections die nicht initialisiert werden -->
+  <rule ref="category/java/errorprone.xml/MissingSerialVersionUID"/>
+
+  <!-- ── Getter/Setter-Konventionen ─────────────────────────────────────── -->
+
+  <!-- Felder sollen nicht direkt öffentlich zugänglich sein -->
+  <rule ref="category/java/codestyle.xml/MethodArgumentCouldBeFinal"/>
+
+  <!-- Methoden-Benennung: set*/get* muss Konvention folgen -->
+  <rule ref="category/java/codestyle.xml/MethodNamingConventions"/>
+
+  <!-- ── Potenzielle Fehlerquellen in Entity-Klassen ─────────────────────── -->
+
+  <!-- Equals/HashCode: wenn equals überschrieben wird, muss hashCode auch -->
+  <rule ref="category/java/errorprone.xml/OverrideBothEqualsAndHashcode"/>
+
+  <!-- Verhindert versehentliche == Vergleiche auf Entitäts-Objekte -->
+  <rule ref="category/java/errorprone.xml/CompareObjectsWithEquals"/>
+
+  <!-- Collections nicht als Rückgabewert direkt freigeben -->
+  <rule ref="category/java/security.xml/HardCodedCryptoKey"/>
+
+  <!-- ── Design-Regeln ───────────────────────────────────────────────────── -->
+
+  <!-- Klassen-Komplexität begrenzen -->
+  <rule ref="category/java/design.xml/CyclomaticComplexity">
+    <properties>
+      <property name="methodReportLevel" value="10"/>
+      <property name="classReportLevel"  value="80"/>
+    </properties>
+  </rule>
+
+  <!-- Zu viele Felder deuten auf God-Entity hin -->
+  <rule ref="category/java/design.xml/TooManyFields">
+    <properties>
+      <property name="maxfields" value="15"/>
+    </properties>
+  </rule>
+
+  <!-- Zu viele Methoden -->
+  <rule ref="category/java/design.xml/TooManyMethods">
+    <properties>
+      <property name="maxmethods" value="25"/>
+    </properties>
+  </rule>
+</ruleset>
