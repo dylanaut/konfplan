@@ -74,7 +74,7 @@ public class AdminService {
     @Transactional
     public List<NutzerDto> getAllUsers(Long veranstaltungId) {
         List<Nutzer> admins = Nutzer.list("role = 'ADMIN'");
-        List<Nutzer> vNutzers = Nutzer.find("SELECT u FROM Nutzer u JOIN u.veranstaltungen v WHERE v.setId(?1", veranstaltungId).list();
+        List<Nutzer> vNutzers = Nutzer.find("SELECT u FROM Nutzer u JOIN u.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
 
         return Stream.concat(admins.stream(), vNutzers.stream())
                 .distinct()
@@ -308,15 +308,15 @@ public class AdminService {
     }
 
     public List<Vortrag> getAllVortraege(Long veranstaltungId) {
-        return Vortrag.find("veranstaltung.getId()", veranstaltungId).list();
+        return Vortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
     }
 
     public Vortrag getVeranstaltungsVortrag(Long veranstaltungId, Long vortragId) {
-        return Vortrag.find("veranstaltung.setId(?1 and id = ?2", veranstaltungId, vortragId).firstResult();
+        return Vortrag.find("veranstaltung.id = ?1 and id = ?2", veranstaltungId, vortragId).firstResult();
     }
 
     public List<Nutzer> getAllReferenten(Long veranstaltungId) {
-        return Nutzer.find("role = 'REFERENT' and veranstaltung.setId(?1", veranstaltungId).list();
+        return Nutzer.find("role = 'REFERENT' and veranstaltung.id = ?1", veranstaltungId).list();
     }
 
     @Transactional
@@ -611,7 +611,7 @@ public class AdminService {
 
 
     public List<EventSlot> getAllEventSlots(Long veranstaltungId) {
-        return EventSlot.find("veranstaltung.getId()", veranstaltungId).list();
+        return EventSlot.find("veranstaltung.id = ?1", veranstaltungId).list();
     }
 
     @Transactional
@@ -692,7 +692,7 @@ public class AdminService {
             String desc = slot.getDescription();
 
             // Delete all availabilities associated with this slot
-            Verfuegbarkeit.delete("slot.getId()", id);
+            Verfuegbarkeit.delete("slot.id = ?1", id);
 
             long count = EventSlot.delete("id = ?1", id);
             if (count > 0) {
@@ -905,7 +905,7 @@ public class AdminService {
     }
 
     public List<VortragStatDto> getStats(Long veranstaltungId) {
-        List<Vortrag> all = Vortrag.find("veranstaltung.getId()", veranstaltungId).list();
+        List<Vortrag> all = Vortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
         return all.stream().map(v -> new VortragStatDto(v.getTitel(), 0, 0, 0, 0, 0)).collect(Collectors.toList());
     }
 
@@ -963,7 +963,7 @@ public class AdminService {
      * @return Eine Liste von Teilnehmern.
      */
     private List<Teilnehmer> getActiveTeilnehmerByGruppe(String gruppe, Long veranstaltungId) {
-        return Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE t.setGruppe(?1 AND v.getId() = ?2 AND t.setIsActive(true",
+        return Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE t.gruppe = ?1 AND v.id = ?2 AND t.isActive = true",
                         gruppe, veranstaltungId)
                 .list();
     }
@@ -1088,10 +1088,10 @@ public class AdminService {
             return Collections.emptyList();
         }
 
-        String query = "SELECT pv FROM Pflichtvortrag pv WHERE pv.setPflichtgruppe(?1 AND pv.pflichtslot = ?2";
+        String query = "SELECT pv FROM Pflichtvortrag pv WHERE pv.pflichtgruppe = ?1 AND pv.pflichtslot = ?2";
 
         if (excludePflichtvortragId != null) {
-            query += " AND pv.getId() != ?3";
+            query += " AND pv.id != ?3";
             return Pflichtvortrag.find(query, gruppe, slot, excludePflichtvortragId).list();
         } else {
             return Pflichtvortrag.find(query, gruppe, slot).list();
@@ -1112,9 +1112,9 @@ public class AdminService {
             return Collections.emptyList();
         }
         // Using JPQL for more robust querying with null excludeId handling
-        String query = "SELECT pv FROM Pflichtvortrag pv WHERE pv.setPflichtraum(?1 AND pv.pflichtslot = ?2";
+        String query = "SELECT pv FROM Pflichtvortrag pv WHERE pv.pflichtraum = ?1 AND pv.pflichtslot = ?2";
         if (excludePflichtvortragId != null) {
-            query += " AND pv.getId() != ?3";
+            query += " AND pv.id != ?3";
             return Pflichtvortrag.find(query, raum, slot, excludePflichtvortragId).list();
         } else {
             return Pflichtvortrag.find(query, raum, slot).list();

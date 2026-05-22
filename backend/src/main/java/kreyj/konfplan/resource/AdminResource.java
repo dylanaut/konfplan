@@ -186,11 +186,8 @@ public class AdminResource {
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Operation(summary = "Verfügbarkeiten abrufen", description = "Ruft die Verfügbarkeiten aller Nutzer für eine Veranstaltung ab.")
     public List<VerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
-        return Verfuegbarkeit.find("select v from Verfuegbarkeit v join v.nutzer u join u.veranstaltungen va where va.getId() = ?1", vid).stream()
-                .map(v -> {
-                    Verfuegbarkeit vf = (Verfuegbarkeit) v;
-                    return new VerfuegbarkeitDto(vf.getNutzer().getId(), vf.getSlot().getId(), vf.isAvailable());
-                })
+        return Verfuegbarkeit.<Verfuegbarkeit>find("select vf from Verfuegbarkeit vf join vf.nutzer n join n.veranstaltungen v where v.id = ?1", vid).stream()
+                .map(vf -> new VerfuegbarkeitDto(vf.getNutzer().getId(), vf.getSlot().getId(), vf.isAvailable()))
                 .toList();
     }
 
@@ -198,7 +195,7 @@ public class AdminResource {
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Transactional
     @Operation(summary = "Verfügbarkeit aktualisieren", description = "Aktualisiert die Verfügbarkeit eines Nutzers für einen bestimmten Slot.")
-    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten", required = true) VerfuegbarkeitDto dto) {
+    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten") VerfuegbarkeitDto dto) {
         Nutzer nutzer = Nutzer.findById(dto.userId);
         EventSlot slot = EventSlot.findById(dto.slotId);
         if (nutzer == null || slot == null) {
@@ -230,7 +227,7 @@ public class AdminResource {
             throw new NotFoundException();
         }
 
-        List<EventSlot> slots = EventSlot.find("veranstaltung.getId()", vid).list();
+        List<EventSlot> slots = EventSlot.find("veranstaltung.id = ?1", vid).list();
         List<Raum> raeume = event.getGebaeude().stream().flatMap(g -> g.getRaeume().stream()).toList();
 
         return raeume.stream().flatMap(r -> slots.stream().map(s -> {
@@ -238,7 +235,7 @@ public class AdminResource {
             RaumBelegbarkeitDto dto = new RaumBelegbarkeitDto(r.getId(), s.getId(), rv != null && rv.isBelegt());
 
             // Cross-event check: Is this room busy in ANY other event at a time that overlaps with this slot?
-            List<RaumBelegbarkeit> otherRvs = RaumBelegbarkeit.find("raum = ?1 and isBelegt = true and slot.veranstaltung.getId() != ?2", r, vid).list();
+            List<RaumBelegbarkeit> otherRvs = RaumBelegbarkeit.find("raum = ?1 and isBelegt = true and slot.veranstaltung.id != ?2", r, vid).list();
             for (RaumBelegbarkeit otherRv : otherRvs) {
                 EventSlot otherSlot = otherRv.getSlot();
                 if (otherSlot.getStartTime().isBefore(s.getEndTime()) && otherSlot.getEndTime().isAfter(s.getStartTime())) {

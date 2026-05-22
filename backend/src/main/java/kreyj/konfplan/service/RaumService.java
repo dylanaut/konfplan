@@ -28,7 +28,7 @@ public class RaumService {
     }
 
     public List<Raum> listByGebaeude(Long gebaeudeId) {
-        return Raum.list("gebaeude.getId()", gebaeudeId);
+        return Raum.list("gebaeude.id = ?1", gebaeudeId);
     }
 
     public Raum findById(Long id) {

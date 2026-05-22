@@ -97,11 +97,11 @@ public class PrioritaetImportTest {
 
         assertEquals(2, Prioritaet.count());
 
-        Prioritaet p1 = Prioritaet.find("teilnehmer.getId() = ?1 and vortrag.getId() = ?2", teilnehmer1Id, wv1Id).firstResult();
+        Prioritaet p1 = Prioritaet.find("teilnehmer.id = ?1 and vortrag.id = ?2", teilnehmer1Id, wv1Id).firstResult();
         assertNotNull(p1);
         assertEquals(5, p1.getPrioWert());
 
-        Prioritaet p2 = Prioritaet.find("teilnehmer.getId() = ?1 and vortrag.getId() = ?2", teilnehmer1Id, wv2Id).firstResult();
+        Prioritaet p2 = Prioritaet.find("teilnehmer.id = ?1 and vortrag.id = ?2", teilnehmer1Id, wv2Id).firstResult();
         assertNotNull(p2);
         assertEquals(3, p2.getPrioWert());
     }

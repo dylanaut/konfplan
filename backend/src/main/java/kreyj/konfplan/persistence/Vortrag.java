@@ -8,6 +8,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.DiscriminatorType;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.JoinColumn;
@@ -16,6 +17,7 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.ArrayList;
@@ -24,6 +26,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
+@NoArgsConstructor
 @Getter
 @Setter
 @Table(name = "Vortrag")
@@ -41,27 +44,25 @@ public abstract class Vortrag extends VersionedEntity {
     @Column(columnDefinition = "TEXT")
     private String inhalt;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "referent_id")
     @JsonIgnoreProperties("vortraege")
-    private Referent referent;
+    Referent referent;
 
-    @ManyToOne(optional = false) // Relation zur Veranstaltung
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "veranstaltung_id")
     @JsonIgnoreProperties({"vortraege", "nutzer", "gebaeude", "eventSlots"})
-    private Veranstaltung veranstaltung;
+    Veranstaltung veranstaltung;
 
     @ManyToMany
     @JoinTable(name = "Vortrag_EventSlot",
             joinColumns = @JoinColumn(name = "vortrag_id"),
             inverseJoinColumns = @JoinColumn(name = "eventslot_id"))
-    private Set<EventSlot> verfuegbareSlots = new HashSet<>();
+    Set<EventSlot> verfuegbareSlots = new HashSet<>();
 
     @JsonProperty("istPflicht")
     public abstract boolean istPflicht();
 
-    public Vortrag() {
-    }
 
     public Vortrag(String titel, Referent referent) {
         this.titel = titel;

@@ -8,8 +8,13 @@ import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.dto.VeranstaltungDto;
 import kreyj.konfplan.dto.csv.VeranstaltungCsvDto;
-import kreyj.konfplan.persistence.*;
+import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Gebaeude;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.ProtokollKategorie;
+import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.resource.VeranstaltungResource;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 
@@ -46,7 +51,7 @@ public class VeranstaltungService {
             if (v == null) {
                 return null;
             }
-            
+
             // Optimistic Locking Prüfung
             if (dto.version != null && !v.getVersion().equals(dto.version)) {
                 throw new OptimisticLockException("Die Veranstaltung wurde in der Zwischenzeit von einem anderen Benutzer geändert.");
@@ -67,7 +72,7 @@ public class VeranstaltungService {
         v.setLogo_link(dto.logo_link);
 
         // Gebäude zuweisen
-        v.clearGebaeude();
+//        v.clearGebaeude(); // TODO alte Gebäude entfernen
         if (dto.gebaeude != null) {
             for (var gDto : dto.gebaeude) {
                 Gebaeude g = Gebaeude.findById(gDto.id);
@@ -78,15 +83,18 @@ public class VeranstaltungService {
         }
 
         // Organisatoren zuweisen
-        if (dto.organisatorIds != null) {
-            v.getNutzer().stream().filter(u -> u instanceof Admin)
-                    .forEach(v::removeNutzer);
-            for (Long aid : dto.organisatorIds) {
-                Admin a = Admin.findById(aid);
-                if (a != null) {
-                    v.addNutzer(a);
-                }
-            }
+        if (CollectionUtils.isNotEmpty(dto.organisatorIds)) {
+            // todo alte Admins entfernen und neue zufügen
+            throw new UnsupportedOperationException("save noch nicht implementiert");
+
+//            v.getNutzer().stream().filter(u -> u instanceof Admin)
+//                    .forEach(v::removeNutzer);
+//            for (Long aid : dto.organisatorIds) {
+//                Admin a = Admin.findById(aid);
+//                if (a != null) {
+//                    v.addNutzer(a);
+//                }
+//            }
         }
 
         if (dto.id == null) {

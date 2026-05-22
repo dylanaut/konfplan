@@ -11,6 +11,7 @@ import kreyj.konfplan.dto.VortragDto;
 import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.EventSlot;
 import kreyj.konfplan.persistence.Gebaeude;
+import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Raum;
@@ -22,7 +23,6 @@ import kreyj.konfplan.persistence.Verfuegbarkeit;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.service.AdminService;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -74,47 +74,47 @@ public class PflichtvortragServiceTest {
         admin.setPasswordHash("hash");
         admin.persist();
 
-        veranstaltung = new Veranstaltung();
-        veranstaltung.setName("Test Event");
-        veranstaltung.setBeginntAm(LocalDateTime.of(2024, 1, 1, 9, 0));
-        veranstaltung.setEndetAm(LocalDateTime.of(2024, 1, 1, 17, 0));
-        veranstaltung.persist();
-
         gebaeude = new Gebaeude();
         gebaeude.setName("Hauptgebäude");
-        gebaeude.setTyp(Gebaeude.Gebaeudetyp.SCHULE);
+        gebaeude.setTyp(Gebaeudetyp.SCHULE);
         gebaeude.setPostleitzahl("12345");
         gebaeude.setOrt("Testort");
         gebaeude.setStrasse("Teststraße");
         gebaeude.persist();
+
+        veranstaltung = new Veranstaltung();
+        veranstaltung.setName("Test Event");
+        veranstaltung.setBeginntAm(LocalDateTime.of(2024, 1, 1, 9, 0));
+        veranstaltung.setEndetAm(LocalDateTime.of(2024, 1, 1, 17, 0));
         veranstaltung.addGebaeude(gebaeude);
         veranstaltung.persist();
+
 
         raum1 = new Raum();
         raum1.setName("Raum 1");
         raum1.setKapazitaet(2);
-        raum1.setGebaeude(gebaeude);
         raum1.persist();
+        gebaeude.addRaum(raum1);
 
         raum2 = new Raum();
         raum2.setName("Raum 2");
         raum2.setKapazitaet(10);
-        raum2.setGebaeude(gebaeude);
         raum2.persist();
+        gebaeude.addRaum(raum2);
 
         slot1 = new EventSlot();
         slot1.setDescription("Slot 1");
         slot1.setStartTime(LocalDateTime.of(2024, 1, 1, 9, 0));
         slot1.setEndTime(LocalDateTime.of(2024, 1, 1, 10, 0));
-        slot1.setVeranstaltung(veranstaltung);
         slot1.persist();
+        veranstaltung.addSlot(slot1);
 
         slot2 = new EventSlot();
         slot2.setDescription("Slot 2");
         slot2.setStartTime(LocalDateTime.of(2024, 1, 1, 10, 0));
         slot2.setEndTime(LocalDateTime.of(2024, 1, 1, 11, 0));
-        slot2.setVeranstaltung(veranstaltung);
         slot2.persist();
+        veranstaltung.addSlot(slot1);
 
         referent = new Referent();
         referent.setEmail("ref@example.com");
@@ -156,7 +156,7 @@ public class PflichtvortragServiceTest {
     @Transactional
     void testCreatePflichtvortragSuccess() {
         // Raum 2 hat Kapazität 10, Gruppe A hat 2 TN
-        Pflichtvortrag pv = new Pflichtvortrag( "PV Test",  referent, "Gruppe A", raum2, slot1);
+        Pflichtvortrag pv = new Pflichtvortrag("PV Test", referent, "Gruppe A", raum2, slot1);
         Pflichtvortrag createdPv = (Pflichtvortrag) adminService.createVortrag(pv, veranstaltung.getId());
 
         assertNotNull(createdPv.getId());
@@ -388,7 +388,7 @@ public class PflichtvortragServiceTest {
 
         updatedPv.pflichtgruppe = "Gruppe A";
         updatedPv.pflichtRaumId = raum2.getId();
-         // Kapazität 10
+        // Kapazität 10
         updatedPv.pflichtSlotId = slot1.getId();
         updatedPv.version = 0L;
 

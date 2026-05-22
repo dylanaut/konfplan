@@ -248,7 +248,7 @@ public class ReportResource {
             return freieSlotsReferenten.data("error", "Veranstaltung nicht gefunden.");
         }
         Map<Long, List<EventSlot>> freieSlots = planService.getFreieSlotsReferenten(vid);
-        List<Referent> referenten = Referent.find("SELECT r FROM Referent r JOIN r.veranstaltungen v WHERE v.getId() = ?1", vid).list();
+        List<Referent> referenten = Referent.find("SELECT r FROM Referent r JOIN r.veranstaltungen v WHERE v.id = ?1", vid).list();
         return freieSlotsReferenten.data("veranstaltung", veranstaltung)
                 .data("freieSlots", freieSlots)
                 .data("referenten", referenten);
@@ -265,7 +265,7 @@ public class ReportResource {
             throw new RuntimeException("Veranstaltung nicht gefunden.");
         }
         Map<Long, List<EventSlot>> freieSlots = planService.getFreieSlotsReferenten(vid);
-        List<Referent> referenten = Referent.find("SELECT r FROM Referent r JOIN r.veranstaltungen v WHERE v.getId() = ?1", vid).list();
+        List<Referent> referenten = Referent.find("SELECT r FROM Referent r JOIN r.veranstaltungen v WHERE v.id = ?1", vid).list();
         TemplateInstance templateInstance = freieSlotsReferenten.data("veranstaltung", veranstaltung)
                 .data("freieSlots", freieSlots)
                 .data("referenten", referenten);
@@ -283,7 +283,7 @@ public class ReportResource {
             return freieSlotsTeilnehmer.data("error", "Veranstaltung nicht gefunden.");
         }
         Map<Long, List<EventSlot>> freieSlots = planService.getFreieSlotsTeilnehmer(vid);
-        List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.getId() = ?1", vid).list();
+        List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", vid).list();
         return freieSlotsTeilnehmer.data("veranstaltung", veranstaltung)
                 .data("freieSlots", freieSlots)
                 .data("teilnehmer", teilnehmer);
@@ -300,7 +300,7 @@ public class ReportResource {
             throw new RuntimeException("Veranstaltung nicht gefunden.");
         }
         Map<Long, List<EventSlot>> freieSlots = planService.getFreieSlotsTeilnehmer(vid);
-        List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.getId() = ?1", vid).list();
+        List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", vid).list();
         TemplateInstance templateInstance = freieSlotsTeilnehmer.data("veranstaltung", veranstaltung)
                 .data("freieSlots", freieSlots)
                 .data("teilnehmer", teilnehmer);

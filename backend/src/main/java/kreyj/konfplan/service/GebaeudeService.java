@@ -6,6 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.dto.csv.GebaeudeRaeumeCsvDto;
 import kreyj.konfplan.persistence.Gebaeude;
+import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import org.jboss.logging.Logger;
@@ -86,7 +87,7 @@ public class GebaeudeService {
                 Gebaeude g = new Gebaeude();
                 g.setName(gebaeudeName);
                 try {
-                    g.setTyp(Gebaeude.Gebaeudetyp.valueOf(dto.typ.toUpperCase()));
+                    g.setTyp(Gebaeudetyp.valueOf(dto.typ.toUpperCase()));
                 } catch (IllegalArgumentException e) {
                     LOG.warn("Gebäude '" + gebaeudeName + "' übersprungen: Ungültiger Gebäudetyp '" + dto.typ + "'.");
                     protokollService.log(ProtokollKategorie.GEBAEUDE, "Gebäude-Import übersprungen", "Gebäude '" + gebaeudeName + "': Ungültiger Gebäudetyp '" + dto.typ + "'.");
@@ -111,7 +112,6 @@ public class GebaeudeService {
                                 if (parts.length >= 3) {
                                     r.setEtage(parts[2].trim());
                                 }
-                                r.setGebaeude(g);
                                 r.persist();
                                 g.addRaum(r);
                                 protokollService.log(ProtokollKategorie.RAUM, "Raum importiert (via Gebäude-Import)", "Raum '" + r.getName() + "' für Gebäude '" + g.getName() + "' importiert.", r.getId());

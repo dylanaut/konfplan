@@ -2,24 +2,26 @@ package kreyj.konfplan.persistence;
 
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.ManyToOne;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Objects;
 
+@Getter
 @Entity
+@NoArgsConstructor
 @DiscriminatorValue("PFLICHT")
 public class Pflichtvortrag extends Vortrag {
     private String pflichtgruppe;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     private Raum pflichtraum;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     private EventSlot pflichtslot;
-
-    public Pflichtvortrag() {
-    }
 
     public Pflichtvortrag(String titel, Referent referent, String pflichtgruppe, Raum pflichtraum, EventSlot pflichtslot) {
         super(titel, referent);
@@ -37,18 +39,6 @@ public class Pflichtvortrag extends Vortrag {
         setPflichtgruppe(pflichtgruppe);
         setPflichtraum(pflichtraum);
         setPflichtslot(pflichtslot);
-    }
-
-    public String getPflichtgruppe() {
-        return pflichtgruppe;
-    }
-
-    public Raum getPflichtraum() {
-        return pflichtraum;
-    }
-
-    public EventSlot getPflichtslot() {
-        return pflichtslot;
     }
 
     public void setPflichtgruppe(String neuePflichtgruppe) {

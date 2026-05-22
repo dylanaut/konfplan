@@ -67,8 +67,9 @@ public class VerfuegbarkeitsTest {
         veranstaltung.setEndetAm(LocalDateTime.now().plusDays(1));
         veranstaltung.setLogo("logo.png");
         veranstaltung.setLogo_link("http://example.com");
-        veranstaltung.addNutzer(admin); // Assign organizer
         veranstaltung.persist();
+
+        admin.addVeranstaltung(veranstaltung);
 
         slot1 = new EventSlot();
         slot1.setDescription("Slot 1");
@@ -176,7 +177,7 @@ public class VerfuegbarkeitsTest {
         g.setHausnummer("1");
         g.setPostleitzahl("12345");
         g.setOrt("Teststadt");
-        g.setTyp(Gebaeude.Gebaeudetyp.SCHULE);
+        g.setTyp(Gebaeudetyp.SCHULE);
         g.addRaum(r);
 
         g.persist();
@@ -217,13 +218,15 @@ public class VerfuegbarkeitsTest {
         g.setHausnummer("1");
         g.setPostleitzahl("12345");
         g.setOrt("Teststadt");
-        g.setTyp(Gebaeude.Gebaeudetyp.SCHULE);
+        g.setTyp(Gebaeudetyp.SCHULE);
         g.persist();
+
         Raum r = new Raum();
         r.setName("Test Raum");
-        r.setGebaeude(g);
         r.setKapazitaet(30);
         r.persist();
+        g.addRaum(r);
+
         Pflichtvortrag pv = new Pflichtvortrag();
         pv.setTitel("Mandatory Talk");
         pv.setVeranstaltung(veranstaltung);
@@ -232,8 +235,10 @@ public class VerfuegbarkeitsTest {
         pv.setPflichtraum(r);
         pv.setReferent(referent); // Assign mandatory referent
         pv.persist();
+
         NutzerDto dto = AdminResource.mapNutzerToDto(teilnehmer);
         dto.gruppe = "GroupA";
+        dto.version = teilnehmer.getVersion() + 1;
         dto = adminService.updateUser(teilnehmer.getId(), dto, List.of(veranstaltung.getId()));
 
         // Verify initial state

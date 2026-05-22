@@ -79,10 +79,10 @@ public class OptimierungService {
                 "Optimierung für '" + vName + "' mit Solver '" + config.solver + "' gestartet.", veranstaltungId);
 
         try {
-            List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.getId() = ?1", veranstaltungId).list();
-            List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.getId()", veranstaltungId).list();
-            List<Wahlvortrag> wahlvortraege = Wahlvortrag.find("veranstaltung.getId()", veranstaltungId).list();
-            List<EventSlot> slots = EventSlot.find("veranstaltung.getId()", veranstaltungId).list();
+            List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
+            List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
+            List<Wahlvortrag> wahlvortraege = Wahlvortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
+            List<EventSlot> slots = EventSlot.find("veranstaltung.id = ?1", veranstaltungId).list();
             List<Raum> raeume = Raum.listAll();
 
             if (slots.isEmpty() || teilnehmer.isEmpty() || wahlvortraege.isEmpty()) {

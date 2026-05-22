@@ -45,8 +45,8 @@ class VerfuegbarkeitResourceTest {
         s.setDescription("Slot 1");
         s.setStartTime(LocalDateTime.now());
         s.setEndTime(LocalDateTime.now().plusHours(1));
-        s.setVeranstaltung(v);
         s.persist();
+        v.addSlot(s);
         slotId = s.getId();
 
         v.addSlot(s);
@@ -73,7 +73,7 @@ class VerfuegbarkeitResourceTest {
                 .statusCode(CREATED.getStatusCode());
 
         Nutzer ref = Nutzer.findByEmail("referent@verf.de");
-        long countRef = Verfuegbarkeit.count("nutzer = ?1 and slot.getId() = ?2", ref, slotId);
+        long countRef = Verfuegbarkeit.count("nutzer = ?1 and slot.id = ?2", ref, slotId);
         assertThat(1).isEqualTo(countRef).describedAs("Verfügbarkeit für Referent sollte erstellt worden sein");
 
         String jsonTeilnehmer = """
@@ -94,7 +94,7 @@ class VerfuegbarkeitResourceTest {
                 .statusCode(CREATED.getStatusCode());
 
         Nutzer teil = Nutzer.findByEmail("schueler@verf.de");
-        long countTeil = Verfuegbarkeit.count("nutzer = ?1 and slot.getId() = ?2", teil, slotId);
+        long countTeil = Verfuegbarkeit.count("nutzer = ?1 and slot.id = ?2", teil, slotId);
         assertThat(1).isEqualTo(countTeil).describedAs("Verfügbarkeit für Teilnehmer sollte erstellt worden sein");
     }
 

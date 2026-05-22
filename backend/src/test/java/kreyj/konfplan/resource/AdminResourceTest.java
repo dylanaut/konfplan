@@ -189,8 +189,9 @@ class AdminResourceTest extends ResourceTestBase {
             slot.setDescription("Slot 1");
             slot.setStartTime(LocalDateTime.now());
             slot.setEndTime(LocalDateTime.now().plusHours(1));
-            slot.setVeranstaltung(v);
             slot.persist();
+
+            v.addSlot(slot);
             sid[0] = slot.getId();
 
             Referent r = new Referent();
@@ -201,6 +202,7 @@ class AdminResourceTest extends ResourceTestBase {
             rid[0] = r.getId();
 
             Verfuegbarkeit vf = new Verfuegbarkeit(r, slot, true);
+
             vf.persist();
         });
 

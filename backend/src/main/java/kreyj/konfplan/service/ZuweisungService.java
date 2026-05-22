@@ -8,14 +8,14 @@ import java.util.List;
 public class ZuweisungService {
 
     public List<Zuweisung> findByVeranstaltung(Long vid) {
-        return Zuweisung.find("vortrag.veranstaltung.getId()", vid).list();
+        return Zuweisung.find("vortrag.veranstaltung.id = ?1", vid).list();
     }
 
     public List<Zuweisung> findByTeilnehmer(String email) {
-        return Zuweisung.find("teilnehmer.getEmail()", email).list();
+        return Zuweisung.find("teilnehmer.email = ?1", email).list();
     }
 
     public List<Zuweisung> findByReferent(String email) {
-        return Zuweisung.find("vortrag.referent.getEmail()", email).list();
+        return Zuweisung.find("vortrag.referent.email = ?1", email).list();
     }
 }

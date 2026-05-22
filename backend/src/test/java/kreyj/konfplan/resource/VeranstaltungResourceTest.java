@@ -59,7 +59,7 @@ class VeranstaltungResourceTest extends ResourceTestBase {
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("size()", is(1))
-                .body("[0].getTitel()", is("Test Vortrag"));
+                .body("[0].titel", is("Test Vortrag"));
     }
 
     private void createWahlvortrag(String titel) {
@@ -82,8 +82,8 @@ class VeranstaltungResourceTest extends ResourceTestBase {
             s1.setDescription("Slot A");
             s1.setStartTime(LocalDateTime.now());
             s1.setEndTime(LocalDateTime.now().plusHours(1));
-            s1.setVeranstaltung(Veranstaltung.findById(testVid));
             s1.persist();
+            Veranstaltung.<Veranstaltung>findById(testVid).addSlot(s1);
         });
 
         given()
@@ -91,7 +91,7 @@ class VeranstaltungResourceTest extends ResourceTestBase {
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("size()", is(1))
-                .body("[0].getDescription()", is("Slot A"));
+                .body("[0].description", is("Slot A"));
     }
 
     @Test
@@ -105,7 +105,7 @@ class VeranstaltungResourceTest extends ResourceTestBase {
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("size()", is(1))
-                .body("[0].getTitel()", is("Vortrag 1"));
+                .body("[0].titel", is("Vortrag 1"));
     }
 
     @Test

@@ -13,13 +13,13 @@ import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.DiscriminatorType;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.NaturalId;
 
@@ -27,10 +27,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Entity
+@NoArgsConstructor
 @Getter
 @Setter
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
@@ -84,7 +84,7 @@ public abstract class Nutzer extends VersionedEntity {
     @Column(name = "email_change_token_expiry")
     private LocalDateTime emailChangeTokenExpiry;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany
     @JoinTable(
             name = "Nutzer_Veranstaltung",
             joinColumns = @JoinColumn(name = "nutzer_id"),
@@ -92,33 +92,20 @@ public abstract class Nutzer extends VersionedEntity {
     )
     @JsonIgnoreProperties({"nutzer", "gebaeude", "eventSlots"})
     private Set<Veranstaltung> veranstaltungen = new HashSet<>();
-    @ManyToMany
-    @JoinTable(
-            name = "Teilnehmer_EventSlot",
-            joinColumns = @JoinColumn(name = "teilnehmer_id"),
-            inverseJoinColumns = @JoinColumn(name = "eventslot_id")
-    )
-    @JsonIgnore // Add this annotation to ignore during JSON serialization
-    private List<EventSlot> verfuegbareSlots = new ArrayList<>();
 
     public Set<Veranstaltung> getVeranstaltungen() {
         return Collections.unmodifiableSet(veranstaltungen);
     }
 
-    public Nutzer() {
-    }
-
-    public static Nutzer findByEmail(String e) {
-        return find("email", e).firstResult();
-    }
-
     public void addVeranstaltung(Veranstaltung v) {
-        if (this.veranstaltungen.contains(v)) {
+        if (null == v) {
             return;
         }
-        this.veranstaltungen.add(v);
-        v.addNutzer(this);
+        if (veranstaltungen.add(v)) {
+            v.nutzer.add(this);
+        }
 
+        //TODO remove business logic
         if (this instanceof Referent || this instanceof Teilnehmer) {
             for (EventSlot slot : v.getEventSlots()) {
                 if (Verfuegbarkeit.count("nutzer = ?1 and slot = ?2", this, slot) == 0) {
@@ -131,12 +118,15 @@ public abstract class Nutzer extends VersionedEntity {
     }
 
     public void removeVeranstaltung(Veranstaltung v) {
-        this.veranstaltungen.remove(v);
-
-        if (v.getNutzer().contains(this)) {
-            v.removeNutzer(this);
+        if (null == v) {
+            return;
         }
 
+        if (veranstaltungen.remove(v)) {
+            v.nutzer.remove(this);
+        }
+
+// TODO remove business logic
         if (this instanceof Referent || this instanceof Teilnehmer) {
             for (EventSlot slot : v.getEventSlots()) {
                 Verfuegbarkeit.delete("nutzer = ?1 and slot = ?2", this, slot);
@@ -144,28 +134,40 @@ public abstract class Nutzer extends VersionedEntity {
         }
     }
 
-    public List<EventSlot> getVerfuegbareSlots() {
-        return Collections.unmodifiableList(verfuegbareSlots);
+    @ManyToMany
+    @JoinTable(
+            name = "Teilnehmer_EventSlot",
+            joinColumns = @JoinColumn(name = "teilnehmer_id"),
+            inverseJoinColumns = @JoinColumn(name = "eventslot_id")
+    )
+    @JsonIgnore // Add this annotation to ignore during JSON serialization
+    Set<EventSlot> verfuegbareSlots = new HashSet<>();
+
+    public Set<EventSlot> getVerfuegbareSlots() {
+        return Collections.unmodifiableSet(verfuegbareSlots);
     }
 
     public void addVerfuegbarenSlot(EventSlot slot) {
+        if (null == slot) {
+            return;
+        }
+
         if (!this.getVeranstaltungen().contains(slot.getVeranstaltung())) {
             throw new IllegalArgumentException("Der Teilnehmer ist nicht für die Veranstaltung des EventSlots angemeldet.");
         }
 
-        if (!verfuegbareSlots.contains(slot)) {
-            verfuegbareSlots.add(slot);
-            slot.addNutzer(this);
+        if (verfuegbareSlots.add(slot)) {
+            slot.nutzer.add(this);
         }
     }
 
     public void removeVerfuegbarenSlot(EventSlot eventSlot) {
-        if (verfuegbareSlots.contains(eventSlot)) {
-            this.verfuegbareSlots.remove(eventSlot);
+        if (null == eventSlot) {
+            return;
         }
 
-        if (eventSlot.getNutzer().contains(this)) {
-            eventSlot.removeNutzer(this);
+        if (verfuegbareSlots.remove(eventSlot)) {
+            eventSlot.nutzer.remove(this);
         }
     }
 
@@ -173,5 +175,9 @@ public abstract class Nutzer extends VersionedEntity {
         for (EventSlot slot : new ArrayList<>(verfuegbareSlots)) {
             removeVerfuegbarenSlot(slot);
         }
+    }
+
+    public static Nutzer findByEmail(String e) {
+        return find("email", e).firstResult();
     }
 }

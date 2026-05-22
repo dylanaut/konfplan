@@ -8,13 +8,15 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
+@NoArgsConstructor
 @Getter
 @Setter
 public class Gebaeude extends VersionedEntity {
@@ -37,14 +39,11 @@ public class Gebaeude extends VersionedEntity {
     @Column(nullable = false)
     private String ort;
 
-    @OneToMany(mappedBy = "gebaeude", cascade = CascadeType.ALL)
-    private List<Raum> raeume = new ArrayList<>();
+    @OneToMany(mappedBy = "gebaeude", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Raum> raeume = new HashSet<>();
 
     @ManyToMany(mappedBy = "gebaeude")
-    private List<Veranstaltung> veranstaltungen = new ArrayList<>();
-
-    public Gebaeude() {
-    }
+    Set<Veranstaltung> veranstaltungen = new HashSet<>();
 
     public Gebaeude(String name, String ort, String strasse, String plz, Gebaeudetyp gebaeudetyp) {
         super();
@@ -55,31 +54,30 @@ public class Gebaeude extends VersionedEntity {
         this.typ = gebaeudetyp;
     }
 
-    public void addVeranstaltung(Veranstaltung v) {
-        if (this.veranstaltungen.contains(v)) {
-            return;
-        }
-        this.veranstaltungen.add(v);
-        v.addGebaeude(this);
-    }
-
-    public List<Raum> getRaeume() {
-        return Collections.unmodifiableList(raeume);
+    public Set<Raum> getRaeume() {
+        return Collections.unmodifiableSet(raeume);
     }
 
     public void addRaum(Raum raum) {
-        if (this.raeume.contains(raum)) {
+        if (null == raum) {
             return;
         }
-        this.raeume.add(raum);
-        raum.setGebaeude(this);
+
+        if (raeume.add(raum)) {
+            raum.setGebaeude(this);
+        }
     }
 
-    // -------------------------------------------------------------------
-    // Helper classes and methods
-    // -------------------------------------------------------------------
+    public void removeRaum(Raum raum) {
+        if (null == raum) {
+            return;
+        }
 
-    public enum Gebaeudetyp {
-        SCHULE, KINO, SPORTHALLE, SAAL, EXTERN
+        raeume.remove(raum);
+        raum.setGebaeude(null);
+    }
+
+    public Set<Veranstaltung> getVeranstaltungen() {
+        return Collections.unmodifiableSet(veranstaltungen);
     }
 }

@@ -1,7 +1,7 @@
 package kreyj.konfplan.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import kreyj.konfplan.persistence.Gebaeude;
+import kreyj.konfplan.persistence.Gebaeudetyp;
 
 import java.util.List;
 
@@ -17,7 +17,7 @@ public class GebaeudeSimpleDto extends AbstractVersionedDto {
 
     public String ort;
 
-    public Gebaeude.Gebaeudetyp typ;
+    public Gebaeudetyp typ;
 
     public List<RaumDto> raeume;
 

@@ -100,7 +100,7 @@ public class TeilnehmerPlanResource {
             throw new WebApplicationException("Nutzer ist kein Teilnehmer", FORBIDDEN.getStatusCode());
         }
 
-        return Verfuegbarkeit.find("nutzer = ?1 and slot.veranstaltung.getId() = ?2", nutzer, vid).stream()
+        return Verfuegbarkeit.find("nutzer = ?1 and slot.veranstaltung.id = ?2", nutzer, vid).stream()
                 .map(v -> {
                     Verfuegbarkeit vf = (Verfuegbarkeit) v;
                     return new VerfuegbarkeitDto(vf.getNutzer().getId(), vf.getSlot().getId(), vf.isAvailable());

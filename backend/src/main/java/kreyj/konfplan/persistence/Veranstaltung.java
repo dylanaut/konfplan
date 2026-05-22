@@ -13,18 +13,19 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotEmpty;
 import kreyj.konfplan.persistence.converter.LocalDateTimeConverter;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Entity
+@NoArgsConstructor
 @Getter
 @Setter
 @Table(uniqueConstraints = {
@@ -58,35 +59,63 @@ public class Veranstaltung extends VersionedEntity {
             joinColumns = @JoinColumn(name = "veranstaltung_id"),
             inverseJoinColumns = @JoinColumn(name = "gebaeude_id")
     )
-    private List<Gebaeude> gebaeude = new ArrayList<>();
+    private Set<Gebaeude> gebaeude = new HashSet<>();
 
-    public List<Gebaeude> getGebaeude() {
-        return Collections.unmodifiableList(gebaeude);
+    public Set<Gebaeude> getGebaeude() {
+        return Collections.unmodifiableSet(gebaeude);
     }
 
 
-    @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL)
-    private Set<EventSlot> eventSlots = new HashSet<>();
+    public void addGebaeude(Gebaeude g) {
+        if (null == g) {
+            return;
+        }
+
+        if (gebaeude.add(g)) {
+            g.veranstaltungen.add(this);
+        }
+    }
+
+    public void removeGebaeude(Gebaeude g) {
+        if (null == g) {
+            return;
+        }
+
+        if (gebaeude.remove(g)) {
+            g.veranstaltungen.remove(this);
+        }
+    }
+
+    @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Setter(AccessLevel.NONE)
+    Set<EventSlot> eventSlots = new HashSet<>();
 
     public Set<EventSlot> getEventSlots() {
         return Collections.unmodifiableSet(eventSlots);
     }
 
-    @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL)
-    private Set<Vortrag> vortraege = new HashSet<>();
 
+    @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL, orphanRemoval = true)
+     Set<Vortrag> vortraege = new HashSet<>();
 
     public Set<Vortrag> getVortraege() {
         return Collections.unmodifiableSet(vortraege);
     }
 
+
     @ManyToMany(mappedBy = "veranstaltungen")
     @JsonIgnoreProperties("veranstaltungen")
-    private Set<Nutzer> nutzer = new HashSet<>();
+    Set<Nutzer> nutzer = new HashSet<>();
 
     public Set<Nutzer> getNutzer() {
         return Collections.unmodifiableSet(nutzer);
     }
+
+    // TODO detect and remove
+    public void setNutzer(Set<Nutzer> newNutzer) {
+        throw new UnsupportedOperationException();
+    }
+
 
     @NotEmpty(message = "Veranstaltung muss mindestens eine/n Organisator/in haben")
     public Set<Admin> organisatoren() {
@@ -105,66 +134,5 @@ public class Veranstaltung extends VersionedEntity {
         return nutzer.stream().filter(u -> u instanceof Referent)
                 .map(u -> (Referent) u)
                 .collect(Collectors.toUnmodifiableSet());
-    }
-
-    public void addSlot(EventSlot slot) {
-        if (this.eventSlots.contains(slot)) {
-            return;
-        }
-        this.eventSlots.add(slot);
-        slot.setVeranstaltung(this);
-    }
-
-    public void removeSlot(EventSlot slot) {
-        if (this.eventSlots.contains(slot)) {
-            this.eventSlots.remove(slot);
-            slot.setVeranstaltung(null);
-        }
-    }
-
-    public void addVortrag(Vortrag vortrag) {
-        if (this.vortraege.contains(vortrag)) {
-            return;
-        }
-        this.vortraege.add(vortrag);
-        vortrag.setVeranstaltung(this);
-    }
-
-    public void removeVortrag(Vortrag vortrag) {
-        if (this.vortraege.contains(vortrag)) {
-            this.vortraege.remove(vortrag);
-            vortrag.setVeranstaltung(null);
-        }
-    }
-
-    public void addNutzer(Nutzer nutzer) {
-        if (this.nutzer.contains(nutzer)) {
-            return;
-        }
-        this.nutzer.add(nutzer);
-        nutzer.addVeranstaltung(this);
-    }
-
-    public void removeNutzer(Nutzer nutzer) {
-        this.nutzer.remove(nutzer);
-
-        if (nutzer.getVeranstaltungen().contains(this)) {
-            nutzer.removeVeranstaltung(this);
-        }
-    }
-
-    public void addGebaeude(Gebaeude gebaeude) {
-        if (this.gebaeude.contains(gebaeude)) {
-            return;
-        }
-        this.gebaeude.add(gebaeude);
-        gebaeude.getVeranstaltungen().add(this);
-    }
-
-    public void clearGebaeude() {
-        for (Gebaeude g : this.gebaeude) {
-            g.getVeranstaltungen().remove(this);
-        }
-        this.gebaeude.clear();
     }
 }

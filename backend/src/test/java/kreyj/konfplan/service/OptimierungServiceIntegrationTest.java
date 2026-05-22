@@ -62,7 +62,7 @@ public class OptimierungServiceIntegrationTest {
                 "Testort",
                 "Teststrasse",
                 "4711",
-                Gebaeude.Gebaeudetyp.SCHULE);
+                Gebaeudetyp.SCHULE);
         schule.persistAndFlush();
 
         Raum raum1 = new Raum("Raum 1", 1);
@@ -162,7 +162,7 @@ public class OptimierungServiceIntegrationTest {
         pflichtvortrag.setReferent(referent);
         pflichtvortrag.setVeranstaltung(veranstaltung);
         pflichtvortrag.setPflichtslot(slot3);
-        pflichtvortrag.setPflichtraum(schule.getRaeume().getFirst());
+        pflichtvortrag.setPflichtraum(schule.getRaeume().iterator().next()); // todo raum 1
         pflichtvortrag.setPflichtgruppe("A");
         pflichtvortrag.persistAndFlush();
 

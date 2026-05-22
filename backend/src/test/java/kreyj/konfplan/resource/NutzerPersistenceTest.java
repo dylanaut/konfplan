@@ -7,12 +7,10 @@ import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.*;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.Response.Status.CREATED;
@@ -36,7 +34,7 @@ class NutzerPersistenceTest extends ResourceTestBase {
         g.setStrasse("Teststraße");
         g.setOrt("Testort");
         g.setPostleitzahl("12345");
-        g.setTyp(Gebaeude.Gebaeudetyp.SCHULE);
+        g.setTyp(Gebaeudetyp.SCHULE);
         g.persist();
 
         Admin admin = new Admin();

@@ -8,10 +8,726 @@
 ----
 @startuml
 left to right direction
+actor "ADMIN" as ADMIN
+actor "PUBLIC" as PUBLIC
+actor "REFERENT" as REFERENT
+actor "TEILNEHMER" as TEILNEHMER
 package "KonfPlan API" {
+  (getRaumbelegungsplan) as getRaumbelegungsplan
+  (getLaufzettelReferent) as getLaufzettelReferent
+  (getUebersichtRaeume) as getUebersichtRaeume
+  (getUebersichtRaeumePdf) as getUebersichtRaeumePdf
+  (getFreieSlotsReferenten) as getFreieSlotsReferenten
+  (getFreieSlotsTeilnehmer) as getFreieSlotsTeilnehmer
+  (getLaufzettelTeilnehmer) as getLaufzettelTeilnehmer
+  (getLaufzettelTeilnehmerPdf) as getLaufzettelTeilnehmerPdf
+  (getLaufzettelReferentPdf) as getLaufzettelReferentPdf
+  (getRaumbelegungsplanPdf) as getRaumbelegungsplanPdf
+  (getFreieSlotsReferentenPdf) as getFreieSlotsReferentenPdf
+  (getFreieSlotsTeilnehmerPdf) as getFreieSlotsTeilnehmerPdf
+  (getAlleVeranstaltungsteilnehmer) as getAlleVeranstaltungsteilnehmer
+  (getTeilnehmer) as getTeilnehmer
+  (toggleActive) as toggleActive
+  (uploadCsv) as uploadCsv
+  (createTeilnehmer) as createTeilnehmer
+  (updateTeilnehmer) as updateTeilnehmer
+  (getTeilnehmerProfile) as getTeilnehmerProfile
+  (deleteTeilnehmer) as deleteTeilnehmer
+  (updateTeilnehmerProfile) as updateTeilnehmerProfile
+  (createInitialAvailabilities) as createInitialAvailabilities
+  (getReferent) as getReferent
+  (updateProfile) as updateProfile
+  (createVortrag) as createVortrag
+  (updateVortrag) as updateVortrag
+  (deleteVortrag) as deleteVortrag
+  (getMyPlan) as getMyPlan
+  (updateVerfuegbarkeit) as updateVerfuegbarkeit
+  (cloneTalkForEvent) as cloneTalkForEvent
+  (registerTalkForEvent) as registerTalkForEvent
+  (requestEmailChange) as requestEmailChange
+  (confirmEmailChange) as confirmEmailChange
+  (getReferentenVortraege) as getReferentenVortraege
+  (getVerfuegbarkeiten) as getVerfuegbarkeiten
+  (getReferentVeranstaltungen) as getReferentVeranstaltungen
+  (deregisterTalkFromEvent) as deregisterTalkFromEvent
+  (getAllProtokollEntries) as getAllProtokollEntries
+  (getPrioritaeten) as getPrioritaeten
+  (updatePrioritaeten) as updatePrioritaeten
+  (getPlan) as getPlan
+  (getPrios) as getPrios
+  (savePriorities) as savePriorities
+  (getMeineVeranstaltungen) as getMeineVeranstaltungen
+  (getAllUsers) as getAllUsers
+  (createUser) as createUser
+  (updateUser) as updateUser
+  (getUser) as getUser
+  (inviteUser) as inviteUser
+  (importAdmins) as importAdmins
+  (deleteUser) as deleteUser
+  (importPrioritaeten) as importPrioritaeten
+  (getRaumVerfuegbarkeiten) as getRaumVerfuegbarkeiten
+  (updateRaumVerfuegbarkeit) as updateRaumVerfuegbarkeit
+  (updateTeilnehmerPrioritaet) as updateTeilnehmerPrioritaet
+  (update) as update
+  (delete) as delete
+  (create) as create
+  (getAll) as getAll
+  (getStats) as getStats
+  (getNutzer) as getNutzer
+  (getVortraege) as getVortraege
+  (getGesamtplan) as getGesamtplan
+  (createNutzer) as createNutzer
+  (updateNutzer) as updateNutzer
+  (deleteNutzer) as deleteNutzer
+  (getSlots) as getSlots
+  (createSlot) as createSlot
+  (updateSlot) as updateSlot
+  (deleteSlot) as deleteSlot
+  (importSlots) as importSlots
+  (getOne) as getOne
+  (getPlanQualitaet) as getPlanQualitaet
+  (starteOptimierung) as starteOptimierung
+  (importVeranstaltungen) as importVeranstaltungen
+  (importReferenten) as importReferenten
+  (uploadTeilnehmerCsv) as uploadTeilnehmerCsv
+  (importVortraege) as importVortraege
+  (getDetaillierterPlan) as getDetaillierterPlan
+  (getVeranstaltungsVortrag) as getVeranstaltungsVortrag
+  (saveTeilnehmerPrioritaeten) as saveTeilnehmerPrioritaeten
+  (importGebaeude) as importGebaeude
+  (createRaum) as createRaum
+  (updateRaum) as updateRaum
+  (deleteRaum) as deleteRaum
+  (importRaeume) as importRaeume
+  (getRaeumeByGebaeude) as getRaeumeByGebaeude
+  (forgotPassword) as forgotPassword
+  (resetPassword) as resetPassword
+  (login) as login
 }
+ADMIN --> getRaumbelegungsplan
+ADMIN --> getLaufzettelReferent
+ADMIN --> getUebersichtRaeume
+ADMIN --> getUebersichtRaeumePdf
+ADMIN --> getFreieSlotsReferenten
+ADMIN --> getFreieSlotsTeilnehmer
+ADMIN --> getLaufzettelTeilnehmer
+ADMIN --> getLaufzettelTeilnehmerPdf
+ADMIN --> getLaufzettelReferentPdf
+ADMIN --> getRaumbelegungsplanPdf
+ADMIN --> getFreieSlotsReferentenPdf
+ADMIN --> getFreieSlotsTeilnehmerPdf
+ADMIN --> getAlleVeranstaltungsteilnehmer
+ADMIN --> getTeilnehmer
+ADMIN --> toggleActive
+ADMIN --> uploadCsv
+ADMIN --> createTeilnehmer
+ADMIN --> updateTeilnehmer
+ADMIN --> deleteTeilnehmer
+ADMIN --> getReferent
+ADMIN --> updateProfile
+ADMIN --> createVortrag
+ADMIN --> updateVortrag
+ADMIN --> deleteVortrag
+ADMIN --> getMyPlan
+ADMIN --> updateVerfuegbarkeit
+ADMIN --> cloneTalkForEvent
+ADMIN --> registerTalkForEvent
+ADMIN --> requestEmailChange
+ADMIN --> confirmEmailChange
+ADMIN --> getReferentenVortraege
+ADMIN --> getVerfuegbarkeiten
+ADMIN --> getReferentVeranstaltungen
+ADMIN --> deregisterTalkFromEvent
+ADMIN --> getAllProtokollEntries
+ADMIN --> getPlan
+ADMIN --> getPrios
+ADMIN --> savePriorities
+ADMIN --> updateVerfuegbarkeit
+ADMIN --> getVerfuegbarkeiten
+ADMIN --> getMeineVeranstaltungen
+ADMIN --> getAllUsers
+ADMIN --> createUser
+ADMIN --> updateUser
+ADMIN --> getUser
+ADMIN --> inviteUser
+ADMIN --> importAdmins
+ADMIN --> deleteUser
+ADMIN --> updateVerfuegbarkeit
+ADMIN --> getVerfuegbarkeiten
+ADMIN --> importPrioritaeten
+ADMIN --> getRaumVerfuegbarkeiten
+ADMIN --> updateRaumVerfuegbarkeit
+ADMIN --> updateTeilnehmerPrioritaet
+ADMIN --> update
+ADMIN --> delete
+ADMIN --> create
+ADMIN --> getAll
+ADMIN --> getStats
+ADMIN --> getNutzer
+ADMIN --> getVortraege
+ADMIN --> createVortrag
+ADMIN --> updateVortrag
+ADMIN --> deleteVortrag
+ADMIN --> getGesamtplan
+ADMIN --> createNutzer
+ADMIN --> updateNutzer
+ADMIN --> deleteNutzer
+ADMIN --> getSlots
+ADMIN --> createSlot
+ADMIN --> updateSlot
+ADMIN --> deleteSlot
+ADMIN --> importSlots
+ADMIN --> getOne
+ADMIN --> getPlanQualitaet
+ADMIN --> starteOptimierung
+ADMIN --> importVeranstaltungen
+ADMIN --> importReferenten
+ADMIN --> uploadTeilnehmerCsv
+ADMIN --> importVortraege
+ADMIN --> getDetaillierterPlan
+ADMIN --> getVeranstaltungsVortrag
+ADMIN --> saveTeilnehmerPrioritaeten
+ADMIN --> update
+ADMIN --> delete
+ADMIN --> create
+ADMIN --> getAll
+ADMIN --> importGebaeude
+ADMIN --> createRaum
+ADMIN --> updateRaum
+ADMIN --> deleteRaum
+ADMIN --> importRaeume
+ADMIN --> getOne
+ADMIN --> getRaeumeByGebaeude
+ADMIN --> getAll
+PUBLIC --> forgotPassword
+PUBLIC --> resetPassword
+PUBLIC --> login
+REFERENT --> getLaufzettelReferent
+REFERENT --> getLaufzettelReferentPdf
+REFERENT --> getReferent
+REFERENT --> updateProfile
+REFERENT --> createVortrag
+REFERENT --> updateVortrag
+REFERENT --> deleteVortrag
+REFERENT --> getMyPlan
+REFERENT --> updateVerfuegbarkeit
+REFERENT --> cloneTalkForEvent
+REFERENT --> registerTalkForEvent
+REFERENT --> requestEmailChange
+REFERENT --> confirmEmailChange
+REFERENT --> getReferentenVortraege
+REFERENT --> getVerfuegbarkeiten
+REFERENT --> getReferentVeranstaltungen
+REFERENT --> deregisterTalkFromEvent
+REFERENT --> getSlots
+REFERENT --> getAll
+TEILNEHMER --> getLaufzettelTeilnehmer
+TEILNEHMER --> getLaufzettelTeilnehmerPdf
+TEILNEHMER --> getTeilnehmerProfile
+TEILNEHMER --> updateTeilnehmerProfile
+TEILNEHMER --> createInitialAvailabilities
+TEILNEHMER --> getPrioritaeten
+TEILNEHMER --> updatePrioritaeten
+TEILNEHMER --> getPlan
+TEILNEHMER --> getPrios
+TEILNEHMER --> savePriorities
+TEILNEHMER --> updateVerfuegbarkeit
+TEILNEHMER --> getVerfuegbarkeiten
+TEILNEHMER --> getMeineVeranstaltungen
+TEILNEHMER --> getVortraege
+TEILNEHMER --> getSlots
+TEILNEHMER --> getAll
 @enduml
 ----
 
 == API Endpunkte & Rollen
+
+=== ReportResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getRaumbelegungsplan
+| GET
+| `/api/reports/{vid}/raum/{rid}/belegungsplan`
+| ADMIN
+| getLaufzettelReferent
+| GET
+| `/api/reports/{vid}/referent/{rid}/laufzettel`
+| REFERENT, ADMIN
+| getUebersichtRaeume
+| GET
+| `/api/reports/{vid}/raeume`
+| ADMIN
+| getUebersichtRaeumePdf
+| GET
+| `/api/reports/{vid}/raeume-pdf`
+| ADMIN
+| getFreieSlotsReferenten
+| GET
+| `/api/reports/{vid}/freie-slots-referenten`
+| ADMIN
+| getFreieSlotsTeilnehmer
+| GET
+| `/api/reports/{vid}/freie-slots-teilnehmer`
+| ADMIN
+| getLaufzettelTeilnehmer
+| GET
+| `/api/reports/{vid}/teilnehmer/{tid}/laufzettel`
+| TEILNEHMER, ADMIN
+| getLaufzettelTeilnehmerPdf
+| GET
+| `/api/reports/{vid}/teilnehmer/{tid}/laufzettel-pdf`
+| TEILNEHMER, ADMIN
+| getLaufzettelReferentPdf
+| GET
+| `/api/reports/{vid}/referent/{rid}/laufzettel-pdf`
+| REFERENT, ADMIN
+| getRaumbelegungsplanPdf
+| GET
+| `/api/reports/{vid}/raum/{rid}/belegungsplan-pdf`
+| ADMIN
+| getFreieSlotsReferentenPdf
+| GET
+| `/api/reports/{vid}/freie-slots-referenten-pdf`
+| ADMIN
+| getFreieSlotsTeilnehmerPdf
+| GET
+| `/api/reports/{vid}/freie-slots-teilnehmer-pdf`
+| ADMIN
+|===
+
+=== TeilnehmerResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getAlleVeranstaltungsteilnehmer
+| GET
+| `/api/teilnehmer`
+| ADMIN
+| getTeilnehmer
+| GET
+| `/api/teilnehmer/{id}`
+| ADMIN
+| toggleActive
+| PATCH
+| `/api/teilnehmer/{id}/toggle`
+| ADMIN
+| uploadCsv
+| POST
+| `/api/teilnehmer/import`
+| ADMIN
+| createTeilnehmer
+| POST
+| `/api/teilnehmer`
+| ADMIN
+| updateTeilnehmer
+| PUT
+| `/api/teilnehmer/{id}`
+| ADMIN
+| getTeilnehmerProfile
+| GET
+| `/api/teilnehmer/profile`
+| TEILNEHMER
+| deleteTeilnehmer
+| DELETE
+| `/api/teilnehmer/{id}`
+| ADMIN
+| updateTeilnehmerProfile
+| PUT
+| `/api/teilnehmer/profile`
+| TEILNEHMER
+| createInitialAvailabilities
+| POST
+| `/api/teilnehmer/veranstaltungen/{vid}/verfuegbarkeiten/init`
+| TEILNEHMER
+|===
+
+=== ReferentResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getReferent
+| GET
+| `/api/referenten/profile`
+| ADMIN, REFERENT
+| updateProfile
+| PUT
+| `/api/referenten/profile`
+| ADMIN, REFERENT
+| createVortrag
+| POST
+| `/api/referenten/vortraege`
+| ADMIN, REFERENT
+| updateVortrag
+| PUT
+| `/api/referenten/vortraege/{vortragId}`
+| ADMIN, REFERENT
+| deleteVortrag
+| DELETE
+| `/api/referenten/vortraege/{vortragId}`
+| ADMIN, REFERENT
+| getMyPlan
+| GET
+| `/api/referenten/plaene`
+| ADMIN, REFERENT
+| updateVerfuegbarkeit
+| POST
+| `/api/referenten/veranstaltungen/{vid}/verfuegbarkeiten`
+| ADMIN, REFERENT
+| cloneTalkForEvent
+| POST
+| `/api/referenten/veranstaltungen/{targetEventId}/vortraege/{sourceTalkId}/clone`
+| ADMIN, REFERENT
+| registerTalkForEvent
+| POST
+| `/api/referenten/veranstaltungen/{eventId}/vortraege/{talkId}/register`
+| ADMIN, REFERENT
+| requestEmailChange
+| POST
+| `/api/referenten/email-change-request`
+| ADMIN, REFERENT
+| confirmEmailChange
+| GET
+| `/api/referenten/email-change-confirm`
+| ADMIN, REFERENT
+| getReferentenVortraege
+| GET
+| `/api/referenten/vortraege`
+| ADMIN, REFERENT
+| getVerfuegbarkeiten
+| GET
+| `/api/referenten/veranstaltungen/{vid}/verfuegbarkeiten`
+| ADMIN, REFERENT
+| getReferentVeranstaltungen
+| GET
+| `/api/referenten/veranstaltungen`
+| ADMIN, REFERENT
+| deregisterTalkFromEvent
+| DELETE
+| `/api/referenten/veranstaltungen/{eventId}/vortraege/{talkId}/deregister`
+| ADMIN, REFERENT
+|===
+
+=== ProtokollResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getAllProtokollEntries
+| GET
+| `/api/admin/protokolle`
+| ADMIN
+|===
+
+=== TeilnehmerPrioritaetenResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getPrioritaeten
+| GET
+| `/api/teilnehmer/prios`
+| TEILNEHMER
+| updatePrioritaeten
+| POST
+| `/api/teilnehmer/prios`
+| TEILNEHMER
+|===
+
+=== TeilnehmerPlanResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getPlan
+| GET
+| `/api/teilnehmer/zuweisungen`
+| TEILNEHMER, ADMIN
+| getPrios
+| GET
+| `/api/teilnehmer/prios`
+| TEILNEHMER, ADMIN
+| savePriorities
+| POST
+| `/api/teilnehmer/prios`
+| TEILNEHMER, ADMIN
+| updateVerfuegbarkeit
+| POST
+| `/api/teilnehmer/veranstaltungen/{vid}/verfuegbarkeiten`
+| TEILNEHMER, ADMIN
+| getVerfuegbarkeiten
+| GET
+| `/api/teilnehmer/veranstaltungen/{vid}/verfuegbarkeiten`
+| TEILNEHMER, ADMIN
+| getMeineVeranstaltungen
+| GET
+| `/api/teilnehmer/veranstaltungen`
+| TEILNEHMER, ADMIN
+|===
+
+=== AdminResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getAllUsers
+| GET
+| `/api/admin/nutzer`
+| ADMIN
+| createUser
+| POST
+| `/api/admin/nutzer`
+| ADMIN
+| updateUser
+| PUT
+| `/api/admin/nutzer/{id}`
+| ADMIN
+| getUser
+| GET
+| `/api/admin/nutzer/{id}`
+| ADMIN
+| inviteUser
+| POST
+| `/api/admin/nutzer/{userId}/einladen/{eventId}`
+| ADMIN
+| importAdmins
+| POST
+| `/api/admin/admins/import`
+| ADMIN
+| deleteUser
+| DELETE
+| `/api/admin/nutzer/{id}`
+| ADMIN
+| updateVerfuegbarkeit
+| POST
+| `/api/admin/veranstaltungen/{vid}/verfuegbarkeiten`
+| ADMIN
+| getVerfuegbarkeiten
+| GET
+| `/api/admin/veranstaltungen/{vid}/verfuegbarkeiten`
+| ADMIN
+| importPrioritaeten
+| POST
+| `/api/admin/veranstaltungen/{vid}/prioritaeten/import`
+| ADMIN
+| getRaumVerfuegbarkeiten
+| GET
+| `/api/admin/veranstaltungen/{vid}/raeume/verfuegbarkeiten`
+| ADMIN
+| updateRaumVerfuegbarkeit
+| POST
+| `/api/admin/veranstaltungen/{vid}/raeume/verfuegbarkeiten`
+| ADMIN
+| updateTeilnehmerPrioritaet
+| PUT
+| `/api/admin/veranstaltungen/{vid}/teilnehmer/{tid}/priorities`
+| ADMIN
+|===
+
+=== VeranstaltungResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| update
+| PUT
+| `/api/veranstaltungen/{id}`
+| ADMIN
+| delete
+| DELETE
+| `/api/veranstaltungen/{id}`
+| ADMIN
+| create
+| POST
+| `/api/veranstaltungen`
+| ADMIN
+| getAll
+| GET
+| `/api/veranstaltungen`
+| ADMIN
+| getStats
+| GET
+| `/api/veranstaltungen/{vid}/stats`
+| ADMIN
+| getNutzer
+| GET
+| `/api/veranstaltungen/{vid}/nutzer`
+| ADMIN
+| getVortraege
+| GET
+| `/api/veranstaltungen/{vid}/vortraege`
+| ADMIN, TEILNEHMER
+| createVortrag
+| POST
+| `/api/veranstaltungen/{vid}/vortraege`
+| ADMIN
+| updateVortrag
+| PUT
+| `/api/veranstaltungen/{vid}/vortraege/{talkId}`
+| ADMIN
+| deleteVortrag
+| DELETE
+| `/api/veranstaltungen/{vid}/vortraege/{id}`
+| ADMIN
+| getGesamtplan
+| GET
+| `/api/veranstaltungen/{vid}/plan`
+| ADMIN
+| createNutzer
+| POST
+| `/api/veranstaltungen/{vid}/nutzer`
+| ADMIN
+| updateNutzer
+| PUT
+| `/api/veranstaltungen/{vid}/nutzer/{id}`
+| ADMIN
+| deleteNutzer
+| DELETE
+| `/api/veranstaltungen/{vid}/nutzer/{id}`
+| ADMIN
+| getSlots
+| GET
+| `/api/veranstaltungen/{vid}/slots`
+| ADMIN, TEILNEHMER, REFERENT
+| createSlot
+| POST
+| `/api/veranstaltungen/{vid}/slots`
+| ADMIN
+| updateSlot
+| PUT
+| `/api/veranstaltungen/{vid}/slots/{id}`
+| ADMIN
+| deleteSlot
+| DELETE
+| `/api/veranstaltungen/{vid}/slots/{id}`
+| ADMIN
+| importSlots
+| POST
+| `/api/veranstaltungen/{vid}/slots/import`
+| ADMIN
+| getOne
+| GET
+| `/api/veranstaltungen/{vid}`
+| ADMIN
+| getPlanQualitaet
+| GET
+| `/api/veranstaltungen/{vid}/plan/qualitaet`
+| ADMIN
+| starteOptimierung
+| POST
+| `/api/veranstaltungen/{vid}/optimierung/start`
+| ADMIN
+| importVeranstaltungen
+| POST
+| `/api/veranstaltungen/import`
+| ADMIN
+| importReferenten
+| POST
+| `/api/veranstaltungen/{vid}/referenten/import`
+| ADMIN
+| uploadTeilnehmerCsv
+| POST
+| `/api/veranstaltungen/{vid}/teilnehmer/import`
+| ADMIN
+| importVortraege
+| POST
+| `/api/veranstaltungen/{vid}/vortraege/import`
+| ADMIN
+| getDetaillierterPlan
+| GET
+| `/api/veranstaltungen/{vid}/plan/details`
+| ADMIN
+| getVeranstaltungsVortrag
+| GET
+| `/api/veranstaltungen/{vid}/vortraege/{tid}`
+| ADMIN
+| saveTeilnehmerPrioritaeten
+| PUT
+| `/api/veranstaltungen/{vid}/teilnehmer/{userId}/prioritaeten`
+| ADMIN
+|===
+
+=== GebaeudeResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| update
+| PUT
+| `/api/gebaeude/{id}`
+| ADMIN
+| delete
+| DELETE
+| `/api/gebaeude/{id}`
+| ADMIN
+| create
+| POST
+| `/api/gebaeude`
+| ADMIN
+| getAll
+| GET
+| `/api/gebaeude`
+| ADMIN
+| importGebaeude
+| POST
+| `/api/gebaeude/import`
+| ADMIN
+| createRaum
+| POST
+| `/api/gebaeude/{gid}/raeume`
+| ADMIN
+| updateRaum
+| PUT
+| `/api/gebaeude/{gid}/raeume/{rid}`
+| ADMIN
+| deleteRaum
+| DELETE
+| `/api/gebaeude/{gid}/raeume/{rid}`
+| ADMIN
+| importRaeume
+| POST
+| `/api/gebaeude/{gid}/raeume/import`
+| ADMIN
+| getOne
+| GET
+| `/api/gebaeude/{id}`
+| ADMIN
+| getRaeumeByGebaeude
+| GET
+| `/api/gebaeude/{gid}/raeume`
+| ADMIN
+|===
+
+=== SlotResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getAll
+| GET
+| `/api/slots`
+| ADMIN, REFERENT, TEILNEHMER
+|===
+
+=== AuthResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| forgotPassword
+| POST
+| `/api/auth/forgot-password`
+| PUBLIC
+| resetPassword
+| POST
+| `/api/auth/reset-password`
+| PUBLIC
+| login
+| POST
+| `/api/auth/login`
+| PUBLIC
+|===
 

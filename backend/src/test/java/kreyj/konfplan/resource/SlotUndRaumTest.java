@@ -10,6 +10,7 @@ import jakarta.transaction.Transactional;
 import kreyj.konfplan.dto.RaumBelegbarkeitDto;
 import kreyj.konfplan.persistence.EventSlot;
 import kreyj.konfplan.persistence.Gebaeude;
+import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Raum;
@@ -70,7 +71,7 @@ class SlotUndRaumTest {
 
         Gebaeude g = new Gebaeude();
         g.setName("G1");
-        g.setTyp(Gebaeude.Gebaeudetyp.EXTERN);
+        g.setTyp(Gebaeudetyp.EXTERN);
         g.setPostleitzahl("53567");
         g.setStrasse("Wallroth");
         g.setOrt("Buchholz");
@@ -78,11 +79,10 @@ class SlotUndRaumTest {
         v.addGebaeude(g);
         v.persist();
 
-        Raum r = new Raum();
-        r.setName("R1");
-        r.setKapazitaet(20);
-        r.setGebaeude(g);
+        Raum r = new Raum("R1", 20);
         r.persist();
+
+        g.addRaum(r);
         raumId = r.getId();
     }
 
@@ -163,8 +163,10 @@ class SlotUndRaumTest {
             s1.setDescription("Slot E1");
             s1.setStartTime(LocalDateTime.of(2025, 10, 1, 9, 0));
             s1.setEndTime(LocalDateTime.of(2025, 10, 1, 10, 0));
-            s1.setVeranstaltung(Veranstaltung.findById(vid));
             s1.persist();
+
+            Veranstaltung.<Veranstaltung>findById(vid).addSlot(s1);
+
             s1Id[0] = s1.getId();
 
             // Slot in Event 2 (zeitlich überschneidend)
@@ -172,8 +174,10 @@ class SlotUndRaumTest {
             s2.setDescription("Slot E2");
             s2.setStartTime(LocalDateTime.of(2025, 10, 1, 9, 30));
             s2.setEndTime(LocalDateTime.of(2025, 10, 1, 10, 30));
-            s2.setVeranstaltung(Veranstaltung.findById(otherVid));
             s2.persist();
+
+            Veranstaltung.<Veranstaltung>findById(otherVid).addSlot(s2);
+
 
             Raum r = Raum.findById(raumId);
 

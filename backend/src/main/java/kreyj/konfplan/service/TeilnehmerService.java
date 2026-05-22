@@ -41,7 +41,7 @@ public class TeilnehmerService {
     ProtokollService protokollService;
 
     public List<Teilnehmer> findAll(Long veranstaltungId) {
-        return Nutzer.find("role = 'TEILNEHMER' and veranstaltung.getId() = ?1", veranstaltungId).list();
+        return Nutzer.find("role = 'TEILNEHMER' and veranstaltung.id = ?1", veranstaltungId).list();
     }
 
     public Teilnehmer findById(Long id) {

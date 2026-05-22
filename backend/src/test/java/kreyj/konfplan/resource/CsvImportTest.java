@@ -51,7 +51,7 @@ class CsvImportTest {
         Gebaeude gebaeude = new Gebaeude();
 
         gebaeude.setName(gebaeudeName);
-        gebaeude.setTyp(Gebaeude.Gebaeudetyp.SCHULE);
+        gebaeude.setTyp(Gebaeudetyp.SCHULE);
         gebaeude.setStrasse("Alte Str.");
         gebaeude.setHausnummer("10");
         gebaeude.setPostleitzahl("12345");

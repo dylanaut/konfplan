@@ -23,7 +23,7 @@ public class Teilnehmer extends Nutzer {
     @CsvBindByName(column = "Gruppe")
     private String gruppe;
 
-    @OneToMany(mappedBy = "teilnehmer", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "teilnehmer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Prioritaet> prioritaeten = new ArrayList<>();
 
 
