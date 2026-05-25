@@ -345,7 +345,7 @@ public class JpaConventionRulesTest {
     static final ArchRule entity_toString_warning = ArchRuleDefinition
             .noClasses()
             .that().areAnnotatedWith(Entity.class)
-            .and().doNotHaveSimpleName("Verfuegbarkeit")
+            .and().doNotHaveSimpleName("NutzerVerfuegbarkeit")
             .should(new ArchCondition<>("toString() ohne Vorsicht überschreiben") {
                 @Override
                 public void check(JavaClass clazz, ConditionEvents events) {

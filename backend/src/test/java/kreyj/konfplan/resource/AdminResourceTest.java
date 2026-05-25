@@ -11,12 +11,12 @@ import kreyj.konfplan.dto.NutzerDto;
 import kreyj.konfplan.dto.VeranstaltungDto;
 import kreyj.konfplan.dto.VerfuegbarkeitDto;
 import kreyj.konfplan.persistence.Admin;
-import kreyj.konfplan.persistence.EventSlot;
+import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Verfuegbarkeit;
 import kreyj.konfplan.util.JwtHelper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -185,7 +185,7 @@ class AdminResourceTest extends ResourceTestBase {
             v.persist();
             vid[0] = v.getId();
 
-            EventSlot slot = new EventSlot();
+            Slot slot = new Slot();
             slot.setDescription("Slot 1");
             slot.setStartTime(LocalDateTime.now());
             slot.setEndTime(LocalDateTime.now().plusHours(1));
@@ -201,7 +201,7 @@ class AdminResourceTest extends ResourceTestBase {
             r.persist();
             rid[0] = r.getId();
 
-            Verfuegbarkeit vf = new Verfuegbarkeit(r, slot, true);
+            NutzerVerfuegbarkeit vf = new NutzerVerfuegbarkeit(r, slot, true);
 
             vf.persist();
         });
@@ -227,8 +227,8 @@ class AdminResourceTest extends ResourceTestBase {
         // Verifizieren
         QuarkusTransaction.requiringNew().run(() -> {
             Referent r = Referent.findById(rid[0]);
-            EventSlot s = EventSlot.findById(sid[0]);
-            Verfuegbarkeit updated = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", r, s).firstResult();
+            Slot s = Slot.findById(sid[0]);
+            NutzerVerfuegbarkeit updated = NutzerVerfuegbarkeit.find("nutzer = ?1 and slot = ?2", r, s).firstResult();
             assertThat(updated.isAvailable()).isFalse();
         });
     }

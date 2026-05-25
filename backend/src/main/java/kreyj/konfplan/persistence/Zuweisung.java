@@ -24,7 +24,7 @@ public class Zuweisung extends VersionedEntity {
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "eventslot_id")
-    private EventSlot slot;
+    private Slot slot;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "raum_id")

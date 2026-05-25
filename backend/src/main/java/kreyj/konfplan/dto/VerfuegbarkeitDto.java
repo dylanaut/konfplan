@@ -1,17 +1,14 @@
 package kreyj.konfplan.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 
 @RegisterForReflection
+@NoArgsConstructor
+@AllArgsConstructor
 public class VerfuegbarkeitDto {
     public Long userId;
     public Long slotId;
     public boolean isAvailable;
-
-    public VerfuegbarkeitDto() {}
-    public VerfuegbarkeitDto(Long userId, Long slotId, boolean isAvailable) {
-        this.userId = userId;
-        this.slotId = slotId;
-        this.isAvailable = isAvailable;
-    }
 }

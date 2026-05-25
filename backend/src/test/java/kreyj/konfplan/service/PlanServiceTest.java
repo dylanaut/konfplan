@@ -26,8 +26,8 @@ public class PlanServiceTest {
     public void setup() {
         // Clear existing data to ensure a clean slate for each test
         Planungsergebnis.deleteAll();
-        Verfuegbarkeit.deleteAll();
-        EventSlot.deleteAll();
+        NutzerVerfuegbarkeit.deleteAll();
+        Slot.deleteAll();
         Prioritaet.deleteAll();
         Vortrag.deleteAll();
         Veranstaltung.deleteAll();

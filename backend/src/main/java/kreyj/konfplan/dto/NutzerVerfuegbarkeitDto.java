@@ -4,16 +4,17 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.Set;
 
 @RegisterForReflection
 @NoArgsConstructor
 @AllArgsConstructor
-public class ZuweisungDto {
-    public Long id;
-    public String teilnehmerName;
-    public String vortragTitel;
-    @Getter
-    public String slotZeit;
-    public String raumName;
-    public String gebaeudeName;
+@Getter
+@Setter
+public class NutzerVerfuegbarkeitDto {
+    private Long nutzerId;
+    private Long veranstaltungId;
+    private Set<Long> verfuegbareSlotIds;
 }

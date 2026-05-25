@@ -14,22 +14,7 @@ import kreyj.konfplan.dto.VortragStatDto;
 import kreyj.konfplan.dto.csv.AdminCsvDto;
 import kreyj.konfplan.dto.csv.EventSlotCsvDto;
 import kreyj.konfplan.dto.csv.VortragCsvDto;
-import kreyj.konfplan.persistence.Admin;
-import kreyj.konfplan.persistence.EventSlot;
-import kreyj.konfplan.persistence.Gebaeude;
-import kreyj.konfplan.persistence.IdEntity;
-import kreyj.konfplan.persistence.Nutzer;
-import kreyj.konfplan.persistence.Pflichtvortrag;
-import kreyj.konfplan.persistence.Prioritaet;
-import kreyj.konfplan.persistence.ProtokollKategorie;
-import kreyj.konfplan.persistence.Raum;
-import kreyj.konfplan.persistence.RaumBelegbarkeit;
-import kreyj.konfplan.persistence.Referent;
-import kreyj.konfplan.persistence.Teilnehmer;
-import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Verfuegbarkeit;
-import kreyj.konfplan.persistence.Vortrag;
-import kreyj.konfplan.persistence.Wahlvortrag;
+import kreyj.konfplan.persistence.*;
 import kreyj.konfplan.resource.AdminResource;
 import org.jboss.logging.Logger;
 
@@ -37,15 +22,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -126,8 +103,6 @@ public class AdminService {
                     LOG.error("Unbekannte Veranstaltung zu id: " + veranstaltungId);
                 } else {
                     nutzer.addVeranstaltung(v);
-                    erstelleVerfuegbarkeitenFuerNutzerInVeranstaltung(nutzer, v);
-                    nutzer.persist();
                 }
             }
         }
@@ -198,7 +173,6 @@ public class AdminService {
                     LOG.error("Unbekannte Veranstaltung zu id: " + toAdd);
                 } else {
                     nutzer.addVeranstaltung(v);
-                    erstelleVerfuegbarkeitenFuerNutzerInVeranstaltung(nutzer, v);
                 }
             }
         }
@@ -209,14 +183,7 @@ public class AdminService {
             r.setOrganisation(dto.organisation);
             r.setSlogan(dto.slogan);
         } else if (nutzer instanceof Teilnehmer t) {
-            String oldGruppe = t.getGruppe();
-            String newGruppe = dto.gruppe;
-            t.setGruppe(newGruppe);
-
-            // Logic for group change
-            if (!Objects.equals(oldGruppe, newGruppe)) {
-                handleGroupChange(t, oldGruppe, newGruppe);
-            }
+            t.setGruppe(dto.gruppe);
         }
 
         nutzer.persistAndFlush();
@@ -271,7 +238,6 @@ public class AdminService {
 
         if (!nutzer.getVeranstaltungen().contains(event)) {
             nutzer.addVeranstaltung(event);
-            erstelleVerfuegbarkeitenFuerNutzerInVeranstaltung(nutzer, event);
             mailService.sendEinladungZuVeranstaltung(nutzer, event);
             LOG.info("Nutzer " + nutzer.getEmail() + " zu Veranstaltung " + event.getName() + " eingeladen.");
             protokollService.log(ProtokollKategorie.SECURITY, "Nutzer zu Event eingeladen", "Nutzer '" + nutzer.getEmail() + "' zu '" + event.getName() + "' eingeladen.", event.getId());
@@ -333,34 +299,38 @@ public class AdminService {
             }
 
             // Vorbedingungen prüfen
-            // 1. Raum darf für Slot nicht belegt sein
-//            if (isRaumGebucht(pv.getPflichtraum(), pv.getPflichtslot())) {
-//                throw new IllegalArgumentException("Raum '" + pv.getPflichtraum().getName() + "' ist im Slot '" + pv.getPflichtslot().getDescription() + "' bereits belegt.");
-//            }
+            if (isRaumGebucht(pv.getPflichtraum().getId(), pv.getPflichtslot().getId(), veranstaltungId)) {
+                throw new IllegalArgumentException("Raum '" + pv.getPflichtraum().getName() + "' ist im Slot '" + pv.getPflichtslot().getDescription() + "' bereits belegt.");
+            }
 
-            // 2. Jeder TN der Gruppe muss für Slot verfügbar sein
             List<Teilnehmer> teilnehmerDerGruppe = getActiveTeilnehmerByGruppe(pv.getPflichtgruppe(), veranstaltungId);
-            if (isTeilnehmerGebucht(teilnehmerDerGruppe, pv.getPflichtslot())) {
+            if (isTeilnehmerGebucht(teilnehmerDerGruppe, pv.getPflichtslot().getId(), veranstaltungId)) {
                 throw new IllegalArgumentException("Nicht alle Teilnehmer der Gruppe '" + pv.getPflichtgruppe() + "' sind im Slot '" + pv.getPflichtslot().getDescription() + "' verfügbar.");
             }
 
-            // 3. Raumkapazität muss ausreichen
             if (kapazitaetZuGering(pv.getPflichtraum(), pv.getPflichtgruppe(), veranstaltungId)) {
                 throw new IllegalArgumentException("Raumkapazität von '" + pv.getPflichtraum().getName() + "' reicht für die Gruppe '" + pv.getPflichtgruppe() + "' nicht aus.");
             }
 
-            // Effekte anwenden
-            pv.persist(); // Persistieren, um ID zu erhalten
+            pv.persist();
 
-            updateRaumAvailability(pv.getPflichtraum(), pv.getPflichtslot(), true, pv.getId());
-            updateTeilnehmerAvailability(teilnehmerDerGruppe, pv.getPflichtslot(), false, pv.getId());
+            // Update availabilities
+            RaumVerfuegbarkeit raumVerfuegbarkeit = RaumVerfuegbarkeit.find("raumId = ?1 and veranstaltungId = ?2", pv.getPflichtraum().getId(), veranstaltungId).firstResult();
+            if (raumVerfuegbarkeit != null) {
+                raumVerfuegbarkeit.removeSlot(pv.getPflichtslot().getId());
+            }
+
+            for (Teilnehmer teilnehmer : teilnehmerDerGruppe) {
+                NutzerVerfuegbarkeit nutzerVerfuegbarkeit = NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2", teilnehmer.getId(), veranstaltungId).firstResult();
+                if (nutzerVerfuegbarkeit != null) {
+                    nutzerVerfuegbarkeit.removeSlot(pv.getPflichtslot().getId());
+                }
+            }
         } else {
             vortrag.persist();
         }
 
-        veranstaltung.addVortrag(vortrag); // Assuming addVortrag handles duplicates or is idempotent
-        veranstaltung.persist(); // Persist veranstaltung to update relationship
-
+        veranstaltung.addVortrag(vortrag);
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag erstellt", "Vortrag '" + vortrag.getTitel() + "' (" + (vortrag.istPflicht() ? "Pflicht" : "Wahl") + ") erstellt.", vortrag.getId());
         return vortrag;
     }
@@ -430,7 +400,7 @@ public class AdminService {
             raeumeByName.get(r.getName()).put(r.getGebaeude(), r);
         }
 
-        Map<String, EventSlot> slotsByName = veranstaltung.getEventSlots().stream().collect(Collectors.toMap(EventSlot::getDescription, s -> s));
+        Map<String, Slot> slotsByName = veranstaltung.getSlots().stream().collect(Collectors.toMap(Slot::getDescription, s -> s));
 
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             CsvToBean<VortragCsvDto> csvToBean = new CsvToBeanBuilder<VortragCsvDto>(reader)
@@ -610,12 +580,12 @@ public class AdminService {
     }
 
 
-    public List<EventSlot> getAllEventSlots(Long veranstaltungId) {
-        return EventSlot.find("veranstaltung.id = ?1", veranstaltungId).list();
+    public List<Slot> getAllEventSlots(Long veranstaltungId) {
+        return Slot.find("veranstaltung.id = ?1", veranstaltungId).list();
     }
 
     @Transactional
-    public EventSlot createEventSlot(EventSlot slot, Long veranstaltungId) {
+    public Slot createEventSlot(Slot slot, Long veranstaltungId) {
         Veranstaltung v = Veranstaltung.findById(veranstaltungId);
         validateSlot(slot, v, null);
         slot.setVeranstaltung(v);
@@ -625,7 +595,9 @@ public class AdminService {
         // Create availability for all participants of the event
         for (Nutzer nutzer : v.getNutzer()) {
             if (nutzer instanceof Teilnehmer || nutzer instanceof Referent) {
-                new Verfuegbarkeit(nutzer, slot, true).persist();
+                NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2", nutzer.getId(), veranstaltungId)
+                        .firstResultOptional()
+                        .ifPresent(verfuegbarkeit -> verfuegbarkeit.addSlot(slot.getId()));
             }
         }
 
@@ -634,8 +606,8 @@ public class AdminService {
     }
 
     @Transactional
-    public EventSlot updateEventSlot(Long id, EventSlot updated, Long veranstaltungId) {
-        EventSlot entity = EventSlot.findById(id);
+    public Slot updateEventSlot(Long id, Slot updated, Long veranstaltungId) {
+        Slot entity = Slot.findById(id);
 
         if (null == entity) {
             return null;
@@ -655,7 +627,7 @@ public class AdminService {
         return entity;
     }
 
-    private void validateSlot(EventSlot slot, Veranstaltung v, Long excludeId) {
+    private void validateSlot(Slot slot, Veranstaltung v, Long excludeId) {
         if (v == null) {
             throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
         }
@@ -673,8 +645,8 @@ public class AdminService {
             throw new IllegalArgumentException("Der Slot darf nicht nach der Veranstaltung enden.");
         }
 
-        List<EventSlot> existing = EventSlot.find("veranstaltung = ?1", v).list();
-        for (EventSlot other : existing) {
+        List<Slot> existing = Slot.find("veranstaltung = ?1", v).list();
+        for (Slot other : existing) {
             if (other.getId().equals(excludeId)) {
                 continue;
             }
@@ -687,14 +659,18 @@ public class AdminService {
 
     @Transactional
     public boolean deleteEventSlot(Long id, Long veranstaltungId) {
-        EventSlot slot = EventSlot.findById(id);
+        Slot slot = Slot.findById(id);
         if (slot != null && slot.getVeranstaltung().getId().equals(veranstaltungId)) {
             String desc = slot.getDescription();
 
             // Delete all availabilities associated with this slot
-            Verfuegbarkeit.delete("slot.id = ?1", id);
+            NutzerVerfuegbarkeit.find("veranstaltungId", veranstaltungId).stream()
+                    .forEach(v -> ((NutzerVerfuegbarkeit) v).removeSlot(id));
+            RaumVerfuegbarkeit.find("veranstaltungId", veranstaltungId).stream()
+                    .forEach(v -> ((RaumVerfuegbarkeit) v).removeSlot(id));
 
-            long count = EventSlot.delete("id = ?1", id);
+
+            long count = Slot.delete("id = ?1", id);
             if (count > 0) {
                 protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot gelöscht", "Slot '" + desc + "' gelöscht.", id);
                 return true;
@@ -730,7 +706,7 @@ public class AdminService {
                     LOG.warn("Slot übersprungen: Beschreibung fehlt.");
                     continue;
                 }
-                EventSlot slot = new EventSlot();
+                Slot slot = new Slot();
                 slot.setDescription(dto.description);
                 try {
                     slot.setStartTime(LocalDateTime.parse(dto.day + " " + dto.startTime, DATE_FORMAT));
@@ -776,101 +752,16 @@ public class AdminService {
         entity.setTitel(updated.titel);
         entity.setInhalt(updated.inhalt);
 
-        if (entity instanceof Pflichtvortrag oldPv && updated.istPflicht) {
-            // Store old values for comparison
-            String oldGruppe = oldPv.getPflichtgruppe();
-            EventSlot oldSlot = oldPv.getPflichtslot();
-            Raum oldRaum = oldPv.getPflichtraum();
-
-            // Update persistence with new values
-            oldPv.setPflichtgruppe(updated.pflichtgruppe);
-            oldPv.setPflichtslot(EventSlot.findById(updated.pflichtSlotId));
-            oldPv.setPflichtraum(Raum.findById(updated.pflichtRaumId));
-
-            // Use the updated persistence for validations
-            if (oldPv.getPflichtslot() == null || oldPv.getPflichtraum() == null || oldPv.getPflichtgruppe() == null || oldPv.getPflichtgruppe().isBlank()) {
-                throw new IllegalArgumentException("Für Pflichtvorträge müssen Slot, Raum und Gruppe angegeben werden.");
-            }
-
-            // Use Case 1: Slot ändern
-            if (!Objects.equals(oldSlot, oldPv.getPflichtslot())) {
-                // Vorbedingungen:
-                // * alle TN der Gruppe müssen im neuen Slot verfügbar sein
-                List<Teilnehmer> teilnehmerDerGruppe = getActiveTeilnehmerByGruppe(oldPv.getPflichtgruppe(), veranstaltungId);
-                if (isTeilnehmerGebucht(teilnehmerDerGruppe, oldPv.getPflichtslot())) {
-                    throw new IllegalArgumentException("Nicht alle Teilnehmer der Gruppe '" + oldPv.getPflichtgruppe() + "' sind im neuen Slot '" + oldPv.getPflichtslot().getDescription() + "' verfügbar.");
-                }
-                // * Raum ist im neuen Slot belegbar
-                if (isRaumGebucht(oldPv.getPflichtraum(), oldPv.getPflichtslot())) {
-                    throw new IllegalArgumentException("Raum '" + oldPv.getPflichtraum().getName() + "' ist im neuen Slot '" + oldPv.getPflichtslot().getDescription() + "' bereits belegt.");
-                }
-
-                // Effekte:
-                // * Raum wird für alten Slot wieder belegbar
-                updateRaumAvailability(oldRaum, oldSlot, false, oldPv.getId());
-                // * alle TN der Gruppe sind im alten Slot wieder verfügbar
-                updateTeilnehmerAvailability(teilnehmerDerGruppe, oldSlot, true, oldPv.getId());
-                // * Raum ist für neuen Slot belegt
-                updateRaumAvailability(oldPv.getPflichtraum(), oldPv.getPflichtslot(), true, oldPv.getId());
-                // * alle TN der Gruppe sind im neuen Slot nicht verfügbar
-                updateTeilnehmerAvailability(teilnehmerDerGruppe, oldPv.getPflichtslot(), false, oldPv.getId());
-            }
-
-            // Use Case 2: Raum ändern
-            if (!Objects.equals(oldRaum, oldPv.getPflichtraum())) {
-                // Vorbedingungen:
-                // * Raum ist im neuen Slot belegbar
-                if (isRaumGebucht(oldPv.getPflichtraum(), oldPv.getPflichtslot())) {
-                    throw new IllegalArgumentException("Neuer Raum '" + oldPv.getPflichtraum().getName() + "' ist im Slot '" + oldPv.getPflichtslot().getDescription() + "' bereits belegt.");
-                }
-                // * Raumkapazität reicht für Anzahl der Teilnehmer aus
-                if (kapazitaetZuGering(oldPv.getPflichtraum(), oldPv.getPflichtgruppe(), veranstaltungId)) {
-                    throw new IllegalArgumentException("Raumkapazität von '" + oldPv.getPflichtraum().getName() + "' reicht für die Gruppe '" + oldPv.getPflichtgruppe() + "' nicht aus.");
-                }
-
-                // Effekte:
-                // * Alter Raum wird für Slot wieder belegbar
-                updateRaumAvailability(oldRaum, oldPv.getPflichtslot(), false, oldPv.getId());
-                // * Neuer Raum ist für Slot belegt
-                updateRaumAvailability(oldPv.getPflichtraum(), oldPv.getPflichtslot(), true, oldPv.getId());
-            }
-
-            // Use Case 3: Gruppe ändern
-            if (!Objects.equals(oldGruppe, oldPv.getPflichtgruppe())) {
-                // Vorbedingungen:
-                // * Raumkapazität für Slot reicht für Anzahl der Teilnehmer aus (für neue Gruppe)
-                if (kapazitaetZuGering(oldPv.getPflichtraum(), oldPv.getPflichtgruppe(), veranstaltungId)) {
-                    throw new IllegalArgumentException("Raumkapazität von '" + oldPv.getPflichtraum().getName() + "' reicht für die neue Gruppe '" + oldPv.getPflichtgruppe() + "' nicht aus.");
-                }
-                // * alle TN der neuen Gruppe müssen im Slot verfügbar sein
-                List<Teilnehmer> neueTeilnehmerDerGruppe = getActiveTeilnehmerByGruppe(oldPv.getPflichtgruppe(), veranstaltungId);
-                if (isTeilnehmerGebucht(neueTeilnehmerDerGruppe, oldPv.getPflichtslot())) {
-                    throw new IllegalArgumentException("Nicht alle Teilnehmer der neuen Gruppe '" + oldPv.getPflichtgruppe() + "' sind im Slot '" + oldPv.getPflichtslot().getDescription() + "' verfügbar.");
-                }
-
-                // Effekte:
-                // * alle TN der alten Gruppe sind im Slot wieder verfügbar
-                List<Teilnehmer> alteTeilnehmerDerGruppe = getActiveTeilnehmerByGruppe(oldPv.getPflichtgruppe(), veranstaltungId);
-                updateTeilnehmerAvailability(alteTeilnehmerDerGruppe, oldPv.getPflichtslot(), true, oldPv.getId());
-                // * alle TN der neuen Gruppe sind im Slot nicht mehr verfügbar
-                updateTeilnehmerAvailability(neueTeilnehmerDerGruppe, oldPv.getPflichtslot(), false, oldPv.getId());
-            }
-
-            // If no specific change, but still a Pflichtvortrag, ensure consistency
-            // This handles cases where only titel/inhalt change, but also ensures initial state if no change was detected above
-            if (Objects.equals(oldSlot, oldPv.getPflichtslot()) && Objects.equals(oldRaum, oldPv.getPflichtraum()) && Objects.equals(oldGruppe, oldPv.getPflichtgruppe())) {
-                // No change in PV specific fields, but ensure availability is set if it wasn't before
-                List<Teilnehmer> teilnehmerDerGruppe = getActiveTeilnehmerByGruppe(oldPv.getPflichtgruppe(), veranstaltungId);
-                updateRaumAvailability(oldPv.getPflichtraum(), oldPv.getPflichtslot(), true, oldPv.getId());
-                updateTeilnehmerAvailability(teilnehmerDerGruppe, oldPv.getPflichtslot(), false, oldPv.getId());
-            }
-
+        if (entity instanceof Pflichtvortrag pv && updated.istPflicht) {
+            pv.setPflichtgruppe(updated.pflichtgruppe);
+            pv.setPflichtslot(Slot.findById(updated.pflichtSlotId));
+            pv.setPflichtraum(Raum.findById(updated.pflichtRaumId));
         } else if (entity instanceof Wahlvortrag wv && !updated.istPflicht) {
             wv.setWiederholbar(updated.wiederholbar);
             wv.setMaxWiederholungen(updated.maxWiederholungen);
             wv.clearVerfuegbareSlots();
             updated.verfuegbareSlotIds.forEach(slotId -> {
-                EventSlot slot = EventSlot.findById(slotId);
+                Slot slot = Slot.findById(slotId);
                 if (slot != null && slot.getVeranstaltung().getId().equals(veranstaltungId)) {
                     wv.addVerfuegbarenSlot(slot);
                 }
@@ -889,12 +780,19 @@ public class AdminService {
 
         String titel = entity.getTitel();
         if (entity instanceof Pflichtvortrag pv) {
-            // Effekte:
-            // * alle Teilnehmer der Gruppe sind für Slot wieder verfügbar
+            // Restore availabilities
+            RaumVerfuegbarkeit raumVerfuegbarkeit = RaumVerfuegbarkeit.find("raumId = ?1 and veranstaltungId = ?2", pv.getPflichtraum().getId(), veranstaltungId).firstResult();
+            if (raumVerfuegbarkeit != null) {
+                raumVerfuegbarkeit.addSlot(pv.getPflichtslot().getId());
+            }
+
             List<Teilnehmer> teilnehmerDerGruppe = getActiveTeilnehmerByGruppe(pv.getPflichtgruppe(), veranstaltungId);
-            updateTeilnehmerAvailability(teilnehmerDerGruppe, pv.getPflichtslot(), true, pv.getId()); // pv.getId() als excludeId
-            // * Raum ist in Slot wieder belegbar
-            updateRaumAvailability(pv.getPflichtraum(), pv.getPflichtslot(), false, pv.getId()); // pv.getId() als excludeId
+            for (Teilnehmer teilnehmer : teilnehmerDerGruppe) {
+                NutzerVerfuegbarkeit nutzerVerfuegbarkeit = NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2", teilnehmer.getId(), veranstaltungId).firstResult();
+                if (nutzerVerfuegbarkeit != null) {
+                    nutzerVerfuegbarkeit.addSlot(pv.getPflichtslot().getId());
+                }
+            }
         }
 
         boolean deleted = Vortrag.deleteById(id);
@@ -918,206 +816,49 @@ public class AdminService {
     // #################################################################################################################
 
     private void erstelleVerfuegbarkeitenFuerNutzerInVeranstaltung(Nutzer nutzer, Veranstaltung veranstaltung) {
-        Set<EventSlot> slots = veranstaltung.getEventSlots();
-        if (slots == null || slots.isEmpty()) {
-            LOG.infof("Keine Slots für Veranstaltung '%s' gefunden. Es werden keine Verfügbarkeiten angelegt.", veranstaltung.getName());
-            return;
-        }
-
-        for (EventSlot slot : slots) {
-            // Prüfen, ob bereits eine Verfügbarkeit existiert
-            long count = Verfuegbarkeit.count("nutzer = ?1 and slot = ?2", nutzer, slot);
-            if (count == 0) {
-                new Verfuegbarkeit(nutzer, slot, true).persist();
-            }
-        }
+        Set<Long> slotIds = veranstaltung.getSlots().stream().map(IdEntity::getId).collect(Collectors.toSet());
+        NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2", nutzer.getId(), veranstaltung.getId())
+                .firstResultOptional()
+                .orElseGet(() -> {
+                    NutzerVerfuegbarkeit neueVerfuegbarkeit = new NutzerVerfuegbarkeit(nutzer.getId(), veranstaltung.getId(), slotIds);
+                    neueVerfuegbarkeit.persist();
+                    return neueVerfuegbarkeit;
+                });
     }
 
-    private void handleGroupChange(Teilnehmer teilnehmer, String oldGruppe, String newGruppe) {
-        // Reset availability for old group's mandatory lectures
-        if (oldGruppe != null && !oldGruppe.isEmpty()) {
-            List<Pflichtvortrag> oldPflichtvortraege = Pflichtvortrag.find("pflichtgruppe", oldGruppe).list();
-            for (Pflichtvortrag pv : oldPflichtvortraege) {
-                if (pv.getPflichtslot() != null) {
-                    updateTeilnehmerAvailability(List.of(teilnehmer), pv.getPflichtslot(), true, pv.getId());
-                }
-            }
-        }
-
-        // Set unavailability for new group's mandatory lectures
-        if (newGruppe != null && !newGruppe.isEmpty()) {
-            List<Pflichtvortrag> newPflichtvortraege = Pflichtvortrag.find("pflichtgruppe", newGruppe).list();
-            for (Pflichtvortrag pv : newPflichtvortraege) {
-                if (pv.getPflichtslot() != null) {
-                    updateTeilnehmerAvailability(List.of(teilnehmer), pv.getPflichtslot(), false, pv.getId());
-                }
-            }
-        }
-    }
-
-    /**
-     * Holt alle aktiven Teilnehmer einer bestimmten Gruppe für eine Veranstaltung.
-     *
-     * @param gruppe          Die Gruppe der Teilnehmer.
-     * @param veranstaltungId Die ID der Veranstaltung.
-     * @return Eine Liste von Teilnehmern.
-     */
-    private List<Teilnehmer> getActiveTeilnehmerByGruppe(String gruppe, Long veranstaltungId) {
-        return Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE t.gruppe = ?1 AND v.id = ?2 AND t.isActive = true",
-                        gruppe, veranstaltungId)
-                .list();
-    }
-
-    /**
-     * Prüft, ob alle übergebenen Teilnehmer im gegebenen Slot verfügbar sind (isAvailable = true).
-     *
-     * @param teilnehmer Die Liste der zu prüfenden Teilnehmer.
-     * @param slot       Der EventSlot.
-     * @return True, wenn alle verfügbar sind, sonst False.
-     */
-    private boolean isTeilnehmerGebucht(List<Teilnehmer> teilnehmer, EventSlot slot) {
+    private boolean isTeilnehmerGebucht(List<Teilnehmer> teilnehmer, Long slotId, Long veranstaltungId) {
         if (teilnehmer.isEmpty()) {
-            return false; // Keine Teilnehmer zu prüfen, also "verfügbar"
+            return false;
         }
-        for (Teilnehmer tn : teilnehmer) {
-            Optional<Verfuegbarkeit> verfuegbarkeit = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", tn, slot).firstResultOptional();
-            if (verfuegbarkeit.isPresent() && !verfuegbarkeit.get().isAvailable()) {
-                LOG.info(String.format("Teilnehmer %s ist in Slot %s nicht verfügbar.", tn.getEmail(), slot.getDescription()));
-                return true; // Mindestens ein Teilnehmer ist nicht verfügbar
+        List<Long> teilnehmerIds = teilnehmer.stream().map(IdEntity::getId).toList();
+        List<NutzerVerfuegbarkeit> verfuegbarkeiten = NutzerVerfuegbarkeit.find("nutzerId in ?1 and veranstaltungId = ?2", teilnehmerIds, veranstaltungId).list();
+
+        for (NutzerVerfuegbarkeit verfuegbarkeit : verfuegbarkeiten) {
+            if (!verfuegbarkeit.getVerfuegbareSlotIds().contains(slotId)) {
+                return true; // At least one participant is not available
             }
         }
         return false;
     }
 
-    /**
-     * Aktualisiert die Verfügbarkeit der Teilnehmer für einen Slot.
-     * Wenn 'available' true ist, wird die Verfügbarkeit nur gesetzt, wenn keine andere PV sie belegt.
-     *
-     * @param teilnehmer              Die Liste der Teilnehmer.
-     * @param slot                    Der EventSlot.
-     * @param available               Der gewünschte Verfügbarkeitsstatus.
-     * @param excludePflichtvortragId Die ID des aktuellen Pflichtvortrags, der bei der Prüfung anderer PVs ignoriert werden soll.
-     */
-    private void updateTeilnehmerAvailability(List<Teilnehmer> teilnehmer, EventSlot slot, boolean available, Long excludePflichtvortragId) {
-        for (Teilnehmer tn : teilnehmer) {
-            Verfuegbarkeit verfuegbarkeit = (Verfuegbarkeit) Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", tn, slot)
-                    .firstResultOptional()
-                    .orElseGet(() -> new Verfuegbarkeit(tn, slot, available));
-
-            if (available) {
-                // Bedingte Freigabe: Nur freigeben, wenn keine andere PV sie belegt
-                List<Pflichtvortrag> otherPvs = getOtherPflichtvortraegeForTeilnehmerGroupAndSlot(tn.getGruppe(), slot, excludePflichtvortragId);
-                if (otherPvs.isEmpty()) {
-                    verfuegbarkeit.setAvailable(true);
-                }
-            } else {
-                // Belegung: Immer auf false setzen
-                verfuegbarkeit.setAvailable(false);
-            }
-            verfuegbarkeit.persist();
-        }
-    }
-
-    /**
-     * Prüft, ob der Raum im gegebenen Slot nicht belegt ist (isBelegt = false).
-     *
-     * @param raum Der Raum.
-     * @param slot Der EventSlot.
-     * @return True, wenn der Raum verfügbar ist, sonst False.
-     */
-    private boolean isRaumGebucht(Raum raum, EventSlot slot) {
-        Optional<RaumBelegbarkeit> raumBelegbarkeit = RaumBelegbarkeit.find("raum = ?1 and slot = ?2", raum, slot).firstResultOptional();
-        return raumBelegbarkeit.isPresent() && raumBelegbarkeit.get().isBelegt();
-    }
-
-    /**
-     * Aktualisiert die Belegbarkeit eines Raums für einen Slot.
-     * Wenn 'belegt' false ist, wird die Belegbarkeit nur freigegeben, wenn keine andere PV ihn belegt.
-     *
-     * @param raum                    Der Raum.
-     * @param slot                    Der EventSlot.
-     * @param belegt                  Der gewünschte Belegungsstatus.
-     * @param excludePflichtvortragId Die ID des aktuellen Pflichtvortrags, der bei der Prüfung anderer PVs ignoriert werden soll.
-     */
-    private void updateRaumAvailability(Raum raum, EventSlot slot, boolean belegt, Long excludePflichtvortragId) {
-        RaumBelegbarkeit raumBelegbarkeit = (RaumBelegbarkeit) RaumBelegbarkeit.find("raum = ?1 and slot = ?2", raum, slot)
+    private boolean isRaumGebucht(Long raumId, Long slotId, Long veranstaltungId) {
+        return RaumVerfuegbarkeit.find("raumId = ?1 and veranstaltungId = ?2", raumId, veranstaltungId)
                 .firstResultOptional()
-                .orElseGet(() -> new RaumBelegbarkeit(raum, slot, true));
-
-        if (!belegt) {
-            // Bedingte Freigabe: Nur freigeben, wenn keine andere PV diesen Raum im Slot belegt
-            List<Pflichtvortrag> otherPvs = getOtherPflichtvortraegeForRaumAndSlot(raum, slot, excludePflichtvortragId);
-            if (otherPvs.isEmpty()) {
-                raumBelegbarkeit.setBelegt(false);
-            }
-        } else {
-            // Belegung: Immer auf true setzen
-            raumBelegbarkeit.setBelegt(true);
-        }
-        raumBelegbarkeit.persist();
+                .map(rv -> !((RaumVerfuegbarkeit) rv).getVerfuegbareSlotIds().contains(slotId))
+                .orElse(false); // If no entry exists, the room is considered available
     }
 
-    /**
-     * Prüft, ob die Kapazität des Raums für die Anzahl der aktiven Teilnehmer der Gruppe ausreicht.
-     *
-     * @param raum            Der Raum.
-     * @param gruppe          Die Gruppe der Teilnehmer.
-     * @param veranstaltungId Die ID der Veranstaltung.
-     * @return True, wenn die Kapazität ausreicht, sonst False.
-     */
     private boolean kapazitaetZuGering(Raum raum, String gruppe, Long veranstaltungId) {
         if (raum == null || raum.getKapazitaet() == null) {
-            // Wenn keine Kapazität definiert ist, gehen wir davon aus, dass sie ausreicht.
             return false;
         }
         long activeTeilnehmerCount = getActiveTeilnehmerByGruppe(gruppe, veranstaltungId).size();
         return raum.getKapazitaet() < activeTeilnehmerCount;
     }
 
-    /**
-     * Findet andere Pflichtvorträge, die dieselbe Gruppe und denselben Slot betreffen.
-     * Wird für die bedingte Freigabe von Verfügbarkeiten benötigt.
-     *
-     * @param gruppe                  Die Gruppe der Teilnehmer.
-     * @param slot                    Der EventSlot.
-     * @param excludePflichtvortragId Die ID des Pflichtvortrags, der bei der Suche ignoriert werden soll (z.B. der gerade gelöschte/geänderte PV).
-     * @return Eine Liste von Pflichtvorträgen.
-     */
-    private List<Pflichtvortrag> getOtherPflichtvortraegeForTeilnehmerGroupAndSlot(String gruppe, EventSlot slot, Long excludePflichtvortragId) {
-        if (gruppe == null || slot == null) {
-            return Collections.emptyList();
-        }
-
-        String query = "SELECT pv FROM Pflichtvortrag pv WHERE pv.pflichtgruppe = ?1 AND pv.pflichtslot = ?2";
-
-        if (excludePflichtvortragId != null) {
-            query += " AND pv.id != ?3";
-            return Pflichtvortrag.find(query, gruppe, slot, excludePflichtvortragId).list();
-        } else {
-            return Pflichtvortrag.find(query, gruppe, slot).list();
-        }
-    }
-
-    /**
-     * Findet andere Pflichtvorträge, die denselben Raum und denselben Slot betreffen.
-     * Wird für die bedingte Freigabe von Belegbarkeiten benötigt.
-     *
-     * @param raum                    Der Raum.
-     * @param slot                    Der EventSlot.
-     * @param excludePflichtvortragId Die ID des Pflichtvortrags, der bei der Suche ignoriert werden soll (z.B. der gerade gelöschte/geänderte PV).
-     * @return Eine Liste von Pflichtvorträgen.
-     */
-    private List<Pflichtvortrag> getOtherPflichtvortraegeForRaumAndSlot(Raum raum, EventSlot slot, Long excludePflichtvortragId) {
-        if (raum == null || slot == null) {
-            return Collections.emptyList();
-        }
-        // Using JPQL for more robust querying with null excludeId handling
-        String query = "SELECT pv FROM Pflichtvortrag pv WHERE pv.pflichtraum = ?1 AND pv.pflichtslot = ?2";
-        if (excludePflichtvortragId != null) {
-            query += " AND pv.id != ?3";
-            return Pflichtvortrag.find(query, raum, slot, excludePflichtvortragId).list();
-        } else {
-            return Pflichtvortrag.find(query, raum, slot).list();
-        }
+    private List<Teilnehmer> getActiveTeilnehmerByGruppe(String gruppe, Long veranstaltungId) {
+        return Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE t.gruppe = ?1 AND v.id = ?2 AND t.isActive = true",
+                        gruppe, veranstaltungId)
+                .list();
     }
 }

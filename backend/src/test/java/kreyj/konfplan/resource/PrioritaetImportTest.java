@@ -29,10 +29,10 @@ public class PrioritaetImportTest {
     void setup() {
         Zuweisung.deleteAll();
         Prioritaet.deleteAll();
-        Verfuegbarkeit.deleteAll();
+        NutzerVerfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
-        RaumBelegbarkeit.deleteAll();
-        EventSlot.deleteAll();
+        RaumVerfuegbarkeit.deleteAll();
+        Slot.deleteAll();
         Veranstaltung.deleteAll();
         Nutzer.deleteAll();
         Raum.deleteAll();

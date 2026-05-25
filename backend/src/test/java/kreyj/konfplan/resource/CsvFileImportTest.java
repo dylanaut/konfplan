@@ -6,16 +6,16 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Admin;
-import kreyj.konfplan.persistence.EventSlot;
+import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Raum;
-import kreyj.konfplan.persistence.RaumBelegbarkeit;
+import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Verfuegbarkeit;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.persistence.Zuweisung;
@@ -45,13 +45,13 @@ class CsvFileImportTest {
     @Transactional
     void setupTransactional() {
         Zuweisung.deleteAll();
-        Verfuegbarkeit.deleteAll();
-        RaumBelegbarkeit.deleteAll();
+        NutzerVerfuegbarkeit.deleteAll();
+        RaumVerfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
         Nutzer.deleteAll();
         Raum.deleteAll();
         Gebaeude.deleteAll();
-        EventSlot.deleteAll();
+        Slot.deleteAll();
         Veranstaltung.deleteAll();
 
         Admin admin = new Admin();
@@ -142,7 +142,7 @@ class CsvFileImportTest {
                 .then()
                 .statusCode(OK.getStatusCode());
 
-        assertThat(12).isEqualTo(EventSlot.count());
+        assertThat(12).isEqualTo(Slot.count());
     }
 
     @Test

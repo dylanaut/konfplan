@@ -23,18 +23,11 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 import kreyj.konfplan.dto.EmailChangeRequestDto;
 import kreyj.konfplan.dto.NutzerDto;
+import kreyj.konfplan.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.dto.ReferentVeranstaltungDto;
 import kreyj.konfplan.dto.ReferentVortragDto;
-import kreyj.konfplan.dto.VerfuegbarkeitDto;
 import kreyj.konfplan.dto.VortragDto;
-import kreyj.konfplan.persistence.EventSlot;
-import kreyj.konfplan.persistence.Nutzer;
-import kreyj.konfplan.persistence.Pflichtvortrag;
-import kreyj.konfplan.persistence.Referent;
-import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Verfuegbarkeit;
-import kreyj.konfplan.persistence.Vortrag;
-import kreyj.konfplan.persistence.Wahlvortrag;
+import kreyj.konfplan.persistence.*;
 import kreyj.konfplan.service.MailService;
 import kreyj.konfplan.service.PlanService;
 import kreyj.konfplan.service.ReferentService;
@@ -256,27 +249,24 @@ public class ReferentResource {
     @GET
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Operation(summary = "Verfügbarkeiten für eine Veranstaltung abrufen", description = "Ruft die persönlichen Verfügbarkeiten des Referenten für eine Veranstaltung ab.")
-    public List<VerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
+    public NutzerVerfuegbarkeitDto getVerfuegbarkeiten(@PathParam("vid") Long vid) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (!(nutzer instanceof Referent)) {
             throw new WebApplicationException("Nutzer ist kein Referent", FORBIDDEN.getStatusCode());
         }
 
-        return Verfuegbarkeit.find("nutzer = ?1 and slot.veranstaltung.id = ?2", nutzer, vid).stream()
-                .map(v -> {
-                    Verfuegbarkeit vf = (Verfuegbarkeit) v;
-                    return new VerfuegbarkeitDto(vf.getNutzer().getId(), vf.getSlot().getId(), vf.isAvailable());
-                })
-                .collect(Collectors.toList());
+        return NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>find("nutzerId = ?1 and veranstaltungId = ?2", nutzer.getId(), vid).firstResultOptional()
+                .map(v -> new NutzerVerfuegbarkeitDto(v.getNutzerId(), v.getVeranstaltungId(), v.getVerfuegbareSlotIds()))
+                .orElseThrow(() -> new WebApplicationException("Keine Verfügbarkeit für diesen Nutzer und diese Veranstaltung gefunden.", Response.Status.NOT_FOUND));
     }
 
     @POST
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Transactional
     @Operation(summary = "Verfügbarkeit für einen Slot aktualisieren", description = "Aktualisiert die persönliche Verfügbarkeit des Referenten für einen bestimmten Slot.")
-    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten", required = true) VerfuegbarkeitDto dto) {
+    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten", required = true) NutzerVerfuegbarkeitDto dto) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
-        if (!(nutzer instanceof Referent)) {
+        if (!(nutzer instanceof Referent) || !nutzer.getId().equals(dto.getNutzerId())) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -291,20 +281,15 @@ public class ReferentResource {
                     .entity("Die Deadline für Referenten ist bereits abgelaufen.").build();
         }
 
-        EventSlot slot = EventSlot.findById(dto.slotId);
-        if (slot == null || !slot.getVeranstaltung().getId().equals(vid)) {
-            return Response.status(Response.Status.BAD_REQUEST).build();
-        }
-
-        Verfuegbarkeit v = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", nutzer, slot).firstResult();
+        NutzerVerfuegbarkeit v = NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2", nutzer.getId(), vid).firstResult();
         if (v == null) {
-            v = new Verfuegbarkeit(nutzer, slot, dto.isAvailable);
-            v.setNutzer(nutzer);
-            v.setSlot(slot);
-        } else {
-            v.setAvailable(dto.isAvailable);
+            return Response.status(Response.Status.NOT_FOUND).entity("Verfügbarkeitseintrag nicht gefunden.").build();
         }
+        
+        v.getVerfuegbareSlotIds().clear();
+        v.getVerfuegbareSlotIds().addAll(dto.getVerfuegbareSlotIds());
         v.persist();
+
         return Response.ok().build();
     }
 
@@ -345,7 +330,7 @@ public class ReferentResource {
             dto.wiederholbar = wahlvortrag.isWiederholbar();
             dto.maxWiederholungen = wahlvortrag.getMaxWiederholungen();
             dto.verfuegbareSlotIds = wahlvortrag.getVerfuegbareSlots().stream()
-                    .map(s -> s.getId())
+                    .map(IdEntity::getId)
                     .collect(Collectors.toList());
         } else if (v instanceof Pflichtvortrag pflichtvortrag) {
             dto.istPflicht = true;

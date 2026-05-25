@@ -7,16 +7,16 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.dto.RaumBelegbarkeitDto;
-import kreyj.konfplan.persistence.EventSlot;
+import kreyj.konfplan.dto.RaumVerfuegbarkeitDto;
+import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Raum;
-import kreyj.konfplan.persistence.RaumBelegbarkeit;
+import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
+import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Verfuegbarkeit;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.Zuweisung;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,11 +43,11 @@ class SlotUndRaumTest {
     @Transactional
     void setup() {
         Zuweisung.deleteAll();
-        RaumBelegbarkeit.deleteAll();
-        Verfuegbarkeit.deleteAll();
+        RaumVerfuegbarkeit.deleteAll();
+        NutzerVerfuegbarkeit.deleteAll();
         Prioritaet.deleteAll();
         Vortrag.deleteAll();
-        EventSlot.deleteAll();
+        Slot.deleteAll();
         Nutzer.deleteAll();
         Raum.deleteAll();
         Gebaeude.deleteAll();
@@ -159,7 +159,7 @@ class SlotUndRaumTest {
         // Daten in einer eigenen Transaktion vorbereiten und committen
         QuarkusTransaction.requiringNew().run(() -> {
             // Slot in Event 1
-            EventSlot s1 = new EventSlot();
+            Slot s1 = new Slot();
             s1.setDescription("Slot E1");
             s1.setStartTime(LocalDateTime.of(2025, 10, 1, 9, 0));
             s1.setEndTime(LocalDateTime.of(2025, 10, 1, 10, 0));
@@ -170,7 +170,7 @@ class SlotUndRaumTest {
             s1Id[0] = s1.getId();
 
             // Slot in Event 2 (zeitlich überschneidend)
-            EventSlot s2 = new EventSlot();
+            Slot s2 = new Slot();
             s2.setDescription("Slot E2");
             s2.setStartTime(LocalDateTime.of(2025, 10, 1, 9, 30));
             s2.setEndTime(LocalDateTime.of(2025, 10, 1, 10, 30));
@@ -182,19 +182,19 @@ class SlotUndRaumTest {
             Raum r = Raum.findById(raumId);
 
             // Raum in Event 2 als belegt markieren
-            RaumBelegbarkeit rv2 = new RaumBelegbarkeit(r, s2, true);
+            RaumVerfuegbarkeit rv2 = new RaumVerfuegbarkeit(r, s2, true);
 
             rv2.persist();
         });
 
         // Abfrage für Event 1: Raum sollte für s1 als "blocked" markiert sein
-        List<RaumBelegbarkeitDto> dtos = given()
+        List<RaumVerfuegbarkeitDto> dtos = given()
                 .when().get("/api/admin/veranstaltungen/{vid}/raeume/verfuegbarkeiten", vid)
                 .then()
                 .statusCode(OK.getStatusCode())
-                .extract().body().jsonPath().getList(".", RaumBelegbarkeitDto.class);
+                .extract().body().jsonPath().getList(".", RaumVerfuegbarkeitDto.class);
 
-        RaumBelegbarkeitDto target = dtos.stream()
+        RaumVerfuegbarkeitDto target = dtos.stream()
                 .filter(d -> d.slotId.equals(s1Id[0]))
                 .findFirst().orElseThrow();
 

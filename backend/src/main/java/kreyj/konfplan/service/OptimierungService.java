@@ -11,7 +11,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonException;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.dto.SolverConfigDto;
-import kreyj.konfplan.persistence.EventSlot;
+import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Planungsergebnis;
@@ -82,7 +82,7 @@ public class OptimierungService {
             List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
             List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
             List<Wahlvortrag> wahlvortraege = Wahlvortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
-            List<EventSlot> slots = EventSlot.find("veranstaltung.id = ?1", veranstaltungId).list();
+            List<Slot> slots = Slot.find("veranstaltung.id = ?1", veranstaltungId).list();
             List<Raum> raeume = Raum.listAll();
 
             if (slots.isEmpty() || teilnehmer.isEmpty() || wahlvortraege.isEmpty()) {
@@ -178,7 +178,7 @@ public class OptimierungService {
     }
 
     private String generiereDzn(List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege,
-                                List<EventSlot> slots, List<Raum> raeume, List<Pflichtvortrag> pflichtvortraege,
+                                List<Slot> slots, List<Raum> raeume, List<Pflichtvortrag> pflichtvortraege,
                                 int maxInstanzen) {
         StringBuilder sb = new StringBuilder();
         sb.append("%Generiert am: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))).append(",Version: 1.0;\n");
@@ -197,7 +197,7 @@ public class OptimierungService {
         return sb.toString();
     }
 
-    private static void appendOidArrays(List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege, List<EventSlot> slots, List<Raum> raeume, StringBuilder sb) {
+    private static void appendOidArrays(List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege, List<Slot> slots, List<Raum> raeume, StringBuilder sb) {
         sb.append("teilnehmer_oids = [").append(teilnehmer.stream().map(t -> String.valueOf(t.getId())).collect(joining(","))).append("];\n");
         sb.append("wahlvortrag_oids = [").append(wahlvortraege.stream().map(v -> String.valueOf(v.getId())).collect(joining(","))).append("];\n");
         sb.append("slot_oids = [").append(slots.stream().map(s -> String.valueOf(s.getId())).collect(joining(","))).append("];\n");
@@ -205,12 +205,12 @@ public class OptimierungService {
     }
 
 
-    private static void appendSlots(List<EventSlot> slots, StringBuilder sb) {
+    private static void appendSlots(List<Slot> slots, StringBuilder sb) {
         final int nSlots = slots.size();
         sb.append("n_slots = ").append(nSlots).append(";\n");
         sb.append("slots = [");
         int sIdx = 0;
-        for (EventSlot s : slots) {
+        for (Slot s : slots) {
             sb.append(String.format("\n(oid: %d)", s.getId()));
             if (++sIdx < nSlots) {
                 sb.append(",");
@@ -253,7 +253,7 @@ public class OptimierungService {
         sb.append("\n];\n\n");
     }
 
-    private static void appendWahlvortraege(List<Wahlvortrag> wahlvortraege, List<EventSlot> slots, StringBuilder sb) {
+    private static void appendWahlvortraege(List<Wahlvortrag> wahlvortraege, List<Slot> slots, StringBuilder sb) {
         final int nWVs = wahlvortraege.size();
         sb.append("n_wahlvortraege = ").append(nWVs).append(";\n");
         Map<Long, Integer> refMap = new HashMap<>();
@@ -304,7 +304,7 @@ public class OptimierungService {
         sb.append("\n\n");
     }
 
-    private static void appendTnVerfuegbarkeiten(List<Teilnehmer> teilnehmer, List<EventSlot> slots, List<Pflichtvortrag> pflichtvortraege, StringBuilder sb) {
+    private static void appendTnVerfuegbarkeiten(List<Teilnehmer> teilnehmer, List<Slot> slots, List<Pflichtvortrag> pflichtvortraege, StringBuilder sb) {
         sb.append("%In welchen Slots jeder Teilnehmer für Wahlvorträge planbar ist:\n");
         int tnSize = teilnehmer.size();
         int slotSize = slots.size();
@@ -314,7 +314,7 @@ public class OptimierungService {
             sb.append("\n");
             int sIdx = 0;
             Set<Long> verfSlotIds = tn.getVerfuegbareSlots().stream().map(IdEntity::getId).collect(Collectors.toSet());
-            for (EventSlot s : slots) {
+            for (Slot s : slots) {
                 sb.append(verfSlotIds.contains(s.getId()) ? "true" : "false");
                 if (++sIdx < slotSize) {
                     sb.append(",");
@@ -330,7 +330,7 @@ public class OptimierungService {
         sb.append("\n\n");
     }
 
-    private static void appendRaumVerfuegbarkeiten(List<Raum> raeume, List<EventSlot> slots, List<Pflichtvortrag> pflichtvortraege, StringBuilder sb) {
+    private static void appendRaumVerfuegbarkeiten(List<Raum> raeume, List<Slot> slots, List<Pflichtvortrag> pflichtvortraege, StringBuilder sb) {
         sb.append("%In welchen Slots Räume für Wahlvorträge planbar ist:\n");
         int raeumeSize = raeume.size();
         int slotSize = slots.size();
@@ -339,7 +339,7 @@ public class OptimierungService {
         for (Raum raum : raeume) {
             sb.append("\n");
             int sIdx = 0;
-            for (EventSlot s : slots) {
+            for (Slot s : slots) {
                 sb.append("true");
                 if (++sIdx < slotSize) {
                     sb.append(",");

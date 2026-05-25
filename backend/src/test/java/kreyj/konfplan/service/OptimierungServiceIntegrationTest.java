@@ -44,12 +44,12 @@ public class OptimierungServiceIntegrationTest {
         Zuweisung.deleteAll();
         Prioritaet.deleteAll();
         Planungsergebnis.deleteAll();
-        Verfuegbarkeit.deleteAll();
-        RaumBelegbarkeit.deleteAll();
+        NutzerVerfuegbarkeit.deleteAll();
+        RaumVerfuegbarkeit.deleteAll();
         Wahlvortrag.deleteAll();
         Pflichtvortrag.deleteAll();
         Vortrag.deleteAll();
-        EventSlot.deleteAll();
+        Slot.deleteAll();
         Veranstaltung.deleteAll();
         Teilnehmer.deleteAll();
         Referent.deleteAll();
@@ -82,7 +82,7 @@ public class OptimierungServiceIntegrationTest {
         veranstaltung.addGebaeude(schule);
         veranstaltung.persistAndFlush();
 
-        EventSlot slot1 = new EventSlot("Slot 1", LocalDateTime.now().plusHours(1), LocalDateTime.now().plusHours(2));
+        Slot slot1 = new Slot("Slot 1", LocalDateTime.now().plusHours(1), LocalDateTime.now().plusHours(2));
         veranstaltung.addSlot(slot1);
         slot1.persistAndFlush();
 
@@ -125,15 +125,15 @@ public class OptimierungServiceIntegrationTest {
         veranstaltung.addGebaeude(schule);
         veranstaltung.persistAndFlush();
 
-        EventSlot slot1 = new EventSlot("Slot 1", LocalDateTime.now().plusHours(1), LocalDateTime.now().plusHours(2));
+        Slot slot1 = new Slot("Slot 1", LocalDateTime.now().plusHours(1), LocalDateTime.now().plusHours(2));
         veranstaltung.addSlot(slot1);
         slot1.persistAndFlush();
 
-        EventSlot slot2 = new EventSlot("Slot 2", LocalDateTime.now().plusHours(2), LocalDateTime.now().plusHours(3));
+        Slot slot2 = new Slot("Slot 2", LocalDateTime.now().plusHours(2), LocalDateTime.now().plusHours(3));
         veranstaltung.addSlot(slot2);
         slot2.persistAndFlush();
 
-        EventSlot slot3 = new EventSlot("Slot 3", LocalDateTime.now().plusHours(3), LocalDateTime.now().plusHours(4));
+        Slot slot3 = new Slot("Slot 3", LocalDateTime.now().plusHours(3), LocalDateTime.now().plusHours(4));
         veranstaltung.addSlot(slot3);
         slot3.persistAndFlush();
 
@@ -246,7 +246,7 @@ public class OptimierungServiceIntegrationTest {
 
         List<RaumBelegungUebersichtDto> belegungsplan = planService.getDetaillierterPlan(veranstaltung.getId());
         assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht leer sein.").isNotEmpty();
-        assertThat(belegungsplan).hasSize(veranstaltung.getEventSlots().size()
+        assertThat(belegungsplan).hasSize(veranstaltung.getSlots().size()
                 * veranstaltung.getGebaeude().stream().mapToInt(g -> g.getRaeume().size()).sum());
         assertThat(belegungsplan)
                 .allMatch(b ->
@@ -277,7 +277,7 @@ public class OptimierungServiceIntegrationTest {
         List<RaumBelegungUebersichtDto> belegungsplan = planService.getDetaillierterPlan(veranstaltung.getId());
 
         assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht leer sein.").isNotEmpty();
-        assertThat(belegungsplan).hasSize(veranstaltung.getEventSlots().size()
+        assertThat(belegungsplan).hasSize(veranstaltung.getSlots().size()
                 * veranstaltung.getGebaeude().stream().mapToInt(g -> g.getRaeume().size()).sum());
         assertThat(belegungsplan)
                 .allMatch(b ->

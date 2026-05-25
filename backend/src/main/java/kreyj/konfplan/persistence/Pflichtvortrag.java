@@ -21,36 +21,36 @@ public class Pflichtvortrag extends Vortrag {
     private Raum pflichtraum;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    private EventSlot pflichtslot;
+    private Slot pflichtslot;
 
-    public Pflichtvortrag(String titel, Referent referent, String pflichtgruppe, Raum pflichtraum, EventSlot pflichtslot) {
+    public Pflichtvortrag(String titel, Referent referent, String pflichtgruppe, Raum pflichtraum, Slot pflichtslot) {
         super(titel, referent);
-
         initPflichtFields(pflichtgruppe, pflichtraum, pflichtslot);
     }
 
-    public Pflichtvortrag(String titel, Referent referent, Veranstaltung veranstaltung, String pflichtgruppe, Raum pflichtraum, EventSlot pflichtslot) {
+    public Pflichtvortrag(String titel, Referent referent, Veranstaltung veranstaltung, String pflichtgruppe, Raum pflichtraum, Slot pflichtslot) {
         super(titel, referent, veranstaltung);
-
         initPflichtFields(pflichtgruppe, pflichtraum, pflichtslot);
     }
 
-    private void initPflichtFields(String pflichtgruppe, Raum pflichtraum, EventSlot pflichtslot) {
+    private void initPflichtFields(String pflichtgruppe, Raum pflichtraum, Slot pflichtslot) {
         setPflichtgruppe(pflichtgruppe);
         setPflichtraum(pflichtraum);
         setPflichtslot(pflichtslot);
     }
 
     public void setPflichtgruppe(String neuePflichtgruppe) {
-        if (Objects.equals(this.pflichtgruppe, neuePflichtgruppe)) {
-            return; // No change
+        if (Objects.equals(this.pflichtgruppe, neuePflichtgruppe) || this.getVeranstaltung() == null) {
+            return;
         }
 
         // Restore availability for participants of the old group
         if (this.pflichtgruppe != null && !this.pflichtgruppe.isEmpty()) {
             List<Teilnehmer> alteTeilnehmer = Teilnehmer.find("gruppe", this.pflichtgruppe).list();
             for (Teilnehmer teilnehmer : alteTeilnehmer) {
-                updateVerfuegbarkeit(teilnehmer, this.pflichtslot, true);
+                NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2", teilnehmer.getId(), this.getVeranstaltung().getId())
+                        .firstResultOptional()
+                        .ifPresent(v -> ((NutzerVerfuegbarkeit) v).addSlot(this.pflichtslot));
             }
         }
 
@@ -60,45 +60,55 @@ public class Pflichtvortrag extends Vortrag {
         if (neuePflichtgruppe != null && !neuePflichtgruppe.isEmpty()) {
             List<Teilnehmer> neueTeilnehmer = Teilnehmer.find("gruppe", neuePflichtgruppe).list();
             for (Teilnehmer teilnehmer : neueTeilnehmer) {
-                updateVerfuegbarkeit(teilnehmer, this.pflichtslot, false);
+                NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2", teilnehmer.getId(), this.getVeranstaltung().getId())
+                        .firstResultOptional()
+                        .ifPresent(v -> ((NutzerVerfuegbarkeit) v).removeSlot(this.pflichtslot));
             }
         }
     }
 
     public void setPflichtraum(Raum neuerRaum) {
-        if (Objects.equals(this.pflichtraum, neuerRaum)) {
-            return; // No change
+        if (Objects.equals(this.pflichtraum, neuerRaum) || this.getVeranstaltung() == null) {
+            return;
         }
 
         // Restore availability for the old room
         if (this.pflichtraum != null) {
-            updateRaumbelegbarkeit(this.pflichtraum, this.pflichtslot, false);
+            RaumVerfuegbarkeit.find("raumId = ?1 and veranstaltungId = ?2", this.pflichtraum.getId(), this.getVeranstaltung().getId())
+                    .firstResultOptional()
+                    .ifPresent(v -> ((RaumVerfuegbarkeit) v).addSlot(this.pflichtslot));
         }
 
         this.pflichtraum = neuerRaum;
 
         // Set unavailability for the new room
         if (neuerRaum != null) {
-            updateRaumbelegbarkeit(neuerRaum, this.pflichtslot, true);
+            RaumVerfuegbarkeit.find("raumId = ?1 and veranstaltungId = ?2", neuerRaum.getId(), this.getVeranstaltung().getId())
+                    .firstResultOptional()
+                    .ifPresent(v -> ((RaumVerfuegbarkeit) v).removeSlot(this.pflichtslot));
         }
     }
 
-    public void setPflichtslot(EventSlot neuerSlot) {
-        if (Objects.equals(this.pflichtslot, neuerSlot)) {
-            return; // No change
+    public void setPflichtslot(Slot neuerSlot) {
+        if (Objects.equals(this.pflichtslot, neuerSlot) || this.getVeranstaltung() == null) {
+            return;
         }
 
-        EventSlot alterSlot = this.pflichtslot;
+        Slot alterSlot = this.pflichtslot;
 
         // Restore availabilities for the old slot
         if (alterSlot != null) {
             if (this.pflichtraum != null) {
-                updateRaumbelegbarkeit(this.pflichtraum, alterSlot, false);
+                RaumVerfuegbarkeit.find("raumId = ?1 and veranstaltungId = ?2", this.pflichtraum.getId(), this.getVeranstaltung().getId())
+                        .firstResultOptional()
+                        .ifPresent(v -> ((RaumVerfuegbarkeit) v).addSlot(alterSlot));
             }
             if (this.pflichtgruppe != null && !this.pflichtgruppe.isEmpty()) {
                 List<Teilnehmer> teilnehmerDerGruppe = Teilnehmer.find("gruppe", this.pflichtgruppe).list();
                 for (Teilnehmer teilnehmer : teilnehmerDerGruppe) {
-                    updateVerfuegbarkeit(teilnehmer, alterSlot, true);
+                    NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2", teilnehmer.getId(), this.getVeranstaltung().getId())
+                            .firstResultOptional()
+                            .ifPresent(v -> ((NutzerVerfuegbarkeit) v).addSlot(alterSlot));
                 }
             }
         }
@@ -108,41 +118,18 @@ public class Pflichtvortrag extends Vortrag {
         // Set unavailabilities for the new slot
         if (neuerSlot != null) {
             if (this.pflichtraum != null) {
-                updateRaumbelegbarkeit(this.pflichtraum, neuerSlot, true);
+                RaumVerfuegbarkeit.find("raumId = ?1 and veranstaltungId = ?2", this.pflichtraum.getId(), this.getVeranstaltung().getId())
+                        .firstResultOptional()
+                        .ifPresent(v -> ((RaumVerfuegbarkeit) v).removeSlot(neuerSlot));
             }
             if (this.pflichtgruppe != null && !this.pflichtgruppe.isEmpty()) {
                 List<Teilnehmer> teilnehmerDerGruppe = Teilnehmer.find("gruppe", this.pflichtgruppe).list();
                 for (Teilnehmer teilnehmer : teilnehmerDerGruppe) {
-                    updateVerfuegbarkeit(teilnehmer, neuerSlot, false);
+                    NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2", teilnehmer.getId(), this.getVeranstaltung().getId())
+                            .firstResultOptional()
+                            .ifPresent(v -> ((NutzerVerfuegbarkeit) v).removeSlot(neuerSlot));
                 }
             }
-        }
-    }
-
-    private void updateRaumbelegbarkeit(Raum raum, EventSlot slot, boolean isBelegt) {
-        if (slot == null) {
-            return;
-        }
-
-        RaumBelegbarkeit belegbarkeit = RaumBelegbarkeit.find("raum = ?1 and slot = ?2", raum, slot).firstResult();
-        if (belegbarkeit != null) {
-            belegbarkeit.setBelegt(isBelegt);
-        } else if (isBelegt) {
-            RaumBelegbarkeit neueBelegbarkeit = new RaumBelegbarkeit(raum, slot, true);
-            neueBelegbarkeit.persist();
-        }
-    }
-
-    private void updateVerfuegbarkeit(Teilnehmer teilnehmer, EventSlot slot, boolean isAvailable) {
-        if (slot == null) {
-            return;
-        }
-
-        Verfuegbarkeit verfuegbarkeit = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", teilnehmer, slot).firstResult();
-        if (verfuegbarkeit != null) {
-            verfuegbarkeit.setAvailable(isAvailable);
-        } else if (!isAvailable) {
-            new Verfuegbarkeit(teilnehmer, slot, false).persist();
         }
     }
 

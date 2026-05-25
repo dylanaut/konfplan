@@ -15,21 +15,13 @@ import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.dto.NutzerDto;
 import kreyj.konfplan.dto.VortragPrioDto;
 import kreyj.konfplan.dto.csv.TeilnehmerCsvDto;
-import kreyj.konfplan.persistence.EventSlot;
-import kreyj.konfplan.persistence.Nutzer;
-import kreyj.konfplan.persistence.Prioritaet;
-import kreyj.konfplan.persistence.ProtokollKategorie;
-import kreyj.konfplan.persistence.Teilnehmer;
-import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Verfuegbarkeit;
-import kreyj.konfplan.persistence.Vortrag;
+import kreyj.konfplan.persistence.*;
 import org.jboss.logging.Logger;
 
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -254,30 +246,5 @@ public class TeilnehmerService {
             }
         }
         protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten gespeichert", "Prioritäten für Teilnehmer " + teilnehmer.getEmail() + " in Veranstaltung " + veranstaltung.getName() + " gespeichert.", teilnehmer.getId());
-    }
-
-    @Transactional
-    public void createInitialAvailabilities(Long userId, Long veranstaltungId) {
-        Teilnehmer teilnehmer = Teilnehmer.findById(userId);
-        if (teilnehmer == null) {
-            throw new NotFoundException("Teilnehmer nicht gefunden.");
-        }
-        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        if (veranstaltung == null) {
-            throw new NotFoundException("Veranstaltung nicht gefunden.");
-        }
-
-        Set<EventSlot> slots = veranstaltung.getEventSlots();
-        if (slots == null || slots.isEmpty()) {
-            return; // Nichts zu tun
-        }
-
-        for (EventSlot slot : slots) {
-            long count = Verfuegbarkeit.count("nutzer = ?1 and slot = ?2", teilnehmer, slot);
-            if (count == 0) {
-                new Verfuegbarkeit(teilnehmer, slot, true).persist();
-            }
-        }
-        protokollService.log(ProtokollKategorie.NUTZER, "Initiale Verfügbarkeiten erstellt", "Initiale Verfügbarkeiten für " + teilnehmer.getEmail() + " in " + veranstaltung.getName() + " erstellt.", teilnehmer.getId());
     }
 }

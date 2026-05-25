@@ -7,7 +7,6 @@ import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.*;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -20,7 +19,7 @@ import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
-class VerfuegbarkeitResourceTest {
+class NutzerVerfuegbarkeitResourceTest {
 
     Long testVid;
     Long slotId;
@@ -29,10 +28,10 @@ class VerfuegbarkeitResourceTest {
     @Transactional
     void setup() {
         Prioritaet.deleteAll();
-        Verfuegbarkeit.deleteAll();
+        NutzerVerfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
         Nutzer.deleteAll();
-        EventSlot.deleteAll();
+        Slot.deleteAll();
         Veranstaltung.deleteAll();
 
         Veranstaltung v = new Veranstaltung();
@@ -41,7 +40,7 @@ class VerfuegbarkeitResourceTest {
         v.persist();
         testVid = v.getId();
 
-        EventSlot s = new EventSlot();
+        Slot s = new Slot();
         s.setDescription("Slot 1");
         s.setStartTime(LocalDateTime.now());
         s.setEndTime(LocalDateTime.now().plusHours(1));
@@ -73,7 +72,7 @@ class VerfuegbarkeitResourceTest {
                 .statusCode(CREATED.getStatusCode());
 
         Nutzer ref = Nutzer.findByEmail("referent@verf.de");
-        long countRef = Verfuegbarkeit.count("nutzer = ?1 and slot.id = ?2", ref, slotId);
+        long countRef = NutzerVerfuegbarkeit.count("nutzer = ?1 and slot.id = ?2", ref, slotId);
         assertThat(1).isEqualTo(countRef).describedAs("Verfügbarkeit für Referent sollte erstellt worden sein");
 
         String jsonTeilnehmer = """
@@ -94,7 +93,7 @@ class VerfuegbarkeitResourceTest {
                 .statusCode(CREATED.getStatusCode());
 
         Nutzer teil = Nutzer.findByEmail("schueler@verf.de");
-        long countTeil = Verfuegbarkeit.count("nutzer = ?1 and slot.id = ?2", teil, slotId);
+        long countTeil = NutzerVerfuegbarkeit.count("nutzer = ?1 and slot.id = ?2", teil, slotId);
         assertThat(1).isEqualTo(countTeil).describedAs("Verfügbarkeit für Teilnehmer sollte erstellt worden sein");
     }
 
@@ -109,12 +108,12 @@ class VerfuegbarkeitResourceTest {
         
         r.addVeranstaltung(v);
         
-        long countBefore = Verfuegbarkeit.count("nutzer = ?1", r);
+        long countBefore = NutzerVerfuegbarkeit.count("nutzer = ?1", r);
         assertThat(1).isEqualTo(countBefore);
         
         r.removeVeranstaltung(v);
         
-        long countAfter = Verfuegbarkeit.count("nutzer = ?1", r);
+        long countAfter = NutzerVerfuegbarkeit.count("nutzer = ?1", r);
         assertThat(0).isEqualTo(countAfter).describedAs("Verfügbarkeit sollte nach Entfernen des Nutzers gelöscht worden sein");
     }
 }

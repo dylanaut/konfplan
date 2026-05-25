@@ -21,8 +21,8 @@ public class VerfuegbarkeitsTest {
     AdminService adminService;
 
     private Veranstaltung veranstaltung;
-    private EventSlot slot1;
-    private EventSlot slot2;
+    private Slot slot1;
+    private Slot slot2;
     private Teilnehmer teilnehmer;
     private Admin admin;
     private Referent referent;
@@ -33,10 +33,10 @@ public class VerfuegbarkeitsTest {
         // Clean up database before each test
         Zuweisung.deleteAll();
         Prioritaet.deleteAll();
-        Verfuegbarkeit.deleteAll();
+        NutzerVerfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
-        RaumBelegbarkeit.deleteAll();
-        EventSlot.deleteAll();
+        RaumVerfuegbarkeit.deleteAll();
+        Slot.deleteAll();
         Nutzer.deleteAll();
         Planungsergebnis.deleteAll();
         Veranstaltung.deleteAll();
@@ -71,13 +71,13 @@ public class VerfuegbarkeitsTest {
 
         admin.addVeranstaltung(veranstaltung);
 
-        slot1 = new EventSlot();
+        slot1 = new Slot();
         slot1.setDescription("Slot 1");
         slot1.setStartTime(veranstaltung.getBeginntAm().plusHours(1));
         slot1.setEndTime(veranstaltung.getBeginntAm().plusHours(2));
         adminService.createEventSlot(slot1, veranstaltung.getId());
 
-        slot2 = new EventSlot();
+        slot2 = new Slot();
         slot2.setDescription("Slot 2");
         slot2.setStartTime(veranstaltung.getBeginntAm().plusHours(3));
         slot2.setEndTime(veranstaltung.getBeginntAm().plusHours(4));
@@ -100,11 +100,11 @@ public class VerfuegbarkeitsTest {
         adminService.inviteUserToEvent(teilnehmer.getId(), veranstaltung.getId());
 
         // 2. Assert that availabilities are created
-        long count = Verfuegbarkeit.count("nutzer", teilnehmer);
+        long count = NutzerVerfuegbarkeit.count("nutzer", teilnehmer);
         assertEquals(2, count, "Participant should have 2 availability records.");
 
-        List<Verfuegbarkeit> verfuegbarkeiten = Verfuegbarkeit.find("nutzer", teilnehmer).list();
-        assertTrue(verfuegbarkeiten.stream().allMatch(Verfuegbarkeit::isAvailable), "All availabilities should be true by default.");
+        List<NutzerVerfuegbarkeit> verfuegbarkeiten = NutzerVerfuegbarkeit.find("nutzer", teilnehmer).list();
+        assertTrue(verfuegbarkeiten.stream().allMatch(NutzerVerfuegbarkeit::isAvailable), "All availabilities should be true by default.");
     }
 
     @Test
@@ -112,14 +112,14 @@ public class VerfuegbarkeitsTest {
     void testRemoveTeilnehmerFromVeranstaltung() {
         // 1. Add participant and verify initial state
         adminService.inviteUserToEvent(teilnehmer.getId(), veranstaltung.getId());
-        assertEquals(2, Verfuegbarkeit.count("nutzer", teilnehmer));
+        assertEquals(2, NutzerVerfuegbarkeit.count("nutzer", teilnehmer));
 
         // 2. Remove participant from event
         NutzerDto dto = AdminResource.mapNutzerToDto(teilnehmer);
         adminService.updateUser(teilnehmer.getId(), dto, List.of()); // Pass empty list of events
 
         // 3. Assert that availabilities are gone
-        long count = Verfuegbarkeit.count("nutzer = ?1 and slot.veranstaltung = ?2", teilnehmer, veranstaltung);
+        long count = NutzerVerfuegbarkeit.count("nutzer = ?1 and slot.veranstaltung = ?2", teilnehmer, veranstaltung);
         assertEquals(0, count, "Availabilities for the event should be removed.");
     }
 
@@ -128,20 +128,20 @@ public class VerfuegbarkeitsTest {
     void testAddEventSlotToVeranstaltung() {
         // 1. Add participant to event
         adminService.inviteUserToEvent(teilnehmer.getId(), veranstaltung.getId());
-        assertEquals(2, Verfuegbarkeit.count("nutzer", teilnehmer));
+        assertEquals(2, NutzerVerfuegbarkeit.count("nutzer", teilnehmer));
 
         // 2. Add a new slot to the event
-        EventSlot slot3 = new EventSlot();
+        Slot slot3 = new Slot();
         slot3.setDescription("Slot 3");
         slot3.setStartTime(veranstaltung.getBeginntAm().plusHours(5));
         slot3.setEndTime(veranstaltung.getBeginntAm().plusHours(6));
         adminService.createEventSlot(slot3, veranstaltung.getId());
 
         // 3. Assert that the participant has a new availability
-        assertEquals(3, Verfuegbarkeit.count("nutzer", teilnehmer), "Participant should have 3 availability records after adding a slot.");
-        Verfuegbarkeit neueVerfuegbarkeit = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", teilnehmer, slot3).firstResult();
-        assertNotNull(neueVerfuegbarkeit, "Availability for the new slot should exist.");
-        assertTrue(neueVerfuegbarkeit.isAvailable(), "New availability should be true.");
+        assertEquals(3, NutzerVerfuegbarkeit.count("nutzer", teilnehmer), "Participant should have 3 availability records after adding a slot.");
+        NutzerVerfuegbarkeit neueNutzerVerfuegbarkeit = NutzerVerfuegbarkeit.find("nutzer = ?1 and slot = ?2", teilnehmer, slot3).firstResult();
+        assertNotNull(neueNutzerVerfuegbarkeit, "Availability for the new slot should exist.");
+        assertTrue(neueNutzerVerfuegbarkeit.isAvailable(), "New availability should be true.");
     }
 
     @Test
@@ -149,14 +149,14 @@ public class VerfuegbarkeitsTest {
     void testRemoveEventSlotFromVeranstaltung() {
         // 1. Add participant to event
         adminService.inviteUserToEvent(teilnehmer.getId(), veranstaltung.getId());
-        assertEquals(2, Verfuegbarkeit.count("nutzer", teilnehmer));
+        assertEquals(2, NutzerVerfuegbarkeit.count("nutzer", teilnehmer));
 
         // 2. Remove a slot from the event
         adminService.deleteEventSlot(slot2.getId(), veranstaltung.getId());
 
         // 3. Assert that the participant's availability for that slot is removed
-        assertEquals(1, Verfuegbarkeit.count("nutzer", teilnehmer), "Participant should have 1 availability record left.");
-        long countForSlot2 = Verfuegbarkeit.count("nutzer = ?1 and slot = ?2", teilnehmer, slot2);
+        assertEquals(1, NutzerVerfuegbarkeit.count("nutzer", teilnehmer), "Participant should have 1 availability record left.");
+        long countForSlot2 = NutzerVerfuegbarkeit.count("nutzer = ?1 and slot = ?2", teilnehmer, slot2);
         assertEquals(0, countForSlot2, "Availability for the deleted slot should be removed.");
     }
 
@@ -197,14 +197,14 @@ public class VerfuegbarkeitsTest {
         adminService.updateUser(teilnehmer.getId(), dto, List.of(veranstaltung.getId()));
 
         // 3. Assert that the availability for the mandatory slot is now false
-        Verfuegbarkeit verfuegbarkeitSlot1 = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", teilnehmer, slot1).firstResult();
-        Verfuegbarkeit verfuegbarkeitSlot2 = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", teilnehmer, slot2).firstResult();
+        NutzerVerfuegbarkeit NutzerVerfuegbarkeitSlot1 = NutzerVerfuegbarkeit.find("nutzer = ?1 and slot = ?2", teilnehmer, slot1).firstResult();
+        NutzerVerfuegbarkeit NutzerVerfuegbarkeitSlot2 = NutzerVerfuegbarkeit.find("nutzer = ?1 and slot = ?2", teilnehmer, slot2).firstResult();
 
-        assertNotNull(verfuegbarkeitSlot1);
-        assertFalse(verfuegbarkeitSlot1.isAvailable(), "Availability for mandatory slot should be false.");
+        assertNotNull(NutzerVerfuegbarkeitSlot1);
+        assertFalse(NutzerVerfuegbarkeitSlot1.isAvailable(), "Availability for mandatory slot should be false.");
 
-        assertNotNull(verfuegbarkeitSlot2);
-        assertTrue(verfuegbarkeitSlot2.isAvailable(), "Availability for other slot should remain true.");
+        assertNotNull(NutzerVerfuegbarkeitSlot2);
+        assertTrue(NutzerVerfuegbarkeitSlot2.isAvailable(), "Availability for other slot should remain true.");
     }
 
     @Test
@@ -242,8 +242,8 @@ public class VerfuegbarkeitsTest {
         dto = adminService.updateUser(teilnehmer.getId(), dto, List.of(veranstaltung.getId()));
 
         // Verify initial state
-        Verfuegbarkeit verfuegbarkeitSlot1_before = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", teilnehmer, slot1).firstResult();
-        assertFalse(verfuegbarkeitSlot1_before.isAvailable(), "Pre-condition: Availability should be false.");
+        NutzerVerfuegbarkeit NutzerVerfuegbarkeitSlot1_before = NutzerVerfuegbarkeit.find("nutzer = ?1 and slot = ?2", teilnehmer, slot1).firstResult();
+        assertFalse(NutzerVerfuegbarkeitSlot1_before.isAvailable(), "Pre-condition: Availability should be false.");
 
         // 2. Remove participant from the group
 
@@ -251,8 +251,8 @@ public class VerfuegbarkeitsTest {
         adminService.updateUser(teilnehmer.getId(), dto, List.of(veranstaltung.getId()));
 
         // 3. Assert that the availability is reset to true
-        Verfuegbarkeit verfuegbarkeitSlot1_after = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", teilnehmer, slot1).firstResult();
-        assertNotNull(verfuegbarkeitSlot1_after);
-        assertTrue(verfuegbarkeitSlot1_after.isAvailable(), "Availability should be reset to true after leaving the group.");
+        NutzerVerfuegbarkeit NutzerVerfuegbarkeitSlot1_after = NutzerVerfuegbarkeit.find("nutzer = ?1 and slot = ?2", teilnehmer, slot1).firstResult();
+        assertNotNull(NutzerVerfuegbarkeitSlot1_after);
+        assertTrue(NutzerVerfuegbarkeitSlot1_after.isAvailable(), "Availability should be reset to true after leaving the group.");
     }
 }

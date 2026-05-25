@@ -1,7 +1,14 @@
 package kreyj.konfplan.dto;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+
 import java.util.List;
 
+@RegisterForReflection
+@NoArgsConstructor
+@AllArgsConstructor
 public class RaumplanEintragDto {
     public Long slotId;
     public String slotZeit;
@@ -10,18 +17,4 @@ public class RaumplanEintragDto {
     public String vortragTyp;
     public int teilnehmerCount;
     public List<TeilnehmerSimpleDto> teilnehmer; // Für Anwesenheitsliste
-
-    public RaumplanEintragDto(Long slotId, String slotZeit, String vortragTitel, String referentName, String vortragTyp, int teilnehmerCount, List<TeilnehmerSimpleDto> teilnehmer) {
-        this.slotId = slotId;
-        this.slotZeit = slotZeit;
-        this.vortragTitel = vortragTitel;
-        this.referentName = referentName;
-        this.vortragTyp = vortragTyp;
-        this.teilnehmerCount = teilnehmerCount;
-        this.teilnehmer = teilnehmer;
-    }
-
-    public String getSlotZeit() {
-        return slotZeit;
-    }
 }

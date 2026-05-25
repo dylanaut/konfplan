@@ -23,7 +23,4 @@ public class VortragDto extends AbstractVersionedDto {
     public Long referentId;
     public String referentName;
     public String referentOrganisation;
-
-    public VortragDto() {
-    }
 }

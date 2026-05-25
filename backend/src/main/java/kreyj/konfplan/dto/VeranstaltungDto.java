@@ -19,7 +19,4 @@ public class VeranstaltungDto extends AbstractVersionedDto {
     public List<Long> organisatorIds = new ArrayList<>();
     public List<String> organisatorNamen = new ArrayList<>();
     public List<GebaeudeSimpleDto> gebaeude = new ArrayList<>();
-
-    public VeranstaltungDto() {
-    }
 }

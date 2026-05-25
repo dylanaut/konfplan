@@ -3,15 +3,39 @@ package kreyj.konfplan.resource;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.persistence.OptimisticLockException;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import kreyj.konfplan.dto.*;
+import kreyj.konfplan.dto.NutzerDto;
+import kreyj.konfplan.dto.PlanQualitaetDto;
+import kreyj.konfplan.dto.RaumBelegungUebersichtDto;
+import kreyj.konfplan.dto.SlotDto;
+import kreyj.konfplan.dto.SolverConfigDto;
+import kreyj.konfplan.dto.VeranstaltungDto;
+import kreyj.konfplan.dto.VortragDto;
+import kreyj.konfplan.dto.VortragPrioDto;
+import kreyj.konfplan.dto.VortragStatDto;
+import kreyj.konfplan.dto.ZuweisungDto;
 import kreyj.konfplan.persistence.Admin;
-import kreyj.konfplan.persistence.EventSlot;
+import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
-import kreyj.konfplan.service.*;
+import kreyj.konfplan.service.AdminService;
+import kreyj.konfplan.service.OptimierungService;
+import kreyj.konfplan.service.PlanService;
+import kreyj.konfplan.service.ReferentService;
+import kreyj.konfplan.service.TeilnehmerService;
+import kreyj.konfplan.service.VeranstaltungService;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
@@ -290,7 +314,7 @@ public class VeranstaltungResource {
     @RolesAllowed({"ADMIN", "TEILNEHMER", "REFERENT"})
     @Path("/{vid}/slots")
     @Operation(summary = "Slots einer Veranstaltung abrufen", description = "Ruft alle Zeit-Slots ab, die zu einer Veranstaltung gehören.")
-    public List<EventSlotDto> getSlots(@PathParam("vid") Long vid) {
+    public List<SlotDto> getSlots(@PathParam("vid") Long vid) {
         return adminService.getAllEventSlots(vid)
                 .stream()
                 .map(SlotResource::mapSlotToDto).toList();
@@ -300,9 +324,9 @@ public class VeranstaltungResource {
     @POST
     @Path("/{vid}/slots")
     @Operation(summary = "Neuen Slot in Veranstaltung erstellen", description = "Erstellt einen neuen Zeit-Slot innerhalb einer Veranstaltung.")
-    public Response createSlot(@PathParam("vid") Long vid, @RequestBody(description = "Der zu erstellende Slot", required = true) EventSlot slot) {
+    public Response createSlot(@PathParam("vid") Long vid, @RequestBody(description = "Der zu erstellende Slot", required = true) Slot slot) {
         try {
-            EventSlot created = adminService.createEventSlot(slot, vid);
+            Slot created = adminService.createEventSlot(slot, vid);
             return Response.status(Response.Status.CREATED).entity(SlotResource.mapSlotToDto(created)).build();
         } catch (IllegalArgumentException e) {
             LOG.error(e.getMessage(), e);
@@ -313,9 +337,9 @@ public class VeranstaltungResource {
     @PUT
     @Path("/{vid}/slots/{id}")
     @Operation(summary = "Slot in Veranstaltung aktualisieren", description = "Aktualisiert einen bestehenden Zeit-Slot innerhalb einer Veranstaltung.")
-    public Response updateSlot(@PathParam("vid") Long vid, @PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Slot-Daten", required = true) EventSlot slot) {
+    public Response updateSlot(@PathParam("vid") Long vid, @PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Slot-Daten", required = true) Slot slot) {
         try {
-            EventSlot updated = adminService.updateEventSlot(id, slot, vid);
+            Slot updated = adminService.updateEventSlot(id, slot, vid);
             if (updated == null) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }

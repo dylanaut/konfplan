@@ -13,16 +13,15 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import kreyj.konfplan.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.dto.PrioritaetRequest;
 import kreyj.konfplan.dto.VeranstaltungDto;
-import kreyj.konfplan.dto.VerfuegbarkeitDto;
 import kreyj.konfplan.dto.ZuweisungDto;
-import kreyj.konfplan.persistence.EventSlot;
 import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Verfuegbarkeit;
 import kreyj.konfplan.service.PlanService;
 import kreyj.konfplan.service.PrioritaetService;
 import kreyj.konfplan.util.JwtHelper;
@@ -33,7 +32,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 
@@ -94,27 +92,24 @@ public class TeilnehmerPlanResource {
     @GET
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Operation(summary = "Meine Verfügbarkeiten abrufen", description = "Ruft die persönlichen Verfügbarkeiten des Teilnehmers für eine Veranstaltung ab.")
-    public List<VerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
+    public NutzerVerfuegbarkeitDto getVerfuegbarkeiten(@PathParam("vid") Long vid) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (!(nutzer instanceof Teilnehmer)) {
             throw new WebApplicationException("Nutzer ist kein Teilnehmer", FORBIDDEN.getStatusCode());
         }
 
-        return Verfuegbarkeit.find("nutzer = ?1 and slot.veranstaltung.id = ?2", nutzer, vid).stream()
-                .map(v -> {
-                    Verfuegbarkeit vf = (Verfuegbarkeit) v;
-                    return new VerfuegbarkeitDto(vf.getNutzer().getId(), vf.getSlot().getId(), vf.isAvailable());
-                })
-                .collect(Collectors.toList());
+        return NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>find("nutzerId = ?1 and veranstaltungId = ?2", nutzer.getId(), vid).firstResultOptional()
+                .map(v -> new NutzerVerfuegbarkeitDto(v.getNutzerId(), v.getVeranstaltungId(), v.getVerfuegbareSlotIds()))
+                .orElseThrow(() -> new WebApplicationException("Keine Verfügbarkeit für diesen Nutzer und diese Veranstaltung gefunden.", Response.Status.NOT_FOUND));
     }
 
     @POST
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Transactional
     @Operation(summary = "Verfügbarkeit aktualisieren", description = "Aktualisiert die persönliche Verfügbarkeit des Teilnehmers für einen bestimmten Slot.")
-    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten", required = true) VerfuegbarkeitDto dto) {
+    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten", required = true) NutzerVerfuegbarkeitDto dto) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
-        if (!(nutzer instanceof Teilnehmer)) {
+        if (!(nutzer instanceof Teilnehmer) || !nutzer.getId().equals(dto.getNutzerId())) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -129,19 +124,13 @@ public class TeilnehmerPlanResource {
                     .entity("Die Deadline für Teilnehmer ist bereits abgelaufen.").build();
         }
 
-        EventSlot slot = EventSlot.findById(dto.slotId);
-        if (slot == null || !slot.getVeranstaltung().getId().equals(vid)) {
-            return Response.status(Response.Status.BAD_REQUEST).build();
+        NutzerVerfuegbarkeit v = NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2", nutzer.getId(), vid).firstResult();
+        if (v == null) {
+            return Response.status(Response.Status.NOT_FOUND).entity("Verfügbarkeitseintrag nicht gefunden.").build();
         }
 
-        Verfuegbarkeit v = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", nutzer, slot).firstResult();
-        if (v == null) {
-            v = new Verfuegbarkeit(nutzer, slot, dto.isAvailable);
-            v.setNutzer(nutzer);
-            v.setSlot(slot);
-        } else {
-            v.setAvailable(dto.isAvailable);
-        }
+        v.getVerfuegbareSlotIds().clear();
+        v.getVerfuegbareSlotIds().addAll(dto.getVerfuegbareSlotIds());
         v.persist();
         return Response.ok().build();
     }

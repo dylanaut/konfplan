@@ -51,17 +51,41 @@ public abstract class Vortrag extends VersionedEntity {
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "veranstaltung_id")
-    @JsonIgnoreProperties({"vortraege", "nutzer", "gebaeude", "eventSlots"})
+    @JsonIgnoreProperties({"vortraege", "nutzer", "gebaeude", "slots"})
     Veranstaltung veranstaltung;
 
     @ManyToMany
     @JoinTable(name = "Vortrag_EventSlot",
             joinColumns = @JoinColumn(name = "vortrag_id"),
             inverseJoinColumns = @JoinColumn(name = "eventslot_id"))
-    Set<EventSlot> verfuegbareSlots = new HashSet<>();
+    Set<Slot> verfuegbareSlots = new HashSet<>();
+
+
+    public Set<Slot> getVerfuegbareSlots() {
+        return Collections.unmodifiableSet(verfuegbareSlots);
+    }
+
+    public void addVerfuegbarenSlot(Slot slot) {
+        verfuegbareSlots.add(slot);
+    }
+
+    public void removeVerfuegbarenSlot(Slot slot) {
+        verfuegbareSlots.remove(slot);
+    }
+
+    public void clearVerfuegbareSlots() {
+        for (Slot slot : new ArrayList<>(verfuegbareSlots)) {
+            removeVerfuegbarenSlot(slot);
+        }
+    }
 
     @JsonProperty("istPflicht")
     public abstract boolean istPflicht();
+
+
+    // -------------------------------------------------------------------
+    // Konstruktoren
+    // -------------------------------------------------------------------
 
 
     public Vortrag(String titel, Referent referent) {
@@ -73,23 +97,5 @@ public abstract class Vortrag extends VersionedEntity {
         this.titel = titel;
         this.referent = referent;
         this.veranstaltung = veranstaltung;
-    }
-
-    public Set<EventSlot> getVerfuegbareSlots() {
-        return Collections.unmodifiableSet(verfuegbareSlots);
-    }
-
-    public void addVerfuegbarenSlot(EventSlot slot) {
-        verfuegbareSlots.add(slot);
-    }
-
-    public void removeVerfuegbarenSlot(EventSlot slot) {
-        verfuegbareSlots.remove(slot);
-    }
-
-    public void clearVerfuegbareSlots() {
-        for (EventSlot eventSlot : new ArrayList<>(verfuegbareSlots)) {
-            removeVerfuegbarenSlot(eventSlot);
-        }
     }
 }

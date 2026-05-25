@@ -104,13 +104,10 @@
                    :selectedVid="selectedVid"
                    :pageSize="pageSize"
                    :sortedSlots="sortedSlots"
-                   :verfuegbarkeiten="verfuegbarkeiten"
                    :isEventFinished="isEventFinished"
                    :electiveTalks="electiveTalks"
                    :participantPriorities="participantPriorities"
                    :changedPriorities="changedPriorities"
-                   :changedAvailabilities="changedAvailabilities"
-                   :hasDirtyAvailabilities="hasDirtyAvailabilities"
                    @triggerUpload="triggerUpload"
                    @openUserModal="openUserModal"
                    @deleteUser="deleteUser"
@@ -119,9 +116,7 @@
                    @batchDeleteParticipants="batchDeleteParticipants"
                    @batchEmailParticipants="batchEmailParticipants"
                    @openInviteModal="openInviteModal"
-                   @toggleAvailability="toggleAvailability"
                    @saveParticipantPriorities="saveParticipantPriorities"
-                   @saveAllAvailabilities="saveAllAvailabilities"
                    @saveAllParticipantPriorities="saveAllParticipantPriorities"
     />
 
@@ -130,13 +125,11 @@
                    :selectedVid="selectedVid"
                    :pageSize="pageSize"
                    :sortedSlots="sortedSlots"
-                   :verfuegbarkeiten="verfuegbarkeiten"
                    :isEventFinished="isEventFinished"
                    @triggerUpload="triggerUpload"
                    @openUserModal="openUserModal"
                    @deleteUser="deleteUser"
                    @openInviteModal="openInviteModal"
-                   @toggleAvailability="toggleAvailability"
     />
 
     <VortraegeTab v-if="activeTab === 'vortraege' && selectedVid"
@@ -228,6 +221,7 @@
 import {computed, onMounted, reactive, ref} from 'vue';
 import api from '../api/axios';
 import {useEventContextStore} from '../stores/eventContext';
+import { useAvailabilityStore } from '../stores/availability';
 import {
   Calendar as CalendarIcon,
   FileText as FileTextIcon,
@@ -257,6 +251,7 @@ import GebaeudeEditorModal from '../components/GebaeudeEditorModal.vue';
 import InviteUserModal from '../components/InviteUserModal.vue';
 
 const eventContext = useEventContextStore();
+const availabilityStore = useAvailabilityStore();
 
 const tabLabels = {
   ergebnisse: 'Ergebnisse',
@@ -282,12 +277,10 @@ const vortraege = ref([]);
 const eventSlots = ref([]);
 const belegungsPlan = ref([]);
 const qualitaet = ref({});
-const verfuegbarkeiten = ref([]);
 const protokolle = ref([]);
 const participantPriorities = ref({});
 const originalParticipantPriorities = ref({});
 const changedPriorities = ref(new Set());
-const changedAvailabilities = ref(new Set());
 
 const isGlobalLoading = ref(false);
 const pageSize = 15;
@@ -398,8 +391,6 @@ const teilnehmerMitPrioritaetenCount = computed(() => {
   return Object.values(participantPriorities.value).filter(prios => Object.values(prios).some(p => p.prioWert > 0)).length;
 });
 
-const hasDirtyAvailabilities = computed(() => changedAvailabilities.value.size > 0);
-
 onMounted(async () => {
   await refreshVeranstaltungen();
   await refreshGebaeude();
@@ -469,15 +460,16 @@ const loadData = async () => {
   if (!selectedVid.value) return;
   const base = `/api/veranstaltungen/${selectedVid.value}`;
   try {
-    const [eventSpecificUsersRes, vRes, sRes, pRes, qRes, avRes, allUsersRes] = await Promise.all([
+    const [eventSpecificUsersRes, vRes, sRes, pRes, qRes, allUsersRes] = await Promise.all([
       api.get(`${base}/nutzer`),
       api.get(`${base}/vortraege`),
       api.get(`${base}/slots`),
       api.get(`${base}/plan/details`),
       api.get(`${base}/plan/qualitaet`),
-      api.get(`/api/admin/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`),
       api.get('/api/admin/nutzer')
     ]);
+
+    await availabilityStore.fetchAvailabilities(selectedVid.value);
 
     const combinedUsersMap = new Map();
     allUsersRes.data.forEach(user => combinedUsersMap.set(user.id, user));
@@ -488,7 +480,6 @@ const loadData = async () => {
     eventSlots.value = sRes.data;
     belegungsPlan.value = pRes.data;
     qualitaet.value = qRes.data;
-    verfuegbarkeiten.value = avRes.data;
 
     const prioMap = {};
     const originalPrioMap = {};
@@ -503,7 +494,6 @@ const loadData = async () => {
     participantPriorities.value = prioMap;
     originalParticipantPriorities.value = originalPrioMap;
     changedPriorities.value.clear();
-    changedAvailabilities.value.clear();
 
     if (activeTab.value === 'protokoll') refreshProtokolle();
 
@@ -769,41 +759,6 @@ const deleteSlot = async (id) => {
     } catch (e) {
       console.error('Fehler beim Löschen des Slots:', e);
     }
-  }
-};
-
-const toggleAvailability = (userId, slotId, isAvailable) => {
-  const key = `${userId}-${slotId}`;
-  if (changedAvailabilities.value.has(key)) {
-    changedAvailabilities.value.delete(key);
-  } else {
-    changedAvailabilities.value.add(key);
-  }
-
-  const idx = verfuegbarkeiten.value.findIndex(v => v.userId === userId && v.slotId === slotId);
-  if (idx !== -1) {
-    verfuegbarkeiten.value[idx].isAvailable = isAvailable;
-  } else {
-    verfuegbarkeiten.value.push({userId, slotId, isAvailable});
-  }
-};
-
-const saveAllAvailabilities = async () => {
-  const promises = [];
-  for (const key of changedAvailabilities.value) {
-    const [userId, slotId] = key.split('-').map(Number);
-    const availability = verfuegbarkeiten.value.find(v => v.userId === userId && v.slotId === slotId);
-    if (availability) {
-      promises.push(api.post(`/api/admin/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`, availability));
-    }
-  }
-  try {
-    await Promise.all(promises);
-    changedAvailabilities.value.clear();
-    alert('Alle Verfügbarkeiten gespeichert!');
-  } catch (e) {
-    console.error('Fehler beim Speichern aller Verfügbarkeiten:', e);
-    alert('Ein Fehler ist aufgetreten.');
   }
 };
 

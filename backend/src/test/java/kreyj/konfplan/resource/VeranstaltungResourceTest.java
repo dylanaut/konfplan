@@ -11,7 +11,6 @@ import kreyj.konfplan.dto.NutzerDto;
 import kreyj.konfplan.dto.VeranstaltungDto;
 import kreyj.konfplan.dto.VortragDto;
 import kreyj.konfplan.persistence.*;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -78,7 +77,7 @@ class VeranstaltungResourceTest extends ResourceTestBase {
     @Test
     void testGetSlotsHierarchical() {
         QuarkusTransaction.requiringNew().run(() -> {
-            EventSlot s1 = new EventSlot();
+            Slot s1 = new Slot();
             s1.setDescription("Slot A");
             s1.setStartTime(LocalDateTime.now());
             s1.setEndTime(LocalDateTime.now().plusHours(1));

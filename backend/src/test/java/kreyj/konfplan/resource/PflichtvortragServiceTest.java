@@ -9,17 +9,17 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.dto.VortragDto;
 import kreyj.konfplan.persistence.Admin;
-import kreyj.konfplan.persistence.EventSlot;
+import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Raum;
-import kreyj.konfplan.persistence.RaumBelegbarkeit;
+import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Verfuegbarkeit;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.service.AdminService;
@@ -46,7 +46,7 @@ public class PflichtvortragServiceTest {
     Veranstaltung veranstaltung;
     Gebaeude gebaeude;
     Raum raum1, raum2;
-    EventSlot slot1, slot2;
+    Slot slot1, slot2;
     Referent referent;
     Teilnehmer teilnehmer1, teilnehmer2, teilnehmer3;
 
@@ -55,14 +55,14 @@ public class PflichtvortragServiceTest {
         // Keep @Transactional for setup to ensure data is created and then rolled back
     void setup() {
         // Clear all entities before each test
-        Verfuegbarkeit.deleteAll();
-        RaumBelegbarkeit.deleteAll();
+        NutzerVerfuegbarkeit.deleteAll();
+        RaumVerfuegbarkeit.deleteAll();
         Pflichtvortrag.deleteAll();
         Wahlvortrag.deleteAll();
         Vortrag.deleteAll();
         Teilnehmer.deleteAll();
         Referent.deleteAll();
-        EventSlot.deleteAll();
+        Slot.deleteAll();
         Raum.deleteAll();
         Gebaeude.deleteAll();
         Veranstaltung.deleteAll();
@@ -102,14 +102,14 @@ public class PflichtvortragServiceTest {
         raum2.persist();
         gebaeude.addRaum(raum2);
 
-        slot1 = new EventSlot();
+        slot1 = new Slot();
         slot1.setDescription("Slot 1");
         slot1.setStartTime(LocalDateTime.of(2024, 1, 1, 9, 0));
         slot1.setEndTime(LocalDateTime.of(2024, 1, 1, 10, 0));
         slot1.persist();
         veranstaltung.addSlot(slot1);
 
-        slot2 = new EventSlot();
+        slot2 = new Slot();
         slot2.setDescription("Slot 2");
         slot2.setStartTime(LocalDateTime.of(2024, 1, 1, 10, 0));
         slot2.setEndTime(LocalDateTime.of(2024, 1, 1, 11, 0));
@@ -172,7 +172,7 @@ public class PflichtvortragServiceTest {
     void testCreatePflichtvortragRaumBelegtFails() {
         // Manually block raum2, slot1 in a committed transaction
         QuarkusTransaction.requiringNew().run(() -> {
-            RaumBelegbarkeit rb = new RaumBelegbarkeit(raum2, slot1, true);
+            RaumVerfuegbarkeit rb = new RaumVerfuegbarkeit(raum2, slot1, true);
 
             rb.persist();
         });
@@ -194,7 +194,7 @@ public class PflichtvortragServiceTest {
     void testCreatePflichtvortragTeilnehmerNichtVerfuegbarFails() {
         // Manually make teilnehmer1 unavailable for slot1 in a committed transaction
         QuarkusTransaction.requiringNew().run(() -> {
-            new Verfuegbarkeit(teilnehmer1, slot1, false).persist();
+            new NutzerVerfuegbarkeit(teilnehmer1, slot1, false).persist();
         });
 
         Pflichtvortrag pv = new Pflichtvortrag();
@@ -340,7 +340,7 @@ public class PflichtvortragServiceTest {
 
         // Manually block slot2 for teilnehmer1 in a committed transaction
         QuarkusTransaction.requiringNew().run(() -> {
-            new Verfuegbarkeit(teilnehmer1, slot2, false).persist();
+            new NutzerVerfuegbarkeit(teilnehmer1, slot2, false).persist();
         });
 
         // Attempt to update PV to change slot to slot2
@@ -414,7 +414,7 @@ public class PflichtvortragServiceTest {
 
         // Manually block raum2, slot1 in a committed transaction
         QuarkusTransaction.requiringNew().run(() -> {
-            new RaumBelegbarkeit(raum2, slot1, true).persist();
+            new RaumVerfuegbarkeit(raum2, slot1, true).persist();
         });
 
         // Attempt to update PV to change room to raum2
@@ -527,7 +527,7 @@ public class PflichtvortragServiceTest {
 
         // Manually make teilnehmer3 (Gruppe B) unavailable for slot1 in a committed transaction
         QuarkusTransaction.requiringNew().run(() -> {
-            new Verfuegbarkeit(teilnehmer3, slot1, false).persist();
+            new NutzerVerfuegbarkeit(teilnehmer3, slot1, false).persist();
         });
 
         // Attempt to update PV to change group to Gruppe B
@@ -622,24 +622,24 @@ public class PflichtvortragServiceTest {
     // -------------------------------------------------------------------
 
     // Helper to check availability - now runs in its own transaction
-    private boolean isTeilnehmerAvailable(Teilnehmer tn, EventSlot slot) {
+    private boolean isTeilnehmerAvailable(Teilnehmer tn, Slot slot) {
         final boolean[] boolArr = {false};
 
         QuarkusTransaction.requiringNew().run(() -> {
-            Optional<Verfuegbarkeit> v = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", tn, slot).firstResultOptional();
-            boolArr[0] = v.map(Verfuegbarkeit::isAvailable).orElse(true);
+            Optional<NutzerVerfuegbarkeit> v = NutzerVerfuegbarkeit.find("nutzer = ?1 and slot = ?2", tn, slot).firstResultOptional();
+            boolArr[0] = v.map(NutzerVerfuegbarkeit::isAvailable).orElse(true);
         });
         return boolArr[0];
     }
 
 
     // Helper to check room availability - now runs in its own transaction
-    private boolean isRaumAvailable(Raum r, EventSlot slot) {
+    private boolean isRaumAvailable(Raum r, Slot slot) {
         final boolean[] boolArr = {false};
 
         QuarkusTransaction.requiringNew().run(() -> {
-            Optional<RaumBelegbarkeit> rb = RaumBelegbarkeit.find("raum = ?1 and slot = ?2", r, slot).firstResultOptional();
-            boolArr[0] = rb.map(raumBelegbarkeit -> !raumBelegbarkeit.isBelegt()).orElse(true);
+            Optional<RaumVerfuegbarkeit> rb = RaumVerfuegbarkeit.find("raum = ?1 and slot = ?2", r, slot).firstResultOptional();
+            boolArr[0] = rb.map(RaumVerfuegbarkeit -> !RaumVerfuegbarkeit.isBelegt()).orElse(true);
         });
 
         return boolArr[0];

@@ -5,8 +5,8 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import kreyj.konfplan.dto.EventSlotDto;
-import kreyj.konfplan.persistence.EventSlot;
+import kreyj.konfplan.dto.SlotDto;
+import kreyj.konfplan.persistence.Slot;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
@@ -20,8 +20,8 @@ public class SlotResource {
 
     @GET
     @Operation(summary = "Alle Slots abrufen", description = "Gibt eine Liste aller Zeit-Slots zurück.")
-    public List<EventSlotDto> getAll() {
-        return EventSlot.<EventSlot>listAll().stream()
+    public List<SlotDto> getAll() {
+        return Slot.<Slot>listAll().stream()
                 .map(SlotResource::mapSlotToDto)
                 .toList();
     }
@@ -31,16 +31,15 @@ public class SlotResource {
     // helper methods
     // -------------------------------------------------------------------
 
-    public static EventSlotDto mapSlotToDto(EventSlot eventSlot) {
-        EventSlotDto dto = new EventSlotDto();
+    public static SlotDto mapSlotToDto(Slot slot) {
+        SlotDto dto = new SlotDto();
 
-        dto.id = eventSlot.getId();
-        dto.version = eventSlot.getVersion();
-
-        dto.description = eventSlot.getDescription();
-        dto.startTime = eventSlot.getStartTime();
-        dto.endTime = eventSlot.getEndTime();
-        dto.veranstaltungId = eventSlot.getVeranstaltung().getId();
+        dto.id = slot.getId();
+        dto.version = slot.getVersion();
+        dto.description = slot.getDescription();
+        dto.startTime = slot.getStartTime();
+        dto.endTime = slot.getEndTime();
+        dto.veranstaltungId = slot.getVeranstaltung().getId();
 
         return dto;
     }

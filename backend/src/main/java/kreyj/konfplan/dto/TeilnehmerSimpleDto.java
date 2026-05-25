@@ -1,15 +1,15 @@
 package kreyj.konfplan.dto;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+
+@RegisterForReflection
+@NoArgsConstructor
+@AllArgsConstructor
 public class TeilnehmerSimpleDto {
     public Long id;
     public String firstName;
     public String lastName;
     public String gruppe;
-
-    public TeilnehmerSimpleDto(Long id, String firstName, String lastName, String gruppe) {
-        this.id = id;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.gruppe = gruppe;
-    }
 }

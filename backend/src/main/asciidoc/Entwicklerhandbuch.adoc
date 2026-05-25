@@ -148,10 +148,10 @@ Das Frontend basiert auf Vue 3, Vite, Tailwind CSS, Pinia (State Management) und
 *   **Veranstaltung**:: Zentrale Entität; hat EventSlots, Gebäude, Nutzer; besitzt Deadlines für Referenten/Teilnehmer.
 *   **Nutzer**:: (SINGLE_TABLE) → Admin | Referent | Teilnehmer
 *   **Vortrag**:: (SINGLE_TABLE) → Pflichtvortrag | Wahlvortrag
-*   **EventSlot**:: Zeitfenster innerhalb einer Veranstaltung; mit Überschneidungsprüfung.
+*   **Slot**:: Zeitfenster innerhalb einer Veranstaltung; mit Überschneidungsprüfung.
 *   **Zuweisung**:: Ordnet Teilnehmer einem Vortrag + Slot + Raum zu.
 *   **Prioritaet**:: Präferenz eines Teilnehmers für einen Wahlvortrag (Ranking 1-10).
-*   **Verfuegbarkeit**:: Gibt an, ob Nutzer in einem Slot verfügbar ist (Default: true bei Zuweisung).
+*   **TeilnehmerVerfuegbarkeit**:: Gibt an, ob Nutzer in einem Slot verfügbar ist (Default: true bei Zuweisung).
 *   **RaumVerfuegbarkeit**:: Modelliert die Verfügbarkeit von Räumen pro Slot inklusive veranstaltungsübergreifender Prüfung.
 *   **AdminPrioritaetUpdateRequestDto**:: DTO für die Aktualisierung einer einzelnen Teilnehmerpriorität durch Administratoren.
 

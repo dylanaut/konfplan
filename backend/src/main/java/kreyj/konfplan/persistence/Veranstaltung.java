@@ -76,27 +76,26 @@ public class Veranstaltung extends VersionedEntity {
         }
     }
 
-    public void removeGebaeude(Gebaeude g) {
-        if (null == g) {
+    @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Setter(AccessLevel.NONE)
+    Set<Slot> slots = new HashSet<>();
+
+    public Set<Slot> getSlots() {
+        return Collections.unmodifiableSet(slots);
+    }
+
+    public void addSlot(Slot r) {
+        if (null == r) {
             return;
         }
 
-        if (gebaeude.remove(g)) {
-            g.veranstaltungen.remove(this);
-        }
-    }
-
-    @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Setter(AccessLevel.NONE)
-    Set<EventSlot> eventSlots = new HashSet<>();
-
-    public Set<EventSlot> getEventSlots() {
-        return Collections.unmodifiableSet(eventSlots);
+        slots.add(r);
+        r.veranstaltung = this;
     }
 
 
     @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL, orphanRemoval = true)
-     Set<Vortrag> vortraege = new HashSet<>();
+    Set<Vortrag> vortraege = new HashSet<>();
 
     public Set<Vortrag> getVortraege() {
         return Collections.unmodifiableSet(vortraege);
@@ -116,6 +115,10 @@ public class Veranstaltung extends VersionedEntity {
         throw new UnsupportedOperationException();
     }
 
+
+    // -------------------------------------------------------------------
+    // Helper methods
+    // -------------------------------------------------------------------
 
     @NotEmpty(message = "Veranstaltung muss mindestens eine/n Organisator/in haben")
     public Set<Admin> organisatoren() {

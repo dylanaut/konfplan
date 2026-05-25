@@ -93,7 +93,7 @@ public class ReferentService {
             dto.beginntAm = e.getBeginntAm();
             dto.endetAm = e.getEndetAm();
             dto.deadlineReferenten = e.getDeadlineReferenten();
-            dto.registeredTalkIds = vortraege.stream()
+            dto.vortraegeIds = vortraege.stream()
                     .filter(t -> t.getVeranstaltung().getId().equals(e.getId()))
                     .map(IdEntity::getId)
                     .collect(Collectors.toList());
@@ -293,7 +293,7 @@ public class ReferentService {
             if (dto.verfuegbareSlotIds != null) {
                 wahlvortrag.clearVerfuegbareSlots();
                 for (Long sid : dto.verfuegbareSlotIds) {
-                    EventSlot slot = EventSlot.findById(sid);
+                    Slot slot = Slot.findById(sid);
                     // Validierung: Slot muss zur Veranstaltung des Vortrags gehören
                     if (slot != null && slot.getVeranstaltung().getId().equals(vortrag.getVeranstaltung().getId())) {
                         wahlvortrag.addVerfuegbarenSlot(slot);
@@ -303,7 +303,7 @@ public class ReferentService {
         } else if (vortrag instanceof Pflichtvortrag pflichtvortrag) {
             pflichtvortrag.setPflichtgruppe(dto.pflichtgruppe);
             if (dto.verfuegbareSlotIds != null && !dto.verfuegbareSlotIds.isEmpty()) {
-                EventSlot slot = EventSlot.findById(dto.verfuegbareSlotIds.getFirst());
+                Slot slot = Slot.findById(dto.verfuegbareSlotIds.getFirst());
                 if (slot != null && slot.getVeranstaltung().getId().equals(vortrag.getVeranstaltung().getId())) {
                     pflichtvortrag.setPflichtslot(slot);
                 }

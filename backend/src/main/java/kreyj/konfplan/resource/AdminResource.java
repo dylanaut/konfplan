@@ -7,7 +7,6 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -18,18 +17,15 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.dto.AdminPrioritaetUpdateRequestDto;
 import kreyj.konfplan.dto.NutzerDto;
-import kreyj.konfplan.dto.RaumBelegbarkeitDto;
-import kreyj.konfplan.dto.VerfuegbarkeitDto;
+import kreyj.konfplan.dto.NutzerVerfuegbarkeitDto;
+import kreyj.konfplan.dto.RaumVerfuegbarkeitDto;
 import kreyj.konfplan.dto.VortragPrioDto;
-import kreyj.konfplan.persistence.EventSlot;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Nutzer;
-import kreyj.konfplan.persistence.Raum;
-import kreyj.konfplan.persistence.RaumBelegbarkeit;
+import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
+import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
-import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Verfuegbarkeit;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.service.AdminService;
 import kreyj.konfplan.service.MailService;
@@ -42,6 +38,7 @@ import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Path("/api/admin")
 @RolesAllowed("ADMIN")
@@ -185,85 +182,48 @@ public class AdminResource {
     @GET
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Operation(summary = "Verfügbarkeiten abrufen", description = "Ruft die Verfügbarkeiten aller Nutzer für eine Veranstaltung ab.")
-    public List<VerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
-        return Verfuegbarkeit.<Verfuegbarkeit>find("select vf from Verfuegbarkeit vf join vf.nutzer n join n.veranstaltungen v where v.id = ?1", vid).stream()
-                .map(vf -> new VerfuegbarkeitDto(vf.getNutzer().getId(), vf.getSlot().getId(), vf.isAvailable()))
-                .toList();
+    public List<NutzerVerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
+        return NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>find("veranstaltungId", vid).stream()
+                .map(v -> new NutzerVerfuegbarkeitDto(v.getNutzerId(), v.getVeranstaltungId(), v.getVerfuegbareSlotIds()))
+                .collect(Collectors.toList());
     }
 
     @POST
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Transactional
     @Operation(summary = "Verfügbarkeit aktualisieren", description = "Aktualisiert die Verfügbarkeit eines Nutzers für einen bestimmten Slot.")
-    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten") VerfuegbarkeitDto dto) {
-        Nutzer nutzer = Nutzer.findById(dto.userId);
-        EventSlot slot = EventSlot.findById(dto.slotId);
-        if (nutzer == null || slot == null) {
+    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten") NutzerVerfuegbarkeitDto dto) {
+        NutzerVerfuegbarkeit verfuegbarkeit = NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2", dto.getNutzerId(), vid).firstResult();
+        if (verfuegbarkeit == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-
-        // Validierung: Gehört der Slot zur angegebenen Veranstaltung?
-        if (!slot.getVeranstaltung().getId().equals(vid)) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("Slot gehört nicht zur angegebenen Veranstaltung.").build();
-        }
-
-        Verfuegbarkeit v = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", nutzer, slot).firstResult();
-        if (v == null) {
-            v = new Verfuegbarkeit(nutzer, slot, dto.isAvailable);
-        } else {
-            v.setAvailable(dto.isAvailable);
-        }
-        v.persist();
+        verfuegbarkeit.getVerfuegbareSlotIds().clear();
+        verfuegbarkeit.getVerfuegbareSlotIds().addAll(dto.getVerfuegbareSlotIds());
+        verfuegbarkeit.persist();
         return Response.ok().build();
     }
 
     @GET
     @Path("/veranstaltungen/{vid}/raeume/verfuegbarkeiten")
     @Operation(summary = "Raum-Verfügbarkeiten abrufen", description = "Ruft die Verfügbarkeiten (Belegungen) aller Räume für eine Veranstaltung ab.")
-    public List<RaumBelegbarkeitDto> getRaumVerfuegbarkeiten(@PathParam("vid") Long vid) {
-        Veranstaltung event = Veranstaltung.findById(vid);
-        if (event == null) {
-            throw new NotFoundException();
-        }
-
-        List<EventSlot> slots = EventSlot.find("veranstaltung.id = ?1", vid).list();
-        List<Raum> raeume = event.getGebaeude().stream().flatMap(g -> g.getRaeume().stream()).toList();
-
-        return raeume.stream().flatMap(r -> slots.stream().map(s -> {
-            RaumBelegbarkeit rv = RaumBelegbarkeit.find("raum = ?1 and slot = ?2", r, s).firstResult();
-            RaumBelegbarkeitDto dto = new RaumBelegbarkeitDto(r.getId(), s.getId(), rv != null && rv.isBelegt());
-
-            // Cross-event check: Is this room busy in ANY other event at a time that overlaps with this slot?
-            List<RaumBelegbarkeit> otherRvs = RaumBelegbarkeit.find("raum = ?1 and isBelegt = true and slot.veranstaltung.id != ?2", r, vid).list();
-            for (RaumBelegbarkeit otherRv : otherRvs) {
-                EventSlot otherSlot = otherRv.getSlot();
-                if (otherSlot.getStartTime().isBefore(s.getEndTime()) && otherSlot.getEndTime().isAfter(s.getStartTime())) {
-                    dto.isBlockedByOtherEvent = true;
-                    dto.blockingEventName = otherSlot.getVeranstaltung().getName();
-                    break;
-                }
-            }
-            return dto;
-        })).toList();
+    public List<RaumVerfuegbarkeitDto> getRaumVerfuegbarkeiten(@PathParam("vid") Long vid) {
+        return RaumVerfuegbarkeit.<RaumVerfuegbarkeit>find("veranstaltungId", vid).stream()
+                .map(v -> new RaumVerfuegbarkeitDto(v.getRaumId(), v.getVeranstaltungId(), v.getVerfuegbareSlotIds(), false, null))
+                .collect(Collectors.toList());
     }
 
     @POST
     @Path("/veranstaltungen/{vid}/raeume/verfuegbarkeiten")
     @Transactional
     @Operation(summary = "Raum-Verfügbarkeit aktualisieren", description = "Aktualisiert die Belegung eines Raumes für einen bestimmten Slot.")
-    public Response updateRaumVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Raum-Verfügbarkeitsdaten", required = true) RaumBelegbarkeitDto dto) {
-        Raum raum = Raum.findById(dto.raumId);
-        EventSlot slot = EventSlot.findById(dto.slotId);
-        if (raum == null || slot == null) {
+    public Response updateRaumVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Raum-Verfügbarkeitsdaten", required = true) RaumVerfuegbarkeitDto dto) {
+        RaumVerfuegbarkeit verfuegbarkeit = RaumVerfuegbarkeit.find("raumId = ?1 and veranstaltungId = ?2", dto.getRaumId(), vid).firstResult();
+        if (verfuegbarkeit == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-
-        RaumBelegbarkeit rv = RaumBelegbarkeit.find("raum = ?1 and slot = ?2", raum, slot).firstResult();
-        if (rv == null) {
-            rv = new RaumBelegbarkeit(raum, slot, true);
-        }
-        rv.persist();
+        verfuegbarkeit.getVerfuegbareSlotIds().clear();
+        verfuegbarkeit.getVerfuegbareSlotIds().addAll(dto.getVerfuegbareSlotIds());
+        verfuegbarkeit.persist();
         return Response.ok().build();
     }
 

@@ -1,9 +1,12 @@
 package kreyj.konfplan.dto;
 
+import lombok.Getter;
+
 import java.util.List;
 
 public class ReferentVortragDto {
     public String vortragTitel;
+    @Getter
     public String slotZeit;
     public String raumName;
     public String gebaeudeName;
@@ -15,9 +18,5 @@ public class ReferentVortragDto {
         this.raumName = raumName;
         this.gebaeudeName = gebaeudeName;
         this.teilnehmer = teilnehmer;
-    }
-
-    public String getSlotZeit() {
-        return slotZeit;
     }
 }

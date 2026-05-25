@@ -10,14 +10,14 @@ public abstract class ResourceTestBase {
     @Transactional
     public void cleanDatabase() {
         Zuweisung.deleteAll();
-        Verfuegbarkeit.deleteAll();
-        RaumBelegbarkeit.deleteAll();
+        NutzerVerfuegbarkeit.deleteAll();
+        RaumVerfuegbarkeit.deleteAll();
         Prioritaet.deleteAll();
         Vortrag.deleteAll();
         Nutzer.deleteAll();
         Raum.deleteAll();
         Gebaeude.deleteAll();
-        EventSlot.deleteAll();
+        Slot.deleteAll();
         Veranstaltung.deleteAll();
     }
 }

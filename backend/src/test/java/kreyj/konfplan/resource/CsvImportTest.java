@@ -29,13 +29,13 @@ class CsvImportTest {
     @Transactional
     void setup() {
         Zuweisung.deleteAll();
-        RaumBelegbarkeit.deleteAll();
-        Verfuegbarkeit.deleteAll();
+        RaumVerfuegbarkeit.deleteAll();
+        NutzerVerfuegbarkeit.deleteAll();
         Vortrag.deleteAll();
         Nutzer.deleteAll();
         Raum.deleteAll();
         Gebaeude.deleteAll();
-        EventSlot.deleteAll();
+        Slot.deleteAll();
         Veranstaltung.deleteAll();
 
         Admin admin = new Admin();
@@ -165,7 +165,7 @@ class CsvImportTest {
                 .then()
                 .statusCode(OK.getStatusCode());
 
-        assertThat(EventSlot.count()).isEqualTo(1);
+        assertThat(Slot.count()).isEqualTo(1);
     }
 
     @Test

@@ -37,38 +37,10 @@ public class Raum extends VersionedEntity {
         this.gebaeude = gebaeude;
     }
 
-    @ManyToMany
-    @JoinTable(
-            name = "Raum_EventSlot",
-            joinColumns = @JoinColumn(name = "raum_id"),
-            inverseJoinColumns = @JoinColumn(name = "eventslot_id")
-    )
-    private Set<EventSlot> verfuegbareSlots = new HashSet<>();
 
-    public Set<EventSlot> getVerfuegbareSlots() {
-        return Collections.unmodifiableSet(verfuegbareSlots);
-    }
-
-
-    public void addSlot(EventSlot slot) {
-        if (null == slot) {
-            return;
-        }
-
-        if (verfuegbareSlots.add(slot)) {
-            slot.raeume.add(this);
-        }
-    }
-
-    public void removeSlot(EventSlot slot) {
-        if (null == slot) {
-            return;
-        }
-
-        if (verfuegbareSlots.remove(slot)) {
-            slot.raeume.remove(this);
-        }
-    }
+    // -------------------------------------------------------------------
+    // Konstruktoren
+    // -------------------------------------------------------------------
 
     public Raum(String name, int kapazitaet) {
         super();

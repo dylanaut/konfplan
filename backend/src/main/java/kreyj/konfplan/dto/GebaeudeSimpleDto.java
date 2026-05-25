@@ -2,6 +2,7 @@ package kreyj.konfplan.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import kreyj.konfplan.persistence.Gebaeudetyp;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -20,7 +21,4 @@ public class GebaeudeSimpleDto extends AbstractVersionedDto {
     public Gebaeudetyp typ;
 
     public List<RaumDto> raeume;
-
-    public GebaeudeSimpleDto() {
-    }
 }

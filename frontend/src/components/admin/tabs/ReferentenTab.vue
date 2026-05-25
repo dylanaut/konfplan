@@ -25,7 +25,7 @@
         <tr v-for="u in paginatedSpeakers" :key="u.id" class="hover:bg-gray-50">
           <td class="px-4 py-2 font-bold" :title="u.email">{{ u.lastName }}, {{ u.firstName }}</td>
           <td v-for="slot in sortedSlots" :key="slot.id" class="px-2 py-2 text-center">
-            <input type="checkbox" :checked="isAvailable(u.id, slot.id)" @change="emit('toggleAvailability', u.id, slot.id, $event.target.checked)" :disabled="isEventFinished" class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3" />
+            <input type="checkbox" :checked="availabilityStore.isUserAvailable(u.id, slot.id)" @change="availabilityStore.toggleUserAvailability(u.id, slot.id)" :disabled="isEventFinished" class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3" />
           </td>
           <td class="px-4 py-2 text-right">
             <button @click="emit('openUserModal', u)" class="text-indigo-600 ml-3" title="Bearbeiten">
@@ -60,17 +60,19 @@ import {
   User as UserIcon
 } from 'lucide-vue-next';
 import PaginationControls from '../../PaginationControls.vue';
+import { useAvailabilityStore } from '../../../stores/availability';
 
 const props = defineProps({
   referenten: Array,
   selectedVid: Number,
   pageSize: Number,
   sortedSlots: Array,
-  verfuegbarkeiten: Array,
   isEventFinished: Boolean
 });
 
-const emit = defineEmits(['triggerUpload', 'openUserModal', 'deleteUser', 'openInviteModal', 'toggleAvailability']);
+const emit = defineEmits(['triggerUpload', 'openUserModal', 'deleteUser', 'openInviteModal']);
+
+const availabilityStore = useAvailabilityStore();
 
 const pages = reactive({
   referenten: 1
@@ -123,10 +125,6 @@ const toggleSort = (key, field) => {
 
 const filteredSpeakers = computed(() => processList(props.referenten, filters.referenten, sorts.referenten));
 const paginatedSpeakers = computed(() => paginate(filteredSpeakers.value, pages.referenten));
-
-const isAvailable = (userId, slotId) => {
-  return props.verfuegbarkeiten.some(v => v.userId === userId && v.slotId === slotId && v.isAvailable);
-};
 
 const formatTime = (t) => t ? new Date(t).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'}) : '';
 </script>

@@ -12,6 +12,7 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -42,7 +43,7 @@ public class Teilnehmer extends Nutzer {
             List<Pflichtvortrag> altePflichtvortraege = Pflichtvortrag.find("pflichtgruppe", this.gruppe).list();
             for (Pflichtvortrag pv : altePflichtvortraege) {
                 if (pv.getPflichtslot() != null) {
-                    updateVerfuegbarkeit(pv.getPflichtslot(), true);
+                    updateVerfuegbarkeit(pv.getVeranstaltung(), pv.getPflichtslot(), true);
                 }
             }
         }
@@ -54,19 +55,27 @@ public class Teilnehmer extends Nutzer {
             List<Pflichtvortrag> neuePflichtvortraege = Pflichtvortrag.find("pflichtgruppe", neueGruppe).list();
             for (Pflichtvortrag pv : neuePflichtvortraege) {
                 if (pv.getPflichtslot() != null) {
-                    updateVerfuegbarkeit(pv.getPflichtslot(), false);
+                    updateVerfuegbarkeit(pv.getVeranstaltung(), pv.getPflichtslot(), false);
                 }
             }
         }
     }
 
-    private void updateVerfuegbarkeit(EventSlot slot, boolean isAvailable) {
-        Verfuegbarkeit verfuegbarkeit = Verfuegbarkeit.find("nutzer = ?1 and slot = ?2", this, slot).firstResult();
-        if (verfuegbarkeit != null) {
-            verfuegbarkeit.setAvailable(isAvailable);
-        } else if (!isAvailable) {
-            // Erstelle eine neue Verfügbarkeit, falls keine existiert und der Teilnehmer nicht verfügbar sein soll
-            new Verfuegbarkeit(this, slot, false).persist();
-        }
+    private void updateVerfuegbarkeit(Veranstaltung veranstaltung, Slot slot, boolean verfuegbar) {
+        NutzerVerfuegbarkeit vfbg = NutzerVerfuegbarkeit.find("nutzer = ?1 and veranstaltung_id = ?2", this, veranstaltung.getId()).firstResult();
+        Long slotId = slot.getId();
+
+        if (verfuegbar) {
+            if (null == vfbg) {
+                new NutzerVerfuegbarkeit(this, veranstaltung, Set.of(slotId)).persist();
+            } else {
+                if (vfbg.addSlot(slotId)) {
+                    vfbg.persist();
+                }
+            }
+        } else // TN für Slot und Veranstaltung NICHT verfuegbar
+            if (null != vfbg) {
+                vfbg.removeSlot(slotId);
+            }
     }
 }

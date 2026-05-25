@@ -12,9 +12,13 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import kreyj.konfplan.dto.RaumBelegungUebersichtDto;
 import kreyj.konfplan.dto.RaumplanEintragDto;
-import kreyj.konfplan.persistence.*;
-import kreyj.konfplan.service.PlanService;
+import kreyj.konfplan.persistence.Raum;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Slot;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.service.PdfService;
+import kreyj.konfplan.service.PlanService;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
@@ -247,7 +251,7 @@ public class ReportResource {
         if (veranstaltung == null) {
             return freieSlotsReferenten.data("error", "Veranstaltung nicht gefunden.");
         }
-        Map<Long, List<EventSlot>> freieSlots = planService.getFreieSlotsReferenten(vid);
+        Map<Long, List<Slot>> freieSlots = planService.getFreieSlotsReferenten(vid);
         List<Referent> referenten = Referent.find("SELECT r FROM Referent r JOIN r.veranstaltungen v WHERE v.id = ?1", vid).list();
         return freieSlotsReferenten.data("veranstaltung", veranstaltung)
                 .data("freieSlots", freieSlots)
@@ -264,7 +268,7 @@ public class ReportResource {
         if (veranstaltung == null) {
             throw new RuntimeException("Veranstaltung nicht gefunden.");
         }
-        Map<Long, List<EventSlot>> freieSlots = planService.getFreieSlotsReferenten(vid);
+        Map<Long, List<Slot>> freieSlots = planService.getFreieSlotsReferenten(vid);
         List<Referent> referenten = Referent.find("SELECT r FROM Referent r JOIN r.veranstaltungen v WHERE v.id = ?1", vid).list();
         TemplateInstance templateInstance = freieSlotsReferenten.data("veranstaltung", veranstaltung)
                 .data("freieSlots", freieSlots)
@@ -282,7 +286,7 @@ public class ReportResource {
         if (veranstaltung == null) {
             return freieSlotsTeilnehmer.data("error", "Veranstaltung nicht gefunden.");
         }
-        Map<Long, List<EventSlot>> freieSlots = planService.getFreieSlotsTeilnehmer(vid);
+        Map<Long, List<Slot>> freieSlots = planService.getFreieSlotsTeilnehmer(vid);
         List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", vid).list();
         return freieSlotsTeilnehmer.data("veranstaltung", veranstaltung)
                 .data("freieSlots", freieSlots)
@@ -299,7 +303,7 @@ public class ReportResource {
         if (veranstaltung == null) {
             throw new RuntimeException("Veranstaltung nicht gefunden.");
         }
-        Map<Long, List<EventSlot>> freieSlots = planService.getFreieSlotsTeilnehmer(vid);
+        Map<Long, List<Slot>> freieSlots = planService.getFreieSlotsTeilnehmer(vid);
         List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", vid).list();
         TemplateInstance templateInstance = freieSlotsTeilnehmer.data("veranstaltung", veranstaltung)
                 .data("freieSlots", freieSlots)

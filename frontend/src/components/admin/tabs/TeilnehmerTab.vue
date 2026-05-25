@@ -151,7 +151,7 @@
             Verfügbarkeiten verwalten
           </div>
         </button>
-        <button v-if="hasDirtyAvailabilities" @click="emit('saveAllAvailabilities')" :disabled="isEventFinished"
+        <button v-if="availabilityStore.hasDirtyAvailabilities()" @click="availabilityStore.saveAvailabilities(selectedVid)" :disabled="isEventFinished"
                 class="btn-save-all">
           <SaveAllIcon class="w-3.5 h-3.5"/>
           Alle Änderungen speichern
@@ -204,8 +204,8 @@
                 </div>
               </td>
               <td v-for="slot in sortedSlots" :key="slot.id" class="px-2 py-2 text-center">
-                <input type="checkbox" :checked="isAvailable(u.id, slot.id)"
-                       @change="emit('toggleAvailability', u.id, slot.id, $event.target.checked)"
+                <input type="checkbox" :checked="availabilityStore.isUserAvailable(u.id, slot.id)"
+                       @change="availabilityStore.toggleUserAvailability(u.id, slot.id)"
                        :disabled="isEventFinished" class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3"/>
               </td>
               <td class="px-4 py-2 text-center">
@@ -265,27 +265,27 @@ import {
 import PaginationControls from '../../PaginationControls.vue';
 import HtmlDisplayModal from '../../HtmlDisplayModal.vue'; // Import the new modal component
 import api from '../../../api/axios'; // Import axios for API calls
+import { useAvailabilityStore } from '../../../stores/availability';
 
 const props = defineProps({
   teilnehmer: Array,
   selectedVid: Number,
   pageSize: Number,
   sortedSlots: Array,
-  verfuegbarkeiten: Array,
   isEventFinished: Boolean,
   electiveTalks: Array,
   participantPriorities: Object,
   changedPriorities: Set,
-  changedAvailabilities: Set,
-  hasDirtyAvailabilities: Boolean,
 });
 
 const emit = defineEmits([
   'triggerUpload', 'openUserModal', 'deleteUser', 'toggleParticipantActive',
   'batchDeactivateParticipants', 'batchDeleteParticipants', 'batchEmailParticipants',
-  'openInviteModal', 'toggleAvailability', 'saveParticipantPriorities',
-  'saveAllAvailabilities', 'saveAllParticipantPriorities'
+  'openInviteModal', 'saveParticipantPriorities',
+  'saveAllParticipantPriorities'
 ]);
+
+const availabilityStore = useAvailabilityStore();
 
 const pages = reactive({
   teilnehmer: 1
@@ -389,17 +389,8 @@ const selectAllFilteredParticipants = () => {
   selectedParticipantIds.value = filteredParticipants.value.map(p => p.id);
 };
 
-const isAvailable = (userId, slotId) => {
-  return props.verfuegbarkeiten.some(v => v.userId === userId && v.slotId === slotId && v.isAvailable);
-};
-
 const isAvailabilityChanged = (userId) => {
-  for (const key of props.changedAvailabilities) {
-    if (key.startsWith(`${userId}-`)) {
-      return true;
-    }
-  }
-  return false;
+  return availabilityStore.changedUserAvailabilities.has(userId);
 };
 
 const getParticipantPrio = (userId, talkId) => {
