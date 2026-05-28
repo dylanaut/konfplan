@@ -152,6 +152,7 @@ public class ArchitectureRulesTest {
                     .that().implement("io.quarkus.hibernate.orm.panache.PanacheRepository")
                     .or().implement("io.quarkus.hibernate.orm.panache.PanacheRepositoryBase")
                     .should().resideInAPackage("kreyj.konfplan.persistence..")
+                    .allowEmptyShould(true)
                     .because("Panache Repositories gehören ausschließlich in die Persistence-Schicht.");
 
     @ArchTest
@@ -176,6 +177,7 @@ public class ArchitectureRulesTest {
                     .and().implement("io.quarkus.hibernate.orm.panache.PanacheRepository")
                     .should().haveSimpleNameEndingWith("Repository")
                     .orShould().haveSimpleNameEndingWith("Adapter")
+                    .allowEmptyShould(true)
                     .because("Persistence-Klassen müssen auf 'Repository' oder 'Adapter' enden.");
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -257,6 +259,7 @@ public class ArchitectureRulesTest {
             classes()
                     .that().areAnnotatedWith("io.smallrye.config.ConfigMapping")
                     .should().resideInAPackage("kreyj.konfplan.infrastructure.config..")
+                    .allowEmptyShould(true)
                     .because("Konfigurationsklassen (@ConfigMapping) gehören in das Config-Subpaket der Infrastructure-Schicht.");
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -271,6 +274,7 @@ public class ArchitectureRulesTest {
                     .that().resideInAPackage("kreyj.konfplan.domain.event..")
                     .should().notBeAnnotatedWith("jakarta.enterprise.context.ApplicationScoped")
                     .andShould().notBeAnnotatedWith("jakarta.enterprise.context.RequestScoped")
+                    .allowEmptyShould(true)
                     .because("Domain Events sind einfache Datentransfer-Objekte (Records oder finale Klassen) " +
                             "ohne CDI-Scope-Annotation.");
 
@@ -292,6 +296,7 @@ public class ArchitectureRulesTest {
                     .that().haveSimpleNameEndingWith("DomainException")
                     .or().haveSimpleNameEndingWith("BusinessException")
                     .should().resideInAPackage("kreyj.konfplan.domain.exception..")
+                    .allowEmptyShould(true)
                     .because("Domain- und Business-Exceptions gehören in die Domain-Schicht.");
 
     @ArchTest

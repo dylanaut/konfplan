@@ -20,18 +20,29 @@ import java.util.Set;
 @DiscriminatorValue("TEILNEHMER")
 public class Teilnehmer extends Nutzer {
 
+    /**
+     * Gruppenzugehörigkeit des Teilnehmers über Name der Gruppe
+     */
     @Column(name = "gruppe")
     @CsvBindByName(column = "Gruppe")
     private String gruppe;
 
     @OneToMany(mappedBy = "teilnehmer", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Prioritaet> prioritaeten = new ArrayList<>();
+    List<Prioritaet> prioritaeten = new ArrayList<>();
 
+
+    // -------------------------------------------------------------------
+    // Konstruktoren
+    // -------------------------------------------------------------------
 
     public Teilnehmer() {
         this.setRole("TEILNEHMER");
     }
 
+
+    // -------------------------------------------------------------------
+    // public methods
+    // -------------------------------------------------------------------
 
     public void setGruppe(String neueGruppe) {
         if (Objects.equals(this.gruppe, neueGruppe)) {
@@ -62,7 +73,8 @@ public class Teilnehmer extends Nutzer {
     }
 
     private void updateVerfuegbarkeit(Veranstaltung veranstaltung, Slot slot, boolean verfuegbar) {
-        NutzerVerfuegbarkeit vfbg = NutzerVerfuegbarkeit.find("nutzer = ?1 and veranstaltung_id = ?2", this, veranstaltung.getId()).firstResult();
+        NutzerVerfuegbarkeit vfbg = NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2",
+                this.getId(), veranstaltung.getId()).firstResult();
         Long slotId = slot.getId();
 
         if (verfuegbar) {
@@ -77,5 +89,11 @@ public class Teilnehmer extends Nutzer {
             if (null != vfbg) {
                 vfbg.removeSlot(slotId);
             }
+    }
+
+    public Set<Long> getVerfuegbareSlotIds(Veranstaltung veranstaltung) {
+        return NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>find("nutzerId = ?1 and veranstaltungId = ?2",
+                        this.getId(), veranstaltung.getId()).firstResult()
+                .getVerfuegbareSlotIds();
     }
 }

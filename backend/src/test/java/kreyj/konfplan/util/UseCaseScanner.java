@@ -1,22 +1,36 @@
 package kreyj.konfplan.util;
 
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 public class UseCaseScanner {
 
     public static void main(String[] args) throws Exception {
-        String basePackage = "kreyj.konfplan.resource";
+        String basePackage = "kreyj.konfplan.presentation";
         String outputPath = args.length > 0 ? args[0] : "src/main/asciidoc/VM-Anwendungsfälle.adoc";
 
         System.out.println("Scanning package: " + basePackage);
-        List<Class<?>> classes = findClasses(basePackage);
+        Set<Class<?>> classes = findClasses(basePackage);
 
         StringBuilder adoc = new StringBuilder();
         adoc.append("= Automatisch generierte UseCase Dokumentation\n");
@@ -25,7 +39,7 @@ public class UseCaseScanner {
         Map<String, List<String>> roleToUCs = new TreeMap<>();
         Map<String, List<EndpointInfo>> classToEndpoints = new LinkedHashMap<>();
 
-        for (Class<?> clazz : classes) {
+        for (Class<?> clazz : classes.stream().sorted().toList()) {
             Path classPathAnno = clazz.getAnnotation(Path.class);
             if (classPathAnno == null) {
                 continue;
@@ -123,15 +137,17 @@ public class UseCaseScanner {
         return null;
     }
 
-    private static List<Class<?>> findClasses(String packageName) throws Exception {
+    private static Set<Class<?>> findClasses(String packageName) throws Exception {
         String path = packageName.replace('.', '/');
         // Simple scanner for the specific project structure
         File root = new File("src/main/java/" + path);
         if (!root.exists()) {
-            return Collections.emptyList();
+            return Collections.emptySet();
         }
 
-        return Arrays.stream(root.listFiles())
+        File[] listedFiles = root.listFiles();
+        return null == listedFiles ? Collections.emptySet()
+                : Arrays.stream(listedFiles)
                 .filter(f -> f.getName().endsWith(".java"))
                 .map(f -> {
                     try {
@@ -141,7 +157,7 @@ public class UseCaseScanner {
                     }
                 })
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
     }
 
     static class EndpointInfo {

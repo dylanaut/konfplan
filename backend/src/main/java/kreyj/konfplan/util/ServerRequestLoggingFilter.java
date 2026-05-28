@@ -26,7 +26,7 @@ public class ServerRequestLoggingFilter extends BaseLoggingFilter implements Con
         // Log request body (if present and not binary)
         if (isTextualMediaType(context.getMediaType())) {
             String body = readBody(context.getEntityStream());
-            // Reset the input stream so the resource can read it
+            // Reset the input stream so the presentation can read it
             context.setEntityStream(new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8)));
             LOG.debug("Request Body: " + body);
         }

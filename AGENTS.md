@@ -36,6 +36,7 @@ cd frontend && npm install && npm run dev
 | Schicht      | Technologie                                       |
 |--------------|---------------------------------------------------|
 | Backend      | Quarkus 3.35.1, Java 21, RESTEasy Reactive        |
+| Architektur  | Hexagonal (Ports & Adapters)                      |
 | ORM          | Hibernate ORM Panache (Active Record Pattern)     |
 | Datenbank    | PostgreSQL (Prod/Dev), H2 (Test)                  |
 | Migration    | Flyway                                            |

@@ -1,4 +1,4 @@
-package kreyj.konfplan.resource;
+package kreyj.konfplan.presentation;
 
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.Mailer;

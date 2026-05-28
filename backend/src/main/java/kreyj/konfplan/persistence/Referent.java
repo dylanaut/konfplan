@@ -7,7 +7,6 @@ import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.ArrayList;
@@ -36,8 +35,12 @@ public class Referent extends Nutzer {
     private String biography;
 
     @OneToMany(mappedBy = "referent", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Vortrag> vortraege = new ArrayList<>();
+    List<Vortrag> vortraege = new ArrayList<>();
 
+    // -------------------------------------------------------------------
+    // Konstruktoren
+    // -------------------------------------------------------------------
+    
     public Referent() {
         this.setRole("REFERENT");
     }

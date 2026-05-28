@@ -4,10 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.opencsv.bean.CsvBindByName;
+import io.quarkus.logging.Log;
 import io.quarkus.security.jpa.Password;
 import io.quarkus.security.jpa.Roles;
 import io.quarkus.security.jpa.UserDefinition;
 import io.quarkus.security.jpa.Username;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.DiscriminatorType;
@@ -26,6 +28,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @NoArgsConstructor
@@ -82,7 +85,7 @@ public abstract class Nutzer extends VersionedEntity {
     @Column(name = "email_change_token_expiry")
     private LocalDateTime emailChangeTokenExpiry;
 
-    @ManyToMany
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "Nutzer_Veranstaltung",
             joinColumns = @JoinColumn(name = "nutzer_id"),
@@ -99,22 +102,23 @@ public abstract class Nutzer extends VersionedEntity {
         if (null == v) {
             return;
         }
-        if (veranstaltungen.add(v)) {
-            v.nutzer.add(this);
+        veranstaltungen.add(v);
+        v.nutzer.add(this);
+
+        Log.warn("addVeranstaltung: move business logic!");
+
+        if (this instanceof Referent || this instanceof Teilnehmer) {
+            NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2",
+                    this.getId(), v.getId()).firstResult();
+            Set<Long> slotIds = v.getSlots().stream().map(Slot::getId).collect(Collectors.toSet());
+            if (null == nv) {
+                nv = new NutzerVerfuegbarkeit(this, v, slotIds);
+
+            } else {
+                nv.verfuegbareSlotIds = slotIds;
+            }
+            nv.persist();
         }
-
-        //TODO remove business logic
-        throw new UnsupportedOperationException("addVeranstaltung noch nicht implementiert");
-
-//        if (this instanceof Referent || this instanceof Teilnehmer) {
-//            for (Slot slot : v.getSlots()) {
-//                if (NutzerVerfuegbarkeit.count("nutzer = ?1 and slot = ?2", this, slot) == 0) {
-//                    new NutzerVerfuegbarkeit(this, slot, true).persist();
-//
-//                    this.addVerfuegbarenSlot(slot);
-//                }
-//            }
-//        }
     }
 
     public void removeVeranstaltung(Veranstaltung v) {
@@ -126,16 +130,18 @@ public abstract class Nutzer extends VersionedEntity {
             v.nutzer.remove(this);
         }
 
-// TODO remove business logic
+        Log.warn("removeVeranstaltung: move business logic!");
         if (this instanceof Referent || this instanceof Teilnehmer) {
-            for (Slot slot : v.getSlots()) {
-                NutzerVerfuegbarkeit.delete("nutzer = ?1 and slot = ?2", this, slot);
-            }
+            NutzerVerfuegbarkeit.delete("nutzer = ?1 and veranstaltung = ?2", this, v);
         }
     }
 
 
     public static Nutzer findByEmail(String e) {
         return find("email", e).firstResult();
+    }
+
+    public void clearVerfuegbareSlots() {
+        System.out.println("###   UnsupportedOperationException: clearVerfuegbareSlots noch nicht implementiert");
     }
 }

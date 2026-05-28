@@ -1,76 +1,52 @@
-# AGENTS.md – backend/
+## Architektur (Hexagonal / Ports & Adapters)
 
-## Überblick
+Das Backend folgt den Prinzipien der **Hexagonalen Architektur**, auch bekannt als **Ports & Adapters**. Das Kernprinzip ist die strikte Trennung zwischen der reinen Anwendungslogik (dem *Hexagon* oder *Kern*) und den technischen Details der Außenwelt (den *Adaptern*).
 
-Das Backend ist eine **Quarkus 3.35.1**-Anwendung (Java 21) mit RESTful API, JWT-Security und einer PostgreSQL-Datenbank für Dev/Prod sowie H2 für Tests. Es folgt einer klassischen Dreischicht-Architektur: `resource` → `service` → `entity`.
+**Die goldene Regel:** Abhängigkeiten im Code zeigen **immer nur nach innen**, zum Kern der Anwendung. Der Kern darf niemals von einem Adapter abhängig sein.
 
-## Paketstruktur
+### Paketstruktur
+
+Die Struktur spiegelt diese Trennung wider:
 
 ```
-src/main/java/kreyj/konfplan/
-├── entity/       # JPA-Entitäten (Panache Active Record)
-├── dto/          # Datentransferobjekte (Request/Response)
-├── service/      # Geschäftslogik (@ApplicationScoped)
-├── resource/     # JAX-RS REST-Endpunkte (@Path)
-└── util/         # Querschnittsklassen (z. B. LoggingFilter)
-
-src/main/resources/
-├── application.properties
-├── db/migration/   # Flyway-Schema
-├── minizinc/vortragsplanung.mzn  # Optimierungsmodell
-├── templates/                  # Freemarker-Templates (E-Mail)
-└── assets/                     # Statische Dateien
+kreyj/konfplan/
+├── application/      # DER HEXAGON (Anwendungskern)
+│   ├── port/
+│   │   ├── in/       # Eingehende Ports (Was die Anwendung kann, z.B. Use Cases)
+│   │   └── out/      # Ausgehende Ports (Was die Anwendung braucht, z.B. Repositories)
+│   └── service/      # Implementierung der Anwendungslogik (Use-Case-Implementierung)
+│
+├── domain/           # Das Domänenmodell (Entitäten, Value Objects)
+│
+└── adapter/          # ADAPTER (Technologie-Implementierungen)
+    ├── in/           # Eingehende Adapter (treiben die Anwendung an)
+    │   └── web/      # REST-Adapter (Ressourcen & DTOs)
+    └── out/          # Ausgehende Adapter (werden von der Anwendung angetrieben)
+        ├── persistence/ # JPA/Panache-Implementierung der Persistenz-Ports
+        └── minizinc/    # Adapter für den externen MiniZinc-Solver
 ```
 
-## Entwicklung
+### Komponenten im Detail
 
-```bash
-# Dev-Modus starten (Hot-Reload)
-cd backend && ../mvnw quarkus:dev
+*   **`application` (Der Hexagon):**
+    *   **`port.in`:** Definiert die Schnittstellen der Anwendungslogik (Use Cases). Beispiel: `AdminServiceInterface`. Sie beschreiben, *was* die Anwendung kann.
+    *   **`port.out`:** Definiert die Schnittstellen, die der Kern benötigt, um mit externen Systemen zu kommunizieren (z.B. Datenbank). Beispiel: `NutzerRepositoryPort` (hypothetisch).
+    *   **`service`:** Implementiert die `in`-Ports. Hier befindet sich die reine Geschäftslogik, frei von technologischen Details wie HTTP oder JPA.
 
-# Tests ausführen
-cd backend && ../mvnw test
+*   **`domain`:**
+    *   Enthält die Kern-Domänenobjekte (`Nutzer`, `Veranstaltung`, etc.).
+    *   **Pragmatische Anmerkung:** In diesem Projekt dienen die JPA/Panache-Entitäten gleichzeitig als Domänenobjekte. In einer "reineren" Form wären dies POJOs ohne Persistenz-Annotationen.
 
-# Produktions-Build
-cd backend && ../mvnw package
-```
-
-## Konfiguration (`application.properties`)
-
-- Port: **9000**
-- CORS für Frontend-Dev auf Port **5173** aktiviert
-- Datenbank: PostgreSQL (Docker Dev Services im Dev-Modus, konfiguriert für Prod)
-- Test-Datenbank: H2 In-Memory
-- JWT: RSA-Schlüsselpaar in `src/main/resources/` (PEM-Dateien)
-- Hibernate: `drop-and-create` (Dev/Test) bzw. `update` (Prod)
-- Flyway: Zur Schema-Migration genutzt.
-
-## Architekturregeln
-
-1. **Resource-Klassen** haben keine Geschäftslogik – nur HTTP-Mapping, Delegation an Services und Mapping zu DTOs.
-2. **Service-Klassen** sind `@ApplicationScoped`; Transaktionen mit `@Transactional`.
-3. **Entities** nutzen Panache Active Record (statische Finder-Methoden direkt auf der Klasse).
-4. Neue Entitäten **müssen** von `VersionedEntity` erben.
-5. Neue Entitäten **müssen** `@Version Long version` für Optimistic Locking enthalten.
-6. Datums-/Zeitfelder: `LocalDateTime` + `@Convert(converter = LocalDateTimeConverter.class)`.
+*   **`adapter` (Die Außenwelt):**
+    *   **`adapter/in/web`:** Der REST-Adapter.
+        *   Die `resource`-Klassen (`AdminResource`) nehmen HTTP-Anfragen entgegen, validieren sie und rufen die entsprechenden Methoden auf den **eingehenden Ports** (`AdminServiceInterface`) auf.
+        *   **DTOs (`dto`-Paket hier):** Data Transfer Objects sind Teil des Web-Adapters. Sie definieren den "Vertrag" der REST-API und werden niemals an die `service`-Schicht weitergegeben. Die `resource`-Klasse ist für die Umwandlung zwischen DTO und Domänenobjekt verantwortlich.
+    *   **`adapter/out/persistence`:** Der Persistenz-Adapter. Implementiert die `out`-Ports und enthält die konkrete Logik zum Speichern und Laden von Daten mittels Panache.
+    *   **`adapter/out/minizinc`:** Der `OptimierungService` agiert als Adapter, der die Anwendungsdaten in ein für MiniZinc verständliches Format übersetzt und den externen Prozess aufruft.
 
 ## Security
 
 - Rollen: `ADMIN`, `REFERENT`, `TEILNEHMER`.
-- Alle Endpunkte mit `@RolesAllowed` oder `@Authenticated` absichern.
+- Alle Endpunkte im `web`-Adapter werden mit `@RolesAllowed` oder `@Authenticated` abgesichert.
 - JWT-Token wird von `AuthResource` ausgestellt.
 - Passwörter: BCrypt via `BcryptUtil.bcryptHash()`.
-
-## Geschäftslogik-Highlights
-
-- **Slot-Validierung**: Prüfung auf Überschneidungsfreiheit und zeitliche Korrektheit bei Erstellung/Update von EventSlots.
-- **Verfügbarkeiten**: Automatische Erstellung von Standard-Verfügbarkeiten (true) beim Hinzufügen von Nutzern zu Veranstaltungen.
-- **Raum-Management**: Veranstaltungsübergreifende Prüfung der Raumverfügbarkeit zur Vermeidung von Doppelbelegungen.
-- **Deadlines**: Referenten und Teilnehmer können ihre Daten nur bis zu einem administrativ festgelegten Zeitpunkt ändern.
-- **Prioritäten-Management (Admin)**: Admins können individuelle Prioritäten für Teilnehmer an Wahlvorträgen über den Endpunkt `/api/admin/veranstaltungen/{vid}/teilnehmer/{tid}/priorities` aktualisieren. Dies ermöglicht gezielte Updates ohne Beeinflussung anderer Prioritäten.
-
-## MiniZinc-Optimierung
-
-Der `OptimierungService` ruft MiniZinc als externen Prozess auf:
-- Modell: `src/main/resources/minizinc/vortragsplanung.mzn`
-- Timeouts und Solver-Konfiguration (z.B. OR-Tools) über `SolverConfigDto`.

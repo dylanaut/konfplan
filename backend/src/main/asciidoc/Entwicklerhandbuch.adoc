@@ -85,7 +85,7 @@ cd frontend && npm install && npm run dev
 [[_backend_spezifika]]
 == 5. Backend-Spezifika
 
-Das Backend ist eine *Quarkus 3.33.1*-Anwendung (Java 21) mit RESTful API, JWT-Security und einer PostgreSQL-Datenbank für Dev/Prod sowie H2 für Tests. Es folgt einer klassischen Dreischicht-Architektur: `resource` → `service` → `persistence`.
+Das Backend ist eine *Quarkus 3.33.1*-Anwendung (Java 21) mit RESTful API, JWT-Security und einer PostgreSQL-Datenbank für Dev/Prod sowie H2 für Tests. Es folgt einer klassischen Dreischicht-Architektur: `presentation` → `service` → `persistence`.
 
 === Paketstruktur (`src/main/java/kreyj/konfplan/`)
 

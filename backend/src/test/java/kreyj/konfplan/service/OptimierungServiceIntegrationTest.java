@@ -1,10 +1,14 @@
 package kreyj.konfplan.service;
 
+import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.dto.RaumBelegungUebersichtDto;
-import kreyj.konfplan.dto.SolverConfigDto;
+import kreyj.konfplan.application.service.MinizincException;
+import kreyj.konfplan.application.service.OptimierungService;
+import kreyj.konfplan.application.service.PlanService;
+import kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto;
+import kreyj.konfplan.presentation.dto.SolverConfigDto;
 import kreyj.konfplan.persistence.*;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,8 +24,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static java.util.stream.Collectors.joining;
-import static kreyj.konfplan.dto.RaumBelegungUebersichtDto.VORTRAG_TITEL_FREI;
-import static kreyj.konfplan.dto.RaumBelegungUebersichtDto.VORTRAG_TYP_FREI;
+import static kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto.VORTRAG_TITEL_FREI;
+import static kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto.VORTRAG_TYP_FREI;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
@@ -73,7 +77,7 @@ public class OptimierungServiceIntegrationTest {
         schule.addRaum(raum2);
     }
 
-    @Transactional
+    @TestTransaction
     public Veranstaltung simpleSetup(boolean satisfiable) {
         // 2. Veranstaltung und Zeitslots
         Veranstaltung veranstaltung = new Veranstaltung();
@@ -116,7 +120,7 @@ public class OptimierungServiceIntegrationTest {
         return veranstaltung;
     }
 
-    @Transactional
+    @TestTransaction
     public Veranstaltung complexSetup() {
         // 2. Veranstaltung und Zeitslots
         Veranstaltung veranstaltung = new Veranstaltung();
@@ -197,7 +201,7 @@ public class OptimierungServiceIntegrationTest {
     }
 
     @Test
-    @Transactional
+    @TestTransaction
     public void testOptimierungslauf_withMinimalSetup() throws Exception {
         Veranstaltung veranstaltung = simpleSetup(true);
 
@@ -226,7 +230,7 @@ public class OptimierungServiceIntegrationTest {
     }
 
     @Test
-    @Transactional
+    @TestTransaction
     public void testOptimierungslauf_noAvailabilities() throws Exception {
         Veranstaltung veranstaltung = simpleSetup(false);
         Teilnehmer tn = Teilnehmer.<Teilnehmer>listAll().getFirst();
@@ -255,7 +259,7 @@ public class OptimierungServiceIntegrationTest {
     }
 
     @Test
-    @Transactional
+    @TestTransaction
     public void testOptimierungslauf_withoutResult() throws Exception {
         Veranstaltung veranstaltung = simpleSetup(false);
         Teilnehmer tn = Teilnehmer.<Teilnehmer>listAll().getFirst();
@@ -286,7 +290,7 @@ public class OptimierungServiceIntegrationTest {
     }
 
     @Test
-    @Transactional
+    @TestTransaction
     public void testOptimierungslauf_withComplexSetup() throws Exception {
         Veranstaltung veranstaltung = complexSetup();
         // 1. Optimierung durchführen
@@ -319,13 +323,13 @@ public class OptimierungServiceIntegrationTest {
         assertThat(tn2InWahlvortrag2).describedAs("Teilnehmer 2 sollte dem Wahlvortrag 2 zugewiesen sein.").isTrue();
 
         // Beide Teilnehmer sollten im Pflichtvortrag sein
-        long anzahltnImPflichtvortrag = belegungsplan.stream()
+        long anzahlTnImPflichtvortrag = belegungsplan.stream()
                 .filter(b -> "Pflichtvortrag".equals(b.getVortragTitel()))
                 .map(RaumBelegungUebersichtDto::getTeilnehmerNamen)
                 .flatMap(List::stream)
                 .distinct()
                 .count();
-        assertThat(anzahltnImPflichtvortrag)
+        assertThat(anzahlTnImPflichtvortrag)
                 .describedAs("Beide Teilnehmer sollten dem Pflichtvortrag zugewiesen sein.")
                 .isEqualTo(2);
     }

@@ -1,6 +1,10 @@
 package kreyj.konfplan.persistence;
 
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.Column;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -9,21 +13,22 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+@MappedSuperclass
 @NoArgsConstructor
-abstract class VeranstaltungsVerfuegbarkeit extends VersionedEntity {
-    @Getter
-    @Column(name = "veranstaltung_id", updatable = false)
+@Getter
+public abstract class VeranstaltungsVerfuegbarkeit extends PanacheEntityBase {
+    @Id
+    @Column(name = "veranstaltung_id")
     protected Long veranstaltungId;
+
+    @Version
+    private Long version;
 
     protected Set<Long> verfuegbareSlotIds = new HashSet<>();
 
     public Set<Long> getVerfuegbareSlotIds() {
         return Collections.unmodifiableSet(verfuegbareSlotIds);
     }
-
-    // -------------------------------------------------------------------
-    // Konstruktoren
-    // -------------------------------------------------------------------
 
     public VeranstaltungsVerfuegbarkeit(Long veranstaltungId, Set<Long> verfuegbareSlotIds) {
         Objects.requireNonNull(veranstaltungId, "VeranstaltungId darf nicht NULL sein");
@@ -32,12 +37,6 @@ abstract class VeranstaltungsVerfuegbarkeit extends VersionedEntity {
         this.veranstaltungId = veranstaltungId;
         this.verfuegbareSlotIds.addAll(verfuegbareSlotIds);
     }
-
-
-    // -------------------------------------------------------------------
-    // Helper methods
-    // -------------------------------------------------------------------
-
 
     public boolean addSlot(Slot slot) {
         return addSlot(slot.getId());
@@ -52,6 +51,6 @@ abstract class VeranstaltungsVerfuegbarkeit extends VersionedEntity {
     }
 
     public boolean removeSlot(Long slotId) {
-        return verfuegbareSlotIds.add(slotId);
+        return verfuegbareSlotIds.remove(slotId);
     }
 }

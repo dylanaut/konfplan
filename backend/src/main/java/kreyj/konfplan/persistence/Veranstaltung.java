@@ -53,7 +53,7 @@ public class Veranstaltung extends VersionedEntity {
 
     private String logo_link;
 
-    @ManyToMany
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "Veranstaltung_Gebaeude",
             joinColumns = @JoinColumn(name = "veranstaltung_id"),
@@ -65,16 +65,24 @@ public class Veranstaltung extends VersionedEntity {
         return Collections.unmodifiableSet(gebaeude);
     }
 
-
-    public void addGebaeude(Gebaeude g) {
-        if (null == g) {
+    public void addGebaeude(Gebaeude r) {
+        if (null == r) {
             return;
         }
 
-        if (gebaeude.add(g)) {
-            g.veranstaltungen.add(this);
-        }
+        gebaeude.add(r);
+        r.veranstaltungen.add(this);
     }
+
+    public void removeGebaeude(Gebaeude r) {
+        if (null == r) {
+            return;
+        }
+
+        gebaeude.remove(r);
+        r.veranstaltungen.remove(this);
+    }
+
 
     @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL, orphanRemoval = true)
     @Setter(AccessLevel.NONE)
@@ -84,21 +92,39 @@ public class Veranstaltung extends VersionedEntity {
         return Collections.unmodifiableSet(slots);
     }
 
-    public void addSlot(Slot r) {
-        if (null == r) {
+    public void addSlot(Slot slot) {
+        if (null == slot) {
             return;
         }
 
-        slots.add(r);
-        r.veranstaltung = this;
+        slots.add(slot);
+        slot.veranstaltung = this;
     }
 
 
-    @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "veranstaltung", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
     Set<Vortrag> vortraege = new HashSet<>();
 
     public Set<Vortrag> getVortraege() {
         return Collections.unmodifiableSet(vortraege);
+    }
+
+    public void addVortrag(Vortrag aVortrag) {
+        if (null == aVortrag) {
+            return;
+        }
+
+        vortraege.add(aVortrag);
+        aVortrag.veranstaltung = this;
+    }
+
+    public void removeVortrag(Vortrag aVortrag) {
+        if (null == aVortrag) {
+            return;
+        }
+
+        vortraege.remove(aVortrag);
+        aVortrag.veranstaltung = null;
     }
 
 
@@ -109,12 +135,6 @@ public class Veranstaltung extends VersionedEntity {
     public Set<Nutzer> getNutzer() {
         return Collections.unmodifiableSet(nutzer);
     }
-
-    // TODO detect and remove
-    public void setNutzer(Set<Nutzer> newNutzer) {
-        throw new UnsupportedOperationException();
-    }
-
 
     // -------------------------------------------------------------------
     // Helper methods

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.DiscriminatorType;
@@ -16,6 +17,7 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -54,30 +56,6 @@ public abstract class Vortrag extends VersionedEntity {
     @JsonIgnoreProperties({"vortraege", "nutzer", "gebaeude", "slots"})
     Veranstaltung veranstaltung;
 
-    @ManyToMany
-    @JoinTable(name = "Vortrag_EventSlot",
-            joinColumns = @JoinColumn(name = "vortrag_id"),
-            inverseJoinColumns = @JoinColumn(name = "eventslot_id"))
-    Set<Slot> verfuegbareSlots = new HashSet<>();
-
-
-    public Set<Slot> getVerfuegbareSlots() {
-        return Collections.unmodifiableSet(verfuegbareSlots);
-    }
-
-    public void addVerfuegbarenSlot(Slot slot) {
-        verfuegbareSlots.add(slot);
-    }
-
-    public void removeVerfuegbarenSlot(Slot slot) {
-        verfuegbareSlots.remove(slot);
-    }
-
-    public void clearVerfuegbareSlots() {
-        for (Slot slot : new ArrayList<>(verfuegbareSlots)) {
-            removeVerfuegbarenSlot(slot);
-        }
-    }
 
     @JsonProperty("istPflicht")
     public abstract boolean istPflicht();

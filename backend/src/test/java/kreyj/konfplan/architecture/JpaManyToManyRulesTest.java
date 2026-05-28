@@ -1,9 +1,7 @@
 package kreyj.konfplan.architecture;
 
 import com.tngtech.archunit.base.DescribedPredicate;
-import com.tngtech.archunit.core.domain.JavaClass;
-import com.tngtech.archunit.core.domain.JavaField;
-import com.tngtech.archunit.core.domain.JavaMethod;
+import com.tngtech.archunit.core.domain.*;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchCondition;
@@ -18,6 +16,7 @@ import org.junit.jupiter.api.Tag;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 @Tag("architecture")
 @AnalyzeClasses(packages = "kreyj.konfplan.persistence")
@@ -68,28 +67,68 @@ class JpaManyToManyRulesTest {
             .because("ManyToMany Collections sollten Set sein um Duplikate bei Joins zu vermeiden");
 
     /**
-     * Regel 3: Inverse Seite (mappedBy) darf keine Pflegemethoden (addX/removeX) haben
+     * Regel 3: Inverse Seite (mappedBy) darf keine Pflegemethoden haben, die die Collection direkt modifizieren.
      */
     @ArchTest
-    static final ArchRule no_modify_methods_on_mapped_side = ArchRuleDefinition
-            .noMethods()
-            .that().haveNameStartingWith("add")
-            .or().haveNameStartingWith("remove")
-            .and().areDeclaredInClassesThat(new DescribedPredicate<>(
-                    "eine 'mapped' ManyToMany Seite besitzen") {
-                @Override
-                public boolean test(JavaClass javaClass) {
-                    return javaClass.getAllFields().stream()
-                            .anyMatch(f -> f.isAnnotatedWith(ManyToMany.class)
-                                    && f.getAnnotationOfType(ManyToMany.class)
-                                    .mappedBy() != null
-                                    && !f.getAnnotationOfType(ManyToMany.class)
-                                    .mappedBy().isEmpty());
+    static final ArchRule no_modify_methods_on_mapped_M2M_side = ArchRuleDefinition.fields()
+            .that(areMappedManyToMany())
+            .should(notBeModifiedByMethodsInTheirOwnClass())
+            .because("Die inverse Seite ('mappedBy') einer @ManyToMany-Beziehung sollte die Collection nicht selbst verwalten. " +
+                    "Alle Modifikationen (add/remove) müssen über die 'owning' Seite der Beziehung erfolgen, um die Synchronisation sicherzustellen.");
+
+
+    private static DescribedPredicate<JavaField> areMappedManyToMany() {
+        return new DescribedPredicate<>("are the inverse side of a @ManyToMany relationship") {
+            @Override
+            public boolean test(JavaField field) {
+                return hasMappedM2M(field);
+            }
+        };
+    }
+
+    private static ArchCondition<JavaField> notBeModifiedByMethodsInTheirOwnClass() {
+        return new ArchCondition<>("not be modified by methods in their own class") {
+            @Override
+            public void check(JavaField mappedField, ConditionEvents events) {
+                Set<String> modificationMethodNames = Set.of("add", "addAll", "remove", "removeAll", "clear", "retainAll");
+
+                for (JavaFieldAccess access : mappedField.getAccessesToSelf()) {
+                    // We only care about accesses from within the same class
+                    if (!access.getOriginOwner().equals(mappedField.getOwner())) {
+                        continue;
+                    }
+
+                    JavaCodeUnit origin = access.getOrigin();
+                    int accessLineNumber = access.getLineNumber();
+
+                    // Check for modification calls on the same line as the field access
+                    for (JavaMethodCall call : origin.getMethodCallsFromSelf()) {
+                        if (call.getLineNumber() == accessLineNumber && modificationMethodNames.contains(call.getName())) {
+                            // This heuristic is strong: a field access and a modification call on the same line
+                            // strongly implies `field.method()`.
+                            String message = String.format(
+                                    "Methode '%s' in Klasse '%s' modifiziert die 'mappedBy' Collection '%s' direkt. " +
+                                    "Die Pflege der Beziehung darf nur von der 'owning' Seite (%s) erfolgen.",
+                                    origin.getName(), mappedField.getOwner().getName(), mappedField.getName(),
+                                    call.getOrigin().getRawParameterTypes().getFirst().getName());
+                            events.add(SimpleConditionEvent.violated(origin, message));
+                        }
+                    }
                 }
-            })
-            .should().bePublic()
-            .because("Inverse ManyToMany Seiten sollen keine öffentlichen add/remove Methoden haben – Pflege nur über Owner")
-            .allowEmptyShould(true);
+            }
+        };
+    }
+
+
+    private static boolean hasMappedM2M(JavaField f) {
+        if (f.isAnnotatedWith(ManyToMany.class)) {
+            String mappedByFieldName = f.getAnnotationOfType(ManyToMany.class).mappedBy();
+            return mappedByFieldName != null && !mappedByFieldName.isEmpty();
+        } else {
+            return false;
+        }
+    }
+
     /**
      * Regel 4: OneToMany muss orphanRemoval=true haben
      */
@@ -163,17 +202,19 @@ class JpaManyToManyRulesTest {
     static final ArchRule inverse_mapping_fields_must_be_package_private = ArchRuleDefinition
             .noFields()
             .that(new DescribedPredicate<>(
-                    "eine inverse ManyToMany oder OneToMany Beziehung ist") {
+                    "eine mapped OneToMany oder ManyToMany Relation ist") {
                 @Override
                 public boolean test(JavaField field) {
                     if (field.isAnnotatedWith(ManyToMany.class)) {
                         String mappedBy = field.getAnnotationOfType(ManyToMany.class).mappedBy();
                         return mappedBy != null && !mappedBy.isEmpty();
                     }
+
                     if (field.isAnnotatedWith(OneToMany.class)) {
                         String mappedBy = field.getAnnotationOfType(OneToMany.class).mappedBy();
                         return mappedBy != null && !mappedBy.isEmpty();
                     }
+
                     return false;
                 }
             })

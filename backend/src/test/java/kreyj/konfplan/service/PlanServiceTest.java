@@ -1,8 +1,10 @@
 package kreyj.konfplan.service;
 
+import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.application.service.PlanService;
 import kreyj.konfplan.persistence.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,7 +13,6 @@ import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @QuarkusTest
 public class PlanServiceTest {
@@ -59,11 +60,11 @@ public class PlanServiceTest {
     }
 
     @Test
-    @Transactional
+    @TestTransaction
     public void testGetDetaillierterPlanDoesNotThrowLobException() {
         // The core of the test is to call the method and ensure it completes without throwing an exception.
         // The setup method prepares a Planungsergebnis with a JSON string, simulating the LOB.
-        // The @Transactional annotation on this test method ensures that the session is active
+        // The @TestTransaction annotation on this test method ensures that the session is active
         // when getDetaillierterPlan is called, which is the context of the original problem.
         
         // We expect this call to succeed without a HibernateException
