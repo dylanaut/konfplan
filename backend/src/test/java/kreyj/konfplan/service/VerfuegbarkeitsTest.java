@@ -1,23 +1,34 @@
 package kreyj.konfplan.service;
 
-import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.application.service.AdminService;
-import kreyj.konfplan.presentation.dto.NutzerDto;
-import kreyj.konfplan.persistence.*;
-import kreyj.konfplan.presentation.AdminResource;
+import kreyj.konfplan.persistence.Gebaeude;
+import kreyj.konfplan.persistence.Gebaeudetyp;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
+import kreyj.konfplan.persistence.NutzerVerfuegbarkeitId;
+import kreyj.konfplan.persistence.Pflichtvortrag;
+import kreyj.konfplan.persistence.Planungsergebnis;
+import kreyj.konfplan.persistence.Prioritaet;
+import kreyj.konfplan.persistence.Raum;
+import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
+import kreyj.konfplan.persistence.RaumVerfuegbarkeitId;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Slot;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Vortrag;
+import kreyj.konfplan.persistence.Zuweisung;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
+import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
+import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvId;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
 public class VerfuegbarkeitsTest {
@@ -26,247 +37,199 @@ public class VerfuegbarkeitsTest {
     AdminService adminService;
 
     private Veranstaltung veranstaltung;
-    private Slot slot1;
-    private Slot slot2;
-    private Teilnehmer teilnehmer;
-    private Admin admin;
+    private Slot slot1, slot2;
+    private Teilnehmer teilnehmerA, teilnehmerB;
+    private Raum raum1, raum2;
     private Referent referent;
 
     @BeforeEach
     @Transactional
     void setUp() {
-        // Clean up database before each test
+        // 1. Full Cleanup
         Zuweisung.deleteAll();
         Prioritaet.deleteAll();
         NutzerVerfuegbarkeit.deleteAll();
-        Vortrag.deleteAll();
         RaumVerfuegbarkeit.deleteAll();
-        Slot.deleteAll();
-        Nutzer.deleteAll();
+        Vortrag.deleteAll();
         Planungsergebnis.deleteAll();
+        Slot.deleteAll();
         Veranstaltung.deleteAll();
+        Nutzer.deleteAll();
         Raum.deleteAll();
         Gebaeude.deleteAll();
 
-        // Create an Admin to be the organizer
-        admin = new Admin();
-        admin.setEmail("admin@test.com");
-        admin.setFirstName("Admin");
-        admin.setLastName("User");
-        admin.setPasswordHash("test");
-        admin.persist();
-
-        // Create a Referent for the mandatory talks
-        referent = new Referent();
-        referent.setEmail("referent@test.com");
-        referent.setFirstName("Referent");
-        referent.setLastName("User");
-        referent.setPasswordHash("test");
-        referent.persist();
-
-
-        // Create common test data
+        // 2. Create Base Entities
         veranstaltung = new Veranstaltung();
-        veranstaltung.setName("Test Event " + System.currentTimeMillis());
+        veranstaltung.setName("Verfügbarkeits-Test Event");
         veranstaltung.setBeginntAm(LocalDateTime.now());
         veranstaltung.setEndetAm(LocalDateTime.now().plusDays(1));
-        veranstaltung.setLogo("logo.png");
-        veranstaltung.setLogo_link("http://example.com");
+        veranstaltung.persistAndFlush();
+
+        slot1 = new Slot("Slot 1", veranstaltung.getBeginntAm().plusHours(1), veranstaltung.getBeginntAm().plusHours(2));
+        slot2 = new Slot("Slot 2", veranstaltung.getBeginntAm().plusHours(3), veranstaltung.getBeginntAm().plusHours(4));
+        veranstaltung.addSlot(slot1);
+        veranstaltung.addSlot(slot2);
+
+        raum1 = new Raum("Raum 1", 30);
+        raum2 = new Raum("Raum 2", 30);
+        Gebaeude gebaeude = new Gebaeude("Testgebäude", "Ort", "Straße", "12345", Gebaeudetyp.SCHULE);
+        gebaeude.addRaum(raum1);
+        gebaeude.addRaum(raum2);
+        gebaeude.persistAndFlush();
+        veranstaltung.addGebaeude(gebaeude);
+
+        teilnehmerA = new Teilnehmer();
+        teilnehmerA.setEmail("teilnehmerA@test.com");
+        teilnehmerA.setGruppe("GruppeA");
+        teilnehmerA.persistAndFlush();
+
+        teilnehmerB = new Teilnehmer();
+        teilnehmerB.setEmail("teilnehmerB@test.com");
+        teilnehmerB.setGruppe("GruppeB");
+        teilnehmerB.persistAndFlush();
+
+        referent = new Referent();
+        referent.setEmail("referent@test.com");
+        referent.persistAndFlush();
+
+        // 3. Add all resources to the event to create initial availabilities
+        veranstaltung.addNutzer(teilnehmerA);
+        veranstaltung.addNutzer(teilnehmerB);
+        veranstaltung.addNutzer(referent);
+        veranstaltung.persistAndFlush();
+    }
+
+    // --- Nutzer-Lebenszyklus Tests ---
+
+    @Test
+    @Transactional
+    void testAddNutzerToVeranstaltung() {
+        NutzerVerfuegbarkeit nvA = NutzerVerfuegbarkeit.findById(nvId(teilnehmerA, veranstaltung));
+        assertThat(nvA).isNotNull();
+        assertThat(nvA.getVerfuegbareSlotIds()).containsExactlyInAnyOrder(slot1.getId(), slot2.getId());
+
+        NutzerVerfuegbarkeit nvB = NutzerVerfuegbarkeit.findById(nvId(teilnehmerB, veranstaltung));
+        assertThat(nvB).isNotNull();
+        assertThat(nvB.getVerfuegbareSlotIds()).containsExactlyInAnyOrder(slot1.getId(), slot2.getId());
+    }
+
+    @Test
+    @Transactional
+    void testRemoveNutzerFromVeranstaltung() {
+        veranstaltung.removeNutzer(teilnehmerA);
+        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(teilnehmerA, veranstaltung));
+        assertThat(nv).isNull();
+    }
+
+    // --- Slot-Lebenszyklus Tests ---
+
+    @Test
+    @Transactional
+    void testAddSlotToVeranstaltung() {
+        Slot slot3 = new Slot("Slot 3", veranstaltung.getBeginntAm().plusHours(5), veranstaltung.getBeginntAm().plusHours(6));
+        veranstaltung.addSlot(slot3);
         veranstaltung.persist();
 
-        admin.addVeranstaltung(veranstaltung);
+        NutzerVerfuegbarkeit nvA = NutzerVerfuegbarkeit.findById(nvId(teilnehmerA, veranstaltung));
+        assertThat(nvA.getVerfuegbareSlotIds()).contains(slot3.getId());
 
-        slot1 = new Slot();
-        slot1.setDescription("Slot 1");
-        slot1.setStartTime(veranstaltung.getBeginntAm().plusHours(1));
-        slot1.setEndTime(veranstaltung.getBeginntAm().plusHours(2));
-        adminService.createEventSlot(slot1, veranstaltung.getId());
-
-        slot2 = new Slot();
-        slot2.setDescription("Slot 2");
-        slot2.setStartTime(veranstaltung.getBeginntAm().plusHours(3));
-        slot2.setEndTime(veranstaltung.getBeginntAm().plusHours(4));
-        adminService.createEventSlot(slot2, veranstaltung.getId());
-
-        NutzerDto teilnehmerDto = new NutzerDto();
-        teilnehmerDto.email = "test.teilnehmer@example.com";
-        teilnehmerDto.firstName = "Test";
-        teilnehmerDto.lastName = "Teilnehmer";
-        teilnehmerDto.role = "TEILNEHMER";
-        teilnehmerDto.isActive = true;
-        NutzerDto createdNutzer = adminService.createUser(teilnehmerDto, List.of());
-        teilnehmer = Teilnehmer.findById(createdNutzer.id);
+        RaumVerfuegbarkeit raumVerfuegbarkeit1 = RaumVerfuegbarkeit.findById(rvId(raum1, veranstaltung));
+        assertThat(raumVerfuegbarkeit1.getVerfuegbareSlotIds()).contains(slot3.getId());
     }
 
     @Test
-    @TestTransaction
-    void testAddTeilnehmerToVeranstaltung() {
-        // 1. Add participant to event
-        adminService.inviteUserToEvent(teilnehmer.getId(), veranstaltung.getId());
+    @Transactional
+    void testRemoveSlotFromVeranstaltung() {
+        veranstaltung.removeSlot(slot2);
+        veranstaltung.persist();
 
-        // 2. Assert that availabilities are created
-        NutzerVerfuegbarkeit verfuegbarkeit = NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2",
-                teilnehmer.getId(), veranstaltung.getId()).firstResult();
-        assertNotNull(verfuegbarkeit);
-        Set<Long> vSlots = veranstaltung.getSlots().stream().map(IdEntity::getId).collect(Collectors.toSet());
-        assertEquals(vSlots, verfuegbarkeit.getVerfuegbareSlotIds(), "All slots should be available.");
+        NutzerVerfuegbarkeit nvA = NutzerVerfuegbarkeit.findById(new NutzerVerfuegbarkeitId(teilnehmerA.getId(), veranstaltung.getId()));
+        assertThat(nvA.getVerfuegbareSlotIds()).doesNotContain(slot2.getId());
+
+        RaumVerfuegbarkeit raumVerfuegbarkeit1 = RaumVerfuegbarkeit.findById(rvId(raum1, veranstaltung));
+        assertThat(raumVerfuegbarkeit1.getVerfuegbareSlotIds()).doesNotContain(slot2.getId());
     }
 
-    @Test
-    @TestTransaction
-    void testRemoveTeilnehmerFromVeranstaltung() {
-        // 1. Add participant and verify initial state
-        adminService.inviteUserToEvent(teilnehmer.getId(), veranstaltung.getId());
-        assertThat(NutzerVerfuegbarkeit.count("nutzerId", teilnehmer.getId())).isEqualTo(1);
-
-        // 2. Remove participant from event
-        NutzerDto dto = AdminResource.mapNutzerToDto(teilnehmer);
-        adminService.updateUser(teilnehmer.getId(), dto, List.of()); // Pass empty list of events
-
-        // 3. Assert that availabilities are gone
-        long count = NutzerVerfuegbarkeit.count("nutzerId = ?1 and veranstaltungId = ?2", teilnehmer.getId(), veranstaltung.getId());
-        assertEquals(0, count, "Availabilities for the event should be removed.");
-    }
+    // --- Pflichtvortrag-Lebenszyklus Tests ---
 
     @Test
-    @TestTransaction
-    void testAddEventSlotToVeranstaltung() {
-        // 1. Add participant to event
-        adminService.inviteUserToEvent(teilnehmer.getId(), veranstaltung.getId());
-        assertThat(NutzerVerfuegbarkeit.count("nutzerId", teilnehmer.getId())).isEqualTo(1);
-
-        // 2. Add a new slot to the event
-        Slot slot3 = new Slot();
-        slot3.setDescription("Slot 3");
-        slot3.setStartTime(veranstaltung.getBeginntAm().plusHours(5));
-        slot3.setEndTime(veranstaltung.getBeginntAm().plusHours(6));
-        adminService.createEventSlot(slot3, veranstaltung.getId());
-
-        // 3. Assert that the participant has a new availability
-        NutzerVerfuegbarkeit neueNutzerVerfuegbarkeit =
-                NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2",
-                        teilnehmer.getId(), veranstaltung.getId()).firstResult();
-        assertNotNull(neueNutzerVerfuegbarkeit, "Availability for the new slot should exist.");
-        assertThat(neueNutzerVerfuegbarkeit.getVerfuegbareSlotIds())
-                .describedAs("New availability should be present.")
-                .contains(slot3.getId());
-    }
-
-    @Test
-    @TestTransaction
-    void testRemoveEventSlotFromVeranstaltung() {
-        // 1. Add participant to event
-        adminService.inviteUserToEvent(teilnehmer.getId(), veranstaltung.getId());
-        assertThat(NutzerVerfuegbarkeit.count("nutzerId", teilnehmer.getId())).isEqualTo(1);
-
-        // 2. Remove a slot from the event
-        adminService.deleteEventSlot(slot2.getId(), veranstaltung.getId());
-
-        // 3. Assert that the participant's availability for that slot is removed
-        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2",
-                teilnehmer.getId(), veranstaltung.getId()).firstResult();
-        assertThat(nv.getVerfuegbareSlotIds()).doesNotContain(slot2.getId());
-    }
-
-    @Test
-    @TestTransaction
-    void testAssignTeilnehmerToGruppeWithPflichtvortrag() {
-        // 1. Setup: Add participant to event, create mandatory lecture
-        adminService.inviteUserToEvent(teilnehmer.getId(), veranstaltung.getId());
-
-        Raum r = new Raum();
-        r.setName("Test Raum");
-        r.setKapazitaet(30);
-        r.persistAndFlush();
-
-        Gebaeude g = new Gebaeude();
-        g.setName("Test Gebaeude");
-        g.setStrasse("Testweg");
-        g.setHausnummer("1");
-        g.setPostleitzahl("12345");
-        g.setOrt("Teststadt");
-        g.setTyp(Gebaeudetyp.SCHULE);
-        g.addRaum(r);
-
-        g.persist();
-
-        Pflichtvortrag pv = new Pflichtvortrag();
-        pv.setTitel("Mandatory Talk");
-        pv.setVeranstaltung(veranstaltung);
-        pv.setPflichtgruppe("GroupA");
-        pv.setPflichtslot(slot1);
-        pv.setPflichtraum(r);
-        pv.setReferent(referent); // Assign mandatory referent
+    @Transactional
+    void testCreatePflichtvortrag() {
+        Pflichtvortrag pv = new Pflichtvortrag("PV", referent, veranstaltung, "GruppeA", raum1, slot1);
         pv.persist();
 
-        // 2. Assign participant to the group
-        NutzerDto dto = AdminResource.mapNutzerToDto(Nutzer.findById(teilnehmer.getId()));
-        dto.gruppe = "GroupA";
-        adminService.updateUser(teilnehmer.getId(), dto, List.of(veranstaltung.getId()));
+        NutzerVerfuegbarkeit nvA = NutzerVerfuegbarkeit.findById(nvId(teilnehmerA, veranstaltung));
+        assertThat(nvA.getVerfuegbareSlotIds()).doesNotContain(slot1.getId()).contains(slot2.getId());
 
-        // 3. Assert that the availability for the mandatory slot is now false
-        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2",
-                        teilnehmer.getId(), veranstaltung.getId())
-                .firstResult();
+        NutzerVerfuegbarkeit nvB = NutzerVerfuegbarkeit.findById(nvId(teilnehmerB, veranstaltung));
+        assertThat(nvB.getVerfuegbareSlotIds()).contains(slot1.getId(), slot2.getId());
 
-        assertNotNull(nv);
-        assertFalse(nv.getVerfuegbareSlotIds().contains(slot1.getId()), "Availability for mandatory slot1 should be false.");
+        RaumVerfuegbarkeit raumVerfuegbarkeit1 = RaumVerfuegbarkeit.findById(rvId(raum1, veranstaltung));
+        assertThat(raumVerfuegbarkeit1.getVerfuegbareSlotIds()).doesNotContain(slot1.getId()).contains(slot2.getId());
 
-        assertTrue(nv.getVerfuegbareSlotIds().contains(slot2.getId()), "Availability for other slot2 should remain true.");
+        RaumVerfuegbarkeit raumVerfuegbarkeit2 = RaumVerfuegbarkeit.findById(new RaumVerfuegbarkeitId(raum2.getId(), veranstaltung.getId()));
+        assertThat(raumVerfuegbarkeit2.getVerfuegbareSlotIds()).contains(slot1.getId(), slot2.getId());
     }
 
     @Test
-    @TestTransaction
-    void testRemoveTeilnehmerFromGruppeWithPflichtvortrag() {
-        // 1. Setup: Participant is in a group with a mandatory lecture
-        adminService.inviteUserToEvent(teilnehmer.getId(), veranstaltung.getId());
-        Gebaeude g = new Gebaeude();
-        g.setName("Test Gebaeude");
-        g.setStrasse("Testweg");
-        g.setHausnummer("1");
-        g.setPostleitzahl("12345");
-        g.setOrt("Teststadt");
-        g.setTyp(Gebaeudetyp.SCHULE);
-        g.persist();
-
-        Raum r = new Raum();
-        r.setName("Test Raum");
-        r.setKapazitaet(30);
-        r.persist();
-        g.addRaum(r);
-
-        Pflichtvortrag pv = new Pflichtvortrag();
-        pv.setTitel("Mandatory Talk");
-        pv.setVeranstaltung(veranstaltung);
-        pv.setPflichtgruppe("GroupA");
-        pv.setPflichtslot(slot1);
-        pv.setPflichtraum(r);
-        pv.setReferent(referent); // Assign mandatory referent
+    @Transactional
+    void testDeletePflichtvortrag() {
+        Pflichtvortrag pv = new Pflichtvortrag("PV", referent, veranstaltung, "GruppeA", raum1, slot1);
         pv.persist();
 
-        NutzerDto dto = AdminResource.mapNutzerToDto(teilnehmer);
-        dto.gruppe = "GroupA";
-        dto.version = teilnehmer.getVersion() + 1;
-        dto = adminService.updateUser(teilnehmer.getId(), dto, List.of(veranstaltung.getId()));
+        // Verify initial block
+        assertThat(NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>findById(nvId(teilnehmerA, veranstaltung)).getVerfuegbareSlotIds()).doesNotContain(slot1.getId());
+        assertThat(RaumVerfuegbarkeit.<RaumVerfuegbarkeit>findById(rvId(raum1, veranstaltung)).getVerfuegbareSlotIds()).doesNotContain(slot1.getId());
 
-        // Verify initial state
-        NutzerVerfuegbarkeit nvBefore =
-                NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2",
-                        teilnehmer.getId(), veranstaltung.getId()).firstResult();
-        assertFalse(nvBefore.getVerfuegbareSlotIds().contains(slot1.getId()),
-                "Pre-condition: Availability should be false.");
+        pv.delete();
 
-        // 2. Remove participant from the group
+        // Verify availability is restored
+        assertThat(NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>findById(nvId(teilnehmerA, veranstaltung)).getVerfuegbareSlotIds()).contains(slot1.getId());
+        assertThat(RaumVerfuegbarkeit.<RaumVerfuegbarkeit>findById(rvId(raum1, veranstaltung)).getVerfuegbareSlotIds()).contains(slot1.getId());
+    }
 
-        dto.gruppe = "GroupB"; // or null
-        adminService.updateUser(teilnehmer.getId(), dto, List.of(veranstaltung.getId()));
+    @Test
+    @Transactional
+    void testChangePflichtvortragSlot() {
+        Pflichtvortrag pv = new Pflichtvortrag("PV", referent, veranstaltung, "GruppeA", raum1, slot1);
+        pv.persist();
 
-        // 3. Assert that the availability is reset to true
-        NutzerVerfuegbarkeit nvAfter =
-                NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2",
-                        teilnehmer.getId(), veranstaltung.getId()).firstResult();
-        assertNotNull(nvAfter);
-        assertTrue(nvAfter.getVerfuegbareSlotIds().contains(slot1.getId()),
-                "Availability should be reset to true after leaving the group.");
+        pv.setPflichtslot(slot2);
+
+        NutzerVerfuegbarkeit nvA = NutzerVerfuegbarkeit.findById(nvId(teilnehmerA, veranstaltung));
+        assertThat(nvA.getVerfuegbareSlotIds()).contains(slot1.getId()).doesNotContain(slot2.getId());
+
+        RaumVerfuegbarkeit raumVerfuegbarkeit1 = RaumVerfuegbarkeit.findById(rvId(raum1, veranstaltung));
+        assertThat(raumVerfuegbarkeit1.getVerfuegbareSlotIds()).contains(slot1.getId()).doesNotContain(slot2.getId());
+    }
+
+    @Test
+    @Transactional
+    void testChangePflichtvortragGruppe() {
+        Pflichtvortrag pv = new Pflichtvortrag("PV", referent, veranstaltung, "GruppeA", raum1, slot1);
+        pv.persist();
+
+        pv.setPflichtgruppe("GruppeB");
+
+        NutzerVerfuegbarkeit nvA = NutzerVerfuegbarkeit.findById(nvId(teilnehmerA, veranstaltung));
+        assertThat(nvA.getVerfuegbareSlotIds()).contains(slot1.getId());
+
+        NutzerVerfuegbarkeit nvB = NutzerVerfuegbarkeit.findById(nvId(teilnehmerB, veranstaltung));
+        assertThat(nvB.getVerfuegbareSlotIds()).doesNotContain(slot1.getId());
+    }
+
+    @Test
+    @Transactional
+    void testChangePflichtvortragRaum() {
+        Pflichtvortrag pv = new Pflichtvortrag("PV", referent, veranstaltung, "GruppeA", raum1, slot1);
+        pv.persist();
+
+        pv.setPflichtraum(raum2);
+
+        RaumVerfuegbarkeit raumVerfuegbarkeit1 = RaumVerfuegbarkeit.findById(rvId(raum1, veranstaltung));
+        assertThat(raumVerfuegbarkeit1.getVerfuegbareSlotIds()).contains(slot1.getId());
+
+        RaumVerfuegbarkeit raumVerfuegbarkeit2 = RaumVerfuegbarkeit.findById(new RaumVerfuegbarkeitId(raum2.getId(), veranstaltung.getId()));
+        assertThat(raumVerfuegbarkeit2.getVerfuegbareSlotIds()).doesNotContain(slot1.getId());
     }
 }

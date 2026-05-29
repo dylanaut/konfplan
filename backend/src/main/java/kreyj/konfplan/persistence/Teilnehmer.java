@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
+
 @Entity
 @Getter
 @Setter
@@ -73,8 +75,7 @@ public class Teilnehmer extends Nutzer {
     }
 
     private void updateVerfuegbarkeit(Veranstaltung veranstaltung, Slot slot, boolean verfuegbar) {
-        NutzerVerfuegbarkeit vfbg = NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2",
-                this.getId(), veranstaltung.getId()).firstResult();
+        NutzerVerfuegbarkeit vfbg = NutzerVerfuegbarkeit.findById(nvId(this, veranstaltung));
         Long slotId = slot.getId();
 
         if (verfuegbar) {
@@ -92,8 +93,8 @@ public class Teilnehmer extends Nutzer {
     }
 
     public Set<Long> getVerfuegbareSlotIds(Veranstaltung veranstaltung) {
-        return NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>find("nutzerId = ?1 and veranstaltungId = ?2",
-                        this.getId(), veranstaltung.getId()).firstResult()
-                .getVerfuegbareSlotIds();
+        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(this, veranstaltung));
+
+        return nv.getVerfuegbareSlotIds();
     }
 }

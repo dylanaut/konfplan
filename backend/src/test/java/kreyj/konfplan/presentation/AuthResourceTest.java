@@ -10,12 +10,12 @@ import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
-import kreyj.konfplan.presentation.dto.LoginRequest;
-import kreyj.konfplan.presentation.dto.ResetRequest;
+import kreyj.konfplan.application.service.MailService;
 import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Teilnehmer;
-import kreyj.konfplan.application.service.MailService;
+import kreyj.konfplan.presentation.dto.LoginRequest;
+import kreyj.konfplan.presentation.dto.ResetRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,7 +83,7 @@ class AuthResourceTest {
 
         Mockito.when(Nutzer.findByEmail("test@example.com")).thenReturn(nutzer);
         // Wir müssen sicherstellen, dass persist() auf dem Mock-Nutzer nichts tut
-        Mockito.doNothing().when(Mockito.mock(Nutzer.class)).persist();
+        Mockito.doNothing().when(Mockito.mock(Nutzer.class)).persistAndFlush();
 
         given()
                 .queryParam("email", "test@example.com")

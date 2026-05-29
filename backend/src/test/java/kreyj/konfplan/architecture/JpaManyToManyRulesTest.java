@@ -1,7 +1,12 @@
 package kreyj.konfplan.architecture;
 
 import com.tngtech.archunit.base.DescribedPredicate;
-import com.tngtech.archunit.core.domain.*;
+import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaCodeUnit;
+import com.tngtech.archunit.core.domain.JavaField;
+import com.tngtech.archunit.core.domain.JavaFieldAccess;
+import com.tngtech.archunit.core.domain.JavaMethod;
+import com.tngtech.archunit.core.domain.JavaMethodCall;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchCondition;
@@ -108,7 +113,7 @@ class JpaManyToManyRulesTest {
                             // strongly implies `field.method()`.
                             String message = String.format(
                                     "Methode '%s' in Klasse '%s' modifiziert die 'mappedBy' Collection '%s' direkt. " +
-                                    "Die Pflege der Beziehung darf nur von der 'owning' Seite (%s) erfolgen.",
+                                            "Die Pflege der Beziehung darf nur von der 'owning' Seite (%s) erfolgen.",
                                     origin.getName(), mappedField.getOwner().getName(), mappedField.getName(),
                                     call.getOrigin().getRawParameterTypes().getFirst().getName());
                             events.add(SimpleConditionEvent.violated(origin, message));

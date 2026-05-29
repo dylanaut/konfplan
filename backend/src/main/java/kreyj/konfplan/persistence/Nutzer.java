@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.opencsv.bean.CsvBindByName;
-import io.quarkus.logging.Log;
 import io.quarkus.security.jpa.Password;
 import io.quarkus.security.jpa.Roles;
 import io.quarkus.security.jpa.UserDefinition;
@@ -27,8 +26,12 @@ import org.hibernate.annotations.NaturalId;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
+import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 
 @Entity
 @NoArgsConstructor
@@ -105,17 +108,13 @@ public abstract class Nutzer extends VersionedEntity {
         veranstaltungen.add(v);
         v.nutzer.add(this);
 
-        Log.warn("addVeranstaltung: move business logic!");
-
         if (this instanceof Referent || this instanceof Teilnehmer) {
-            NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2",
-                    this.getId(), v.getId()).firstResult();
+            NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(this, v));
             Set<Long> slotIds = v.getSlots().stream().map(Slot::getId).collect(Collectors.toSet());
             if (null == nv) {
                 nv = new NutzerVerfuegbarkeit(this, v, slotIds);
-
             } else {
-                nv.verfuegbareSlotIds = slotIds;
+                nv.setVerfuegbareSlotIds(slotIds);
             }
             nv.persist();
         }
@@ -126,22 +125,34 @@ public abstract class Nutzer extends VersionedEntity {
             return;
         }
 
-        if (veranstaltungen.remove(v)) {
-            v.nutzer.remove(this);
-        }
+        veranstaltungen.remove(v);
+        v.nutzer.remove(this);
 
-        Log.warn("removeVeranstaltung: move business logic!");
         if (this instanceof Referent || this instanceof Teilnehmer) {
-            NutzerVerfuegbarkeit.delete("nutzer = ?1 and veranstaltung = ?2", this, v);
+            NutzerVerfuegbarkeit.delete("nutzerId = ?1 and veranstaltungId = ?2", this, v);
         }
     }
 
+    public void clearVerfuegbareSlots(Veranstaltung veranstaltung) {
+        Objects.requireNonNull(veranstaltung);
+        Long vId = veranstaltung.getId();
+        Objects.requireNonNull(vId);
+
+        if (this instanceof Referent || this instanceof Teilnehmer) {
+            NutzerVerfuegbarkeit nv =
+                    NutzerVerfuegbarkeit.findById(nvIdL(this.getId(), vId));
+
+            if (null == nv) {
+                nv = new NutzerVerfuegbarkeit(this, veranstaltung, Collections.emptySet());
+            } else {
+                nv.setVerfuegbareSlotIds(Collections.emptySet());
+            }
+
+            nv.persistAndFlush();
+        }
+    }
 
     public static Nutzer findByEmail(String e) {
         return find("email", e).firstResult();
-    }
-
-    public void clearVerfuegbareSlots() {
-        System.out.println("###   UnsupportedOperationException: clearVerfuegbareSlots noch nicht implementiert");
     }
 }

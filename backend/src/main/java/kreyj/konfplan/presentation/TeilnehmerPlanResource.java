@@ -14,15 +14,15 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.application.service.PlanService;
 import kreyj.konfplan.application.service.PrioritaetService;
-import kreyj.konfplan.presentation.dto.NutzerVerfuegbarkeitDto;
-import kreyj.konfplan.presentation.dto.PrioritaetRequest;
-import kreyj.konfplan.presentation.dto.VeranstaltungDto;
-import kreyj.konfplan.presentation.dto.ZuweisungDto;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.presentation.dto.NutzerVerfuegbarkeitDto;
+import kreyj.konfplan.presentation.dto.PrioritaetRequest;
+import kreyj.konfplan.presentation.dto.VeranstaltungDto;
+import kreyj.konfplan.presentation.dto.ZuweisungDto;
 import kreyj.konfplan.util.JwtHelper;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -33,6 +33,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
+import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 
 @Path("/api/teilnehmer")
 @RolesAllowed({"TEILNEHMER", "ADMIN"})
@@ -100,9 +101,14 @@ public class TeilnehmerPlanResource {
             throw new WebApplicationException("Nutzer ist kein Teilnehmer", FORBIDDEN.getStatusCode());
         }
 
-        return NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>find("nutzerId = ?1 and veranstaltungId = ?2", nutzer.getId(), vid).firstResultOptional()
-                .map(NutzerVerfuegbarkeitDto::new)
-                .orElseThrow(() -> new WebApplicationException("Keine Verfügbarkeit für diesen Nutzer und diese Veranstaltung gefunden.", Response.Status.NOT_FOUND));
+        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(nutzer.getId(), vid));
+
+        if (null == nv) {
+            throw new WebApplicationException("Keine Verfügbarkeit für diesen Nutzer und diese Veranstaltung gefunden.",
+                    Response.Status.NOT_FOUND);
+        } else {
+            return new NutzerVerfuegbarkeitDto(nv);
+        }
     }
 
     @POST
@@ -126,7 +132,7 @@ public class TeilnehmerPlanResource {
                     .entity("Die Deadline für Teilnehmer ist bereits abgelaufen.").build();
         }
 
-        NutzerVerfuegbarkeit v = NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2", nutzer.getId(), vid).firstResult();
+        NutzerVerfuegbarkeit v = NutzerVerfuegbarkeit.findById(nvIdL(nutzer.getId(), vid));
         if (v == null) {
             return Response.status(Response.Status.NOT_FOUND).entity("Verfügbarkeitseintrag nicht gefunden.").build();
         }

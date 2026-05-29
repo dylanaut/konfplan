@@ -1,6 +1,5 @@
 package kreyj.konfplan.service;
 
-import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -13,7 +12,10 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @QuarkusTest
 public class AdminServiceTest {
@@ -34,12 +36,12 @@ public class AdminServiceTest {
         user.setEmail("test@example.com");
         user.setFirstName("Test");
         user.setLastName("User");
-        user.persist();
+        user.persistAndFlush();
         testUserId = user.getId();
     }
 
     @Test
-    @TestTransaction
+    @Transactional
     public void testConfirmEmailChange_Success() {
         // 1. Initiate email change
         String newEmail = "new.email@example.com";
@@ -62,7 +64,7 @@ public class AdminServiceTest {
     }
 
     @Test
-    @TestTransaction
+    @Transactional
     public void testConfirmEmailChange_InvalidToken() {
         // 1. Initiate email change
         String newEmail = "new.email@example.com";
@@ -82,7 +84,7 @@ public class AdminServiceTest {
     }
 
     @Test
-    @TestTransaction
+    @Transactional
     public void testConfirmEmailChange_ExpiredToken() {
         // 1. Initiate email change with an expired token
         String newEmail = "new.email@example.com";
@@ -105,7 +107,7 @@ public class AdminServiceTest {
     }
 
     @Test
-    @TestTransaction
+    @Transactional
     public void testConfirmEmailChange_MultipleConfirmations() {
         // 1. Initiate email change
         String newEmail = "new.email@example.com";

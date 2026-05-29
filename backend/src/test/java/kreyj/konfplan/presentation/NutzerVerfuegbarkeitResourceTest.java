@@ -6,7 +6,11 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.persistence.*;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Slot;
+import kreyj.konfplan.persistence.Veranstaltung;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,11 +19,10 @@ import java.time.LocalDateTime;
 import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.Response.Status.CREATED;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
-class NutzerVerfuegbarkeitResourceTest {
+class NutzerVerfuegbarkeitResourceTest extends DatabaseCleaner {
 
     Long testVid;
     Long slotId;
@@ -27,24 +30,17 @@ class NutzerVerfuegbarkeitResourceTest {
     @BeforeEach
     @Transactional
     void setup() {
-        Prioritaet.deleteAll();
-        NutzerVerfuegbarkeit.deleteAll();
-        Vortrag.deleteAll();
-        Nutzer.deleteAll();
-        Slot.deleteAll();
-        Veranstaltung.deleteAll();
-
         Veranstaltung v = new Veranstaltung();
         v.setName("Test Event");
         v.setBeginntAm(LocalDateTime.now());
-        v.persist();
+        v.persistAndFlush();
         testVid = v.getId();
 
         Slot s = new Slot();
         s.setDescription("Slot 1");
         s.setStartTime(LocalDateTime.now());
         s.setEndTime(LocalDateTime.now().plusHours(1));
-        s.persist();
+        s.persistAndFlush();
         v.addSlot(s);
         slotId = s.getId();
 
@@ -101,18 +97,18 @@ class NutzerVerfuegbarkeitResourceTest {
     @Transactional
     void testVerfuegbarkeitRemovedOnRemoveNutzer() {
         Veranstaltung v = Veranstaltung.findById(testVid);
-        
+
         Referent r = new Referent();
         r.setEmail("del@verf.de");
-        r.persist();
-        
+        r.persistAndFlush();
+
         r.addVeranstaltung(v);
-        
+
         long countBefore = NutzerVerfuegbarkeit.count("nutzer = ?1", r);
         assertThat(1).isEqualTo(countBefore);
-        
+
         r.removeVeranstaltung(v);
-        
+
         long countAfter = NutzerVerfuegbarkeit.count("nutzer = ?1", r);
         assertThat(0).isEqualTo(countAfter).describedAs("Verfügbarkeit sollte nach Entfernen des Nutzers gelöscht worden sein");
     }

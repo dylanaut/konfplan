@@ -7,18 +7,13 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.presentation.dto.RaumVerfuegbarkeitDto;
-import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
-import kreyj.konfplan.persistence.Nutzer;
-import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
-import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
+import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Vortrag;
-import kreyj.konfplan.persistence.Zuweisung;
+import kreyj.konfplan.presentation.dto.RaumVerfuegbarkeitDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
-class SlotUndRaumTest {
+class SlotUndRaumTest extends DatabaseCleaner {
 
     Long vid;
     Long otherVid;
@@ -43,23 +38,12 @@ class SlotUndRaumTest {
     @BeforeEach
     @Transactional
     void setup() {
-        Zuweisung.deleteAll();
-        RaumVerfuegbarkeit.deleteAll();
-        NutzerVerfuegbarkeit.deleteAll();
-        Prioritaet.deleteAll();
-        Vortrag.deleteAll();
-        Slot.deleteAll();
-        Nutzer.deleteAll();
-        Raum.deleteAll();
-        Gebaeude.deleteAll();
-        Veranstaltung.deleteAll();
-
         // Hauptveranstaltung
         Veranstaltung v = new Veranstaltung();
         v.setName("Haupt Event");
         v.setBeginntAm(LocalDateTime.of(2025, 10, 1, 8, 0));
         v.setEndetAm(LocalDateTime.of(2025, 10, 1, 18, 0));
-        v.persist();
+        v.persistAndFlush();
         vid = v.getId();
 
         // Andere Veranstaltung (zeitgleich)
@@ -67,7 +51,7 @@ class SlotUndRaumTest {
         v2.setName("Anderes Event");
         v2.setBeginntAm(LocalDateTime.of(2025, 10, 1, 8, 0));
         v2.setEndetAm(LocalDateTime.of(2025, 10, 1, 18, 0));
-        v2.persist();
+        v2.persistAndFlush();
         otherVid = v2.getId();
 
         Gebaeude g = new Gebaeude();
@@ -76,12 +60,12 @@ class SlotUndRaumTest {
         g.setPostleitzahl("53567");
         g.setStrasse("Wallroth");
         g.setOrt("Buchholz");
-        g.persist();
+        g.persistAndFlush();
         v.addGebaeude(g);
-        v.persist();
+        v.persistAndFlush();
 
         Raum r = new Raum("R1", 20);
-        r.persist();
+        r.persistAndFlush();
 
         g.addRaum(r);
         raumId = r.getId();
@@ -164,7 +148,7 @@ class SlotUndRaumTest {
             s1.setDescription("Slot E1");
             s1.setStartTime(LocalDateTime.of(2025, 10, 1, 9, 0));
             s1.setEndTime(LocalDateTime.of(2025, 10, 1, 10, 0));
-            s1.persist();
+            s1.persistAndFlush();
 
             Veranstaltung.<Veranstaltung>findById(vid).addSlot(s1);
 
@@ -175,9 +159,9 @@ class SlotUndRaumTest {
             s2.setDescription("Slot E2");
             s2.setStartTime(LocalDateTime.of(2025, 10, 1, 9, 30));
             s2.setEndTime(LocalDateTime.of(2025, 10, 1, 10, 30));
-            s2.persist();
+            s2.persistAndFlush();
 
-            Veranstaltung otherV = Veranstaltung.<Veranstaltung>findById(otherVid);
+            Veranstaltung otherV = Veranstaltung.findById(otherVid);
             otherV.addSlot(s2);
 
 
@@ -186,7 +170,7 @@ class SlotUndRaumTest {
             // Raum in Event 2 als belegt markieren
             RaumVerfuegbarkeit rv2 = new RaumVerfuegbarkeit(r, otherV, Set.of(s2.getId()));
 
-            rv2.persist();
+            rv2.persistAndFlush();
         });
 
         // Abfrage für Event 1: Raum sollte für s1 als "blocked" markiert sein

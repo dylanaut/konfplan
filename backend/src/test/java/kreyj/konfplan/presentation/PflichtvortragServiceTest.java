@@ -7,11 +7,11 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.presentation.dto.VortragDto;
+import kreyj.konfplan.application.service.AdminService;
+import kreyj.konfplan.application.service.TeilnehmerService;
 import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
-import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Raum;
@@ -20,10 +20,7 @@ import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Vortrag;
-import kreyj.konfplan.persistence.Wahlvortrag;
-import kreyj.konfplan.application.service.AdminService;
-import kreyj.konfplan.application.service.TeilnehmerService;
+import kreyj.konfplan.presentation.dto.VortragDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,6 +28,8 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Set;
 
+import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
+import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvId;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -40,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @QuarkusTest
 @TestSecurity(user = "admin@example.com", roles = "ADMIN")
 @QuarkusTestResource(H2DatabaseTestResource.class)
-public class PflichtvortragServiceTest {
+class PflichtvortragServiceTest extends DatabaseCleaner {
 
     @Inject
     AdminService adminService;
@@ -56,27 +55,12 @@ public class PflichtvortragServiceTest {
 
     @BeforeEach
     @Transactional
-        // Keep @Transactional for setup to ensure data is created and then rolled back
     void setup() {
-        // Clear all entities before each test
-        NutzerVerfuegbarkeit.deleteAll();
-        RaumVerfuegbarkeit.deleteAll();
-        Pflichtvortrag.deleteAll();
-        Wahlvortrag.deleteAll();
-        Vortrag.deleteAll();
-        Teilnehmer.deleteAll();
-        Referent.deleteAll();
-        Slot.deleteAll();
-        Raum.deleteAll();
-        Gebaeude.deleteAll();
-        Veranstaltung.deleteAll();
-        Nutzer.deleteAll();
-
         // Setup Admin for @TestSecurity
         Admin admin = new Admin();
         admin.setEmail("admin@example.com");
         admin.setPasswordHash("hash");
-        admin.persist();
+        admin.persistAndFlush();
 
         gebaeude = new Gebaeude();
         gebaeude.setName("Hauptgebäude");
@@ -84,40 +68,40 @@ public class PflichtvortragServiceTest {
         gebaeude.setPostleitzahl("12345");
         gebaeude.setOrt("Testort");
         gebaeude.setStrasse("Teststraße");
-        gebaeude.persist();
+        gebaeude.persistAndFlush();
 
         veranstaltung = new Veranstaltung();
         veranstaltung.setName("Test Event");
         veranstaltung.setBeginntAm(LocalDateTime.of(2024, 1, 1, 9, 0));
         veranstaltung.setEndetAm(LocalDateTime.of(2024, 1, 1, 17, 0));
         veranstaltung.addGebaeude(gebaeude);
-        veranstaltung.persist();
+        veranstaltung.persistAndFlush();
 
 
         raum1 = new Raum();
         raum1.setName("Raum 1");
         raum1.setKapazitaet(2);
-        raum1.persist();
+        raum1.persistAndFlush();
         gebaeude.addRaum(raum1);
 
         raum2 = new Raum();
         raum2.setName("Raum 2");
         raum2.setKapazitaet(10);
-        raum2.persist();
+        raum2.persistAndFlush();
         gebaeude.addRaum(raum2);
 
         slot1 = new Slot();
         slot1.setDescription("Slot 1");
         slot1.setStartTime(LocalDateTime.of(2024, 1, 1, 9, 0));
         slot1.setEndTime(LocalDateTime.of(2024, 1, 1, 10, 0));
-        slot1.persist();
+        slot1.persistAndFlush();
         veranstaltung.addSlot(slot1);
 
         slot2 = new Slot();
         slot2.setDescription("Slot 2");
         slot2.setStartTime(LocalDateTime.of(2024, 1, 1, 10, 0));
         slot2.setEndTime(LocalDateTime.of(2024, 1, 1, 11, 0));
-        slot2.persist();
+        slot2.persistAndFlush();
         veranstaltung.addSlot(slot1);
 
         referent = new Referent();
@@ -126,7 +110,7 @@ public class PflichtvortragServiceTest {
         referent.setLastName("Erent");
         referent.setPasswordHash("hash");
         referent.addVeranstaltung(veranstaltung);
-        referent.persist();
+        referent.persistAndFlush();
 
         teilnehmer1 = new Teilnehmer();
         teilnehmer1.setEmail("tn1@example.com");
@@ -135,7 +119,7 @@ public class PflichtvortragServiceTest {
         teilnehmer1.setGruppe("Gruppe A");
         teilnehmer1.setActive(true);
         teilnehmer1.addVeranstaltung(veranstaltung);
-        teilnehmer1.persist();
+        teilnehmer1.persistAndFlush();
 
         teilnehmer2 = new Teilnehmer();
         teilnehmer2.setEmail("tn2@example.com");
@@ -144,7 +128,7 @@ public class PflichtvortragServiceTest {
         teilnehmer2.setGruppe("Gruppe A");
         teilnehmer2.setActive(true);
         teilnehmer2.addVeranstaltung(veranstaltung);
-        teilnehmer2.persist();
+        teilnehmer2.persistAndFlush();
 
         teilnehmer3 = new Teilnehmer();
         teilnehmer3.setEmail("tn3@example.com");
@@ -153,15 +137,15 @@ public class PflichtvortragServiceTest {
         teilnehmer3.setGruppe("Gruppe B");
         teilnehmer3.setActive(true);
         teilnehmer3.addVeranstaltung(veranstaltung);
-        teilnehmer3.persist();
+        teilnehmer3.persistAndFlush();
     }
 
     @Test
     @Transactional
     void testCreatePflichtvortragSuccess() {
         // Raum 2 hat Kapazität 10, Gruppe A hat 2 TN
-        Pflichtvortrag pv = new Pflichtvortrag("PV Test", referent, "Gruppe A", raum2, slot1);
-        Pflichtvortrag createdPv = (Pflichtvortrag) adminService.createVortrag(pv, veranstaltung.getId());
+        VortragDto pvDTO = pvDTO("PV Test", referent, "Gruppe A", raum2, slot1, veranstaltung);
+        Pflichtvortrag createdPv = (Pflichtvortrag) adminService.createVortrag(pvDTO);
 
         assertNotNull(createdPv.getId());
         assertEquals("PV Test", createdPv.getTitel());
@@ -172,67 +156,50 @@ public class PflichtvortragServiceTest {
         assertThat(isRaumAvailable(raum1, veranstaltung, slot1)).isTrue(); // Raum 1 not used
     }
 
+    private static VortragDto pvDTO(String titel, Referent referent, String gruppe, Raum raum, Slot slot,
+                                    Veranstaltung veranstaltung) {
+        return new VortragDto(titel, referent.getId(), gruppe, raum.getId(), slot.getId(), veranstaltung.getId());
+    }
+
     @Test
+    @Transactional
     void testCreatePflichtvortragRaumBelegtFails() {
         // Manually block raum2, slot1 in a committed transaction
-        QuarkusTransaction.requiringNew().run(() -> {
-            new RaumVerfuegbarkeit(raum2, veranstaltung, Set.of(slot1.getId())).persist();
-        });
+        new RaumVerfuegbarkeit(raum2, veranstaltung, Set.of(slot1.getId())).persistAndFlush();
 
-        Pflichtvortrag pv = new Pflichtvortrag();
-        pv.setTitel("PV Test");
-        pv.setReferent(referent);
-        pv.setPflichtgruppe("Gruppe A");
-        pv.setPflichtraum(raum2);
-        pv.setPflichtslot(slot1);
+        VortragDto pvDTO = pvDTO("PV Test", referent, "Gruppe A", raum2, slot1, veranstaltung);
 
-        assertThrows(IllegalArgumentException.class, () -> adminService.createVortrag(pv, veranstaltung.getId()));
+        assertThrows(IllegalArgumentException.class, () -> adminService.createVortrag(pvDTO));
         final long[] pvCount = {0L};
         QuarkusTransaction.requiringNew().run(() -> pvCount[0] = Pflichtvortrag.count());
         assertEquals(0L, pvCount[0]); // No PV created
     }
 
     @Test
+    @Transactional
     void testCreatePflichtvortragTeilnehmerNichtVerfuegbarFails() {
         // Manually make teilnehmer1 unavailable for slot1 in a committed transaction
-        QuarkusTransaction.requiringNew().run(() -> {
-            NutzerVerfuegbarkeit nv =
-                    NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>find("veranstaltungId = ?1 and nutzerId = ?2",
-                            veranstaltung.getId(), teilnehmer1.getId()).firstResult();
-            nv.getVerfuegbareSlotIds().remove(slot1.getId());
-            nv.persist();
-        });
+        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(teilnehmer1, veranstaltung));
+        nv.getVerfuegbareSlotIds().remove(slot1.getId());
+        nv.persistAndFlush();
 
-        Pflichtvortrag pv = new Pflichtvortrag();
-        pv.setTitel("PV Test");
-        pv.setReferent(referent);
-        pv.setPflichtgruppe("Gruppe A");
-        pv.setPflichtraum(raum2);
-        pv.setPflichtslot(slot1);
+        VortragDto pvDTO = new VortragDto("PV Test", referent, "Gruppe A", raum2, slot1, veranstaltung);
 
-        assertThrows(IllegalArgumentException.class, () -> adminService.createVortrag(pv, veranstaltung.getId()));
-        final long[] pvCount = {0L};
-        QuarkusTransaction.requiringNew().run(() -> pvCount[0] = Pflichtvortrag.count());
-        assertThat(0L).isEqualTo(pvCount[0]); // No PV created
+        assertThrows(IllegalArgumentException.class, () -> adminService.createVortrag(pvDTO));
+        assertThat(0L).isEqualTo(Pflichtvortrag.count()); // No PV created
     }
 
     @Test
+    @Transactional
     void testCreatePflichtvortragRaumKapazitaetFails() {
-        Pflichtvortrag pv = new Pflichtvortrag();
-        pv.setTitel("PV Test");
-        pv.setReferent(referent);
-        pv.setPflichtgruppe("Gruppe A"); // 2 Teilnehmer
-        pv.setPflichtraum(raum1); // Kapazität 2 (initial)
-        QuarkusTransaction.requiringNew().run(() -> { // Update raum1 in a committed transaction
-            // Retrieve the Raum persistence by its ID within this new transaction
-            Raum r = Raum.findById(raum1.getId());
-            r.setKapazitaet(1);
-            pv.setPflichtraum(r);
-        });
-        pv.setPflichtslot(slot1);
+        VortragDto pv = new VortragDto("PV Test", referent, "Gruppe A", raum1, slot1, veranstaltung);
+
+        Raum r = Raum.findById(raum1.getId());
+        r.setKapazitaet(1);
+        r.persistAndFlush();
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
-            adminService.createVortrag(pv, veranstaltung.getId());
+            adminService.createVortrag(pv);
         });
         assertThat(thrown.getMessage().contains("Raumkapazität von 'Raum 1' reicht für die Gruppe 'Gruppe A' nicht aus.")).isTrue();
         final long[] pvCount = {0L};
@@ -241,26 +208,18 @@ public class PflichtvortragServiceTest {
     }
 
     @Test
+    @Transactional
     void testCreatePflichtvortragFailsIfRaumAlreadyOccupiedByAnotherPflichtvortrag() {
         // Create first PV
-        Pflichtvortrag pv1 = new Pflichtvortrag();
-        pv1.setTitel("PV1");
-        pv1.setReferent(referent);
-        pv1.setPflichtgruppe("Gruppe A");
-        pv1.setPflichtraum(raum2);
-        pv1.setPflichtslot(slot1);
-        adminService.createVortrag(pv1, veranstaltung.getId());
+        VortragDto pv1 = new VortragDto("PV1", referent, "Gruppe A", raum2, slot1, veranstaltung);
+
+        adminService.createVortrag(pv1);
 
         // Attempt to create a second PV using the same room and slot
-        Pflichtvortrag pv2 = new Pflichtvortrag();
-        pv2.setTitel("PV2");
-        pv2.setReferent(referent);
-        pv2.setPflichtgruppe("Gruppe B"); // Different group
-        pv2.setPflichtraum(raum2); // Same room
-        pv2.setPflichtslot(slot1); // Same slot
+        VortragDto pv2 = new VortragDto("PV2", referent, "Gruppe B", raum2, slot1, veranstaltung);
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
-            adminService.createVortrag(pv2, veranstaltung.getId());
+            adminService.createVortrag(pv2);
         });
         assertThat(thrown.getMessage().contains("Raum 'Raum 2' ist im Slot 'Slot 1' bereits belegt.")).isTrue();
         final long[] pvCount = {0L};
@@ -269,26 +228,18 @@ public class PflichtvortragServiceTest {
     }
 
     @Test
+    @Transactional
     void testCreatePflichtvortragFailsIfGruppeAlreadyOccupiedByAnotherPflichtvortrag() {
         // Create first PV
-        Pflichtvortrag pv1 = new Pflichtvortrag();
-        pv1.setTitel("PV1");
-        pv1.setReferent(referent);
-        pv1.setPflichtgruppe("Gruppe A");
-        pv1.setPflichtraum(raum2);
-        pv1.setPflichtslot(slot1);
-        adminService.createVortrag(pv1, veranstaltung.getId());
+        VortragDto pv1 = new VortragDto("PV1", referent, "Gruppe A", raum2, slot1, veranstaltung);
+
+        adminService.createVortrag(pv1);
 
         // Attempt to create a second PV using the same group and slot
-        Pflichtvortrag pv2 = new Pflichtvortrag();
-        pv2.setTitel("PV2");
-        pv2.setReferent(referent);
-        pv2.setPflichtgruppe("Gruppe A"); // Same group
-        pv2.setPflichtraum(raum1); // Different room
-        pv2.setPflichtslot(slot1); // Same slot
+        VortragDto pv2 = new VortragDto("PV2", referent, "Gruppe A", raum1, slot1, veranstaltung);
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
-            adminService.createVortrag(pv2, veranstaltung.getId());
+            adminService.createVortrag(pv2);
         });
         assertThat(thrown.getMessage().contains("Nicht alle Teilnehmer der Gruppe 'Gruppe A' sind im Slot 'Slot 1' verfügbar.")).isTrue();
         final long[] pvCount = {0L};
@@ -297,15 +248,11 @@ public class PflichtvortragServiceTest {
     }
 
     @Test
+    @Transactional
     void testUpdatePflichtvortragChangeSlotSuccess() {
         // Create initial PV
-        Pflichtvortrag pv = new Pflichtvortrag();
-        pv.setTitel("PV Initial");
-        pv.setReferent(referent);
-        pv.setPflichtgruppe("Gruppe A");
-        pv.setPflichtraum(raum2); // Raum 2 hat Kapazität 10, Gruppe A hat 2 TN
-        pv.setPflichtslot(slot1);
-        Pflichtvortrag initialPv = (Pflichtvortrag) adminService.createVortrag(pv, veranstaltung.getId());
+        VortragDto pv = new VortragDto("PV Initial", referent, "Gruppe A", raum2, slot1, veranstaltung);
+        Pflichtvortrag initialPv = (Pflichtvortrag) adminService.createVortrag(pv);
 
         // Verify initial state
 
@@ -319,7 +266,7 @@ public class PflichtvortragServiceTest {
         updatedPvDto.istPflicht = true;
         updatedPvDto.titel = "PV Updated Slot";
         updatedPvDto.referentId = referent.getId();
-        updatedPvDto.pflichtgruppe = "Gruppe A";
+        updatedPvDto.pflichtGruppe = "Gruppe A";
         updatedPvDto.pflichtRaumId = raum2.getId();
         updatedPvDto.pflichtSlotId = slot2.getId();
         updatedPvDto.version = 0L;
@@ -334,29 +281,18 @@ public class PflichtvortragServiceTest {
     }
 
     @Test
+    @Transactional
     void testUpdatePflichtvortragChangeSlotFailsIfNewSlotNotAvailable() {
         // Create initial PV
-        Pflichtvortrag pv = new Pflichtvortrag();
-        pv.setTitel("PV Initial");
-        pv.setReferent(referent);
-        pv.setPflichtgruppe("Gruppe A");
-        pv.setPflichtraum(raum2);
-        pv.setPflichtslot(slot1);
-        Pflichtvortrag initialPv = (Pflichtvortrag) adminService.createVortrag(pv, veranstaltung.getId());
+        VortragDto pvDto = new VortragDto("PV Initial", referent, "Gruppe A", raum2, slot1, veranstaltung);
+        Pflichtvortrag initialPv = (Pflichtvortrag) adminService.createVortrag(pvDto);
 
         // Manually block slot2 for teilnehmer1 in a committed transaction
-        QuarkusTransaction.requiringNew().run(() -> {
-            new NutzerVerfuegbarkeit(teilnehmer1, veranstaltung, Collections.emptySet()).persist();
-        });
+        new NutzerVerfuegbarkeit(teilnehmer1, veranstaltung, Collections.emptySet()).persistAndFlush();
 
         // Attempt to update PV to change slot to slot2
-        VortragDto updatedPv = new VortragDto();
-        updatedPv.istPflicht = true;
-        updatedPv.titel = "PV Updated Slot";
-        updatedPv.referentId = referent.getId();
-        updatedPv.pflichtgruppe = "Gruppe A";
-        updatedPv.pflichtRaumId = raum2.getId();
-        updatedPv.pflichtSlotId = slot2.getId();
+        VortragDto updatedPv = new VortragDto("PV Updated Slot", referent, "Gruppe A", raum2, slot2, veranstaltung);
+
         updatedPv.version = 0L;
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
@@ -372,30 +308,18 @@ public class PflichtvortragServiceTest {
     }
 
     @Test
+    @Transactional
     void testUpdatePflichtvortragChangeRaumSuccess() {
         // Create initial PV
-        Pflichtvortrag pv = new Pflichtvortrag();
-        pv.setTitel("PV Initial");
-        pv.setReferent(referent);
-        pv.setPflichtgruppe("Gruppe A");
-        pv.setPflichtraum(raum1); // Kapazität 2
-        pv.setPflichtslot(slot1);
-        Pflichtvortrag initialPv = (Pflichtvortrag) adminService.createVortrag(pv, veranstaltung.getId());
+        VortragDto pv = new VortragDto("PV Initial", referent, "Gruppe A", raum1, slot1, veranstaltung);
+        Pflichtvortrag initialPv = (Pflichtvortrag) adminService.createVortrag(pv);
 
         // Verify initial state
         assertThat(isRaumAvailable(raum1, veranstaltung, slot1)).isFalse();
         assertThat(isRaumAvailable(raum2, veranstaltung, slot1)).isTrue();
 
         // Update PV to change room to raum2
-        VortragDto updatedPv = new VortragDto();
-        updatedPv.istPflicht = true;
-        updatedPv.titel = "PV Updated Raum";
-        updatedPv.referentId = referent.getId();
-
-        updatedPv.pflichtgruppe = "Gruppe A";
-        updatedPv.pflichtRaumId = raum2.getId();
-        // Kapazität 10
-        updatedPv.pflichtSlotId = slot1.getId();
+        VortragDto updatedPv = new VortragDto("PV Updated Raum", referent, "Gruppe A", raum2, slot1, veranstaltung);
         updatedPv.version = 0L;
 
         adminService.updateVortrag(veranstaltung.getId(), initialPv.getId(), updatedPv);
@@ -410,29 +334,16 @@ public class PflichtvortragServiceTest {
     @Transactional
     void testUpdatePflichtvortragChangeRaumFailsIfNewRaumBelegt() {
         // Create initial PV
-        Pflichtvortrag pv = new Pflichtvortrag();
-        pv.setTitel("PV Initial");
-        pv.setReferent(referent);
-        pv.setPflichtgruppe("Gruppe A");
-        pv.setPflichtraum(raum1);
-        pv.setPflichtslot(slot1);
-        Pflichtvortrag initialPv = (Pflichtvortrag) adminService.createVortrag(pv, veranstaltung.getId());
+        VortragDto pv = new VortragDto("PV Initial", referent, "Gruppe A", raum1, slot1, veranstaltung);
+        Pflichtvortrag initialPv = (Pflichtvortrag) adminService.createVortrag(pv);
 
         // Manually block raum2, slot1 in a committed transaction
         QuarkusTransaction.requiringNew().run(() -> {
-            new RaumVerfuegbarkeit(raum2, veranstaltung, Set.of(slot1.getId())).persist();
+            new RaumVerfuegbarkeit(raum2, veranstaltung, Set.of(slot1.getId())).persistAndFlush();
         });
 
         // Attempt to update PV to change room to raum2
-        VortragDto updatedPv = new VortragDto();
-        updatedPv.istPflicht = true;
-        updatedPv.titel = "PV Updated Raum";
-        updatedPv.referentId = referent.getId();
-
-        updatedPv.pflichtgruppe = "Gruppe A";
-        updatedPv.pflichtRaumId = raum2.getId();
-
-        updatedPv.pflichtSlotId = slot1.getId();
+        VortragDto updatedPv = new VortragDto("PV Updated Raum", referent, "Gruppe A", raum2, slot1, veranstaltung);
         updatedPv.version = 0L;
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
@@ -446,33 +357,18 @@ public class PflichtvortragServiceTest {
     }
 
     @Test
+    @Transactional
     void testUpdatePflichtvortragChangeRaumFailsIfNewRaumOccupiedByAnotherPflichtvortrag() {
         // Create PV1
-        Pflichtvortrag pv1 = new Pflichtvortrag();
-        pv1.setTitel("PV1");
-        pv1.setReferent(referent);
-        pv1.setPflichtgruppe("Gruppe A");
-        pv1.setPflichtraum(raum1);
-        pv1.setPflichtslot(slot1);
-        Pflichtvortrag createdPv1 = (Pflichtvortrag) adminService.createVortrag(pv1, veranstaltung.getId());
+        VortragDto pv1 = new VortragDto("PV1", referent, "Gruppe A", raum1, slot1, veranstaltung);
+        Pflichtvortrag createdPv1 = (Pflichtvortrag) adminService.createVortrag(pv1);
 
         // Create PV2 that occupies raum2, slot1
-        Pflichtvortrag pv2 = new Pflichtvortrag();
-        pv2.setTitel("PV2");
-        pv2.setReferent(referent);
-        pv2.setPflichtgruppe("Gruppe B");
-        pv2.setPflichtraum(raum2);
-        pv2.setPflichtslot(slot1);
-        adminService.createVortrag(pv2, veranstaltung.getId());
+        VortragDto pv2 = new VortragDto("PV2", referent, "Gruppe B", raum2, slot1, veranstaltung);
+        adminService.createVortrag(pv2);
 
         // Attempt to update PV1 to use raum2 (which is occupied by PV2)
-        VortragDto updatedPv1 = new VortragDto();
-        updatedPv1.istPflicht = true;
-        updatedPv1.titel = "PV1 Updated Raum";
-        updatedPv1.referentId = referent.getId();
-        updatedPv1.pflichtgruppe = "Gruppe A";
-        updatedPv1.pflichtRaumId = raum2.getId(); // Try to change to raum2
-        updatedPv1.pflichtSlotId = slot1.getId();
+        VortragDto updatedPv1 = new VortragDto("PV1 Updated Raum", referent, "Gruppe A", raum2, slot1, veranstaltung);
         updatedPv1.version = 0L;
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
@@ -486,15 +382,11 @@ public class PflichtvortragServiceTest {
     }
 
     @Test
+    @Transactional
     void testUpdatePflichtvortragChangeGruppeSuccess() {
         // Create initial PV for Gruppe A
-        Pflichtvortrag pv = new Pflichtvortrag();
-        pv.setTitel("PV Initial");
-        pv.setReferent(referent);
-        pv.setPflichtgruppe("Gruppe A");
-        pv.setPflichtraum(raum2);
-        pv.setPflichtslot(slot1);
-        Pflichtvortrag initialPv = (Pflichtvortrag) adminService.createVortrag(pv, veranstaltung.getId());
+        VortragDto pv = new VortragDto("PV Initial", referent, "Gruppe A", raum2, slot1, veranstaltung);
+        Pflichtvortrag initialPv = (Pflichtvortrag) adminService.createVortrag(pv);
 
         // Verify initial state
         assertThat(isTeilnehmerAvailable(teilnehmer1, veranstaltung, slot1)).isFalse(); // Gruppe A
@@ -502,13 +394,7 @@ public class PflichtvortragServiceTest {
         assertThat(isTeilnehmerAvailable(teilnehmer3, veranstaltung, slot1)).isTrue(); // Gruppe B
 
         // Update PV to change group to Gruppe B
-        VortragDto updatedPv = new VortragDto();
-        updatedPv.istPflicht = true;
-        updatedPv.titel = "PV Updated Gruppe";
-        updatedPv.referentId = referent.getId();
-        updatedPv.pflichtgruppe = "Gruppe B";
-        updatedPv.pflichtRaumId = raum2.getId();
-        updatedPv.pflichtSlotId = slot1.getId();
+        VortragDto updatedPv = new VortragDto("PV Updated Gruppe", referent, "Gruppe B", raum2, slot1, veranstaltung);
         updatedPv.version = 0L;
 
         adminService.updateVortrag(veranstaltung.getId(), initialPv.getId(), updatedPv);
@@ -521,29 +407,19 @@ public class PflichtvortragServiceTest {
     }
 
     @Test
+    @Transactional
     void testUpdatePflichtvortragChangeGruppeFailsIfNewGruppeNotAvailable() {
         // Create initial PV for Gruppe A
-        Pflichtvortrag pv = new Pflichtvortrag();
-        pv.setTitel("PV Initial");
-        pv.setReferent(referent);
-        pv.setPflichtgruppe("Gruppe A");
-        pv.setPflichtraum(raum2);
-        pv.setPflichtslot(slot1);
-        Pflichtvortrag initialPv = (Pflichtvortrag) adminService.createVortrag(pv, veranstaltung.getId());
+        VortragDto pv = new VortragDto("PV Initial", referent, "Gruppe A", raum2, slot1, veranstaltung);
+        Pflichtvortrag initialPv = (Pflichtvortrag) adminService.createVortrag(pv);
 
         // Manually make teilnehmer3 (Gruppe B) unavailable for slot1 in a committed transaction
         QuarkusTransaction.requiringNew().run(() -> {
-            new NutzerVerfuegbarkeit(teilnehmer3, veranstaltung, Collections.emptySet()).persist();
+            new NutzerVerfuegbarkeit(teilnehmer3, veranstaltung, Collections.emptySet()).persistAndFlush();
         });
 
         // Attempt to update PV to change group to Gruppe B
-        VortragDto updatedPv = new VortragDto();
-        updatedPv.istPflicht = true;
-        updatedPv.titel = "PV Updated Gruppe";
-        updatedPv.referentId = referent.getId();
-        updatedPv.pflichtgruppe = "Gruppe B";
-        updatedPv.pflichtRaumId = raum2.getId();
-        updatedPv.pflichtSlotId = slot1.getId();
+        VortragDto updatedPv = new VortragDto("PV Updated Gruppe", referent, "Gruppe B", raum2, slot1, veranstaltung);
         updatedPv.version = 0L;
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
@@ -557,33 +433,18 @@ public class PflichtvortragServiceTest {
     }
 
     @Test
+    @Transactional
     void testUpdatePflichtvortragChangeGruppeFailsIfNewGruppeOccupiedByAnotherPflichtvortrag() {
         // Create PV1 for Gruppe A, Slot 1
-        Pflichtvortrag pv1 = new Pflichtvortrag();
-        pv1.setTitel("PV1");
-        pv1.setReferent(referent);
-        pv1.setPflichtgruppe("Gruppe A");
-        pv1.setPflichtraum(raum2);
-        pv1.setPflichtslot(slot1);
-        Pflichtvortrag createdPv1 = (Pflichtvortrag) adminService.createVortrag(pv1, veranstaltung.getId());
+        VortragDto pv1 = new VortragDto("PV1", referent, "Gruppe A", raum2, slot1, veranstaltung);
+        Pflichtvortrag createdPv1 = (Pflichtvortrag) adminService.createVortrag(pv1);
 
         // Create PV2 for Gruppe B, Slot 1
-        Pflichtvortrag pv2 = new Pflichtvortrag();
-        pv2.setTitel("PV2");
-        pv2.setReferent(referent);
-        pv2.setPflichtgruppe("Gruppe B");
-        pv2.setPflichtraum(raum1);
-        pv2.setPflichtslot(slot1);
-        adminService.createVortrag(pv2, veranstaltung.getId());
+        VortragDto pv2 = new VortragDto("PV2", referent, "Gruppe B", raum1, slot1, veranstaltung);
+        adminService.createVortrag(pv2);
 
         // Attempt to update PV1 to use Gruppe B (which is occupied by PV2)
-        VortragDto updatedPv1 = new VortragDto();
-        updatedPv1.istPflicht = true;
-        updatedPv1.titel = "PV1 Updated Gruppe";
-        updatedPv1.referentId = referent.getId();
-        updatedPv1.pflichtgruppe = "Gruppe B"; // Try to change to Gruppe B
-        updatedPv1.pflichtRaumId = raum2.getId();
-        updatedPv1.pflichtSlotId = slot1.getId();
+        VortragDto updatedPv1 = new VortragDto("PV1 Updated Gruppe", referent, "Gruppe B", raum2, slot1, veranstaltung);
         updatedPv1.version = 0L;
 
         IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
@@ -597,15 +458,11 @@ public class PflichtvortragServiceTest {
     }
 
     @Test
+    @Transactional
     void testDeletePflichtvortragSuccess() {
         // Create initial PV
-        Pflichtvortrag pv = new Pflichtvortrag();
-        pv.setTitel("PV Test");
-        pv.setReferent(referent);
-        pv.setPflichtgruppe("Gruppe A");
-        pv.setPflichtraum(raum2);
-        pv.setPflichtslot(slot1);
-        Pflichtvortrag createdPv = (Pflichtvortrag) adminService.createVortrag(pv, veranstaltung.getId());
+        VortragDto pv = new VortragDto("PV Test", referent, "Gruppe A", raum2, slot1, veranstaltung);
+        Pflichtvortrag createdPv = (Pflichtvortrag) adminService.createVortrag(pv);
 
         // Verify initial state
         assertThat(isTeilnehmerAvailable(teilnehmer1, veranstaltung, slot1)).isFalse();
@@ -627,29 +484,19 @@ public class PflichtvortragServiceTest {
     // Helper methods to check availability
     // -------------------------------------------------------------------
 
-    // Helper to check availability - now runs in its own transaction
-    private boolean isTeilnehmerAvailable(Teilnehmer tn, Veranstaltung veranstaltung, Slot slot) {
-        final boolean[] boolArr = {false};
+    // Helper to check availability - requiring surrounding transaction
 
-        QuarkusTransaction.requiringNew().run(() -> {
-            NutzerVerfuegbarkeit nv =
-                    NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2",
-                            tn.getId(), veranstaltung.getId()).firstResult();
-            boolArr[0] = nv.getVerfuegbareSlotIds().contains(slot.getId());
-        });
-        return boolArr[0];
+    private boolean isTeilnehmerAvailable(Teilnehmer tn, Veranstaltung veranstaltung, Slot slot) {
+        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(tn, veranstaltung));
+
+        return nv.getVerfuegbareSlotIds().contains(slot.getId());
     }
 
 
     // Helper to check room availability - now runs in its own transaction
-    private boolean isRaumAvailable(Raum r, Veranstaltung veranstaltung, Slot slot) {
-        final boolean[] boolArr = {false};
+    private boolean isRaumAvailable(Raum raum, Veranstaltung veranstaltung, Slot slot) {
+        RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvId(raum, veranstaltung));
 
-        QuarkusTransaction.requiringNew().run(() -> {
-            RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.find("raum = ?1 and veranstaltung = ?2", r, veranstaltung).firstResult();
-            boolArr[0] = rv.getVerfuegbareSlotIds().contains(slot.getId());
-        });
-
-        return boolArr[0];
+        return rv.getVerfuegbareSlotIds().contains(slot.getId());
     }
 }

@@ -24,11 +24,24 @@ public abstract class VeranstaltungsVerfuegbarkeit extends PanacheEntityBase {
     @Version
     private Long version;
 
-    protected Set<Long> verfuegbareSlotIds = new HashSet<>();
+    private Set<Long> verfuegbareSlotIds = new HashSet<>();
 
     public Set<Long> getVerfuegbareSlotIds() {
         return Collections.unmodifiableSet(verfuegbareSlotIds);
     }
+
+    protected void setVerfuegbareSlotIds(Set<Long> verfuegbareSlotIds) {
+        if (null == verfuegbareSlotIds) {
+            this.verfuegbareSlotIds = Collections.emptySet();
+        } else {
+            this.verfuegbareSlotIds = new HashSet<>(verfuegbareSlotIds);
+        }
+    }
+
+
+    // -------------------------------------------------------------------
+    // Konstruktoren
+    // -------------------------------------------------------------------
 
     public VeranstaltungsVerfuegbarkeit(Long veranstaltungId, Set<Long> verfuegbareSlotIds) {
         Objects.requireNonNull(veranstaltungId, "VeranstaltungId darf nicht NULL sein");
@@ -39,6 +52,8 @@ public abstract class VeranstaltungsVerfuegbarkeit extends PanacheEntityBase {
     }
 
     public boolean addSlot(Slot slot) {
+        Objects.requireNonNull(slot);
+
         return addSlot(slot.getId());
     }
 
@@ -47,10 +62,16 @@ public abstract class VeranstaltungsVerfuegbarkeit extends PanacheEntityBase {
     }
 
     public boolean removeSlot(Slot slot) {
+        Objects.requireNonNull(slot);
+
         return removeSlot(slot.getId());
     }
 
     public boolean removeSlot(Long slotId) {
         return verfuegbareSlotIds.remove(slotId);
+    }
+
+    protected void clearVerfuegbareSlotIds() {
+        this.verfuegbareSlotIds = Collections.emptySet();
     }
 }

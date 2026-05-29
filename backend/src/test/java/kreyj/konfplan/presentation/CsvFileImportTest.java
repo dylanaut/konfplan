@@ -6,19 +6,14 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Admin;
-import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Pflichtvortrag;
-import kreyj.konfplan.persistence.Raum;
-import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
 import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
-import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.Wahlvortrag;
-import kreyj.konfplan.persistence.Zuweisung;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.commons.util.ClassLoaderUtils;
@@ -35,7 +30,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 @QuarkusTest
 @TestSecurity(user = "admin@test.de", roles = "ADMIN")
 @QuarkusTestResource(H2DatabaseTestResource.class)
-class CsvFileImportTest {
+class CsvFileImportTest extends DatabaseCleaner {
 
     public static final String CSV_DIR = "csv_import/bo_26_09/";
     Long testVid;
@@ -44,20 +39,10 @@ class CsvFileImportTest {
     @BeforeEach
     @Transactional
     void setupTransactional() {
-        Zuweisung.deleteAll();
-        NutzerVerfuegbarkeit.deleteAll();
-        RaumVerfuegbarkeit.deleteAll();
-        Vortrag.deleteAll();
-        Nutzer.deleteAll();
-        Raum.deleteAll();
-        Gebaeude.deleteAll();
-        Slot.deleteAll();
-        Veranstaltung.deleteAll();
-
         Admin admin = new Admin();
         admin.setEmail("admin@test.de");
         admin.setPasswordHash("hash");
-        admin.persist();
+        admin.persistAndFlush();
     }
 
     @BeforeEach
@@ -135,20 +120,20 @@ class CsvFileImportTest {
     }
 
     @Test
-    void testImportEventSlots() {
+    void testImportSlots() {
         given()
                 .multiPart("file", getCsvFile("slots.csv"))
                 .when().post("/api/veranstaltungen/{vid}/slots/import", testVid)
                 .then()
                 .statusCode(OK.getStatusCode());
 
-        assertThat(12).isEqualTo(Slot.count());
+        assertThat(Slot.count()).isEqualTo(12);
     }
 
     @Test
     void testImportVortraege() {
         testImportReferenten();
-        testImportEventSlots();
+        testImportSlots();
 
         given()
                 .multiPart("file", getCsvFile("wahl_vortraege.csv"))
@@ -156,7 +141,7 @@ class CsvFileImportTest {
                 .then()
                 .statusCode(OK.getStatusCode());
 
-        assertThat(16).isEqualTo(Wahlvortrag.count());
+        assertThat(Wahlvortrag.count()).isEqualTo(16);
         Wahlvortrag wv = Wahlvortrag.find("titel", "Traumberuf Polizei?").firstResult();
         assertThat(wv).describedAs("Wahlvortrag sollte importiert worden sein").isNotNull();
         assertThat(wv.isWiederholbar()).isTrue();

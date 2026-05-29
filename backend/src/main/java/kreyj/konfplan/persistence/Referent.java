@@ -9,8 +9,9 @@ import jakarta.persistence.OneToMany;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -35,12 +36,34 @@ public class Referent extends Nutzer {
     private String biography;
 
     @OneToMany(mappedBy = "referent", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<Vortrag> vortraege = new ArrayList<>();
+    Set<Vortrag> vortraege = new HashSet<>();
+
+    public Set<Vortrag> getVortraege() {
+        return Collections.unmodifiableSet(vortraege);
+    }
+
+    public void addVortrag(Vortrag aVortrag) {
+        if (null == aVortrag) {
+            return;
+        }
+
+        vortraege.add(aVortrag);
+        aVortrag.referent = this;
+    }
+
+    public void removeVortrag(Vortrag aVortrag) {
+        if (null == aVortrag) {
+            return;
+        }
+
+        vortraege.remove(aVortrag);
+        aVortrag.referent = null;
+    }
 
     // -------------------------------------------------------------------
     // Konstruktoren
     // -------------------------------------------------------------------
-    
+
     public Referent() {
         this.setRole("REFERENT");
     }

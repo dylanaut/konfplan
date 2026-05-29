@@ -6,7 +6,11 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.persistence.*;
+import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,11 +19,12 @@ import java.time.LocalDateTime;
 import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.Response.Status.CREATED;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
-class NutzerInheritanceTest extends ResourceTestBase {
+class NutzerInheritanceTest extends DatabaseCleaner {
 
     Long testVid;
 
@@ -29,16 +34,16 @@ class NutzerInheritanceTest extends ResourceTestBase {
         Admin admin = new Admin();
         admin.setEmail("org@test.de");
         admin.setPasswordHash("hash");
-        admin.persist();
+        admin.persistAndFlush();
 
         Veranstaltung v = new Veranstaltung();
         v.setName("Inheritance Test Event " + System.currentTimeMillis());
         v.setBeginntAm(LocalDateTime.now());
-        v.persist();
+        v.persistAndFlush();
         testVid = v.getId();
 
         admin.addVeranstaltung(v);
-        admin.persist();
+        admin.persistAndFlush();
     }
 
     @Test

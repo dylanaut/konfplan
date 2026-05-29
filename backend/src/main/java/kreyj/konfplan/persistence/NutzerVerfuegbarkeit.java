@@ -17,7 +17,6 @@ import java.util.Set;
 @Table(name = "NutzerVerfuegbarkeit")
 @IdClass(NutzerVerfuegbarkeitId.class)
 public class NutzerVerfuegbarkeit extends VeranstaltungsVerfuegbarkeit {
-
     @Id
     @Column(name = "nutzer_id")
     private Long nutzerId;
@@ -28,7 +27,7 @@ public class NutzerVerfuegbarkeit extends VeranstaltungsVerfuegbarkeit {
 
     public NutzerVerfuegbarkeit(Long nutzerId, Long veranstaltungId, Set<Long> verfuegbareSlotIds) {
         super(veranstaltungId, verfuegbareSlotIds);
-        Objects.requireNonNull(nutzerId, "NutzerId darf nicht NULL sein");
+        Objects.requireNonNull(nutzerId, "nutzerId darf nicht NULL sein");
         this.nutzerId = nutzerId;
     }
 

@@ -1,15 +1,29 @@
 package kreyj.konfplan.service;
 
-import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.application.service.MinizincException;
 import kreyj.konfplan.application.service.OptimierungService;
 import kreyj.konfplan.application.service.PlanService;
+import kreyj.konfplan.persistence.Gebaeude;
+import kreyj.konfplan.persistence.Gebaeudetyp;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
+import kreyj.konfplan.persistence.Pflichtvortrag;
+import kreyj.konfplan.persistence.Planungsergebnis;
+import kreyj.konfplan.persistence.Prioritaet;
+import kreyj.konfplan.persistence.Raum;
+import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Slot;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Vortrag;
+import kreyj.konfplan.persistence.Wahlvortrag;
+import kreyj.konfplan.persistence.Zuweisung;
 import kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto;
 import kreyj.konfplan.presentation.dto.SolverConfigDto;
-import kreyj.konfplan.persistence.*;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,14 +84,14 @@ public class OptimierungServiceIntegrationTest {
         schule.persistAndFlush();
 
         Raum raum1 = new Raum("Raum 1", 1);
-        raum1.persist();
+        raum1.persistAndFlush();
         Raum raum2 = new Raum("Raum 2", 2);
-        raum2.persist();
+        raum2.persistAndFlush();
         schule.addRaum(raum1);
         schule.addRaum(raum2);
     }
 
-    @TestTransaction
+    @Transactional
     public Veranstaltung simpleSetup(boolean satisfiable) {
         // 2. Veranstaltung und Zeitslots
         Veranstaltung veranstaltung = new Veranstaltung();
@@ -120,7 +134,7 @@ public class OptimierungServiceIntegrationTest {
         return veranstaltung;
     }
 
-    @TestTransaction
+    @Transactional
     public Veranstaltung complexSetup() {
         // 2. Veranstaltung und Zeitslots
         Veranstaltung veranstaltung = new Veranstaltung();
@@ -201,7 +215,7 @@ public class OptimierungServiceIntegrationTest {
     }
 
     @Test
-    @TestTransaction
+    @Transactional
     public void testOptimierungslauf_withMinimalSetup() throws Exception {
         Veranstaltung veranstaltung = simpleSetup(true);
 
@@ -230,12 +244,12 @@ public class OptimierungServiceIntegrationTest {
     }
 
     @Test
-    @TestTransaction
+    @Transactional
     public void testOptimierungslauf_noAvailabilities() throws Exception {
         Veranstaltung veranstaltung = simpleSetup(false);
         Teilnehmer tn = Teilnehmer.<Teilnehmer>listAll().getFirst();
         // tn ist nicht verfügbar für Wahlvorträge
-        tn.clearVerfuegbareSlots();
+        tn.clearVerfuegbareSlots(veranstaltung);
         tn.persistAndFlush();
 
         // 1. Optimierung durchführen
@@ -259,12 +273,12 @@ public class OptimierungServiceIntegrationTest {
     }
 
     @Test
-    @TestTransaction
+    @Transactional
     public void testOptimierungslauf_withoutResult() throws Exception {
         Veranstaltung veranstaltung = simpleSetup(false);
         Teilnehmer tn = Teilnehmer.<Teilnehmer>listAll().getFirst();
         // tn ist nicht verfügbar für Wahlvorträge
-        tn.clearVerfuegbareSlots();
+        tn.clearVerfuegbareSlots(veranstaltung);
         tn.persistAndFlush();
 
         // 1. Optimierung durchführen
@@ -290,7 +304,7 @@ public class OptimierungServiceIntegrationTest {
     }
 
     @Test
-    @TestTransaction
+    @Transactional
     public void testOptimierungslauf_withComplexSetup() throws Exception {
         Veranstaltung veranstaltung = complexSetup();
         // 1. Optimierung durchführen

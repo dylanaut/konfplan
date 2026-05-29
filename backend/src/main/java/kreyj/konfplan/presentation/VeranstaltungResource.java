@@ -21,6 +21,7 @@ import kreyj.konfplan.application.service.PlanService;
 import kreyj.konfplan.application.service.ReferentService;
 import kreyj.konfplan.application.service.TeilnehmerService;
 import kreyj.konfplan.application.service.VeranstaltungService;
+import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.presentation.dto.NutzerDto;
 import kreyj.konfplan.presentation.dto.PlanQualitaetDto;
 import kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto;
@@ -265,18 +266,20 @@ public class VeranstaltungResource {
     @POST
     @Path("/{vid}/vortraege")
     @Operation(summary = "Neuen Vortrag in Veranstaltung erstellen", description = "Erstellt einen neuen Vortrag innerhalb einer Veranstaltung.")
-    public Response createVortrag(@PathParam("vid") Long vid, @RequestBody(description = "Der zu erstellende Vortrag", required = true) Vortrag vortrag) {
-        Vortrag created = adminService.createVortrag(vortrag, vid);
+    public Response createVortrag(@PathParam("vid") Long vid,
+                                  @RequestBody(description = "Der zu erstellende Vortrag",
+                                          required = true) VortragDto vDto) {
+        Vortrag created = adminService.createVortrag(vDto);
         return Response.status(Response.Status.CREATED).entity(created).build();
     }
 
     @PUT
-    @Path("/{vid}/vortraege/{talkId}")
+    @Path("/{vid}/vortraege/{vortragId}")
     @Operation(summary = "Vortrag in Veranstaltung aktualisieren", description = "Aktualisiert einen bestehenden Vortrag innerhalb einer Veranstaltung.")
-    public Response updateVortrag(@PathParam("vid") Long vid, @PathParam("talkId") Long talkId, @RequestBody(description = "Die aktualisierten Vortragsdaten", required = true) VortragDto vortragDto) {
+    public Response updateVortrag(@PathParam("vid") Long vid, @PathParam("vortragId") Long vortragId, @RequestBody(description = "Die aktualisierten Vortragsdaten", required = true) VortragDto vortragDto) {
         Vortrag updated = null;
         try {
-            updated = adminService.updateVortrag(vid, talkId, vortragDto);
+            updated = adminService.updateVortrag(vid, vortragId, vortragDto);
         } catch (OptimisticLockException e) {
             return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
         }

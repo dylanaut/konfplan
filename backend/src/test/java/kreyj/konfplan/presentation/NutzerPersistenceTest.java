@@ -6,7 +6,13 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.persistence.*;
+import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Gebaeude;
+import kreyj.konfplan.persistence.Gebaeudetyp;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +27,7 @@ import static org.hamcrest.Matchers.matchesPattern;
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
-class NutzerPersistenceTest extends ResourceTestBase {
+class NutzerPersistenceTest extends DatabaseCleaner {
 
     public static final String TEST_VERANSTALTUNG = "Test Veranstaltung";
     Long testVid;
@@ -35,22 +41,22 @@ class NutzerPersistenceTest extends ResourceTestBase {
         g.setOrt("Testort");
         g.setPostleitzahl("12345");
         g.setTyp(Gebaeudetyp.SCHULE);
-        g.persist();
+        g.persistAndFlush();
 
         Admin admin = new Admin();
         admin.setEmail("organisator@test.de");
         admin.setPasswordHash("hash");
-        admin.persist();
+        admin.persistAndFlush();
 
         Veranstaltung v = new Veranstaltung();
         v.setName(TEST_VERANSTALTUNG + "_" + System.currentTimeMillis());
         v.setBeginntAm(LocalDateTime.now());
         v.addGebaeude(g);
-        v.persist();
+        v.persistAndFlush();
         testVid = v.getId();
 
         admin.addVeranstaltung(v);
-        admin.persist();
+        admin.persistAndFlush();
     }
 
     @Test

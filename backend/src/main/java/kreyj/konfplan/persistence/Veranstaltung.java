@@ -101,6 +101,15 @@ public class Veranstaltung extends VersionedEntity {
         slot.veranstaltung = this;
     }
 
+    public void removeSlot(Slot slot) {
+        if (null == slot) {
+            return;
+        }
+
+        slots.remove(slot);
+        slot.veranstaltung = null;
+    }
+
 
     @OneToMany(mappedBy = "veranstaltung", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
     Set<Vortrag> vortraege = new HashSet<>();
@@ -134,6 +143,22 @@ public class Veranstaltung extends VersionedEntity {
 
     public Set<Nutzer> getNutzer() {
         return Collections.unmodifiableSet(nutzer);
+    }
+
+    public void addNutzer(Nutzer nutzer) {
+        if (null == nutzer) {
+            return;
+        }
+
+        nutzer.addVeranstaltung(this);
+    }
+
+    public void removeNutzer(Nutzer nutzer) {
+        if (null == nutzer) {
+            return;
+        }
+
+        nutzer.removeVeranstaltung(this);
     }
 
     // -------------------------------------------------------------------

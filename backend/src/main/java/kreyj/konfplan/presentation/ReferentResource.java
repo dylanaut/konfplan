@@ -23,12 +23,6 @@ import jakarta.ws.rs.core.UriInfo;
 import kreyj.konfplan.application.service.MailService;
 import kreyj.konfplan.application.service.PlanService;
 import kreyj.konfplan.application.service.ReferentService;
-import kreyj.konfplan.presentation.dto.EmailChangeRequestDto;
-import kreyj.konfplan.presentation.dto.NutzerDto;
-import kreyj.konfplan.presentation.dto.NutzerVerfuegbarkeitDto;
-import kreyj.konfplan.presentation.dto.ReferentVeranstaltungDto;
-import kreyj.konfplan.presentation.dto.ReferentVortragDto;
-import kreyj.konfplan.presentation.dto.VortragDto;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Pflichtvortrag;
@@ -38,6 +32,12 @@ import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
 import kreyj.konfplan.persistence.Wahlvortrag;
+import kreyj.konfplan.presentation.dto.EmailChangeRequestDto;
+import kreyj.konfplan.presentation.dto.NutzerDto;
+import kreyj.konfplan.presentation.dto.NutzerVerfuegbarkeitDto;
+import kreyj.konfplan.presentation.dto.ReferentVeranstaltungDto;
+import kreyj.konfplan.presentation.dto.ReferentVortragDto;
+import kreyj.konfplan.presentation.dto.VortragDto;
 import kreyj.konfplan.util.JwtHelper;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -52,6 +52,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
+import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
+import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvId;
 
 @Path("/api/referenten")
 @RolesAllowed({"ADMIN", "REFERENT"})
@@ -210,11 +212,11 @@ public class ReferentResource {
     }
 
     @POST
-    @Path("/veranstaltungen/{targetEventId}/vortraege/{sourceTalkId}/clone")
+    @Path("/veranstaltungen/{targetEventId}/vortraege/{sourceVortragId}/clone")
     @Operation(summary = "Vortrag für eine andere Veranstaltung klonen", description = "Klont einen bestehenden Vortrag für eine neue Veranstaltung.")
-    public Response cloneTalkForEvent(@PathParam("targetEventId") Long targetEventId, @PathParam("sourceTalkId") Long sourceTalkId) {
+    public Response cloneTalkForEvent(@PathParam("targetEventId") Long targetEventId, @PathParam("sourceVortragId") Long sourceVortragId) {
         try {
-            VortragDto clonedTalk = referentService.cloneTalkForEvent(JwtHelper.getUserPrincipalName(jwt), sourceTalkId, targetEventId);
+            VortragDto clonedTalk = referentService.cloneTalkForEvent(JwtHelper.getUserPrincipalName(jwt), sourceVortragId, targetEventId);
             return Response.status(Response.Status.CREATED).entity(clonedTalk).build();
         } catch (WebApplicationException e) {
             return e.getResponse();
@@ -242,18 +244,18 @@ public class ReferentResource {
     }
 
     @POST
-    @Path("/veranstaltungen/{eventId}/vortraege/{talkId}/register")
+    @Path("/veranstaltungen/{eventId}/vortraege/{vortragId}/register")
     @Operation(summary = "Vortrag für Veranstaltung registrieren", description = "Registriert einen Vortrag des Referenten für eine Veranstaltung.")
-    public Response registerTalkForEvent(@PathParam("eventId") Long eventId, @PathParam("talkId") Long talkId) {
-        referentService.registerTalkForEvent(JwtHelper.getUserPrincipalName(jwt), talkId, eventId);
+    public Response registerTalkForEvent(@PathParam("eventId") Long eventId, @PathParam("vortragId") Long vortragId) {
+        referentService.registerTalkForEvent(JwtHelper.getUserPrincipalName(jwt), vortragId, eventId);
         return Response.ok().build();
     }
 
     @DELETE
-    @Path("/veranstaltungen/{eventId}/vortraege/{talkId}/deregister")
+    @Path("/veranstaltungen/{eventId}/vortraege/{vortragId}/deregister")
     @Operation(summary = "Vortrag von Veranstaltung deregistrieren", description = "Entfernt die Registrierung eines Vortrags von einer Veranstaltung.")
-    public Response deregisterTalkFromEvent(@PathParam("eventId") Long eventId, @PathParam("talkId") Long talkId) {
-        referentService.deregisterTalkFromEvent(JwtHelper.getUserPrincipalName(jwt), talkId, eventId);
+    public Response deregisterTalkFromEvent(@PathParam("eventId") Long eventId, @PathParam("vortragId") Long vortragId) {
+        referentService.deregisterTalkFromEvent(JwtHelper.getUserPrincipalName(jwt), vortragId, eventId);
         return Response.ok().build();
     }
 
@@ -266,10 +268,14 @@ public class ReferentResource {
             throw new WebApplicationException("Nutzer ist kein Referent", FORBIDDEN.getStatusCode());
         }
 
-        return NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>find("nutzerId = ?1 and veranstaltungId = ?2",
-                        nutzer.getId(), vid).firstResultOptional()
-                .map(v -> new NutzerVerfuegbarkeitDto(v.getNutzerId(), v.getVeranstaltungId(), v.getVerfuegbareSlotIds()))
-                .orElseThrow(() -> new WebApplicationException("Keine Verfügbarkeit für diesen Nutzer und diese Veranstaltung gefunden.", Response.Status.NOT_FOUND));
+        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(nutzer.getId(), vid));
+
+        if (null == nv) {
+            throw new WebApplicationException("Keine Verfügbarkeit für diesen Nutzer und diese Veranstaltung gefunden.",
+                    Response.Status.NOT_FOUND);
+        } else {
+            return new NutzerVerfuegbarkeitDto(nv);
+        }
     }
 
     @POST
@@ -293,7 +299,7 @@ public class ReferentResource {
                     .entity("Die Deadline für Referenten ist bereits abgelaufen.").build();
         }
 
-        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2", nutzer.getId(), vid).firstResult();
+        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(nutzer.getId(), vid));
         if (nv == null) {
             return Response.status(Response.Status.NOT_FOUND).entity("NutzerVerfuegbarkeit nicht gefunden.").build();
         }
@@ -341,8 +347,8 @@ public class ReferentResource {
         if (v instanceof Wahlvortrag wahlvortrag) {
             dto.wiederholbar = wahlvortrag.isWiederholbar();
             dto.maxWiederholungen = wahlvortrag.getMaxWiederholungen();
-            VortragVerfuegbarkeit vv = VortragVerfuegbarkeit.find("vortragId = ?1 AND veranstaltungId = ?2",
-                    wahlvortrag.getId(), wahlvortrag.getVeranstaltung().getId()).firstResult();
+            VortragVerfuegbarkeit vv = VortragVerfuegbarkeit.findById(vvId(
+                    wahlvortrag, wahlvortrag.getVeranstaltung()));
             if (null == vv) {
                 dto.verfuegbareSlotIds = Slot.<Slot>find("veranstaltung", v.getVeranstaltung())
                         .stream()
@@ -353,7 +359,7 @@ public class ReferentResource {
             }
         } else if (v instanceof Pflichtvortrag pflichtvortrag) {
             dto.istPflicht = true;
-            dto.pflichtgruppe = pflichtvortrag.getPflichtgruppe();
+            dto.pflichtGruppe = pflichtvortrag.getPflichtgruppe();
             if (pflichtvortrag.getPflichtslot() != null) {
                 dto.verfuegbareSlotIds = Set.of(pflichtvortrag.getPflichtslot().getId());
             }
@@ -376,7 +382,7 @@ public class ReferentResource {
             wahlvortrag.setMaxWiederholungen(dto.maxWiederholungen);
         } else {
             Pflichtvortrag pflichtvortrag = (Pflichtvortrag) vortrag;
-            pflichtvortrag.setPflichtgruppe(dto.pflichtgruppe);
+            pflichtvortrag.setPflichtgruppe(dto.pflichtGruppe);
         }
 
         return vortrag;

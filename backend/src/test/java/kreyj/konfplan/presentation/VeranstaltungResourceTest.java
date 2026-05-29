@@ -7,17 +7,24 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Slot;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.presentation.dto.NutzerDto;
 import kreyj.konfplan.presentation.dto.VeranstaltungDto;
 import kreyj.konfplan.presentation.dto.VortragDto;
-import kreyj.konfplan.persistence.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 
 import static io.restassured.RestAssured.given;
-import static jakarta.ws.rs.core.Response.Status.*;
+import static jakarta.ws.rs.core.Response.Status.CONFLICT;
+import static jakarta.ws.rs.core.Response.Status.CREATED;
+import static jakarta.ws.rs.core.Response.Status.OK;
 import static kreyj.konfplan.util.JwtHelper.tokenFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
@@ -25,7 +32,7 @@ import static org.hamcrest.CoreMatchers.is;
 @QuarkusTest
 @TestSecurity(user = "admin@test.de", roles = "ADMIN")
 @QuarkusTestResource(H2DatabaseTestResource.class)
-class VeranstaltungResourceTest extends ResourceTestBase {
+class VeranstaltungResourceTest extends DatabaseCleaner {
 
     Long testVid;
 
@@ -35,16 +42,16 @@ class VeranstaltungResourceTest extends ResourceTestBase {
         Admin admin = new Admin();
         admin.setEmail("admin@test.de");
         admin.setPasswordHash("hash");
-        admin.persist();
+        admin.persistAndFlush();
 
         Veranstaltung v = new Veranstaltung();
         v.setName("Test Event " + System.currentTimeMillis());
         v.setBeginntAm(LocalDateTime.now());
-        v.persist();
+        v.persistAndFlush();
         testVid = v.getId();
 
         admin.addVeranstaltung(v);
-        admin.persist();
+        admin.persistAndFlush();
     }
 
     @Test
@@ -65,13 +72,13 @@ class VeranstaltungResourceTest extends ResourceTestBase {
         Referent r = new Referent();
         r.setEmail("ref-" + System.currentTimeMillis() + "@vresource.de");
         r.setLastName("Mustermann");
-        r.persist();
+        r.persistAndFlush();
 
         Wahlvortrag v = new Wahlvortrag();
         v.setTitel(titel);
         v.setReferent(r);
         v.setVeranstaltung(Veranstaltung.findById(testVid));
-        v.persist();
+        v.persistAndFlush();
     }
 
     @Test
@@ -81,7 +88,7 @@ class VeranstaltungResourceTest extends ResourceTestBase {
             s1.setDescription("Slot A");
             s1.setStartTime(LocalDateTime.now());
             s1.setEndTime(LocalDateTime.now().plusHours(1));
-            s1.persist();
+            s1.persistAndFlush();
             Veranstaltung.<Veranstaltung>findById(testVid).addSlot(s1);
         });
 
@@ -128,32 +135,29 @@ class VeranstaltungResourceTest extends ResourceTestBase {
     }
 
     @Test
+    @Transactional
     void testOptimisticLockingForVortrag() {
-        final Long[] vortragId = new Long[1];
         final String referentEmail = "referent@test.de";
         final String referentPassword = "password";
 
         // 1. Create a Referent and a Wahlvortrag
-        QuarkusTransaction.requiringNew().run(() -> {
-            Referent r = new Referent();
-            r.setEmail(referentEmail);
-            r.setPasswordHash(referentPassword);
-            r.setFirstName("Referent");
-            r.setLastName("Test");
-            r.persist();
+        Referent r = new Referent();
+        r.setEmail(referentEmail);
+        r.setPasswordHash(referentPassword);
+        r.setFirstName("Referent");
+        r.setLastName("Test");
+        r.persistAndFlush();
 
-            Wahlvortrag w = new Wahlvortrag();
-            w.setTitel("Original Vortrag Titel");
-            w.setReferent(r);
-            w.setVeranstaltung(Veranstaltung.findById(testVid));
-            w.persist();
-            vortragId[0] = w.getId();
-        });
+        Wahlvortrag w = new Wahlvortrag();
+        w.setTitel("Original Vortrag Titel");
+        w.setReferent(r);
+        w.setVeranstaltung(Veranstaltung.findById(testVid));
+        w.persistAndFlush();
 
         // 2. Admin (via @TestSecurity) fetches vortrag data
-        Long talkId = vortragId[0];
+        Long vortragId = w.getId();
         VortragDto adminFetchedVortrag = given()
-                .when().get("/api/veranstaltungen/{vid}/vortraege/{vortragId}", testVid, talkId)
+                .when().get("/api/veranstaltungen/{vid}/vortraege/{vortragId}", testVid, vortragId)
                 .then()
                 .statusCode(OK.getStatusCode())
                 .extract().as(VortragDto.class);
@@ -162,7 +166,7 @@ class VeranstaltungResourceTest extends ResourceTestBase {
         String referentToken = tokenFor(referentEmail, "REFERENT");
         VortragDto referentFetchedVortrag = given()
                 .auth().oauth2(referentToken)
-                .when().get("/api/veranstaltungen/{vid}/vortraege/{vortragId}", testVid, talkId)
+                .when().get("/api/veranstaltungen/{vid}/vortraege/{vortragId}", testVid, vortragId)
                 .then()
                 .statusCode(OK.getStatusCode())
                 .extract().as(VortragDto.class);
@@ -176,7 +180,7 @@ class VeranstaltungResourceTest extends ResourceTestBase {
         given()
                 .contentType(ContentType.JSON)
                 .body(adminFetchedVortrag)
-                .when().put("/api/veranstaltungen/{vid}/vortraege/{vortragId}", testVid, talkId)
+                .when().put("/api/veranstaltungen/{vid}/vortraege/{vortragId}", testVid, vortragId)
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("titel", is("Admin Updated Vortrag Titel"))
@@ -188,13 +192,13 @@ class VeranstaltungResourceTest extends ResourceTestBase {
                 .auth().oauth2(referentToken)
                 .contentType(ContentType.JSON)
                 .body(referentFetchedVortrag) // This DTO has the old version
-                .when().put("/api/veranstaltungen/{vid}/vortraege/{vortragId}", testVid, talkId)
+                .when().put("/api/veranstaltungen/{vid}/vortraege/{vortragId}", testVid, vortragId)
                 .then()
                 .statusCode(CONFLICT.getStatusCode()); // Expect conflict
 
         // 6. Verify data integrity: only Admin's changes should be present
         VortragDto finalVortrag = given()
-                .when().get("/api/veranstaltungen/{vid}/vortraege/{vortragId}", testVid, talkId)
+                .when().get("/api/veranstaltungen/{vid}/vortraege/{vortragId}", testVid, vortragId)
                 .then()
                 .statusCode(OK.getStatusCode())
                 .extract().as(VortragDto.class);

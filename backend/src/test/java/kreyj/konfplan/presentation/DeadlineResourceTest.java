@@ -9,10 +9,13 @@ import io.quarkus.test.security.jwt.Claim;
 import io.quarkus.test.security.jwt.JwtSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.presentation.dto.PrioritaetRequest;
-import kreyj.konfplan.presentation.dto.VortragDto;
 import kreyj.konfplan.presentation.dto.VeranstaltungDto;
-import kreyj.konfplan.persistence.*;
+import kreyj.konfplan.presentation.dto.VortragDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +29,7 @@ import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
-class DeadlineResourceTest {
+class DeadlineResourceTest extends DatabaseCleaner {
 
     Long pastEventId;
     Long refId;
@@ -36,29 +39,20 @@ class DeadlineResourceTest {
     @BeforeEach
     @Transactional
     void setup() {
-        // Aufräumen
-        Zuweisung.deleteAll();
-        RaumVerfuegbarkeit.deleteAll();
-        NutzerVerfuegbarkeit.deleteAll();
-        Prioritaet.deleteAll();
-        Vortrag.deleteAll();
-        Nutzer.deleteAll();
-        Veranstaltung.deleteAll();
-
         // Veranstaltung mit abgelaufenen Deadlines
         Veranstaltung v = new Veranstaltung();
         v.setName("Abgelaufenes Event");
         v.setBeginntAm(LocalDateTime.now().plusDays(10));
         v.setDeadlineReferenten(LocalDateTime.now().minusDays(1));
         v.setDeadlineTeilnehmer(LocalDateTime.now().minusDays(1));
-        v.persist();
+        v.persistAndFlush();
         pastEventId = v.getId();
 
         // Referent
         Referent r = new Referent();
         r.setEmail("referent@test.de");
         r.setPasswordHash(BcryptUtil.bcryptHash("test"));
-        r.persist();
+        r.persistAndFlush();
         refId = r.getId();
 
         // Teilnehmer
@@ -66,7 +60,7 @@ class DeadlineResourceTest {
         t.setEmail("teilnehmer@test.de");
         t.setPasswordHash(BcryptUtil.bcryptHash("test"));
         t.addVeranstaltung(v);
-        t.persist();
+        t.persistAndFlush();
         tnId = t.getId();
 
         // Vortrag für das Event (damit man was ändern/löschen könnte)
@@ -74,7 +68,7 @@ class DeadlineResourceTest {
         wv.setTitel("Testvortrag");
         wv.setVeranstaltung(v);
         wv.setReferent(r);
-        wv.persist();
+        wv.persistAndFlush();
         wahlvortragId = wv.getId();
     }
 

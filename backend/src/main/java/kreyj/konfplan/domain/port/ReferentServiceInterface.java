@@ -14,8 +14,8 @@ public interface ReferentServiceInterface {
     VortragDto createVortrag(String username, VortragDto dto);
     VortragDto updateVortrag(String username, Long vortragId, VortragDto dto);
     boolean deleteVortrag(String username, Long vortragId);
-    VortragDto cloneTalkForEvent(String username, Long sourceTalkId, Long targetEventId);
+    VortragDto cloneTalkForEvent(String username, Long sourceVortragId, Long targetEventId);
     List<ReferentVeranstaltungDto> getReferentVeranstaltungen(String username);
-    void registerTalkForEvent(String username, Long talkId, Long eventId);
-    void deregisterTalkFromEvent(String username, Long talkId, Long eventId);
+    void registerTalkForEvent(String username, Long vortragId, Long eventId);
+    void deregisterTalkFromEvent(String username, Long vortragId, Long eventId);
 }

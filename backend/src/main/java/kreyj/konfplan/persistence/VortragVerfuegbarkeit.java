@@ -28,7 +28,8 @@ public class VortragVerfuegbarkeit extends VeranstaltungsVerfuegbarkeit {
 
     public VortragVerfuegbarkeit(Long vortragId, Long veranstaltungId, Set<Long> verfuegbareSlotIds) {
         super(veranstaltungId, verfuegbareSlotIds);
-        Objects.requireNonNull(vortragId, "VortragId darf nicht NULL sein");
+
+        Objects.requireNonNull(vortragId, "vortragId darf nicht NULL sein");
         this.vortragId = vortragId;
     }
 

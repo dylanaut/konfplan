@@ -1,33 +1,41 @@
 package kreyj.konfplan.presentation;
 
-import io.quarkus.test.TestTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Slot;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.presentation.dto.NutzerDto;
 import kreyj.konfplan.presentation.dto.VeranstaltungDto;
 import kreyj.konfplan.presentation.dto.VerfuegbarkeitDto;
-import kreyj.konfplan.persistence.*;
 import kreyj.konfplan.util.JwtHelper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 
 import static io.restassured.RestAssured.given;
-import static jakarta.ws.rs.core.Response.Status.*;
+import static jakarta.ws.rs.core.Response.Status.CONFLICT;
+import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
+import static jakarta.ws.rs.core.Response.Status.NO_CONTENT;
+import static jakarta.ws.rs.core.Response.Status.OK;
+import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
 @TestSecurity(user = "admin@example.com", roles = "ADMIN")
 @QuarkusTestResource(H2DatabaseTestResource.class)
-class AdminResourceTest extends ResourceTestBase {
+class AdminResourceTest extends DatabaseCleaner {
 
     Long adminId;
 
@@ -37,17 +45,17 @@ class AdminResourceTest extends ResourceTestBase {
         Admin admin = new Admin();
         admin.setEmail("admin@example.com");
         admin.setPasswordHash("hash");
-        admin.persist();
+        admin.persistAndFlush();
 
         adminId = admin.getId();
     }
 
     @Test
-    @TestTransaction
+    @Transactional
     void testGetAllUsersGlobal() {
         Admin a = new Admin();
         a.setEmail("admin1@example.com");
-        a.persist();
+        a.persistAndFlush();
 
         given()
                 .when().get("/api/admin/nutzer")
@@ -58,7 +66,7 @@ class AdminResourceTest extends ResourceTestBase {
     }
 
     @Test
-    @TestTransaction
+    @Transactional
     void testCreateUser() {
         NutzerDto dto = new NutzerDto();
         dto.email = "new@test.de";
@@ -78,11 +86,11 @@ class AdminResourceTest extends ResourceTestBase {
     }
 
     @Test
-    @TestTransaction
+    @Transactional
     void testUpdateUser() {
         Teilnehmer t = new Teilnehmer();
         t.setEmail("old@test.de");
-        t.persist();
+        t.persistAndFlush();
         Long userId = t.getId();
 
         NutzerDto dto = new NutzerDto();
@@ -107,11 +115,11 @@ class AdminResourceTest extends ResourceTestBase {
     }
 
     @Test
-    @TestTransaction
+    @Transactional
     void testDeleteUser() {
         Teilnehmer t = new Teilnehmer();
         t.setEmail("todelete@test.de");
-        t.persist();
+        t.persistAndFlush();
         Long userId = t.getId();
 
         given()
@@ -123,17 +131,17 @@ class AdminResourceTest extends ResourceTestBase {
     }
 
     @Test
-    @TestTransaction
+    @Transactional
     void testInviteUser() {
         Teilnehmer t = new Teilnehmer();
         t.setEmail("invite@test.de");
-        t.persist();
+        t.persistAndFlush();
         Long userId = t.getId();
 
         Veranstaltung v = new Veranstaltung();
         v.setName("Invite Event");
         v.setBeginntAm(LocalDateTime.now().plusDays(1));
-        v.persist();
+        v.persistAndFlush();
         Long eventId = v.getId();
 
         Admin orga = Admin.findById(adminId);
@@ -150,13 +158,13 @@ class AdminResourceTest extends ResourceTestBase {
     }
 
     @Test
-    @TestTransaction
+    @Transactional
     void testVerfuegbarkeitenEndpoints() {
         Veranstaltung v = new Veranstaltung();
         v.setName("Event " + System.currentTimeMillis());
         v.setBeginntAm(LocalDateTime.now());
         v.persistAndFlush();
-        Long vid = v.getId();
+        Long vId = v.getId();
 
         Slot slot = new Slot();
         slot.setDescription("Slot 1");
@@ -164,50 +172,47 @@ class AdminResourceTest extends ResourceTestBase {
         slot.setEndTime(LocalDateTime.now().plusHours(1));
         v.addSlot(slot);
         slot.persistAndFlush();
-        Long sid = slot.getId();
+        Long slotId = slot.getId();
 
         Referent referent = new Referent();
         referent.setEmail("ref@test.de");
         referent.setPasswordHash("hash");
         referent.persistAndFlush();
         referent.addVeranstaltung(v);
-        Long rid = referent.getId();
-
-        NutzerVerfuegbarkeit vf = new NutzerVerfuegbarkeit(referent, v, Set.of(slot.getId()));
-        vf.persist();
+        Long refId = referent.getId();
 
         // GET Test
         given()
-                .when().get("/api/admin/veranstaltungen/{vid}/verfuegbarkeiten", vid)
+                .when().get("/api/admin/veranstaltungen/{vid}/verfuegbarkeiten", vId)
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("size()", is(1))
-                .body("[0].nutzerId", is(rid.intValue()));
+                .body("[0].nutzerId", is(refId.intValue()));
 
         // POST Test (Update)
-        VerfuegbarkeitDto updateDto = new VerfuegbarkeitDto(rid, sid, false);
+        VerfuegbarkeitDto updateDto = new VerfuegbarkeitDto(refId, slotId, false);
         given()
                 .contentType(ContentType.JSON)
                 .body(updateDto)
-                .when().post("/api/admin/veranstaltungen/{vid}/verfuegbarkeiten", vid)
+                .when().post("/api/admin/veranstaltungen/{vid}/verfuegbarkeiten", vId)
                 .then()
                 .statusCode(OK.getStatusCode());
 
         // Verifizieren
-        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2",
-                rid, vid).firstResult();
-        assertThat(nv.getVerfuegbareSlotIds()).doesNotContain(sid);
+        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(refId, vId));
+
+        assertThat(nv.getVerfuegbareSlotIds()).doesNotContain(slotId);
     }
 
     @Test
-    @TestTransaction
+    @Transactional
     void testOptimisticLockingFuerTeilnehmerProfil() {
         Teilnehmer t = new Teilnehmer();
         t.setEmail("teilnehmer@example.com");
         t.setPasswordHash("password");
         t.setFirstName("Original");
         t.setLastName("Name");
-        t.persist();
+        t.persistAndFlush();
         Long tnId = t.getId();
 
         // 2. Admin 1 fetches teilnehmer data (initial version)
@@ -264,19 +269,19 @@ class AdminResourceTest extends ResourceTestBase {
     }
 
     @Test
-    @TestTransaction
+    @Transactional
     void testOptimisticLockingForVeranstaltungName() {
         Veranstaltung v = new Veranstaltung();
-        v.setName ("Original Event Name");
+        v.setName("Original Event Name");
         v.setBeginntAm(LocalDateTime.now().plusDays(1));
         v.setEndetAm(LocalDateTime.now().plusDays(2));
-        v.persist();
+        v.persistAndFlush();
         Long vid = v.getId();
 
         Admin admin2 = new Admin();
         admin2.setEmail("admin2@example.com");
         admin2.setPasswordHash("hash");
-        admin2.persist();
+        admin2.persistAndFlush();
 
         given()
                 .when().get("/api/veranstaltungen")

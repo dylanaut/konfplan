@@ -17,11 +17,6 @@ import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.application.service.AdminService;
 import kreyj.konfplan.application.service.MailService;
 import kreyj.konfplan.application.service.PrioritaetService;
-import kreyj.konfplan.presentation.dto.AdminPrioritaetUpdateRequestDto;
-import kreyj.konfplan.presentation.dto.NutzerDto;
-import kreyj.konfplan.presentation.dto.NutzerVerfuegbarkeitDto;
-import kreyj.konfplan.presentation.dto.RaumVerfuegbarkeitDto;
-import kreyj.konfplan.presentation.dto.VortragPrioDto;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
@@ -29,6 +24,11 @@ import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Vortrag;
+import kreyj.konfplan.presentation.dto.AdminPrioritaetUpdateRequestDto;
+import kreyj.konfplan.presentation.dto.NutzerDto;
+import kreyj.konfplan.presentation.dto.NutzerVerfuegbarkeitDto;
+import kreyj.konfplan.presentation.dto.RaumVerfuegbarkeitDto;
+import kreyj.konfplan.presentation.dto.VortragPrioDto;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
@@ -37,6 +37,9 @@ import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 import java.util.Collections;
 import java.util.List;
+
+import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
+import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvIdL;
 
 @Path("/api/admin")
 @RolesAllowed("ADMIN")
@@ -184,8 +187,9 @@ public class AdminResource {
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Operation(summary = "Verfügbarkeiten abrufen", description = "Ruft die Verfügbarkeiten aller Nutzer für eine Veranstaltung ab.")
     public List<NutzerVerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
-        return NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>find("veranstaltungId", vid).stream()
-                .map(v -> new NutzerVerfuegbarkeitDto(v.getNutzerId(), v.getVeranstaltungId(), v.getVerfuegbareSlotIds()))
+        return NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>find("veranstaltungId", vid)
+                .stream()
+                .map(NutzerVerfuegbarkeitDto::new)
                 .toList();
     }
 
@@ -194,8 +198,8 @@ public class AdminResource {
     @Transactional
     @Operation(summary = "Verfügbarkeit aktualisieren", description = "Aktualisiert die Verfügbarkeit eines Nutzers für einen bestimmten Slot.")
     public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten") NutzerVerfuegbarkeitDto dto) {
-        NutzerVerfuegbarkeit verfuegbarkeit = NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2",
-                dto.getNutzerId(), vid).firstResult();
+        NutzerVerfuegbarkeit verfuegbarkeit = NutzerVerfuegbarkeit.findById(nvIdL(dto.getNutzerId(), vid));
+
         if (verfuegbarkeit == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
@@ -219,8 +223,7 @@ public class AdminResource {
     @Transactional
     @Operation(summary = "Raum-Verfügbarkeit aktualisieren", description = "Aktualisiert die Belegung eines Raumes für einen bestimmten Slot.")
     public Response updateRaumVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Raum-Verfügbarkeitsdaten", required = true) RaumVerfuegbarkeitDto dto) {
-        RaumVerfuegbarkeit verfuegbarkeit = RaumVerfuegbarkeit.find("raumId = ?1 and veranstaltungId = ?2",
-                dto.getRaumId(), vid).firstResult();
+        RaumVerfuegbarkeit verfuegbarkeit = RaumVerfuegbarkeit.findById(rvIdL(dto.getRaumId(), vid));
         if (verfuegbarkeit == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }

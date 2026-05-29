@@ -33,7 +33,7 @@ public interface AdminServiceInterface {
     Slot updateEventSlot(Long id, Slot updated, Long veranstaltungId);
     boolean deleteEventSlot(Long id, Long veranstaltungId);
     int importSlotsFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception;
-    Vortrag updateVortrag(Long veranstaltungId, Long talkId, VortragDto updated);
+    Vortrag updateVortrag(Long veranstaltungId, Long vortragId, VortragDto updated);
     boolean deleteVortrag(Long id, Long veranstaltungId);
     List<VortragStatDto> getStats(Long veranstaltungId);
 }

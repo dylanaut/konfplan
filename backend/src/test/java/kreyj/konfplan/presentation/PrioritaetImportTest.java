@@ -3,8 +3,13 @@ package kreyj.konfplan.presentation;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.persistence.*;
 import kreyj.konfplan.application.service.AdminService;
+import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Prioritaet;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Wahlvortrag;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @QuarkusTest
 @TestSecurity(user = "admin@test.de", roles = "ADMIN")
-public class PrioritaetImportTest {
+class PrioritaetImportTest extends DatabaseCleaner {
 
     Long testVid;
     Long wv1Id;
@@ -27,57 +32,46 @@ public class PrioritaetImportTest {
     @BeforeEach
     @Transactional
     void setup() {
-        Zuweisung.deleteAll();
-        Prioritaet.deleteAll();
-        NutzerVerfuegbarkeit.deleteAll();
-        Vortrag.deleteAll();
-        RaumVerfuegbarkeit.deleteAll();
-        Slot.deleteAll();
-        Veranstaltung.deleteAll();
-        Nutzer.deleteAll();
-        Raum.deleteAll();
-        Gebaeude.deleteAll();
-
         Admin admin = new Admin();
         admin.setEmail("admin@test.de");
         admin.setPasswordHash("hash");
-        admin.persist();
+        admin.persistAndFlush();
 
         Veranstaltung v = new Veranstaltung();
         v.setName("Test Event " + System.currentTimeMillis());
         v.setBeginntAm(LocalDateTime.of(2025, 10, 10, 9, 0));
         v.setEndetAm(LocalDateTime.of(2025, 10, 10, 17, 0));
-        v.persist();
+        v.persistAndFlush();
         testVid = v.getId();
 
         admin.addVeranstaltung(v);
-        admin.persist();
+        admin.persistAndFlush();
 
         Teilnehmer t1 = new Teilnehmer();
         t1.setEmail("teilnehmer1@test.de");
         t1.setPasswordHash("hash");
         t1.addVeranstaltung(v);
-        t1.persist();
+        t1.persistAndFlush();
         teilnehmer1Id = t1.getId();
 
         Referent r1 = new Referent();
-        r1.setEmail( "referent1@test.de");
+        r1.setEmail("referent1@test.de");
         r1.setPasswordHash("hash");
         r1.addVeranstaltung(v);
-        r1.persist();
+        r1.persistAndFlush();
 
         Wahlvortrag wv1 = new Wahlvortrag();
-        wv1.setTitel( "Wahlvortrag 1");
+        wv1.setTitel("Wahlvortrag 1");
         wv1.setVeranstaltung(v);
         wv1.setReferent(r1);
-        wv1.persist();
+        wv1.persistAndFlush();
         wv1Id = wv1.getId();
 
         Wahlvortrag wv2 = new Wahlvortrag();
         wv2.setTitel("Wahlvortrag 2");
         wv2.setVeranstaltung(v);
         wv2.setReferent(r1); // same referent for simplicity
-        wv2.persist();
+        wv2.persistAndFlush();
         wv2Id = wv2.getId();
     }
 

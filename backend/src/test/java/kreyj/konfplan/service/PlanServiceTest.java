@@ -1,11 +1,15 @@
 package kreyj.konfplan.service;
 
-import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.application.service.PlanService;
-import kreyj.konfplan.persistence.*;
+import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
+import kreyj.konfplan.persistence.Planungsergebnis;
+import kreyj.konfplan.persistence.Prioritaet;
+import kreyj.konfplan.persistence.Slot;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Vortrag;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +40,7 @@ public class PlanServiceTest {
         veranstaltung = new Veranstaltung();
         veranstaltung.setName("Test Event");
         veranstaltung.setBeginntAm(LocalDateTime.now());
-        veranstaltung.persist();
+        veranstaltung.persistAndFlush();
 
         Planungsergebnis ergebnis = new Planungsergebnis();
         ergebnis.setVeranstaltung(veranstaltung);
@@ -56,24 +60,24 @@ public class PlanServiceTest {
                   "besucht": []
                 }
                 """);
-        ergebnis.persist();
+        ergebnis.persistAndFlush();
     }
 
     @Test
-    @TestTransaction
+    @Transactional
     public void testGetDetaillierterPlanDoesNotThrowLobException() {
         // The core of the test is to call the method and ensure it completes without throwing an exception.
         // The setup method prepares a Planungsergebnis with a JSON string, simulating the LOB.
-        // The @TestTransaction annotation on this test method ensures that the session is active
+        // The @Transactional annotation on this test method ensures that the session is active
         // when getDetaillierterPlan is called, which is the context of the original problem.
-        
+
         // We expect this call to succeed without a HibernateException
         var detaillierterPlan = planService.getDetaillierterPlan(veranstaltung.getId());
 
         // A simple assertion to verify that the method ran and returned a (potentially empty) list.
         assertThat(detaillierterPlan).describedAs("The returned plan should not be null.")
                 .isNotNull();
-        
+
         // The primary assertion is implicit: the test fails if a HibernateException is thrown.
         assertDoesNotThrow(() -> {
             // You could add more complex processing of the result here if needed,

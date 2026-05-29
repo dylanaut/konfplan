@@ -7,10 +7,6 @@ import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import kreyj.konfplan.presentation.dto.NutzerDto;
-import kreyj.konfplan.presentation.dto.ReferentVeranstaltungDto;
-import kreyj.konfplan.presentation.dto.VortragDto;
-import kreyj.konfplan.presentation.dto.csv.ReferentCsvDto;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Pflichtvortrag;
@@ -23,6 +19,10 @@ import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.presentation.ReferentResource;
+import kreyj.konfplan.presentation.dto.NutzerDto;
+import kreyj.konfplan.presentation.dto.ReferentVeranstaltungDto;
+import kreyj.konfplan.presentation.dto.VortragDto;
+import kreyj.konfplan.presentation.dto.csv.ReferentCsvDto;
 import org.jboss.logging.Logger;
 
 import java.io.FileReader;
@@ -34,6 +34,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+
+import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvIdL;
 
 @ApplicationScoped
 public class ReferentService {
@@ -167,9 +169,9 @@ public class ReferentService {
     }
 
     @Transactional
-    public void registerTalkForEvent(String email, Long talkId, Long eventId) {
+    public void registerTalkForEvent(String email, Long vortragId, Long eventId) {
         Referent referent = Referent.find("email", email).firstResult();
-        Vortrag sourceTalk = Vortrag.findById(talkId);
+        Vortrag sourceTalk = Vortrag.findById(vortragId);
         Veranstaltung targetEvent = Veranstaltung.findById(eventId);
 
         if (referent == null || sourceTalk == null || targetEvent == null) {
@@ -213,13 +215,13 @@ public class ReferentService {
     }
 
     @Transactional
-    public VortragDto cloneTalkForEvent(String email, Long sourceTalkId, Long targetEventId) {
+    public VortragDto cloneTalkForEvent(String email, Long sourceVortragId, Long targetEventId) {
         Referent referent = Referent.find("email", email).firstResult();
         if (referent == null) {
             throw new WebApplicationException("Referent nicht gefunden.", Response.Status.NOT_FOUND);
         }
 
-        Vortrag sourceTalk = Vortrag.findById(sourceTalkId);
+        Vortrag sourceTalk = Vortrag.findById(sourceVortragId);
         if (sourceTalk == null) {
             throw new WebApplicationException("Quell-Vortrag nicht gefunden.", Response.Status.NOT_FOUND);
         }
@@ -274,9 +276,9 @@ public class ReferentService {
     }
 
     @Transactional
-    public void deregisterTalkFromEvent(String email, Long talkId, Long eventId) {
+    public void deregisterTalkFromEvent(String email, Long vortragId, Long eventId) {
         Referent referent = Referent.find("email", email).firstResult();
-        Vortrag talk = Vortrag.findById(talkId);
+        Vortrag talk = Vortrag.findById(vortragId);
         Veranstaltung event = Veranstaltung.findById(eventId);
 
         if (referent == null || talk == null || event == null) {
@@ -294,7 +296,7 @@ public class ReferentService {
         if (event.getBeginntAm().isAfter(LocalDateTime.now())) {
             mailService.sendVortragsRegistrierung(event, referent, talk, false);
         }
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag von Event abgemeldet", "Referent '" + email + "' hat Vortrag '" + titel + "' von Event '" + event.getName() + "' abgemeldet.", talkId);
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag von Event abgemeldet", "Referent '" + email + "' hat Vortrag '" + titel + "' von Event '" + event.getName() + "' abgemeldet.", vortragId);
     }
 
     private void updateVortragFromDto(Vortrag vortrag, VortragDto dto) {
@@ -314,18 +316,16 @@ public class ReferentService {
                 wahlvortrag.setMaxWiederholungen(dto.maxWiederholungen);
             }
             if (dto.verfuegbareSlotIds != null) {
-                VortragVerfuegbarkeit vv = VortragVerfuegbarkeit.find("vortragId = ?1 AND veranstaltungId = ?2",
-                        dto.id, dto.veranstaltungId).firstResult();
+                VortragVerfuegbarkeit vv = VortragVerfuegbarkeit.findById(vvIdL(dto.id, dto.veranstaltungId));
 
                 if (null == vv) {
                     vv = new VortragVerfuegbarkeit(dto.id, dto.veranstaltungId, dto.verfuegbareSlotIds);
-
                 }
 
                 vv.persist();
             }
         } else if (vortrag instanceof Pflichtvortrag pflichtvortrag) {
-            pflichtvortrag.setPflichtgruppe(dto.pflichtgruppe);
+            pflichtvortrag.setPflichtgruppe(dto.pflichtGruppe);
             pflichtvortrag.setPflichtraum(Raum.findById(dto.pflichtRaumId));
             pflichtvortrag.setPflichtslot(Slot.findById(dto.pflichtRaumId));
         }
