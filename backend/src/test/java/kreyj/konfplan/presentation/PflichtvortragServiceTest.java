@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.Set;
+import java.util.List;
 
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
 import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvId;
@@ -90,27 +90,25 @@ class PflichtvortragServiceTest extends DatabaseCleaner {
         raum2.persistAndFlush();
         gebaeude.addRaum(raum2);
 
-        slot1 = new Slot();
-        slot1.setDescription("Slot 1");
-        slot1.setStartTime(LocalDateTime.of(2024, 1, 1, 9, 0));
-        slot1.setEndTime(LocalDateTime.of(2024, 1, 1, 10, 0));
+        slot1 = new Slot("Slot 1",
+                LocalDateTime.of(2024, 1, 1, 9, 0),
+                LocalDateTime.of(2024, 1, 1, 10, 0), veranstaltung);
         slot1.persistAndFlush();
         veranstaltung.addSlot(slot1);
 
-        slot2 = new Slot();
-        slot2.setDescription("Slot 2");
-        slot2.setStartTime(LocalDateTime.of(2024, 1, 1, 10, 0));
-        slot2.setEndTime(LocalDateTime.of(2024, 1, 1, 11, 0));
+        slot2 = new Slot("Slot 2",
+                LocalDateTime.of(2024, 1, 1, 10, 0),
+                LocalDateTime.of(2024, 1, 1, 11, 0), veranstaltung);
         slot2.persistAndFlush();
-        veranstaltung.addSlot(slot1);
+        veranstaltung.addSlot(slot2);
 
         referent = new Referent();
         referent.setEmail("ref@example.com");
         referent.setFirstName("Ref");
         referent.setLastName("Erent");
         referent.setPasswordHash("hash");
-        referent.addVeranstaltung(veranstaltung);
         referent.persistAndFlush();
+        referent.addVeranstaltung(veranstaltung);
 
         teilnehmer1 = new Teilnehmer();
         teilnehmer1.setEmail("tn1@example.com");
@@ -118,8 +116,8 @@ class PflichtvortragServiceTest extends DatabaseCleaner {
         teilnehmer1.setLastName("GruppeA");
         teilnehmer1.setGruppe("Gruppe A");
         teilnehmer1.setActive(true);
-        teilnehmer1.addVeranstaltung(veranstaltung);
         teilnehmer1.persistAndFlush();
+        teilnehmer1.addVeranstaltung(veranstaltung);
 
         teilnehmer2 = new Teilnehmer();
         teilnehmer2.setEmail("tn2@example.com");
@@ -127,8 +125,8 @@ class PflichtvortragServiceTest extends DatabaseCleaner {
         teilnehmer2.setLastName("GruppeA");
         teilnehmer2.setGruppe("Gruppe A");
         teilnehmer2.setActive(true);
-        teilnehmer2.addVeranstaltung(veranstaltung);
         teilnehmer2.persistAndFlush();
+        teilnehmer2.addVeranstaltung(veranstaltung);
 
         teilnehmer3 = new Teilnehmer();
         teilnehmer3.setEmail("tn3@example.com");
@@ -136,8 +134,8 @@ class PflichtvortragServiceTest extends DatabaseCleaner {
         teilnehmer3.setLastName("GruppeB");
         teilnehmer3.setGruppe("Gruppe B");
         teilnehmer3.setActive(true);
-        teilnehmer3.addVeranstaltung(veranstaltung);
         teilnehmer3.persistAndFlush();
+        teilnehmer3.addVeranstaltung(veranstaltung);
     }
 
     @Test
@@ -165,14 +163,13 @@ class PflichtvortragServiceTest extends DatabaseCleaner {
     @Transactional
     void testCreatePflichtvortragRaumBelegtFails() {
         // Manually block raum2, slot1 in a committed transaction
-        new RaumVerfuegbarkeit(raum2, veranstaltung, Set.of(slot1.getId())).persistAndFlush();
+        new RaumVerfuegbarkeit(raum2, veranstaltung, List.of(slot1.getId())).persistAndFlush();
 
         VortragDto pvDTO = pvDTO("PV Test", referent, "Gruppe A", raum2, slot1, veranstaltung);
 
         assertThrows(IllegalArgumentException.class, () -> adminService.createVortrag(pvDTO));
-        final long[] pvCount = {0L};
-        QuarkusTransaction.requiringNew().run(() -> pvCount[0] = Pflichtvortrag.count());
-        assertEquals(0L, pvCount[0]); // No PV created
+
+        assertThat(Pflichtvortrag.count()).isZero(); // No PV created
     }
 
     @Test
@@ -202,9 +199,7 @@ class PflichtvortragServiceTest extends DatabaseCleaner {
             adminService.createVortrag(pv);
         });
         assertThat(thrown.getMessage().contains("Raumkapazität von 'Raum 1' reicht für die Gruppe 'Gruppe A' nicht aus.")).isTrue();
-        final long[] pvCount = {0L};
-        QuarkusTransaction.requiringNew().run(() -> pvCount[0] = Pflichtvortrag.count());
-        assertEquals(0, pvCount[0]); // No PV created
+        assertThat(Pflichtvortrag.count()).isEqualTo(0L);
     }
 
     @Test
@@ -222,9 +217,7 @@ class PflichtvortragServiceTest extends DatabaseCleaner {
             adminService.createVortrag(pv2);
         });
         assertThat(thrown.getMessage().contains("Raum 'Raum 2' ist im Slot 'Slot 1' bereits belegt.")).isTrue();
-        final long[] pvCount = {0L};
-        QuarkusTransaction.requiringNew().run(() -> pvCount[0] = Pflichtvortrag.count());
-        assertEquals(1, pvCount[0]); // Only PV1 created
+        assertThat(Pflichtvortrag.count()).isEqualTo(1L); // Only PV1 created
     }
 
     @Test
@@ -242,9 +235,7 @@ class PflichtvortragServiceTest extends DatabaseCleaner {
             adminService.createVortrag(pv2);
         });
         assertThat(thrown.getMessage().contains("Nicht alle Teilnehmer der Gruppe 'Gruppe A' sind im Slot 'Slot 1' verfügbar.")).isTrue();
-        final long[] pvCount = {0L};
-        QuarkusTransaction.requiringNew().run(() -> pvCount[0] = Pflichtvortrag.count());
-        assertEquals(1, pvCount[0]); // Only PV1 created
+        assertThat(Pflichtvortrag.count()).isEqualTo(1L); // Only PV1 created
     }
 
     @Test
@@ -288,7 +279,7 @@ class PflichtvortragServiceTest extends DatabaseCleaner {
         Pflichtvortrag initialPv = (Pflichtvortrag) adminService.createVortrag(pvDto);
 
         // Manually block slot2 for teilnehmer1 in a committed transaction
-        new NutzerVerfuegbarkeit(teilnehmer1, veranstaltung, Collections.emptySet()).persistAndFlush();
+        new NutzerVerfuegbarkeit(teilnehmer1, veranstaltung, Collections.emptyList()).persistAndFlush();
 
         // Attempt to update PV to change slot to slot2
         VortragDto updatedPv = new VortragDto("PV Updated Slot", referent, "Gruppe A", raum2, slot2, veranstaltung);
@@ -338,9 +329,8 @@ class PflichtvortragServiceTest extends DatabaseCleaner {
         Pflichtvortrag initialPv = (Pflichtvortrag) adminService.createVortrag(pv);
 
         // Manually block raum2, slot1 in a committed transaction
-        QuarkusTransaction.requiringNew().run(() -> {
-            new RaumVerfuegbarkeit(raum2, veranstaltung, Set.of(slot1.getId())).persistAndFlush();
-        });
+        new RaumVerfuegbarkeit(raum2, veranstaltung, List.of(slot1.getId())).persistAndFlush();
+
 
         // Attempt to update PV to change room to raum2
         VortragDto updatedPv = new VortragDto("PV Updated Raum", referent, "Gruppe A", raum2, slot1, veranstaltung);
@@ -414,9 +404,7 @@ class PflichtvortragServiceTest extends DatabaseCleaner {
         Pflichtvortrag initialPv = (Pflichtvortrag) adminService.createVortrag(pv);
 
         // Manually make teilnehmer3 (Gruppe B) unavailable for slot1 in a committed transaction
-        QuarkusTransaction.requiringNew().run(() -> {
-            new NutzerVerfuegbarkeit(teilnehmer3, veranstaltung, Collections.emptySet()).persistAndFlush();
-        });
+        new NutzerVerfuegbarkeit(teilnehmer3, veranstaltung, Collections.emptyList()).persistAndFlush();
 
         // Attempt to update PV to change group to Gruppe B
         VortragDto updatedPv = new VortragDto("PV Updated Gruppe", referent, "Gruppe B", raum2, slot1, veranstaltung);
@@ -463,21 +451,20 @@ class PflichtvortragServiceTest extends DatabaseCleaner {
         // Create initial PV
         VortragDto pv = new VortragDto("PV Test", referent, "Gruppe A", raum2, slot1, veranstaltung);
         Pflichtvortrag createdPv = (Pflichtvortrag) adminService.createVortrag(pv);
+        Long createdId = createdPv.getId();
 
         // Verify initial state
         assertThat(isTeilnehmerAvailable(teilnehmer1, veranstaltung, slot1)).isFalse();
         assertThat(isRaumAvailable(raum2, veranstaltung, slot1)).isFalse();
 
         // Delete PV
-        adminService.deleteVortrag(createdPv.getId(), veranstaltung.getId());
+        adminService.deleteVortrag(createdId, veranstaltung.getId());
 
         // Verify new state
         assertThat(isTeilnehmerAvailable(teilnehmer1, veranstaltung, slot1)).isTrue(); // Freed
         assertThat(isRaumAvailable(raum2, veranstaltung, slot1)).isTrue(); // Freed
 
-        Object[] resultArr = {""};
-        QuarkusTransaction.requiringNew().run(() -> resultArr[0] = Pflichtvortrag.findById(createdPv.getId()));
-        assertNull(resultArr[0]); // PV deleted
+        assertThat(Pflichtvortrag.<Pflichtvortrag>findById(createdId)).isNull(); // PV deleted
     }
 
     // -------------------------------------------------------------------

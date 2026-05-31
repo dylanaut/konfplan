@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
 import java.util.Set;
 
 @RegisterForReflection
@@ -17,7 +18,7 @@ import java.util.Set;
 public class NutzerVerfuegbarkeitDto {
     private Long nutzerId;
     private Long veranstaltungId;
-    private Set<Long> verfuegbareSlotIds;
+    private List<Long> verfuegbareSlotIds;
 
     // -------------------------------------------------------------------
     // Konstruktoren

@@ -1,5 +1,6 @@
 package kreyj.konfplan.presentation;
 
+import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.logging.Log;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.transaction.Transactional;
@@ -99,7 +100,7 @@ public class AdminResource {
         NutzerDto createdNutzerDto = adminService.createUser(dto, dto.veranstaltungIds);
         // E-Mail nach erfolgreicher Erstellung senden
         Nutzer createdNutzer = Nutzer.findById(createdNutzerDto.id);
-        if (createdNutzer != null) {
+        if (null != createdNutzer) {
             mailService.sendRegistrationConfirmation(createdNutzer);
         }
         return createdNutzerDto;
@@ -136,9 +137,9 @@ public class AdminResource {
     @Operation(summary = "Nutzer löschen", description = "Löscht einen Nutzer und sendet eine Benachrichtigungs-E-Mail.")
     public void deleteUser(@PathParam("id") Long id) {
         Nutzer nutzerToDelete = Nutzer.findById(id); // Nutzer vor dem Löschen abrufen
-        adminService.deleteUser(id);
-        if (nutzerToDelete != null) {
-            mailService.sendUserDeletionNotification(nutzerToDelete);
+
+        if (null != nutzerToDelete) {
+            adminService.deleteUser(id);
         }
     }
 
@@ -187,8 +188,10 @@ public class AdminResource {
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Operation(summary = "Verfügbarkeiten abrufen", description = "Ruft die Verfügbarkeiten aller Nutzer für eine Veranstaltung ab.")
     public List<NutzerVerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
-        return NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>find("veranstaltungId", vid)
-                .stream()
+        List<NutzerVerfuegbarkeit> alle = NutzerVerfuegbarkeit.listAll();
+        List<NutzerVerfuegbarkeit> nvs = NutzerVerfuegbarkeit.find("veranstaltungId", vid).list();
+
+        return nvs.stream()
                 .map(NutzerVerfuegbarkeitDto::new)
                 .toList();
     }
@@ -203,9 +206,7 @@ public class AdminResource {
         if (verfuegbarkeit == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        verfuegbarkeit.getVerfuegbareSlotIds().clear();
-        verfuegbarkeit.getVerfuegbareSlotIds().addAll(dto.getVerfuegbareSlotIds());
-        verfuegbarkeit.persist();
+        verfuegbarkeit.setVerfuegbareSlotIds(dto.getVerfuegbareSlotIds());
         return Response.ok().build();
     }
 
@@ -223,12 +224,11 @@ public class AdminResource {
     @Transactional
     @Operation(summary = "Raum-Verfügbarkeit aktualisieren", description = "Aktualisiert die Belegung eines Raumes für einen bestimmten Slot.")
     public Response updateRaumVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Raum-Verfügbarkeitsdaten", required = true) RaumVerfuegbarkeitDto dto) {
-        RaumVerfuegbarkeit verfuegbarkeit = RaumVerfuegbarkeit.findById(rvIdL(dto.getRaumId(), vid));
+        RaumVerfuegbarkeit verfuegbarkeit = RaumVerfuegbarkeit.findById(rvIdL(dto.raumId, vid));
         if (verfuegbarkeit == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        verfuegbarkeit.getVerfuegbareSlotIds().clear();
-        verfuegbarkeit.getVerfuegbareSlotIds().addAll(dto.getVerfuegbareSlotIds());
+        verfuegbarkeit.setVerfuegbareSlotIds(dto.verfuegbareSlotIds);
         verfuegbarkeit.persist();
         return Response.ok().build();
     }

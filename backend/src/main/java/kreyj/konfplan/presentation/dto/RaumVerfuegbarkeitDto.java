@@ -7,17 +7,17 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
 import java.util.Set;
 
 @RegisterForReflection
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter
-@Setter
+
 public class RaumVerfuegbarkeitDto {
-    private Long raumId;
-    private Long veranstaltungId;
-    private Set<Long> verfuegbareSlotIds;
+    public Long raumId;
+    public Long veranstaltungId;
+    public List<Long> verfuegbareSlotIds;
     public boolean isBlockedByOtherEvent;
     public String blockingEventName;
 

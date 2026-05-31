@@ -9,6 +9,7 @@ import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
@@ -40,8 +41,26 @@ class CsvImportTest extends DatabaseCleaner {
         admin.setPasswordHash("hash");
         admin.persistAndFlush();
 
+        Referent r = new Referent();
+        r.setEmail("vortrag@ref.de");
+        r.setFirstName("Max");
+        r.setLastName("Ref");
+        r.setPasswordHash("hash");
+        r.persistAndFlush();
+
         Gebaeude gebaeude = setupGebaeude("RKS_LINZ");
+        gebaeude.addRaum(new Raum("A101", 30));
+
         testVid = setupVeranstaltung(admin, List.of(gebaeude));
+
+        Veranstaltung veranstaltung = Veranstaltung.findById(testVid);
+
+        r.addVeranstaltung(veranstaltung);
+        Slot slot1 = new Slot("Slot 1", veranstaltung.getBeginntAm(),
+                veranstaltung.getBeginntAm().plusHours(1), veranstaltung);
+        slot1.persistAndFlush();
+        veranstaltung.addSlot(slot1);
+        System.out.println(veranstaltung.getSlots().iterator().next().getId());
     }
 
     private Gebaeude setupGebaeude(String gebaeudeName) {
@@ -53,7 +72,6 @@ class CsvImportTest extends DatabaseCleaner {
         gebaeude.setHausnummer("10");
         gebaeude.setPostleitzahl("12345");
         gebaeude.setOrt("Stadt");
-        gebaeude.persistAndFlush();
 
         return gebaeude;
     }
@@ -154,7 +172,7 @@ class CsvImportTest extends DatabaseCleaner {
     }
 
     @Test
-    void testImportEventSlots() {
+    void testImportSlots() {
         String csv = "Bezeichnung;Tag;Beginn;Ende\n" +
                 "Slot 1;2025-10-10;09:00;09:45";
 
@@ -168,19 +186,12 @@ class CsvImportTest extends DatabaseCleaner {
     }
 
     @Test
-    @Transactional
     void testImportVortraege() {
-        Referent r = new Referent();
-        r.setEmail("vortrag@ref.de");
-        r.setFirstName("Max");
-        r.setLastName("Ref");
-        r.setPasswordHash("hash");
-        r.persistAndFlush();
-        r.addVeranstaltung(Veranstaltung.findById(testVid));
-
-        String vortragTitel = "Java Kurs";
+        String wvTitel = "Java Kurs";
+        String pvTitel = "Berufsorientierung";
         String csv = "istPflicht;Titel;Referent_Email;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;Pflichtslot\n" +
-                "false;" + vortragTitel + ";vortrag@ref.de;Inhalt Text;Alle;true;2;;";
+                "false;" + wvTitel + ";vortrag@ref.de;Inhalt Text;;true;2;;\n" +
+                "true;" + pvTitel + ";vortrag@ref.de;Inhalt Text;LeereGruppe;false;1;A101;Slot 1";
 
         given()
                 .multiPart("file", "vortraege.csv", csv.getBytes())
@@ -188,8 +199,10 @@ class CsvImportTest extends DatabaseCleaner {
                 .then()
                 .statusCode(OK.getStatusCode());
 
-        Wahlvortrag wv = Wahlvortrag.find("titel", vortragTitel).firstResult();
-        assertThat(wv).describedAs("Wahlvortrag sollte importiert worden sein").isNotNull();
+        Wahlvortrag wv = Wahlvortrag.find("titel", wvTitel).firstResult();
+        assertThat(wv).describedAs("Wahlvortrag '" +
+                wvTitel + "' sollte importiert worden sein").isNotNull();
         assertThat(wv.isWiederholbar()).isTrue();
+        assertThat(wv.getMaxWiederholungen()).isEqualTo(2);
     }
 }

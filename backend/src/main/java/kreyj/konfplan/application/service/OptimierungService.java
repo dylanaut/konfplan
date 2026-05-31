@@ -314,7 +314,7 @@ public class OptimierungService {
         for (Teilnehmer tn : teilnehmer) {
             sb.append("\n");
             int sIdx = 0;
-            Set<Long> verfSlotIds = tn.getVerfuegbareSlotIds(veranstaltung);
+            List<Long> verfSlotIds = tn.getVerfuegbareSlotIds(veranstaltung);
             for (Slot s : slots) {
                 sb.append(verfSlotIds.contains(s.getId()) ? "true" : "false");
                 if (++sIdx < slotSize) {

@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 
 import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.Response.Status.CREATED;
+import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
+import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
@@ -30,21 +32,19 @@ class NutzerVerfuegbarkeitResourceTest extends DatabaseCleaner {
     @BeforeEach
     @Transactional
     void setup() {
+        LocalDateTime now = LocalDateTime.now();
+
         Veranstaltung v = new Veranstaltung();
         v.setName("Test Event");
-        v.setBeginntAm(LocalDateTime.now());
+        v.setBeginntAm(now);
         v.persistAndFlush();
         testVid = v.getId();
 
-        Slot s = new Slot();
-        s.setDescription("Slot 1");
-        s.setStartTime(LocalDateTime.now());
-        s.setEndTime(LocalDateTime.now().plusHours(1));
+        Slot s = new Slot("Slot 1", now, now.plusHours(1), v);
         s.persistAndFlush();
-        v.addSlot(s);
-        slotId = s.getId();
 
         v.addSlot(s);
+        slotId = s.getId();
     }
 
     @Test
@@ -55,7 +55,7 @@ class NutzerVerfuegbarkeitResourceTest extends DatabaseCleaner {
                     "role": "REFERENT",
                     "email": "referent@verf.de",
                     "firstName": "Ref",
-                    "lastName": "Ernt"
+                    "lastName": "Erent"
                 }
                 """;
 
@@ -68,8 +68,10 @@ class NutzerVerfuegbarkeitResourceTest extends DatabaseCleaner {
                 .statusCode(CREATED.getStatusCode());
 
         Nutzer ref = Nutzer.findByEmail("referent@verf.de");
-        long countRef = NutzerVerfuegbarkeit.count("nutzer = ?1 and slot.id = ?2", ref, slotId);
-        assertThat(1).isEqualTo(countRef).describedAs("Verfügbarkeit für Referent sollte erstellt worden sein");
+        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(ref.getId(), testVid));
+        assertThat(nv.getVerfuegbareSlotIds())
+                .describedAs("Verfügbarkeit für Referent sollte erstellt worden sein")
+                .contains(slotId);
 
         String jsonTeilnehmer = """
                 {
@@ -88,9 +90,10 @@ class NutzerVerfuegbarkeitResourceTest extends DatabaseCleaner {
                 .then()
                 .statusCode(CREATED.getStatusCode());
 
-        Nutzer teil = Nutzer.findByEmail("schueler@verf.de");
-        long countTeil = NutzerVerfuegbarkeit.count("nutzer = ?1 and slot.id = ?2", teil, slotId);
-        assertThat(1).isEqualTo(countTeil).describedAs("Verfügbarkeit für Teilnehmer sollte erstellt worden sein");
+        Nutzer tn = Nutzer.findByEmail("schueler@verf.de");
+        nv = NutzerVerfuegbarkeit.findById(nvIdL(tn.getId(), testVid));
+        assertThat(nv).describedAs("Verfügbarkeit für Teilnehmer sollte erstellt worden sein")
+                .isNotNull();
     }
 
     @Test
@@ -104,12 +107,14 @@ class NutzerVerfuegbarkeitResourceTest extends DatabaseCleaner {
 
         r.addVeranstaltung(v);
 
-        long countBefore = NutzerVerfuegbarkeit.count("nutzer = ?1", r);
-        assertThat(1).isEqualTo(countBefore);
+        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(r, v));
+        assertThat(nv).isNotNull();
 
         r.removeVeranstaltung(v);
 
-        long countAfter = NutzerVerfuegbarkeit.count("nutzer = ?1", r);
-        assertThat(0).isEqualTo(countAfter).describedAs("Verfügbarkeit sollte nach Entfernen des Nutzers gelöscht worden sein");
+        nv = NutzerVerfuegbarkeit.findById(nvId(r, v));
+        assertThat(nv)
+                .describedAs("Verfügbarkeit sollte nach Entfernen des Nutzers gelöscht worden sein")
+                .isNull();
     }
 }

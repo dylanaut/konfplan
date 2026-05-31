@@ -56,7 +56,7 @@ public class Teilnehmer extends Nutzer {
             List<Pflichtvortrag> altePflichtvortraege = Pflichtvortrag.find("pflichtgruppe", this.gruppe).list();
             for (Pflichtvortrag pv : altePflichtvortraege) {
                 if (pv.getPflichtslot() != null) {
-                    updateVerfuegbarkeit(pv.getVeranstaltung(), pv.getPflichtslot(), true);
+                    updateNutzerVerfuegbarkeit(pv.getVeranstaltung(), pv.getPflichtslot(), true);
                 }
             }
         }
@@ -68,31 +68,13 @@ public class Teilnehmer extends Nutzer {
             List<Pflichtvortrag> neuePflichtvortraege = Pflichtvortrag.find("pflichtgruppe", neueGruppe).list();
             for (Pflichtvortrag pv : neuePflichtvortraege) {
                 if (pv.getPflichtslot() != null) {
-                    updateVerfuegbarkeit(pv.getVeranstaltung(), pv.getPflichtslot(), false);
+                    updateNutzerVerfuegbarkeit(pv.getVeranstaltung(), pv.getPflichtslot(), false);
                 }
             }
         }
     }
 
-    private void updateVerfuegbarkeit(Veranstaltung veranstaltung, Slot slot, boolean verfuegbar) {
-        NutzerVerfuegbarkeit vfbg = NutzerVerfuegbarkeit.findById(nvId(this, veranstaltung));
-        Long slotId = slot.getId();
-
-        if (verfuegbar) {
-            if (null == vfbg) {
-                new NutzerVerfuegbarkeit(this, veranstaltung, Set.of(slotId)).persist();
-            } else {
-                if (vfbg.addSlot(slotId)) {
-                    vfbg.persist();
-                }
-            }
-        } else // TN für Slot und Veranstaltung NICHT verfuegbar
-            if (null != vfbg) {
-                vfbg.removeSlot(slotId);
-            }
-    }
-
-    public Set<Long> getVerfuegbareSlotIds(Veranstaltung veranstaltung) {
+    public List<Long> getVerfuegbareSlotIds(Veranstaltung veranstaltung) {
         NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(this, veranstaltung));
 
         return nv.getVerfuegbareSlotIds();

@@ -25,17 +25,22 @@ import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.presentation.AdminResource;
 import kreyj.konfplan.presentation.dto.NutzerDto;
+import kreyj.konfplan.presentation.dto.RaumVerfuegbarkeitDto;
+import kreyj.konfplan.presentation.dto.SlotDto;
 import kreyj.konfplan.presentation.dto.VortragDto;
 import kreyj.konfplan.presentation.dto.VortragStatDto;
 import kreyj.konfplan.presentation.dto.csv.AdminCsvDto;
 import kreyj.konfplan.presentation.dto.csv.SlotCsvDto;
 import kreyj.konfplan.presentation.dto.csv.VortragCsvDto;
+import lombok.AllArgsConstructor;
 import org.jboss.logging.Logger;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -66,6 +71,14 @@ public class AdminService {
     public AdminService(MailService mailService, ProtokollService protokollService) {
         this.mailService = mailService;
         this.protokollService = protokollService;
+    }
+
+    // Helper class to store blocking information
+    @AllArgsConstructor
+    private static class BlockingInfo {
+        LocalDateTime start;
+        LocalDateTime end;
+        String eventName;
     }
 
     @Transactional
@@ -250,27 +263,30 @@ public class AdminService {
     }
 
     @Transactional
-    public void inviteUserToEvent(Long userId, Long eventId) {
-        Nutzer nutzer = Nutzer.findById(userId);
-        Veranstaltung event = Veranstaltung.findById(eventId);
+    public void inviteUserToEvent(Long userId, Long veranstaltungId) {
+        Objects.requireNonNull(userId, "userId darf nicht null sein.");
+        Objects.requireNonNull(veranstaltungId, "veranstaltungId darf nicht null sein.");
 
-        if (nutzer == null || event == null) {
+        Nutzer nutzer = Nutzer.findById(userId);
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
+
+        if (nutzer == null || veranstaltung == null) {
             throw new IllegalArgumentException("Nutzer oder Veranstaltung nicht gefunden.");
         }
 
         // Validierung: Veranstaltung darf nicht in der Vergangenheit liegen (Enddatum prüfen)
         LocalDateTime now = LocalDateTime.now();
-        if (event.getEndetAm() != null && event.getEndetAm().isBefore(now)) {
-            throw new IllegalArgumentException("Die Veranstaltung '" + event.getName() + "' ist bereits beendet.");
+        if (veranstaltung.getEndetAm() != null && veranstaltung.getEndetAm().isBefore(now)) {
+            throw new IllegalArgumentException("Die Veranstaltung '" + veranstaltung.getName() + "' ist bereits beendet.");
         }
 
-        if (!nutzer.getVeranstaltungen().contains(event)) {
-            nutzer.addVeranstaltung(event);
-            mailService.sendEinladungZuVeranstaltung(nutzer, event);
-            LOG.info("Nutzer " + nutzer.getEmail() + " zu Veranstaltung " + event.getName() + " eingeladen.");
-            protokollService.log(ProtokollKategorie.SECURITY, "Nutzer zu Veranstaltung eingeladen", "Nutzer '" + nutzer.getEmail() + "' zu '" + event.getName() + "' eingeladen.", event.getId());
+        if (!nutzer.getVeranstaltungen().contains(veranstaltung)) {
+            nutzer.addVeranstaltung(veranstaltung);
+            mailService.sendEinladungZuVeranstaltung(nutzer, veranstaltung);
+            LOG.info("Nutzer " + nutzer.getEmail() + " zu Veranstaltung " + veranstaltung.getName() + " eingeladen.");
+            protokollService.log(ProtokollKategorie.SECURITY, "Nutzer zu Veranstaltung eingeladen", "Nutzer '" + nutzer.getEmail() + "' zu '" + veranstaltung.getName() + "' eingeladen.", veranstaltung.getId());
         } else {
-            LOG.info("Nutzer " + nutzer.getEmail() + " ist bereits für Veranstaltung " + event.getName() + " registriert.");
+            LOG.info("Nutzer " + nutzer.getEmail() + " ist bereits für Veranstaltung " + veranstaltung.getName() + " registriert.");
         }
     }
 
@@ -356,15 +372,11 @@ public class AdminService {
             }
 
             // map vortragDTO to Vortrag
-            Pflichtvortrag pv = new Pflichtvortrag();
-            pv.setTitel(vortragDto.titel);
-            pv.setInhalt(vortragDto.inhalt);
-            pv.setReferent(referent);
-            pv.setPflichtgruppe(vortragDto.pflichtGruppe);
-            pv.setPflichtslot(pflichtSlot);
-            pv.setPflichtraum(pflichtRaum);
-
+            Pflichtvortrag pv = new Pflichtvortrag(vortragDto.titel, vortragDto.inhalt, referent,
+                    veranstaltung, vortragDto.pflichtGruppe, pflichtRaum, pflichtSlot);
             pv.persistAndFlush();
+            pv.afterPersistAndFlush();
+
             created = pv;
 
             // Update availabilities
@@ -380,14 +392,12 @@ public class AdminService {
                 }
             }
         } else {
-            Wahlvortrag wv = new Wahlvortrag();
-            wv.setTitel(vortragDto.titel);
-            wv.setInhalt(vortragDto.inhalt);
-            wv.setReferent(referent);
-            wv.setWiederholbar(vortragDto.wiederholbar);
-            wv.setMaxWiederholungen(vortragDto.maxWiederholungen);
+            Wahlvortrag wv = new Wahlvortrag(vortragDto.titel, vortragDto.inhalt, referent,
+                    vortragDto.wiederholbar, vortragDto.maxWiederholungen, veranstaltung);
 
             wv.persistAndFlush();
+            wv.afterPersistAndFlush();
+
             created = wv;
         }
 
@@ -455,7 +465,7 @@ public class AdminService {
             LOG.error("CSV-Import (Vorträge) abgebrochen: Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
             throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
         }
-        var v_raeume = veranstaltung.getGebaeude().stream()
+        List<Raum> v_raeume = veranstaltung.getGebaeude().stream()
                 .flatMap(g -> g.getRaeume().stream())
                 .toList();
 
@@ -490,6 +500,7 @@ public class AdminService {
                 }
 
                 VortragDto dto = new VortragDto();
+                dto.veranstaltungId = veranstaltungId;
                 dto.istPflicht = csvDto.istPflicht;
                 dto.titel = csvDto.titel;
                 dto.inhalt = csvDto.inhalt;
@@ -506,7 +517,6 @@ public class AdminService {
                         }
 
                         dto.pflichtGruppe = csvDto.pflichtGruppe;
-
 
                         if (csvDto.pflichtSlot == null
                                 || csvDto.pflichtSlot.isBlank()
@@ -666,12 +676,19 @@ public class AdminService {
     }
 
     @Transactional
-    public Slot createEventSlot(Slot slot, Long veranstaltungId) {
+    public Slot createSlot(SlotDto slotDto, Long veranstaltungId) {
+        Objects.requireNonNull(veranstaltungId, "veranstaltungId darf nicht NULL sein");
+        if (slotDto.veranstaltungId != null && !slotDto.veranstaltungId.equals(veranstaltungId)) {
+            throw new IllegalArgumentException("Mismatching veranstaltungIds");
+        }
+
         Veranstaltung v = Veranstaltung.findById(veranstaltungId);
-        validateSlot(slot, v, null);
-        slot.setVeranstaltung(v);
-        slot.persist();
+        validateSlot(slotDto, v, null);
+
+        Slot slot = new Slot(slotDto.description, slotDto.startTime, slotDto.endTime, v);
+        slot.persistAndFlush();
         v.addSlot(slot);
+        v.persist();
 
         // Create availability for all participants of the event
         for (Nutzer nutzer : v.getNutzer()) {
@@ -679,52 +696,59 @@ public class AdminService {
                 NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(nutzer.getId(), veranstaltungId));
 
                 if (null != nv) {
-                    nv.addSlot(slot.getId());
+                    nv.addSlot(slot);
+                    nv.persist();
                 }
             }
         }
 
-        protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot erstellt", "Slot '" + slot.getDescription() + "' für '" + v.getName() + "' erstellt.", slot.getId());
+        protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot erstellt",
+                "Slot '" + slotDto.description + "' für '" + v.getName() + "' erstellt.", slot.getId());
+
         return slot;
     }
 
     @Transactional
-    public Slot updateEventSlot(Long id, Slot updated, Long veranstaltungId) {
-        Slot entity = Slot.findById(id);
+    public Slot updateSlot(Long slotId, SlotDto updated, Long veranstaltungId) {
+        Objects.requireNonNull(slotId, "slotId darf nicht NULL sein");
+        Slot entity = Slot.findById(slotId);
 
         if (null == entity) {
             return null;
         }
 
-        if (!Objects.equals(entity.getVersion(), updated.getVersion())) {
+        Objects.requireNonNull(veranstaltungId, "veranstaltungId darf nicht NULL sein");
+
+        if (!Objects.equals(entity.getVersion(), updated.version)) {
             throw new OptimisticLockException("Der Slot wurde zwischenzeitlich von Dritten geändert. Bitte aktualisieren Sie die Daten und versuchen Sie es erneut.");
         }
         Veranstaltung v = Veranstaltung.findById(veranstaltungId);
         if (entity.getVeranstaltung().getId().equals(veranstaltungId)) {
-            validateSlot(updated, v, id);
-            entity.setDescription(updated.getDescription());
-            entity.setStartTime(updated.getStartTime());
-            entity.setEndTime(updated.getEndTime());
+            validateSlot(updated, v, slotId);
+            entity.setDescription(updated.description);
+            entity.setStartTime(updated.startTime);
+            entity.setEndTime(updated.endTime);
             protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot aktualisiert", "Slot '" + entity.getDescription() + "' aktualisiert.", entity.getId());
         }
         return entity;
     }
 
-    private void validateSlot(Slot slot, Veranstaltung v, Long excludeId) {
-        if (v == null) {
-            throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
-        }
-        if (slot.getStartTime() == null || slot.getEndTime() == null) {
+    private void validateSlot(SlotDto slotDto, Veranstaltung v, Long excludeId) {
+        Objects.requireNonNull(slotDto, "Slot darf nicht NULL sein");
+        Objects.requireNonNull(slotDto.description, "Slot-Beschreibung darf nicht NULL sein");
+        Objects.requireNonNull(v, "Veranstaltung darf nicht NULL sein");
+
+        if (slotDto.startTime == null || slotDto.endTime == null) {
             throw new IllegalArgumentException("Beginn und Ende müssen gesetzt sein.");
         }
-        if (!slot.getEndTime().isAfter(slot.getStartTime())) {
+        if (!slotDto.endTime.isAfter(slotDto.startTime)) {
             throw new IllegalArgumentException("Das Ende muss nach dem Beginn liegen.");
         }
-        if (slot.getStartTime().isBefore(v.getBeginntAm())) {
+        if (slotDto.startTime.isBefore(v.getBeginntAm())) {
             throw new IllegalArgumentException("Der Slot darf nicht vor der Veranstaltung beginnen.");
         }
         // NEUE PRÜFUNG: Slot darf nicht nach dem Ende der Veranstaltung enden.
-        if (slot.getEndTime().isAfter(v.getEndetAm())) {
+        if (slotDto.endTime.isAfter(v.getEndetAm())) {
             throw new IllegalArgumentException("Der Slot darf nicht nach der Veranstaltung enden.");
         }
 
@@ -734,14 +758,14 @@ public class AdminService {
                 continue;
             }
             // Überschneidungsprüfung: (StartA < EndeB) AND (EndA > StartB)
-            if (slot.getStartTime().isBefore(other.getEndTime()) && slot.getEndTime().isAfter(other.getStartTime())) {
+            if (slotDto.startTime.isBefore(other.getEndTime()) && slotDto.endTime.isAfter(other.getStartTime())) {
                 throw new IllegalArgumentException("Der Zeit-Slot überschneidet sich mit einem vorhandenen Intervall (" + other.getDescription() + ").");
             }
         }
     }
 
     @Transactional
-    public boolean deleteEventSlot(Long id, Long veranstaltungId) {
+    public boolean deleteSlot(Long id, Long veranstaltungId) {
         Slot slot = Slot.findById(id);
         if (slot != null && slot.getVeranstaltung().getId().equals(veranstaltungId)) {
             String desc = slot.getDescription();
@@ -789,21 +813,21 @@ public class AdminService {
                     LOG.warn("Slot übersprungen: Beschreibung fehlt.");
                     continue;
                 }
-                Slot slot = new Slot();
-                slot.setDescription(dto.bezeichnung);
+                SlotDto slotDto = new SlotDto();
+                slotDto.description = dto.bezeichnung;
                 try {
-                    slot.setStartTime(LocalDateTime.parse(dto.tag + " " + dto.beginntUm, DATE_FORMAT));
-                    slot.setEndTime(LocalDateTime.parse(dto.tag + " " + dto.endetUm, DATE_FORMAT));
+                    slotDto.startTime = LocalDateTime.parse(dto.tag + " " + dto.beginntUm, DATE_FORMAT);
+                    slotDto.endTime = LocalDateTime.parse(dto.tag + " " + dto.endetUm, DATE_FORMAT);
                 } catch (Exception e) {
                     LOG.error("Fehler beim Parsen der Zeit für Slot '" + dto.bezeichnung + "': " + e.getMessage());
                     continue;
                 }
-                slot.setVeranstaltung(v);
 
                 try {
-                    createEventSlot(slot, veranstaltungId); // Use createEventSlot to also create availabilities
+                    Slot created = createSlot(slotDto, veranstaltungId);
                     count++;
-                    protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot importiert", "Slot '" + slot.getDescription() + "' via CSV importiert.", slot.getId());
+                    protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot importiert",
+                            "Slot '" + slotDto.description + "' via CSV importiert.", created.getId());
                 } catch (IllegalArgumentException e) {
                     LOG.warn("Slot '" + dto.bezeichnung + "' übersprungen aufgrund von Validierungsfehler: " + e.getMessage());
                 }
@@ -836,9 +860,9 @@ public class AdminService {
         entity.setInhalt(updated.inhalt);
 
         if (entity instanceof Pflichtvortrag pv && updated.istPflicht) {
-            pv.setPflichtgruppe(updated.pflichtGruppe);
-            pv.setPflichtslot(Slot.findById(updated.pflichtSlotId));
-            pv.setPflichtraum(Raum.findById(updated.pflichtRaumId));
+            pv.updatePflichtgruppe(updated.pflichtGruppe);
+            pv.updatePflichtslot(Slot.findById(updated.pflichtSlotId));
+            pv.updatePflichtraum(Raum.findById(updated.pflichtRaumId));
         } else if (entity instanceof Wahlvortrag wv && !updated.istPflicht) {
             wv.setWiederholbar(updated.wiederholbar);
             wv.setMaxWiederholungen(updated.maxWiederholungen);
@@ -891,19 +915,85 @@ public class AdminService {
         return all.stream().map(v -> new VortragStatDto(v.getTitel(), 0, 0, 0, 0, 0)).toList();
     }
 
+    @Transactional
+    public List<RaumVerfuegbarkeitDto> getRaumVerfuegbarkeiten(Long veranstaltungId) {
+        Veranstaltung aktuelleVeranstaltung = Veranstaltung.findById(veranstaltungId);
+        if (aktuelleVeranstaltung == null) {
+            return Collections.emptyList();
+        }
+
+        // 1. Lade alle relevanten Daten
+        List<Raum> relevanteRaeume = aktuelleVeranstaltung.getGebaeude().stream()
+                .flatMap(g -> g.getRaeume().stream())
+                .toList();
+        List<RaumVerfuegbarkeit> alleBelegungen = RaumVerfuegbarkeit.listAll();
+        Map<Long, RaumVerfuegbarkeit> eigeneBelegungen = alleBelegungen.stream()
+                .filter(rv -> rv.getVeranstaltungId().equals(veranstaltungId))
+                .collect(Collectors.toMap(RaumVerfuegbarkeit::getRaumId, rv -> rv));
+
+        // 2. Erstelle eine Map aller blockierten Zeitintervalle pro Raum (durch fremde Veranstaltungen)
+        Map<Long, List<BlockingInfo>> blockierteIntervalleProRaum = new HashMap<>();
+        alleBelegungen.stream()
+                .filter(rv -> !rv.getVeranstaltungId().equals(veranstaltungId))
+                .forEach(fremdeBelegung -> {
+                    Veranstaltung fremdeVeranstaltung = Veranstaltung.findById(fremdeBelegung.getVeranstaltungId());
+                    Set<Long> verfuegbareSlots = new HashSet<>(fremdeBelegung.getVerfuegbareSlotIds());
+
+                    fremdeVeranstaltung.getSlots().stream()
+                            .filter(slot -> !verfuegbareSlots.contains(slot.getId())) // Finde die blockierten Slots
+                            .forEach(blockierterSlot -> {
+                                BlockingInfo info = new BlockingInfo(
+                                        blockierterSlot.getStartTime(),
+                                        blockierterSlot.getEndTime(),
+                                        fremdeVeranstaltung.getName()
+                                );
+                                blockierteIntervalleProRaum
+                                        .computeIfAbsent(fremdeBelegung.getRaumId(), k -> new ArrayList<>())
+                                        .add(info);
+                            });
+                });
+
+        // 3. Erstelle die DTOs und prüfe auf Kollisionen
+        List<RaumVerfuegbarkeitDto> dtos = new ArrayList<>();
+        for (Raum raum : relevanteRaeume) {
+            RaumVerfuegbarkeitDto dto = new RaumVerfuegbarkeitDto();
+            dto.raumId = raum.getId();
+            dto.veranstaltungId = veranstaltungId;
+
+            RaumVerfuegbarkeit eigeneVerfuegbarkeit = eigeneBelegungen.get(raum.getId());
+            if (eigeneVerfuegbarkeit != null) {
+                dto.verfuegbareSlotIds = eigeneVerfuegbarkeit.getVerfuegbareSlotIds();
+            } else {
+                dto.verfuegbareSlotIds =
+                       (aktuelleVeranstaltung.getSlots().stream().map(Slot::getId).toList());
+            }
+
+            // Prüfe auf Kollisionen
+            List<BlockingInfo> blockaden = blockierteIntervalleProRaum.get(raum.getId());
+            if (blockaden != null) {
+                for (Slot eigenerSlot : aktuelleVeranstaltung.getSlots()) {
+                    for (BlockingInfo blockade : blockaden) {
+                        // Prüfe auf Zeitüberlappung: (StartA < EndeB) AND (EndeA > StartB)
+                        if (eigenerSlot.getStartTime().isBefore(blockade.end) && eigenerSlot.getEndTime().isAfter(blockade.start)) {
+                            dto.isBlockedByOtherEvent = true;
+                            dto.blockingEventName = blockade.eventName;
+                            break; // Ein Treffer pro Raum reicht für die DTO-Markierung
+                        }
+                    }
+                    if (dto.isBlockedByOtherEvent) {
+                        break;
+                    }
+                }
+            }
+            dtos.add(dto);
+        }
+        return dtos;
+    }
+
+
     // #################################################################################################################
     // # Helper Methods
     // #################################################################################################################
-
-    private void erstelleVerfuegbarkeitenFuerNutzerInVeranstaltung(Nutzer nutzer, Veranstaltung veranstaltung) {
-        Set<Long> slotIds = veranstaltung.getSlots().stream().map(IdEntity::getId).collect(Collectors.toSet());
-
-        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(nutzer, veranstaltung));
-
-        if (null == nv) {
-            new NutzerVerfuegbarkeit(nutzer, veranstaltung, slotIds).persist();
-        }
-    }
 
     private boolean sindTeilnehmerGebucht(List<Teilnehmer> teilnehmer, Long slotId, Long veranstaltungId) {
         if (teilnehmer.isEmpty()) {

@@ -1,6 +1,5 @@
 package kreyj.konfplan.presentation;
 
-import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -56,9 +55,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
 
     @Test
     void testGetVortraegeHierarchical() {
-        QuarkusTransaction.requiringNew().run(() -> {
-            createWahlvortrag("Test Vortrag");
-        });
+        createWahlvortrag("Test Vortrag");
 
         given()
                 .when().get("/api/veranstaltungen/{vid}/vortraege", testVid)
@@ -68,7 +65,8 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
                 .body("[0].titel", is("Test Vortrag"));
     }
 
-    private void createWahlvortrag(String titel) {
+    @Transactional
+    public void createWahlvortrag(String titel) {
         Referent r = new Referent();
         r.setEmail("ref-" + System.currentTimeMillis() + "@vresource.de");
         r.setLastName("Mustermann");
@@ -82,15 +80,16 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
     }
 
     @Test
+    @Transactional
     void testGetSlotsHierarchical() {
-        QuarkusTransaction.requiringNew().run(() -> {
-            Slot s1 = new Slot();
-            s1.setDescription("Slot A");
-            s1.setStartTime(LocalDateTime.now());
-            s1.setEndTime(LocalDateTime.now().plusHours(1));
-            s1.persistAndFlush();
-            Veranstaltung.<Veranstaltung>findById(testVid).addSlot(s1);
-        });
+        LocalDateTime now = LocalDateTime.now();
+        Veranstaltung veranstaltung = Veranstaltung.findById(testVid);
+
+        Slot s1 = new Slot("Slot A", now, now.plusHours(1), veranstaltung);
+        s1.persistAndFlush();
+
+        veranstaltung.addSlot(s1);
+
 
         given()
                 .when().get("/api/veranstaltungen/{vid}/slots", testVid)
@@ -102,9 +101,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
 
     @Test
     void testGetStatsHierarchical() {
-        QuarkusTransaction.requiringNew().run(() -> {
-            createWahlvortrag("Vortrag 1");
-        });
+        createWahlvortrag("Vortrag 1");
 
         given()
                 .when().get("/api/veranstaltungen/{vid}/stats", testVid)
@@ -118,7 +115,9 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
     @Transactional
     void testCreateNutzerHierarchical() {
         NutzerDto t = new NutzerDto();
-        t.email = "new@test.de";
+        String nutzerEmail = "new@test.de";
+
+        t.email = nutzerEmail;
         t.role = "TEILNEHMER";
         t.firstName = "Neu";
         t.lastName = "Nutzer";
@@ -129,9 +128,9 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
                 .when().post("/api/veranstaltungen/{vid}/nutzer", testVid)
                 .then()
                 .statusCode(CREATED.getStatusCode())
-                .body("email", is("new@test.de"));
+                .body("email", is(nutzerEmail));
 
-        assertThat(Nutzer.findByEmail("new@test.de")).isNotNull();
+        assertThat(Nutzer.findByEmail(nutzerEmail)).isNotNull();
     }
 
     @Test

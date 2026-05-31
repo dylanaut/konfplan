@@ -8,6 +8,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -21,21 +22,18 @@ public class VortragVerfuegbarkeit extends VeranstaltungsVerfuegbarkeit {
     @Id
     @Column(name = "vortrag_id")
     private Long vortragId;
+// -------------------------------------------------------------------
+// Konstruktoren
+// -------------------------------------------------------------------
 
-    public VortragVerfuegbarkeit(Vortrag vortrag, Veranstaltung veranstaltung, Set<Long> verfuegbareSlotIds) {
+    public VortragVerfuegbarkeit(Vortrag vortrag, Veranstaltung veranstaltung, List<Long> verfuegbareSlotIds) {
         this(vortrag.getId(), veranstaltung.getId(), verfuegbareSlotIds);
     }
 
-    public VortragVerfuegbarkeit(Long vortragId, Long veranstaltungId, Set<Long> verfuegbareSlotIds) {
+    public VortragVerfuegbarkeit(Long vortragId, Long veranstaltungId, List<Long> verfuegbareSlotIds) {
         super(veranstaltungId, verfuegbareSlotIds);
 
         Objects.requireNonNull(vortragId, "vortragId darf nicht NULL sein");
         this.vortragId = vortragId;
-    }
-
-    @Override
-    public String toString() {
-        return "Vortrag " + vortragId + " ist für " + veranstaltungId
-                + " verfügbar in Slots " + getVerfuegbareSlotIds();
     }
 }

@@ -59,8 +59,8 @@ class DeadlineResourceTest extends DatabaseCleaner {
         Teilnehmer t = new Teilnehmer();
         t.setEmail("teilnehmer@test.de");
         t.setPasswordHash(BcryptUtil.bcryptHash("test"));
-        t.addVeranstaltung(v);
         t.persistAndFlush();
+        t.addVeranstaltung(v);
         tnId = t.getId();
 
         // Vortrag für das Event (damit man was ändern/löschen könnte)

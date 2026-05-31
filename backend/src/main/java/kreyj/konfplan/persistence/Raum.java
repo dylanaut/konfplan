@@ -9,6 +9,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
+import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvId;
+
 @Entity
 @NoArgsConstructor
 @Getter
@@ -36,5 +42,36 @@ public class Raum extends VersionedEntity {
         super();
         this.name = name;
         this.kapazitaet = kapazitaet;
+    }
+
+    // -------------------------------------------------------------------
+    // Helper methods
+    // -------------------------------------------------------------------
+
+    public void updateRaumVerfuegbarkeit(Veranstaltung veranstaltung, Slot slot, boolean verfuegbar) {
+        Objects.requireNonNull(veranstaltung);
+        Objects.requireNonNull(slot);
+
+        RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvId(this, veranstaltung));
+
+        if (verfuegbar) {
+            if (null == rv) {
+                new RaumVerfuegbarkeit(this, veranstaltung, List.of(slot.getId())).persistAndFlush();
+            } else {
+                rv.addSlot(slot);
+            }
+        } else // Raum für Slot und Veranstaltung NICHT verfuegbar
+            if (null != rv) {
+                rv.removeSlot(slot);
+            }
+    }
+
+    public void deleteRaumVerfuegbarkeit(Veranstaltung veranstaltung) {
+        Objects.requireNonNull(veranstaltung);
+
+        RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvId(this, veranstaltung));
+        if (null != rv) {
+            rv.delete();
+        }
     }
 }

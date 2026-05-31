@@ -100,9 +100,9 @@ public class OptimierungServiceIntegrationTest {
         veranstaltung.addGebaeude(schule);
         veranstaltung.persistAndFlush();
 
-        Slot slot1 = new Slot("Slot 1", LocalDateTime.now().plusHours(1), LocalDateTime.now().plusHours(2));
+        Slot slot1 = new Slot("Slot 1", LocalDateTime.now().plusHours(1),
+                LocalDateTime.now().plusHours(2), veranstaltung);
         veranstaltung.addSlot(slot1);
-        slot1.persistAndFlush();
 
         // 3. Referent und Vorträge
         Referent referent = new Referent();
@@ -115,8 +115,8 @@ public class OptimierungServiceIntegrationTest {
         Wahlvortrag wahlvortrag1 = new Wahlvortrag();
         wahlvortrag1.setTitel("Wahlvortrag 1");
         wahlvortrag1.setReferent(referent);
-        wahlvortrag1.setVeranstaltung(veranstaltung);
         wahlvortrag1.persistAndFlush();
+        wahlvortrag1.setVeranstaltung(veranstaltung);
 
         // 4. Teilnehmer und Prioritäten
         Teilnehmer teilnehmer1 = new Teilnehmer();
@@ -143,17 +143,17 @@ public class OptimierungServiceIntegrationTest {
         veranstaltung.addGebaeude(schule);
         veranstaltung.persistAndFlush();
 
-        Slot slot1 = new Slot("Slot 1", LocalDateTime.now().plusHours(1), LocalDateTime.now().plusHours(2));
+        Slot slot1 = new Slot("Slot 1", LocalDateTime.now().plusHours(1),
+                LocalDateTime.now().plusHours(2), veranstaltung);
         veranstaltung.addSlot(slot1);
-        slot1.persistAndFlush();
 
-        Slot slot2 = new Slot("Slot 2", LocalDateTime.now().plusHours(2), LocalDateTime.now().plusHours(3));
+        Slot slot2 = new Slot("Slot 2", LocalDateTime.now().plusHours(2),
+                LocalDateTime.now().plusHours(3), veranstaltung);
         veranstaltung.addSlot(slot2);
-        slot2.persistAndFlush();
 
-        Slot slot3 = new Slot("Slot 3", LocalDateTime.now().plusHours(3), LocalDateTime.now().plusHours(4));
+        Slot slot3 = new Slot("Slot 3", LocalDateTime.now().plusHours(3),
+                LocalDateTime.now().plusHours(4), veranstaltung);
         veranstaltung.addSlot(slot3);
-        slot3.persistAndFlush();
 
         // 3. Referent und Vorträge
         Referent referent = new Referent();
@@ -163,26 +163,20 @@ public class OptimierungServiceIntegrationTest {
         referent.persistAndFlush();
         referent.addVeranstaltung(veranstaltung);
 
-        Wahlvortrag wahlvortrag1 = new Wahlvortrag();
-        wahlvortrag1.setTitel("Wahlvortrag 1");
-        wahlvortrag1.setReferent(referent);
-        wahlvortrag1.setVeranstaltung(veranstaltung);
+        Wahlvortrag wahlvortrag1 = new Wahlvortrag("Wahlvortrag 1", "Inhalt", referent,
+                true, 1, veranstaltung);
         wahlvortrag1.persistAndFlush();
+        veranstaltung.addVortrag(wahlvortrag1);
 
-        Wahlvortrag wahlvortrag2 = new Wahlvortrag();
-        wahlvortrag2.setTitel("Wahlvortrag 2");
-        wahlvortrag2.setReferent(referent);
-        wahlvortrag2.setVeranstaltung(veranstaltung);
+        Wahlvortrag wahlvortrag2 = new Wahlvortrag("Wahlvortrag 2", "Inhalt", referent,
+                true, 1, veranstaltung);
         wahlvortrag2.persistAndFlush();
+        veranstaltung.addVortrag(wahlvortrag2);
 
-        Pflichtvortrag pflichtvortrag = new Pflichtvortrag();
-        pflichtvortrag.setTitel("Pflichtvortrag");
-        pflichtvortrag.setReferent(referent);
-        pflichtvortrag.setVeranstaltung(veranstaltung);
-        pflichtvortrag.setPflichtslot(slot3);
-        pflichtvortrag.setPflichtraum(schule.getRaeume().iterator().next()); // todo raum 1
-        pflichtvortrag.setPflichtgruppe("A");
+        Pflichtvortrag pflichtvortrag = new Pflichtvortrag("Pflichtvortrag", referent, veranstaltung,
+        "A", schule.getRaeume().iterator().next(), slot3);
         pflichtvortrag.persistAndFlush();
+        veranstaltung.addVortrag(pflichtvortrag);
 
         // 4. Teilnehmer und Prioritäten
         Teilnehmer teilnehmer1 = new Teilnehmer();
@@ -190,6 +184,7 @@ public class OptimierungServiceIntegrationTest {
         teilnehmer1.setFirstName("Peter");
         teilnehmer1.setLastName("Pan");
         teilnehmer1.persistAndFlush();
+
         teilnehmer1.setGruppe("A");
         teilnehmer1.addVeranstaltung(veranstaltung);
 
@@ -198,6 +193,7 @@ public class OptimierungServiceIntegrationTest {
         teilnehmer2.setFirstName("Wendy");
         teilnehmer2.setLastName("Darling");
         teilnehmer2.persistAndFlush();
+
         teilnehmer2.setGruppe("A");
         teilnehmer2.addVeranstaltung(veranstaltung);
 

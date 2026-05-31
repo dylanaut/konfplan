@@ -4,11 +4,14 @@ import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PreRemove;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
 import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvId;
@@ -26,23 +29,31 @@ public class Pflichtvortrag extends Vortrag {
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     private Slot pflichtslot;
 
-    public Pflichtvortrag(String titel, Referent referent, String pflichtgruppe, Raum pflichtraum, Slot pflichtslot) {
-        super(titel, referent);
-        initPflichtFields(pflichtgruppe, pflichtraum, pflichtslot);
+    public Pflichtvortrag(String titel, Referent referent, Veranstaltung veranstaltung,
+                          String pflichtgruppe, Raum pflichtraum, Slot pflichtslot) {
+        this(titel, "", referent, veranstaltung, pflichtgruppe, pflichtraum, pflichtslot);
     }
 
-    public Pflichtvortrag(String titel, Referent referent, Veranstaltung veranstaltung, String pflichtgruppe, Raum pflichtraum, Slot pflichtslot) {
-        super(titel, referent, veranstaltung);
-        initPflichtFields(pflichtgruppe, pflichtraum, pflichtslot);
+
+    public Pflichtvortrag(String titel, String inhalt, Referent referent, Veranstaltung veranstaltung,
+                          String pflichtgruppe, Raum pflichtraum, Slot pflichtslot) {
+        super(titel, inhalt, referent, veranstaltung);
+
+        Objects.requireNonNull(pflichtgruppe);
+        Objects.requireNonNull(pflichtraum);
+        Objects.requireNonNull(pflichtslot);
+
+        this.pflichtgruppe = pflichtgruppe;
+        this.pflichtraum = pflichtraum;
+        this.pflichtslot = pflichtslot;
+        // constructor requires invocation of #updateVerfuegbarkeitenAfterPersist()
     }
 
-    private void initPflichtFields(String pflichtgruppe, Raum pflichtraum, Slot pflichtslot) {
-        setPflichtgruppe(pflichtgruppe);
-        setPflichtraum(pflichtraum);
-        setPflichtslot(pflichtslot);
-    }
+    public void updatePflichtgruppe(String neuePflichtgruppe) {
+        if (null == neuePflichtgruppe || neuePflichtgruppe.isBlank()) {
+            throw new IllegalArgumentException("Pflichtgruppe darf nicht leer sein.");
+        }
 
-    public void setPflichtgruppe(String neuePflichtgruppe) {
         if (Objects.equals(this.pflichtgruppe, neuePflichtgruppe) || this.getVeranstaltung() == null) {
             return;
         }
@@ -61,20 +72,10 @@ public class Pflichtvortrag extends Vortrag {
 
         this.pflichtgruppe = neuePflichtgruppe;
 
-        // Remove availability for participants of the new group
-        if (neuePflichtgruppe != null && !neuePflichtgruppe.isEmpty()) {
-            List<Teilnehmer> neueTeilnehmer = Teilnehmer.find("gruppe", neuePflichtgruppe).list();
-            for (Teilnehmer teilnehmer : neueTeilnehmer) {
-                NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(teilnehmer, this.getVeranstaltung()));
-
-                if (null != nv) {
-                    nv.removeSlot(this.pflichtslot);
-                }
-            }
-        }
+        initNutzerVerfuegbarkeitFuerGruppe();
     }
 
-    public void setPflichtraum(Raum neuerRaum) {
+    public void updatePflichtraum(Raum neuerRaum) {
         if (Objects.equals(this.pflichtraum, neuerRaum) || this.getVeranstaltung() == null) {
             return;
         }
@@ -89,16 +90,10 @@ public class Pflichtvortrag extends Vortrag {
 
         this.pflichtraum = neuerRaum;
 
-        // Set unavailability for the new room
-        if (neuerRaum != null) {
-            RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvId(neuerRaum, this.getVeranstaltung()));
-            if (null != rv) {
-                rv.removeSlot(this.pflichtslot);
-            }
-        }
+        initRaumVerfuegbarkeiten();
     }
 
-    public void setPflichtslot(Slot neuerSlot) {
+    public void updatePflichtslot(Slot neuerSlot) {
         if (Objects.equals(this.pflichtslot, neuerSlot) || this.getVeranstaltung() == null) {
             return;
         }
@@ -129,26 +124,89 @@ public class Pflichtvortrag extends Vortrag {
         // Set unavailabilities for the new slot
         if (neuerSlot != null) {
             if (this.pflichtraum != null) {
-                RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvId(this.pflichtraum, this.getVeranstaltung()));
-
-                if (null != rv) {
-                    rv.removeSlot(neuerSlot);
-                }
+                initRaumVerfuegbarkeiten();
             }
             if (this.pflichtgruppe != null && !this.pflichtgruppe.isEmpty()) {
-                List<Teilnehmer> teilnehmerDerGruppe = Teilnehmer.find("gruppe", this.pflichtgruppe).list();
-                for (Teilnehmer teilnehmer : teilnehmerDerGruppe) {
-                    NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(teilnehmer, this.getVeranstaltung()));
-                    if (null != nv) {
-                        nv.removeSlot(neuerSlot);
-                    }
+                initNutzerVerfuegbarkeitFuerGruppe();
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------
+    // Overrides
+    // -------------------------------------------------------------------
+
+    @Override
+    public boolean istPflicht() {
+        return true;
+    }
+
+
+    @Override
+    public void afterPersistAndFlush() {
+        initNutzerVerfuegbarkeitFuerGruppe();
+        initRaumVerfuegbarkeiten();
+    }
+
+
+    // -------------------------------------------------------------------
+    // Helper methods for Verfuegbarkeiten
+    // -------------------------------------------------------------------
+
+    @PreRemove
+    public void wiederherstelleVerfuegbarkeiten() {
+        if (this.pflichtraum != null) {
+            RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvId(this.pflichtraum, this.getVeranstaltung()));
+            if (null != rv) {
+                rv.addSlot(this.pflichtslot);
+            }
+        }
+        if (this.pflichtgruppe != null && !this.pflichtgruppe.isEmpty()) {
+            List<Teilnehmer> teilnehmerDerGruppe = Teilnehmer.find("gruppe", this.pflichtgruppe).list();
+            for (Teilnehmer teilnehmer : teilnehmerDerGruppe) {
+                NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(teilnehmer, this.getVeranstaltung()));
+                if (null != nv) {
+                    nv.addSlot(this.pflichtslot);
                 }
             }
         }
     }
 
-    @Override
-    public boolean istPflicht() {
-        return true;
+
+    // -------------------------------------------------------------------
+    // Helper methods
+    // -------------------------------------------------------------------
+
+    /**
+     * Set unavailability for the new room
+     */
+    private void initRaumVerfuegbarkeiten() {
+        RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvId(pflichtraum, veranstaltung));
+        if (null != rv) {
+            rv.removeSlot(pflichtslot);
+        } else {
+            // wieso haben wir hier noch keine RaumVerfügbarkeiten??
+            List<Long> verfuegbareIdsOhnePflicht = veranstaltung.getSlots().stream()
+                    .filter(slot -> !Objects.equals(slot, pflichtslot))
+                    .map(IdEntity::getId)
+                    .toList();
+            new RaumVerfuegbarkeit(pflichtraum, veranstaltung, verfuegbareIdsOhnePflicht).persistAndFlush();
+        }
+    }
+
+    /**
+     * Remove availability for participants of the new group - after persist()
+     */
+    private void initNutzerVerfuegbarkeitFuerGruppe() {
+        List<Teilnehmer> gruppenTeilnehmer = Teilnehmer.find("gruppe", pflichtgruppe).list();
+        for (Teilnehmer teilnehmer : gruppenTeilnehmer) {
+            NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(teilnehmer, veranstaltung));
+
+            if (null != nv) {
+                nv.removeSlot(pflichtslot);
+            } else {
+                new NutzerVerfuegbarkeit(teilnehmer, veranstaltung, List.of(pflichtslot.getId())).persistAndFlush();
+            }
+        }
     }
 }

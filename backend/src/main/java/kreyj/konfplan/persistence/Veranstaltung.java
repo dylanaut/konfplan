@@ -1,5 +1,6 @@
 package kreyj.konfplan.persistence;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -21,6 +22,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -65,22 +67,33 @@ public class Veranstaltung extends VersionedEntity {
         return Collections.unmodifiableSet(gebaeude);
     }
 
-    public void addGebaeude(Gebaeude r) {
-        if (null == r) {
+    public void addGebaeude(Gebaeude aGebaeude) {
+        if (null == aGebaeude) {
             return;
         }
 
-        gebaeude.add(r);
-        r.veranstaltungen.add(this);
+        this.gebaeude.add(aGebaeude);
+        aGebaeude.veranstaltungen.add(this);
+
+        for (Slot slot : slots) {
+            for (Raum raum : aGebaeude.raeume) {
+                raum.updateRaumVerfuegbarkeit(this, slot, true);
+            }
+        }
     }
 
-    public void removeGebaeude(Gebaeude r) {
-        if (null == r) {
+    public void removeGebaeude(Gebaeude aGebaeude) {
+        if (null == aGebaeude) {
+            return;
+        }
+        if (!gebaeude.contains(aGebaeude)) {
             return;
         }
 
-        gebaeude.remove(r);
-        r.veranstaltungen.remove(this);
+        aGebaeude.raeume.forEach(raum -> raum.deleteRaumVerfuegbarkeit(this));
+
+        gebaeude.remove(aGebaeude);
+        aGebaeude.veranstaltungen.remove(this);
     }
 
 
@@ -92,6 +105,11 @@ public class Veranstaltung extends VersionedEntity {
         return Collections.unmodifiableSet(slots);
     }
 
+    @JsonIgnore
+    public List<Long> getSlotIds() {
+        return slots.stream().map(Slot::getId).toList();
+    }
+
     public void addSlot(Slot slot) {
         if (null == slot) {
             return;
@@ -99,6 +117,13 @@ public class Veranstaltung extends VersionedEntity {
 
         slots.add(slot);
         slot.veranstaltung = this;
+
+        nutzer.forEach(n -> n.updateNutzerVerfuegbarkeit(this, slot, true));
+        gebaeude.stream().flatMap(g -> g.getRaeume().stream())
+                .forEach(r -> r.updateRaumVerfuegbarkeit(this, slot, true));
+        vortraege.stream()
+                .filter(v -> !v.istPflicht())
+                .forEach(v -> v.updateVortragVerfuegbarkeit(this, slot, true));
     }
 
     public void removeSlot(Slot slot) {
@@ -108,6 +133,12 @@ public class Veranstaltung extends VersionedEntity {
 
         slots.remove(slot);
         slot.veranstaltung = null;
+        nutzer.forEach(n -> n.updateNutzerVerfuegbarkeit(this, slot, false));
+        gebaeude.stream().flatMap(g -> g.getRaeume().stream())
+                .forEach(r -> r.updateRaumVerfuegbarkeit(this, slot, false));
+        vortraege.stream()
+                .filter(v -> !v.istPflicht())
+                .forEach(v -> v.updateVortragVerfuegbarkeit(this, slot, false));
     }
 
 

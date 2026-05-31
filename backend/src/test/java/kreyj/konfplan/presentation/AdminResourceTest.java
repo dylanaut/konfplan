@@ -1,5 +1,6 @@
 package kreyj.konfplan.presentation;
 
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -14,8 +15,8 @@ import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.presentation.dto.NutzerDto;
+import kreyj.konfplan.presentation.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.presentation.dto.VeranstaltungDto;
-import kreyj.konfplan.presentation.dto.VerfuegbarkeitDto;
 import kreyj.konfplan.util.JwtHelper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +29,7 @@ import static jakarta.ws.rs.core.Response.Status.CONFLICT;
 import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 import static jakarta.ws.rs.core.Response.Status.NO_CONTENT;
 import static jakarta.ws.rs.core.Response.Status.OK;
+import static java.util.Collections.emptyList;
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
@@ -51,11 +53,12 @@ class AdminResourceTest extends DatabaseCleaner {
     }
 
     @Test
-    @Transactional
     void testGetAllUsersGlobal() {
-        Admin a = new Admin();
-        a.setEmail("admin1@example.com");
-        a.persistAndFlush();
+        QuarkusTransaction.requiringNew().run(() -> {
+            Admin a = new Admin();
+            a.setEmail("admin1@example.com");
+            a.persist();
+        });
 
         given()
                 .when().get("/api/admin/nutzer")
@@ -88,10 +91,13 @@ class AdminResourceTest extends DatabaseCleaner {
     @Test
     @Transactional
     void testUpdateUser() {
-        Teilnehmer t = new Teilnehmer();
-        t.setEmail("old@test.de");
-        t.persistAndFlush();
-        Long userId = t.getId();
+        final Long[] userIdArray = {0L};
+        QuarkusTransaction.requiringNew().run(() -> {
+            Teilnehmer t = new Teilnehmer();
+            t.setEmail("old@test.de");
+            t.persistAndFlush();
+            userIdArray[0] = t.getId();
+        });
 
         NutzerDto dto = new NutzerDto();
         dto.email = "updated@test.de";
@@ -100,6 +106,7 @@ class AdminResourceTest extends DatabaseCleaner {
         dto.lastName = "Mustermann";
         dto.version = 0L;
 
+        Long userId = userIdArray[0];
         given()
                 .contentType(ContentType.JSON)
                 .body(dto)
@@ -117,10 +124,16 @@ class AdminResourceTest extends DatabaseCleaner {
     @Test
     @Transactional
     void testDeleteUser() {
-        Teilnehmer t = new Teilnehmer();
-        t.setEmail("todelete@test.de");
-        t.persistAndFlush();
-        Long userId = t.getId();
+        final Long[] userIdArray = {0L};
+
+        QuarkusTransaction.requiringNew().run(() -> {
+            Teilnehmer t1 = new Teilnehmer();
+            t1.setEmail("todelete@test.de");
+            t1.persistAndFlush();
+            userIdArray[0] = t1.getId();
+        });
+
+        Long userId = userIdArray[0];
 
         given()
                 .when().delete("/api/admin/nutzer/{id}", userId)
@@ -133,19 +146,27 @@ class AdminResourceTest extends DatabaseCleaner {
     @Test
     @Transactional
     void testInviteUser() {
-        Teilnehmer t = new Teilnehmer();
-        t.setEmail("invite@test.de");
-        t.persistAndFlush();
-        Long userId = t.getId();
+        Long[] userIdArray = {0L};
+        Long[] vIdArray = {0L};
 
-        Veranstaltung v = new Veranstaltung();
-        v.setName("Invite Event");
-        v.setBeginntAm(LocalDateTime.now().plusDays(1));
-        v.persistAndFlush();
-        Long eventId = v.getId();
+        QuarkusTransaction.requiringNew().run(() -> {
+            Teilnehmer t1 = new Teilnehmer();
+            t1.setEmail("invite@test.de");
+            t1.persist();
+            userIdArray[0] = t1.getId();
 
-        Admin orga = Admin.findById(adminId);
-        orga.addVeranstaltung(v);
+            Veranstaltung v = new Veranstaltung();
+            v.setName("Invite Event");
+            v.setBeginntAm(LocalDateTime.now().plusDays(1));
+            v.persistAndFlush();
+            vIdArray[0] = v.getId();
+
+            Admin orga = Admin.findById(adminId);
+            orga.addVeranstaltung(v);
+        });
+
+        Long userId = userIdArray[0];
+        Long eventId = vIdArray[0];
 
         given()
                 .contentType(ContentType.JSON)
@@ -160,71 +181,82 @@ class AdminResourceTest extends DatabaseCleaner {
     @Test
     @Transactional
     void testVerfuegbarkeitenEndpoints() {
-        Veranstaltung v = new Veranstaltung();
-        v.setName("Event " + System.currentTimeMillis());
-        v.setBeginntAm(LocalDateTime.now());
-        v.persistAndFlush();
-        Long vId = v.getId();
+        LocalDateTime now = LocalDateTime.now();
+        final Long[] vId = {0L};
+        final Long[] refId = {0L};
+        final Long[] slotId = {0L};
 
-        Slot slot = new Slot();
-        slot.setDescription("Slot 1");
-        slot.setStartTime(LocalDateTime.now());
-        slot.setEndTime(LocalDateTime.now().plusHours(1));
-        v.addSlot(slot);
-        slot.persistAndFlush();
-        Long slotId = slot.getId();
+        QuarkusTransaction.requiringNew().run(() -> {
+            Veranstaltung v = new Veranstaltung();
+            v.setName("Event " + System.currentTimeMillis());
+            v.setBeginntAm(now);
+            v.persistAndFlush();
+            vId[0] = v.getId();
 
-        Referent referent = new Referent();
-        referent.setEmail("ref@test.de");
-        referent.setPasswordHash("hash");
-        referent.persistAndFlush();
-        referent.addVeranstaltung(v);
-        Long refId = referent.getId();
+            Slot slot = new Slot("Slot 1", now, now.plusHours(1), v);
+            slot.persistAndFlush();
+            slotId[0] = slot.getId();
+            v.addSlot(slot);
+            v.persistAndFlush();
+
+            Referent referent = new Referent();
+            referent.setEmail("ref@test.de");
+            referent.setPasswordHash("hash");
+
+            referent.persistAndFlush();
+            refId[0] = referent.getId();
+
+            referent.addVeranstaltung(v);
+        });
 
         // GET Test
         given()
-                .when().get("/api/admin/veranstaltungen/{vid}/verfuegbarkeiten", vId)
+                .when().get("/api/admin/veranstaltungen/{vid}/verfuegbarkeiten", vId[0])
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("size()", is(1))
-                .body("[0].nutzerId", is(refId.intValue()));
+                .body("[0].nutzerId", is(refId[0].intValue()));
 
         // POST Test (Update)
-        VerfuegbarkeitDto updateDto = new VerfuegbarkeitDto(refId, slotId, false);
+        NutzerVerfuegbarkeitDto updateDto = new NutzerVerfuegbarkeitDto(refId[0], vId[0], emptyList());
         given()
                 .contentType(ContentType.JSON)
                 .body(updateDto)
-                .when().post("/api/admin/veranstaltungen/{vid}/verfuegbarkeiten", vId)
+                .when().post("/api/admin/veranstaltungen/{vid}/verfuegbarkeiten", vId[0])
                 .then()
                 .statusCode(OK.getStatusCode());
 
         // Verifizieren
-        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(refId, vId));
+        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(refId[0], vId[0]));
 
-        assertThat(nv.getVerfuegbareSlotIds()).doesNotContain(slotId);
+        assertThat(nv.getVerfuegbareSlotIds()).doesNotContain(slotId[0]);
     }
 
     @Test
     @Transactional
     void testOptimisticLockingFuerTeilnehmerProfil() {
-        Teilnehmer t = new Teilnehmer();
-        t.setEmail("teilnehmer@example.com");
-        t.setPasswordHash("password");
-        t.setFirstName("Original");
-        t.setLastName("Name");
-        t.persistAndFlush();
-        Long tnId = t.getId();
+        Long[] tnId = {0L};
+
+        QuarkusTransaction.requiringNew().run(() -> {
+            Teilnehmer t = new Teilnehmer();
+            t.setEmail("teilnehmer@example.com");
+            t.setPasswordHash("password");
+            t.setFirstName("Original");
+            t.setLastName("Name");
+            t.persistAndFlush();
+            tnId[0] = t.getId();
+        });
 
         // 2. Admin 1 fetches teilnehmer data (initial version)
         NutzerDto adminFetchedUser1 = given()
-                .when().get("/api/admin/nutzer/{id}", tnId)
+                .when().get("/api/admin/nutzer/{id}", tnId[0])
                 .then()
                 .statusCode(OK.getStatusCode())
                 .extract().as(NutzerDto.class);
 
         // 3. Admin 2 fetches the same participant again (simulating concurrent user/tab)
         NutzerDto adminFetchedUser2 = given()
-                .when().get("/api/admin/nutzer/{id}", tnId)
+                .when().get("/api/admin/nutzer/{id}", tnId[0])
                 .then()
                 .statusCode(OK.getStatusCode())
                 .extract().as(NutzerDto.class);
@@ -238,7 +270,7 @@ class AdminResourceTest extends DatabaseCleaner {
         NutzerDto fetchedUpdate = given()
                 .contentType(ContentType.JSON)
                 .body(adminFetchedUser1)
-                .when().put("/api/admin/nutzer/{id}", tnId)
+                .when().put("/api/admin/nutzer/{id}", tnId[0])
                 .then()
                 .statusCode(OK.getStatusCode())
                 .extract().as(NutzerDto.class);
@@ -252,13 +284,13 @@ class AdminResourceTest extends DatabaseCleaner {
         given()
                 .contentType(ContentType.JSON)
                 .body(adminFetchedUser2) // This DTO has the old version
-                .when().put("/api/admin/nutzer/{id}", tnId)
+                .when().put("/api/admin/nutzer/{id}", tnId[0])
                 .then()
                 .statusCode(CONFLICT.getStatusCode()); // Expect conflict
 
         // 6. Verify data integrity: only the first update should be present
         NutzerDto finalUser = given()
-                .when().get("/api/admin/nutzer/{id}", tnId)
+                .when().get("/api/admin/nutzer/{id}", tnId[0])
                 .then()
                 .statusCode(OK.getStatusCode())
                 .extract().as(NutzerDto.class);
@@ -271,17 +303,23 @@ class AdminResourceTest extends DatabaseCleaner {
     @Test
     @Transactional
     void testOptimisticLockingForVeranstaltungName() {
-        Veranstaltung v = new Veranstaltung();
-        v.setName("Original Event Name");
-        v.setBeginntAm(LocalDateTime.now().plusDays(1));
-        v.setEndetAm(LocalDateTime.now().plusDays(2));
-        v.persistAndFlush();
-        Long vid = v.getId();
+        final Long[] vIdArray = {0L};
+        String admin2Email = "admin2@example.com";
 
-        Admin admin2 = new Admin();
-        admin2.setEmail("admin2@example.com");
-        admin2.setPasswordHash("hash");
-        admin2.persistAndFlush();
+        QuarkusTransaction.requiringNew().run(() -> {
+            Veranstaltung v = new Veranstaltung();
+            v.setName("Original Event Name");
+            v.setBeginntAm(LocalDateTime.now().plusDays(1));
+            v.setEndetAm(LocalDateTime.now().plusDays(2));
+            v.persist();
+            vIdArray[0] = v.getId();
+
+            Admin admin2 = new Admin();
+            admin2.setEmail(admin2Email);
+            admin2.setPasswordHash("hash");
+            admin2.persist();
+        });
+        Long vId = vIdArray[0];
 
         given()
                 .when().get("/api/veranstaltungen")
@@ -291,16 +329,16 @@ class AdminResourceTest extends DatabaseCleaner {
 
         // 2. Admin 1 (via @TestSecurity) fetches veranstaltung data
         VeranstaltungDto admin1FetchedVeranstaltung = given()
-                .when().get("/api/veranstaltungen/{id}", vid)
+                .when().get("/api/veranstaltungen/{id}", vId)
                 .then()
                 .statusCode(OK.getStatusCode())
                 .extract().as(VeranstaltungDto.class);
 
         // 3. Admin 2 (via JWT token) fetches veranstaltung data
-        String admin2Token = JwtHelper.tokenFor(admin2.getEmail(), "ADMIN");
+        String admin2Token = JwtHelper.tokenFor(admin2Email, "ADMIN");
         VeranstaltungDto admin2FetchedVeranstaltung = given()
                 .auth().oauth2(admin2Token)
-                .when().get("/api/veranstaltungen/{id}", vid)
+                .when().get("/api/veranstaltungen/{id}", vId)
                 .then()
                 .statusCode(OK.getStatusCode())
                 .extract().as(VeranstaltungDto.class);
@@ -314,7 +352,7 @@ class AdminResourceTest extends DatabaseCleaner {
         VeranstaltungDto updatedVDto = given()
                 .contentType(ContentType.JSON)
                 .body(admin1FetchedVeranstaltung)
-                .when().put("/api/veranstaltungen/{id}", vid)
+                .when().put("/api/veranstaltungen/{id}", vId)
                 .then()
                 .statusCode(OK.getStatusCode())
                 .extract().as(VeranstaltungDto.class);
@@ -328,13 +366,13 @@ class AdminResourceTest extends DatabaseCleaner {
                 .auth().oauth2(admin2Token)
                 .contentType(ContentType.JSON)
                 .body(admin2FetchedVeranstaltung) // This DTO has the old version
-                .when().put("/api/veranstaltungen/{id}", vid)
+                .when().put("/api/veranstaltungen/{id}", vId)
                 .then()
                 .statusCode(CONFLICT.getStatusCode()); // Expect conflict
 
         // 6. Verify data integrity: only Admin 1's changes should be present
         VeranstaltungDto finalVeranstaltung = given()
-                .when().get("/api/veranstaltungen/{id}", vid)
+                .when().get("/api/veranstaltungen/{id}", vId)
                 .then()
                 .statusCode(OK.getStatusCode())
                 .extract().as(VeranstaltungDto.class);

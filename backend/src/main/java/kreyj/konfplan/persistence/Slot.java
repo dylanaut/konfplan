@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
 @NoArgsConstructor
@@ -26,6 +27,7 @@ public class Slot extends VersionedEntity {
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "veranstaltung_id", nullable = false, updatable = false)
+    @Setter(AccessLevel.NONE)
     Veranstaltung veranstaltung;
 
 
@@ -33,9 +35,12 @@ public class Slot extends VersionedEntity {
     // Konstruktoren
     // -------------------------------------------------------------------
 
-    public Slot(String description, LocalDateTime startTime, LocalDateTime endTime) {
+    public Slot(String description, LocalDateTime startTime, LocalDateTime endTime, Veranstaltung veranstaltung) {
         this.description = description;
         this.startTime = startTime;
         this.endTime = endTime;
+
+        Objects.requireNonNull(veranstaltung);
+        this.veranstaltung = veranstaltung;
     }
 }

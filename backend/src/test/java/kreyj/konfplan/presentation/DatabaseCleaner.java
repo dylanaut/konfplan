@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
+import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
@@ -14,7 +15,7 @@ import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
 import kreyj.konfplan.persistence.Zuweisung;
 import org.junit.jupiter.api.BeforeEach;
 
-abstract class DatabaseCleaner {
+public abstract class DatabaseCleaner {
 
     @BeforeEach
     @Transactional
@@ -27,6 +28,7 @@ abstract class DatabaseCleaner {
         Vortrag.deleteAll();
         Nutzer.deleteAll();
         Slot.deleteAll();
+        Planungsergebnis.deleteAll();
         Veranstaltung.deleteAll();
         Raum.deleteAll();
         Gebaeude.deleteAll();

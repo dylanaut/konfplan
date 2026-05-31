@@ -21,10 +21,10 @@ import kreyj.konfplan.application.service.PlanService;
 import kreyj.konfplan.application.service.ReferentService;
 import kreyj.konfplan.application.service.TeilnehmerService;
 import kreyj.konfplan.application.service.VeranstaltungService;
-import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.presentation.dto.NutzerDto;
 import kreyj.konfplan.presentation.dto.PlanQualitaetDto;
 import kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto;
+import kreyj.konfplan.presentation.dto.RaumVerfuegbarkeitDto;
 import kreyj.konfplan.presentation.dto.SlotDto;
 import kreyj.konfplan.presentation.dto.SolverConfigDto;
 import kreyj.konfplan.presentation.dto.VeranstaltungDto;
@@ -328,9 +328,10 @@ public class VeranstaltungResource {
     @POST
     @Path("/{vid}/slots")
     @Operation(summary = "Neuen Slot in Veranstaltung erstellen", description = "Erstellt einen neuen Zeit-Slot innerhalb einer Veranstaltung.")
-    public Response createSlot(@PathParam("vid") Long vid, @RequestBody(description = "Der zu erstellende Slot", required = true) Slot slot) {
+    public Response createSlot(@PathParam("vid") Long vid,
+                               @RequestBody(description = "Der zu erstellende Slot", required = true) SlotDto slotDto) {
         try {
-            Slot created = adminService.createEventSlot(slot, vid);
+            Slot created = adminService.createSlot(slotDto, vid);
             return Response.status(Response.Status.CREATED).entity(SlotResource.mapSlotToDto(created)).build();
         } catch (IllegalArgumentException e) {
             LOG.error(e.getMessage(), e);
@@ -341,9 +342,10 @@ public class VeranstaltungResource {
     @PUT
     @Path("/{vid}/slots/{id}")
     @Operation(summary = "Slot in Veranstaltung aktualisieren", description = "Aktualisiert einen bestehenden Zeit-Slot innerhalb einer Veranstaltung.")
-    public Response updateSlot(@PathParam("vid") Long vid, @PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Slot-Daten", required = true) Slot slot) {
+    public Response updateSlot(@PathParam("vid") Long vid, @PathParam("id") Long id,
+                               @RequestBody(description = "Die aktualisierten Slot-Daten", required = true) SlotDto slotDto) {
         try {
-            Slot updated = adminService.updateEventSlot(id, slot, vid);
+            Slot updated = adminService.updateSlot(id, slotDto, vid);
             if (updated == null) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
@@ -360,7 +362,7 @@ public class VeranstaltungResource {
     @Path("/{vid}/slots/{id}")
     @Operation(summary = "Slot aus Veranstaltung löschen", description = "Löscht einen Zeit-Slot aus einer Veranstaltung.")
     public Response deleteSlot(@PathParam("vid") Long vid, @PathParam("id") Long id) {
-        boolean deleted = adminService.deleteEventSlot(id, vid);
+        boolean deleted = adminService.deleteSlot(id, vid);
         if (!deleted) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
@@ -423,6 +425,13 @@ public class VeranstaltungResource {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("Fehler bei der Optimierung: " + e.getMessage()).build();
         }
+    }
+
+    @GET
+    @Path("/{vid}/raum-verfuegbarkeiten")
+    @Operation(summary = "Raumverfügbarkeiten für eine Veranstaltung abrufen", description = "Ruft die Verfügbarkeiten aller Räume für die Slots einer Veranstaltung ab und prüft auf Kollisionen mit anderen Veranstaltungen.")
+    public List<RaumVerfuegbarkeitDto> getRaumVerfuegbarkeiten(@PathParam("vid") Long vid) {
+        return adminService.getRaumVerfuegbarkeiten(vid);
     }
 
     // -------------------------------------------------------------------

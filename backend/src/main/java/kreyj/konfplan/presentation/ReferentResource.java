@@ -247,7 +247,7 @@ public class ReferentResource {
     @Path("/veranstaltungen/{eventId}/vortraege/{vortragId}/register")
     @Operation(summary = "Vortrag für Veranstaltung registrieren", description = "Registriert einen Vortrag des Referenten für eine Veranstaltung.")
     public Response registerTalkForEvent(@PathParam("eventId") Long eventId, @PathParam("vortragId") Long vortragId) {
-        referentService.registerTalkForEvent(JwtHelper.getUserPrincipalName(jwt), vortragId, eventId);
+        referentService.registriereVortragFuerVeranstaltung(JwtHelper.getUserPrincipalName(jwt), vortragId, eventId);
         return Response.ok().build();
     }
 
@@ -353,7 +353,7 @@ public class ReferentResource {
                 dto.verfuegbareSlotIds = Slot.<Slot>find("veranstaltung", v.getVeranstaltung())
                         .stream()
                         .map(Slot::getId)
-                        .collect(Collectors.toSet());
+                        .toList();
             } else {
                 dto.verfuegbareSlotIds = vv.getVerfuegbareSlotIds();
             }
@@ -361,7 +361,7 @@ public class ReferentResource {
             dto.istPflicht = true;
             dto.pflichtGruppe = pflichtvortrag.getPflichtgruppe();
             if (pflichtvortrag.getPflichtslot() != null) {
-                dto.verfuegbareSlotIds = Set.of(pflichtvortrag.getPflichtslot().getId());
+                dto.verfuegbareSlotIds = List.of(pflichtvortrag.getPflichtslot().getId());
             }
         }
 
@@ -382,7 +382,7 @@ public class ReferentResource {
             wahlvortrag.setMaxWiederholungen(dto.maxWiederholungen);
         } else {
             Pflichtvortrag pflichtvortrag = (Pflichtvortrag) vortrag;
-            pflichtvortrag.setPflichtgruppe(dto.pflichtGruppe);
+            pflichtvortrag.updatePflichtgruppe(dto.pflichtGruppe);
         }
 
         return vortrag;

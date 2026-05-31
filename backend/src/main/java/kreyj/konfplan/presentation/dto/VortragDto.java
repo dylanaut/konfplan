@@ -7,7 +7,9 @@ import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Veranstaltung;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @RegisterForReflection
@@ -18,7 +20,7 @@ public class VortragDto extends AbstractVersionedDto {
     public String inhalt;
     public boolean istPflicht;
     public boolean wiederholbar;
-    public Set<Long> verfuegbareSlotIds = new HashSet<>();
+    public List<Long> verfuegbareSlotIds = new ArrayList<>();
 
     public String pflichtGruppe;
     public Long pflichtSlotId;

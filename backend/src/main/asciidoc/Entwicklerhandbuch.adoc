@@ -175,6 +175,80 @@ Das Frontend basiert auf Vue 3, Vite, Tailwind CSS, Pinia (State Management) und
 *   **Passwort-Reset:** Passwort-Reset per E-Mail (Mailpit-Credentials in `application.properties` setzen).
 *   **Standard-Passwort:** Standard-Passwort bei Erstellung/Import: `start123` (BCrypt-gehasht).
 
+== H2-Datenbanken im Quarkus-Test debuggen
+
+Die H2-Datenbank läuft im Test-Modus normalerweise nur im Speicher (`in-memory`) und ist von außen nicht erreichbar.
+
+Die beste Methode dafür ist, die H2-Datenbank in einem Modus zu starten, der externe Verbindungen erlaubt, und die H2-Web-Konsole zu nutzen.
+
+== Die beste Methode: H2 im Server-Modus + Externe Konsole
+
+Das Ziel ist, die in-memory Datenbank in eine Datei auf der Festplatte zu schreiben, damit ein externes Tool (die H2 Konsole) darauf zugreifen kann, während dein Test am Breakpoint pausiert.
+
+. *Schritt 1: Konfiguriere die Test-Datenbank in `application.properties`*
++
+Erstelle oder bearbeite die Datei `src/test/resources/application.properties` und zwinge H2, eine Datei zu verwenden.
++
+[source,properties]
+----
+# src/test/resources/application.properties
+
+# Wir überschreiben die Standard-In-Memory-Datenbank
+# H2 wird nun in eine Datei im target-Verzeichnis schreiben.
+quarkus.datasource.jdbc.url=jdbc:h2:file:./target/h2-testdb;DB_CLOSE_DELAY=-1
+
+# Der Parameter DB_CLOSE_DELAY=-1 ist SEHR WICHTIG.
+# Er verhindert, dass H2 die Datenbankdatei löscht, wenn die letzte Verbindung geschlossen wird.
+
+# Setze den Benutzernamen und das Passwort explizit (Standard ist 'sa' und leer)
+quarkus.datasource.username=sa
+quarkus.datasource.password=
+
+# Optional: Stelle sicher, dass die DB bei jedem Test-Start neu erstellt wird
+quarkus.hibernate-orm.database.generation=drop-and-create
+----
+
+. *Schritt 2: Starte die externe H2-Web-Konsole*
++
+Bevor du deinen Test startest, öffne ein Terminal und starte die H2-Konsole. Dafür brauchst du die H2-JAR-Datei, die Maven für dein Projekt bereits heruntergeladen hat.
++
+.. *Finde die H2-JAR-Datei:*
++
+Sie liegt in deinem lokalen Maven-Repository. Der Pfad sieht etwa so aus: `~/.m2/repository/com/h2database/h2/2.2.224/h2-2.2.224.jar` (Die Versionsnummer kann variieren).
++
+.. *Starte die Konsole:*
++
+Führe im Terminal folgenden Befehl aus (passe den Pfad zur JAR-Datei an):
++
+[source,sh]
+----
+java -jar ~/.m2/repository/com/h2database/h2/2.2.224/h2-2.2.224.jar
+----
++
+Ein Browserfenster mit der H2-Login-Maske öffnet sich automatisch.
+
+. *Schritt 3: Verbinde dich mit der Datenbank-Datei*
++
+In der H2-Login-Maske im Browser musst du jetzt die korrekten Verbindungsdaten eingeben.
++
+* *Driver Class:* `org.h2.Driver` (sollte vorausgefüllt sein)
+* *JDBC URL:* Gib hier *exakt den gleichen Wert* wie in der `application.properties` ein, aber mit dem vollen Pfad. Der Wert lautet: `jdbc:h2:file:./target/h2-testdb`
+* *User Name:* `sa`
+* *Password:* (leer lassen)
++
+Klicke auf *Connect*. Du solltest jetzt eine leere Datenbank sehen (oder Tabellen von einem vorherigen Testlauf).
+
+. *Schritt 4: Der Debugging-Workflow*
+.. Lass das H2-Konsolen-Fenster im Browser geöffnet.
+.. Starte deinen Quarkus-Test im *Debug-Modus* in deiner IDE.
+.. Warte, bis der Test deinen Breakpoint erreicht. Die Ausführung pausiert.
+.. Wechsle zum H2-Konsolen-Fenster im Browser.
+.. Auf der linken Seite siehst du jetzt die Tabellen, die Quarkus erstellt hat (z.B. `VERANSTALTUNG`, `SLOT`, etc.).
+.. Schreibe deine SQL-Abfrage in das große Textfeld, z.B. `SELECT * FROM NUTZER_VERFUEGBARKEIT;`
+.. Klicke auf *Run*.
++
+Du siehst jetzt den *exakten Zustand der Datenbank* in dem Moment, in dem dein Test pausiert ist.
+
 == 10. MacOS Entwicklung
 
 docker desktop für MacOS mit M2 (silicon chip / aarch) verwenden

@@ -19,12 +19,12 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 
 import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 import static jakarta.ws.rs.core.Response.Status.CREATED;
 import static jakarta.ws.rs.core.Response.Status.OK;
+import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvIdL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
@@ -40,7 +40,7 @@ class SlotUndRaumTest extends DatabaseCleaner {
     void setup() {
         // Hauptveranstaltung
         Veranstaltung v = new Veranstaltung();
-        v.setName("Haupt Event");
+        v.setName("Haupt Veranstaltung");
         v.setBeginntAm(LocalDateTime.of(2025, 10, 1, 8, 0));
         v.setEndetAm(LocalDateTime.of(2025, 10, 1, 18, 0));
         v.persistAndFlush();
@@ -48,7 +48,7 @@ class SlotUndRaumTest extends DatabaseCleaner {
 
         // Andere Veranstaltung (zeitgleich)
         Veranstaltung v2 = new Veranstaltung();
-        v2.setName("Anderes Event");
+        v2.setName("Andere Veranstaltung");
         v2.setBeginntAm(LocalDateTime.of(2025, 10, 1, 8, 0));
         v2.setEndetAm(LocalDateTime.of(2025, 10, 1, 18, 0));
         v2.persistAndFlush();
@@ -136,44 +136,62 @@ class SlotUndRaumTest extends DatabaseCleaner {
                 .statusCode(BAD_REQUEST.getStatusCode());
     }
 
+    /**
+     * Testet die Funktionalität der Raumverfügbarkeitshandhabung über verschiedene Veranstaltungen hinweg.
+     * Die Methode verifiziert, dass ein Raum, der in einer Veranstaltung gebucht wurde, seine Verfügbarkeit
+     * für überlappende Zeitfenster in einer anderen Veranstaltung blockiert.
+     *
+     * Testablauf:
+     * - Erstellt ein Zeitfenster in einer Veranstaltung und ein weiteres überlappendes Zeitfenster in einer anderen Veranstaltung.
+     * - Markiert den Raum als belegt durch die zweite Veranstaltung.
+     * - Verifiziert, dass der Raum für das Zeitfenster der ersten Veranstaltung korrekt als blockiert angezeigt wird
+     *   aufgrund der Überlappung mit der zweiten Veranstaltung.
+     *
+     * Testerwartungen:
+     * - Stellt sicher, dass der Raum für die erste Veranstaltung aufgrund der
+     *   konfliktierenden Buchung in der zweiten Veranstaltung als "blockiert" gekennzeichnet ist.
+     * - Validiert, dass die Veranstaltung, die für die Blockierung des Raumes verantwortlich ist, korrekt
+     *   in der Antwort identifiziert wird.
+     */
+
     @Test
     @TestSecurity(user = "admin@test.de", roles = "ADMIN")
+    @Transactional
     void testRaumVerfuegbarkeitCrossEvent() {
-        final Long[] s1Id = new Long[1];
+        final Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        final Long[] s1IdArray = {0L};
 
-        // Daten in einer eigenen Transaktion vorbereiten und committen
         QuarkusTransaction.requiringNew().run(() -> {
-            // Slot in Event 1
-            Slot s1 = new Slot();
-            s1.setDescription("Slot E1");
-            s1.setStartTime(LocalDateTime.of(2025, 10, 1, 9, 0));
-            s1.setEndTime(LocalDateTime.of(2025, 10, 1, 10, 0));
+            // Slot in Veranstaltung 1
+            Slot s1 = new Slot("Slot E1",
+                    LocalDateTime.of(2025, 10, 1, 9, 0),
+                    LocalDateTime.of(2025, 10, 1, 10, 0), veranstaltung);
             s1.persistAndFlush();
-
-            Veranstaltung.<Veranstaltung>findById(vid).addSlot(s1);
-
-            s1Id[0] = s1.getId();
-
-            // Slot in Event 2 (zeitlich überschneidend)
-            Slot s2 = new Slot();
-            s2.setDescription("Slot E2");
-            s2.setStartTime(LocalDateTime.of(2025, 10, 1, 9, 30));
-            s2.setEndTime(LocalDateTime.of(2025, 10, 1, 10, 30));
-            s2.persistAndFlush();
+            s1IdArray[0] = s1.getId();
+            veranstaltung.addSlot(s1);
 
             Veranstaltung otherV = Veranstaltung.findById(otherVid);
+            // Slot in Veranstaltung 2 (zeitlich überschneidend)
+            Slot s2 = new Slot("Slot E2",
+                    LocalDateTime.of(2025, 10, 1, 9, 30),
+                    LocalDateTime.of(2025, 10, 1, 10, 30), otherV);
+            s2.persistAndFlush();
+
             otherV.addSlot(s2);
-
-
-            Raum r = Raum.findById(raumId);
-
-            // Raum in Event 2 als belegt markieren
-            RaumVerfuegbarkeit rv2 = new RaumVerfuegbarkeit(r, otherV, Set.of(s2.getId()));
-
-            rv2.persistAndFlush();
+            otherV.persist();
         });
 
-        // Abfrage für Event 1: Raum sollte für s1 als "blocked" markiert sein
+        Long s1Id = s1IdArray[0];
+        
+        // Raum in Veranstaltung 2 als belegt markieren
+//        RaumVerfuegbarkeit rv2 = new RaumVerfuegbarkeit(r, otherV, List.of(s2.getId()));
+//        rv2.persistAndFlush();
+
+        RaumVerfuegbarkeit rv1 = RaumVerfuegbarkeit.findById(rvIdL(raumId, vid));
+        RaumVerfuegbarkeit rv2 = RaumVerfuegbarkeit.findById(rvIdL(raumId, otherVid));
+        System.out.println(rv2);
+
+        // Abfrage für Veranstaltung 1: Raum sollte für s1 als "blocked" markiert sein
         List<RaumVerfuegbarkeitDto> dtos = given()
                 .when().get("/api/admin/veranstaltungen/{vid}/raeume/verfuegbarkeiten", vid)
                 .then()
@@ -181,10 +199,10 @@ class SlotUndRaumTest extends DatabaseCleaner {
                 .extract().body().jsonPath().getList(".", RaumVerfuegbarkeitDto.class);
 
         RaumVerfuegbarkeitDto target = dtos.stream()
-                .filter(d -> d.getVerfuegbareSlotIds().contains(s1Id[0]))
+                .filter(d -> d.verfuegbareSlotIds.contains(s1Id))
                 .findFirst().orElseThrow();
 
-        assertThat(target.isBlockedByOtherEvent).describedAs("Raum sollte durch anderes Event blockiert sein").isTrue();
-        assertThat(target.blockingEventName).isEqualTo("Anderes Event");
+        assertThat(target.isBlockedByOtherEvent).describedAs("Raum sollte durch andere Veranstaltung blockiert sein").isTrue();
+        assertThat(target.blockingEventName).isEqualTo("Andere Veranstaltung");
     }
 }

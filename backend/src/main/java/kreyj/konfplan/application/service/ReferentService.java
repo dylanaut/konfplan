@@ -169,134 +169,134 @@ public class ReferentService {
     }
 
     @Transactional
-    public void registerTalkForEvent(String email, Long vortragId, Long eventId) {
+    public void registriereVortragFuerVeranstaltung(String email, Long vortragId, Long veranstaltungId) {
         Referent referent = Referent.find("email", email).firstResult();
         Vortrag sourceTalk = Vortrag.findById(vortragId);
-        Veranstaltung targetEvent = Veranstaltung.findById(eventId);
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
 
-        if (referent == null || sourceTalk == null || targetEvent == null) {
+        if (referent == null || sourceTalk == null || veranstaltung == null) {
             return;
         }
         if (!sourceTalk.getReferent().getId().equals(referent.getId())) {
             return;
         }
 
-        checkDeadline(targetEvent);
+        checkDeadline(veranstaltung);
 
         // Prüfen, ob bereits ein Vortrag mit diesem Titel in der Zielveranstaltung existiert
-        boolean exists = Vortrag.find("referent = ?1 and veranstaltung = ?2 and titel = ?3", referent, targetEvent, sourceTalk.getTitel()).count() > 0;
+        boolean exists = Vortrag.find("referent = ?1 and veranstaltung = ?2 and titel = ?3", referent, veranstaltung, sourceTalk.getTitel()).count() > 0;
         if (exists) {
             return;
         }
 
-        Vortrag newTalk;
+        Vortrag vortrag;
         if (sourceTalk instanceof Wahlvortrag sw) {
             Wahlvortrag nw = new Wahlvortrag();
             nw.setWiederholbar(sw.isWiederholbar());
             nw.setMaxWiederholungen(sw.getMaxWiederholungen());
             // Wir übernehmen keine Slots, da diese veranstaltungsspezifisch sind!
-            newTalk = nw;
+            vortrag = nw;
         } else {
             Pflichtvortrag np = new Pflichtvortrag();
-            np.setPflichtgruppe(((Pflichtvortrag) sourceTalk).getPflichtgruppe());
-            newTalk = np;
+            np.updatePflichtgruppe(((Pflichtvortrag) sourceTalk).getPflichtgruppe());
+            vortrag = np;
         }
 
-        newTalk.setTitel(sourceTalk.getTitel());
-        newTalk.setInhalt(sourceTalk.getInhalt());
-        newTalk.setReferent(referent);
-        newTalk.setVeranstaltung(targetEvent);
-        newTalk.persist();
+        vortrag.setTitel(sourceTalk.getTitel());
+        vortrag.setInhalt(sourceTalk.getInhalt());
+        vortrag.setReferent(referent);
+        vortrag.setVeranstaltung(veranstaltung);
+        vortrag.persist();
 
-        if (targetEvent.getBeginntAm().isAfter(LocalDateTime.now())) {
-            mailService.sendVortragsRegistrierung(targetEvent, referent, newTalk, true);
+        if (veranstaltung.getBeginntAm().isAfter(LocalDateTime.now())) {
+            mailService.sendVortragsRegistrierung(veranstaltung, referent, vortrag, true);
         }
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag für weiteres Event registriert", "Referent '" + email + "' hat Vortrag '" + newTalk.getTitel() + "' für Event '" + targetEvent.getName() + "' registriert.", newTalk.getId());
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag für weiteres Event registriert", "Referent '" + email + "' hat Vortrag '" + vortrag.getTitel() + "' für Event '" + veranstaltung.getName() + "' registriert.", vortrag.getId());
     }
 
     @Transactional
-    public VortragDto cloneTalkForEvent(String email, Long sourceVortragId, Long targetEventId) {
+    public VortragDto cloneTalkForEvent(String email, Long sourceVortragId, Long veranstaltungId) {
         Referent referent = Referent.find("email", email).firstResult();
         if (referent == null) {
             throw new WebApplicationException("Referent nicht gefunden.", Response.Status.NOT_FOUND);
         }
 
-        Vortrag sourceTalk = Vortrag.findById(sourceVortragId);
-        if (sourceTalk == null) {
+        Vortrag quellVortrag = Vortrag.findById(sourceVortragId);
+        if (quellVortrag == null) {
             throw new WebApplicationException("Quell-Vortrag nicht gefunden.", Response.Status.NOT_FOUND);
         }
 
-        Veranstaltung targetEvent = Veranstaltung.findById(targetEventId);
-        if (targetEvent == null) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
+        if (veranstaltung == null) {
             throw new WebApplicationException("Ziel-Veranstaltung nicht gefunden.", Response.Status.NOT_FOUND);
         }
 
         // Validierung: Gehört der Quell-Vortrag dem Referenten?
-        if (!sourceTalk.getReferent().getId().equals(referent.getId())) {
+        if (!quellVortrag.getReferent().getId().equals(referent.getId())) {
             throw new WebApplicationException("Referent ist nicht der Eigentümer des Quell-Vortrags.", Response.Status.FORBIDDEN);
         }
 
         // Deadline für die Ziel-Veranstaltung prüfen
-        checkDeadline(targetEvent);
+        checkDeadline(veranstaltung);
 
         // Prüfen, ob bereits ein Vortrag mit demselben Titel in der Zielveranstaltung existiert
-        boolean exists = Vortrag.find("referent = ?1 and veranstaltung = ?2 and titel = ?3", referent, targetEvent, sourceTalk.getTitel()).count() > 0;
+        boolean exists = Vortrag.find("referent = ?1 and veranstaltung = ?2 and titel = ?3", referent, veranstaltung, quellVortrag.getTitel()).count() > 0;
         if (exists) {
             throw new WebApplicationException("Ein Vortrag mit demselben Titel existiert bereits für diesen Referenten in der Ziel-Veranstaltung.", Response.Status.CONFLICT);
         }
 
-        Vortrag newTalk;
-        if (sourceTalk instanceof Wahlvortrag sw) {
+        Vortrag zielVortrag;
+        if (quellVortrag instanceof Wahlvortrag sw) {
             Wahlvortrag nw = new Wahlvortrag();
             nw.setWiederholbar(sw.isWiederholbar());
             nw.setMaxWiederholungen(sw.getMaxWiederholungen());
             // Wahl-Slots werden nicht kopiert, da sie veranstaltungsspezifisch sind.
-            newTalk = nw;
-        } else if (sourceTalk instanceof Pflichtvortrag) {
+            zielVortrag = nw;
+        } else if (quellVortrag instanceof Pflichtvortrag) {
             // Pflichtvorträge können nicht von Referenten geklont werden, da sie eine Admin-Konfiguration erfordern (Slots, Räume, Gruppen).
             throw new WebApplicationException("Pflichtvorträge können nicht von Referenten geklont werden.", Response.Status.BAD_REQUEST);
         } else {
             throw new WebApplicationException("Unbekannter Vortragstyp.", Response.Status.INTERNAL_SERVER_ERROR);
         }
 
-        newTalk.setTitel(sourceTalk.getTitel());
-        newTalk.setInhalt(sourceTalk.getInhalt()); // AbstractText wird kopiert und kann angepasst werden
-        newTalk.setReferent(referent);
-        newTalk.setVeranstaltung(targetEvent);
-        newTalk.persist();
+        zielVortrag.setTitel(quellVortrag.getTitel());
+        zielVortrag.setInhalt(quellVortrag.getInhalt()); // AbstractText wird kopiert und kann angepasst werden
+        zielVortrag.setReferent(referent);
+        zielVortrag.setVeranstaltung(veranstaltung);
+        zielVortrag.persist();
 
         // Benachrichtigung senden, wenn die Veranstaltung in der Zukunft liegt
-        if (targetEvent.getBeginntAm().isAfter(LocalDateTime.now())) {
-            mailService.sendVortragsRegistrierung(targetEvent, referent, newTalk, true);
+        if (veranstaltung.getBeginntAm().isAfter(LocalDateTime.now())) {
+            mailService.sendVortragsRegistrierung(veranstaltung, referent, zielVortrag, true);
         }
 
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag geklont", "Referent '" + email + "' hat Vortrag '" + newTalk.getTitel() + "' von Event '" + sourceTalk.getVeranstaltung().getName() + "' nach Event '" + targetEvent.getName() + "' geklont.", newTalk.getId());
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag geklont", "Referent '" + email + "' hat Vortrag '" + zielVortrag.getTitel() + "' von Event '" + quellVortrag.getVeranstaltung().getName() + "' nach Event '" + veranstaltung.getName() + "' geklont.", zielVortrag.getId());
 
-        return ReferentResource.mapVortragToDto(newTalk);
+        return ReferentResource.mapVortragToDto(zielVortrag);
     }
 
     @Transactional
-    public void deregisterTalkFromEvent(String email, Long vortragId, Long eventId) {
+    public void deregisterTalkFromEvent(String email, Long vortragId, Long veranstaltungId) {
         Referent referent = Referent.find("email", email).firstResult();
         Vortrag talk = Vortrag.findById(vortragId);
-        Veranstaltung event = Veranstaltung.findById(eventId);
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
 
-        if (referent == null || talk == null || event == null) {
+        if (referent == null || talk == null || veranstaltung == null) {
             return;
         }
-        if (!talk.getReferent().getId().equals(referent.getId()) || !talk.getVeranstaltung().getId().equals(event.getId())) {
+        if (!talk.getReferent().getId().equals(referent.getId()) || !talk.getVeranstaltung().getId().equals(veranstaltung.getId())) {
             return;
         }
 
-        checkDeadline(event);
+        checkDeadline(veranstaltung);
 
         String titel = talk.getTitel();
         talk.delete();
 
-        if (event.getBeginntAm().isAfter(LocalDateTime.now())) {
-            mailService.sendVortragsRegistrierung(event, referent, talk, false);
+        if (veranstaltung.getBeginntAm().isAfter(LocalDateTime.now())) {
+            mailService.sendVortragsRegistrierung(veranstaltung, referent, talk, false);
         }
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag von Event abgemeldet", "Referent '" + email + "' hat Vortrag '" + titel + "' von Event '" + event.getName() + "' abgemeldet.", vortragId);
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag von Event abgemeldet", "Referent '" + email + "' hat Vortrag '" + titel + "' von Event '" + veranstaltung.getName() + "' abgemeldet.", vortragId);
     }
 
     private void updateVortragFromDto(Vortrag vortrag, VortragDto dto) {
@@ -325,9 +325,9 @@ public class ReferentService {
                 vv.persist();
             }
         } else if (vortrag instanceof Pflichtvortrag pflichtvortrag) {
-            pflichtvortrag.setPflichtgruppe(dto.pflichtGruppe);
-            pflichtvortrag.setPflichtraum(Raum.findById(dto.pflichtRaumId));
-            pflichtvortrag.setPflichtslot(Slot.findById(dto.pflichtRaumId));
+            pflichtvortrag.updatePflichtgruppe(dto.pflichtGruppe);
+            pflichtvortrag.updatePflichtraum(Raum.findById(dto.pflichtRaumId));
+            pflichtvortrag.updatePflichtslot(Slot.findById(dto.pflichtRaumId));
         }
     }
 
@@ -342,12 +342,12 @@ public class ReferentService {
 
         checkDeadline(vortrag.getVeranstaltung());
 
-        Veranstaltung event = vortrag.getVeranstaltung();
+        Veranstaltung veranstaltung = vortrag.getVeranstaltung();
         String titel = vortrag.getTitel();
         vortrag.delete();
 
-        if (event.getBeginntAm().isAfter(LocalDateTime.now())) {
-            mailService.sendVortragsRegistrierung(event, referent, vortrag, false);
+        if (veranstaltung.getBeginntAm().isAfter(LocalDateTime.now())) {
+            mailService.sendVortragsRegistrierung(veranstaltung, referent, vortrag, false);
         }
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent gelöscht", "Referent '" + email + "' hat Vortrag '" + titel + "' gelöscht.", vortragId);
 
