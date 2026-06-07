@@ -205,6 +205,7 @@ public class ReferentService {
 
         vortrag.setTitel(sourceTalk.getTitel());
         vortrag.setInhalt(sourceTalk.getInhalt());
+        vortrag.setAusstattung(sourceTalk.getAusstattung());
         vortrag.setReferent(referent);
         vortrag.setVeranstaltung(veranstaltung);
         vortrag.persist();
@@ -262,6 +263,7 @@ public class ReferentService {
 
         zielVortrag.setTitel(quellVortrag.getTitel());
         zielVortrag.setInhalt(quellVortrag.getInhalt()); // AbstractText wird kopiert und kann angepasst werden
+        zielVortrag.setAusstattung(quellVortrag.getAusstattung());
         zielVortrag.setReferent(referent);
         zielVortrag.setVeranstaltung(veranstaltung);
         zielVortrag.persist();
@@ -301,15 +303,16 @@ public class ReferentService {
     }
 
     private void updateVortragFromDto(Vortrag vortrag, VortragDto dto) {
-        if (!Objects.equals(vortrag.getId(), dto.id)) {
+        if (vortrag.getId() != null && !Objects.equals(vortrag.getId(), dto.id)) {
             throw new IllegalArgumentException("Vortrag-Ids sind unterschiedlich");
         }
-        if (!Objects.equals(vortrag.getVeranstaltung().getId(), dto.veranstaltungId)) {
+        if (vortrag.getVeranstaltung() != null && !Objects.equals(vortrag.getVeranstaltung().getId(), dto.veranstaltungId)) {
             throw new IllegalArgumentException("Veranstaltung-Ids sind unterschiedlich");
         }
 
         vortrag.setTitel(dto.titel);
         vortrag.setInhalt(dto.inhalt);
+        vortrag.setAusstattung(dto.ausstattung);
 
         if (vortrag instanceof Wahlvortrag wahlvortrag) {
             wahlvortrag.setWiederholbar(dto.wiederholbar);
@@ -328,7 +331,7 @@ public class ReferentService {
         } else if (vortrag instanceof Pflichtvortrag pflichtvortrag) {
             pflichtvortrag.updatePflichtgruppe(dto.pflichtGruppe);
             pflichtvortrag.updatePflichtraum(Raum.findById(dto.pflichtRaumId));
-            pflichtvortrag.updatePflichtslot(Slot.findById(dto.pflichtRaumId));
+            pflichtvortrag.updatePflichtslot(Slot.findById(dto.pflichtSlotId));
         }
     }
 
@@ -423,6 +426,7 @@ public class ReferentService {
         dto.version = v.getVersion();
         dto.titel = v.getTitel();
         dto.inhalt = v.getInhalt();
+        dto.ausstattung = v.getAusstattung();
         dto.veranstaltungId = v.getVeranstaltung().getId();
         dto.veranstaltungName = v.getVeranstaltung().getName();
         dto.referentId = v.getReferent().getId();
@@ -460,6 +464,7 @@ public class ReferentService {
         vortrag.setVersion(dto.version);
         vortrag.setTitel(dto.titel);
         vortrag.setInhalt(dto.inhalt);
+        vortrag.setAusstattung(dto.ausstattung);
         vortrag.setVeranstaltung(Veranstaltung.findById(dto.veranstaltungId));
         vortrag.setReferent(Referent.findById(dto.referentId));
         if (vortrag instanceof Wahlvortrag wahlvortrag) {

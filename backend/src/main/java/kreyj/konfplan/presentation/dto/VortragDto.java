@@ -7,9 +7,8 @@ import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Veranstaltung;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @RegisterForReflection
@@ -18,6 +17,7 @@ public class VortragDto extends AbstractVersionedDto {
     public Long id;
     public String titel;
     public String inhalt;
+    public String ausstattung;
     public boolean istPflicht;
     public boolean wiederholbar;
     public Set<Long> verfuegbareSlotIds = new HashSet<>();
@@ -32,26 +32,43 @@ public class VortragDto extends AbstractVersionedDto {
     public String referentName;
     public String referentOrganisation;
 
-    public VortragDto(String titel, Referent referent, String gruppe, Raum raum, Slot slot, Veranstaltung veranstaltung) {
-        this(titel, referent.getId(), gruppe, raum.getId(), slot.getId(), veranstaltung.getId());
+    // Konstruktor für Pflichtvortrag
+    public VortragDto(String titel, Referent referent, String pflichtGruppe, Raum pflichtRaum, Slot pflichtSlot, Veranstaltung veranstaltung) {
+        this(titel, referent.getId(), pflichtGruppe, pflichtRaum.getId(), pflichtSlot.getId(), veranstaltung.getId());
     }
 
-    public VortragDto(String titel, Long referentId, String gruppe, Long raumId, Long slotId, Long veranstaltungId) {
-        this.istPflicht = true;
-        this.titel = titel;
+    // Konstruktor für Pflichtvortrag mit IDs
+    public VortragDto(String titel, Long referentId, String pflichtGruppe, Long pflichtRaumId, Long pflichtSlotId, Long veranstaltungId) {
+        this(titel, null, referentId, pflichtGruppe, pflichtRaumId, pflichtSlotId, veranstaltungId);
+    }
 
-        this.veranstaltungId = veranstaltungId;
-        this.referentId = referentId;
+    public VortragDto(String titel, String inhalt, Long referentId, String pflichtGruppe, Long pflichtRaumId, Long pflichtSlotId,
+                      Long veranstaltungId) {
+        this(true, titel, inhalt, referentId, veranstaltungId);
 
-        this.pflichtGruppe = gruppe;
-        this.pflichtRaumId = raumId;
-        this.pflichtSlotId = slotId;
+        Objects.requireNonNull(pflichtGruppe, "Pflichtgruppe darf nicht null sein");
+        Objects.requireNonNull(pflichtRaumId, "PflichtraumId darf nicht null sein");
+        Objects.requireNonNull(pflichtSlotId, "PflichtslotId darf nicht null sein");
+
+        this.pflichtGruppe = pflichtGruppe;
+        this.pflichtRaumId = pflichtRaumId;
+        this.pflichtSlotId = pflichtSlotId;
     }
 
     public VortragDto(boolean istPflicht, String titel, String inhalt, Long referentId, Long veranstaltungId) {
+        this(istPflicht, titel, inhalt, null, referentId, veranstaltungId);
+    }
+
+    public VortragDto(boolean istPflicht, String titel, String inhalt, String ausstattung, Long referentId,
+                      Long veranstaltungId) {
+        Objects.requireNonNull(titel, "Titel darf nicht null sein");
+        Objects.requireNonNull(veranstaltungId, "VeranstaltungId darf nicht null sein");
+        Objects.requireNonNull(referentId, "ReferentId darf nicht null sein");
+
         this.istPflicht = istPflicht;
         this.titel = titel;
         this.inhalt = inhalt;
+        this.ausstattung = ausstattung;
         this.referentId = referentId;
         this.veranstaltungId = veranstaltungId;
     }

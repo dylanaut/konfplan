@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static kreyj.konfplan.util.DateHelper.DATE_FORMAT;
 
@@ -155,7 +156,7 @@ public class VeranstaltungService {
                         // Admin verknüpfen
                         admin.addVeranstaltung(v);
 
-                        if (dto.gebaeudeNamen != null && !dto.gebaeudeNamen.isEmpty()) {
+                        if (StringUtils.isNotBlank(dto.gebaeudeNamen)) {
                             Arrays.stream(dto.gebaeudeNamen.split("\\|")).map(String::trim).forEach(name -> {
                                 Gebaeude g = Gebaeude.find("name", name).firstResult();
                                 if (g != null) {
@@ -165,6 +166,11 @@ public class VeranstaltungService {
                                 }
                             });
                         }
+
+                        if (StringUtils.isNotBlank(dto.gruppen)) {
+                            Arrays.stream(dto.gruppen.split("\\|")).map(String::trim).forEach(v::addGruppe);
+                        }
+
                         count++;
                         protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung importiert", "Veranstaltung '" + v.getName() + "' via CSV importiert.", v.getId());
                     } else {
@@ -221,6 +227,7 @@ public class VeranstaltungService {
         }
 
         dto.gebaeude = v.getGebaeude().stream().map(VeranstaltungService::mapToDto).toList();
+        dto.gruppen = v.getGruppen();
 
         return dto;
     }

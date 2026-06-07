@@ -179,7 +179,11 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Abstract (Kurzbeschreibung)</label>
-          <textarea v-model="selectedTalk.abstractText" rows="4" class="input-field" :disabled="isDeadlinePassedForTalk(selectedTalk)"></textarea>
+          <textarea v-model="selectedTalk.inhalt" rows="4" class="input-field" :disabled="isDeadlinePassedForTalk(selectedTalk)"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Benötigte Ausstattung (optional)</label>
+          <textarea v-model="selectedTalk.ausstattung" rows="2" class="input-field" placeholder="z.B. Beamer, Whiteboard, Starkstromanschluss..." :disabled="isDeadlinePassedForTalk(selectedTalk)"></textarea>
         </div>
 
         <div class="flex items-center gap-4 p-4 bg-indigo-50 rounded-lg">
@@ -391,7 +395,8 @@ const addNewTalk = () => {
   }
   selectedTalk.value = {
     titel: '',
-    abstractText: '',
+    inhalt: '',
+    ausstattung: '',
     wiederholbar: false,
     verfuegIds: [],
     veranstaltungId: availableEvent.id

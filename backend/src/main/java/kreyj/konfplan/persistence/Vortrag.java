@@ -44,6 +44,9 @@ public abstract class Vortrag extends VersionedEntity {
     @Setter
     private String inhalt;
 
+    @Setter
+    private String ausstattung;
+
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "referent_id")
     @JsonIgnoreProperties("vortraege")

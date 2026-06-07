@@ -49,7 +49,6 @@ import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -74,6 +73,7 @@ import static org.apache.commons.collections4.SetUtils.difference;
 public class AdminService {
     private static final Logger LOG = Logger.getLogger(AdminService.class);
     public static final String CSV_PRIO_HEADER = "Teilnehmer E-Mail;Prioritäten";
+    public static final String PV_FAIL_MESSAGE = ". Pflichtvortrag kann nicht erstellt werden.";
 
     private final MailService mailService;
 
@@ -391,6 +391,7 @@ public class AdminService {
             // map vortragDTO to Vortrag
             Pflichtvortrag pv = new Pflichtvortrag(vortragDto.titel, vortragDto.inhalt, referent,
                     veranstaltung, vortragDto.pflichtGruppe, pflichtRaum, pflichtSlot);
+            pv.setAusstattung(vortragDto.ausstattung);
             pv.persistAndFlush();
             pv.afterPersistAndFlush();
 
@@ -409,7 +410,7 @@ public class AdminService {
         } else {
             Wahlvortrag wv = new Wahlvortrag(vortragDto.titel, vortragDto.inhalt, referent,
                     vortragDto.wiederholbar, vortragDto.maxWiederholungen, veranstaltung);
-
+            wv.setAusstattung(vortragDto.ausstattung);
             wv.persistAndFlush();
             wv.afterPersistAndFlush();
 
@@ -519,24 +520,31 @@ public class AdminService {
                 dto.istPflicht = csvDto.istPflicht;
                 dto.titel = csvDto.titel;
                 dto.inhalt = csvDto.inhalt;
+                dto.ausstattung = csvDto.ausstattung;
 
                 Nutzer referent = Nutzer.findByEmail(csvDto.referentEmail);
 
                 if (referent instanceof Referent) {
                     if (csvDto.istPflicht) {
-                        if (csvDto.pflichtGruppe == null
-                                || csvDto.pflichtGruppe.isBlank()) {
+                        if (StringUtils.isBlank(csvDto.pflichtGruppe)) {
                             LOG.warn("Vortrag '" + csvDto.titel + "': Gruppe fehlt." +
-                                    " Pflichtvortrag kann nicht erstellt werden.");
+                                    PV_FAIL_MESSAGE);
                             continue;
+                        } else {
+                            if (veranstaltung.getGruppen().contains(csvDto.pflichtGruppe)) {
+                                dto.pflichtGruppe = csvDto.pflichtGruppe;
+                            } else {
+                                LOG.warn("Unbekannte Gruppe '" + csvDto.pflichtGruppe + "' für '" +
+                                        dto.titel + "' in Veranstaltung '" + veranstaltung.getName() + "'" +
+                                        PV_FAIL_MESSAGE);
+                                continue;
+                            }
                         }
 
-                        dto.pflichtGruppe = csvDto.pflichtGruppe;
-
-                        if (csvDto.pflichtSlot == null
-                                || csvDto.pflichtSlot.isBlank()
+                        if (StringUtils.isBlank(csvDto.pflichtSlot)
                                 || !slotsByName.containsKey(csvDto.pflichtSlot)) {
-                            LOG.warn("Vortrag '" + csvDto.titel + "': Slot '" + csvDto.pflichtSlot + "' nicht gefunden. Pflichtvortrag kann nicht erstellt werden.");
+                            LOG.warn("Vortrag '" + csvDto.titel + "': Slot '" + csvDto.pflichtSlot + "' nicht gefunden"
+                                    + PV_FAIL_MESSAGE);
                             continue;
                         }
 
@@ -545,7 +553,7 @@ public class AdminService {
                         Map<Gebaeude, Raum> gebaeudeRaumMap = raeumeByName.get(csvDto.pflichtRaum);
                         if (null == gebaeudeRaumMap) {
                             if (csvDto.pflichtRaum != null && !csvDto.pflichtRaum.isBlank()) {
-                                LOG.warn("Vortrag '" + csvDto.titel + "': Unbekannter Raum '" + csvDto.pflichtRaum + "'. Pflichtvortrag kann nicht erstellt werden.");
+                                LOG.warn("Vortrag '" + csvDto.titel + "': Unbekannter Raum '" + csvDto.pflichtRaum + "'" + PV_FAIL_MESSAGE);
                             }
                             continue;
                         } else {
@@ -554,12 +562,14 @@ public class AdminService {
                                     .collect(Collectors.toSet());
 
                             if (gebaeudeSet.isEmpty()) {
-                                LOG.warn("Vortrag '" + csvDto.titel + "': Raum '" + csvDto.pflichtRaum + "' nicht gefunden in Veranstaltungsgebäuden. Pflichtvortrag kann nicht erstellt werden.");
+                                LOG.warn("Vortrag '" + csvDto.titel + "': Raum '" + csvDto.pflichtRaum + "' nicht gefunden in Veranstaltungsgebäuden"
+                                        + PV_FAIL_MESSAGE);
                                 continue;
                             } else if (gebaeudeSet.size() == 1) {
                                 dto.pflichtRaumId = gebaeudeRaumMap.get(gebaeudeSet.iterator().next()).getId();
                             } else {
-                                LOG.warn("Vortrag '" + csvDto.titel + "': Raum '" + csvDto.pflichtRaum + "' nicht eindeutig in Veranstaltungsgebäuden. Pflichtvortrag kann nicht erstellt werden.");
+                                LOG.warn("Vortrag '" + csvDto.titel + "': Raum '" + csvDto.pflichtRaum + "' nicht eindeutig in Veranstaltungsgebäuden"
+                                        + PV_FAIL_MESSAGE);
                                 continue;
                             }
                         }
@@ -586,7 +596,8 @@ public class AdminService {
                     LOG.warn("Vortrag '" + csvDto.titel + "' übersprungen: Referent mit Email " + csvDto.referentEmail + " nicht gefunden oder kein Referent.");
                 }
             }
-        } catch (Exception e) {
+        } catch (
+                Exception e) {
             LOG.error("Kritischer Fehler beim Importieren der Vorträge aus CSV: " + csvFilePath, e);
             throw new CsvImportException(csvFilePath, e.getMessage());
         }
@@ -875,6 +886,7 @@ public class AdminService {
 
         entity.setTitel(updated.titel);
         entity.setInhalt(updated.inhalt);
+        entity.setAusstattung(updated.ausstattung);
 
         if (entity instanceof Pflichtvortrag pv && updated.istPflicht) {
             pv.updatePflichtgruppe(updated.pflichtGruppe);
@@ -1002,7 +1014,7 @@ public class AdminService {
             if (blockaden != null) {
                 for (Slot eigenerSlot : aktuelleVeranstaltung.getSlots()) {
                     for (BlockingInfo blockade : blockaden) {
-                        // Prüfe auf Zeitüberlappung: (StartA < EndeB) AND (EndeA > StartB)
+                        // Prüfe auf Zeitüberlappung: (StartA < EndeB) AND (EndA > StartB)
                         if (eigenerSlot.getStartTime().isBefore(blockade.end) && eigenerSlot.getEndTime().isAfter(blockade.start)) {
                             dto.isBlockedByOtherEvent = true;
                             dto.blockingEventName = blockade.eventName;
@@ -1019,9 +1031,9 @@ public class AdminService {
         return dtos;
     }
 
-    // #################################################################################################################
-    // # GRUPPEN-VERWALTUNG
-    // #################################################################################################################
+// #################################################################################################################
+// # GRUPPEN-VERWALTUNG
+// #################################################################################################################
 
     @Transactional
     public Set<String> getGruppen(Long veranstaltungId) {
@@ -1105,9 +1117,9 @@ public class AdminService {
         protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Gruppe gelöscht", "Gruppe '" + gruppenName + "' aus Veranstaltung '" + veranstaltung.getName() + "' entfernt.", veranstaltungId);
     }
 
-    // -------------------------------------------------------------------
-    // Mapper methods
-    // -------------------------------------------------------------------
+// -------------------------------------------------------------------
+// Mapper methods
+// -------------------------------------------------------------------
 
     public static NutzerDto mapNutzerToDto(Nutzer u) {
         NutzerDto dto = new NutzerDto();
@@ -1162,9 +1174,9 @@ public class AdminService {
         return dto;
     }
 
-    // -------------------------------------------------------------------
-    // Helper methods
-    // -------------------------------------------------------------------
+// -------------------------------------------------------------------
+// Helper methods
+// -------------------------------------------------------------------
 
     private boolean kapazitaetZuGering(Raum raum, String gruppe, Long veranstaltungId) {
         if (raum == null || raum.getKapazitaet() == null) {

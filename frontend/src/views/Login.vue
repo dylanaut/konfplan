@@ -32,7 +32,7 @@
           </div>
 
           <button type="submit" :disabled="loading" class="btn-primary w-full">
-            <span v-if="loading">Lädt...</span>
+            <span v-if="loading">Anmelden...</span>
             <span v-else>Anmelden</span>
           </button>
         </form>
@@ -72,12 +72,12 @@
 
 <script setup>
 import {ref} from 'vue';
-import {useRouter} from 'vue-router';
 import {useAuthStore} from '../stores/auth';
 import api from '../api/axios';
+import { useToast } from 'vue-toastification';
 
-const router = useRouter();
 const authStore = useAuthStore();
+const toast = useToast();
 
 // UI States
 const isForgotMode = ref(false);
@@ -91,31 +91,19 @@ const forgotEmail = ref('');
 
 const handleLogin = async () => {
   loading.value = true;
-  try {
-    const res = await api.post('/api/auth/login', {email: email.value, password: password.value});
-    // TokenResponse: { token: '...', role: '...' }
-    authStore.setToken(res.data.token, res.data.role);
-
-    // Redirect basierend auf Rolle
-    if (res.data.role === 'ADMIN') router.push('/admin');
-    else if (res.data.role === 'REFERENT') router.push('/referent');
-    else router.push('/teilnehmer');  // TEILNEHMER
-  } catch (e) {
-    alert("Login fehlgeschlagen. Bitte prüfen Sie Ihre Daten.");
-  } finally {
-    loading.value = false;
-  }
+  await authStore.login({ email: email.value, password: password.value });
+  loading.value = false;
 };
 
 const handleForgot = async () => {
   loading.value = true;
   try {
-    // API-Call an den forgot-password Endpunkt
     await api.post(`/api/auth/forgot-password?email=${forgotEmail.value}`);
     forgotSuccess.value = true;
-    // Aus Sicherheitsgründen zeigen wir immer Erfolg an (Email Enumeration verhindern)
+    toast.success("Anforderung erfolgreich. Bitte prüfen Sie Ihr Postfach.");
   } catch (e) {
     console.error(e);
+    toast.error("Anforderung fehlgeschlagen. Bitte versuchen Sie es später erneut.");
   } finally {
     loading.value = false;
   }

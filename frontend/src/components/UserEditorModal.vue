@@ -49,10 +49,15 @@
 
         <!-- Rollenspezifische Felder: TEILNEHMER -->
         <div v-if="form.role === 'TEILNEHMER'" class="md:col-span-2 bg-green-50 p-4 rounded-lg">
-          <h3 class="text-xs font-bold text-green-700 uppercase tracking-wider mb-3">Teilnehmer-Details</h3>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Organisation / Schule</label>
-            <input v-model="form.organization" type="text" class="input-field" placeholder="Firma / Bildungseinrichtung" />
+          <h3 class="text-xs font-bold text-green-700 uppercase tracking-wider mb-3">Gruppenzugehörigkeit</h3>
+          <div class="space-y-2">
+            <p v-if="groupStore.gruppen.length === 0" class="text-xs text-gray-500">Für die ausgewählte Veranstaltung sind keine Gruppen definiert.</p>
+            <div v-else class="grid grid-cols-2 md:grid-cols-3 gap-2">
+              <div v-for="gruppe in groupStore.gruppen" :key="gruppe" class="flex items-center gap-2 bg-white p-2 rounded-md border">
+                <input :id="`gruppe-${gruppe}`" type="checkbox" :value="gruppe" v-model="form.gruppen" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                <label :for="`gruppe-${gruppe}`" class="text-sm font-medium text-gray-700">{{ gruppe }}</label>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -74,13 +79,16 @@
 
 <script setup>
 import { reactive, watch } from 'vue';
+import { useGroupStore } from '../stores/group';
 
 const props = defineProps({
   isVisible: { type: Boolean, required: true },
   nutzer: { type: Object, default: null },
+  selectedVid: { type: Number, default: null }
 });
 
 const emit = defineEmits(['close', 'save']);
+const groupStore = useGroupStore();
 
 const form = reactive({
   id: null,
@@ -90,24 +98,35 @@ const form = reactive({
   role: 'TEILNEHMER',
   isActive: true,
   biography: '',
-  organization: '',
   jobRole: '',
+  gruppen: [],
+  version: null,
 });
+
+watch(
+    () => props.isVisible,
+    (visible) => {
+      if (visible && props.selectedVid) {
+        groupStore.fetchGruppen(props.selectedVid);
+      }
+    }
+);
 
 watch(
     () => props.nutzer,
     (val) => {
       form.id = val?.id ?? null;
+      form.version = val?.version ?? null;
       form.firstName = val?.firstName ?? '';
       form.lastName = val?.lastName ?? '';
       form.email = val?.email ?? '';
       form.role = val?.role ?? 'TEILNEHMER';
       form.isActive = val?.isActive ?? true;
       form.biography = val?.biography ?? '';
-      form.organization = val?.organization ?? '';
       form.jobRole = val?.jobRole ?? '';
+      form.gruppen = val?.gruppen ? [...val.gruppen] : [];
     },
-    { immediate: true }
+    { immediate: true, deep: true }
 );
 
 const save = () => {

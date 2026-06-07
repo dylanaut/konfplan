@@ -16,7 +16,8 @@
     "pinia": "^2.1.0",
     "vite-plugin-html": "^3.2.2",
     "vue": "^3.3.0",
-    "vue-router": "^4.2.0"
+    "vue-router": "^4.2.0",
+    "vue-toastification": "^2.0.0-rc.5"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.3.4",

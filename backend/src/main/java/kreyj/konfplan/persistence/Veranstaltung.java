@@ -62,6 +62,27 @@ public class Veranstaltung extends VersionedEntity {
     @Column(name = "gruppen")
     private Set<String> gruppen = new HashSet<>();
 
+    public Set<String> getGruppen() {
+        return Collections.unmodifiableSet(gruppen);
+    }
+
+    public void addGruppe(String gruppenName) {
+        if (null == gruppenName) {
+            return;
+        }
+
+        this.gruppen.add(gruppenName);
+    }
+
+    public void removeGruppe(String gruppenName) {
+        if (null == gruppenName) {
+            return;
+        }
+
+        gruppen.remove(gruppenName);
+    }
+
+
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "Veranstaltung_Gebaeude",

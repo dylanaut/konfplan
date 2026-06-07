@@ -12,7 +12,6 @@ public class VeranstaltungCsvDto {
     @CsvBindByName(column = "Ende")
     public String endetAm;
 
-
     @CsvBindByName(column = "Logo")
     public String logo;
 
@@ -25,4 +24,7 @@ public class VeranstaltungCsvDto {
 
     @CsvBindByName(column = "Gebaeude_Namen") // Pipe-getrennte Liste von Gebaeude-Namen
     public String gebaeudeNamen;
+
+    @CsvBindByName(column = "Gruppen") // Pipe-getrennte Liste von Gruppen
+    public String gruppen;
 }

@@ -1,19 +1,19 @@
-istPflicht;Titel;Referent_Email;Pflichtgruppe;Pflichtraum;Pflichtslot;Inhalt;wiederholbar;maxWiederholungen;wahlSlots
-true;Vortrag Arbeitsagentur für 8.1;juergenkrey-monika_engler@yahoo.de;"8.1";A-1.01;2;Studien- und Berufsberatung für Klasse 8.1;false;1;
-true;Vortrag Arbeitsagentur für 8.3;juergenkrey-monika_engler@yahoo.de;"8.3";A-2.03;1;Studien- und Berufsberatung für Klasse 8.3;false;1;
-true;Vortrag Arbeitsagentur für 8.4;juergenkrey-monika_engler@yahoo.de;"8.4";V-0.05;3;Studien- und Berufsberatung für Klasse 8.4;false;1;
-true;Vortrag Arbeitsagentur für 9.1;juergenkrey-monika_engler@yahoo.de;"9.1";A-2.01;5;Studien- und Berufsberatung für Klasse 9.1;false;1;
-true;Vortrag Arbeitsagentur für 9.2;juergenkrey-monika_engler@yahoo.de;"9.2";A-0.12;10;Studien- und Berufsberatung für Klasse 9.2;false;1;
-true;Vorbereitung der Präsentation 9.3 (1/2);juergenkrey-eva_leinen-lartey@yahoo.de;"9.3";A-0.13;5;Vorbereitung der Präsentation (Teil 1);false;1;
-true;Vorbereitung der Präsentation 9.3 (2/2);juergenkrey-eva_leinen-lartey@yahoo.de;"9.3";A-0.13;6;Vorbereitung der Präsentation (Teil 2);false;1;
-true;Vorbereitung der Präsentation 9.4 (1/2);juergenkrey-michael_weiler@yahoo.de;"9.4";A-2.06;5;Vorbereitung der Präsentation (Teil 1);false;1;
-true;Vorbereitung der Präsentation 9.4 (2/2);juergenkrey-michael_weiler@yahoo.de;"9.4";A-2.06;6;Vorbereitung der Präsentation (Teil 2);false;1;
-true;Vorbereitung Abschluss 10.3 (1/2);juergenkrey-dirk_mattesen@yahoo.de;"10.3";A-1.07;1;Vorbereitung Abschluss (Teil 1);false;1;
-true;Vorbereitung Abschluss 10.3 (2/2);juergenkrey-dirk_mattesen@yahoo.de;"10.3";A-1.07;2;Vorbereitung Abschluss (Teil 2);false;1;
-true;Vorbereitung Abschluss 10.4 (1/2);juergenkrey-isabel_gohr@yahoo.de;"10.4";A-1.04;1;Vorbereitung Abschluss (Teil 1);false;1;
-true;Vorbereitung Abschluss 10.4 (2/2);juergenkrey-isabel_gohr@yahoo.de;"10.4";A-1.04;2;Vorbereitung Abschluss (Teil 2);false;1;
-true;Vorbereitung Abschluss 10.5 (1/2);juergenkrey-jennifer_lehmler@yahoo.de;"10.5";A-2.04;1;Vorbereitung Abschluss (Teil 1);false;1;
-true;Vorbereitung Abschluss 10.5 (2/2);juergenkrey-jennifer_lehmler@yahoo.de;"10.5";A-2.04;2;Vorbereitung Abschluss (Teil 2);false;1;
-true;Vortrag Arbeitsagentur für 10.3;juergenkrey-monika_engler@yahoo.de;"10.3";A-1.07;7;Studien- und Berufsberatung für Klasse 10.3;false;1;
-true;Vortrag Arbeitsagentur für 10.4;juergenkrey-monika_engler@yahoo.de;"10.4";A-1.04;8;Studien- und Berufsberatung für Klasse 10.4;false;1;
-true;Vortrag Arbeitsagentur für 10.5;juergenkrey-monika_engler@yahoo.de;"10.5";A-2.04;9;Studien- und Berufsberatung für Klasse 10.5;false;1;
+istPflicht;Titel;Referent_Email;Pflichtgruppe;Pflichtraum;Pflichtslot;Inhalt;wiederholbar;maxWiederholungen;wahlSlots;ausstattung
+true;Vortrag Arbeitsagentur für 8.1;juergenkrey-monika_engler@yahoo.de;"8.1";A-1.01;2;Studien- und Berufsberatung für Klasse 8.1;false;1;;FlipChart
+true;Vortrag Arbeitsagentur für 8.3;juergenkrey-monika_engler@yahoo.de;"8.3";A-2.03;1;Studien- und Berufsberatung für Klasse 8.3;false;1;;FlipChart
+true;Vortrag Arbeitsagentur für 8.4;juergenkrey-monika_engler@yahoo.de;"8.4";V-0.05;3;Studien- und Berufsberatung für Klasse 8.4;false;1;;FlipChart
+true;Vortrag Arbeitsagentur für 9.1;juergenkrey-monika_engler@yahoo.de;"9.1";A-2.01;5;Studien- und Berufsberatung für Klasse 9.1;false;1;;FlipChart
+true;Vortrag Arbeitsagentur für 9.2;juergenkrey-monika_engler@yahoo.de;"9.2";A-0.12;10;Studien- und Berufsberatung für Klasse 9.2;false;1;;FlipChart
+true;Vorbereitung der Präsentation 9.3 (1/2);juergenkrey-eva_leinen-lartey@yahoo.de;"9.3";A-0.13;5;Vorbereitung der Präsentation(Teil 1);false;1;;FlipChart
+true;Vorbereitung der Präsentation 9.3 (2/2);juergenkrey-eva_leinen-lartey@yahoo.de;"9.3";A-0.13;6;Vorbereitung der Präsentation(Teil 2);false;1;;FlipChart
+true;Vorbereitung der Präsentation 9.4 (1/2);juergenkrey-michael_weiler@yahoo.de;"9.4";A-2.06;5;Vorbereitung der Präsentation(Teil 1);false;1;;FlipChart
+true;Vorbereitung der Präsentation 9.4 (2/2);juergenkrey-michael_weiler@yahoo.de;"9.4";A-2.06;6;Vorbereitung der Präsentation(Teil 2);false;1;;FlipChart
+true;Vorbereitung Abschluss 10.3 (1/2);juergenkrey-dirk_mattesen@yahoo.de;"10.3";A-1.07;1;Vorbereitung Abschluss (Teil 1);false;1;;FlipChart
+true;Vorbereitung Abschluss 10.3 (2/2);juergenkrey-dirk_mattesen@yahoo.de;"10.3";A-1.07;2;Vorbereitung Abschluss (Teil 2);false;1;;FlipChart
+true;Vorbereitung Abschluss 10.4 (1/2);juergenkrey-isabel_gohr@yahoo.de;"10.4";A-1.04;1;Vorbereitung Abschluss (Teil 1);false;1;;FlipChart
+true;Vorbereitung Abschluss 10.4 (2/2);juergenkrey-isabel_gohr@yahoo.de;"10.4";A-1.04;2;Vorbereitung Abschluss (Teil 2);false;1;;FlipChart
+true;Vorbereitung Abschluss 10.5 (1/2);juergenkrey-jennifer_lehmler@yahoo.de;"10.5";A-2.04;1;Vorbereitung Abschluss (Teil 1);false;1;;FlipChart
+true;Vorbereitung Abschluss 10.5 (2/2);juergenkrey-jennifer_lehmler@yahoo.de;"10.5";A-2.04;2;Vorbereitung Abschluss (Teil 2);false;1;;FlipChart
+true;Vortrag Arbeitsagentur für 10.3;juergenkrey-monika_engler@yahoo.de;"10.3";A-1.07;7;Studien- und Berufsberatung für Klasse 10.3;false;1;;FlipChart
+true;Vortrag Arbeitsagentur für 10.4;juergenkrey-monika_engler@yahoo.de;"10.4";A-1.04;8;Studien- und Berufsberatung für Klasse 10.4;false;1;;FlipChart
+true;Vortrag Arbeitsagentur für 10.5;juergenkrey-monika_engler@yahoo.de;"10.5";A-2.04;9;Studien- und Berufsberatung für Klasse 10.5;false;1;;FlipChart

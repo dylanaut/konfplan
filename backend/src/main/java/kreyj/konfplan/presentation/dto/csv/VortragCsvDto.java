@@ -15,6 +15,9 @@ public class VortragCsvDto {
     @CsvBindByName(column = "Inhalt")
     public String inhalt;
 
+    @CsvBindByName(column = "Ausstattung")
+    public String ausstattung;
+
     @CsvBindByName(column = "wiederholbar")
     public boolean wiederholbar;
 
