@@ -20,18 +20,14 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
+import kreyj.konfplan.application.service.AdminService;
 import kreyj.konfplan.application.service.MailService;
 import kreyj.konfplan.application.service.PlanService;
 import kreyj.konfplan.application.service.ReferentService;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
-import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Referent;
-import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Vortrag;
-import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
-import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.presentation.dto.EmailChangeRequestDto;
 import kreyj.konfplan.presentation.dto.NutzerDto;
 import kreyj.konfplan.presentation.dto.NutzerVerfuegbarkeitDto;
@@ -47,13 +43,10 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
-import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvId;
 
 @Path("/api/referenten")
 @RolesAllowed({"ADMIN", "REFERENT"})
@@ -87,13 +80,13 @@ public class ReferentResource {
         if (referent == null) {
             throw new WebApplicationException("Referent not found", Response.Status.NOT_FOUND);
         }
-        return mapReferentToNutzerDto(referent); // Use mapper
+        return AdminService.mapReferentToNutzerDto(referent); // Use mapper
     }
 
     @PUT
     @Path("/profile")
     @Operation(summary = "Referentenprofil aktualisieren", description = "Aktualisiert das Profil des aktuell angemeldeten Referenten.")
-    public Response updateProfile(@RequestBody(description = "Die aktualisierten Profildaten", required = true) NutzerDto dto) {
+    public Response updateProfile(@RequestBody(description = "Die aktualisierten Profildaten") NutzerDto dto) {
         try {
             referentService.updateProfile(JwtHelper.getUserPrincipalName(jwt), dto);
         } catch (OptimisticLockException e) {
@@ -106,7 +99,7 @@ public class ReferentResource {
     @Path("/email-change-request")
     @Transactional
     @Operation(summary = "E-Mail-Änderung anfordern", description = "Fordert eine Änderung der E-Mail-Adresse an und sendet Bestätigungs-E-Mails.")
-    public Response requestEmailChange(@RequestBody(description = "Anfrage zur E-Mail-Änderung", required = true) EmailChangeRequestDto requestDto) {
+    public Response requestEmailChange(@RequestBody(description = "Anfrage zur E-Mail-Änderung") EmailChangeRequestDto requestDto) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (nutzer == null) {
             return Response.status(Response.Status.NOT_FOUND).entity("Nutzer nicht gefunden.").build();
@@ -172,7 +165,7 @@ public class ReferentResource {
     @POST
     @Path("/vortraege")
     @Operation(summary = "Neuen Vortrag erstellen", description = "Erstellt einen neuen Vortrag für den aktuell angemeldeten Referenten.")
-    public Response createVortrag(@RequestBody(description = "Die Daten des neuen Vortrags", required = true) VortragDto dto) {
+    public Response createVortrag(@RequestBody(description = "Die Daten des neuen Vortrags") VortragDto dto) {
         try {
             VortragDto saved = referentService.createVortrag(JwtHelper.getUserPrincipalName(jwt), dto);
             return Response.ok(saved).build();
@@ -185,7 +178,7 @@ public class ReferentResource {
     @PUT
     @Path("/vortraege/{vortragId}")
     @Operation(summary = "Vortrag aktualisieren", description = "Aktualisiert einen bestehenden Vortrag des Referenten.")
-    public Response updateVortrag(@PathParam("vortragId") Long vortragId, @RequestBody(description = "Die aktualisierten Vortragsdaten", required = true) VortragDto dto) {
+    public Response updateVortrag(@PathParam("vortragId") Long vortragId, @RequestBody(description = "Die aktualisierten Vortragsdaten") VortragDto dto) {
         try {
             VortragDto updated = referentService.updateVortrag(JwtHelper.getUserPrincipalName(jwt), vortragId, dto);
             if (updated == null) {
@@ -282,9 +275,9 @@ public class ReferentResource {
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Transactional
     @Operation(summary = "Verfügbarkeit für einen Slot aktualisieren", description = "Aktualisiert die persönliche Verfügbarkeit des Referenten für einen bestimmten Slot.")
-    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten", required = true) NutzerVerfuegbarkeitDto dto) {
+    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten") NutzerVerfuegbarkeitDto dto) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
-        if (!(nutzer instanceof Referent) || !nutzer.getId().equals(dto.getNutzerId())) {
+        if (!(nutzer instanceof Referent) || !nutzer.getId().equals(dto.nutzerId)) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -305,87 +298,9 @@ public class ReferentResource {
         }
 
         nv.getVerfuegbareSlotIds().clear();
-        nv.getVerfuegbareSlotIds().addAll(dto.getVerfuegbareSlotIds());
+        nv.getVerfuegbareSlotIds().addAll(dto.verfuegbareSlotIds);
         nv.persist();
 
         return Response.ok().build();
-    }
-
-    // -------------------------------------------------------------------
-    // Helper methods
-    // -------------------------------------------------------------------
-
-
-    // New mapper method
-    public static NutzerDto mapReferentToNutzerDto(Referent referent) {
-        NutzerDto dto = new NutzerDto();
-        dto.id = referent.getId();
-        dto.version = referent.getVersion();
-        dto.email = referent.getEmail();
-        dto.firstName = referent.getFirstName();
-        dto.lastName = referent.getLastName();
-        dto.jobRole = referent.getJobRole();
-        dto.organisation = referent.getOrganisation();
-        dto.slogan = referent.getSlogan();
-        dto.biography = referent.getBiography();
-        dto.role = referent.getRole();
-        return dto;
-    }
-
-    public static VortragDto mapVortragToDto(Vortrag v) {
-        VortragDto dto = new VortragDto();
-        dto.id = v.getId();
-        dto.version = v.getVersion();
-        dto.titel = v.getTitel();
-        dto.inhalt = v.getInhalt();
-        dto.veranstaltungId = v.getVeranstaltung().getId();
-        dto.veranstaltungName = v.getVeranstaltung().getName();
-        dto.referentId = v.getReferent().getId();
-        dto.referentName = v.getReferent().getLastName() + ", " + v.getReferent().getFirstName();
-        dto.referentOrganisation = v.getReferent().getOrganisation();
-
-        if (v instanceof Wahlvortrag wahlvortrag) {
-            dto.wiederholbar = wahlvortrag.isWiederholbar();
-            dto.maxWiederholungen = wahlvortrag.getMaxWiederholungen();
-            VortragVerfuegbarkeit vv = VortragVerfuegbarkeit.findById(vvId(
-                    wahlvortrag, wahlvortrag.getVeranstaltung()));
-            if (null == vv) {
-                dto.verfuegbareSlotIds = Slot.<Slot>find("veranstaltung", v.getVeranstaltung())
-                        .stream()
-                        .map(Slot::getId)
-                        .toList();
-            } else {
-                dto.verfuegbareSlotIds = vv.getVerfuegbareSlotIds();
-            }
-        } else if (v instanceof Pflichtvortrag pflichtvortrag) {
-            dto.istPflicht = true;
-            dto.pflichtGruppe = pflichtvortrag.getPflichtgruppe();
-            if (pflichtvortrag.getPflichtslot() != null) {
-                dto.verfuegbareSlotIds = List.of(pflichtvortrag.getPflichtslot().getId());
-            }
-        }
-
-        return dto;
-    }
-
-    public static Vortrag mapDtoToVortrag(VortragDto dto) {
-        Vortrag vortrag = dto.istPflicht ? new Pflichtvortrag() : new Wahlvortrag();
-
-        vortrag.setId(dto.id);
-        vortrag.setVersion(dto.version);
-        vortrag.setTitel(dto.titel);
-        vortrag.setInhalt(dto.inhalt);
-        vortrag.setVeranstaltung(Veranstaltung.findById(dto.veranstaltungId));
-        vortrag.setReferent(Referent.findById(dto.referentId));
-        if (vortrag instanceof Wahlvortrag wahlvortrag) {
-            wahlvortrag.setWiederholbar(dto.wiederholbar);
-            wahlvortrag.setMaxWiederholungen(dto.maxWiederholungen);
-        } else {
-            Pflichtvortrag pflichtvortrag = (Pflichtvortrag) vortrag;
-            pflichtvortrag.updatePflichtgruppe(dto.pflichtGruppe);
-        }
-
-        return vortrag;
-
     }
 }

@@ -69,8 +69,9 @@ class NutzerInheritanceTest extends DatabaseCleaner {
 
         Referent ref = (Referent) Nutzer.findByEmail("expert@konfplan.de");
         assertNotNull(ref, "Referent sollte in der DB existieren");
-        assertThat(ref.getVeranstaltungen().isEmpty()).describedAs("Veranstaltung des Referenten sollte nicht leer sein").isFalse();
-        assertEquals(testVid, ref.getVeranstaltungen().iterator().next().getId());
+        assertThat(ref.getVeranstaltungen())
+                .describedAs("Veranstaltung des Referenten sollte nicht leer sein").isNotEmpty();
+        assertThat(ref.getVeranstaltungen().iterator().next().getId()).isEqualTo(testVid);
     }
 
     @Test
@@ -83,7 +84,7 @@ class NutzerInheritanceTest extends DatabaseCleaner {
                     "firstName": "Lukas",
                     "lastName": "Lernbereit",
                     "role": "TEILNEHMER",
-                    "gruppe": "10.3",
+                    "gruppen": ["10.3"],
                     "isActive": true
                 }""";
 
@@ -98,7 +99,7 @@ class NutzerInheritanceTest extends DatabaseCleaner {
         assertNotNull(tn, "Teilnehmer sollte in der DB existieren");
         assertNotNull(Veranstaltung.findById(testVid), "Veranstaltung %d sollte in der DB existieren".formatted(testVid));
         assertNotNull(tn.getVeranstaltungen(), "Veranstaltung des Teilnehmers sollte nicht leer sein");
-        assertEquals(testVid, tn.getVeranstaltungen().iterator().next().getId());
-        assertEquals("10.3", tn.getGruppe());
+        assertThat(tn.getVeranstaltungen().iterator().next().getId()).isEqualTo(testVid);
+        assertThat(tn.getGruppen()).contains("10.3");
     }
 }

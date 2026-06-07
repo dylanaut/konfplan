@@ -1,6 +1,5 @@
 package kreyj.konfplan.presentation;
 
-import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.logging.Log;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.transaction.Transactional;
@@ -12,31 +11,28 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.application.service.AdminService;
 import kreyj.konfplan.application.service.MailService;
 import kreyj.konfplan.application.service.PrioritaetService;
-import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
-import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.presentation.dto.AdminPrioritaetUpdateRequestDto;
 import kreyj.konfplan.presentation.dto.NutzerDto;
 import kreyj.konfplan.presentation.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.presentation.dto.RaumVerfuegbarkeitDto;
-import kreyj.konfplan.presentation.dto.VortragPrioDto;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
-import java.util.Collections;
 import java.util.List;
 
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
@@ -61,31 +57,6 @@ public class AdminResource {
         this.mailService = mailService;
     }
 
-    public static NutzerDto mapNutzerToDto(Nutzer u) {
-        NutzerDto dto = new NutzerDto();
-        dto.id = u.getId();
-        dto.version = u.getVersion();
-        dto.email = u.getEmail();
-        dto.firstName = u.getFirstName();
-        dto.lastName = u.getLastName();
-        dto.role = u.getRole();
-        dto.isActive = u.isActive();
-        dto.veranstaltungIds = null != u.getVeranstaltungen() ? u.getVeranstaltungen().stream().map(IdEntity::getId).toList() : Collections.emptyList();
-
-        if (u instanceof Referent r) {
-            dto.biography = r.getBiography();
-            dto.jobRole = r.getJobRole();
-            dto.organisation = r.getOrganisation();
-            dto.slogan = r.getSlogan();
-        } else if (u instanceof Teilnehmer tn) {
-            dto.gruppe = tn.getGruppe();
-            if (tn.getPrioritaeten() != null) {
-                dto.prioritaeten = tn.getPrioritaeten().stream().map(VortragPrioDto::from).toList();
-            }
-        }
-        return dto;
-    }
-
     @GET
     @Path("/nutzer")
     @Operation(summary = "Alle Nutzer abrufen", description = "Gibt eine Liste aller Nutzer (Admins, Referenten, Teilnehmer) zurück.")
@@ -96,7 +67,7 @@ public class AdminResource {
     @POST
     @Path("/nutzer")
     @Operation(summary = "Neuen Nutzer erstellen", description = "Erstellt einen neuen Nutzer und sendet eine Bestätigungs-E-Mail.")
-    public NutzerDto createUser(@RequestBody(description = "Die Daten des neuen Nutzers", required = true) NutzerDto dto) {
+    public NutzerDto ocreateUser(@RequestBody(description = "Die Daten des neuen Nutzers") NutzerDto dto) {
         NutzerDto createdNutzerDto = adminService.createUser(dto, dto.veranstaltungIds);
         // E-Mail nach erfolgreicher Erstellung senden
         Nutzer createdNutzer = Nutzer.findById(createdNutzerDto.id);
@@ -117,13 +88,13 @@ public class AdminResource {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        return Response.ok().entity(mapNutzerToDto(nutzer)).build();
+        return Response.ok().entity(AdminService.mapNutzerToDto(nutzer)).build();
     }
 
     @PUT
     @Path("/nutzer/{id}")
     @Operation(summary = "Nutzer aktualisieren", description = "Aktualisiert die Daten eines Nutzers.")
-    public Response updateUser(@PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Nutzerdaten", required = true) NutzerDto dto) {
+    public Response updateUser(@PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Nutzerdaten") NutzerDto dto) {
         try {
             NutzerDto updateUser = adminService.updateUser(id, dto, dto.veranstaltungIds);
             return Response.ok().entity(updateUser).build();
@@ -188,7 +159,6 @@ public class AdminResource {
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Operation(summary = "Verfügbarkeiten abrufen", description = "Ruft die Verfügbarkeiten aller Nutzer für eine Veranstaltung ab.")
     public List<NutzerVerfuegbarkeitDto> getVerfuegbarkeiten(@PathParam("vid") Long vid) {
-        List<NutzerVerfuegbarkeit> alle = NutzerVerfuegbarkeit.listAll();
         List<NutzerVerfuegbarkeit> nvs = NutzerVerfuegbarkeit.find("veranstaltungId", vid).list();
 
         return nvs.stream()
@@ -200,13 +170,14 @@ public class AdminResource {
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Transactional
     @Operation(summary = "Verfügbarkeit aktualisieren", description = "Aktualisiert die Verfügbarkeit eines Nutzers für einen bestimmten Slot.")
-    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten") NutzerVerfuegbarkeitDto dto) {
-        NutzerVerfuegbarkeit verfuegbarkeit = NutzerVerfuegbarkeit.findById(nvIdL(dto.getNutzerId(), vid));
+    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid,
+                                         @RequestBody(description = "Verfügbarkeitsdaten für einen Nutzer") NutzerVerfuegbarkeitDto dto) {
+        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(dto.nutzerId, vid));
 
-        if (verfuegbarkeit == null) {
+        if (nv == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        verfuegbarkeit.setVerfuegbareSlotIds(dto.getVerfuegbareSlotIds());
+        nv.setVerfuegbareSlotIds(dto.verfuegbareSlotIds);
         return Response.ok().build();
     }
 
@@ -214,16 +185,14 @@ public class AdminResource {
     @Path("/veranstaltungen/{vid}/raeume/verfuegbarkeiten")
     @Operation(summary = "Raum-Verfügbarkeiten abrufen", description = "Ruft die Verfügbarkeiten (Belegungen) aller Räume für eine Veranstaltung ab.")
     public List<RaumVerfuegbarkeitDto> getRaumVerfuegbarkeiten(@PathParam("vid") Long vid) {
-        return RaumVerfuegbarkeit.<RaumVerfuegbarkeit>find("veranstaltungId", vid).stream()
-                .map(RaumVerfuegbarkeitDto::new)
-                .toList();
+        return adminService.getRaumVerfuegbarkeiten(vid);
     }
 
     @POST
     @Path("/veranstaltungen/{vid}/raeume/verfuegbarkeiten")
     @Transactional
     @Operation(summary = "Raum-Verfügbarkeit aktualisieren", description = "Aktualisiert die Belegung eines Raumes für einen bestimmten Slot.")
-    public Response updateRaumVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Raum-Verfügbarkeitsdaten", required = true) RaumVerfuegbarkeitDto dto) {
+    public Response updateRaumVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Raum-Verfügbarkeitsdaten") RaumVerfuegbarkeitDto dto) {
         RaumVerfuegbarkeit verfuegbarkeit = RaumVerfuegbarkeit.findById(rvIdL(dto.raumId, vid));
         if (verfuegbarkeit == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -240,7 +209,7 @@ public class AdminResource {
     public Response updateTeilnehmerPrioritaet(
             @PathParam("vid") Long vid,
             @PathParam("tid") Long tid,
-            @RequestBody(description = "Eine Liste von Prioritäts-Updates", required = true) List<AdminPrioritaetUpdateRequestDto> dtoList) { // Changed to List
+            @RequestBody(description = "Eine Liste von Prioritäts-Updates") List<AdminPrioritaetUpdateRequestDto> dtoList) { // Changed to List
 
         Teilnehmer teilnehmer = Teilnehmer.findById(tid);
         if (teilnehmer == null) {
@@ -268,6 +237,55 @@ public class AdminResource {
         } catch (Exception e) {
             Log.error("Fehler beim Aktualisieren der Priorität: " + e.getMessage(), e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Interner Serverfehler beim Aktualisieren der Priorität.").build();
+        }
+    }
+
+    // --- GRUPPEN-VERWALTUNG ---
+
+    @GET
+    @Path("/veranstaltungen/{vid}/gruppen")
+    @Operation(summary = "Alle Gruppen einer Veranstaltung abrufen")
+    public Response getGruppen(@PathParam("vid") Long vid) {
+        try {
+            return Response.ok(adminService.getGruppen(vid)).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
+        }
+    }
+
+    @POST
+    @Path("/veranstaltungen/{vid}/gruppen")
+    @Operation(summary = "Eine neue Gruppe zu einer Veranstaltung hinzufügen")
+    public Response createGruppe(@PathParam("vid") Long vid, @RequestBody(description = "Der Name der neuen Gruppe") String gruppenName) {
+        try {
+            adminService.createGruppe(vid, gruppenName);
+            return Response.status(Response.Status.CREATED).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
+
+    @PUT
+    @Path("/veranstaltungen/{vid}/gruppen")
+    @Operation(summary = "Eine Gruppe umbenennen")
+    public Response renameGruppe(@PathParam("vid") Long vid, @QueryParam("alterName") String alterName, @QueryParam("neuerName") String neuerName) {
+        try {
+            adminService.renameGruppe(vid, alterName, neuerName);
+            return Response.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
+        }
+    }
+
+    @DELETE
+    @Path("/veranstaltungen/{vid}/gruppen/{gruppenName}")
+    @Operation(summary = "Eine Gruppe aus einer Veranstaltung löschen")
+    public Response deleteGruppe(@PathParam("vid") Long vid, @PathParam("gruppenName") String gruppenName) {
+        try {
+            adminService.deleteGruppe(vid, gruppenName);
+            return Response.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
     }
 }

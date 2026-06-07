@@ -1,20 +1,21 @@
 package kreyj.konfplan.persistence;
 
-import com.opencsv.bean.CsvBindByName;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
-
-import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
 
 @Entity
 @Getter
@@ -22,12 +23,10 @@ import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
 @DiscriminatorValue("TEILNEHMER")
 public class Teilnehmer extends Nutzer {
 
-    /**
-     * Gruppenzugehörigkeit des Teilnehmers über Name der Gruppe
-     */
-    @Column(name = "gruppe")
-    @CsvBindByName(column = "Gruppe")
-    private String gruppe;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "teilnehmer_gruppen", joinColumns = @JoinColumn(name = "teilnehmer_id"))
+    @Column(name = "gruppen")
+    private Set<String> gruppen = new HashSet<>();
 
     @OneToMany(mappedBy = "teilnehmer", cascade = CascadeType.ALL, orphanRemoval = true)
     List<Prioritaet> prioritaeten = new ArrayList<>();
@@ -46,37 +45,36 @@ public class Teilnehmer extends Nutzer {
     // public methods
     // -------------------------------------------------------------------
 
-    public void setGruppe(String neueGruppe) {
-        if (Objects.equals(this.gruppe, neueGruppe)) {
-            return; // Keine Änderung
+    public boolean hasGruppe(String gruppe) {
+        if (null == gruppe) {
+            return false;
         }
-
-        // Pflichtvorträge der alten Gruppe entfernen und Verfügbarkeiten wiederherstellen
-        if (this.gruppe != null && !this.gruppe.isEmpty()) {
-            List<Pflichtvortrag> altePflichtvortraege = Pflichtvortrag.find("pflichtgruppe", this.gruppe).list();
-            for (Pflichtvortrag pv : altePflichtvortraege) {
-                if (pv.getPflichtslot() != null) {
-                    updateNutzerVerfuegbarkeit(pv.getVeranstaltung(), pv.getPflichtslot(), true);
-                }
-            }
-        }
-
-        this.gruppe = neueGruppe;
-
-        // Pflichtvorträge der neuen Gruppe zuweisen und Verfügbarkeiten entfernen
-        if (neueGruppe != null && !neueGruppe.isEmpty()) {
-            List<Pflichtvortrag> neuePflichtvortraege = Pflichtvortrag.find("pflichtgruppe", neueGruppe).list();
-            for (Pflichtvortrag pv : neuePflichtvortraege) {
-                if (pv.getPflichtslot() != null) {
-                    updateNutzerVerfuegbarkeit(pv.getVeranstaltung(), pv.getPflichtslot(), false);
-                }
-            }
-        }
+        return gruppen.contains(gruppe);
     }
 
-    public List<Long> getVerfuegbareSlotIds(Veranstaltung veranstaltung) {
-        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(this, veranstaltung));
+    public void addGruppe(String gruppe) {
+        if (null == gruppe || gruppe.isBlank()) {
+            return;
+        }
+        gruppen.add(gruppe);
+    }
 
-        return nv.getVerfuegbareSlotIds();
+    public void removeGruppe(String gruppe) {
+        if (null == gruppe) {
+            return;
+        }
+        gruppen.remove(gruppe);
+    }
+
+    public static List<Teilnehmer> getGruppenTeilnehmer(String gruppenName, Long veranstaltungId) {
+        return Teilnehmer.find("SELECT tn FROM Teilnehmer tn JOIN tn.veranstaltungen v " +
+                        " WHERE ?1 MEMBER OF tn.gruppen " +
+                        " AND v.id = ?2 and tn.isActive = true",
+                gruppenName, veranstaltungId).list();
+
+    }
+
+    public static List<Teilnehmer> getVeranstaltungTeilnehmer(Long veranstaltungId) {
+        return Teilnehmer.find("SELECT tn FROM Teilnehmer tn JOIN tn.veranstaltungen v WHERE v.id = ?1 and tn.isActive = true", veranstaltungId).list();
     }
 }

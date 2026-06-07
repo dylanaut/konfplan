@@ -8,9 +8,11 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+
+import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvId;
+import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvIdL;
 
 @Entity
 @NoArgsConstructor
@@ -23,13 +25,45 @@ public class RaumVerfuegbarkeit extends VeranstaltungsVerfuegbarkeit {
     @Column(name = "raum_id")
     private Long raumId;
 
-    public RaumVerfuegbarkeit(Raum raum, Veranstaltung veranstaltung, List<Long> verfuegbareSlotIds) {
+    public RaumVerfuegbarkeit(Raum raum, Veranstaltung veranstaltung, Set<Long> verfuegbareSlotIds) {
         this(raum.getId(), veranstaltung.getId(), verfuegbareSlotIds);
     }
 
-    public RaumVerfuegbarkeit(Long raumId, Long veranstaltungId, List<Long> verfuegbareSlotIds) {
+    public RaumVerfuegbarkeit(Long raumId, Long veranstaltungId, Set<Long> verfuegbareSlotIds) {
         super(veranstaltungId, verfuegbareSlotIds);
         Objects.requireNonNull(raumId, "RaumId darf nicht NULL sein");
         this.raumId = raumId;
+    }
+
+    // -------------------------------------------------------------------
+    // Overrides
+    // -------------------------------------------------------------------
+
+    @Override
+    public String toString() {
+        return "RV<" + raumId + "," + veranstaltungId + ">=" + verfuegbareSlotIds;
+    }
+
+
+    // -------------------------------------------------------------------
+    // Helper methods
+    // -------------------------------------------------------------------
+
+
+    public static boolean isRaumGebucht(Long raumId, Long slotId, Long veranstaltungId) {
+        RaumVerfuegbarkeit rv = findById(rvIdL(raumId, veranstaltungId));
+
+        return null != rv && !rv.verfuegbareSlotIds.contains(slotId);
+    }
+
+
+    public static boolean isRaumVerfuegbar(Raum raum, Slot slot, Veranstaltung veranstaltung) {
+        Objects.requireNonNull(raum, "teilnehmer darf nicht NULL sein");
+        Objects.requireNonNull(slot, "slot darf nicht NULL sein");
+        Objects.requireNonNull(veranstaltung, "veranstaltung darf nicht NULL sein");
+
+        RaumVerfuegbarkeit rv = findById(rvId(raum, veranstaltung));
+
+        return null == rv || rv.verfuegbareSlotIds.contains(slot.getId());
     }
 }

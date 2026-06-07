@@ -9,6 +9,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.json.Json;
 import jakarta.json.JsonException;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
+import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
 import kreyj.konfplan.presentation.dto.SolverConfigDto;
 import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Planungsergebnis;
@@ -42,6 +44,8 @@ import java.util.Set;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.joining;
+import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
+import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvId;
 
 @ApplicationScoped
 public class OptimierungService {
@@ -79,7 +83,7 @@ public class OptimierungService {
                 "Optimierung für '" + vName + "' mit Solver '" + config.solver + "' gestartet.", veranstaltungId);
 
         try {
-            List<Teilnehmer> teilnehmer = Teilnehmer.find("SELECT t FROM Teilnehmer t JOIN t.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
+            List<Teilnehmer> teilnehmer = Teilnehmer.getVeranstaltungTeilnehmer(veranstaltungId);
             List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
             List<Wahlvortrag> wahlvortraege = Wahlvortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
             List<Slot> slots = Slot.find("veranstaltung.id = ?1", veranstaltungId).list();
@@ -191,7 +195,7 @@ public class OptimierungService {
         appendWahlvortraege(wahlvortraege, slots, sb);
         appendTnPrios(teilnehmer, wahlvortraege, sb);
         appendTnVerfuegbarkeiten(veranstaltung, teilnehmer, slots, pflichtvortraege, sb);
-        appendRaumVerfuegbarkeiten(raeume, slots, pflichtvortraege, sb);
+        appendRaumVerfuegbarkeiten(veranstaltung, raeume, slots, pflichtvortraege, sb);
         appendOidArrays(teilnehmer, wahlvortraege, slots, raeume, sb);
 
         return sb.toString();
@@ -247,7 +251,7 @@ public class OptimierungService {
             if (++pIdx < nTNs) {
                 sb.append(",");
             }
-            sb.append(String.format(" %% %d: %s (%s)", pIdx, tn.getEmail(), tn.getGruppe()));
+            sb.append(String.format(" %% %d: %s (%s)", pIdx, tn.getEmail(), tn.getGruppen()));
         }
 
         sb.append("\n];\n\n");
@@ -314,7 +318,8 @@ public class OptimierungService {
         for (Teilnehmer tn : teilnehmer) {
             sb.append("\n");
             int sIdx = 0;
-            List<Long> verfSlotIds = tn.getVerfuegbareSlotIds(veranstaltung);
+            NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId( tn, veranstaltung));
+            Set<Long> verfSlotIds = nv.getVerfuegbareSlotIds();
             for (Slot s : slots) {
                 sb.append(verfSlotIds.contains(s.getId()) ? "true" : "false");
                 if (++sIdx < slotSize) {
@@ -331,7 +336,7 @@ public class OptimierungService {
         sb.append("\n\n");
     }
 
-    private static void appendRaumVerfuegbarkeiten(List<Raum> raeume, List<Slot> slots, List<Pflichtvortrag> pflichtvortraege, StringBuilder sb) {
+    private static void appendRaumVerfuegbarkeiten(Veranstaltung veranstaltung, List<Raum> raeume, List<Slot> slots, List<Pflichtvortrag> pflichtvortraege, StringBuilder sb) {
         sb.append("%In welchen Slots Räume für Wahlvorträge planbar ist:\n");
         int raeumeSize = raeume.size();
         int slotSize = slots.size();
@@ -339,9 +344,11 @@ public class OptimierungService {
         sb.append("raum_belegbar = [| %% Slot 1..").append(slots.size());
         for (Raum raum : raeume) {
             sb.append("\n");
+            RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvId(raum, veranstaltung));
+            Set<Long> verfSlotIds = rv.getVerfuegbareSlotIds();
             int sIdx = 0;
             for (Slot s : slots) {
-                sb.append("true");
+                sb.append(verfSlotIds.contains(s.getId()) ? "true" : "false");
                 if (++sIdx < slotSize) {
                     sb.append(",");
                 } else {

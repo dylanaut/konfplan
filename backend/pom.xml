@@ -209,6 +209,13 @@
             <artifactId>quarkus-test-h2</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>p6spy</groupId>
+            <artifactId>p6spy</artifactId>
+            <version>3.9.1</version> <!-- Eine aktuelle, stabile Version -->
+            <scope>test</scope> <!-- Wichtig: Nur für Tests, nicht für Produktion -->
+        </dependency>
     </dependencies>
 
     <build>

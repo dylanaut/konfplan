@@ -18,7 +18,6 @@ import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
 import kreyj.konfplan.persistence.Wahlvortrag;
-import kreyj.konfplan.presentation.ReferentResource;
 import kreyj.konfplan.presentation.dto.NutzerDto;
 import kreyj.konfplan.presentation.dto.ReferentVeranstaltungDto;
 import kreyj.konfplan.presentation.dto.VortragDto;
@@ -34,7 +33,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvId;
 import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvIdL;
 
 @ApplicationScoped
@@ -88,7 +89,7 @@ public class ReferentService {
         }
 
         List<Vortrag> vortraege = Vortrag.find("referent", referent).list();
-        return vortraege.stream().map(ReferentResource::mapVortragToDto).toList();
+        return vortraege.stream().map(ReferentService::mapVortragToDto).toList();
     }
 
     public List<ReferentVeranstaltungDto> getReferentVeranstaltungen(String email) {
@@ -145,7 +146,7 @@ public class ReferentService {
         }
 
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent erstellt", "Referent '" + email + "' hat Vortrag '" + vortrag.getTitel() + "' für Event '" + veranstaltung.getName() + "' erstellt.", vortrag.getId());
-        return ReferentResource.mapVortragToDto(vortrag);
+        return mapVortragToDto(vortrag);
     }
 
     @Transactional
@@ -165,7 +166,7 @@ public class ReferentService {
 
         updateVortragFromDto(vortrag, dto);
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent aktualisiert", "Referent '" + email + "' hat Vortrag '" + vortrag.getTitel() + "' aktualisiert.", vortrag.getId());
-        return ReferentResource.mapVortragToDto(vortrag);
+        return mapVortragToDto(vortrag);
     }
 
     @Transactional
@@ -272,7 +273,7 @@ public class ReferentService {
 
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag geklont", "Referent '" + email + "' hat Vortrag '" + zielVortrag.getTitel() + "' von Event '" + quellVortrag.getVeranstaltung().getName() + "' nach Event '" + veranstaltung.getName() + "' geklont.", zielVortrag.getId());
 
-        return ReferentResource.mapVortragToDto(zielVortrag);
+        return mapVortragToDto(zielVortrag);
     }
 
     @Transactional
@@ -409,4 +410,68 @@ public class ReferentService {
         }
         return count;
     }
+
+    // -------------------------------------------------------------------
+    // Mapper methods
+    // -------------------------------------------------------------------
+
+
+
+    public static VortragDto mapVortragToDto(Vortrag v) {
+        VortragDto dto = new VortragDto();
+        dto.id = v.getId();
+        dto.version = v.getVersion();
+        dto.titel = v.getTitel();
+        dto.inhalt = v.getInhalt();
+        dto.veranstaltungId = v.getVeranstaltung().getId();
+        dto.veranstaltungName = v.getVeranstaltung().getName();
+        dto.referentId = v.getReferent().getId();
+        dto.referentName = v.getReferent().getLastName() + ", " + v.getReferent().getFirstName();
+        dto.referentOrganisation = v.getReferent().getOrganisation();
+
+        if (v instanceof Wahlvortrag wahlvortrag) {
+            dto.wiederholbar = wahlvortrag.isWiederholbar();
+            dto.maxWiederholungen = wahlvortrag.getMaxWiederholungen();
+            VortragVerfuegbarkeit vv = VortragVerfuegbarkeit.findById(vvId(
+                    wahlvortrag, wahlvortrag.getVeranstaltung()));
+            if (null == vv) {
+                dto.verfuegbareSlotIds = Slot.<Slot>find("veranstaltung", v.getVeranstaltung())
+                        .stream()
+                        .map(Slot::getId)
+                        .collect(Collectors.toSet());
+            } else {
+                dto.verfuegbareSlotIds = vv.getVerfuegbareSlotIds();
+            }
+        } else if (v instanceof Pflichtvortrag pflichtvortrag) {
+            dto.istPflicht = true;
+            dto.pflichtGruppe = pflichtvortrag.getPflichtgruppe();
+            if (pflichtvortrag.getPflichtslot() != null) {
+                dto.verfuegbareSlotIds = Set.of(pflichtvortrag.getPflichtslot().getId());
+            }
+        }
+
+        return dto;
+    }
+
+    public static Vortrag mapDtoToVortrag(VortragDto dto) {
+        Vortrag vortrag = dto.istPflicht ? new Pflichtvortrag() : new Wahlvortrag();
+
+        vortrag.setId(dto.id);
+        vortrag.setVersion(dto.version);
+        vortrag.setTitel(dto.titel);
+        vortrag.setInhalt(dto.inhalt);
+        vortrag.setVeranstaltung(Veranstaltung.findById(dto.veranstaltungId));
+        vortrag.setReferent(Referent.findById(dto.referentId));
+        if (vortrag instanceof Wahlvortrag wahlvortrag) {
+            wahlvortrag.setWiederholbar(dto.wiederholbar);
+            wahlvortrag.setMaxWiederholungen(dto.maxWiederholungen);
+        } else {
+            Pflichtvortrag pflichtvortrag = (Pflichtvortrag) vortrag;
+            pflichtvortrag.updatePflichtgruppe(dto.pflichtGruppe);
+        }
+
+        return vortrag;
+
+    }
+
 }

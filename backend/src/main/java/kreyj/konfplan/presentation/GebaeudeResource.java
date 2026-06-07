@@ -15,6 +15,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.application.service.GebaeudeService;
 import kreyj.konfplan.application.service.RaumService;
+import kreyj.konfplan.application.service.VeranstaltungService;
 import kreyj.konfplan.presentation.dto.FileUploadDto;
 import kreyj.konfplan.presentation.dto.GebaeudeSimpleDto;
 import kreyj.konfplan.presentation.dto.RaumDto;
@@ -49,7 +50,7 @@ public class GebaeudeResource {
                                           @QueryParam("sortDirectionRooms") @DefaultValue("asc") String sortDirectionRooms) {
         return gebaeudeService.listAll()
                 .stream()
-                .map(gebaeude -> mapToDto(gebaeude))
+                .map(gebaeude -> VeranstaltungService.mapToDto(gebaeude))
                 .toList();
     }
 
@@ -79,7 +80,7 @@ public class GebaeudeResource {
 
     @POST
     @Operation(summary = "Neues Gebäude erstellen", description = "Erstellt ein neues Gebäude.")
-    public Response create(@RequestBody(description = "Das zu erstellende Gebäude", required = true) Gebaeude g) {
+    public Response create(@RequestBody(description = "Das zu erstellende Gebäude") Gebaeude g) {
         Gebaeude saved = gebaeudeService.save(g);
         return Response.status(Response.Status.CREATED).entity(saved).build();
     }
@@ -87,7 +88,7 @@ public class GebaeudeResource {
     @PUT
     @Path("/{id}")
     @Operation(summary = "Gebäude aktualisieren", description = "Aktualisiert ein bestehendes Gebäude.")
-    public Response update(@PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Gebäudedaten", required = true) Gebaeude g) {
+    public Response update(@PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Gebäudedaten") Gebaeude g) {
         g.setId(id);
         Gebaeude updated = gebaeudeService.save(g);
         if (updated == null) {
@@ -113,13 +114,13 @@ public class GebaeudeResource {
     @Path("/{gid}/raeume")
     @Operation(summary = "Räume eines Gebäudes abrufen", description = "Ruft alle Räume ab, die zu einem bestimmten Gebäude gehören.")
     public List<RaumDto> getRaeumeByGebaeude(@PathParam("gid") Long gid) {
-        return raumService.listByGebaeude(gid).stream().map(GebaeudeResource::mapRaumToDto).toList();
+        return raumService.listByGebaeude(gid).stream().map(VeranstaltungService::mapRaumToDto).toList();
     }
 
     @POST
     @Path("/{gid}/raeume")
     @Operation(summary = "Neuen Raum in einem Gebäude erstellen", description = "Erstellt einen neuen Raum innerhalb eines Gebäudes.")
-    public Response createRaum(@PathParam("gid") Long gid, @RequestBody(description = "Der zu erstellende Raum", required = true) Raum r) {
+    public Response createRaum(@PathParam("gid") Long gid, @RequestBody(description = "Der zu erstellende Raum") Raum r) {
         try {
             Raum saved = raumService.save(r, gid);
             return Response.status(Response.Status.CREATED).entity(saved).build();
@@ -131,7 +132,7 @@ public class GebaeudeResource {
     @PUT
     @Path("/{gid}/raeume/{rid}")
     @Operation(summary = "Raum aktualisieren", description = "Aktualisiert einen bestehenden Raum.")
-    public Response updateRaum(@PathParam("gid") Long gid, @PathParam("rid") Long rid, @RequestBody(description = "Die aktualisierten Raumdaten", required = true) Raum r) {
+    public Response updateRaum(@PathParam("gid") Long gid, @PathParam("rid") Long rid, @RequestBody(description = "Die aktualisierten Raumdaten") Raum r) {
         r.setId(rid);
         try {
             Raum saved = raumService.save(r, gid);
@@ -168,40 +169,4 @@ public class GebaeudeResource {
         }
     }
 
-    // -------------------------------------------------------------------
-    // Helper methods
-    // -------------------------------------------------------------------
-
-    public static GebaeudeSimpleDto mapToDto(Gebaeude gebaeude) {
-        GebaeudeSimpleDto dto = new GebaeudeSimpleDto();
-        dto.id = gebaeude.getId();
-        dto.version = gebaeude.getVersion();
-
-        dto.name = gebaeude.getName();
-        dto.strasse = gebaeude.getStrasse();
-        dto.hausnummer = gebaeude.getHausnummer();
-        dto.ort = gebaeude.getOrt();
-        dto.postleitzahl = gebaeude.getPostleitzahl();
-        dto.typ = gebaeude.getTyp();
-
-        dto.raeume = gebaeude.getRaeume().stream()
-                .map(GebaeudeResource::mapRaumToDto)
-                .toList();
-
-        return dto;
-    }
-
-    public static RaumDto mapRaumToDto(Raum raum) {
-        RaumDto dto = new RaumDto();
-
-        dto.id = raum.getId();
-        dto.version = raum.getVersion();
-        dto.name = raum.getName();
-        dto.kapazitaet = raum.getKapazitaet();
-        dto.etage = raum.getEtage();
-
-        dto.gebaeudeId = raum.getGebaeude().getId();
-
-        return dto;
-    }
 }

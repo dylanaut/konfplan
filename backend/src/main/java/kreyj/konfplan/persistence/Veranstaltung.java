@@ -3,9 +3,12 @@ package kreyj.konfplan.persistence;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
@@ -22,7 +25,6 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -55,6 +57,11 @@ public class Veranstaltung extends VersionedEntity {
 
     private String logo_link;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "veranstaltung_gruppen", joinColumns = @JoinColumn(name = "veranstaltung_id"))
+    @Column(name = "gruppen")
+    private Set<String> gruppen = new HashSet<>();
+
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "Veranstaltung_Gebaeude",
@@ -77,7 +84,7 @@ public class Veranstaltung extends VersionedEntity {
 
         for (Slot slot : slots) {
             for (Raum raum : aGebaeude.raeume) {
-                raum.updateRaumVerfuegbarkeit(this, slot, true);
+                raum.updateVerfuegbarkeit(slot, this, true, true);
             }
         }
     }
@@ -106,8 +113,8 @@ public class Veranstaltung extends VersionedEntity {
     }
 
     @JsonIgnore
-    public List<Long> getSlotIds() {
-        return slots.stream().map(Slot::getId).toList();
+    public Set<Long> getSlotIds() {
+        return slots.stream().map(Slot::getId).collect(Collectors.toSet());
     }
 
     public void addSlot(Slot slot) {
@@ -115,15 +122,15 @@ public class Veranstaltung extends VersionedEntity {
             return;
         }
 
-        slots.add(slot);
+        boolean added = slots.add(slot);
         slot.veranstaltung = this;
 
-        nutzer.forEach(n -> n.updateNutzerVerfuegbarkeit(this, slot, true));
+        nutzer.forEach(n -> n.updateVerfuegbarkeit(slot, this, true, true));
         gebaeude.stream().flatMap(g -> g.getRaeume().stream())
-                .forEach(r -> r.updateRaumVerfuegbarkeit(this, slot, true));
+                .forEach(r -> r.updateVerfuegbarkeit(slot, this, true, true));
         vortraege.stream()
                 .filter(v -> !v.istPflicht())
-                .forEach(v -> v.updateVortragVerfuegbarkeit(this, slot, true));
+                .forEach(v -> v.updateVerfuegbarkeit(slot, this, true, true));
     }
 
     public void removeSlot(Slot slot) {
@@ -133,12 +140,12 @@ public class Veranstaltung extends VersionedEntity {
 
         slots.remove(slot);
         slot.veranstaltung = null;
-        nutzer.forEach(n -> n.updateNutzerVerfuegbarkeit(this, slot, false));
+        nutzer.forEach(n -> n.updateVerfuegbarkeit(slot, this, false, false));
         gebaeude.stream().flatMap(g -> g.getRaeume().stream())
-                .forEach(r -> r.updateRaumVerfuegbarkeit(this, slot, false));
+                .forEach(r -> r.updateVerfuegbarkeit(slot, this, false, false));
         vortraege.stream()
                 .filter(v -> !v.istPflicht())
-                .forEach(v -> v.updateVortragVerfuegbarkeit(this, slot, false));
+                .forEach(v -> v.updateVerfuegbarkeit(slot, this, false, false));
     }
 
 

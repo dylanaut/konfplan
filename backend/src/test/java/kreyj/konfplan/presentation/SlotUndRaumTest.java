@@ -1,5 +1,6 @@
 package kreyj.konfplan.presentation;
 
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
@@ -25,26 +26,28 @@ import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 import static jakarta.ws.rs.core.Response.Status.CREATED;
 import static jakarta.ws.rs.core.Response.Status.OK;
 import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvIdL;
+import static kreyj.konfplan.presentation.DatabaseCleaner.isRaumVerfuegbar;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
+@TestSecurity(user = "admin@test.de", roles = "ADMIN")
 class SlotUndRaumTest extends DatabaseCleaner {
 
-    Long vid;
-    Long otherVid;
+    Long v1_Id;
+    Long v2_Id;
     Long raumId;
 
     @BeforeEach
     @Transactional
     void setup() {
         // Hauptveranstaltung
-        Veranstaltung v = new Veranstaltung();
-        v.setName("Haupt Veranstaltung");
-        v.setBeginntAm(LocalDateTime.of(2025, 10, 1, 8, 0));
-        v.setEndetAm(LocalDateTime.of(2025, 10, 1, 18, 0));
-        v.persistAndFlush();
-        vid = v.getId();
+        Veranstaltung v1 = new Veranstaltung();
+        v1.setName("Haupt Veranstaltung");
+        v1.setBeginntAm(LocalDateTime.of(2025, 10, 1, 8, 0));
+        v1.setEndetAm(LocalDateTime.of(2025, 10, 1, 18, 0));
+        v1.persistAndFlush();
+        v1_Id = v1.getId();
 
         // Andere Veranstaltung (zeitgleich)
         Veranstaltung v2 = new Veranstaltung();
@@ -52,7 +55,7 @@ class SlotUndRaumTest extends DatabaseCleaner {
         v2.setBeginntAm(LocalDateTime.of(2025, 10, 1, 8, 0));
         v2.setEndetAm(LocalDateTime.of(2025, 10, 1, 18, 0));
         v2.persistAndFlush();
-        otherVid = v2.getId();
+        v2_Id = v2.getId();
 
         Gebaeude g = new Gebaeude();
         g.setName("G1");
@@ -61,18 +64,18 @@ class SlotUndRaumTest extends DatabaseCleaner {
         g.setStrasse("Wallroth");
         g.setOrt("Buchholz");
         g.persistAndFlush();
-        v.addGebaeude(g);
-        v.persistAndFlush();
 
-        Raum r = new Raum("R1", 20);
-        r.persistAndFlush();
+        v1.addGebaeude(g);
+        v2.addGebaeude(g);
 
-        g.addRaum(r);
-        raumId = r.getId();
+        Raum raum = new Raum("R1", 20);
+        raum.persistAndFlush();
+
+        g.addRaum(raum);
+        raumId = raum.getId();
     }
 
     @Test
-    @TestSecurity(user = "admin@test.de", roles = "ADMIN")
     void testSlotValidation() {
         // 1. Ende vor Beginn
         String jsonInvalid = """
@@ -85,7 +88,7 @@ class SlotUndRaumTest extends DatabaseCleaner {
         given()
                 .contentType(ContentType.JSON)
                 .body(jsonInvalid)
-                .when().post("/api/veranstaltungen/{vid}/slots", vid)
+                .when().post("/api/veranstaltungen/{vid}/slots", v1_Id)
                 .then()
                 .statusCode(BAD_REQUEST.getStatusCode());
 
@@ -100,7 +103,7 @@ class SlotUndRaumTest extends DatabaseCleaner {
         given()
                 .contentType(ContentType.JSON)
                 .body(jsonEarly)
-                .when().post("/api/veranstaltungen/{vid}/slots", vid)
+                .when().post("/api/veranstaltungen/{vid}/slots", v1_Id)
                 .then()
                 .statusCode(BAD_REQUEST.getStatusCode());
 
@@ -115,7 +118,7 @@ class SlotUndRaumTest extends DatabaseCleaner {
         Integer slotId = given()
                 .contentType(ContentType.JSON)
                 .body(jsonOk)
-                .when().post("/api/veranstaltungen/{vid}/slots", vid)
+                .when().post("/api/veranstaltungen/{vid}/slots", v1_Id)
                 .then()
                 .statusCode(CREATED.getStatusCode())
                 .extract().path("id");
@@ -131,7 +134,7 @@ class SlotUndRaumTest extends DatabaseCleaner {
         given()
                 .contentType(ContentType.JSON)
                 .body(jsonOverlap)
-                .when().post("/api/veranstaltungen/{vid}/slots", vid)
+                .when().post("/api/veranstaltungen/{vid}/slots", v1_Id)
                 .then()
                 .statusCode(BAD_REQUEST.getStatusCode());
     }
@@ -155,48 +158,51 @@ class SlotUndRaumTest extends DatabaseCleaner {
      */
 
     @Test
-    @TestSecurity(user = "admin@test.de", roles = "ADMIN")
-    @Transactional
     void testRaumVerfuegbarkeitCrossEvent() {
-        final Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        final Long[] s1IdArray = {0L};
+        final Long[] slotIdArray = {-1L, -1L};
 
         QuarkusTransaction.requiringNew().run(() -> {
+            final Veranstaltung veranstaltung = Veranstaltung.findById(v1_Id);
             // Slot in Veranstaltung 1
             Slot s1 = new Slot("Slot E1",
                     LocalDateTime.of(2025, 10, 1, 9, 0),
                     LocalDateTime.of(2025, 10, 1, 10, 0), veranstaltung);
             s1.persistAndFlush();
-            s1IdArray[0] = s1.getId();
+            slotIdArray[0] = s1.getId();
             veranstaltung.addSlot(s1);
 
-            Veranstaltung otherV = Veranstaltung.findById(otherVid);
+            Veranstaltung otherV = Veranstaltung.findById(v2_Id);
             // Slot in Veranstaltung 2 (zeitlich überschneidend)
             Slot s2 = new Slot("Slot E2",
                     LocalDateTime.of(2025, 10, 1, 9, 30),
                     LocalDateTime.of(2025, 10, 1, 10, 30), otherV);
             s2.persistAndFlush();
-
+            slotIdArray[1] = s2.getId();
             otherV.addSlot(s2);
-            otherV.persist();
+
+            // Raum in Veranstaltung 2 als belegt markieren
+            RaumVerfuegbarkeit rv2 = RaumVerfuegbarkeit.findById(rvIdL(raumId, v2_Id));
+            rv2.removeSlot(s2);
         });
 
-        Long s1Id = s1IdArray[0];
-        
-        // Raum in Veranstaltung 2 als belegt markieren
-//        RaumVerfuegbarkeit rv2 = new RaumVerfuegbarkeit(r, otherV, List.of(s2.getId()));
-//        rv2.persistAndFlush();
+        Long s1Id = slotIdArray[0];
+        Long s2Id = slotIdArray[1];
 
-        RaumVerfuegbarkeit rv1 = RaumVerfuegbarkeit.findById(rvIdL(raumId, vid));
-        RaumVerfuegbarkeit rv2 = RaumVerfuegbarkeit.findById(rvIdL(raumId, otherVid));
-        System.out.println(rv2);
+        assertThat(isRaumVerfuegbar(raumId, s1Id, v1_Id)).isTrue();
+        assertThat(isRaumVerfuegbar(raumId, s1Id, v2_Id)).isFalse();
+
+        assertThat(isRaumVerfuegbar(raumId, s2Id, v1_Id)).isFalse();
+        assertThat(isRaumVerfuegbar(raumId, s2Id, v2_Id)).isFalse();
 
         // Abfrage für Veranstaltung 1: Raum sollte für s1 als "blocked" markiert sein
         List<RaumVerfuegbarkeitDto> dtos = given()
-                .when().get("/api/admin/veranstaltungen/{vid}/raeume/verfuegbarkeiten", vid)
+                .when().get("/api/admin/veranstaltungen/{vid}/raeume/verfuegbarkeiten", v1_Id)
                 .then()
                 .statusCode(OK.getStatusCode())
-                .extract().body().jsonPath().getList(".", RaumVerfuegbarkeitDto.class);
+                .extract()
+                .body()
+                .jsonPath()
+                .getList(".", RaumVerfuegbarkeitDto.class);
 
         RaumVerfuegbarkeitDto target = dtos.stream()
                 .filter(d -> d.verfuegbareSlotIds.contains(s1Id))

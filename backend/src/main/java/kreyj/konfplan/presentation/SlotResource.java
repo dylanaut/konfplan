@@ -5,6 +5,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import kreyj.konfplan.application.service.AdminService;
 import kreyj.konfplan.presentation.dto.SlotDto;
 import kreyj.konfplan.persistence.Slot;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -22,25 +23,7 @@ public class SlotResource {
     @Operation(summary = "Alle Slots abrufen", description = "Gibt eine Liste aller Zeit-Slots zurück.")
     public List<SlotDto> getAll() {
         return Slot.<Slot>listAll().stream()
-                .map(SlotResource::mapSlotToDto)
+                .map(AdminService::mapSlotToDto)
                 .toList();
-    }
-
-
-    // -------------------------------------------------------------------
-    // helper methods
-    // -------------------------------------------------------------------
-
-    public static SlotDto mapSlotToDto(Slot slot) {
-        SlotDto dto = new SlotDto();
-
-        dto.id = slot.getId();
-        dto.version = slot.getVersion();
-        dto.description = slot.getDescription();
-        dto.startTime = slot.getStartTime();
-        dto.endTime = slot.getEndTime();
-        dto.veranstaltungId = slot.getVeranstaltung().getId();
-
-        return dto;
     }
 }

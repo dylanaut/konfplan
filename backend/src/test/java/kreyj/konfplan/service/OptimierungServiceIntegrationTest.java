@@ -97,11 +97,12 @@ public class OptimierungServiceIntegrationTest {
         Veranstaltung veranstaltung = new Veranstaltung();
         veranstaltung.setName((satisfiable ? "E" : "Une") + "rfüllbarer Testlauf");
         veranstaltung.setBeginntAm(LocalDateTime.now());
-        veranstaltung.addGebaeude(schule);
+        veranstaltung.addGebaeude(Gebaeude.findById(schule.getId()));
         veranstaltung.persistAndFlush();
 
         Slot slot1 = new Slot("Slot 1", LocalDateTime.now().plusHours(1),
                 LocalDateTime.now().plusHours(2), veranstaltung);
+        slot1.persistAndFlush();
         veranstaltung.addSlot(slot1);
 
         // 3. Referent und Vorträge
@@ -115,15 +116,15 @@ public class OptimierungServiceIntegrationTest {
         Wahlvortrag wahlvortrag1 = new Wahlvortrag();
         wahlvortrag1.setTitel("Wahlvortrag 1");
         wahlvortrag1.setReferent(referent);
-        wahlvortrag1.persistAndFlush();
         wahlvortrag1.setVeranstaltung(veranstaltung);
+        wahlvortrag1.persistAndFlush();
 
         // 4. Teilnehmer und Prioritäten
         Teilnehmer teilnehmer1 = new Teilnehmer();
         teilnehmer1.setEmail("tn1@test.com");
         teilnehmer1.setFirstName("Peter");
         teilnehmer1.setLastName("Pan");
-        teilnehmer1.setGruppe("A");
+        teilnehmer1.addGruppe("A");
         teilnehmer1.persistAndFlush();
         teilnehmer1.addVeranstaltung(veranstaltung);
 
@@ -140,19 +141,22 @@ public class OptimierungServiceIntegrationTest {
         Veranstaltung veranstaltung = new Veranstaltung();
         veranstaltung.setName("Komplexer Testlauf");
         veranstaltung.setBeginntAm(LocalDateTime.now());
-        veranstaltung.addGebaeude(schule);
+        veranstaltung.addGebaeude(Gebaeude.findById(schule.getId()));
         veranstaltung.persistAndFlush();
 
         Slot slot1 = new Slot("Slot 1", LocalDateTime.now().plusHours(1),
                 LocalDateTime.now().plusHours(2), veranstaltung);
+        slot1.persistAndFlush();
         veranstaltung.addSlot(slot1);
 
         Slot slot2 = new Slot("Slot 2", LocalDateTime.now().plusHours(2),
                 LocalDateTime.now().plusHours(3), veranstaltung);
+        slot2.persistAndFlush();
         veranstaltung.addSlot(slot2);
 
         Slot slot3 = new Slot("Slot 3", LocalDateTime.now().plusHours(3),
                 LocalDateTime.now().plusHours(4), veranstaltung);
+        slot3.persistAndFlush();
         veranstaltung.addSlot(slot3);
 
         // 3. Referent und Vorträge
@@ -185,7 +189,7 @@ public class OptimierungServiceIntegrationTest {
         teilnehmer1.setLastName("Pan");
         teilnehmer1.persistAndFlush();
 
-        teilnehmer1.setGruppe("A");
+        teilnehmer1.addGruppe("A");
         teilnehmer1.addVeranstaltung(veranstaltung);
 
         Teilnehmer teilnehmer2 = new Teilnehmer();
@@ -194,7 +198,7 @@ public class OptimierungServiceIntegrationTest {
         teilnehmer2.setLastName("Darling");
         teilnehmer2.persistAndFlush();
 
-        teilnehmer2.setGruppe("A");
+        teilnehmer2.addGruppe("A");
         teilnehmer2.addVeranstaltung(veranstaltung);
 
         // Prioritäten für TN 1

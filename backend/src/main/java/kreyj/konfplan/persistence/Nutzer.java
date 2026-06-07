@@ -26,11 +26,10 @@ import org.hibernate.annotations.NaturalId;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+import static java.util.Collections.emptySet;
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 
@@ -111,7 +110,7 @@ public abstract class Nutzer extends VersionedEntity {
 
         if (this instanceof Referent || this instanceof Teilnehmer) {
             NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(this, v));
-            List<Long> slotIds = v.getSlotIds();
+            Set<Long> slotIds = v.getSlotIds();
             if (null == nv) {
                 nv = new NutzerVerfuegbarkeit(this, v, slotIds);
             } else {
@@ -143,32 +142,42 @@ public abstract class Nutzer extends VersionedEntity {
             NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(this.getId(), vId));
 
             if (null == nv) {
-                nv = new NutzerVerfuegbarkeit(this, veranstaltung, Collections.emptyList());
+                nv = new NutzerVerfuegbarkeit(this, veranstaltung, emptySet());
             } else {
-                nv.setVerfuegbareSlotIds(Collections.emptyList());
+                nv.setVerfuegbareSlotIds(emptySet());
             }
 
             nv.persistAndFlush();
         }
     }
 
-    public void updateNutzerVerfuegbarkeit(Veranstaltung veranstaltung, Slot slot, boolean verfuegbar) {
+    public void updateVerfuegbarkeit(Slot slot, Veranstaltung veranstaltung, boolean verfuegbar) {
+        updateVerfuegbarkeit(slot, veranstaltung, verfuegbar, false);
+    }
+
+    public void updateVerfuegbarkeit(Slot slot, Veranstaltung veranstaltung, boolean verfuegbar, boolean createIfMissing) {
         Objects.requireNonNull(veranstaltung);
         Objects.requireNonNull(slot);
 
         NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(this, veranstaltung));
 
-        if (verfuegbar) {
-            if (null == nv) {
-                new NutzerVerfuegbarkeit(this, veranstaltung, List.of(slot.getId())).persist();
+        if (nv == null) {
+            if (createIfMissing) {
+                nv = new NutzerVerfuegbarkeit(this, veranstaltung, veranstaltung.getSlotIds());
+                nv.persistAndFlush();
             } else {
-                nv.addSlot(slot);
+                throw new IllegalStateException("Missing NutzerVerfuegbarkeit für " + this.getEmail()
+                        + " in Veranstaltung '" + veranstaltung.getName() + "'");
             }
-        } else // TN für Slot und Veranstaltung NICHT verfuegbar
-            if (null != nv) {
-                nv.removeSlot(slot);
-            }
+        }
+
+        if (verfuegbar) {
+            nv.addSlot(slot);
+        } else {
+            nv.removeSlot(slot);
+        }
     }
+
 
     public static Nutzer findByEmail(String e) {
         return find("email", e).firstResult();

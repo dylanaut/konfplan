@@ -1,5 +1,6 @@
 package kreyj.konfplan.presentation;
 
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -80,19 +81,17 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
     }
 
     @Test
-    @Transactional
     void testGetSlotsHierarchical() {
         LocalDateTime now = LocalDateTime.now();
-        Veranstaltung veranstaltung = Veranstaltung.findById(testVid);
 
-        Slot s1 = new Slot("Slot A", now, now.plusHours(1), veranstaltung);
-        s1.persistAndFlush();
+        QuarkusTransaction.requiringNew().run(() -> {
+            Veranstaltung veranstaltung = Veranstaltung.findById(testVid);
+            Slot s1 = new Slot("Slot A", now, now.plusHours(1), veranstaltung);
+            veranstaltung.addSlot(s1);
+        });
 
-        veranstaltung.addSlot(s1);
-
-
-        given()
-                .when().get("/api/veranstaltungen/{vid}/slots", testVid)
+        given().when()
+                .get("/api/veranstaltungen/{vid}/slots", testVid)
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("size()", is(1))
@@ -112,19 +111,12 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
     }
 
     @Test
-    @Transactional
     void testCreateNutzerHierarchical() {
-        NutzerDto t = new NutzerDto();
         String nutzerEmail = "new@test.de";
+        NutzerDto tn = NutzerDto.teilnehmer(nutzerEmail, "Neu", "Nutzer");
 
-        t.email = nutzerEmail;
-        t.role = "TEILNEHMER";
-        t.firstName = "Neu";
-        t.lastName = "Nutzer";
-
-        given()
-                .contentType(ContentType.JSON)
-                .body(t)
+        given().contentType(ContentType.JSON)
+                .body(tn)
                 .when().post("/api/veranstaltungen/{vid}/nutzer", testVid)
                 .then()
                 .statusCode(CREATED.getStatusCode())
@@ -134,32 +126,37 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
     }
 
     @Test
-    @Transactional
     void testOptimisticLockingForVortrag() {
         final String referentEmail = "referent@test.de";
-        final String referentPassword = "password";
 
         // 1. Create a Referent and a Wahlvortrag
-        Referent r = new Referent();
-        r.setEmail(referentEmail);
-        r.setPasswordHash(referentPassword);
-        r.setFirstName("Referent");
-        r.setLastName("Test");
-        r.persistAndFlush();
+        NutzerDto refDto = NutzerDto.referent(referentEmail, "Referent", "Test");
+        NutzerDto referent =
+                given().contentType(ContentType.JSON)
+                        .body(refDto)
+                        .when().post("/api/admin/nutzer")
+                        .then()
+                        .statusCode(OK.getStatusCode())
+                        .extract().as(NutzerDto.class);
 
-        Wahlvortrag w = new Wahlvortrag();
-        w.setTitel("Original Vortrag Titel");
-        w.setReferent(r);
-        w.setVeranstaltung(Veranstaltung.findById(testVid));
-        w.persistAndFlush();
+        VortragDto wvDto = new VortragDto(false, "Original Vortrag Titel", "", referent.id, testVid);
+        VortragDto w =
+                given().contentType(ContentType.JSON)
+                        .body(wvDto)
+                        .when().post("/api/veranstaltungen/{vid}/vortraege", testVid)
+                        .then()
+                        .statusCode(CREATED.getStatusCode())
+                        .extract().as(VortragDto.class);
 
         // 2. Admin (via @TestSecurity) fetches vortrag data
-        Long vortragId = w.getId();
+        Long vortragId = w.id;
         VortragDto adminFetchedVortrag = given()
-                .when().get("/api/veranstaltungen/{vid}/vortraege/{vortragId}", testVid, vortragId)
+                .when()
+                .get("/api/veranstaltungen/{vid}/vortraege/{vortragId}", testVid, vortragId)
                 .then()
                 .statusCode(OK.getStatusCode())
                 .extract().as(VortragDto.class);
+        assertThat(adminFetchedVortrag.version).isNotNull().isEqualTo(0L);
 
         // 3. Referent (via JWT token) fetches vortrag data
         String referentToken = tokenFor(referentEmail, "REFERENT");
@@ -171,19 +168,23 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
                 .extract().as(VortragDto.class);
 
         // Ensure versions are the same initially
-        assertThat(adminFetchedVortrag.version).isNotNull();
-        assertThat(adminFetchedVortrag.version).isEqualTo(referentFetchedVortrag.version);
+        assertThat(referentFetchedVortrag.version).isEqualTo(adminFetchedVortrag.version);
 
         // 4. Admin updates vortrag title (successful, increments version)
         adminFetchedVortrag.titel = "Admin Updated Vortrag Titel";
-        given()
-                .contentType(ContentType.JSON)
-                .body(adminFetchedVortrag)
-                .when().put("/api/veranstaltungen/{vid}/vortraege/{vortragId}", testVid, vortragId)
-                .then()
-                .statusCode(OK.getStatusCode())
-                .body("titel", is("Admin Updated Vortrag Titel"))
-                .body("version", is(adminFetchedVortrag.version.intValue() + 1)); // Version should increment
+
+        VortragDto adminUpdate =
+                given().contentType(ContentType.JSON)
+                        .body(adminFetchedVortrag)
+                        .when()
+                        .put("/api/veranstaltungen/{vid}/vortraege/{vortragId}",
+                                testVid, vortragId)
+                        .then()
+                        .statusCode(OK.getStatusCode())
+                        .extract().as(VortragDto.class);
+
+        assertThat(adminUpdate.titel).isEqualTo("Admin Updated Vortrag Titel");
+        assertThat(adminUpdate.version).isEqualTo(adminFetchedVortrag.version + 1);
 
         // 5. Referent attempts to update with outdated version (should fail with CONFLICT.getStatusCode() Conflict)
         referentFetchedVortrag.titel = "Referent Updated Vortrag Titel"; // This change should not be saved
@@ -191,26 +192,29 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
                 .auth().oauth2(referentToken)
                 .contentType(ContentType.JSON)
                 .body(referentFetchedVortrag) // This DTO has the old version
-                .when().put("/api/veranstaltungen/{vid}/vortraege/{vortragId}", testVid, vortragId)
+                .when()
+                .put("/api/veranstaltungen/{vid}/vortraege/{vortragId}", testVid, vortragId)
                 .then()
                 .statusCode(CONFLICT.getStatusCode()); // Expect conflict
 
         // 6. Verify data integrity: only Admin's changes should be present
-        VortragDto finalVortrag = given()
-                .when().get("/api/veranstaltungen/{vid}/vortraege/{vortragId}", testVid, vortragId)
+        VortragDto finalVortrag = given().when()
+                .get("/api/veranstaltungen/{vid}/vortraege/{vortragId}", testVid, vortragId)
                 .then()
                 .statusCode(OK.getStatusCode())
                 .extract().as(VortragDto.class);
 
-        assertThat(finalVortrag.titel).isEqualTo("Admin Updated Vortrag Titel");
-        assertThat(finalVortrag.version).isEqualTo(adminFetchedVortrag.version + 1); // Version should be the one after admin's update
+        assertThat(finalVortrag.titel).isEqualTo(adminUpdate.titel);
+        assertThat(finalVortrag.version)
+                .describedAs("Version should be the same as admin's update")
+                .isEqualTo(adminUpdate.version);
     }
 
     @Test
     void testUpdateVeranstaltung() {
         // 1. Veranstaltung abrufen
-        VeranstaltungDto fetchedVeranstaltung = given()
-                .when().get("/api/veranstaltungen/{id}", testVid)
+        VeranstaltungDto fetchedVeranstaltung = given().when()
+                .get("/api/veranstaltungen/{id}", testVid)
                 .then()
                 .statusCode(OK.getStatusCode())
                 .extract().as(VeranstaltungDto.class);
@@ -223,10 +227,10 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
         String updatedName = "Updated Event Name " + System.currentTimeMillis();
         fetchedVeranstaltung.name = updatedName;
 
-        given()
-                .contentType(ContentType.JSON)
+        given().contentType(ContentType.JSON)
                 .body(fetchedVeranstaltung)
-                .when().put("/api/veranstaltungen/{id}", testVid)
+                .when()
+                .put("/api/veranstaltungen/{id}", testVid)
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("name", is(updatedName))

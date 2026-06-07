@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 
 @Entity
@@ -42,5 +43,15 @@ public class Slot extends VersionedEntity {
 
         Objects.requireNonNull(veranstaltung);
         this.veranstaltung = veranstaltung;
+    }
+
+    // -------------------------------------------------------------------
+    // Public methods
+    // -------------------------------------------------------------------
+
+
+    public static List<Slot> getVeranstaltungSlots(Long veranstaltungId) {
+        return Teilnehmer.find("SELECT s FROM Slot s where s.veranstaltung.id = ?1",
+                veranstaltungId).list();
     }
 }

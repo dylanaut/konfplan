@@ -16,6 +16,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import kreyj.konfplan.application.service.AdminService;
 import kreyj.konfplan.application.service.TeilnehmerService;
 import kreyj.konfplan.presentation.dto.FileUploadDto;
 import kreyj.konfplan.presentation.dto.NutzerDto;
@@ -64,7 +65,7 @@ public class TeilnehmerResource {
         if (!nutzer.getEmail().equals(JwtHelper.getUserPrincipalName(jwt)) && !jwt.getGroups().contains("ADMIN")) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
-        return Response.ok(AdminResource.mapNutzerToDto(nutzer)).build();
+        return Response.ok(AdminService.mapNutzerToDto(nutzer)).build();
     }
 
     @GET
@@ -78,13 +79,13 @@ public class TeilnehmerResource {
             throw new WebApplicationException("Teilnehmer not found", Response.Status.NOT_FOUND);
         }
 
-        return Response.ok(AdminResource.mapNutzerToDto(teilnehmer)).build();
+        return Response.ok(AdminService.mapNutzerToDto(teilnehmer)).build();
     }
 
     @POST
     @Transactional
     @Operation(summary = "Neuen Teilnehmer erstellen", description = "Erstellt einen neuen Teilnehmer für eine Veranstaltung.")
-    public Response createTeilnehmer(@RequestBody(description = "Der zu erstellende Teilnehmer", required = true) Teilnehmer user, @QueryParam("vid") Long vid) {
+    public Response createTeilnehmer(@RequestBody(description = "Der zu erstellende Teilnehmer") Teilnehmer user, @QueryParam("vid") Long vid) {
         Teilnehmer created = teilnehmerService.createTeilnehmer(user, vid);
         return Response.status(Response.Status.CREATED).entity(created).build();
     }
@@ -94,7 +95,7 @@ public class TeilnehmerResource {
     @Path("/{id}")
     @Transactional
     @Operation(summary = "Teilnehmer aktualisieren", description = "Aktualisiert die Daten eines Teilnehmers.")
-    public Response updateTeilnehmer(@PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Teilnehmerdaten", required = true) NutzerDto user, @QueryParam("vid") Long vid) {
+    public Response updateTeilnehmer(@PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Teilnehmerdaten") NutzerDto user, @QueryParam("vid") Long vid) {
         try {
             Teilnehmer updated = teilnehmerService.updateTeilnehmer(id, user, vid);
             if (updated == null) {
@@ -112,7 +113,7 @@ public class TeilnehmerResource {
     @RolesAllowed("TEILNEHMER")
     @Transactional
     @Operation(summary = "Eigenes Teilnehmerprofil aktualisieren", description = "Aktualisiert das Profil des aktuell angemeldeten Teilnehmers.")
-    public Response updateTeilnehmerProfile(@RequestBody(description = "Die aktualisierten Profildaten", required = true) NutzerDto teilnehmerDto) {
+    public Response updateTeilnehmerProfile(@RequestBody(description = "Die aktualisierten Profildaten") NutzerDto teilnehmerDto) {
         if (teilnehmerDto == null) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
@@ -125,7 +126,7 @@ public class TeilnehmerResource {
             if (updated == null) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
-            return Response.ok(AdminResource.mapNutzerToDto(updated)).build();
+            return Response.ok(AdminService.mapNutzerToDto(updated)).build();
         } catch (OptimisticLockException e) {
             return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
         }

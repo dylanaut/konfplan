@@ -32,7 +32,6 @@ import kreyj.konfplan.presentation.dto.VortragDto;
 import kreyj.konfplan.presentation.dto.VortragPrioDto;
 import kreyj.konfplan.presentation.dto.VortragStatDto;
 import kreyj.konfplan.presentation.dto.ZuweisungDto;
-import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
@@ -74,13 +73,14 @@ public class VeranstaltungResource {
         this.optimierungService = optimierungService;
         this.planService = planService;
     }
-// --- BASIS: VERANSTALTUNGEN ---
+
+    // --- BASIS: VERANSTALTUNGEN ---
 
     @GET
     @Operation(summary = "Alle Veranstaltungen abrufen", description = "Gibt eine Liste aller Veranstaltungen zurück.")
     public List<VeranstaltungDto> getAll() {
         return veranstaltungService.listAll().stream()
-                .map(VeranstaltungResource::mapVeranstaltungToDto)
+                .map(VeranstaltungService::mapVeranstaltungToDto)
                 .toList();
     }
 
@@ -92,12 +92,12 @@ public class VeranstaltungResource {
         if (vEntity == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(mapVeranstaltungToDto(vEntity)).build();
+        return Response.ok(VeranstaltungService.mapVeranstaltungToDto(vEntity)).build();
     }
 
     @POST
     @Operation(summary = "Neue Veranstaltung erstellen", description = "Erstellt eine neue Veranstaltung.")
-    public Response create(@RequestBody(description = "Die zu erstellende Veranstaltung", required = true) VeranstaltungDto vDto) {
+    public Response create(@RequestBody(description = "Die zu erstellende Veranstaltung") VeranstaltungDto vDto) {
         try {
             VeranstaltungDto saved = veranstaltungService.save(vDto);
             return Response.status(Response.Status.CREATED).entity(saved).build();
@@ -110,7 +110,7 @@ public class VeranstaltungResource {
     @PUT
     @Path("/{id}")
     @Operation(summary = "Veranstaltung aktualisieren", description = "Aktualisiert eine bestehende Veranstaltung.")
-    public Response update(@PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Veranstaltungsdaten", required = true) VeranstaltungDto vDto) {
+    public Response update(@PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Veranstaltungsdaten") VeranstaltungDto vDto) {
         vDto.id = id;
         try {
             VeranstaltungDto updated = veranstaltungService.save(vDto);
@@ -163,7 +163,7 @@ public class VeranstaltungResource {
     @POST
     @Path("/{vid}/nutzer")
     @Operation(summary = "Neuen Nutzer zu Veranstaltung hinzufügen", description = "Erstellt einen neuen Nutzer und fügt ihn direkt zu einer Veranstaltung hinzu.")
-    public Response createNutzer(@PathParam("vid") Long vid, @RequestBody(description = "Die Daten des neuen Nutzers", required = true) NutzerDto nutzerDto) {
+    public Response createNutzer(@PathParam("vid") Long vid, @RequestBody(description = "Die Daten des neuen Nutzers") NutzerDto nutzerDto) {
         NutzerDto created = adminService.createUser(nutzerDto, List.of(vid));
         return Response.status(Response.Status.CREATED).entity(created).build();
     }
@@ -171,7 +171,7 @@ public class VeranstaltungResource {
     @PUT
     @Path("/{vid}/nutzer/{id}")
     @Operation(summary = "Nutzer in Veranstaltung aktualisieren", description = "Aktualisiert die Daten eines Nutzers im Kontext einer Veranstaltung.")
-    public Response updateNutzer(@PathParam("vid") Long vid, @PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Nutzerdaten", required = true) NutzerDto nutzerDto) {
+    public Response updateNutzer(@PathParam("vid") Long vid, @PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Nutzerdaten") NutzerDto nutzerDto) {
         try {
             NutzerDto updated = adminService.updateUser(id, nutzerDto, List.of(vid));
 
@@ -227,7 +227,7 @@ public class VeranstaltungResource {
     @PUT
     @Path("/{vid}/teilnehmer/{userId}/prioritaeten")
     @Operation(summary = "Prioritäten eines Teilnehmers speichern", description = "Speichert die Vortragsprioritäten für einen Teilnehmer in einer Veranstaltung.")
-    public Response saveTeilnehmerPrioritaeten(@PathParam("vid") Long vid, @PathParam("userId") Long userId, @RequestBody(description = "Liste der Prioritäten", required = true) List<VortragPrioDto> priorityDtos) {
+    public Response saveTeilnehmerPrioritaeten(@PathParam("vid") Long vid, @PathParam("userId") Long userId, @RequestBody(description = "Liste der Prioritäten") List<VortragPrioDto> priorityDtos) {
         try {
             teilnehmerService.savePriorities(userId, vid, priorityDtos);
             return Response.noContent().build();
@@ -249,7 +249,7 @@ public class VeranstaltungResource {
     @Operation(summary = "Vorträge einer Veranstaltung abrufen", description = "Ruft alle Vorträge ab, die zu einer Veranstaltung gehören.")
     public List<VortragDto> getVortraege(@PathParam("vid") Long vid) {
         List<Vortrag> allVortraege = adminService.getAllVortraege(vid);
-        return allVortraege.stream().map(ReferentResource::mapVortragToDto).toList();
+        return allVortraege.stream().map(ReferentService::mapVortragToDto).toList();
     }
 
     @GET
@@ -260,30 +260,29 @@ public class VeranstaltungResource {
         if (null == vortrag) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(ReferentResource.mapVortragToDto(vortrag)).build();
+        return Response.ok(ReferentService.mapVortragToDto(vortrag)).build();
     }
 
     @POST
     @Path("/{vid}/vortraege")
     @Operation(summary = "Neuen Vortrag in Veranstaltung erstellen", description = "Erstellt einen neuen Vortrag innerhalb einer Veranstaltung.")
     public Response createVortrag(@PathParam("vid") Long vid,
-                                  @RequestBody(description = "Der zu erstellende Vortrag",
-                                          required = true) VortragDto vDto) {
+                                  @RequestBody(description = "Der zu erstellende Vortrag") VortragDto vDto) {
         Vortrag created = adminService.createVortrag(vDto);
-        return Response.status(Response.Status.CREATED).entity(created).build();
+        return Response.status(Response.Status.CREATED).entity(ReferentService.mapVortragToDto(created)).build();
     }
 
     @PUT
     @Path("/{vid}/vortraege/{vortragId}")
     @Operation(summary = "Vortrag in Veranstaltung aktualisieren", description = "Aktualisiert einen bestehenden Vortrag innerhalb einer Veranstaltung.")
-    public Response updateVortrag(@PathParam("vid") Long vid, @PathParam("vortragId") Long vortragId, @RequestBody(description = "Die aktualisierten Vortragsdaten", required = true) VortragDto vortragDto) {
-        Vortrag updated = null;
+    public Response updateVortrag(@PathParam("vid") Long vid, @PathParam("vortragId") Long vortragId, @RequestBody(description = "Die aktualisierten Vortragsdaten") VortragDto vortragDto) {
+        VortragDto updated = null;
         try {
-            updated = adminService.updateVortrag(vid, vortragId, vortragDto);
+            updated = adminService.updateVortrag(vortragId, vid, vortragDto);
         } catch (OptimisticLockException e) {
             return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
         }
-        if (updated == null) {
+        if (null == updated) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         return Response.ok(updated).build();
@@ -321,7 +320,7 @@ public class VeranstaltungResource {
     public List<SlotDto> getSlots(@PathParam("vid") Long vid) {
         return adminService.getAllEventSlots(vid)
                 .stream()
-                .map(SlotResource::mapSlotToDto).toList();
+                .map(AdminService::mapSlotToDto).toList();
     }
 
 
@@ -329,10 +328,10 @@ public class VeranstaltungResource {
     @Path("/{vid}/slots")
     @Operation(summary = "Neuen Slot in Veranstaltung erstellen", description = "Erstellt einen neuen Zeit-Slot innerhalb einer Veranstaltung.")
     public Response createSlot(@PathParam("vid") Long vid,
-                               @RequestBody(description = "Der zu erstellende Slot", required = true) SlotDto slotDto) {
+                               @RequestBody(description = "Der zu erstellende Slot") SlotDto slotDto) {
         try {
             Slot created = adminService.createSlot(slotDto, vid);
-            return Response.status(Response.Status.CREATED).entity(SlotResource.mapSlotToDto(created)).build();
+            return Response.status(Response.Status.CREATED).entity(AdminService.mapSlotToDto(created)).build();
         } catch (IllegalArgumentException e) {
             LOG.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
@@ -343,13 +342,13 @@ public class VeranstaltungResource {
     @Path("/{vid}/slots/{id}")
     @Operation(summary = "Slot in Veranstaltung aktualisieren", description = "Aktualisiert einen bestehenden Zeit-Slot innerhalb einer Veranstaltung.")
     public Response updateSlot(@PathParam("vid") Long vid, @PathParam("id") Long id,
-                               @RequestBody(description = "Die aktualisierten Slot-Daten", required = true) SlotDto slotDto) {
+                               @RequestBody(description = "Die aktualisierten Slot-Daten") SlotDto slotDto) {
         try {
             Slot updated = adminService.updateSlot(id, slotDto, vid);
             if (updated == null) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
-            return Response.ok(SlotResource.mapSlotToDto(updated)).build();
+            return Response.ok(AdminService.mapSlotToDto(updated)).build();
         } catch (OptimisticLockException e) {
             return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
         } catch (IllegalArgumentException e) {
@@ -416,7 +415,7 @@ public class VeranstaltungResource {
     @POST
     @Path("/{vid}/optimierung/start")
     @Operation(summary = "Optimierung starten", description = "Startet den Optimierungsprozess (MiniZinc), um die Teilnehmer den Vorträgen zuzuordnen.")
-    public Response starteOptimierung(@PathParam("vid") Long vid, @RequestBody(description = "Konfiguration für den Solver", required = true) SolverConfigDto config) {
+    public Response starteOptimierung(@PathParam("vid") Long vid, @RequestBody(description = "Konfiguration für den Solver") SolverConfigDto config) {
         try {
             optimierungService.starteOptimierung(vid, config);
             return Response.ok("Optimierung erfolgreich abgeschlossen.").build();
@@ -432,37 +431,5 @@ public class VeranstaltungResource {
     @Operation(summary = "Raumverfügbarkeiten für eine Veranstaltung abrufen", description = "Ruft die Verfügbarkeiten aller Räume für die Slots einer Veranstaltung ab und prüft auf Kollisionen mit anderen Veranstaltungen.")
     public List<RaumVerfuegbarkeitDto> getRaumVerfuegbarkeiten(@PathParam("vid") Long vid) {
         return adminService.getRaumVerfuegbarkeiten(vid);
-    }
-
-    // -------------------------------------------------------------------
-    // helper methods
-    // -------------------------------------------------------------------
-
-    public static VeranstaltungDto mapVeranstaltungToDto(Veranstaltung v) {
-        VeranstaltungDto dto = new VeranstaltungDto();
-        dto.id = v.getId();
-        dto.version = v.getVersion();
-
-        dto.name = v.getName();
-        dto.beginntAm = v.getBeginntAm();
-        dto.endetAm = v.getEndetAm();
-        dto.deadlineReferenten = v.getDeadlineReferenten();
-        dto.deadlineTeilnehmer = v.getDeadlineTeilnehmer();
-        dto.logo = v.getLogo();
-        dto.logo_link = v.getLogo_link();
-
-        // Organisatoren filtern und hinzufügen
-        if (v.getNutzer() != null) {
-            v.getNutzer().stream()
-                    .filter(u -> u instanceof Admin)
-                    .forEach(u -> {
-                        dto.organisatorIds.add(u.getId());
-                        dto.organisatorNamen.add(u.getLastName());
-                    });
-        }
-
-        dto.gebaeude = v.getGebaeude().stream().map(GebaeudeResource::mapToDto).toList();
-
-        return dto;
     }
 }

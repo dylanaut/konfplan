@@ -44,7 +44,7 @@ public class TeilnehmerPrioritaetenResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Operation(summary = "Prioritäten aktualisieren", description = "Aktualisiert die Prioritäten des Teilnehmers für die Wahlvorträge.")
-    public Response updatePrioritaeten(@RequestBody(description = "Liste der Prioritäts-Anfragen", required = true) List<PrioritaetRequest> requests) {
+    public Response updatePrioritaeten(@RequestBody(description = "Liste der Prioritäts-Anfragen") List<PrioritaetRequest> requests) {
         String email = JwtHelper.getUserPrincipalName(jwt);
         prioService.savePrioritaeten(email, requests);
         return Response.ok().build();

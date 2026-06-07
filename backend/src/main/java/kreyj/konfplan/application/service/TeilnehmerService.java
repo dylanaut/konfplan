@@ -111,7 +111,7 @@ public class TeilnehmerService {
                     tn.setEmail(email);
                     tn.setFirstName(dto.vorname);
                     tn.setLastName(dto.nachname);
-                    tn.setGruppe(dto.gruppe);
+                    tn.addGruppe(dto.gruppe);
 
                     String tempPassword = "start123"; // UUID.randomUUID().toString();
                     tn.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
@@ -166,7 +166,7 @@ public class TeilnehmerService {
 
         teilnehmer.setFirstName(dto.firstName);
         teilnehmer.setLastName(dto.lastName);
-        teilnehmer.setGruppe(dto.gruppe);
+        dto.gruppen.forEach(teilnehmer::addGruppe);
         teilnehmer.setActive(dto.isActive);
 
         teilnehmer.persistAndFlush();
@@ -177,12 +177,10 @@ public class TeilnehmerService {
     @Transactional
     public Teilnehmer updateTeilnehmer(Long id, NutzerDto tnDto, Long veranstaltungId) {
         Nutzer existing = Nutzer.findById(id);
-        if (!(existing instanceof Teilnehmer)) {
+        if (!(existing instanceof Teilnehmer tn)) {
             protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Update fehlgeschlagen", "Teilnehmer mit ID " + id + " nicht gefunden oder falscher Typ.");
             return null;
         }
-
-        Teilnehmer tn = (Teilnehmer) existing;
 
         if (tnDto.version != null && !tn.getVersion().equals(tnDto.version)) {
             throw new OptimisticLockException("Der Teilnehmer wurde in der Zwischenzeit von einem anderen Benutzer geändert.");
@@ -192,7 +190,7 @@ public class TeilnehmerService {
         tn.setFirstName(tnDto.firstName);
         tn.setLastName(tnDto.lastName);
         tn.setEmail(tnDto.email == null ? existing.getEmail() : tnDto.email.trim().toLowerCase());
-        tn.setGruppe(tnDto.gruppe);
+        tnDto.gruppen.forEach(tn::addGruppe);
         tn.setActive(tnDto.isActive);
 
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);

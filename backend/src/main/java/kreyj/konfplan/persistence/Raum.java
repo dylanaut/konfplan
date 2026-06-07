@@ -9,9 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvId;
 
@@ -48,23 +46,31 @@ public class Raum extends VersionedEntity {
     // Helper methods
     // -------------------------------------------------------------------
 
-    public void updateRaumVerfuegbarkeit(Veranstaltung veranstaltung, Slot slot, boolean verfuegbar) {
+    public void updateVerfuegbarkeit(Slot slot, Veranstaltung veranstaltung, boolean verfuegbar) {
+        updateVerfuegbarkeit(slot, veranstaltung, verfuegbar, false);
+    }
+
+    public void updateVerfuegbarkeit(Slot slot, Veranstaltung veranstaltung, boolean verfuegbar, boolean createIfMissing) {
         Objects.requireNonNull(veranstaltung);
         Objects.requireNonNull(slot);
 
         RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvId(this, veranstaltung));
-
-        if (verfuegbar) {
-            if (null == rv) {
-                new RaumVerfuegbarkeit(this, veranstaltung, List.of(slot.getId())).persistAndFlush();
+        if (null == rv) {
+            if (createIfMissing) {
+                rv = new RaumVerfuegbarkeit(this, veranstaltung, veranstaltung.getSlotIds());
+                rv.persistAndFlush();
             } else {
-                rv.addSlot(slot);
+                throw new IllegalStateException("Missing RaumVerfuegbarkeit für " + this.getName()
+                        + " in Veranstaltung '" + veranstaltung.getName() + "'");
             }
-        } else // Raum für Slot und Veranstaltung NICHT verfuegbar
-            if (null != rv) {
-                rv.removeSlot(slot);
-            }
+        }
+        if (verfuegbar) {
+            rv.addSlot(slot);
+        } else {
+            rv.removeSlot(slot);
+        }
     }
+
 
     public void deleteRaumVerfuegbarkeit(Veranstaltung veranstaltung) {
         Objects.requireNonNull(veranstaltung);

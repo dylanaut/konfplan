@@ -20,7 +20,7 @@ public class VortragDto extends AbstractVersionedDto {
     public String inhalt;
     public boolean istPflicht;
     public boolean wiederholbar;
-    public List<Long> verfuegbareSlotIds = new ArrayList<>();
+    public Set<Long> verfuegbareSlotIds = new HashSet<>();
 
     public String pflichtGruppe;
     public Long pflichtSlotId;

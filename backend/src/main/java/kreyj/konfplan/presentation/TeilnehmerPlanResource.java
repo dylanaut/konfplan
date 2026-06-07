@@ -14,6 +14,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.application.service.PlanService;
 import kreyj.konfplan.application.service.PrioritaetService;
+import kreyj.konfplan.application.service.VeranstaltungService;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Prioritaet;
@@ -64,7 +65,7 @@ public class TeilnehmerPlanResource {
             return List.of();
         }
         return t.getVeranstaltungen().stream()
-                .map(VeranstaltungResource::mapVeranstaltungToDto)
+                .map(VeranstaltungService::mapVeranstaltungToDto)
                 .toList();
     }
 
@@ -87,7 +88,7 @@ public class TeilnehmerPlanResource {
     @POST
     @Path("/prios")
     @Operation(summary = "Prioritäten speichern", description = "Speichert eine Liste von Prioritäten für den Teilnehmer.")
-    public Response savePriorities(@RequestBody(description = "Liste der Prioritäts-Anfragen", required = true) List<PrioritaetRequest> requests) {
+    public Response savePriorities(@RequestBody(description = "Liste der Prioritäts-Anfragen") List<PrioritaetRequest> requests) {
         prioritaetService.savePrioritaeten(JwtHelper.getUserPrincipalName(jwt), requests);
         return Response.ok().build();
     }
@@ -115,9 +116,9 @@ public class TeilnehmerPlanResource {
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Transactional
     @Operation(summary = "Verfügbarkeit aktualisieren", description = "Aktualisiert die persönliche Verfügbarkeit des Teilnehmers für einen bestimmten Slot.")
-    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten", required = true) NutzerVerfuegbarkeitDto dto) {
+    public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten") NutzerVerfuegbarkeitDto dto) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
-        if (!(nutzer instanceof Teilnehmer) || !nutzer.getId().equals(dto.getNutzerId())) {
+        if (!(nutzer instanceof Teilnehmer) || !nutzer.getId().equals(dto.nutzerId)) {
             return Response.status(FORBIDDEN).build();
         }
 
@@ -138,7 +139,7 @@ public class TeilnehmerPlanResource {
         }
 
         v.getVerfuegbareSlotIds().clear();
-        v.getVerfuegbareSlotIds().addAll(dto.getVerfuegbareSlotIds());
+        v.getVerfuegbareSlotIds().addAll(dto.verfuegbareSlotIds);
         v.persist();
         return Response.ok().build();
     }

@@ -23,16 +23,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.Response.Status.CONFLICT;
+import static jakarta.ws.rs.core.Response.Status.CREATED;
 import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 import static jakarta.ws.rs.core.Response.Status.NO_CONTENT;
 import static jakarta.ws.rs.core.Response.Status.OK;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 
 @QuarkusTest
 @TestSecurity(user = "admin@example.com", roles = "ADMIN")
@@ -69,16 +73,11 @@ class AdminResourceTest extends DatabaseCleaner {
     }
 
     @Test
-    @Transactional
     void testCreateUser() {
-        NutzerDto dto = new NutzerDto();
-        dto.email = "new@test.de";
-        dto.role = "REFERENT";
-        dto.firstName = "Max";
-        dto.lastName = "Mustermann";
+        NutzerDto dto = NutzerDto.referent("new@test.de", "Max", "Mustermann",
+                null, null, null, null);
 
-        given()
-                .contentType(ContentType.JSON)
+        given().contentType(ContentType.JSON)
                 .body(dto)
                 .when().post("/api/admin/nutzer")
                 .then()
@@ -89,62 +88,65 @@ class AdminResourceTest extends DatabaseCleaner {
     }
 
     @Test
-    @Transactional
     void testUpdateUser() {
-        final Long[] userIdArray = {0L};
-        QuarkusTransaction.requiringNew().run(() -> {
-            Teilnehmer t = new Teilnehmer();
-            t.setEmail("old@test.de");
-            t.persistAndFlush();
-            userIdArray[0] = t.getId();
-        });
+        String oldEmail = "old@test.de";
+        NutzerDto dto = NutzerDto.teilnehmer(oldEmail, null, null);
+        NutzerDto created =
+                given().contentType(ContentType.JSON)
+                        .body(dto)
+                        .when().post("/api/admin/nutzer")
+                        .then()
+                        .statusCode(OK.getStatusCode())
+                        .extract().as(NutzerDto.class);
 
-        NutzerDto dto = new NutzerDto();
-        dto.email = "updated@test.de";
-        dto.role = "TEILNEHMER";
-        dto.firstName = "Max";
-        dto.lastName = "Mustermann";
-        dto.version = 0L;
+        assertThat(created.email).isEqualTo(oldEmail);
+        assertThat(created.version).isEqualTo(0L);
 
-        Long userId = userIdArray[0];
-        given()
-                .contentType(ContentType.JSON)
-                .body(dto)
-                .when().put("/api/admin/nutzer/{id}", userId)
-                .then()
-                .statusCode(OK.getStatusCode())
-                .body("email", is("old@test.de")); // Email should not have changed yet
+        String newEmail = "updated@test.de";
+        NutzerDto tnUpdate = NutzerDto.teilnehmer(newEmail, "Max", "Mustermann", Set.of("New Group"), emptyList());
+        tnUpdate.version = created.version;
 
-        Nutzer user = Nutzer.findById(userId);
-        assertThat(user.getEmail()).isEqualTo("old@test.de");
-        assertThat(user.getNewEmail()).isEqualTo("updated@test.de");
+        NutzerDto updated =
+                given().contentType(ContentType.JSON)
+                        .body(tnUpdate)
+                        .when().put("/api/admin/nutzer/{id}", created.id)
+                        .then()
+                        .statusCode(OK.getStatusCode())
+                        .extract().as(NutzerDto.class); // Email should not have changed yet
+
+        assertThat(updated.email)
+                .describedAs("Email should not have changed yet, unless newEmail is confirmed")
+                .isEqualTo(oldEmail);
+
+        Nutzer user = Nutzer.findById(updated.id);
+        assertThat(user.getEmail()).isEqualTo(oldEmail);
+        assertThat(user.getNewEmail()).isEqualTo(newEmail);
         assertThat(user.getEmailChangeToken()).isNotNull();
+        assertThat(((Teilnehmer) user).getGruppen()).contains("New Group");
     }
 
     @Test
-    @Transactional
     void testDeleteUser() {
-        final Long[] userIdArray = {0L};
+        NutzerDto dto = NutzerDto.teilnehmer("todelete@test.de", null, null);
 
-        QuarkusTransaction.requiringNew().run(() -> {
-            Teilnehmer t1 = new Teilnehmer();
-            t1.setEmail("todelete@test.de");
-            t1.persistAndFlush();
-            userIdArray[0] = t1.getId();
-        });
-
-        Long userId = userIdArray[0];
+        NutzerDto created =
+                given().contentType(ContentType.JSON)
+                        .body(dto)
+                        .when().post("/api/admin/nutzer")
+                        .then()
+                        .statusCode(OK.getStatusCode())
+                        .extract().as(NutzerDto.class);
 
         given()
-                .when().delete("/api/admin/nutzer/{id}", userId)
+                .when()
+                .delete("/api/admin/nutzer/{id}", created.id)
                 .then()
                 .statusCode(NO_CONTENT.getStatusCode());
 
-        Assertions.assertNull(Nutzer.findById(userId));
+        Assertions.assertNull(Nutzer.findById(created.id));
     }
 
     @Test
-    @Transactional
     void testInviteUser() {
         Long[] userIdArray = {0L};
         Long[] vIdArray = {0L};
@@ -179,7 +181,6 @@ class AdminResourceTest extends DatabaseCleaner {
     }
 
     @Test
-    @Transactional
     void testVerfuegbarkeitenEndpoints() {
         LocalDateTime now = LocalDateTime.now();
         final Long[] vId = {0L};
@@ -190,6 +191,7 @@ class AdminResourceTest extends DatabaseCleaner {
             Veranstaltung v = new Veranstaltung();
             v.setName("Event " + System.currentTimeMillis());
             v.setBeginntAm(now);
+            v.setEndetAm(now.plusHours(2));
             v.persistAndFlush();
             vId[0] = v.getId();
 
@@ -218,7 +220,7 @@ class AdminResourceTest extends DatabaseCleaner {
                 .body("[0].nutzerId", is(refId[0].intValue()));
 
         // POST Test (Update)
-        NutzerVerfuegbarkeitDto updateDto = new NutzerVerfuegbarkeitDto(refId[0], vId[0], emptyList());
+        NutzerVerfuegbarkeitDto updateDto = new NutzerVerfuegbarkeitDto(refId[0], vId[0], emptySet());
         given()
                 .contentType(ContentType.JSON)
                 .body(updateDto)
@@ -229,11 +231,10 @@ class AdminResourceTest extends DatabaseCleaner {
         // Verifizieren
         NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(refId[0], vId[0]));
 
-        assertThat(nv.getVerfuegbareSlotIds()).doesNotContain(slotId[0]);
+        assertThat(nv.isVerfuegbar(slotId[0])).isFalse();
     }
 
     @Test
-    @Transactional
     void testOptimisticLockingFuerTeilnehmerProfil() {
         Long[] tnId = {0L};
 
@@ -301,7 +302,6 @@ class AdminResourceTest extends DatabaseCleaner {
     }
 
     @Test
-    @Transactional
     void testOptimisticLockingForVeranstaltungName() {
         final Long[] vIdArray = {0L};
         String admin2Email = "admin2@example.com";
@@ -388,5 +388,63 @@ class AdminResourceTest extends DatabaseCleaner {
                 .when().get("/api/admin/nutzer")
                 .then()
                 .statusCode(FORBIDDEN.getStatusCode());
+    }
+
+    // --- GRUPPEN API TESTS ---
+    @Test
+    void testGruppenApiLifecycle() {
+        Long vId = QuarkusTransaction.requiringNew().call(() -> {
+            Veranstaltung v = new Veranstaltung();
+            v.setName("Gruppen Test Event");
+            v.setBeginntAm(LocalDateTime.now());
+            v.setEndetAm(LocalDateTime.now().plusDays(1));
+            v.persist();
+            return v.getId();
+        });
+
+        // 1. Create a new group
+        given()
+                .contentType(ContentType.JSON)
+                .body("Gruppe Alpha")
+                .when().post("/api/admin/veranstaltungen/{vid}/gruppen", vId)
+                .then()
+                .statusCode(CREATED.getStatusCode());
+
+        // 2. Get all groups and verify
+        given()
+                .when().get("/api/admin/veranstaltungen/{vid}/gruppen", vId)
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body("size()", is(1))
+                .body("", containsInAnyOrder("Gruppe Alpha"));
+
+        // 3. Rename the group
+        given()
+                .queryParam("alterName", "Gruppe Alpha")
+                .queryParam("neuerName", "Gruppe Bravo")
+                .when().put("/api/admin/veranstaltungen/{vid}/gruppen", vId)
+                .then()
+                .statusCode(NO_CONTENT.getStatusCode());
+
+        // 4. Verify the rename
+        given()
+                .when().get("/api/admin/veranstaltungen/{vid}/gruppen", vId)
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body("size()", is(1))
+                .body("", containsInAnyOrder("Gruppe Bravo"));
+
+        // 5. Delete the group
+        given()
+                .when().delete("/api/admin/veranstaltungen/{vid}/gruppen/{gruppenName}", vId, "Gruppe Bravo")
+                .then()
+                .statusCode(NO_CONTENT.getStatusCode());
+
+        // 6. Verify the deletion
+        given()
+                .when().get("/api/admin/veranstaltungen/{vid}/gruppen", vId)
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body("size()", is(0));
     }
 }

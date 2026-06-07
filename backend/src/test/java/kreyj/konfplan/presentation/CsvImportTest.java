@@ -60,7 +60,6 @@ class CsvImportTest extends DatabaseCleaner {
                 veranstaltung.getBeginntAm().plusHours(1), veranstaltung);
         slot1.persistAndFlush();
         veranstaltung.addSlot(slot1);
-        System.out.println(veranstaltung.getSlots().iterator().next().getId());
     }
 
     private Gebaeude setupGebaeude(String gebaeudeName) {
@@ -168,13 +167,13 @@ class CsvImportTest extends DatabaseCleaner {
 
         Teilnehmer t = (Teilnehmer) Nutzer.findByEmail(tnEmail);
         assertThat(t).isNotNull();
-        assertThat(t.getGruppe()).isEqualTo("10b");
+        assertThat(t.getGruppen()).contains("10b");
     }
 
     @Test
     void testImportSlots() {
         String csv = "Bezeichnung;Tag;Beginn;Ende\n" +
-                "Slot 1;2025-10-10;09:00;09:45";
+                "Slot 2;2025-10-10;11:00;11:45";
 
         given()
                 .multiPart("file", "slots.csv", csv.getBytes())
@@ -182,7 +181,7 @@ class CsvImportTest extends DatabaseCleaner {
                 .then()
                 .statusCode(OK.getStatusCode());
 
-        assertThat(Slot.count()).isEqualTo(1);
+        assertThat(Slot.count()).isEqualTo(2);
     }
 
     @Test

@@ -2,27 +2,26 @@ package kreyj.konfplan.presentation.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-import java.util.List;
 import java.util.Set;
 
 @RegisterForReflection
 @NoArgsConstructor
-@AllArgsConstructor
-@Getter
-@Setter
 public class NutzerVerfuegbarkeitDto {
-    private Long nutzerId;
-    private Long veranstaltungId;
-    private List<Long> verfuegbareSlotIds;
+    public Long nutzerId;
+    public Long veranstaltungId;
+    public Set<Long> verfuegbareSlotIds;
 
     // -------------------------------------------------------------------
     // Konstruktoren
     // -------------------------------------------------------------------
+
+    public NutzerVerfuegbarkeitDto(Long nutzerId, Long veranstaltungId, Set<Long> verfuegbareSlotIds) {
+        this.nutzerId = nutzerId;
+        this.veranstaltungId = veranstaltungId;
+        this.verfuegbareSlotIds = verfuegbareSlotIds;
+    }
 
     public NutzerVerfuegbarkeitDto(NutzerVerfuegbarkeit nv) {
         this(nv.getNutzerId(), nv.getVeranstaltungId(), nv.getVerfuegbareSlotIds());

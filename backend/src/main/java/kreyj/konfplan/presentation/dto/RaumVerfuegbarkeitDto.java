@@ -17,7 +17,7 @@ import java.util.Set;
 public class RaumVerfuegbarkeitDto {
     public Long raumId;
     public Long veranstaltungId;
-    public List<Long> verfuegbareSlotIds;
+    public Set<Long> verfuegbareSlotIds;
     public boolean isBlockedByOtherEvent;
     public String blockingEventName;
 

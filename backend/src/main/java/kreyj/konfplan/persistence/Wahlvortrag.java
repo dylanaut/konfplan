@@ -72,7 +72,7 @@ public class Wahlvortrag extends Vortrag {
      */
 
     private void provideVortragVerfuegbarkeit() {
-        List<Long> slotIds = veranstaltung.getSlotIds();
+        Set<Long> slotIds = veranstaltung.getSlotIds();
 
         VortragVerfuegbarkeit vv = VortragVerfuegbarkeit.findById(vvId(this, veranstaltung));
         if (null == vv) {

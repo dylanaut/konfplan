@@ -107,7 +107,7 @@ class NutzerPersistenceTest extends DatabaseCleaner {
                     "email": "schueler@test.de",
                     "firstName": "Peter",
                     "lastName": "Müller",
-                    "gruppe": "10a"
+                    "gruppen": ["10a"]
                 }
                 """;
 
@@ -119,10 +119,10 @@ class NutzerPersistenceTest extends DatabaseCleaner {
                 .statusCode(CREATED.getStatusCode())
                 .body("role", is("TEILNEHMER"));
 
-        Teilnehmer teil = (Teilnehmer) Nutzer.findByEmail("schueler@test.de");
-        assertThat(teil).isNotNull();
-        assertThat("10a").isEqualTo(teil.getGruppe());
-        assertThat(teil.getVeranstaltungen().isEmpty()).describedAs("Veranstaltung sollten nicht leer sein").isFalse();
-        assertThat(testVid).isEqualTo(teil.getVeranstaltungen().iterator().next().getId());
+        Teilnehmer tn = (Teilnehmer) Nutzer.findByEmail("schueler@test.de");
+        assertThat(tn).isNotNull();
+        assertThat(tn.getGruppen().contains("10a"));
+        assertThat(tn.getVeranstaltungen().isEmpty()).describedAs("Veranstaltung sollten nicht leer sein").isFalse();
+        assertThat(testVid).isEqualTo(tn.getVeranstaltungen().iterator().next().getId());
     }
 }

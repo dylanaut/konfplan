@@ -86,7 +86,7 @@ public class AuthResource {
     @PermitAll
     @Transactional
     @Operation(summary = "Passwort zurücksetzen", description = "Setzt das Passwort mit einem gültigen Token zurück.")
-    public Response resetPassword(@RequestBody(description = "Das Reset-Anfrage-Objekt", required = true) ResetRequest req) {
+    public Response resetPassword(@RequestBody(description = "Das Reset-Anfrage-Objekt") ResetRequest req) {
         Nutzer nutzer = Nutzer.find("resetToken", req.token).firstResult();
         if (nutzer != null && nutzer.getResetTokenExpiry().isAfter(LocalDateTime.now())) {
             nutzer.setPasswordHash(BcryptUtil.bcryptHash(req.newPassword));
@@ -103,7 +103,7 @@ public class AuthResource {
     @PermitAll
     @Transactional
     @Operation(summary = "Login", description = "Authentifiziert einen Nutzer und gibt einen JWT-Token zurück.")
-    public Response login(@RequestBody(description = "Die Login-Anmeldeinformationen", required = true) LoginRequest loginRequest) {
+    public Response login(@RequestBody(description = "Die Login-Anmeldeinformationen") LoginRequest loginRequest) {
         Nutzer nutzer = Nutzer.findByEmail(loginRequest.email);
 
         if (nutzer != null && BcryptUtil.matches(loginRequest.password, nutzer.getPasswordHash())

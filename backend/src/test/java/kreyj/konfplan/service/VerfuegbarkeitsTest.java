@@ -30,10 +30,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
 public class VerfuegbarkeitsTest extends DatabaseCleaner {
-
-    @Inject
-    AdminService adminService;
-
     private Long veranstaltung_id;
     private Long slot1_id, slot2_id;
     private Long tn_in_A_id, tn_in_B_id;
@@ -74,13 +70,13 @@ public class VerfuegbarkeitsTest extends DatabaseCleaner {
 
         Teilnehmer tn_in_A = new Teilnehmer();
         tn_in_A.setEmail("tn_in_a@test.com");
-        tn_in_A.setGruppe("GruppeA");
+        tn_in_A.addGruppe("GruppeA");
         tn_in_A.persistAndFlush();
         tn_in_A_id = tn_in_A.getId();
 
         Teilnehmer tn_in_B = new Teilnehmer();
         tn_in_B.setEmail("tn_in_b@test.com");
-        tn_in_B.setGruppe("GruppeB");
+        tn_in_B.addGruppe("GruppeB");
         tn_in_B.persistAndFlush();
         tn_in_B_id = tn_in_B.getId();
 

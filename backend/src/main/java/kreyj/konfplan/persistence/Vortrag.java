@@ -102,21 +102,28 @@ public abstract class Vortrag extends VersionedEntity {
     // public methods
     // -------------------------------------------------------------------
 
-    public void updateVortragVerfuegbarkeit(Veranstaltung veranstaltung, Slot slot, boolean verfuegbar) {
+    public void updateVerfuegbarkeit(Slot slot, Veranstaltung veranstaltung, boolean verfuegbar, boolean createIfMissing) {
         Objects.requireNonNull(veranstaltung);
         Objects.requireNonNull(slot);
 
         VortragVerfuegbarkeit vv = VortragVerfuegbarkeit.findById(vvId(this, veranstaltung));
+        if (null == vv) {
+            if (createIfMissing) {
+                new VortragVerfuegbarkeit(this, veranstaltung, Set.of(slot.getId())).persist();
+            }
+        } else {
+            throw new IllegalStateException("VortragVerfuegbarkeit existiert nicht");
+        }
 
         if (verfuegbar) {
-            if (null == vv) {
-                new VortragVerfuegbarkeit(this, veranstaltung, List.of(slot.getId())).persist();
-            } else {
-                vv.addSlot(slot);
-            }
-        } else // Vortrag für Slot und Veranstaltung NICHT verfuegbar
-            if (null != vv) {
-                vv.removeSlot(slot);
-            }
+            vv.addSlot(slot);
+        } else {
+            vv.removeSlot(slot);
+        }
+    }
+
+
+    public static List<Vortrag> getVeranstaltungVortraege(Long veranstaltungId) {
+        return Vortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
     }
 }
