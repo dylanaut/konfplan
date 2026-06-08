@@ -22,6 +22,7 @@ import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.persistence.Zuweisung;
+import kreyj.konfplan.presentation.DatabaseCleaner;
 import kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto;
 import kreyj.konfplan.presentation.dto.SolverConfigDto;
 import org.jboss.logging.Logger;
@@ -44,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 @QuarkusTest
-public class OptimierungServiceIntegrationTest {
+public class OptimierungServiceIntegrationTest extends DatabaseCleaner {
     private static final Logger LOG = Logger.getLogger(OptimierungServiceIntegrationTest.class);
 
     @Inject
@@ -58,23 +59,6 @@ public class OptimierungServiceIntegrationTest {
     @BeforeEach
     @Transactional
     public void setup() {
-        // Clean up database before each test
-        Zuweisung.deleteAll();
-        Prioritaet.deleteAll();
-        Planungsergebnis.deleteAll();
-        NutzerVerfuegbarkeit.deleteAll();
-        RaumVerfuegbarkeit.deleteAll();
-        Wahlvortrag.deleteAll();
-        Pflichtvortrag.deleteAll();
-        Vortrag.deleteAll();
-        Slot.deleteAll();
-        Veranstaltung.deleteAll();
-        Teilnehmer.deleteAll();
-        Referent.deleteAll();
-        Nutzer.deleteAll();
-        Raum.deleteAll();
-        Gebaeude.deleteAll();
-
         // 1. Schule (Gebäude) und Räume
         schule = new Gebaeude("Test Schule",
                 "Testort",

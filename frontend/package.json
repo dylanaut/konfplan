@@ -12,7 +12,7 @@
     "@capacitor/ios": "^8.3.4",
     "axios": "^1.4.0",
     "jwt-decode": "^3.1.2",
-    "lucide-vue-next": "^0.244.0",
+    "@lucide/vue": "^1.17.0",
     "pinia": "^2.1.0",
     "vite-plugin-html": "^3.2.2",
     "vue": "^3.3.0",

@@ -1,7 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Fullstack Dev" type="CompoundRunConfigurationType">
     <toRun name="frontend" type="JavascriptDebugType" />
-    <toRun name="npm install" type="js.build_tools.npm" />
     <toRun name="backend dev" type="QuarkusRunConfigurationType" />
     <method v="2" />
   </configuration>

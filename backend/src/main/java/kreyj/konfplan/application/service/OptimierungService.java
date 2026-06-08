@@ -21,6 +21,8 @@ import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
+import org.eclipse.microprofile.config.inject.ConfigProperties;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.io.BufferedReader;
@@ -57,6 +59,9 @@ public class OptimierungService {
     private final ProtokollService protokollService;
 
     private final ObjectMapper objectMapper;
+
+    @ConfigProperty(name = "minizinc.path", defaultValue = "/opt/homebrew/bin/minizinc")
+    String miniZincPath;
 
     public OptimierungService(ProtokollService protokollService, ObjectMapper objectMapper) {
         this.protokollService = protokollService;
@@ -123,7 +128,7 @@ public class OptimierungService {
     public String rufeMiniZincAuf(Path modelPath, Path dznPath, String solver,
                            int timeoutSeconds, int numThreads) throws IOException, InterruptedException {
         List<String> command = new ArrayList<>(Arrays.asList(
-                "minizinc", "--solver", solver,
+                miniZincPath, "--solver", solver,
                 "--time-limit", String.valueOf(timeoutSeconds * 1000),
                 "--parallel", String.valueOf(numThreads)
         ));
