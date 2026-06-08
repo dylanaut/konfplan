@@ -1,5 +1,6 @@
 package kreyj.konfplan.service;
 
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -8,20 +9,16 @@ import kreyj.konfplan.application.service.OptimierungService;
 import kreyj.konfplan.application.service.PlanService;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
-import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Raum;
-import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.Wahlvortrag;
-import kreyj.konfplan.persistence.Zuweisung;
 import kreyj.konfplan.presentation.DatabaseCleaner;
 import kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto;
 import kreyj.konfplan.presentation.dto.SolverConfigDto;
@@ -162,7 +159,7 @@ public class OptimierungServiceIntegrationTest extends DatabaseCleaner {
         veranstaltung.addVortrag(wahlvortrag2);
 
         Pflichtvortrag pflichtvortrag = new Pflichtvortrag("Pflichtvortrag", referent, veranstaltung,
-        "A", schule.getRaeume().iterator().next(), slot3);
+                "A", schule.getRaeume().iterator().next(), slot3);
         pflichtvortrag.persistAndFlush();
         veranstaltung.addVortrag(pflichtvortrag);
 
@@ -199,7 +196,6 @@ public class OptimierungServiceIntegrationTest extends DatabaseCleaner {
     }
 
     @Test
-    @Transactional
     public void testOptimierungslauf_withMinimalSetup() throws Exception {
         Veranstaltung veranstaltung = simpleSetup(true);
 
@@ -228,13 +224,18 @@ public class OptimierungServiceIntegrationTest extends DatabaseCleaner {
     }
 
     @Test
-    @Transactional
     public void testOptimierungslauf_noAvailabilities() throws Exception {
         Veranstaltung veranstaltung = simpleSetup(false);
         Teilnehmer tn = Teilnehmer.<Teilnehmer>listAll().getFirst();
-        // tn ist nicht verfügbar für Wahlvorträge
-        tn.clearVerfuegbareSlots(veranstaltung);
-        tn.persistAndFlush();
+
+        // tn ist nicht verfügbar in allen V-Slots
+        QuarkusTransaction.requiringNew().run(() -> {
+            veranstaltung.getSlots().forEach(slot -> tn.updateVerfuegbarkeit(slot, veranstaltung, false));
+        });
+
+        NutzerVerfuegbarkeit nv = tn.getVerfuegbarkeit(veranstaltung);
+        assertThat(nv).isNotNull();
+        assertThat(nv.getVerfuegbareSlotIds()).isEmpty();
 
         // 1. Optimierung durchführen
         SolverConfigDto config = new SolverConfigDto("cp-sat", 60, 4, 1);
@@ -257,13 +258,17 @@ public class OptimierungServiceIntegrationTest extends DatabaseCleaner {
     }
 
     @Test
-    @Transactional
     public void testOptimierungslauf_withoutResult() throws Exception {
         Veranstaltung veranstaltung = simpleSetup(false);
         Teilnehmer tn = Teilnehmer.<Teilnehmer>listAll().getFirst();
-        // tn ist nicht verfügbar für Wahlvorträge
-        tn.clearVerfuegbareSlots(veranstaltung);
-        tn.persistAndFlush();
+
+        // tn ist nicht verfügbar in allen V-Slots
+        QuarkusTransaction.requiringNew().run(() -> {
+            veranstaltung.getSlots().forEach(slot -> tn.updateVerfuegbarkeit(slot, veranstaltung, false));
+        });
+
+        NutzerVerfuegbarkeit nv = tn.getVerfuegbarkeit(veranstaltung);
+        assertThat(nv).isNotNull();
 
         // 1. Optimierung durchführen
         SolverConfigDto config = new SolverConfigDto("cp-sat", 60, 4, 1);
@@ -288,7 +293,6 @@ public class OptimierungServiceIntegrationTest extends DatabaseCleaner {
     }
 
     @Test
-    @Transactional
     public void testOptimierungslauf_withComplexSetup() throws Exception {
         Veranstaltung veranstaltung = complexSetup();
         // 1. Optimierung durchführen

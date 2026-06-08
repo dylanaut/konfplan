@@ -76,8 +76,8 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         veranstaltung.setBeginntAm(LocalDateTime.of(2024, 1, 1, 9, 0));
         veranstaltung.setEndetAm(LocalDateTime.of(2024, 1, 1, 17, 0));
         veranstaltung.addGebaeude(gebaeude);
-        veranstaltung.getGruppen().add("Gruppe A");
-        veranstaltung.getGruppen().add("Gruppe B");
+        veranstaltung.addGruppe("Gruppe A");
+        veranstaltung.addGruppe("Gruppe B");
         veranstaltung.persistAndFlush();
 
         raum1 = new Raum();

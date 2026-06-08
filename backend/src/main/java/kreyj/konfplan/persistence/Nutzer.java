@@ -29,9 +29,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import static java.util.Collections.emptySet;
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
-import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 
 @Entity
 @NoArgsConstructor
@@ -133,27 +131,19 @@ public abstract class Nutzer extends VersionedEntity {
         }
     }
 
-    public void clearVerfuegbareSlots(Veranstaltung veranstaltung) {
-        Objects.requireNonNull(veranstaltung);
-        Long vId = veranstaltung.getId();
-        Objects.requireNonNull(vId);
+    // -------------------------------------------------------------------
+    // Helper methods
+    // -------------------------------------------------------------------
 
-        if (this instanceof Referent || this instanceof Teilnehmer) {
-            NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(this.getId(), vId));
 
-            if (null == nv) {
-                nv = new NutzerVerfuegbarkeit(this, veranstaltung, emptySet());
-            } else {
-                nv.setVerfuegbareSlotIds(emptySet());
-            }
-
-            nv.persistAndFlush();
-        }
+    public NutzerVerfuegbarkeit getVerfuegbarkeit(Veranstaltung veranstaltung) {
+        return NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2", getId(), veranstaltung.getId()).firstResult();
     }
 
     public void updateVerfuegbarkeit(Slot slot, Veranstaltung veranstaltung, boolean verfuegbar) {
         updateVerfuegbarkeit(slot, veranstaltung, verfuegbar, false);
     }
+
 
     public void updateVerfuegbarkeit(Slot slot, Veranstaltung veranstaltung, boolean verfuegbar, boolean createIfMissing) {
         Objects.requireNonNull(veranstaltung);
@@ -176,6 +166,8 @@ public abstract class Nutzer extends VersionedEntity {
         } else {
             nv.removeSlot(slot);
         }
+
+        nv.persistAndFlush();
     }
 
 

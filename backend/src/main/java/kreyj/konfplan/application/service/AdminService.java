@@ -1053,7 +1053,7 @@ public class AdminService {
         if (veranstaltung == null) {
             throw new CreateVortragException("Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
         }
-        if (!veranstaltung.getGruppen().add(gruppenName)) {
+        if (!veranstaltung.addGruppe(gruppenName)) {
             throw new CreateVortragException("Gruppe '" + gruppenName + "' existiert bereits.");
         }
         protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Gruppe erstellt", "Gruppe '" + gruppenName + "' zu Veranstaltung '" + veranstaltung.getName() + "' hinzugefügt.", veranstaltungId);
@@ -1080,14 +1080,14 @@ public class AdminService {
         }
 
         // 1. Gruppe in Veranstaltung umbenennen
-        veranstaltung.getGruppen().remove(alterName);
-        veranstaltung.getGruppen().add(neuerName);
+        veranstaltung.removeGruppe(alterName);
+        veranstaltung.addGruppe(neuerName);
 
         // 2. Alle Teilnehmer der Veranstaltung durchgehen und Gruppe umbenennen
         List<Teilnehmer> betroffeneTeilnehmer = Teilnehmer.find("?1 MEMBER OF gruppen AND ?2 MEMBER OF veranstaltungen", alterName, veranstaltung).list();
         for (Teilnehmer teilnehmer : betroffeneTeilnehmer) {
-            teilnehmer.getGruppen().remove(alterName);
-            teilnehmer.getGruppen().add(neuerName);
+            teilnehmer.removeGruppe(alterName);
+            teilnehmer.addGruppe(neuerName);
         }
 
         protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Gruppe umbenannt", "Gruppe von '" + alterName + "' zu '" + neuerName + "' in Veranstaltung '" + veranstaltung.getName() + "' umbenannt.", veranstaltungId);
@@ -1104,14 +1104,14 @@ public class AdminService {
         }
 
         // 1. Gruppe aus Veranstaltung entfernen
-        if (!veranstaltung.getGruppen().remove(gruppenName)) {
+        if (!veranstaltung.removeGruppe(gruppenName)) {
             throw new DeleteVortragsgruppeException("Gruppe '" + gruppenName + "' konnte nicht entfernt werden, da sie nicht existiert.");
         }
 
         // 2. Gruppe aus allen Teilnehmern der Veranstaltung entfernen
         List<Teilnehmer> betroffeneTeilnehmer = Teilnehmer.find("?1 MEMBER OF gruppen AND ?2 MEMBER OF veranstaltungen", gruppenName, veranstaltung).list();
         for (Teilnehmer teilnehmer : betroffeneTeilnehmer) {
-            teilnehmer.getGruppen().remove(gruppenName);
+            teilnehmer.removeGruppe(gruppenName);
         }
 
         protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Gruppe gelöscht", "Gruppe '" + gruppenName + "' aus Veranstaltung '" + veranstaltung.getName() + "' entfernt.", veranstaltungId);

@@ -66,20 +66,20 @@ public class Veranstaltung extends VersionedEntity {
         return Collections.unmodifiableSet(gruppen);
     }
 
-    public void addGruppe(String gruppenName) {
+    public boolean addGruppe(String gruppenName) {
         if (null == gruppenName) {
-            return;
+            return false;
         }
 
-        this.gruppen.add(gruppenName);
+        return gruppen.add(gruppenName);
     }
 
-    public void removeGruppe(String gruppenName) {
+    public boolean removeGruppe(String gruppenName) {
         if (null == gruppenName) {
-            return;
+            return false;
         }
 
-        gruppen.remove(gruppenName);
+        return gruppen.remove(gruppenName);
     }
 
 

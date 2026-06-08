@@ -35,9 +35,9 @@ public class NutzerVerfuegbarkeit extends VeranstaltungsVerfuegbarkeit {
     }
 
 
-// -------------------------------------------------------------------
-// Helper methods
-// -------------------------------------------------------------------
+    // -------------------------------------------------------------------
+    // Helper methods
+    // -------------------------------------------------------------------
 
     public static boolean alleNutzerVerfuegbar(List<Teilnehmer> teilnehmer, Long slotId, Long veranstaltungId) {
         if (teilnehmer.isEmpty()) {
