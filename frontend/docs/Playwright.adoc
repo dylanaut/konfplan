@@ -2,7 +2,7 @@
 
 End-to-End (E2E) Test mit Playwright: +
 simuliert einen typischen Planungsablauf in der Anwendung.
-NOTE: Dieser Test dient dazu, den kompletten Workflow von der Anlage einer Veranstaltung bis zur Vorbereitung der Optimierung zu verifizieren.
+NOTE: Dieser Test dient dazu, den kompletten Workflow von der Anlage einer Veranstaltung bis zur Vorbereitung der PlanErstellung zu verifizieren.
 
 == Testfall: `PlanungsWorkflow.spec.js`
 
@@ -30,7 +30,7 @@ Der Test simuliert die folgenden Schritte im Frontend:
 ** E-Mail: "tom@student.de"
 . **Navigation zum Tab "Vortragsplanung"**.
 . **Verifikation der angezeigten Zählwerte** für Teilnehmer, Vorträge und Referenten in der Übersichtsbox.
-. **Prüfung, ob der "MiniZinc Optimierung starten"-Button aktiv ist**.
+. **Prüfung, ob der "MiniZinc PlanErstellung starten"-Button aktiv ist**.
 
 === Testcode: `frontend/tests/PlanungsWorkflow.spec.js`
 

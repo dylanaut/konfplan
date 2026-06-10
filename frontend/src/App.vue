@@ -53,7 +53,7 @@
 import { ref } from 'vue';
 import { useAuthStore } from './stores/auth';
 import { useEventContextStore } from './stores/eventContext';
-import { Menu as MenuIcon } from 'lucide-vue-next';
+import { Menu as MenuIcon } from '@lucide/vue';
 
 const auth = useAuthStore();
 const eventContext = useEventContextStore();

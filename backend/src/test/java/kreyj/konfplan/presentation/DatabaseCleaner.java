@@ -15,7 +15,6 @@ import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
-import kreyj.konfplan.persistence.Zuweisung;
 import kreyj.konfplan.presentation.dto.VortragDto;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -26,7 +25,6 @@ public abstract class DatabaseCleaner {
     @BeforeEach
     @Transactional
     public void cleanDatabase() {
-        Zuweisung.deleteAll();
         NutzerVerfuegbarkeit.deleteAll();
         RaumVerfuegbarkeit.deleteAll();
         VortragVerfuegbarkeit.deleteAll();

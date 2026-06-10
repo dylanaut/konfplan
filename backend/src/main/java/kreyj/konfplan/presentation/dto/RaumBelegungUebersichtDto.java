@@ -1,5 +1,7 @@
 package kreyj.konfplan.presentation.dto;
 
+import lombok.Getter;
+
 import java.util.List;
 
 public class RaumBelegungUebersichtDto {
@@ -7,12 +9,15 @@ public class RaumBelegungUebersichtDto {
     public static final String VORTRAG_TITEL_FREI = "Frei";
 
     public Long slotId;
+    @Getter
     public String slotZeit;
     public Long raumId;
     public String raumName;
+    @Getter
     public String vortragTitel;
     public String referentName;
     public String vortragTyp; // "WAHL", "PFLICHT", "FREI"
+    @Getter
     public List<String> teilnehmerNamen;
     public Integer kapazitaet;
 
@@ -26,18 +31,6 @@ public class RaumBelegungUebersichtDto {
         this.vortragTyp = vortragTyp;
         this.teilnehmerNamen = teilnehmerNamen;
         this.kapazitaet = kapazitaet;
-    }
-
-    public String getSlotZeit() {
-        return slotZeit;
-    }
-
-    public String getVortragTitel() {
-        return vortragTitel;
-    }
-
-    public List<String> getTeilnehmerNamen() {
-        return teilnehmerNamen;
     }
 
     @Override

@@ -36,6 +36,7 @@ public class MinizincException extends RuntimeException {
     public enum MZ_Exception {
         NO_SOLUTION,
         INVOCATION_ERROR,
-        UNSATISFIABLE, INTERMEDIATE;
+        UNSATISFIABLE,
+        INTERMEDIATE
     }
 }

@@ -18,7 +18,7 @@ DTOs (Data Transfer Objects) entkoppeln die API-Schicht von den JPA-Entitäten. 
 | `VortragStatDto`      | Statistik (Anmeldezahlen etc.) für einen Vortrag   |
 | `ZuweisungDto`        | Zuweisung Teilnehmer ↔ Vortrag ↔ Slot ↔ Raum      |
 | `RaumBelegungDto`     | Welcher Vortrag ist wann in welchem Raum           |
-| `PlanQualitaetDto`    | Qualitätsmetriken des Optimierungsergebnisses      |
+| `PlanQualitaetDto`    | Qualitätsmetriken des PlanErstellungsergebnisses      |
 | `LoginRequest`        | E-Mail + Passwort für Login                        |
 | `TokenResponse`       | JWT-Token als Antwort auf Login                    |
 | `ResetRequest`        | Token + neues Passwort für Passwort-Reset          |

@@ -24,7 +24,7 @@ package "KonfPlan System" {
   (Nutzerkonten verwalten) as UC3
   (Zeit-Slots definieren) as UC4
   (Vorträge & Zuweisungen verwalten) as UC5
-  (Optimierung starten) as UC6
+  (PlanErstellung starten) as UC6
   (Pläne & Türschilder exportieren) as UC7
 
   (Eigene Vorträge verwalten) as UC8
@@ -76,9 +76,9 @@ User --> UC13
 `GET/POST/PUT/DELETE /api/admin/nutzer` +
 `GET/POST/PUT/DELETE /api/veranstaltungen/{vid}/nutzer`
 
-| **Optimierung starten**
+| **PlanErstellung starten**
 | Ausführen des MiniZinc-Solvers zur optimalen Zuweisung von Teilnehmern zu Vorträgen basierend auf Prioritäten. +
-`POST /api/veranstaltungen/{vid}/optimierung/start`
+`POST /api/veranstaltungen/{vid}/planungen`
 
 | **Export & Ergebnisse**
 | Generierung von Türschildern (PDF) und Gesamtplanungs-Exports (CSV). +
@@ -121,7 +121,7 @@ User --> UC13
 `POST /api/teilnehmer/priorities`
 
 | **Persönlichen Plan einsehen**
-| Nach der Optimierung: Ansicht des verbindlichen individuellen Stundenplans. +
+| Nach der PlanErstellung: Ansicht des verbindlichen individuellen Stundenplans. +
 `GET /api/participant/plaene`
 
 | **Referenten-Info einholen**

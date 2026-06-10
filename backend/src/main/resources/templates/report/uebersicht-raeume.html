@@ -12,9 +12,9 @@
     </style>
 </head>
 <body>
-    <h1>Übersicht Raumbelegung für ${veranstaltung.name}</h1>
+    <h1>Übersicht Raumbelegung für {veranstaltung.name}</h1>
 
-    <#if plan?has_content>
+    {#if plan}
         <table>
             <thead>
                 <tr>
@@ -26,19 +26,19 @@
                 </tr>
             </thead>
             <tbody>
-                <#list plan as belegung>
+                {#for belegung in plan}
                     <tr>
-                        <td>${belegung.slotZeit}</td>
-                        <td>${belegung.raumName}</td>
-                        <td>${belegung.vortragTitel}</td>
-                        <td>${belegung.referentName}</td>
-                        <td>${belegung.vortragTyp}</td>
+                        <td>{belegung.slotZeit}</td>
+                        <td>{belegung.raumName}</td>
+                        <td>{belegung.vortragTitel}</td>
+                        <td>{belegung.referentName}</td>
+                        <td>{belegung.vortragTyp}</td>
                     </tr>
-                </#list>
+                {/for}
             </tbody>
         </table>
-    <#else>
+    {#else}
         <p>Kein Plan vorhanden.</p>
-    </#if>
+    {/if}
 </body>
 </html>

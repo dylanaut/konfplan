@@ -61,7 +61,7 @@ import {
   Pencil as PencilIcon,
   Trash2 as Trash2Icon,
   Upload as UploadIcon
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 import PaginationControls from '../../PaginationControls.vue';
 
 const props = defineProps({

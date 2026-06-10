@@ -20,7 +20,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @QuarkusTest
 public class AdminServiceTest {
@@ -68,7 +67,7 @@ public class AdminServiceTest {
     @Test
     public void testCreateAndGetGruppen() {
         adminService.createGruppe(veranstaltung.getId(), "Gruppe A");
-        Set<String> gruppen = adminService.getGruppen(veranstaltung.getId());
+        List<String> gruppen = adminService.getGruppen(veranstaltung.getId());
         assertThat(gruppen.contains("Gruppe A")).isTrue();
         assertThat(gruppen.size()).isEqualTo(1);
     }
@@ -77,9 +76,7 @@ public class AdminServiceTest {
     @Transactional
     public void testCreateGruppe_DuplicateName_ThrowsException() {
         adminService.createGruppe(veranstaltung.getId(), "Gruppe A");
-        assertThatExceptionOfType(CreateVortragException.class).isThrownBy(() -> {
-            adminService.createGruppe(veranstaltung.getId(), "Gruppe A");
-        });
+        assertThatExceptionOfType(CreateVortragException.class).isThrownBy(() -> adminService.createGruppe(veranstaltung.getId(), "Gruppe A"));
     }
 
     @Test
@@ -108,9 +105,7 @@ public class AdminServiceTest {
     public void testRenameGruppe_ToExistingName_ThrowsException() {
         adminService.createGruppe(veranstaltung.getId(), "Gruppe A");
         adminService.createGruppe(veranstaltung.getId(), "Gruppe B");
-        assertThatExceptionOfType(UpdateVortragException.class).isThrownBy(() -> {
-            adminService.renameGruppe(veranstaltung.getId(), "Gruppe A", "Gruppe B");
-        });
+        assertThatExceptionOfType(UpdateVortragException.class).isThrownBy(() -> adminService.renameGruppe(veranstaltung.getId(), "Gruppe A", "Gruppe B"));
     }
 
     @Test

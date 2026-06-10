@@ -14,6 +14,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,7 +24,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-public class UseCaseScanner {
+class UseCaseScanner {
 
     public static void main(String[] args) throws Exception {
         String basePackage = "kreyj.konfplan.presentation";
@@ -39,7 +40,7 @@ public class UseCaseScanner {
         Map<String, List<String>> roleToUCs = new TreeMap<>();
         Map<String, List<EndpointInfo>> classToEndpoints = new LinkedHashMap<>();
 
-        for (Class<?> clazz : classes.stream().sorted().toList()) {
+        for (Class<?> clazz : classes.stream().sorted(Comparator.comparing(Class::getName)).toList()) {
             Path classPathAnno = clazz.getAnnotation(Path.class);
             if (classPathAnno == null) {
                 continue;

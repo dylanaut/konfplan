@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Raumbelegungsplan für ${raum.name}</title>
+    <title>Raumbelegungsplan für {raum.name}</title>
     <style>
         body { font-family: sans-serif; }
         h1, h2 { color: #333; }
@@ -12,10 +12,10 @@
     </style>
 </head>
 <body>
-    <h1>Raumbelegungsplan für ${raum.name}</h1>
-    <h2>Veranstaltung: ${veranstaltung.name}</h2>
+    <h1>Raumbelegungsplan für {raum.name}</h1>
+    <h2>Veranstaltung: {veranstaltung.name}</h2>
 
-    <#if belegung?has_content>
+    {#if belegung}
         <table>
             <thead>
                 <tr>
@@ -27,20 +27,19 @@
                 </tr>
             </thead>
             <tbody>
-                <#list belegung?keys as slotId>
-                    <#assign eintrag = belegung[slotId]>
+                {#for eintrag in belegung.values}
                     <tr>
-                        <td>${eintrag.slotZeit}</td>
-                        <td>${eintrag.vortragTitel}</td>
-                        <td>${eintrag.referentName}</td>
-                        <td>${eintrag.vortragTyp}</td>
-                        <td>${eintrag.anzahlTeilnehmer}</td>
+                        <td>{eintrag.slotZeit}</td>
+                        <td>{eintrag.vortragTitel}</td>
+                        <td>{eintrag.referentName}</td>
+                        <td>{eintrag.vortragTyp}</td>
+                        <td>{eintrag.anzahlTeilnehmer}</td>
                     </tr>
-                </#list>
+                {/for}
             </tbody>
         </table>
-    <#else>
+    {#else}
         <p>Für diesen Raum sind keine Belegungen geplant.</p>
-    </#if>
+    {/if}
 </body>
 </html>

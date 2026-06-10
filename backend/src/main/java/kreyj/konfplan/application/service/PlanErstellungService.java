@@ -10,18 +10,17 @@ import jakarta.json.Json;
 import jakarta.json.JsonException;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
-import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
-import kreyj.konfplan.presentation.dto.SolverConfigDto;
 import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import kreyj.konfplan.persistence.Raum;
+import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
-import org.eclipse.microprofile.config.inject.ConfigProperties;
+import kreyj.konfplan.presentation.dto.SolverConfigDto;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -50,8 +49,8 @@ import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
 import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvId;
 
 @ApplicationScoped
-public class OptimierungService {
-    private static final Logger LOG = Logger.getLogger(OptimierungService.class);
+public class PlanErstellungService {
+    private static final Logger LOG = Logger.getLogger(PlanErstellungService.class);
     private static final String MZN_MODEL_FILE = "konfplan.mzn";
     private static final DateTimeFormatter WEEKDAY_TIME_FORMAT = DateTimeFormatter.ofPattern("EE,HH:mm");
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
@@ -63,18 +62,18 @@ public class OptimierungService {
     @ConfigProperty(name = "minizinc.path", defaultValue = "/opt/homebrew/bin/minizinc")
     String miniZincPath;
 
-    public OptimierungService(ProtokollService protokollService, ObjectMapper objectMapper) {
+    public PlanErstellungService(ProtokollService protokollService, ObjectMapper objectMapper) {
         this.protokollService = protokollService;
         this.objectMapper = objectMapper;
     }
 
-    public void starteOptimierung(Long veranstaltungId, SolverConfigDto config) throws Exception {
-        starteOptimierung(veranstaltungId, config, MZN_MODEL_FILE);
+    public void erstellePlan(Long veranstaltungId, SolverConfigDto config) throws Exception {
+        erstellePlan(veranstaltungId, config, MZN_MODEL_FILE);
     }
 
     @Transactional
-    public void starteOptimierung(Long veranstaltungId, SolverConfigDto config, String modelName) throws Exception {
-        LOG.info("Starte Optimierung für Veranstaltung: " + veranstaltungId);
+    public void erstellePlan(Long veranstaltungId, SolverConfigDto config, String modelName) throws Exception {
+        LOG.info("Starte Planerstellung für Veranstaltung: " + veranstaltungId);
 
         URL modelUrl = getClass().getClassLoader().getResource("minizinc/" + modelName);
         if (modelUrl == null) {
@@ -82,21 +81,22 @@ public class OptimierungService {
         }
 
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        String vName = veranstaltung != null ? veranstaltung.getName() : "ID: " + veranstaltungId;
+        assert veranstaltung != null;
+        String vName = veranstaltung.getName();
 
-        protokollService.log(ProtokollKategorie.PLANUNG, "Optimierung gestartet",
-                "Optimierung für '" + vName + "' mit Solver '" + config.solver + "' gestartet.", veranstaltungId);
+        protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung gestartet",
+                "Planerstellung für '" + vName + "' mit Solver '" + config.solver + "' gestartet.", veranstaltungId);
 
         try {
-            List<Teilnehmer> teilnehmer = Teilnehmer.getVeranstaltungTeilnehmer(veranstaltungId);
+            List<Teilnehmer> teilnehmer = veranstaltung.teilnehmer();
             List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
-            List<Wahlvortrag> wahlvortraege = Wahlvortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
-            List<Slot> slots = Slot.find("veranstaltung.id = ?1", veranstaltungId).list();
-            List<Raum> raeume = Raum.listAll();
+            List<Wahlvortrag> wahlvortraege = veranstaltung.getWahlvortraege();
+            Set<Slot> slots = veranstaltung.getSlots();
+            List<Raum> raeume = veranstaltung.getRaeume();
 
             if (slots.isEmpty() || teilnehmer.isEmpty() || wahlvortraege.isEmpty()) {
-                LOG.warn("Keine Wahlvorträge, Slots oder Teilnehmer vorhanden. Optimierung wird nicht gestartet.");
-                protokollService.log(ProtokollKategorie.PLANUNG, "Optimierung abgebrochen", "Voraussetzungen (Teilnehmer, Slots, Wahlvorträge) nicht erfüllt.", veranstaltungId);
+                LOG.warn("Keine Wahlvorträge, Slots oder Teilnehmer vorhanden. Planerstellung wird nicht gestartet.");
+                protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung abgebrochen", "Voraussetzungen (Teilnehmer, Slots, Wahlvorträge) nicht erfüllt.", veranstaltungId);
                 return;
             }
 
@@ -111,28 +111,28 @@ public class OptimierungService {
 
                 if (resultJson.contains("instanz_slot") && isValidJson(resultJson)) {
                     speicherePlanungsergebnis(veranstaltung, resultJson, config);
-                    protokollService.log(ProtokollKategorie.PLANUNG, "Optimierung erfolgreich",
-                            "Optimierung für '" + vName + "' abgeschlossen. Ergebnis wurde gespeichert.", veranstaltungId);
+                    protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung erfolgreich",
+                            "Planerstellung für '" + vName + "' abgeschlossen. Ergebnis wurde gespeichert.", veranstaltungId);
                 } else {
-                    protokollService.log(ProtokollKategorie.PLANUNG, "Optimierung fehlgeschlagen", "MiniZinc konnte keine Lösung finden.", veranstaltungId);
+                    protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung fehlgeschlagen", "MiniZinc konnte keine Lösung finden.", veranstaltungId);
                 }
             } finally {
                 Files.deleteIfExists(tempDzn);
             }
         } catch (Exception e) {
-            protokollService.log(ProtokollKategorie.PLANUNG, "Fehler bei Optimierung", e.getMessage(), veranstaltungId);
+            protokollService.log(ProtokollKategorie.PLANUNG, "Fehler bei Planerstellung", e.getMessage(), veranstaltungId);
             throw e;
         }
     }
 
     public String rufeMiniZincAuf(Path modelPath, Path dznPath, String solver,
-                           int timeoutSeconds, int numThreads) throws IOException, InterruptedException {
+                                  int timeoutSeconds, int numThreads) throws IOException, InterruptedException {
         List<String> command = new ArrayList<>(Arrays.asList(
                 miniZincPath, "--solver", solver,
                 "--time-limit", String.valueOf(timeoutSeconds * 1000),
                 "--parallel", String.valueOf(numThreads)
         ));
-        // Für Optimierungsprobleme sorgt dieses Flag dafür, dass Zwischenlösungen ausgegeben werden.
+        // Bei Planerstellungsproblemen sorgt dieses Flag dafür, dass Zwischenlösungen ausgegeben werden.
         command.add("--intermediate");
         command.add(modelPath.toAbsolutePath().toString());
         command.add(dznPath.toAbsolutePath().toString());
@@ -186,8 +186,9 @@ public class OptimierungService {
         return "";
     }
 
+
     private String generiereDzn(Veranstaltung veranstaltung, List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege,
-                                List<Slot> slots, List<Raum> raeume, List<Pflichtvortrag> pflichtvortraege,
+                                Set<Slot> slots, List<Raum> raeume, List<Pflichtvortrag> pflichtvortraege,
                                 int maxInstanzen) {
         StringBuilder sb = new StringBuilder();
         sb.append("%Generiert am: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))).append(",Version: 1.0;\n");
@@ -206,7 +207,7 @@ public class OptimierungService {
         return sb.toString();
     }
 
-    private static void appendOidArrays(List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege, List<Slot> slots, List<Raum> raeume, StringBuilder sb) {
+    private static void appendOidArrays(List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege, Set<Slot> slots, List<Raum> raeume, StringBuilder sb) {
         sb.append("teilnehmer_oids = [").append(teilnehmer.stream().map(t -> String.valueOf(t.getId())).collect(joining(","))).append("];\n");
         sb.append("wahlvortrag_oids = [").append(wahlvortraege.stream().map(v -> String.valueOf(v.getId())).collect(joining(","))).append("];\n");
         sb.append("slot_oids = [").append(slots.stream().map(s -> String.valueOf(s.getId())).collect(joining(","))).append("];\n");
@@ -214,7 +215,7 @@ public class OptimierungService {
     }
 
 
-    private static void appendSlots(List<Slot> slots, StringBuilder sb) {
+    private static void appendSlots(Set<Slot> slots, StringBuilder sb) {
         final int nSlots = slots.size();
         sb.append("n_slots = ").append(nSlots).append(";\n");
         sb.append("slots = [");
@@ -262,7 +263,7 @@ public class OptimierungService {
         sb.append("\n];\n\n");
     }
 
-    private static void appendWahlvortraege(List<Wahlvortrag> wahlvortraege, List<Slot> slots, StringBuilder sb) {
+    private static void appendWahlvortraege(List<Wahlvortrag> wahlvortraege, Set<Slot> slots, StringBuilder sb) {
         final int nWVs = wahlvortraege.size();
         sb.append("n_wahlvortraege = ").append(nWVs).append(";\n");
         Map<Long, Integer> refMap = new HashMap<>();
@@ -313,7 +314,7 @@ public class OptimierungService {
         sb.append("\n\n");
     }
 
-    private static void appendTnVerfuegbarkeiten(Veranstaltung veranstaltung, List<Teilnehmer> teilnehmer, List<Slot> slots,
+    private static void appendTnVerfuegbarkeiten(Veranstaltung veranstaltung, List<Teilnehmer> teilnehmer, Set<Slot> slots,
                                                  List<Pflichtvortrag> pflichtvortraege, StringBuilder sb) {
         sb.append("%In welchen Slots jeder Teilnehmer für Wahlvorträge einer Veranstaltung planbar ist:\n");
         int tnSize = teilnehmer.size();
@@ -323,7 +324,7 @@ public class OptimierungService {
         for (Teilnehmer tn : teilnehmer) {
             sb.append("\n");
             int sIdx = 0;
-            NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId( tn, veranstaltung));
+            NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(tn, veranstaltung));
             Set<Long> verfSlotIds = nv.getVerfuegbareSlotIds();
             for (Slot s : slots) {
                 sb.append(verfSlotIds.contains(s.getId()) ? "true" : "false");
@@ -341,7 +342,7 @@ public class OptimierungService {
         sb.append("\n\n");
     }
 
-    private static void appendRaumVerfuegbarkeiten(Veranstaltung veranstaltung, List<Raum> raeume, List<Slot> slots, List<Pflichtvortrag> pflichtvortraege, StringBuilder sb) {
+    private static void appendRaumVerfuegbarkeiten(Veranstaltung veranstaltung, List<Raum> raeume, Set<Slot> slots, List<Pflichtvortrag> pflichtvortraege, StringBuilder sb) {
         sb.append("%In welchen Slots Räume für Wahlvorträge planbar ist:\n");
         int raeumeSize = raeume.size();
         int slotSize = slots.size();

@@ -91,7 +91,7 @@
 
 <script setup>
 import { computed, ref } from 'vue';
-import { Download as DownloadIcon, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-vue-next';
+import { Download as DownloadIcon, ArrowUpDown, ChevronUp, ChevronDown } from '@lucide/vue';
 
 const props = defineProps({
   protokolle: {

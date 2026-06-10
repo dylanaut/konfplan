@@ -101,7 +101,7 @@ public class GebaeudeService {
                 g.setHausnummer(dto.hausnummer);
                 g.setPostleitzahl(dto.plz);
                 g.setOrt(dto.ort);
-                g.persist();
+                g.persistAndFlush();
 
                 // Räume parsen und zuweisen
                 if (dto.raeumeRaw != null && !dto.raeumeRaw.isBlank()) {
@@ -116,7 +116,7 @@ public class GebaeudeService {
                                 if (parts.length >= 3) {
                                     r.setEtage(parts[2].trim());
                                 }
-                                r.persist();
+                                r.persistAndFlush();
                                 g.addRaum(r);
                                 protokollService.log(ProtokollKategorie.RAUM, "Raum importiert (via Gebäude-Import)", "Raum '" + r.getName() + "' für Gebäude '" + g.getName() + "' importiert.", r.getId());
                             } catch (NumberFormatException e) {
@@ -128,7 +128,6 @@ public class GebaeudeService {
                             protokollService.log(ProtokollKategorie.RAUM, "Raum-Import übersprungen (via Gebäude-Import)", "Gebäude '" + gebaeudeName + "': Raum '" + rs + "' ungültiges Format.");
                         }
                     }
-                    g.persist();
                 }
                 count++;
                 protokollService.log(ProtokollKategorie.GEBAEUDE, "Gebäude importiert", "Gebäude '" + g.getName() + "' via CSV importiert.", g.getId());

@@ -261,7 +261,7 @@ import {
   Users as UsersIcon,
   X as XIcon,
   FileText as FileTextIcon // Import the FileTextIcon
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 import PaginationControls from '../../PaginationControls.vue';
 import HtmlDisplayModal from '../../HtmlDisplayModal.vue'; // Import the new modal component
 import api from '../../../api/axios'; // Import axios for API calls

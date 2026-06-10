@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 import java.util.Objects;
 import java.util.Set;
 
-import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvId;
 import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvId;
 
 @Entity

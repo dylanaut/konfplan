@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Laufzettel für ${teilnehmer.firstName} ${teilnehmer.lastName}</title>
+    <title>Laufzettel für {teilnehmer.firstName} {teilnehmer.lastName}</title>
     <style>
         body { font-family: sans-serif; }
         h1, h2 { color: #333; }
@@ -12,10 +12,10 @@
     </style>
 </head>
 <body>
-    <h1>Laufzettel für ${teilnehmer.firstName} ${teilnehmer.lastName}</h1>
-    <h2>Veranstaltung: ${veranstaltung.name}</h2>
+    <h1>Laufzettel für {teilnehmer.firstName} {teilnehmer.lastName}</h1>
+    <h2>Veranstaltung: {veranstaltung.name}</h2>
 
-    <#if plan?has_content>
+    {#if plan}
         <table>
             <thead>
                 <tr>
@@ -26,18 +26,18 @@
                 </tr>
             </thead>
             <tbody>
-                <#list plan as zuweisung>
+                {#for zuweisung in plan}
                     <tr>
-                        <td>${zuweisung.slotZeit}</td>
-                        <td>${zuweisung.vortragTitel}</td>
-                        <td>${zuweisung.raumName}</td>
-                        <td>${zuweisung.gebaeudeName}</td>
+                        <td>{zuweisung.slotZeit}</td>
+                        <td>{zuweisung.vortragTitel}</td>
+                        <td>{zuweisung.raumName}</td>
+                        <td>{zuweisung.gebaeudeName}</td>
                     </tr>
-                </#list>
+                {/for}
             </tbody>
         </table>
-    <#else>
+    {#else}
         <p>Für Sie wurde noch kein Plan erstellt.</p>
-    </#if>
+    {/if}
 </body>
 </html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Freie Slots der Referenten</title>
+    <style>
+        body { font-family: sans-serif; }
+        h1, h2 { color: #333; }
+        .referent { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Freie Slots der Referenten für {veranstaltung.name}</h1>
+
+    {#if referenten}
+        {#for referent in referenten}
+            <div class="referent">
+                <h2>{referent.firstName} {referent.lastName}</h2>
+                {#if freieSlots.get(referent.id)}
+                    <ul>
+                        {#for slot in freieSlots.get(referent.id)}
+                            <li>{slot.startTime.format('HH:mm')} - {slot.endTime.format('HH:mm')}</li>
+                        {/for}
+                    </ul>
+                {#else}
+                    <p>Keine freien Slots.</p>
+                {/if}
+            </div>
+        {/for}
+    {#else}
+        <p>Keine Referenten für diese Veranstaltung gefunden.</p>
+    {/if}
+</body>
+</html>

@@ -24,6 +24,7 @@ import kreyj.konfplan.application.service.AdminService;
 import kreyj.konfplan.application.service.MailService;
 import kreyj.konfplan.application.service.PlanService;
 import kreyj.konfplan.application.service.ReferentService;
+import kreyj.konfplan.application.service.VeranstaltungService;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Referent;
@@ -54,6 +55,7 @@ import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "Referenten", description = "Endpunkte für Referenten zur Verwaltung ihres Profils und ihrer Vorträge")
 public class ReferentResource {
+    private final VeranstaltungService veranstaltungService;
     @Context
     UriInfo uriInfo;
 
@@ -65,11 +67,12 @@ public class ReferentResource {
 
     private final MailService mailService;
 
-    public ReferentResource(JsonWebToken jwt, ReferentService referentService, PlanService planService, MailService mailService) {
+    public ReferentResource(JsonWebToken jwt, ReferentService referentService, PlanService planService, MailService mailService, VeranstaltungService veranstaltungService) {
         this.jwt = jwt;
         this.referentService = referentService;
         this.planService = planService;
         this.mailService = mailService;
+        this.veranstaltungService = veranstaltungService;
     }
 
     @GET
@@ -222,11 +225,13 @@ public class ReferentResource {
     @GET
     @Path("/plaene")
     @Operation(summary = "Persönlichen Plan abrufen", description = "Ruft den persönlichen Vortragsplan des Referenten für eine Veranstaltung ab.")
-    public List<ReferentVortragDto> getMyPlan(@QueryParam("vid") Long vid) {
-        if (vid == null) {
-            throw new BadRequestException("Veranstaltungs-ID (vid) ist erforderlich.");
+    public Response getMyPlan(@QueryParam("vid") Long vid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (veranstaltung == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return planService.getPlanFuerReferent(JwtHelper.getUserPrincipalName(jwt), vid);
+        List<ReferentVortragDto> planFuerReferent = planService.getPlanFuerReferent(JwtHelper.getUserPrincipalName(jwt), veranstaltung);
+        return Response.ok(planFuerReferent).build();
     }
 
     @GET

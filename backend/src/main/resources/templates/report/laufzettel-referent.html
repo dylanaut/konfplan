@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Laufzettel für ${referent.firstName} ${referent.lastName}</title>
+    <title>Laufzettel für {referent.firstName} {referent.lastName}</title>
     <style>
         body { font-family: sans-serif; }
         h1, h2, h3 { color: #333; }
@@ -13,33 +13,33 @@
     </style>
 </head>
 <body>
-    <h1>Laufzettel für ${referent.firstName} ${referent.lastName}</h1>
-    <h2>Veranstaltung: ${veranstaltung.name}</h2>
+    <h1>Laufzettel für {referent.firstName} {referent.lastName}</h1>
+    <h2>Veranstaltung: {veranstaltung.name}</h2>
 
-    <#if plan?has_content>
-        <#list plan as vortrag>
+    {#if plan}
+        {#for vortrag in plan}
             <div class="vortrag">
-                <h3>${vortrag.vortragTitel}</h3>
-                <p><strong>Zeit:</strong> ${vortrag.slotZeit}</p>
-                <p><strong>Raum:</strong> ${vortrag.raumName} (${vortrag.gebaeudeName})</p>
+                <h3>{vortrag.vortragTitel}</h3>
+                <p><strong>Zeit:</strong> {vortrag.slotZeit}</p>
+                <p><strong>Raum:</strong> {vortrag.raumName} ({vortrag.gebaeudeName})</p>
 
                 <h4>Teilnehmerliste:</h4>
-                <#if vortrag.teilnehmer?has_content>
+                {#if vortrag.teilnehmer}
                     <ul class="teilnehmer-liste">
-                        <#list vortrag.teilnehmer as tn>
+                        {#for tn in vortrag.teilnehmer}
                             <li>
                                 <div class="checkbox"></div>
-                                ${tn.firstName} ${tn.lastName} (${tn.gruppe})
+                                {tn.firstName} {tn.lastName} ({tn.gruppe})
                             </li>
-                        </#list>
+                        {/for}
                     </ul>
-                <#else>
+                {#else}
                     <p>Keine Teilnehmer zugewiesen.</p>
-                </#if>
+                {/if}
             </div>
-        </#list>
-    <#else>
+        {/for}
+    {#else}
         <p>Für Sie sind keine Vorträge geplant.</p>
-    </#if>
+    {/if}
 </body>
 </html>

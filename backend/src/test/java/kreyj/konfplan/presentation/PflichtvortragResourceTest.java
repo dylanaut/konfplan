@@ -164,7 +164,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
 
     @Test
     void testCreatePflichtvortragRaumBelegtFails() {
-        QuarkusTransaction.requiringNew().run(() -> raum2.updateVerfuegbarkeit(slot1, veranstaltung, false, false));
+        QuarkusTransaction.requiringNew().run(() -> raum2.updateRaumVerfuegbarkeit(slot1, veranstaltung, false, false));
 
         VortragDto pvDTO = pvDto("PV Test", referent, "Gruppe A", raum2, slot1, veranstaltung);
 
@@ -192,7 +192,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
                 .then()
                 .log().all()
                 .statusCode(BAD_REQUEST.getStatusCode())
-                .body("error", startsWith("Nicht alle Teilnehmer der Gruppe 'Gruppe A' sind im Slot 'Slot 1' verfügbar."));
+                .body("error", startsWith("Teilnehmer der Gruppe 'Gruppe A' sind im Slot 'Slot 1'"));
 
         assertThat(Pflichtvortrag.count()).isZero(); // No PV created
     }
@@ -263,7 +263,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
                 .then()
                 .log().all()
                 .statusCode(BAD_REQUEST.getStatusCode())
-                .body("error", startsWith("Nicht alle Teilnehmer der Gruppe 'Gruppe A' sind im Slot 'Slot 1' verfügbar."));
+                .body("error", startsWith("Teilnehmer der Gruppe 'Gruppe A' sind im Slot 'Slot 1'"));
 
         assertThat(Pflichtvortrag.count())
                 .describedAs("nur PV1 erzeugt")
@@ -409,7 +409,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
                         .as(VortragDto.class);
 
         // Manually block raum2, slot1 in a committed transaction
-        QuarkusTransaction.requiringNew().run(() -> raum2.updateVerfuegbarkeit(slot1, veranstaltung, false, false));
+        QuarkusTransaction.requiringNew().run(() -> raum2.updateRaumVerfuegbarkeit(slot1, veranstaltung, false, false));
 
         assertThat(isRaumVerfuegbar(raum2, slot1, veranstaltung)).isFalse();
 

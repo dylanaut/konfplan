@@ -109,8 +109,6 @@ public class RaumService {
                 count++;
                 protokollService.log(ProtokollKategorie.RAUM, "Raum importiert", "Raum '" + r.getName() + "' für Gebäude '" + gebaeude.getName() + "' importiert.", r.getId());
             }
-
-            gebaeude.persist();
         } catch (Exception e) {
             LOG.error("Kritischer Fehler beim Importieren der Räume aus CSV: " + csvFilePath, e);
             protokollService.log(ProtokollKategorie.SYSTEM, "Kritischer Fehler beim Raum-Import", e.getMessage());

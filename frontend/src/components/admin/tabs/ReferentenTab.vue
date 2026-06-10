@@ -58,7 +58,7 @@ import {
   Pencil as PencilIcon,
   Trash2 as Trash2Icon,
   User as UserIcon
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 import PaginationControls from '../../PaginationControls.vue';
 import { useAvailabilityStore } from '../../../stores/availability';
 

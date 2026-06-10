@@ -80,8 +80,8 @@ public class DevDataInitService {
             }
             Long vid = veranstaltungen.getFirst().getId();
 
-            // 4. Slots
-            adminService.importSlotsFromCsv(basePath.resolve("slots.csv"), vid);
+            // 4. Slots - für *ALLE* Veranstaltungen
+            adminService.importSlotsFromCsv(basePath.resolve("slots_2026.csv"), vid);
 
             // 5. Referenten
             referentService.importFromCsv(basePath.resolve("referenten.csv"), vid);

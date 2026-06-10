@@ -76,7 +76,7 @@ test.describe('KonfPlan Planungs-Workflow', () => {
     // 8. KONTROLLE IN VORTRAGSPLANUNG
     await page.click('nav button:has-text("Vortragsplanung")');
     await expect(page.locator('div:has-text("Teilnehmer") + div')).toContainText('1'); // Da wir nur 1 angelegt haben
-    await expect(page.locator('button:has-text("MiniZinc Optimierung starten")')).toBeEnabled();
+    await expect(page.locator('button:has-text("MiniZinc PlanErstellung starten")')).toBeEnabled();
   });
 
 });

@@ -176,7 +176,7 @@ class CsvImportTest extends DatabaseCleaner {
                 "Slot 2;2025-10-10;11:00;11:45";
 
         given()
-                .multiPart("file", "slots.csv", csv.getBytes())
+                .multiPart("file", "slots_2026.csv", csv.getBytes())
                 .when().post("/api/veranstaltungen/{vid}/slots/import", testVid)
                 .then()
                 .statusCode(OK.getStatusCode());

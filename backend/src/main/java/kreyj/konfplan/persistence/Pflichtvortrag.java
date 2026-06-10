@@ -53,7 +53,7 @@ public class Pflichtvortrag extends Vortrag {
     }
 
     /**
-     * Aktualisiert die "Pflichtgruppe" für einen Pflichvortrag und stellt sicher,
+     * Aktualisiert die "Pflichtgruppe" für einen Pflichtvortrag und stellt sicher,
      * dass die Teilnehmerverfügbarkeit entsprechend angepasst wird.
      * Die Methode stellt zunächst die Verfügbarkeit für Teilnehmer der alten Gruppe wieder her,
      * validiert die Verfügbarkeit von Teilnehmern in der neuen Gruppe für den "Pflichtslot",
@@ -197,6 +197,7 @@ public class Pflichtvortrag extends Vortrag {
     @Override
     public void afterPersistAndFlush() {
         initNutzerVerfuegbarkeitFuerGruppe();
+        // todo ist die reihenfolge hier wichtig?
         initRaumVerfuegbarkeiten();
     }
 
@@ -232,9 +233,9 @@ public class Pflichtvortrag extends Vortrag {
     /**
      * Set unavailability for the new room
      *
-     * @deprecated in factory integrieren
+     * AT deprecated in factory integrieren
      */
-    @Deprecated
+    // TODO in factory integrieren
     private void initRaumVerfuegbarkeiten() {
         RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvId(pflichtraum, veranstaltung));
         if (null != rv) {

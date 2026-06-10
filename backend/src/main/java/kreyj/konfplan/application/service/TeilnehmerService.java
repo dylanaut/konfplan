@@ -117,6 +117,7 @@ public class TeilnehmerService {
                     tn.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
 
                     tn.persist();
+
                     tn.addVeranstaltung(v);
 
                     count++;

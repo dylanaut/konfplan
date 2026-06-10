@@ -38,10 +38,9 @@ public class AuthResource {
 
     private final ProtokollService protokollService;
 
-    public AuthResource(@Location("passwordReset") MailTemplate passwordResetTemplate,
+    public AuthResource(@Location("email/passwordReset") MailTemplate passwordResetTemplate,
                         JsonWebToken jwt,
                         ProtokollService protokollService) {
-        this.adminEmail = adminEmail;
         this.passwordResetTemplate = passwordResetTemplate;
         this.jwt = jwt;
         this.protokollService = protokollService;

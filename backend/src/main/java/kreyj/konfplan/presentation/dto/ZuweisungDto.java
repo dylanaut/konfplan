@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ZuweisungDto {
-    public Long id;
     public String teilnehmerName;
     public String vortragTitel;
     @Getter

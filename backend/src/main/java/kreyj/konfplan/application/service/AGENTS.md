@@ -13,7 +13,7 @@ Services enthalten die gesamte **Geschäftslogik**. Sie werden von Resource-Klas
 | `TeilnehmerService`   | Verwaltung von Teilnehmern und Gruppen.                              |
 | `PrioritaetService`   | Speichern von Teilnehmer-Präferenzen; **Deadline-Prüfung** für Teilnehmer. |
 | `VeranstaltungService`| Zentrale Verwaltung von Events und deren Metadaten (Logo, Termine).  |
-| `OptimierungService`  | MiniZinc-basierte Zuweisung von Teilnehmern zu Wahlvorträgen.        |
+| `PlanErstellungService`  | MiniZinc-basierte Zuweisung von Teilnehmern zu Wahlvorträgen.        |
 | `PlanService`         | Stundenplan-Erstellung und Qualitätsberechnung der Zuweisung.        |
 | `MailService`         | Versand von Einladungen, Benachrichtigungen und Passwort-Resets via Mailpit. |
 | `PdfService`          | Erzeugung von Türschildern und Plänen via OpenPDF.                   |
@@ -34,8 +34,8 @@ Die Methode `validateSlot` stellt sicher, dass:
 - **Nutzer**: Beim Zuweisen eines Nutzers zu einer Veranstaltung werden in `Nutzer.addVeranstaltung` automatisch `Verfuegbarkeit`-Einträge für alle Slots erstellt (Default: `true`).
 - **Räume**: Die Raumverfügbarkeit wird veranstaltungsübergreifend geprüft, um Doppelbelegungen desselben Raums zur gleichen Zeit in verschiedenen Events zu verhindern.
 
-## MiniZinc-Optimierung
-Der `OptimierungService` exportiert die Daten in eine temporäre `.dzn`-Datei und ruft den MiniZinc-Solver auf. Er verarbeitet das JSON-Ergebnis und erzeugt die `Zuweisung`-Entitäten.
+## MiniZinc-PlanErstellung
+Der `PlanErstellungService` exportiert die Daten in eine temporäre `.dzn`-Datei und ruft den MiniZinc-Solver auf. Er verarbeitet das JSON-Ergebnis und erzeugt die `Zuweisung`-Entitäten.
 
 ## Regeln & Konventionen
 - Schreibende Methoden benötigen **immer** `@Transactional`.

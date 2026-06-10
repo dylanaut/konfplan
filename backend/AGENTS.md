@@ -42,7 +42,7 @@ kreyj/konfplan/
         *   Die `resource`-Klassen (`AdminResource`) nehmen HTTP-Anfragen entgegen, validieren sie und rufen die entsprechenden Methoden auf den **eingehenden Ports** (`AdminServiceInterface`) auf.
         *   **DTOs (`dto`-Paket hier):** Data Transfer Objects sind Teil des Web-Adapters. Sie definieren den "Vertrag" der REST-API und werden niemals an die `service`-Schicht weitergegeben. Die `resource`-Klasse ist für die Umwandlung zwischen DTO und Domänenobjekt verantwortlich.
     *   **`adapter/out/persistence`:** Der Persistenz-Adapter. Implementiert die `out`-Ports und enthält die konkrete Logik zum Speichern und Laden von Daten mittels Panache.
-    *   **`adapter/out/minizinc`:** Der `OptimierungService` agiert als Adapter, der die Anwendungsdaten in ein für MiniZinc verständliches Format übersetzt und den externen Prozess aufruft.
+    *   **`adapter/out/minizinc`:** Der `PlanErstellungService` agiert als Adapter, der die Anwendungsdaten in ein für MiniZinc verständliches Format übersetzt und den externen Prozess aufruft.
 
 ## Security
 

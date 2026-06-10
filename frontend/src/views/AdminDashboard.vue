@@ -63,7 +63,7 @@
                    :belegungsPlan="belegungsPlan"
                    :qualitaet="qualitaet"
                    :eventSlots="eventSlots"
-                   :raeume="raeume"
+                   :raeume="filteredRaeume"
                    @downloadStundenplan="downloadStundenplan"
                    @downloadRaumschilder="downloadRaumschilder"
     />
@@ -152,7 +152,7 @@
     />
 
     <PlanungTab v-if="activeTab === 'planung' && selectedVid"
-                :isOptimizing="isOptimizing"
+                :isPlanning="isOptimizing"
                 :veranstaltung="eventContext.selectedEvent"
                 :organisatoren="organisatoren"
                 :eventSlotsCount="eventSlots.length"
@@ -162,7 +162,7 @@
                 :wahlvortraegeCount="wahlvortraegeCount"
                 :pflichtvortraegeCount="pflichtvortraegeCount"
                 :teilnehmerMitPrioritaetenCount="teilnehmerMitPrioritaetenCount"
-                @startOptimization="startOptimization"
+                @startOptimization="startPlanning"
     />
 
     <ProtokollTab v-if="activeTab === 'protokoll'"
@@ -221,13 +221,13 @@
 import {computed, onMounted, reactive, ref} from 'vue';
 import api from '../api/axios';
 import {useEventContextStore} from '../stores/eventContext';
-import { useAvailabilityStore } from '../stores/availability';
+import {useAvailabilityStore} from '../stores/availability';
 import {
   Calendar as CalendarIcon,
   FileText as FileTextIcon,
   Loader as LoaderIcon,
   PlusCircle as PlusCircleIcon,
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 
 // Import Tab Components
 import ErgebnisseTab from '../components/admin/tabs/ErgebnisseTab.vue';
@@ -254,15 +254,15 @@ const eventContext = useEventContextStore();
 const availabilityStore = useAvailabilityStore();
 
 const tabLabels = {
-  ergebnisse: 'Ergebnisse',
-  planung: 'Optimierung',
+  administratoren: 'Organisatoren',
+  gebaeude: 'Gebäude',
+  veranstaltungen: 'Veranstaltungen',
   teilnehmer: 'Teilnehmer',
   referenten: 'Referenten',
   vortraege: 'Vorträge',
   slots: 'Zeit-Slots',
-  veranstaltungen: 'Veranstaltungen',
-  gebaeude: 'Gebäude',
-  administratoren: 'Organisatoren',
+  planung: 'Planerstellung',
+  ergebnisse: 'Ergebnisse',
   protokoll: 'Protokoll'
 };
 
@@ -271,7 +271,7 @@ const activeTab = ref('ergebnisse');
 const selectedVid = ref(null);
 const veranstaltungen = ref([]);
 const gebaeude = ref([]);
-const raeume = ref([]);
+const raeume = ref([]); // This will hold ALL rooms
 const users = ref([]);
 const vortraege = ref([]);
 const eventSlots = ref([]);
@@ -313,9 +313,14 @@ const csvFeedback = reactive({
 });
 
 const visibleTabs = computed(() => {
-  const base = ['veranstaltungen', 'gebaeude', 'administratoren', 'protokoll'];
-  if (selectedVid.value) return ['ergebnisse', 'planung', 'teilnehmer', 'referenten', 'vortraege', 'slots', ...base];
-  return base;
+  if (selectedVid.value) return ['administratoren', 'gebaeude',
+    'teilnehmer', 'referenten', 'vortraege',
+    'veranstaltungen', 'slots',
+    'planung', 'ergebnisse',
+    'protokoll'];
+  return ['administratoren', 'gebaeude',
+    'veranstaltungen',
+    'protokoll'];
 });
 
 const futureEvents = computed(() => {
@@ -339,7 +344,7 @@ const referenten = computed(() => users.value.filter(u => u.role === 'REFERENT')
 const teilnehmer = computed(() => users.value.filter(u => u.role === 'TEILNEHMER'));
 
 const participantGroups = computed(() => {
-  const groups = new Set(teilnehmer.value.map(t => t.gruppe).filter(Boolean));
+  const groups = new Set(teilnehmer.value.flatMap(t => t.gruppen).filter(Boolean));
   return Array.from(groups).sort();
 });
 
@@ -410,7 +415,7 @@ const refreshGebaeude = async () => {
   try {
     const res = await api.get('/api/gebaeude');
     gebaeude.value = res.data;
-    updateRaeumeList();
+    // raeume.value = gebaeude.value.flatMap(g => g.raeume.map(r => ({...r, gebaeude: {id: g.id, name: g.name}}))); // This line is now handled by filteredRaeume
   } catch (e) {
     console.error('Fehler beim Laden der Gebäude:', e);
   }
@@ -433,9 +438,17 @@ const refreshProtokolle = async () => {
   }
 };
 
-const updateRaeumeList = () => {
-  raeume.value = gebaeude.value.flatMap(g => g.raeume.map(r => ({...r, gebaeude: {id: g.id, name: g.name}})));
-};
+// NEU: Gefilterte Räume für die aktuelle Veranstaltung
+const filteredRaeume = computed(() => {
+  if (!eventContext.selectedEvent || !gebaeude.value.length) return [];
+
+  const eventGebaeudeIds = new Set(eventContext.selectedEvent.gebaeude.map(g => g.id));
+
+  return gebaeude.value
+      .filter(g => eventGebaeudeIds.has(g.id)) // Nur Gebäude der aktuellen Veranstaltung
+      .flatMap(g => g.raeume.map(r => ({...r, gebaeude: {id: g.id, name: g.name}})));
+});
+
 
 const handleVeranstaltungChange = () => {
   const ev = veranstaltungen.value.find(v => v.id === selectedVid.value);
@@ -503,7 +516,7 @@ const loadData = async () => {
 };
 
 const openVeranstaltungEditor = (v) => {
-  selectedVeranstaltung.value = v || { name: '', beginntAm: '', endetAm: '', gebaeude: [], organisatorIds: [] };
+  selectedVeranstaltung.value = v || {name: '', beginntAm: '', endetAm: '', gebaeude: [], organisatorIds: []};
   showVeranstaltungModal.value = true;
 };
 const handleSaveVeranstaltung = async (v) => {
@@ -514,7 +527,7 @@ const handleSaveVeranstaltung = async (v) => {
       if (veranstaltungen.value.length === 0) {
         selectedVid.value = res.data.id;
         handleVeranstaltungChange();
-        activeTab.value = 'ergebnisse';
+        activeTab.value = 'veranstaltungen';
       }
     }
     showVeranstaltungModal.value = false;
@@ -533,7 +546,7 @@ const deleteVeranstaltung = async (id) => {
       }
       await refreshVeranstaltungen();
     } catch (e) {
-      console.error('Fehler beim Lore-Löschen der Veranstaltung:', e);
+      console.error('Fehler beim Löschen der Veranstaltung:', e);
     }
   }
 };
@@ -594,7 +607,7 @@ const openUserModal = (u) => {
     email: '',
     role: u?.role || 'TEILNEHMER',
     isActive: true,
-    gruppe: '',
+    gruppen: [],
     veranstaltungIds: selectedVid.value ? [selectedVid.value] : []
   };
   showUserModal.value = true;
@@ -698,7 +711,7 @@ const openVortragEditor = (v) => {
   selectedVortrag.value = v?.id ? {...v} : {
     titel: '',
     inhalt: '',
-    zielgruppe: '',
+    ausstattung: '',
     referent: {id: null},
     vortrag_typ: 'WAHL',
     pflichtgruppe: '',
@@ -811,14 +824,14 @@ const saveAllParticipantPriorities = async () => {
   }
 };
 
-const startOptimization = async (solverConfig) => {
+const startPlanning = async (solverConfig) => {
   isOptimizing.value = true;
   try {
-    await api.post(`/api/veranstaltungen/${selectedVid.value}/optimierung/start`, solverConfig);
+    await api.post(`/api/veranstaltungen/${selectedVid.value}/planungen`, solverConfig);
     await loadData();
     activeTab.value = 'ergebnisse';
   } catch (e) {
-    console.error('Fehler bei der Optimierung:', e);
+    console.error('Fehler bei der Planerstellung:', e);
   } finally {
     isOptimizing.value = false;
   }
@@ -827,7 +840,7 @@ const startOptimization = async (solverConfig) => {
 const downloadStundenplan = async () => {
   try {
     alert("Download des Stundenplans nicht implementiert"); // TODO Download des Stundenplans implementieren
-    const res = await api.get(`/api/reports/${selectedVid.value}/raeume-pdf`, { responseType: 'blob' });
+    const res = await api.get(`/api/reports/${selectedVid.value}/raeume-pdf`, {responseType: 'blob'});
     const url = window.URL.createObjectURL(new Blob([res.data]));
     const link = document.createElement('a');
     link.href = url;
@@ -841,7 +854,7 @@ const downloadStundenplan = async () => {
 
 const downloadRaumschilder = async () => {
   try {
-    const res = await api.get(`/api/reports/${selectedVid.value}/raeume-pdf`, { responseType: 'blob' });
+    const res = await api.get(`/api/reports/${selectedVid.value}/raeume-pdf`, {responseType: 'blob'});
     const url = window.URL.createObjectURL(new Blob([res.data]));
     const link = document.createElement('a');
     link.href = url;
@@ -855,7 +868,7 @@ const downloadRaumschilder = async () => {
 
 const downloadTuerschilder = async () => {
   try {
-    const res = await api.get(`/api/reports/${selectedVid.value}/freie-slots-referenten-pdf`, {responseType: 'blob'});
+    const res = await api.get(`/api/reports/${selectedVid.value}/tuerschilder-pdf`, {responseType: 'blob'});
     const url = window.URL.createObjectURL(new Blob([res.data]));
     const link = document.createElement('a');
     link.href = url;
@@ -864,6 +877,34 @@ const downloadTuerschilder = async () => {
     link.click();
   } catch (e) {
     console.error('Fehler beim Download der Türschilder:', e);
+  }
+};
+
+const downloadFreieSlotsReferenten = async () => {
+  try {
+    const res = await api.get(`/api/reports/${selectedVid.value}/freie-slots-referenten-pdf`, {responseType: 'blob'});
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'Referenten_freie_Slots.pdf');
+    document.body.appendChild(link);
+    link.click();
+  } catch (e) {
+    console.error('Fehler beim Download der freien Slots für Referenten:', e);
+  }
+};
+
+const downloadFreieSlotsTeilnehmer = async () => {
+  try {
+    const res = await api.get(`/api/reports/${selectedVid.value}/freie-slots-teilnehmer-pdf`, {responseType: 'blob'});
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'Teilnehmer_freie_Slots.pdf');
+    document.body.appendChild(link);
+    link.click();
+  } catch (e) {
+    console.error('Fehler beim Download der freien Slots für Teilnehmer:', e);
   }
 };
 

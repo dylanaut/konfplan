@@ -42,15 +42,21 @@ public class Raum extends VersionedEntity {
         this.kapazitaet = kapazitaet;
     }
 
+    public Raum(String name, int kapazitaet, String etage) {
+        super();
+        this.name = name;
+        this.kapazitaet = kapazitaet;
+    }
+
     // -------------------------------------------------------------------
     // Helper methods
     // -------------------------------------------------------------------
 
-    public void updateVerfuegbarkeit(Slot slot, Veranstaltung veranstaltung, boolean verfuegbar) {
-        updateVerfuegbarkeit(slot, veranstaltung, verfuegbar, false);
+    public void updateRaumVerfuegbarkeit(Slot slot, Veranstaltung veranstaltung, boolean verfuegbar) {
+        updateRaumVerfuegbarkeit(slot, veranstaltung, verfuegbar, false);
     }
 
-    public void updateVerfuegbarkeit(Slot slot, Veranstaltung veranstaltung, boolean verfuegbar, boolean createIfMissing) {
+    public void updateRaumVerfuegbarkeit(Slot slot, Veranstaltung veranstaltung, boolean verfuegbar, boolean createIfMissing) {
         Objects.requireNonNull(veranstaltung);
         Objects.requireNonNull(slot);
 

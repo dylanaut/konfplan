@@ -5,7 +5,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.application.service.MinizincException;
-import kreyj.konfplan.application.service.OptimierungService;
+import kreyj.konfplan.application.service.PlanErstellungService;
 import kreyj.konfplan.application.service.PlanService;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
@@ -42,11 +42,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 @QuarkusTest
-public class OptimierungServiceIntegrationTest extends DatabaseCleaner {
-    private static final Logger LOG = Logger.getLogger(OptimierungServiceIntegrationTest.class);
+public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
+    private static final Logger LOG = Logger.getLogger(PlanErstellungServiceIntegrationTest.class);
 
     @Inject
-    OptimierungService optimierungService;
+    PlanErstellungService planErstellungService;
 
     @Inject
     PlanService planService;
@@ -196,21 +196,21 @@ public class OptimierungServiceIntegrationTest extends DatabaseCleaner {
     }
 
     @Test
-    public void testOptimierungslauf_withMinimalSetup() throws Exception {
+    public void testPlanerstellung_withMinimalSetup() throws Exception {
         Veranstaltung veranstaltung = simpleSetup(true);
 
-        // 1. Optimierung durchführen
+        // 1. PlanErstellung durchführen
         SolverConfigDto config = new SolverConfigDto("cp-sat", 10, 4, 1);
-        optimierungService.starteOptimierung(veranstaltung.getId(), config);
+        planErstellungService.erstellePlan(veranstaltung.getId(), config);
 
         // 2. Ergebnis prüfen
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
-        assertThat(ergebnis).describedAs("Planungsergebnis sollte nach der Optimierung vorhanden sein.").isNotNull();
+        assertThat(ergebnis).describedAs("Planungsergebnis sollte nach der PlanErstellung vorhanden sein.").isNotNull();
         assertThat(ergebnis.getJsonErgebnis()).describedAs("Das JSON-Ergebnis im Planungsergebnis darf nicht null sein.").isNotNull();
         assertThat(ergebnis.getJsonErgebnis().contains("instanz_slot")).describedAs("Das JSON-Ergebnis sollte den Schlüssel 'instanz_slot' enthalten.").isTrue();
 
         // 3. Belegungsplan abrufen und prüfen
-        List<RaumBelegungUebersichtDto> belegungsplan = planService.getDetaillierterPlan(veranstaltung.getId());
+        List<RaumBelegungUebersichtDto> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
         LOG.info("# Belegungsplan:\n  " + belegungsplan.stream().map(Object::toString).collect(joining("\n  ")));
 
         assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht null sein.").isNotNull();
@@ -224,7 +224,7 @@ public class OptimierungServiceIntegrationTest extends DatabaseCleaner {
     }
 
     @Test
-    public void testOptimierungslauf_noAvailabilities() throws Exception {
+    public void testPlanerstellung_noAvailabilities() throws Exception {
         Veranstaltung veranstaltung = simpleSetup(false);
         Teilnehmer tn = Teilnehmer.<Teilnehmer>listAll().getFirst();
 
@@ -237,17 +237,17 @@ public class OptimierungServiceIntegrationTest extends DatabaseCleaner {
         assertThat(nv).isNotNull();
         assertThat(nv.getVerfuegbareSlotIds()).isEmpty();
 
-        // 1. Optimierung durchführen
+        // 1. PlanErstellung durchführen
         SolverConfigDto config = new SolverConfigDto("cp-sat", 60, 4, 1);
-        optimierungService.starteOptimierung(veranstaltung.getId(), config);
+        planErstellungService.erstellePlan(veranstaltung.getId(), config);
 
         // 2. Ergebnis prüfen
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
-        assertThat(ergebnis).describedAs("Planungsergebnis sollte nach der Optimierung vorhanden sein.").isNotNull();
+        assertThat(ergebnis).describedAs("Planungsergebnis sollte nach der PlanErstellung vorhanden sein.").isNotNull();
         assertThat(ergebnis.getJsonErgebnis()).describedAs("Das JSON-Ergebnis im Planungsergebnis darf nicht null sein.").isNotNull();
         assertThat(ergebnis.getJsonErgebnis().contains("instanz_slot")).describedAs("Das JSON-Ergebnis sollte den Schlüssel 'instanz_slot' enthalten.").isTrue();
 
-        List<RaumBelegungUebersichtDto> belegungsplan = planService.getDetaillierterPlan(veranstaltung.getId());
+        List<RaumBelegungUebersichtDto> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
         assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht leer sein.").isNotEmpty();
         assertThat(belegungsplan).hasSize(veranstaltung.getSlots().size()
                 * veranstaltung.getGebaeude().stream().mapToInt(g -> g.getRaeume().size()).sum());
@@ -258,7 +258,7 @@ public class OptimierungServiceIntegrationTest extends DatabaseCleaner {
     }
 
     @Test
-    public void testOptimierungslauf_withoutResult() throws Exception {
+    public void testPlanerstellung_withoutResult() throws Exception {
         Veranstaltung veranstaltung = simpleSetup(false);
         Teilnehmer tn = Teilnehmer.<Teilnehmer>listAll().getFirst();
 
@@ -270,18 +270,18 @@ public class OptimierungServiceIntegrationTest extends DatabaseCleaner {
         NutzerVerfuegbarkeit nv = tn.getVerfuegbarkeit(veranstaltung);
         assertThat(nv).isNotNull();
 
-        // 1. Optimierung durchführen
+        // 1. PlanErstellung durchführen
         SolverConfigDto config = new SolverConfigDto("cp-sat", 60, 4, 1);
-        optimierungService.starteOptimierung(veranstaltung.getId(), config);
+        planErstellungService.erstellePlan(veranstaltung.getId(), config);
 
         // 2. Ergebnis prüfen
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
-        assertThat(ergebnis).describedAs("Planungsergebnis sollte nach der Optimierung vorhanden sein.").isNotNull();
+        assertThat(ergebnis).describedAs("Planungsergebnis sollte nach der PlanErstellung vorhanden sein.").isNotNull();
         assertThat(ergebnis.getJsonErgebnis()).describedAs("Das JSON-Ergebnis im Planungsergebnis darf nicht null sein.").isNotNull();
         assertThat(ergebnis.getJsonErgebnis().contains("instanz_slot")).describedAs("Das JSON-Ergebnis sollte den Schlüssel 'instanz_slot' enthalten.").isTrue();
 
         // 3. Belegungsplan abrufen und prüfen
-        List<RaumBelegungUebersichtDto> belegungsplan = planService.getDetaillierterPlan(veranstaltung.getId());
+        List<RaumBelegungUebersichtDto> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
 
         assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht leer sein.").isNotEmpty();
         assertThat(belegungsplan).hasSize(veranstaltung.getSlots().size()
@@ -293,21 +293,21 @@ public class OptimierungServiceIntegrationTest extends DatabaseCleaner {
     }
 
     @Test
-    public void testOptimierungslauf_withComplexSetup() throws Exception {
+    public void testPlanerstellung_withComplexSetup() throws Exception {
         Veranstaltung veranstaltung = complexSetup();
-        // 1. Optimierung durchführen
+        // 1. PlanErstellung durchführen
         SolverConfigDto config = new SolverConfigDto("cp-sat", 120, 4, 2);
-        optimierungService.starteOptimierung(veranstaltung.getId(), config);
+        planErstellungService.erstellePlan(veranstaltung.getId(), config);
 
         // 2. Ergebnis prüfen
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
-        assertThat(ergebnis).describedAs("Planungsergebnis sollte nach der Optimierung vorhanden sein.").isNotNull();
+        assertThat(ergebnis).describedAs("Planungsergebnis sollte nach der PlanErstellung vorhanden sein.").isNotNull();
         assertThat(ergebnis.getJsonErgebnis()).describedAs("Das JSON-Ergebnis im Planungsergebnis darf nicht null sein.").isNotNull();
         assertThat(ergebnis.getJsonErgebnis().contains("instanz_slot")).describedAs("Das JSON-Ergebnis sollte den Schlüssel 'instanz_slot' enthalten.").isTrue();
         LOG.info("####### jsonErgebnis: " + ergebnis.getJsonErgebnis());
 
         // 3. Belegungsplan abrufen und prüfen
-        List<RaumBelegungUebersichtDto> belegungsplan = planService.getDetaillierterPlan(veranstaltung.getId());
+        List<RaumBelegungUebersichtDto> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
         LOG.info("$$$$$$$ belegungsplan: " + belegungsplan);
 
         assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht null sein.").isNotNull();
@@ -337,40 +337,40 @@ public class OptimierungServiceIntegrationTest extends DatabaseCleaner {
     }
 
     @Test
-    public void testOptimierung_withUnsatisfiableModel() {
+    public void testPlanErstellung_withUnsatisfiableModel() {
         SolverConfigDto config = new SolverConfigDto("cp-sat", 5, 1, 1);
 
         assertThatExceptionOfType(MinizincException.class)
-                .isThrownBy(() -> starteTestOptimierung(config, "unsatisfiable.mzn"));
+                .isThrownBy(() -> starteTestPlanErstellung(config, "unsatisfiable.mzn"));
     }
 
     @Test
-    public void testOptimierung_withIntermediateResult() throws Exception {
+    public void testPlanErstellung_withIntermediateResult() throws Exception {
         // Kurzer Timeout, um sicher eine Zwischenlösung zu erhalten
         SolverConfigDto config = new SolverConfigDto("cp-sat", 1, 1, 1);
 
-        String resultJson = starteTestOptimierung(config, "intermediate.mzn");
+        String resultJson = starteTestPlanErstellung(config, "intermediate.mzn");
 
         assertThat(resultJson).describedAs("Sollte ein Ergebnis (letzte Zwischenlösung) zurückgeben.").isNotNull();
         assertThat(resultJson.isEmpty()).describedAs("Das Ergebnis-JSON sollte nicht leer sein.").isFalse();
-        assertThat(OptimierungService.isValidJson(resultJson)).describedAs("Das Ergebnis sollte valides JSON sein.").isTrue();
+        assertThat(PlanErstellungService.isValidJson(resultJson)).describedAs("Das Ergebnis sollte valides JSON sein.").isTrue();
         assertThat(resultJson.contains("total_value")).describedAs("Das Ergebnis-JSON sollte 'total_value' enthalten.").isTrue();
     }
 
     @Test
-    public void testOptimierung_withNoSolutionInTime() {
+    public void testPlanErstellung_withNoSolutionInTime() {
         // Sehr kurzer Timeout, damit garantiert keine Lösung gefunden wird
         SolverConfigDto config = new SolverConfigDto("cp-sat", 1, 1, 1);
 
         assertThatExceptionOfType(MinizincException.class)
-                .isThrownBy(() -> starteTestOptimierung(config, "no-solution-in-time.mzn"));
+                .isThrownBy(() -> starteTestPlanErstellung(config, "no-solution-in-time.mzn"));
     }
 
     // -------------------------------------------------------------------
     // Helper-Methoden für Test-Setups
     // -------------------------------------------------------------------
 
-    public String starteTestOptimierung(SolverConfigDto config, String modelName) throws Exception {
+    public String starteTestPlanErstellung(SolverConfigDto config, String modelName) throws Exception {
         URL modelUrl = getClass().getClassLoader().getResource("minizinc/" + modelName);
         if (modelUrl == null) {
             throw new FileNotFoundException("MiniZinc model not found: " + modelName);
@@ -380,7 +380,7 @@ public class OptimierungServiceIntegrationTest extends DatabaseCleaner {
         Files.writeString(tempDzn, "%no data", StandardCharsets.UTF_8);
 
         try {
-            return optimierungService.rufeMiniZincAuf(Paths.get(modelUrl.toURI()),
+            return planErstellungService.rufeMiniZincAuf(Paths.get(modelUrl.toURI()),
                     tempDzn, config.solver, config.timeout, config.numThreads);
 
         } finally {

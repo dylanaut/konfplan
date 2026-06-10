@@ -2,29 +2,51 @@ package kreyj.konfplan.application.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lowagie.text.*;
+import com.lowagie.text.Document;
+import com.lowagie.text.Element;
 import com.lowagie.text.Font;
+import com.lowagie.text.FontFactory;
 import com.lowagie.text.Image;
+import com.lowagie.text.PageSize;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.Phrase;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.persistence.*;
+import kreyj.konfplan.persistence.IdEntity;
+import kreyj.konfplan.persistence.Pflichtvortrag;
+import kreyj.konfplan.persistence.Planungsergebnis;
+import kreyj.konfplan.persistence.Raum;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Slot;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Vortrag;
+import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.presentation.dto.PlanQualitaetDto;
 import kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto;
 import kreyj.konfplan.presentation.dto.RaumplanEintragDto;
 import kreyj.konfplan.presentation.dto.ReferentVortragDto;
 import kreyj.konfplan.presentation.dto.TeilnehmerSimpleDto;
 import kreyj.konfplan.presentation.dto.ZuweisungDto;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.jboss.logging.Logger;
 
 import java.awt.*;
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.toMap;
@@ -44,12 +66,11 @@ public class PlanService {
     }
 
     @Transactional
-    public List<ZuweisungDto> getGesamtplan(Long veranstaltungId) {
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.id = ?1", veranstaltungId).firstResult();
+    public List<ZuweisungDto> getGesamtplan(Veranstaltung veranstaltung) {
+        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
         if (planungsergebnis == null) {
             return Collections.emptyList();
         }
-
 
         try {
             JsonNode root = objectMapper.readTree(planungsergebnis.getJsonErgebnis());
@@ -58,13 +79,13 @@ public class PlanService {
             JsonNode besucht = root.get("besucht");
 
             if (instanzSlot == null || instanzRaum == null || besucht == null) {
-                LOG.warn("MiniZinc-Ergebnis für Veranstaltung " + veranstaltungId + " unvollständig.");
+                LOG.warn("MiniZinc-Ergebnis für Veranstaltung " + veranstaltung.getName() + " unvollständig.");
                 return Collections.emptyList();
             }
 
-            List<Teilnehmer> alleTeilnehmer = Teilnehmer.getVeranstaltungTeilnehmer(veranstaltungId);
-            List<Vortrag> alleVortraege = Vortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
-            List<Slot> alleSlots = Slot.find("veranstaltung.id = ?1", veranstaltungId).list();
+            List<Teilnehmer> alleTeilnehmer = veranstaltung.teilnehmer();
+            Set<Vortrag> alleVortraege = veranstaltung.getVortraege();
+            Set<Slot> alleSlots = veranstaltung.getSlots();
             List<Raum> alleRaeume = Raum.listAll();
 
             Map<Long, Teilnehmer> teilnehmerMap = alleTeilnehmer.stream().collect(toMap(IdEntity::getId, t -> t));
@@ -89,11 +110,9 @@ public class PlanService {
             List<Long> raumOids = StreamSupport.stream(inputData.get("raum_oids").spliterator(), false)
                     .map(JsonNode::asLong).toList();
 
-            List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
-            for (Pflichtvortrag pv : pflichtvortraege) {
+            for (Pflichtvortrag pv : veranstaltung.getPflichtvortraege()) {
                 for (Teilnehmer tn : alleTeilnehmer) {
                     zuweisungen.add(new ZuweisungDto(
-                            null,
                             tn.getLastName(),
                             pv.getTitel(),
                             pv.getPflichtslot().getStartTime().format(TIME_FORMAT),
@@ -131,7 +150,6 @@ public class PlanService {
 
                                 if (slot != null && raum != null) {
                                     zuweisungen.add(new ZuweisungDto(
-                                            null,
                                             teilnehmer.getLastName(),
                                             vortrag.getTitel(),
                                             slot.getStartTime().format(TIME_FORMAT),
@@ -147,25 +165,25 @@ public class PlanService {
             return zuweisungen;
 
         } catch (Exception e) {
-            LOG.error("Fehler beim Parsen des Planungsergebnisses für Veranstaltung " + veranstaltungId, e);
+            LOG.error("Fehler beim Parsen des Planungsergebnisses für Veranstaltung " + veranstaltung.getName(), e);
             return Collections.emptyList();
         }
     }
 
     @Transactional
-    public List<RaumBelegungUebersichtDto> getDetaillierterPlan(Long veranstaltungId) {
-        Map<Long, Map<Long, RaumplanEintragDto>> raumplan = getRaumbelegungsplan(veranstaltungId);
+    public List<RaumBelegungUebersichtDto> getDetaillierterPlan(Veranstaltung veranstaltung) {
+        Map<Long, Map<Long, RaumplanEintragDto>> raumplan = getRaumbelegungsplan(veranstaltung);
         List<RaumBelegungUebersichtDto> detaillierterPlan = new ArrayList<>();
 
-        List<Slot> alleSlots = Slot.find("veranstaltung.id = ?1", veranstaltungId).list();
-        List<Raum> alleRaeume = Raum.listAll();
+        List<Slot> sortedSlots = veranstaltung.getSlots().stream().sorted(Comparator.comparing(Slot::getStartTime)).toList();
+        List<Raum> sortedRaeume =
+                veranstaltung.getRaeume().stream()
+                        .sorted(Comparator.comparing((Raum r) -> r.getGebaeude().getName())
+                                .thenComparing(Raum::getName))
+                        .toList();
 
-        // Sortiere Slots und Räume für konsistente Ausgabe
-        alleSlots.sort(Comparator.comparing(Slot::getStartTime));
-        alleRaeume.sort(Comparator.comparing(Raum::getName));
-
-        for (Slot slot : alleSlots) {
-            for (Raum raum : alleRaeume) {
+        for (Slot slot : sortedSlots) {
+            for (Raum raum : sortedRaeume) {
                 RaumplanEintragDto eintrag = null;
                 if (raumplan.containsKey(raum.getId())) {
                     eintrag = raumplan.get(raum.getId()).get(slot.getId());
@@ -206,8 +224,8 @@ public class PlanService {
     }
 
     @Transactional
-    public PlanQualitaetDto getPlanQualitaet(Long veranstaltungId) {
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.id = ?1", veranstaltungId).firstResult();
+    public PlanQualitaetDto getPlanQualitaet(Veranstaltung veranstaltung) {
+        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
         if (planungsergebnis == null) {
             return new PlanQualitaetDto(0, 0, "Kein Ergebnis vorhanden");
         }
@@ -216,11 +234,11 @@ public class PlanService {
             JsonNode root = objectMapper.readTree(planungsergebnis.getJsonErgebnis());
             int kosten = root.has("kosten") ? root.get("kosten").asInt() : 0;
             int anzahlZuweisungen = root.has("zuweisungen") ? root.get("zuweisungen").asInt() : 0;
-            String status = "Optimierung abgeschlossen";
+            String status = "Planerstellung abgeschlossen";
 
             return new PlanQualitaetDto(kosten, anzahlZuweisungen, status);
         } catch (Exception e) {
-            LOG.error("Fehler beim Parsen der Planqualität für Veranstaltung " + veranstaltungId, e);
+            LOG.error("Fehler beim Parsen der Planqualität für Veranstaltung " + veranstaltung.getName(), e);
             return new PlanQualitaetDto(0, 0, "Fehler beim Parsen");
         }
     }
@@ -274,7 +292,6 @@ public class PlanService {
                 Set<String> tnGruppe = teilnehmer.getGruppen();
                 if (tnGruppe != null && tnGruppe.contains(pv.getPflichtgruppe())) {
                     zuweisungen.add(new ZuweisungDto(
-                            null,
                             teilnehmer.getLastName(),
                             pv.getTitel(),
                             pv.getPflichtslot().getStartTime().format(TIME_FORMAT),
@@ -305,7 +322,6 @@ public class PlanService {
 
                             if (slot != null && raum != null) {
                                 zuweisungen.add(new ZuweisungDto(
-                                        null,
                                         teilnehmer.getLastName(),
                                         vortrag.getTitel(),
                                         slot.getStartTime().format(TIME_FORMAT),
@@ -328,13 +344,13 @@ public class PlanService {
     }
 
     @Transactional
-    public List<ReferentVortragDto> getPlanFuerReferent(String email, Long veranstaltungId) {
+    public List<ReferentVortragDto> getPlanFuerReferent(String email, Veranstaltung veranstaltung) {
         Referent referent = Referent.find("email", email).firstResult();
         if (referent == null) {
             return Collections.emptyList();
         }
 
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.id = ?1", veranstaltungId).firstResult();
+        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
         if (planungsergebnis == null) {
             return Collections.emptyList();
         }
@@ -347,7 +363,7 @@ public class PlanService {
             JsonNode besucht = root.get("besucht");
 
             if (inputData == null || instanzSlot == null || instanzRaum == null || besucht == null) {
-                LOG.warn("MiniZinc-Ergebnis für Veranstaltung " + veranstaltungId + " unvollständig.");
+                LOG.warn("MiniZinc-Ergebnis für Veranstaltung " + veranstaltung.getName() + " unvollständig.");
                 return Collections.emptyList();
             }
 
@@ -357,22 +373,22 @@ public class PlanService {
             List<Long> raumOids = StreamSupport.stream(inputData.get("raum_oids").spliterator(), false).map(JsonNode::asLong).toList();
 
             Map<Long, Teilnehmer> teilnehmerMap =
-                    Teilnehmer.getVeranstaltungTeilnehmer(veranstaltungId).stream().collect(toMap(IdEntity::getId, t -> t));
-            Map<Long, Slot> slotMap = Slot.getVeranstaltungSlots(veranstaltungId).stream().collect(toMap(IdEntity::getId, s -> s));
+                    veranstaltung.teilnehmer().stream().collect(toMap(IdEntity::getId, t -> t));
+            Map<Long, Slot> slotMap = veranstaltung.getSlots().stream().collect(toMap(IdEntity::getId, s -> s));
             Map<Long, Raum> raumMap = Raum.<Raum>listAll().stream().collect(toMap(IdEntity::getId, r -> r));
 
             List<ReferentVortragDto> referentPlan = new ArrayList<>();
 
-            List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.id = ?1 and referent.id = ?2", veranstaltungId, referent.getId()).list();
+            List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung = ?1 and referent = ?2", veranstaltung, referent).list();
             for (Pflichtvortrag pv : pflichtvortraege) {
-                List<Teilnehmer> gruppenTeilnehmer = Teilnehmer.getGruppenTeilnehmer(pv.getPflichtgruppe(), veranstaltungId);
+                List<Teilnehmer> gruppenTeilnehmer = Teilnehmer.getGruppenTeilnehmer(pv.getPflichtgruppe(), veranstaltung.getId());
                 List<TeilnehmerSimpleDto> teilnehmerDtos = gruppenTeilnehmer.stream()
                         .map(tn -> new TeilnehmerSimpleDto(tn.getId(), tn.getFirstName(), tn.getLastName(), tn.getGruppen()))
                         .toList();
                 referentPlan.add(new ReferentVortragDto(pv.getTitel(), pv.getPflichtslot().getStartTime().format(TIME_FORMAT), pv.getPflichtraum().getName(), pv.getPflichtraum().getGebaeude().getName(), teilnehmerDtos));
             }
 
-            List<Wahlvortrag> referentenWahlvortraege = Wahlvortrag.find("veranstaltung.id = ?1 and referent.id = ?2", veranstaltungId, referent.getId()).list();
+            List<Wahlvortrag> referentenWahlvortraege = Wahlvortrag.find("veranstaltung = ?1 and referent = ?2", veranstaltung, referent).list();
             for (Wahlvortrag wv : referentenWahlvortraege) {
                 int wIdx = wvOids.indexOf(wv.getId());
                 if (wIdx == -1) {
@@ -417,8 +433,8 @@ public class PlanService {
     }
 
     @Transactional
-    public Map<Long, Map<Long, RaumplanEintragDto>> getRaumbelegungsplan(Long veranstaltungId) {
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.id = ?1", veranstaltungId).firstResult();
+    public Map<Long, Map<Long, RaumplanEintragDto>> getRaumbelegungsplan(Veranstaltung veranstaltung) {
+        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
         if (planungsergebnis == null) {
             return Collections.emptyMap();
         }
@@ -433,15 +449,15 @@ public class PlanService {
             JsonNode besucht = root.get("besucht");
 
             if (instanzSlot == null || instanzRaum == null || besucht == null) {
-                LOG.warn("MiniZinc-Ergebnis für Veranstaltung " + veranstaltungId + " unvollständig.");
+                LOG.warn("MiniZinc-Ergebnis für Veranstaltung " + veranstaltung.getName() + " unvollständig.");
                 return Collections.emptyMap();
             }
 
 
-            List<Teilnehmer> alleTeilnehmer = Teilnehmer.getVeranstaltungTeilnehmer(veranstaltungId);
-            List<Vortrag> alleVortraege = Vortrag.getVeranstaltungVortraege(veranstaltungId);
-            List<Slot> alleSlots = Slot.getVeranstaltungSlots(veranstaltungId);
-            List<Raum> alleRaeume = Raum.listAll();
+            List<Teilnehmer> alleTeilnehmer = veranstaltung.teilnehmer();
+            Set<Vortrag> alleVortraege = veranstaltung.getVortraege();
+            Set<Slot> alleSlots = veranstaltung.getSlots();
+            List<Raum> alleRaeume = veranstaltung.getRaeume();
 
             Map<Long, Teilnehmer> teilnehmerMap = alleTeilnehmer.stream().collect(toMap(IdEntity::getId, t -> t));
             Map<Long, Vortrag> vortragMap = alleVortraege.stream().collect(toMap(IdEntity::getId, v -> v));
@@ -462,12 +478,11 @@ public class PlanService {
             Map<Long, Map<Long, RaumplanEintragDto>> raumplan = new HashMap<>();
 
             // Pflichtvorträge hinzufügen
-            List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
-            for (Pflichtvortrag pv : pflichtvortraege) {
+            for (Pflichtvortrag pv : veranstaltung.getPflichtvortraege()) {
                 Raum raum = pv.getPflichtraum();
                 Slot slot = pv.getPflichtslot();
 
-                List<Teilnehmer> gruppenTeilnehmer = Teilnehmer.getGruppenTeilnehmer(pv.getPflichtgruppe(), veranstaltungId);
+                List<Teilnehmer> gruppenTeilnehmer = Teilnehmer.getGruppenTeilnehmer(pv.getPflichtgruppe(), veranstaltung.getId());
                 List<TeilnehmerSimpleDto> teilnehmerDtos = gruppenTeilnehmer.stream()
                         .map(tn -> new TeilnehmerSimpleDto(tn.getId(), tn.getFirstName(), tn.getLastName(), tn.getGruppen()))
                         .toList();
@@ -532,7 +547,7 @@ public class PlanService {
             return raumplan;
 
         } catch (Exception e) {
-            LOG.error("Fehler beim Erstellen des Raumbelegungsplans für Veranstaltung " + veranstaltungId, e);
+            LOG.error("Fehler beim Erstellen des Raumbelegungsplans für Veranstaltung " + veranstaltung.getName(), e);
             return Collections.emptyMap();
         }
     }
@@ -600,9 +615,9 @@ public class PlanService {
     }
 
     @Transactional
-    public Map<Long, List<Slot>> getFreieSlotsTeilnehmer(Long veranstaltungId) {
+    public Map<Long, List<Slot>> getFreieSlotsTeilnehmer(Veranstaltung veranstaltung) {
         Map<Long, List<Slot>> freieSlotsTeilnehmer = new HashMap<>();
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung.id = ?1", veranstaltungId).firstResult();
+        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
         if (planungsergebnis == null) {
             return Collections.emptyMap();
         }
@@ -618,14 +633,15 @@ public class PlanService {
             List<Long> wvOids = StreamSupport.stream(wvOidsNode.spliterator(), false).map(JsonNode::asLong).toList();
             List<Long> slotOids = StreamSupport.stream(slotOidsNode.spliterator(), false).map(JsonNode::asLong).toList();
 
-            List<Teilnehmer> alleTeilnehmer = Teilnehmer.getVeranstaltungTeilnehmer(veranstaltungId);
-            List<Slot> alleSlots = Slot.getVeranstaltungSlots(veranstaltungId);
+            List<Teilnehmer> alleTeilnehmer = veranstaltung.teilnehmer();
+            Set<Slot> alleSlots = veranstaltung.getSlots();
+
+            List<Pflichtvortrag> pflichtvortraege = veranstaltung.getPflichtvortraege();
 
             for (Teilnehmer teilnehmer : alleTeilnehmer) {
                 Set<Long> belegteSlotIds = new HashSet<>();
 
                 // Pflichtvorträge des Teilnehmers
-                List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
                 for (Pflichtvortrag pv : pflichtvortraege) {
                     Set<String> tnGruppe = teilnehmer.getGruppen();
                     if (tnGruppe != null && tnGruppe.contains(pv.getPflichtgruppe())) {
@@ -657,15 +673,25 @@ public class PlanService {
             }
 
         } catch (Exception e) {
-            LOG.error("Fehler beim Ermitteln freier Teilnehmer-Slots für Veranstaltung " + veranstaltungId, e);
+            LOG.error("Fehler beim Ermitteln freier Teilnehmer-Slots für Veranstaltung " + veranstaltung.getName(), e);
         }
         return freieSlotsTeilnehmer;
     }
 
+    // Helper class for Qute template
+    @Getter
+    @AllArgsConstructor
+    public static class RaumschildDaten {
+        private Veranstaltung veranstaltung;
+        private Raum raum;
+        private Map<Long, RaumplanEintragDto> belegungFuerRaum;
+        private List<Slot> sortedSlots;
+        private Map<String, String> vortragColors;
+    }
+
     @Transactional
-    public byte[] generiereTuerschilderPdf(Long veranstaltungId) {
-        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        Map<Long, Map<Long, RaumplanEintragDto>> raumplan = getRaumbelegungsplan(veranstaltungId);
+    public byte[] generiereTuerschilderPdf(Veranstaltung veranstaltung) {
+        Map<Long, Map<Long, RaumplanEintragDto>> raumplan = getRaumbelegungsplan(veranstaltung);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Document document = new Document(PageSize.A4);
@@ -724,7 +750,7 @@ public class PlanService {
             }
 
             // Zeilen
-            List<Slot> sortedSlots = Slot.<Slot>list("veranstaltung.id = ?1", veranstaltungId).stream().toList().stream()
+            List<Slot> sortedSlots = veranstaltung.getSlots().stream()
                     .sorted(Comparator.comparing(Slot::getStartTime))
                     .toList();
 
@@ -766,7 +792,117 @@ public class PlanService {
         return baos.toByteArray();
     }
 
-    private ZuweisungDto mapToDto(Zuweisung z) {
-        return new ZuweisungDto(z.getId(), z.getTeilnehmer().getLastName(), z.getVortrag().getTitel(), z.getSlot().getStartTime().format(TIME_FORMAT), z.getRaum().getName(), z.getRaum().getGebaeude().getName());
+    @Transactional
+    public byte[] generiereAlleRaumschilderPdf(Veranstaltung veranstaltung) {
+        Map<Long, Map<Long, RaumplanEintragDto>> raumplan = getRaumbelegungsplan(veranstaltung);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Document document = new Document(PageSize.A4);
+        PdfWriter.getInstance(document, baos);
+        document.open();
+
+        Font fontTitle = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 24);
+        Font fontSubtitle = FontFactory.getFont(FontFactory.HELVETICA, 18, Color.GRAY);
+        Font fontTableHeader = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, Color.WHITE);
+        Font fontTableCell = FontFactory.getFont(FontFactory.HELVETICA, 11);
+        Font fontTeilnehmer = FontFactory.getFont(FontFactory.HELVETICA, 9);
+
+        // Lade nur die Räume, die zu den Gebäuden dieser Veranstaltung gehören
+        List<Raum> alleRaeumeDerVeranstaltung = veranstaltung.getRaeume();
+
+        List<Slot> sortedSlots = veranstaltung.getSlots().stream()
+                .sorted(Comparator.comparing(Slot::getStartTime))
+                .toList();
+
+        // Helper für farbliche Kodierung der Vorträge
+        Map<String, String> vortragColors = new HashMap<>();
+        String colorCodeFrei = "#f5f5f5";
+        String[] colorPalette = {"#1A5276", "#1E6B3C", "#C0392B", "#D4820A", "#6E2F7A", "#4A4A4A", "#B7470A", "#7D6608", "#5D6D7E", "#C2185B", "#00838F", "#5C4033"};
+        int colorIndex = 0;
+
+        for (Raum raum : alleRaeumeDerVeranstaltung) {
+            Map<Long, RaumplanEintragDto> belegungFuerRaum = raumplan.getOrDefault(raum.getId(), Collections.emptyMap());
+
+            // 1. Logo & Header
+            if (veranstaltung.getLogo() != null && !veranstaltung.getLogo().isEmpty()) {
+                try {
+                    Image logo = Image.getInstance(new URI(veranstaltung.getLogo()).toURL());
+                    logo.scaleToFit(100, 100);
+                    logo.setAlignment(Element.ALIGN_RIGHT);
+                    document.add(logo);
+                } catch (Exception e) {
+                    LOG.warn("Fehler beim Laden des Logos: " + e.getMessage());
+                }
+            }
+
+            Paragraph pVeranstaltung = new Paragraph(veranstaltung.getName(), fontSubtitle);
+            document.add(pVeranstaltung);
+
+            Paragraph pRaum = new Paragraph("Raum: " + raum.getName(), fontTitle);
+            pRaum.setSpacingAfter(20);
+            document.add(pRaum);
+
+            // 2. Belegungstabelle
+            PdfPTable table = new PdfPTable(3);
+            table.setWidthPercentage(100);
+            table.setWidths(new float[]{20, 50, 30});
+
+            // Header
+            String[] headers = {"Zeit", "Vortrag", "Referent"};
+            for (String h : headers) {
+                PdfPCell cell = new PdfPCell(new Phrase(h, fontTableHeader));
+                cell.setBackgroundColor(new Color(79, 70, 229)); // Indigo-600
+                cell.setPadding(8);
+                table.addCell(cell);
+            }
+
+            // Zeilen
+            for (Slot slot : sortedSlots) {
+                RaumplanEintragDto eintrag = belegungFuerRaum.get(slot.getId());
+                if (eintrag != null) {
+                    // Farbe für Vortragstitel im PDF
+                    if (!vortragColors.containsKey(eintrag.vortragTitel)) {
+                        vortragColors.put(eintrag.vortragTitel, colorPalette[colorIndex % colorPalette.length]);
+                        colorIndex++;
+                    }
+                    Color vortragBgColor = Color.decode(vortragColors.get(eintrag.vortragTitel));
+
+                    PdfPCell vortragCell = new PdfPCell(new Phrase(eintrag.vortragTitel, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11, vortragBgColor)));
+                    vortragCell.setBackgroundColor(vortragBgColor.brighter()); // Leichterer Hintergrund
+                    vortragCell.setPadding(5);
+
+                    table.addCell(new PdfPCell(new Phrase(slot.getStartTime().format(TIME_FORMAT) + " - " + slot.getEndTime().format(TIME_FORMAT), fontTableCell)));
+                    table.addCell(vortragCell);
+                    table.addCell(new PdfPCell(new Phrase(eintrag.referentName, fontTableCell)));
+                } else {
+                    // Leere Zeile für unbelegte Slots
+                    table.addCell(new PdfPCell(new Phrase(slot.getStartTime().format(TIME_FORMAT) + " - " + slot.getEndTime().format(TIME_FORMAT), fontTableCell)));
+                    table.addCell(new PdfPCell(new Phrase("Frei", fontTableCell)));
+                    table.addCell(new PdfPCell(new Phrase("", fontTableCell)));
+                }
+            }
+            document.add(table);
+
+            // Teilnehmerliste (optional, für jeden Vortrag)
+            document.add(new Paragraph("\n")); // Abstand
+            for (Slot slot : sortedSlots) {
+                RaumplanEintragDto eintrag = belegungFuerRaum.get(slot.getId());
+                if (eintrag != null && eintrag.teilnehmer != null && !eintrag.teilnehmer.isEmpty()) {
+                    document.add(new Paragraph(eintrag.vortragTitel + " (" + eintrag.slotZeit + ") - Teilnehmer:", fontTableCell));
+                    List<String> teilnehmerNamen = eintrag.teilnehmer.stream()
+                            .map(tn -> tn.firstName + " " + tn.lastName + (tn.gruppen != null ? " (" + tn.gruppen + ")" : ""))
+                            .toList();
+                    for (String tnName : teilnehmerNamen) {
+                        document.add(new Paragraph("- " + tnName, fontTeilnehmer));
+                    }
+                    document.add(new Paragraph("\n")); // Abstand nach Teilnehmerliste
+                }
+            }
+
+            document.newPage(); // Neues Blatt für den nächsten Raum
+        }
+
+        document.close();
+        return baos.toByteArray();
     }
 }

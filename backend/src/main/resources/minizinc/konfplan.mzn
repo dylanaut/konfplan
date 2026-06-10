@@ -138,7 +138,7 @@ var int: kosten_raumwechsel =
     else 0 endif;
 
 % =============================================================================
-% OPTIMIERUNG
+% PLANERSTELLUNG
 % =============================================================================
 
 var int: kosten_prioritaeten = sum(p in 1..n_teilnehmer, w in 1..n_wahlvortraege, i in 1..max_instanzen) (

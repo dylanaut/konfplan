@@ -31,13 +31,13 @@ public class MailService implements MailServiceInterface {
             @ConfigProperty(name = "app.mail.admin", defaultValue = "konfplan@yahoo.com")
             String adminEmail,
             Mailer mailer,
-            @Location("registrationConfirmation")
+            @Location("email/registrationConfirmation")
             MailTemplate registrationConfirmationTemplate,
-            @Location("deregistrationNotification")
+            @Location("email/deregistrationNotification")
             MailTemplate deregistrationNotificationTemplate,
-            @Location("emailChangeNotificationOldAddress")
+            @Location("email/emailChangeNotificationOldAddress")
             MailTemplate emailChangeNotificationOldAddressTemplate,
-            @Location("emailChangeConfirmationNewAddress")
+            @Location("email/emailChangeConfirmationNewAddress")
             MailTemplate emailChangeConfirmationNewAddressTemplate) {
         this.adminEmail = adminEmail;
         this.mailer = mailer;

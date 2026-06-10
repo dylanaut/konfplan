@@ -67,14 +67,10 @@ public class Teilnehmer extends Nutzer {
     }
 
     public static List<Teilnehmer> getGruppenTeilnehmer(String gruppenName, Long veranstaltungId) {
-        return Teilnehmer.find("SELECT tn FROM Teilnehmer tn JOIN tn.veranstaltungen v " +
+        return Teilnehmer.find("SELECT tn from Teilnehmer tn " +
+                        "JOIN tn.veranstaltungen v " +
                         " WHERE ?1 MEMBER OF tn.gruppen " +
                         " AND v.id = ?2 and tn.isActive = true",
                 gruppenName, veranstaltungId).list();
-
-    }
-
-    public static List<Teilnehmer> getVeranstaltungTeilnehmer(Long veranstaltungId) {
-        return Teilnehmer.find("SELECT tn FROM Teilnehmer tn JOIN tn.veranstaltungen v WHERE v.id = ?1 and tn.isActive = true", veranstaltungId).list();
     }
 }

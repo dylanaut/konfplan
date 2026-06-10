@@ -25,6 +25,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -103,9 +104,9 @@ public class Veranstaltung extends VersionedEntity {
         this.gebaeude.add(aGebaeude);
         aGebaeude.veranstaltungen.add(this);
 
-        for (Slot slot : slots) {
-            for (Raum raum : aGebaeude.raeume) {
-                raum.updateVerfuegbarkeit(slot, this, true, true);
+        for (Raum raum : aGebaeude.raeume) {
+            for (Slot slot : slots) {
+                raum.updateRaumVerfuegbarkeit(slot, this, true, true);
             }
         }
     }
@@ -143,12 +144,12 @@ public class Veranstaltung extends VersionedEntity {
             return;
         }
 
-        boolean added = slots.add(slot);
+        slots.add(slot);
         slot.veranstaltung = this;
 
         nutzer.forEach(n -> n.updateVerfuegbarkeit(slot, this, true, true));
         gebaeude.stream().flatMap(g -> g.getRaeume().stream())
-                .forEach(r -> r.updateVerfuegbarkeit(slot, this, true, true));
+                .forEach(r -> r.updateRaumVerfuegbarkeit(slot, this, true, true));
         vortraege.stream()
                 .filter(v -> !v.istPflicht())
                 .forEach(v -> v.updateVerfuegbarkeit(slot, this, true, true));
@@ -163,7 +164,7 @@ public class Veranstaltung extends VersionedEntity {
         slot.veranstaltung = null;
         nutzer.forEach(n -> n.updateVerfuegbarkeit(slot, this, false, false));
         gebaeude.stream().flatMap(g -> g.getRaeume().stream())
-                .forEach(r -> r.updateVerfuegbarkeit(slot, this, false, false));
+                .forEach(r -> r.updateRaumVerfuegbarkeit(slot, this, false, false));
         vortraege.stream()
                 .filter(v -> !v.istPflicht())
                 .forEach(v -> v.updateVerfuegbarkeit(slot, this, false, false));
@@ -193,6 +194,19 @@ public class Veranstaltung extends VersionedEntity {
 
         vortraege.remove(aVortrag);
         aVortrag.veranstaltung = null;
+    }
+
+    public List<Wahlvortrag> getWahlvortraege() {
+        return vortraege.stream().filter(v -> v instanceof Wahlvortrag)
+                .map(v -> (Wahlvortrag) v)
+                .toList();
+    }
+
+
+    public List<Pflichtvortrag> getPflichtvortraege() {
+        return vortraege.stream().filter(v -> v instanceof Pflichtvortrag)
+                .map(v -> (Pflichtvortrag) v)
+                .toList();
     }
 
 
@@ -225,21 +239,30 @@ public class Veranstaltung extends VersionedEntity {
     // -------------------------------------------------------------------
 
     @NotEmpty(message = "Veranstaltung muss mindestens eine/n Organisator/in haben")
-    public Set<Admin> organisatoren() {
-        return nutzer.stream().filter(u -> u instanceof Admin)
+    public List<Admin> organisatoren() {
+        return nutzer.stream()
+                .filter(u -> u instanceof Admin)
                 .map(u -> (Admin) u)
-                .collect(Collectors.toUnmodifiableSet());
+                .toList();
     }
 
-    public Set<Teilnehmer> teilnehmer() {
-        return nutzer.stream().filter(u -> u instanceof Teilnehmer)
+    public List<Teilnehmer> teilnehmer() {
+        return nutzer.stream()
+                .filter(u -> u instanceof Teilnehmer)
                 .map(u -> (Teilnehmer) u)
-                .collect(Collectors.toUnmodifiableSet());
+                .toList();
     }
 
-    public Set<Referent> referenten() {
-        return nutzer.stream().filter(u -> u instanceof Referent)
+    public List<Referent> referenten() {
+        return nutzer.stream()
+                .filter(u -> u instanceof Referent)
                 .map(u -> (Referent) u)
-                .collect(Collectors.toUnmodifiableSet());
+                .toList();
+    }
+
+    public List<Raum> getRaeume() {
+        return gebaeude.stream()
+                .flatMap(g -> g.getRaeume().stream())
+                .toList();
     }
 }

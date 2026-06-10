@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Raumschilder für {veranstaltung.name}</title>
+    <style>
+        body { font-family: sans-serif; color: #333; }
+        .page {
+            page-break-after: always;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 95%;
+        }
+        .page:last-child { page-break-after: auto; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .logo { max-width: 150px; max-height: 70px; }
+        .event-name { font-size: 1.2em; color: #555; text-align: right; }
+        .room-title { font-size: 2.5em; font-weight: bold; color: #2c3e50; margin-top: 20px; }
+        .schedule-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .schedule-table th, .schedule-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        .schedule-table th { background-color: #f2f2f2; font-size: 0.9em; }
+        .time-col { width: 25%; }
+        .talk-col { width: 50%; }
+        .speaker-col { width: 25%; }
+        .empty-slot { color: #999; font-style: italic; }
+    </style>
+</head>
+<body>
+
+{#for raum in raeume}
+    <div class="page">
+        <div class="header">
+            <div>
+                <h1 class="room-title">Raum: {raum.name}</h1>
+                <h2 class="event-name">{veranstaltung.name}</h2>
+            </div>
+            {#if veranstaltung.logo}
+                <img src="{veranstaltung.logo}" alt="Logo" class="logo">
+            {/if}
+        </div>
+
+        <table class="schedule-table">
+            <thead>
+                <tr>
+                    <th class="time-col">Zeit</th>
+                    <th class="talk-col">Vortrag</th>
+                    <th class="speaker-col">Referent</th>
+                </tr>
+            </thead>
+            <tbody>
+            {#for slot in slots}
+            <tr>
+                <td>{slot.startTime.format('HH:mm')} - {slot.endTime.format('HH:mm')}</td>
+                {#let innerMap = raumplan.get(raum.id)}
+                    {#if innerMap}
+                        {#let eintrag = innerMap.get(slot.id)}
+                            {#if eintrag}
+                                <td>{eintrag.vortragTitel}</td>
+                                <td>{eintrag.referentName}</td>
+                            {#else}
+                                <td colspan="2" class="empty-slot">Frei</td>
+                            {/if}
+                        {/let}
+                    {#else}
+                        <td colspan="2" class="empty-slot">Frei</td>
+                    {/if}
+                {/let}
+            </tr>
+            {/for}
+            </tbody>
+        </table>
+    </div>
+{/for}
+
+</body>
+</html>

@@ -2,7 +2,7 @@
 
 ## Projektübersicht
 
-Der **KonfPlan** ist eine Webanwendung zur Planung und Verwaltung von Veranstaltungen mit Vorträgen (z. B. Schulungstage). Er unterstützt drei Nutzerrollen: Admin, Referent und Teilnehmer. Ein zentrales Feature ist die automatische Optimierung der Teilnehmerzuweisung zu Wahlvorträgen via **MiniZinc**.
+Der **KonfPlan** ist eine Webanwendung zur Planung und Verwaltung von Veranstaltungen mit Vorträgen (z. B. Schulungstage). Er unterstützt drei Nutzerrollen: Admin, Referent und Teilnehmer. Ein zentrales Feature ist die automatische PlanErstellung der Teilnehmerzuweisung zu Wahlvorträgen via **MiniZinc**.
 
 ## Struktur
 
@@ -41,7 +41,7 @@ cd frontend && npm install && npm run dev
 | Datenbank    | PostgreSQL (Prod/Dev), H2 (Test)                  |
 | Migration    | Flyway                                            |
 | Security     | JWT (SmallRye), BCrypt, `quarkus-security-jpa`    |
-| Optimierung  | MiniZinc (externer Prozess via `OptimierungService`) |
+| PlanErstellung  | MiniZinc (externer Prozess via `PlanErstellungService`) |
 | CSV-Import   | OpenCSV 5.11.2                                    |
 | PDF-Export   | OpenPDF 2.0.3                                     |
 | E-Mail       | Quarkus Mailer (Mailpit für Dev)                  |
@@ -73,7 +73,7 @@ cd frontend && npm install && npm run dev
 
 ## Bekannte Besonderheiten
 
-- MiniZinc muss auf dem System installiert sein (`minizinc` im PATH) für `OptimierungService`.
+- MiniZinc muss auf dem System installiert sein (`minizinc` im PATH) für `PlanErstellungService`.
 - Deadlines verhindern Eingaben/Änderungen für Referenten und Teilnehmer nach Ablauf.
 - Räume werden veranstaltungsübergreifend auf Überschneidungen geprüft.
 - Passwort-Reset per E-Mail (Mailpit-Credentials in `application.properties` setzen).

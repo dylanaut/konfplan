@@ -112,10 +112,11 @@ public abstract class Vortrag extends VersionedEntity {
         VortragVerfuegbarkeit vv = VortragVerfuegbarkeit.findById(vvId(this, veranstaltung));
         if (null == vv) {
             if (createIfMissing) {
-                new VortragVerfuegbarkeit(this, veranstaltung, Set.of(slot.getId())).persist();
+                vv = new VortragVerfuegbarkeit(this, veranstaltung, Set.of(slot.getId()));
+                vv.persist();
+            } else {
+                throw new IllegalStateException("VortragVerfuegbarkeit existiert nicht");
             }
-        } else {
-            throw new IllegalStateException("VortragVerfuegbarkeit existiert nicht");
         }
 
         if (verfuegbar) {
@@ -123,10 +124,5 @@ public abstract class Vortrag extends VersionedEntity {
         } else {
             vv.removeSlot(slot);
         }
-    }
-
-
-    public static List<Vortrag> getVeranstaltungVortraege(Long veranstaltungId) {
-        return Vortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
     }
 }

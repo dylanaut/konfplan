@@ -165,7 +165,7 @@ import {
   Upload as UploadIcon,
   Users as UsersIcon,
   Users2 as Users2Icon,
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 import PaginationControls from '../../PaginationControls.vue';
 
 const props = defineProps({

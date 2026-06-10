@@ -12,7 +12,7 @@ Dieses Handbuch bietet einen Überblick über die Architektur, Technologien und 
 [[_projektuebersicht]]
 == 1. Projektübersicht
 
-Der *KonfPlan* ist eine Webanwendung zur Planung und Verwaltung von Veranstaltungen mit Vorträgen (z. B. Schulungstage). Er unterstützt drei Nutzerrollen: Admin, Referent und Teilnehmer. Ein zentrales Feature ist die automatische Optimierung der Teilnehmerzuweisung zu Wahlvorträgen via *MiniZinc*.
+Der *KonfPlan* ist eine Webanwendung zur Planung und Verwaltung von Veranstaltungen mit Vorträgen (z. B. Schulungstage). Er unterstützt drei Nutzerrollen: Admin, Referent und Teilnehmer. Ein zentrales Feature ist die automatische PlanErstellung der Teilnehmerzuweisung zu Wahlvorträgen via *MiniZinc*.
 
 [[_struktur]]
 == 2. Struktur
@@ -40,7 +40,7 @@ Die Anwendung setzt auf folgende Kerntechnologien:
 | Datenbank | PostgreSQL (Prod/Dev), H2 (Test)
 | Migration | Flyway
 | Security | JWT (SmallRye), BCrypt, `quarkus-security-jpa`
-| Optimierung | MiniZinc (externer Prozess via `OptimierungService`)
+| PlanErstellung | MiniZinc (externer Prozess via `PlanErstellungService`)
 | CSV-Import | OpenCSV 5.11.2
 | PDF-Export | OpenPDF 2.0.3
 | E-Mail | Quarkus Mailer (Mailpit für Dev)
@@ -130,9 +130,9 @@ Wichtige Konfigurationen:
 *   **Deadlines**: Referenten und Teilnehmer können ihre Daten nur bis zu einem administrativ festgelegten Zeitpunkt ändern.
 *   **Prioritäten-Management (Admin)**: Admins können individuelle Prioritäten für Teilnehmer an Wahlvorträgen über den Endpunkt `/api/admin/veranstaltungen/{vid}/teilnehmer/{tid}/priorities` aktualisieren.
 
-=== MiniZinc-Optimierung
+=== MiniZinc-PlanErstellung
 
-Der `OptimierungService` ruft MiniZinc als externen Prozess auf:
+Der `PlanErstellungService` ruft MiniZinc als externen Prozess auf:
 
 *   **Modell:** `src/main/resources/minizinc/vortragsplanung.mzn`
 *   Timeouts und Solver-Konfiguration (z.B. OR-Tools) über `SolverConfigDto`.
@@ -149,7 +149,6 @@ Das Frontend basiert auf Vue 3, Vite, Tailwind CSS, Pinia (State Management) und
 *   **Nutzer**:: (SINGLE_TABLE) → Admin | Referent | Teilnehmer
 *   **Vortrag**:: (SINGLE_TABLE) → Pflichtvortrag | Wahlvortrag
 *   **Slot**:: Zeitfenster innerhalb einer Veranstaltung; mit Überschneidungsprüfung.
-*   **Zuweisung**:: Ordnet Teilnehmer einem Vortrag + Slot + Raum zu.
 *   **Prioritaet**:: Präferenz eines Teilnehmers für einen Wahlvortrag (Ranking 1-10).
 *   **TeilnehmerVerfuegbarkeit**:: Gibt an, ob Nutzer in einem Slot verfügbar ist (Default: true bei Zuweisung).
 *   **RaumVerfuegbarkeit**:: Modelliert die Verfügbarkeit von Räumen pro Slot inklusive veranstaltungsübergreifender Prüfung.
@@ -169,7 +168,7 @@ Das Frontend basiert auf Vue 3, Vite, Tailwind CSS, Pinia (State Management) und
 [[_bekannte_besonderheiten]]
 == 9. Bekannte Besonderheiten
 
-*   **MiniZinc-Installation:** MiniZinc muss auf dem System installiert sein (`minizinc` im PATH) für `OptimierungService`.
+*   **MiniZinc-Installation:** MiniZinc muss auf dem System installiert sein (`minizinc` im PATH) für `PlanErstellungService`.
 *   **Deadlines:** Deadlines verhindern Eingaben/Änderungen für Referenten und Teilnehmer nach Ablauf.
 *   **Raumprüfung:** Räume werden veranstaltungsübergreifend auf Überschneidungen geprüft.
 *   **Passwort-Reset:** Passwort-Reset per E-Mail (Mailpit-Credentials in `application.properties` setzen).

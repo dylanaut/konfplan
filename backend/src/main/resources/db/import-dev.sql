@@ -1,17 +1,17 @@
 -- SUPER ADMIN
-INSERT INTO Nutzer (email, password_hash, role, first_name, last_name, is_active, version)
-VALUES ('juergenkrey@yahoo.de', '$2a$10$8920ztppz0N29GNOOw1FCuZJqMUIJhybpqw9tKwkS0rR3BmELJIlC', 'ADMIN', 'Jürgen',
-        'Krey', TRUE, 1);
+INSERT INTO Nutzer (id, email, password_hash, role, first_name, last_name, is_active, version)
+VALUES (0, 'juergenkrey@yahoo.de', '$2a$12$.TNCv.nyCvC7kIHObHbvqu7Z6AJ0Uf/sn3HS5qSPl/4H.Et1K8lri', 'ADMIN', 'Jürgen',
+        'Krey', TRUE, 0);
 
 -- DEMO Referent
 -- INSERT INTO Nutzer (email, password_hash, role, first_name, last_name, is_active, version)
--- VALUES ('r.ref@yahoo.de', '$2a$10$8920ztppz0N29GNOOw1FCuZJqMUIJhybpqw9tKwkS0rR3BmELJIlC', 'REFERENT',
+-- VALUES ('r.ref@yahoo.de', '$2a$12$.TNCv.nyCvC7kIHObHbvqu7Z6AJ0Uf/sn3HS5qSPl/4H.Et1K8lri', 'REFERENT',
 --         'Ref',
 --         'REFERENT', TRUE, 1);
 
 -- Demo Teilnehmer
 -- INSERT INTO Nutzer (email, password_hash, role, first_name, last_name, is_active, version)
--- VALUES ('t.tn@yahoo.de', '$2a$10$8920ztppz0N29GNOOw1FCuZJqMUIJhybpqw9tKwkS0rR3BmELJIlC', 'TEILNEHMER',
+-- VALUES ('t.tn@yahoo.de', '$2a$12$.TNCv.nyCvC7kIHObHbvqu7Z6AJ0Uf/sn3HS5qSPl/4H.Et1K8lri', 'TEILNEHMER',
 --         'Theo',
 --         'TEILNEHMER', TRUE, 1);
 

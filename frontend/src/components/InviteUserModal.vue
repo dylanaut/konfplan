@@ -53,7 +53,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { X as XIcon, Info as InfoIcon, Loader as LoaderIcon } from 'lucide-vue-next';
+import { X as XIcon, Info as InfoIcon, Loader as LoaderIcon } from '@lucide/vue';
 
 const props = defineProps({
   isVisible: Boolean,

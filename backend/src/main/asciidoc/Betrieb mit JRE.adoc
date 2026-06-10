@@ -20,7 +20,7 @@ Wenn du im Verzeichnis `backend/` den Befehl ausführst:
 Passiert folgendes automatisch:
 1. Das **Quarkus-Backend** startet auf Port `9000`.
 2. Quinoa erkennt das Frontend-Verzeichnis (`../frontend`) und startet den **Vite-Dev-Server** auf Port `5173`.
-3. Quarkus agiert als **Proxy**: Du kannst die Anwendung unter `http://localhost:9000` aufrufen. Anfragen, die keine API-Pfad sind, werden intern an das Frontend weitergeleitet.
+3. Quarkus agiert als **Proxy**: Du kannst die Anwendung unter `http://localhost:9000` aufrufen. Anfragen, die kein API-Pfad sind, werden intern an das Frontend weitergeleitet.
 
 [TIP]
 ====

@@ -174,7 +174,7 @@ import {
   CalendarCheck as CalendarCheckIcon, MapPin as MapPinIcon,
   Calendar as CalendarIcon, CheckSquare as CheckSquareIcon, X as XIcon,
   Star as StarIcon, Info as InfoIcon, Printer as PrinterIcon, Download as DownloadIcon
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 
 const eventContext = useEventContextStore();
 const authStore = useAuthStore();

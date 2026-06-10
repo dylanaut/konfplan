@@ -4,8 +4,6 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 
 /**
  * DTO für den Login-Vorgang.
- * @RegisterForReflection ist wichtig, falls du die App später 
- * als Native Image (GraalVM) bauen möchtest.
  */
 @RegisterForReflection
 public class LoginRequest {

@@ -7,7 +7,7 @@ import org.jboss.logging.Logger;
 
 import java.util.Map;
 
-@Provider
+//@Provider
 public class NPEMapper implements ExceptionMapper<NullPointerException> {
     private static final Logger LOG = Logger.getLogger(NPEMapper.class);
 

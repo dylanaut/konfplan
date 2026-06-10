@@ -17,10 +17,9 @@ public class PrioritaetService {
     @Transactional
     public void savePrioritaeten(String email, List<PrioritaetRequest> requests) {
         Nutzer nutzer = Nutzer.findByEmail(email);
-        if (!(nutzer instanceof Teilnehmer)) {
+        if (!(nutzer instanceof Teilnehmer teilnehmer)) {
             throw new WebApplicationException("Nutzer ist kein Teilnehmer", BAD_REQUEST.getStatusCode());
         }
-        Teilnehmer teilnehmer = (Teilnehmer) nutzer;
 
         // Deadline Check
         if (!requests.isEmpty()) {
@@ -67,7 +66,7 @@ public class PrioritaetService {
     }
 
     @Transactional
-    public Prioritaet updateSinglePrioritaet(Long userId, Long vortragId, int prioWert) {
+    public void updateSinglePrioritaet(Long userId, Long vortragId, int prioWert) {
         Teilnehmer teilnehmer = Teilnehmer.findById(userId);
         if (teilnehmer == null) {
             throw new WebApplicationException("Teilnehmer nicht gefunden", NOT_FOUND.getStatusCode());
@@ -88,10 +87,9 @@ public class PrioritaetService {
             if (p != null) {
                 p.delete();
             }
-            return null;
         }
 
-        if (p == null) {
+        if (null == p) {
             p = new Prioritaet();
             p.setTeilnehmer(teilnehmer);
             p.setVortrag(vortrag);
@@ -99,8 +97,6 @@ public class PrioritaetService {
         p.setPrioWert(prioWert);
         p.setLastUpdated(LocalDateTime.now());
         p.persist();
-
-        return p;
     }
 
     public List<Prioritaet> getPrioritaetenForUser(String email) {

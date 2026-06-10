@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static kreyj.konfplan.util.DateHelper.DATE_FORMAT;
 
@@ -133,50 +132,51 @@ public class VeranstaltungService {
                     continue;
                 }
 
+                Veranstaltung veranstaltung = new Veranstaltung();
+                veranstaltung.setName(dto.name);
+                try {
+                    veranstaltung.setBeginntAm(LocalDateTime.parse(dto.beginntAm, DATE_FORMAT));
+                    if (dto.endetAm != null && !dto.endetAm.isEmpty()) {
+                        veranstaltung.setEndetAm(LocalDateTime.parse(dto.endetAm, DATE_FORMAT));
+                    }
+                } catch (Exception e) {
+                    LOG.error("Fehler beim Parsen des Datums für Veranstaltung '" + dto.name + "': " + e.getMessage());
+                    continue;
+                }
+                veranstaltung.setLogo(dto.logo);
+                veranstaltung.setLogo_link(dto.logo_link);
+
+                if (StringUtils.isNotBlank(dto.gruppen)) {
+                    Arrays.stream(dto.gruppen.split("\\|")).map(String::trim).forEach(veranstaltung::addGruppe);
+                }
+
+                if (StringUtils.isNotBlank(dto.gebaeudeNamen)) {
+                    Arrays.stream(dto.gebaeudeNamen.split("\\|")).map(String::trim).forEach(name -> {
+                        Gebaeude g = Gebaeude.find("name", name).firstResult();
+                        if (g != null) {
+                            veranstaltung.addGebaeude(g);
+                        } else {
+                            LOG.warn("Veranstaltung '" + dto.name + "': Gebäude nicht gefunden: '" + name + "'");
+                        }
+                    });
+                }
+
+                veranstaltung.persistAndFlush();
+
                 String[] organisatorenEmails = StringUtils.split(dto.organisatorenEmails, ",");
                 for (String organisatorenEmail : organisatorenEmails) {
                     Nutzer admin = Nutzer.findByEmail(organisatorenEmail.trim());
 
                     if (admin instanceof Admin) {
-                        Veranstaltung v = new Veranstaltung();
-                        v.setName(dto.name);
-                        try {
-                            v.setBeginntAm(LocalDateTime.parse(dto.beginntAm, DATE_FORMAT));
-                            if (dto.endetAm != null && !dto.endetAm.isEmpty()) {
-                                v.setEndetAm(LocalDateTime.parse(dto.endetAm, DATE_FORMAT));
-                            }
-                        } catch (Exception e) {
-                            LOG.error("Fehler beim Parsen des Datums für Veranstaltung '" + dto.name + "': " + e.getMessage());
-                            continue;
-                        }
-                        v.setLogo(dto.logo);
-                        v.setLogo_link(dto.logo_link);
-                        v.persist();
-
                         // Admin verknüpfen
-                        admin.addVeranstaltung(v);
-
-                        if (StringUtils.isNotBlank(dto.gebaeudeNamen)) {
-                            Arrays.stream(dto.gebaeudeNamen.split("\\|")).map(String::trim).forEach(name -> {
-                                Gebaeude g = Gebaeude.find("name", name).firstResult();
-                                if (g != null) {
-                                    v.addGebaeude(g);
-                                } else {
-                                    LOG.warn("Veranstaltung '" + dto.name + "': Gebäude nicht gefunden: '" + name + "'");
-                                }
-                            });
-                        }
-
-                        if (StringUtils.isNotBlank(dto.gruppen)) {
-                            Arrays.stream(dto.gruppen.split("\\|")).map(String::trim).forEach(v::addGruppe);
-                        }
-
-                        count++;
-                        protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung importiert", "Veranstaltung '" + v.getName() + "' via CSV importiert.", v.getId());
+                        admin.addVeranstaltung(veranstaltung);
                     } else {
                         LOG.warn("Veranstaltung '" + dto.name + "' übersprungen: Organisator (Admin) mit Email " + organisatorenEmail + " nicht gefunden.");
                     }
                 }
+
+                count++;
+                protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung importiert", "Veranstaltung '" + veranstaltung.getName() + "' via CSV importiert.", veranstaltung.getId());
             }
         } catch (Exception e) {
             LOG.error("Kritischer Fehler beim Importieren der Veranstaltungen aus CSV: " + csvFilePath, e);

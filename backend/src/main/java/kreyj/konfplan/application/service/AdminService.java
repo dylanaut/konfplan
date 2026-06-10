@@ -59,6 +59,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.emptyList;
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
@@ -74,6 +75,7 @@ public class AdminService {
     private static final Logger LOG = Logger.getLogger(AdminService.class);
     public static final String CSV_PRIO_HEADER = "Teilnehmer E-Mail;Prioritäten";
     public static final String PV_FAIL_MESSAGE = ". Pflichtvortrag kann nicht erstellt werden.";
+    public static final String LEGENDE = "# Legende:";
 
     private final MailService mailService;
 
@@ -354,7 +356,7 @@ public class AdminService {
         Referent referent = Referent.findById(vortragDto.referentId);
         Objects.requireNonNull(referent, "Unbekannter Referent zu id: " + vortragDto.referentId + ".");
 
-        Vortrag created = null;
+        Vortrag created;
 
         if (vortragDto.istPflicht) {
             if (vortragDto.pflichtSlotId == null
@@ -376,11 +378,25 @@ public class AdminService {
             }
 
             List<Teilnehmer> teilnehmerDerGruppe = getGruppenTeilnehmer(vortragDto.pflichtGruppe, veranstaltungId);
+            List<String> nichtVerfuegbareTeilnehmer =
+                    teilnehmerDerGruppe.stream()
+                            .map(tn -> {
+                                        NutzerVerfuegbarkeit nv = tn.getVerfuegbarkeit(veranstaltung);
+                                        if (nv == null || nv.isVerfuegbar(vortragDto.pflichtSlotId)) {
+                                            return null;
+                                        } else {
+                                            return tn.getEmail();
+                                        }
+                                    }
+                            )
+                            .filter(Objects::nonNull)
+                            .toList();
 
-            if (!NutzerVerfuegbarkeit.alleNutzerVerfuegbar(teilnehmerDerGruppe, vortragDto.pflichtSlotId, veranstaltungId)) {
-                throw new CreateVortragException("Nicht alle Teilnehmer der Gruppe '" + vortragDto.pflichtGruppe
-                        + "' sind im Slot '" + pflichtSlot.getDescription() + "' verfügbar. (" +
-                        veranstaltung.getName() + ")");
+            if (!nichtVerfuegbareTeilnehmer.isEmpty()) {
+                throw new CreateVortragException("Teilnehmer der Gruppe '" + vortragDto.pflichtGruppe
+                        + "' sind im Slot '" + pflichtSlot.getDescription() + "' für '"
+                        + veranstaltung.getName() + "'  nicht verfügbar: "
+                        + String.join(", ", nichtVerfuegbareTeilnehmer) + ".");
             }
 
             if (kapazitaetZuGering(pflichtRaum, vortragDto.pflichtGruppe, veranstaltungId)) {
@@ -473,7 +489,7 @@ public class AdminService {
     }
 
     @Transactional
-    public int importVortraegeFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception {
+    public int importVortraegeFromCsv(Path csvFilePath, Long veranstaltungId) {
         int count = 0;
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
 
@@ -481,9 +497,7 @@ public class AdminService {
             LOG.error("CSV-Import (Vorträge) abgebrochen: Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
             throw new CsvImportException(csvFilePath, "Veranstaltung '" + veranstaltungId + "' nicht gefunden.");
         }
-        List<Raum> v_raeume = veranstaltung.getGebaeude().stream()
-                .flatMap(g -> g.getRaeume().stream())
-                .toList();
+        List<Raum> v_raeume = veranstaltung.getRaeume();
 
         Map<String, Map<Gebaeude, Raum>> raeumeByName = new HashMap<>();
         for (Raum r : v_raeume) {
@@ -586,8 +600,7 @@ public class AdminService {
 
                         count++;
                         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag importiert",
-                                "Vortrag '" + dto.titel + "' via" +
-                                        " CSV importiert.", vortrag.getId());
+                                "Vortrag '" + dto.titel + "' via CSV importiert.", vortrag.getId());
                     } catch (IllegalArgumentException e) {
                         LOG.warn("Vortrag '" + csvDto.titel + "' übersprungen aufgrund von Validierungsfehler: " + e.getMessage());
                     }
@@ -596,8 +609,7 @@ public class AdminService {
                     LOG.warn("Vortrag '" + csvDto.titel + "' übersprungen: Referent mit Email " + csvDto.referentEmail + " nicht gefunden oder kein Referent.");
                 }
             }
-        } catch (
-                Exception e) {
+        } catch (Exception e) {
             LOG.error("Kritischer Fehler beim Importieren der Vorträge aus CSV: " + csvFilePath, e);
             throw new CsvImportException(csvFilePath, e.getMessage());
         }
@@ -615,9 +627,21 @@ public class AdminService {
         }
 
         boolean headerLineFound = false;
+        Map<Integer, Wahlvortrag> legendIndexMap = EMPTY_MAP;
 
         try (BufferedReader reader = new BufferedReader(new FileReader(csvFilePath.toFile()))) {
-            String line;
+            String line = reader.readLine();
+
+            if (line.startsWith(LEGENDE)) {
+                List<Wahlvortrag> wahlvortraege = veranstaltung.getVortraege().stream()
+                        .filter(v -> v instanceof Wahlvortrag)
+                        .map(v -> (Wahlvortrag) v)
+                        .toList();
+                legendIndexMap = parseLegende(line.substring(LEGENDE.length()), wahlvortraege);
+            } else {
+                LOG.error("CSV-Import (Prioritäten) abgebrochen: Legende fehlt.");
+                throw new CsvImportException(csvFilePath, "Legende fehlt.");
+            }
 
             // Read data rows
             while ((line = reader.readLine()) != null) {
@@ -661,11 +685,12 @@ public class AdminService {
                             continue;
                         }
                         String[] data = wvPrio.split(":");
-                        Long vortragId = Long.parseLong(data[0].trim());
-                        Vortrag vortrag = Vortrag.findById(vortragId);
+                        Integer index = Integer.parseInt(data[0].trim());
+                        Wahlvortrag vortrag = legendIndexMap.get(index);
 
-                        if (!(vortrag instanceof Wahlvortrag) || !vortrag.getVeranstaltung().getId().equals(veranstaltungId)) {
-                            LOG.warn("Priorität für '" + teilnehmerEmail + "' übersprungen: Vortrag mit ID " + vortragId + " ist ungültig oder kein Wahlvortrag dieser Veranstaltung.");
+                        if (vortrag == null || !vortrag.getVeranstaltung().getId().equals(veranstaltungId)) {
+                            LOG.warn("Priorität für '" + teilnehmerEmail + "' übersprungen: legendenIndex " + index + " ist" +
+                                    " ungültig oder kein Wahlvortrag dieser Veranstaltung.");
                             continue;
                         }
 
@@ -684,7 +709,7 @@ public class AdminService {
                             count++;
                             protokollService.log(ProtokollKategorie.VORTRAEGE, "Priorität importiert", "Priorität für '" + teilnehmer.getEmail() + "' für Vortrag '" + vortrag.getTitel() + "' auf " + prioWert + " gesetzt.", vortrag.getId());
                         } catch (NumberFormatException e) {
-                            LOG.warn("Ungültiger Prioritätswert für Teilnehmer " + teilnehmerEmail + " und Vortrag " + vortragId);
+                            LOG.warn("Ungültiger Prioritätswert für Teilnehmer " + teilnehmerEmail + " und Vortrag " + vortrag.getTitel() + ": " + e.getMessage());
                         }
                     }
                 }
@@ -695,6 +720,31 @@ public class AdminService {
         }
         LOG.info("Prioritäten-Import abgeschlossen: " + count + " Prioritäten importiert/aktualisiert.");
         return count;
+    }
+
+    private Map<Integer, Wahlvortrag> parseLegende(String legende, List<Wahlvortrag> wvs) {
+        Map<Integer, Wahlvortrag> indexToVortragsIdMap = new HashMap<>();
+
+        for (String entry : legende.split(",")) {
+            String[] parts = entry.split("=");
+            if (parts.length != 2) {
+                LOG.warn("Uungültiger Legenden-Eintrag '" + parts + "'");
+            } else {
+                String titelPrefix = parts[1].trim();
+                Wahlvortrag wv = wvs.stream()
+                        .filter(v -> v.getTitel().startsWith(titelPrefix))
+                        .findFirst()
+                        .orElse(null);
+
+                if (wv != null) {
+                    indexToVortragsIdMap.put(Integer.parseInt(parts[0].trim()), wv);
+                } else {
+                    LOG.warn("Kein Wahlvortrag gefunden mit Legenden-Präfix '" + titelPrefix);
+                }
+            }
+        }
+
+        return indexToVortragsIdMap;
     }
 
 
@@ -965,9 +1015,7 @@ public class AdminService {
         }
 
         // 1. Lade alle relevanten Daten
-        List<Raum> relevanteRaeume = aktuelleVeranstaltung.getGebaeude().stream()
-                .flatMap(g -> g.getRaeume().stream())
-                .toList();
+        List<Raum> relevanteRaeume = aktuelleVeranstaltung.getRaeume();
         List<RaumVerfuegbarkeit> alleBelegungen = RaumVerfuegbarkeit.listAll();
         Map<Long, RaumVerfuegbarkeit> eigeneBelegungen = alleBelegungen.stream()
                 .filter(rv -> rv.getVeranstaltungId().equals(veranstaltungId))
@@ -1036,12 +1084,12 @@ public class AdminService {
 // #################################################################################################################
 
     @Transactional
-    public Set<String> getGruppen(Long veranstaltungId) {
+    public List<String> getGruppen(Long veranstaltungId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
         if (veranstaltung == null) {
             throw new FindEntityException(Veranstaltung.class, "ID " + veranstaltungId + " nicht gefunden.");
         }
-        return veranstaltung.getGruppen();
+        return veranstaltung.getGruppen().stream().sorted().toList();
     }
 
     @Transactional
