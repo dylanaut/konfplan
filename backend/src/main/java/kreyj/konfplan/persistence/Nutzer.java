@@ -114,7 +114,7 @@ public abstract class Nutzer extends VersionedEntity {
             } else {
                 nv.setVerfuegbareSlotIds(slotIds);
             }
-            nv.persistAndFlush();
+            nv.persist();
         }
     }
 
@@ -154,7 +154,7 @@ public abstract class Nutzer extends VersionedEntity {
         if (nv == null) {
             if (createIfMissing) {
                 nv = new NutzerVerfuegbarkeit(this, veranstaltung, veranstaltung.getSlotIds());
-                nv.persistAndFlush();
+                nv.persist();
             } else {
                 throw new IllegalStateException("Missing NutzerVerfuegbarkeit für " + this.getEmail()
                         + " in Veranstaltung '" + veranstaltung.getName() + "'");
@@ -167,7 +167,7 @@ public abstract class Nutzer extends VersionedEntity {
             nv.removeSlot(slot);
         }
 
-        nv.persistAndFlush();
+        nv.persist();
     }
 
 

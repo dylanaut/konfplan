@@ -78,7 +78,7 @@ public class Pflichtvortrag extends Vortrag {
 
         // Verfuegbarkeit für Teilnehmenden der neuen Gruppe prüfen
         List<Teilnehmer> neueGruppenTeilnehmer =
-                Teilnehmer.getGruppenTeilnehmer(neuePflichtgruppe, veranstaltungId);
+                Teilnehmer.getGruppenTeilnehmer(neuePflichtgruppe, veranstaltung);
 
         if (!alleNutzerVerfuegbar(neueGruppenTeilnehmer, pflichtslot.getId(), veranstaltungId)) {
             throw new UpdateVortragException("Nicht alle Teilnehmer der neuen Gruppe '" + neuePflichtgruppe
@@ -88,7 +88,7 @@ public class Pflichtvortrag extends Vortrag {
         // Verfuegbarkeit für Teilnehmenden der alten Gruppe wiederherstellen
         if (StringUtils.isNotBlank(pflichtgruppe)) {
             List<Teilnehmer> alteGruppenTeilnehmer =
-                    Teilnehmer.getGruppenTeilnehmer(pflichtgruppe, veranstaltungId);
+                    Teilnehmer.getGruppenTeilnehmer(pflichtgruppe, veranstaltung);
             for (Teilnehmer teilnehmer : alteGruppenTeilnehmer) {
                 NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(teilnehmer, veranstaltung));
                 if (null != nv) {
@@ -163,7 +163,7 @@ public class Pflichtvortrag extends Vortrag {
             }
         }
 
-        List<Teilnehmer> teilnehmerDerGruppe = Teilnehmer.getGruppenTeilnehmer(pflichtgruppe, veranstaltung.getId());
+        List<Teilnehmer> teilnehmerDerGruppe = Teilnehmer.getGruppenTeilnehmer(pflichtgruppe, veranstaltung);
 
         for (Teilnehmer teilnehmer : teilnehmerDerGruppe) {
             NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(teilnehmer, veranstaltung));
@@ -195,7 +195,7 @@ public class Pflichtvortrag extends Vortrag {
 
 
     @Override
-    public void afterPersistAndFlush() {
+    public void afterPersist() {
         initNutzerVerfuegbarkeitFuerGruppe();
         // todo ist die reihenfolge hier wichtig?
         initRaumVerfuegbarkeiten();
@@ -215,7 +215,7 @@ public class Pflichtvortrag extends Vortrag {
             }
         }
         if (pflichtgruppe != null && !pflichtgruppe.isEmpty()) {
-            List<Teilnehmer> teilnehmerDerGruppe = Teilnehmer.getGruppenTeilnehmer(pflichtgruppe, veranstaltung.getId());
+            List<Teilnehmer> teilnehmerDerGruppe = Teilnehmer.getGruppenTeilnehmer(pflichtgruppe, veranstaltung);
             for (Teilnehmer teilnehmer : teilnehmerDerGruppe) {
                 NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(teilnehmer, veranstaltung));
                 if (null != nv) {
@@ -232,8 +232,8 @@ public class Pflichtvortrag extends Vortrag {
 
     /**
      * Set unavailability for the new room
-     *
-     * AT deprecated in factory integrieren
+     * <p>
+     * @ AT deprecated in factory integrieren
      */
     // TODO in factory integrieren
     private void initRaumVerfuegbarkeiten() {
@@ -252,7 +252,7 @@ public class Pflichtvortrag extends Vortrag {
                     .filter(slot -> !Objects.equals(slot, pflichtslot))
                     .map(IdEntity::getId)
                     .collect(Collectors.toSet());
-            new RaumVerfuegbarkeit(pflichtraum, veranstaltung, verfuegbareIdsOhnePflicht).persistAndFlush();
+            new RaumVerfuegbarkeit(pflichtraum, veranstaltung, verfuegbareIdsOhnePflicht).persist();
         }
     }
 
@@ -260,7 +260,7 @@ public class Pflichtvortrag extends Vortrag {
      * Remove availability for participants of the new group - after persist()
      */
     private void initNutzerVerfuegbarkeitFuerGruppe() {
-        List<Teilnehmer> gruppenTeilnehmer = Teilnehmer.getGruppenTeilnehmer(pflichtgruppe, veranstaltung.getId());
+        List<Teilnehmer> gruppenTeilnehmer = Teilnehmer.getGruppenTeilnehmer(pflichtgruppe, veranstaltung);
         for (Teilnehmer teilnehmer : gruppenTeilnehmer) {
             NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(teilnehmer, veranstaltung));
 

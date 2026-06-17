@@ -10,7 +10,7 @@ import kreyj.konfplan.domain.exception.CreateSlotException;
 import kreyj.konfplan.domain.exception.CreateVortragException;
 import kreyj.konfplan.domain.exception.CsvImportException;
 import kreyj.konfplan.domain.exception.DeleteVortragsgruppeException;
-import kreyj.konfplan.domain.exception.FindEntityException;
+import kreyj.konfplan.domain.exception.EntityNotFoundException;
 import kreyj.konfplan.domain.exception.UpdateNutzerException;
 import kreyj.konfplan.domain.exception.UpdateVortragException;
 import kreyj.konfplan.domain.exception.VeranstaltungException;
@@ -64,7 +64,6 @@ import static java.util.Collections.emptyList;
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvId;
-import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvIdL;
 import static kreyj.konfplan.persistence.Teilnehmer.getGruppenTeilnehmer;
 import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvIdL;
 import static kreyj.konfplan.util.DateHelper.DATE_FORMAT;
@@ -241,7 +240,7 @@ public class AdminService {
             t.setGruppen(dto.gruppen);
         }
 
-        nutzer.persistAndFlush();
+        nutzer.persist();
 
         protokollService.log(ProtokollKategorie.NUTZER, "Nutzer aktualisiert", "Nutzer '" + nutzer.getEmail() + "' aktualisiert.", nutzer.getId());
         return mapNutzerToDto(nutzer);
@@ -283,12 +282,12 @@ public class AdminService {
 
         Nutzer nutzer = Nutzer.findById(nutzerId);
         if (nutzer == null) {
-            throw new FindEntityException(Nutzer.class, "Nutzer nicht gefunden.");
+            throw new EntityNotFoundException(Nutzer.class, "Nutzer nicht gefunden.");
         }
 
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
         if (veranstaltung == null) {
-            throw new FindEntityException(Veranstaltung.class, "Nutzer oder Veranstaltung nicht gefunden.");
+            throw new EntityNotFoundException(Veranstaltung.class, "Nutzer oder Veranstaltung nicht gefunden.");
         }
 
         // Validierung: Veranstaltung darf nicht in der Vergangenheit liegen (Enddatum prüfen)
@@ -377,7 +376,7 @@ public class AdminService {
                         veranstaltung.getName() + ")");
             }
 
-            List<Teilnehmer> teilnehmerDerGruppe = getGruppenTeilnehmer(vortragDto.pflichtGruppe, veranstaltungId);
+            List<Teilnehmer> teilnehmerDerGruppe = getGruppenTeilnehmer(vortragDto.pflichtGruppe, veranstaltung);
             List<String> nichtVerfuegbareTeilnehmer =
                     teilnehmerDerGruppe.stream()
                             .map(tn -> {
@@ -399,7 +398,7 @@ public class AdminService {
                         + String.join(", ", nichtVerfuegbareTeilnehmer) + ".");
             }
 
-            if (kapazitaetZuGering(pflichtRaum, vortragDto.pflichtGruppe, veranstaltungId)) {
+            if (kapazitaetZuGering(pflichtRaum, vortragDto.pflichtGruppe, veranstaltung)) {
                 throw new CreateVortragException("Raumkapazität von '" + pflichtRaum.getName() + "' reicht für die Gruppe '"
                         + vortragDto.pflichtGruppe + "' nicht aus. (" + veranstaltung.getName() + ")");
             }
@@ -408,8 +407,8 @@ public class AdminService {
             Pflichtvortrag pv = new Pflichtvortrag(vortragDto.titel, vortragDto.inhalt, referent,
                     veranstaltung, vortragDto.pflichtGruppe, pflichtRaum, pflichtSlot);
             pv.setAusstattung(vortragDto.ausstattung);
-            pv.persistAndFlush();
-            pv.afterPersistAndFlush();
+            pv.persist();
+            pv.afterPersist();
 
             created = pv;
 
@@ -427,8 +426,8 @@ public class AdminService {
             Wahlvortrag wv = new Wahlvortrag(vortragDto.titel, vortragDto.inhalt, referent,
                     vortragDto.wiederholbar, vortragDto.maxWiederholungen, veranstaltung);
             wv.setAusstattung(vortragDto.ausstattung);
-            wv.persistAndFlush();
-            wv.afterPersistAndFlush();
+            wv.persist();
+            wv.afterPersist();
 
             created = wv;
         }
@@ -763,7 +762,7 @@ public class AdminService {
         validateSlot(slotDto, v, null);
 
         Slot slot = new Slot(slotDto.description, slotDto.startTime, slotDto.endTime, v);
-        slot.persistAndFlush();
+        slot.persist();
         v.addSlot(slot);
         v.persist();
 
@@ -842,15 +841,15 @@ public class AdminService {
     }
 
     @Transactional
-    public boolean deleteSlot(Long id, Long veranstaltungId) {
+    public boolean deleteSlot(Long id, Veranstaltung veranstaltung) {
         Slot slot = Slot.findById(id);
-        if (slot != null && slot.getVeranstaltung().getId().equals(veranstaltungId)) {
+        if (slot != null && slot.getVeranstaltung().getId().equals(veranstaltung)) {
             String desc = slot.getDescription();
 
             // Delete all availabilities associated with this slot
-            NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>find("veranstaltungId", veranstaltungId).stream()
+            NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>find("veranstaltungId", veranstaltung.getId()).stream()
                     .forEach(v -> v.removeSlot(id));
-            RaumVerfuegbarkeit.<RaumVerfuegbarkeit>find("veranstaltungId", veranstaltungId).stream()
+            RaumVerfuegbarkeit.<RaumVerfuegbarkeit>find("veranstaltungId", veranstaltung.getId()).stream()
                     .forEach(v -> v.removeSlot(id));
 
 
@@ -953,32 +952,34 @@ public class AdminService {
                 updated.verfuegbareSlotIds.forEach(vv::addSlot);
             }
         }
-        entity.persistAndFlush();
+        entity.persist();
 
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag aktualisiert", "Vortrag '" + entity.getTitel() + "' aktualisiert.", entity.getId());
         return ReferentService.mapVortragToDto(entity);
     }
 
     @Transactional
-    public boolean deleteVortrag(Long id, Long veranstaltungId) {
+    public boolean deleteVortrag(Long id, Veranstaltung veranstaltung) {
+        Objects.requireNonNull(id, "ID darf nicht NULL sein");
+        Objects.requireNonNull(veranstaltung, "Veranstaltung darf nicht NULL sein");
+
         Vortrag entity = Vortrag.findById(id);
-        if (entity == null || !entity.getVeranstaltung().getId().equals(veranstaltungId)) {
+        if (entity == null || !entity.getVeranstaltung().getId().equals(veranstaltung.getId())) {
             return false;
         }
 
         if (entity instanceof Pflichtvortrag pv) {
             // delete RaumVerfuegbarkeit
-            RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvIdL(pv.getPflichtraum().getId(), veranstaltungId));
+            RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvId(pv.getPflichtraum(), veranstaltung));
 
             if (rv != null) {
                 rv.addSlot(pv.getPflichtslot());
             }
 
             // delete NutzerVerfuegbarkeit'en
-            List<Teilnehmer> teilnehmerDerGruppe = getGruppenTeilnehmer(pv.getPflichtgruppe(), veranstaltungId);
+            List<Teilnehmer> teilnehmerDerGruppe = getGruppenTeilnehmer(pv.getPflichtgruppe(), veranstaltung);
             for (Teilnehmer teilnehmer : teilnehmerDerGruppe) {
-                NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(teilnehmer.getId(),
-                        veranstaltungId));
+                NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(teilnehmer, veranstaltung));
                 if (nv != null) {
                     nv.addSlot(pv.getPflichtslot());
                 }
@@ -986,7 +987,7 @@ public class AdminService {
         }
 
         // delete VortragVerfuegbarkeit'en
-        VortragVerfuegbarkeit vv = VortragVerfuegbarkeit.findById(vvIdL(id, veranstaltungId));
+        VortragVerfuegbarkeit vv = VortragVerfuegbarkeit.findById(vvIdL(id, veranstaltung.getId()));
 
         if (vv != null) {
             vv.delete();
@@ -1087,7 +1088,7 @@ public class AdminService {
     public List<String> getGruppen(Long veranstaltungId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
         if (veranstaltung == null) {
-            throw new FindEntityException(Veranstaltung.class, "ID " + veranstaltungId + " nicht gefunden.");
+            throw new EntityNotFoundException(Veranstaltung.class, "ID " + veranstaltungId + " nicht gefunden.");
         }
         return veranstaltung.getGruppen().stream().sorted().toList();
     }
@@ -1207,30 +1208,15 @@ public class AdminService {
         return dto;
     }
 
-    public static NutzerDto mapReferentToNutzerDto(Referent referent) {
-        NutzerDto dto = new NutzerDto();
-        dto.id = referent.getId();
-        dto.version = referent.getVersion();
-        dto.email = referent.getEmail();
-        dto.firstName = referent.getFirstName();
-        dto.lastName = referent.getLastName();
-        dto.jobRole = referent.getJobRole();
-        dto.organisation = referent.getOrganisation();
-        dto.slogan = referent.getSlogan();
-        dto.biography = referent.getBiography();
-        dto.role = referent.getRole();
-        return dto;
-    }
-
 // -------------------------------------------------------------------
 // Helper methods
 // -------------------------------------------------------------------
 
-    private boolean kapazitaetZuGering(Raum raum, String gruppe, Long veranstaltungId) {
+    private boolean kapazitaetZuGering(Raum raum, String gruppe, Veranstaltung veranstaltung) {
         if (raum == null || raum.getKapazitaet() == null) {
             return false;
         }
-        long activeTeilnehmerCount = getGruppenTeilnehmer(gruppe, veranstaltungId).size();
+        long activeTeilnehmerCount = getGruppenTeilnehmer(gruppe, veranstaltung).size();
 
         return raum.getKapazitaet() < activeTeilnehmerCount;
     }

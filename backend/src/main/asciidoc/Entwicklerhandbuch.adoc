@@ -135,7 +135,7 @@ Wichtige Konfigurationen:
 Der `PlanErstellungService` ruft MiniZinc als externen Prozess auf:
 
 *   **Modell:** `src/main/resources/minizinc/vortragsplanung.mzn`
-*   Timeouts und Solver-Konfiguration (z.B. OR-Tools) über `SolverConfigDto`.
+*   Timeouts und Solver-Konfiguration (z.B. OR-Tools) über `SolverConfig`.
 
 [[_frontend_spezifika]]
 == 6. Frontend-Spezifika

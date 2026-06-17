@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Laufzettel für {nutzer.firstName} {nutzer.lastName}</title>
+    <style>
+        body { font-family: sans-serif; }
+        h1, h2, h3 { color: #333; }
+        .vortrag { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; }
+        .teilnehmer-liste { list-style-type: none; padding-left: 0; }
+        .teilnehmer-liste li { display: flex; align-items: center; margin-bottom: 5px; }
+        .checkbox { width: 20px; height: 20px; border: 1px solid #999; margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Laufzettel für {nutzer.firstName} {nutzer.lastName}</h1>
+    <h2>Veranstaltung: {veranstaltung.name}</h2>
+
+    {#if plan}
+        {#for vortrag in plan}
+            <div class="vortrag">
+                <h3>{vortrag.vortragTitel}</h3>
+                <p><strong>Zeit:</strong> {vortrag.slotZeit}</p>
+                <p><strong>Raum:</strong> {vortrag.raumName} ({vortrag.gebaeudeName})</p>
+
+                <h4>Teilnehmerliste:</h4>
+                {#if vortrag.teilnehmer}
+                    <ul class="teilnehmer-liste">
+                        {#for tn in vortrag.teilnehmer}
+                            <li>
+                                <div class="checkbox"></div>
+                                {tn.firstName} {tn.lastName} ({tn.gruppe})
+                            </li>
+                        {/for}
+                    </ul>
+                {#else}
+                    <p>Keine Teilnehmer zugewiesen.</p>
+                {/if}
+            </div>
+        {/for}
+    {#else}
+        <p>Für Sie sind keine Vorträge geplant.</p>
+    {/if}
+</body>
+</html>

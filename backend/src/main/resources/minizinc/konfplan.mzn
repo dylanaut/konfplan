@@ -155,4 +155,4 @@ solve minimize kosten_prioritaeten - (anzahl_zuweisungen * 10) + kosten_raumwech
 % OUTPUT
 % =============================================================================
 
-output ["{ \"instanz_slot\": \(instanz_slot), \"instanz_raum\": \(instanz_raum), \"besucht\": \(besucht), \"kosten\": \(kosten_prioritaeten), \"zuweisungen\": \(anzahl_zuweisungen), \"input_data\": { \"teilnehmer_oids\": \(teilnehmer_oids), \"wahlvortrag_oids\": \(wahlvortrag_oids), \"slot_oids\": \(slot_oids), \"raum_oids\": \(raum_oids) } }"];
+output ["{ \"instanz_slot\": \(instanz_slot), \"instanz_raum\": \(instanz_raum), \"besucht\": \(besucht), \"kosten\": \(kosten_prioritaeten), \"zuweisungen\": \(anzahl_zuweisungen), \"teilnehmer_oids\": \(teilnehmer_oids), \"wahlvortrag_oids\": \(wahlvortrag_oids), \"slot_oids\": \(slot_oids), \"raum_oids\": \(raum_oids) }"];

@@ -37,11 +37,11 @@ class NutzerVerfuegbarkeitResourceTest extends DatabaseCleaner {
         Veranstaltung v = new Veranstaltung();
         v.setName("Test Event");
         v.setBeginntAm(now);
-        v.persistAndFlush();
+        v.persist();
         testVid = v.getId();
 
         Slot s = new Slot("Slot 1", now, now.plusHours(1), v);
-        s.persistAndFlush();
+        s.persist();
 
         v.addSlot(s);
         slotId = s.getId();
@@ -103,7 +103,7 @@ class NutzerVerfuegbarkeitResourceTest extends DatabaseCleaner {
 
         Referent r = new Referent();
         r.setEmail("del@verf.de");
-        r.persistAndFlush();
+        r.persist();
 
         r.addVeranstaltung(v);
 

@@ -1,16 +1,13 @@
 package kreyj.konfplan.presentation;
 
-import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.MediaType;
-import kreyj.konfplan.application.service.TeilnehmerService;
 import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
@@ -49,10 +46,6 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
     Slot slot1, slot2;
     Referent referent;
     Teilnehmer teilnehmer1, teilnehmer2, teilnehmer3;
-    @Inject
-    TeilnehmerService teilnehmerService;
-    @Inject
-    DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig;
 
     @BeforeEach
     @Transactional
@@ -61,7 +54,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         Admin admin = new Admin();
         admin.setEmail("admin@example.com");
         admin.setPasswordHash("hash");
-        admin.persistAndFlush();
+        admin.persist();
 
         gebaeude = new Gebaeude();
         gebaeude.setName("Hauptgebäude");
@@ -69,7 +62,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         gebaeude.setPostleitzahl("12345");
         gebaeude.setOrt("Testort");
         gebaeude.setStrasse("Teststraße");
-        gebaeude.persistAndFlush();
+        gebaeude.persist();
 
         veranstaltung = new Veranstaltung();
         veranstaltung.setName("Test Event");
@@ -78,30 +71,30 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         veranstaltung.addGebaeude(gebaeude);
         veranstaltung.addGruppe("Gruppe A");
         veranstaltung.addGruppe("Gruppe B");
-        veranstaltung.persistAndFlush();
+        veranstaltung.persist();
 
         raum1 = new Raum();
         raum1.setName("Raum 1");
         raum1.setKapazitaet(2);
-        raum1.persistAndFlush();
+        raum1.persist();
         gebaeude.addRaum(raum1);
 
         raum2 = new Raum();
         raum2.setName("Raum 2");
         raum2.setKapazitaet(10);
-        raum2.persistAndFlush();
+        raum2.persist();
         gebaeude.addRaum(raum2);
 
         slot1 = new Slot("Slot 1",
                 LocalDateTime.of(2024, 1, 1, 9, 0),
                 LocalDateTime.of(2024, 1, 1, 10, 0), veranstaltung);
-        slot1.persistAndFlush();
+        slot1.persist();
         veranstaltung.addSlot(slot1);
 
         slot2 = new Slot("Slot 2",
                 LocalDateTime.of(2024, 1, 1, 10, 0),
                 LocalDateTime.of(2024, 1, 1, 11, 0), veranstaltung);
-        slot2.persistAndFlush();
+        slot2.persist();
         veranstaltung.addSlot(slot2);
 
         referent = new Referent();
@@ -109,7 +102,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         referent.setFirstName("Ref");
         referent.setLastName("Erent");
         referent.setPasswordHash("hash");
-        referent.persistAndFlush();
+        referent.persist();
         referent.addVeranstaltung(veranstaltung);
 
         teilnehmer1 = new Teilnehmer();
@@ -117,7 +110,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         teilnehmer1.setFirstName("TN1");
         teilnehmer1.setLastName("GruppeA");
         teilnehmer1.setGruppen(Set.of("Gruppe A"));
-        teilnehmer1.persistAndFlush();
+        teilnehmer1.persist();
         teilnehmer1.addVeranstaltung(veranstaltung);
 
         teilnehmer2 = new Teilnehmer();
@@ -125,7 +118,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         teilnehmer2.setFirstName("TN2");
         teilnehmer2.setLastName("GruppeA");
         teilnehmer2.setGruppen(Set.of("Gruppe A"));
-        teilnehmer2.persistAndFlush();
+        teilnehmer2.persist();
         teilnehmer2.addVeranstaltung(veranstaltung);
 
         teilnehmer3 = new Teilnehmer();
@@ -133,7 +126,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         teilnehmer3.setFirstName("TN3");
         teilnehmer3.setLastName("GruppeB");
         teilnehmer3.setGruppen(Set.of("Gruppe B"));
-        teilnehmer3.persistAndFlush();
+        teilnehmer3.persist();
         teilnehmer3.addVeranstaltung(veranstaltung);
     }
 

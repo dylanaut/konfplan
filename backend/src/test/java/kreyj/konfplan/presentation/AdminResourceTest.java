@@ -51,7 +51,7 @@ class AdminResourceTest extends DatabaseCleaner {
         Admin admin = new Admin();
         admin.setEmail("admin@example.com");
         admin.setPasswordHash("hash");
-        admin.persistAndFlush();
+        admin.persist();
 
         adminId = admin.getId();
     }
@@ -160,7 +160,7 @@ class AdminResourceTest extends DatabaseCleaner {
             Veranstaltung v = new Veranstaltung();
             v.setName("Invite Event");
             v.setBeginntAm(LocalDateTime.now().plusDays(1));
-            v.persistAndFlush();
+            v.persist();
             vIdArray[0] = v.getId();
 
             Admin orga = Admin.findById(adminId);
@@ -192,20 +192,20 @@ class AdminResourceTest extends DatabaseCleaner {
             v.setName("Event " + System.currentTimeMillis());
             v.setBeginntAm(now);
             v.setEndetAm(now.plusHours(2));
-            v.persistAndFlush();
+            v.persist();
             vId[0] = v.getId();
 
             Slot slot = new Slot("Slot 1", now, now.plusHours(1), v);
-            slot.persistAndFlush();
+            slot.persist();
             slotId[0] = slot.getId();
             v.addSlot(slot);
-            v.persistAndFlush();
+            v.persist();
 
             Referent referent = new Referent();
             referent.setEmail("ref@test.de");
             referent.setPasswordHash("hash");
 
-            referent.persistAndFlush();
+            referent.persist();
             refId[0] = referent.getId();
 
             referent.addVeranstaltung(v);
@@ -244,7 +244,7 @@ class AdminResourceTest extends DatabaseCleaner {
             t.setPasswordHash("password");
             t.setFirstName("Original");
             t.setLastName("Name");
-            t.persistAndFlush();
+            t.persist();
             tnId[0] = t.getId();
         });
 

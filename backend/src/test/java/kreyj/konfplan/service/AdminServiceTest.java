@@ -43,7 +43,7 @@ public class AdminServiceTest {
         user.setEmail("test@example.com");
         user.setFirstName("Test");
         user.setLastName("User");
-        user.persistAndFlush();
+        user.persist();
         testUserId = user.getId();
 
         // Create a test event
@@ -51,14 +51,14 @@ public class AdminServiceTest {
         veranstaltung.setName("Test Konferenz");
         veranstaltung.setBeginntAm(LocalDateTime.now());
         veranstaltung.setEndetAm(LocalDateTime.now().plusDays(1));
-        veranstaltung.persistAndFlush();
+        veranstaltung.persist();
 
         // Create a test participant
         Teilnehmer teilnehmer = new Teilnehmer();
         teilnehmer.setEmail("teilnehmer@example.com");
         teilnehmer.setFirstName("Max");
         teilnehmer.setLastName("Mustermann");
-        teilnehmer.persistAndFlush();
+        teilnehmer.persist();
         teilnehmer.addVeranstaltung(veranstaltung);
 
         tnId = teilnehmer.getId();
@@ -138,12 +138,12 @@ public class AdminServiceTest {
 //        tn.persist();
 
         // Test
-        List<Teilnehmer> result = Teilnehmer.getGruppenTeilnehmer("Gruppe A", veranstaltung.getId());
+        List<Teilnehmer> result = Teilnehmer.getGruppenTeilnehmer("Gruppe A", veranstaltung);
         assertThat(result.size()).isEqualTo(1);
         assertThat(result.getFirst().getId()).isEqualTo(tnId);
 
         // Test with non-existent group
-        List<Teilnehmer> emptyResult = Teilnehmer.getGruppenTeilnehmer("Gruppe B", veranstaltung.getId());
+        List<Teilnehmer> emptyResult = Teilnehmer.getGruppenTeilnehmer("Gruppe B", veranstaltung);
         assertThat(emptyResult.isEmpty()).isTrue();
     }
 

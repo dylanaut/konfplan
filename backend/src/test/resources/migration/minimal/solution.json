@@ -1,0 +1,54 @@
+{
+  "instanz_slot": [
+    [
+      3,
+      0
+    ],
+    [
+      2,
+      0
+    ]
+  ],
+  "instanz_raum": [
+    [
+      1,
+      0
+    ],
+    [
+      1,
+      0
+    ]
+  ],
+  "besucht": [
+    [
+      [
+        false,
+        false
+      ],
+      [
+        false,
+        false
+      ]
+    ],
+    [
+      [
+        true,
+        false
+      ],
+      [
+        true,
+        false
+      ]
+    ],
+    [
+      [
+        true,
+        false
+      ],
+      [
+        true,
+        false
+      ]
+    ]
+  ]
+}

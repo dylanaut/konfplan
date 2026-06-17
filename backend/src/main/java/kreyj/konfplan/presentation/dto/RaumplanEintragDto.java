@@ -15,6 +15,23 @@ public class RaumplanEintragDto {
     public String vortragTitel;
     public String referentName;
     public String vortragTyp;
-    public int teilnehmerCount;
-    public List<TeilnehmerSimpleDto> teilnehmer; // Für Anwesenheitsliste
+    public List<TeilnehmerDto> teilnehmer;
+
+
+    public int anzahlTeilnehmer() {
+        return teilnehmer == null ? 0 : teilnehmer.size();
+    }
+
+
+    @Override
+    public String toString() {
+        return "RaumplanEintragDto{" +
+                "slotId=" + slotId +
+                ", titel='" + vortragTitel + '\'' +
+                ", ref='" + referentName + '\'' +
+                ", vortragTyp='" + vortragTyp + '\'' +
+                ", teilnehmer=" + teilnehmer +
+                '}';
+    }
 }
+

@@ -48,7 +48,8 @@
             <button @click="preview('freie-slots-referenten')"
                     class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">Vorschau
             </button>
-            <button @click="download('freie-slots-referenten-pdf')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">
+            <button @click="download('freie-slots-referenten-pdf')"
+                    class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">
               PDF
             </button>
           </div>
@@ -62,8 +63,26 @@
             <button @click="preview('freie-slots-teilnehmer')"
                     class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">Vorschau
             </button>
-            <button @click="download('freie-slots-teilnehmer-pdf')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">
-              PDF
+            <button @click="download('freie-slots-teilnehmer-pdf')"
+                    class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">PDF
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div class="flex items-center space-x-2">
+            <img src="/logo/konfplan-light_footer.svg" alt="Icon" class="w-5 h-5"/>
+            <span class="font-semibold">Messeplaner</span>
+          </div>
+          <div class="space-x-2">
+            <button @click="preview('admin-dashboard')"
+                    class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">Dashboard
+            </button>
+            <button @click="preview('teilnehmer-dashboard')"
+                    class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">Teilnehmer
+            </button>
+            <button @click="preview('prios-dashboard')"
+                    class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">Prios
             </button>
           </div>
         </div>
@@ -203,8 +222,8 @@ const belegungsplanProTag = computed(() => {
 const fetchReport = async (report, blobType) => {
   try {
     const vid = eventContext.selectedEvent.id;
-    const response = await api.get(`/api/reports/${vid}/${report}`, { responseType: 'blob' });
-    return new Blob([response.data], { type: blobType });
+    const response = await api.get(`/api/reports/${vid}/${report}`, {responseType: 'blob'});
+    return new Blob([response.data], {type: blobType});
   } catch (error) {
     console.error(`Fehler beim Abrufen von ${report}:`, error);
     return null;
@@ -214,8 +233,19 @@ const fetchReport = async (report, blobType) => {
 const preview = async (report) => {
   const file = await fetchReport(report, 'text/html;charset=utf-8');
   if (file) {
-    const fileURL = URL.createObjectURL(file);
-    window.open(fileURL, '_blank');
+    // Für PDFs weiterhin die Blob-URL verwenden, da sie den PDF-Viewer des Browsers korrekt initialisiert.
+    if (file.type.includes('pdf')) {
+      const fileURL = URL.createObjectURL(file);
+      window.open(fileURL, '_blank');
+    } else {
+      // Für HTML den Inhalt manuell in ein neues Fenster schreiben, um den Tab-Titel korrekt zu setzen.
+      const htmlContent = await file.text();
+      const newWindow = window.open('', '_blank');
+      if (newWindow) {
+        newWindow.document.writeln(htmlContent);
+        newWindow.document.close(); // Wichtig, um das Laden abzuschließen
+      }
+    }
   }
 };
 

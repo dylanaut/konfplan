@@ -39,14 +39,14 @@ class CsvImportTest extends DatabaseCleaner {
         Admin admin = new Admin();
         admin.setEmail("admin@test.de");
         admin.setPasswordHash("hash");
-        admin.persistAndFlush();
+        admin.persist();
 
         Referent r = new Referent();
         r.setEmail("vortrag@ref.de");
         r.setFirstName("Max");
         r.setLastName("Ref");
         r.setPasswordHash("hash");
-        r.persistAndFlush();
+        r.persist();
 
         Gebaeude gebaeude = setupGebaeude("RKS_LINZ");
         gebaeude.addRaum(new Raum("A101", 30));
@@ -58,7 +58,7 @@ class CsvImportTest extends DatabaseCleaner {
         r.addVeranstaltung(veranstaltung);
         Slot slot1 = new Slot("Slot 1", veranstaltung.getBeginntAm(),
                 veranstaltung.getBeginntAm().plusHours(1), veranstaltung);
-        slot1.persistAndFlush();
+        slot1.persist();
         veranstaltung.addSlot(slot1);
     }
 
@@ -81,10 +81,10 @@ class CsvImportTest extends DatabaseCleaner {
         v.setBeginntAm(LocalDateTime.of(2025, 10, 10, 9, 0));
         v.setEndetAm(LocalDateTime.of(2025, 10, 10, 17, 0));
         gebaeudeList.forEach(v::addGebaeude);
-        v.persistAndFlush();
+        v.persist();
 
         admin.addVeranstaltung(v);
-        admin.persistAndFlush();
+        admin.persist();
 
         return v.getId();
     }

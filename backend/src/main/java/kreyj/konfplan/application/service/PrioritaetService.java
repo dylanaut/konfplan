@@ -1,15 +1,26 @@
 package kreyj.konfplan.application.service;
 
+import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Prioritaet;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.presentation.dto.PrioritaetRequest;
-import kreyj.konfplan.persistence.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
-import static jakarta.ws.rs.core.Response.Status.*;
+import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
+import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
+import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 
 @ApplicationScoped
 public class PrioritaetService {
@@ -23,7 +34,7 @@ public class PrioritaetService {
 
         // Deadline Check
         if (!requests.isEmpty()) {
-            Vortrag v1 = Vortrag.findById(requests.getFirst().vortragId);
+            Wahlvortrag v1 = Wahlvortrag.findById(requests.getFirst().vortragId);
             if (v1 != null) {
                 Veranstaltung v = v1.getVeranstaltung();
                 if (v.getDeadlineTeilnehmer() != null && v.getDeadlineTeilnehmer().isBefore(LocalDateTime.now())) {
@@ -53,17 +64,17 @@ public class PrioritaetService {
 
         // 4. Neue Prioritäten speichern
         for (PrioritaetRequest req : requests) {
-            Vortrag vortrag = Vortrag.findById(req.vortragId);
+            Wahlvortrag vortrag = Wahlvortrag.findById(req.vortragId);
             if (vortrag != null) {
                 Prioritaet entity = new Prioritaet();
                 entity.setTeilnehmer(teilnehmer);
                 entity.setVortrag(vortrag);
                 entity.setPrioWert(req.prioWert); // Hier umbenannt
-                entity.setLastUpdated(LocalDateTime.now());
                 entity.persist();
             }
         }
     }
+
 
     @Transactional
     public void updateSinglePrioritaet(Long userId, Long vortragId, int prioWert) {
@@ -72,9 +83,9 @@ public class PrioritaetService {
             throw new WebApplicationException("Teilnehmer nicht gefunden", NOT_FOUND.getStatusCode());
         }
 
-        Vortrag vortrag = Vortrag.findById(vortragId);
+        Wahlvortrag vortrag = Wahlvortrag.findById(vortragId);
         if (vortrag == null) {
-            throw new WebApplicationException("Vortrag nicht gefunden", NOT_FOUND.getStatusCode());
+            throw new WebApplicationException("Wahlvortrag nicht gefunden", NOT_FOUND.getStatusCode());
         }
 
         if (prioWert < 0 || prioWert > 10) {
@@ -95,11 +106,12 @@ public class PrioritaetService {
             p.setVortrag(vortrag);
         }
         p.setPrioWert(prioWert);
-        p.setLastUpdated(LocalDateTime.now());
         p.persist();
     }
 
-    public List<Prioritaet> getPrioritaetenForUser(String email) {
+
+    @Transactional
+    public List<Prioritaet> getNutzerPrioritaeten(String email) {
         Nutzer nutzer = Nutzer.findByEmail(email);
 
         if (!(nutzer instanceof Teilnehmer teilnehmer)) {
@@ -107,5 +119,47 @@ public class PrioritaetService {
         }
 
         return Prioritaet.list("teilnehmer", teilnehmer);
+    }
+
+
+    @Transactional
+    public List<Prioritaet> getNutzerPrioritaeten(Long userId) {
+        Nutzer nutzer = Nutzer.findById(userId);
+
+        if (!(nutzer instanceof Teilnehmer teilnehmer)) {
+            throw new WebApplicationException("Nutzer ist kein Teilnehmer", BAD_REQUEST.getStatusCode());
+        }
+
+        return Prioritaet.list("teilnehmer", teilnehmer);
+    }
+
+
+    @RegisterForReflection
+    record VortragPrio(
+            @ProjectedFieldName("vortrag.id")
+            Long vortragId,
+            @ProjectedFieldName("prioWert")
+            Integer prioWert) {
+    }
+
+
+    @Transactional
+    public Map<Long, Integer> getVortragPrioritaeten(Long nutzerId, Long veranstaltungId) {
+        Objects.requireNonNull(nutzerId);
+        Objects.requireNonNull(veranstaltungId);
+
+        Map<Long, Integer> vortragIdToPrioWert = Prioritaet
+                .find("FROM Prioritaet p " +
+                                "JOIN p.teilnehmer tn " +
+                                "JOIN p.vortrag v " +
+                                "JOIN v.veranstaltung e " +
+                                "WHERE tn.id = ?1 AND e.id = ?2",
+                        nutzerId, veranstaltungId
+                )
+                .project(VortragPrio.class)
+                .list().stream()
+                .collect(Collectors.toMap(VortragPrio::vortragId, VortragPrio::prioWert));
+
+        return vortragIdToPrioWert;
     }
 }

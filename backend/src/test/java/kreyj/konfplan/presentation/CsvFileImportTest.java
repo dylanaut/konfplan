@@ -42,7 +42,7 @@ class CsvFileImportTest extends DatabaseCleaner {
         Admin admin = new Admin();
         admin.setEmail("admin@test.de");
         admin.setPasswordHash("hash");
-        admin.persistAndFlush();
+        admin.persist();
     }
 
     @BeforeEach

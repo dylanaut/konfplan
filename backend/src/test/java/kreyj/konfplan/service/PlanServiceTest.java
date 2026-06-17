@@ -1,25 +1,26 @@
 package kreyj.konfplan.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.application.service.PlanService;
-import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Planungsergebnis;
-import kreyj.konfplan.persistence.Prioritaet;
-import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Vortrag;
+import kreyj.konfplan.presentation.DatabaseCleaner;
+import kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto;
+import kreyj.konfplan.presentation.dto.ZuweisungDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 @QuarkusTest
-public class PlanServiceTest {
+public class PlanServiceTest extends DatabaseCleaner {
 
     @Inject
     PlanService planService;
@@ -29,18 +30,10 @@ public class PlanServiceTest {
     @BeforeEach
     @Transactional
     public void setup() {
-        // Clear existing data to ensure a clean slate for each test
-        Planungsergebnis.deleteAll();
-        NutzerVerfuegbarkeit.deleteAll();
-        Slot.deleteAll();
-        Prioritaet.deleteAll();
-        Vortrag.deleteAll();
-        Veranstaltung.deleteAll();
-
         veranstaltung = new Veranstaltung();
         veranstaltung.setName("Test Event");
         veranstaltung.setBeginntAm(LocalDateTime.now());
-        veranstaltung.persistAndFlush();
+        veranstaltung.persist();
 
         Planungsergebnis ergebnis = new Planungsergebnis();
         ergebnis.setVeranstaltung(veranstaltung);
@@ -49,39 +42,55 @@ public class PlanServiceTest {
         // Simulate a minimal valid JSON structure to avoid NullPointerExceptions during parsing
         ergebnis.setJsonErgebnis("""
                 {
-                  "input_data": {
-                    "teilnehmer_oids": [],
-                    "wahlvortrag_oids": [],
-                    "slot_oids": [],
-                    "raum_oids": []
-                  },
-                  "instanz_slot": [],
-                  "instanz_raum": [],
-                  "besucht": []
+                  "instanz_slot": [[]],
+                  "instanz_raum": [[]],
+                  "besucht": [[[]]],
+                  "teilnehmer_oids": [],
+                  "wahlvortrag_oids": [],
+                  "slot_oids": [],
+                  "raum_oids": []
                 }
                 """);
-        ergebnis.persistAndFlush();
+        ergebnis.persist();
     }
 
     @Test
-    @Transactional
     public void testGetDetaillierterPlanDoesNotThrowLobException() {
-        // The core of the test is to call the method and ensure it completes without throwing an exception.
-        // The setup method prepares a Planungsergebnis with a JSON string, simulating the LOB.
-        // The @Transactional annotation on this test method ensures that the session is active
-        // when getDetaillierterPlan is called, which is the context of the original problem.
+        List<RaumBelegungUebersichtDto> detaillierterPlan = planService.getDetaillierterPlan(veranstaltung);
 
-        // We expect this call to succeed without a HibernateException
-        var detaillierterPlan = planService.getDetaillierterPlan(veranstaltung);
-
-        // A simple assertion to verify that the method ran and returned a (potentially empty) list.
         assertThat(detaillierterPlan).describedAs("The returned plan should not be null.")
                 .isNotNull();
+    }
+
+
+    @Test
+    public void testPlanErgebnisIsParseable() {
+        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
+        assertThat(planungsergebnis).isNotNull();
+        String jsonErgebnis = planungsergebnis.getJsonErgebnis();
+        assertThat(jsonErgebnis).isNotNull();
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        final Planungsergebnis.MinizincResult[] results = {null};
 
         // The primary assertion is implicit: the test fails if a HibernateException is thrown.
         assertDoesNotThrow(() -> {
-            // You could add more complex processing of the result here if needed,
-            // but for the LOB issue, simply accessing it is the key.
+            results[0] = objectMapper.readValue(jsonErgebnis,
+                    Planungsergebnis.MinizincResult.class);
         }, "Accessing the detailed plan should not throw any exception.");
+
+        Planungsergebnis.MinizincResult result = results[0];
+
+        assertThat(result).isNotNull();
+
+        assertThat(result.teilnehmer_oids).isNotNull();
+        assertThat(result.wahlvortrag_oids).isNotNull();
+        assertThat(result.slot_oids).isNotNull();
+        assertThat(result.raum_oids).isNotNull();
+        assertThat(result.besucht).isNotNull();
+        assertThat(result.instanz_slot).isNotNull();
+        assertThat(result.instanz_raum).isNotNull();
     }
+
+
 }

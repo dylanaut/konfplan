@@ -41,6 +41,7 @@ public class DevDataInitService {
 
     private final ReferentService referentService;
 
+
     public DevDataInitService(AgroalDataSource datasource, TeilnehmerService teilnehmerService,
                               AdminService adminService, VeranstaltungService veranstaltungService,
                               GebaeudeService gebaeudeService, ReferentService referentService) {
@@ -52,13 +53,20 @@ public class DevDataInitService {
         this.referentService = referentService;
     }
 
+
     @Transactional
-    void onStart(@Observes StartupEvent ev) throws SQLException {
+    public void onStart(@Observes StartupEvent ev) {
         if (!devInitEnabled) {
             return;
         }
 
-        LOG.info("Starte Dev-Daten-Initialisierung für " + datasource.getConnection().getMetaData().getURL() + " ...");
+        try {
+            String connectionUrl = datasource.getConnection().getMetaData().getURL();
+
+            LOG.info("Starte Dev-Daten-Initialisierung für " + connectionUrl + " ...");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
 
         try {
             Path basePath = Paths.get(csvBasePath);

@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="de">
-{! required vdata parameters: cfg, wahl_erfuellung_stats, stats, slots, raeume, belegung_details, n_frei_liste  !}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stundenplan {cfg.messe_titel}</title>
-    <link href="../../META-INF/resources/css/bootstrap.min.css" rel="stylesheet">
+    <title>Stundenplan {veranstaltung.name}</title>
+    <link href="../../../resources/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #f8f9fa;
@@ -28,9 +27,9 @@
 
 <div class="container-fluid py-4">
     <header class="mb-4 d-flex justify-content-between align-items-center">
-        <h1>📅 {cfg.messe_titel} ({cfg.messe_ort}, {cfg.messe_termin})</h1>
-        <a href="{cfg.messe_logo_link}">
-            <img src="{cfg.logo_base64}" alt="Messe Logo" class="header-logo">
+        <h1>📅 {veranstaltung.name} ({veranstaltung.zeitraumTage})</h1>
+        <a href="{veranstaltung.logo_link}">
+            <img src="{veranstaltung.logo}" alt="Messe Logo" class="header-logo">
         </a>
     </header>
 
@@ -41,17 +40,20 @@
             <div class="card bg-success text-white shadow-sm">
                 <div class="card-body text-center p-3">
                     <h6 class="mb-1">Erfüllung Wahlvorträge</h6>
-                    <h5 class="mb-0">{wahl_erfuellung_stats.total_prefs} Wünsche, erfüllt: {wahl_erfuellung_stats.total_fulfills}x
-                        ≅ {((wahl_erfuellung_stats.total_fulfills / (wahl_erfuellung_stats.total_prefs > 0 ? wahl_erfuellung_stats.total_prefs : 1)) * 100).formatted('%.1f')}%</h5>
+                    <h5 class="mb-0">{wahl_erfuellung_stats.total_prefs} Wünsche, erfüllt: {wahl_erfuellung_stats.total_fillups}x
+                        ≅ {((wahl_erfuellung_stats.total_fillups.div(wahl_erfuellung_stats.total_prefs > 0 ?
+                        wahl_erfuellung_stats.total_prefs : 1)) * 100).formatted('%.1f')}%</h5>
                     <div class="mt-2" style="font-size: 0.8rem; opacity: 0.9;">
-                        {#for entry in wahl_erfuellung_stats.wv_prefs.entrySet}
-                            {#let wv_idx = entry.key}
+                        {#for entry in wahl_erfuellung_stats.wv_prefs.entrySet()}
+                            {#let wv_oid = entry.key}
                             {#let pref_cnt = entry.value}
                             {#if pref_cnt > 0}
-                                {#let fulfill = wahl_erfuellung_stats.wv_fulfills.get(wv_idx)}
+                                {#let fillup = wahl_erfuellung_stats.wv_fillups.get(wv_oid)}
                                 <div class="d-flex justify-content-between">
-                                    <span title="{wv_dict.get(wv_idx + 1).name}">Vortrag {wv_idx + 1}: {pref_cnt}x gewählt, berücksichtigt {fulfill}</span>
-                                    <span>≅ {((fulfill / (pref_cnt > 0 ? pref_cnt : 1)) * 100).formatted('%.1f')}%</span>
+                                    {#let titel = wv_dict.get(wv_oid).titel}
+                                    <span title="{titel}">{titel.padded(12)}: {pref_cnt}x gewählt,
+                                        berücksichtigt {fillup}</span>
+                                    <span>≅ {((fillup / (pref_cnt > 0 ? pref_cnt : 1)) * 100).formatted('%.1f')}%</span>
                                 </div>
                             {/if}
                         {/for}
@@ -65,14 +67,14 @@
                 <div class="card-body text-center p-3">
                     <h6 class="mb-1">Prio-Erfüllung</h6>
                     <div class="mt-2" style="font-size: 0.8rem; opacity: 0.9;">
-                        {#for entry in wahl_erfuellung_stats.prio_prefs.entrySet}
+                        {#for entry in wahl_erfuellung_stats.prio_prefs.entrySet()}
                             {#let prio = entry.key}
                             {#let pref = entry.value}
                             {#if pref > 0}
-                                {#let fulfill = wahl_erfuellung_stats.prio_fulfills.get(prio)}
+                                {#let fillup = wahl_erfuellung_stats.prio_fillups.get(prio)}
                                 <div class="d-flex justify-content-between">
-                                    <span>Prio {prio}: {pref}x gewählt, berücksichtigt: {fulfill}x</span>
-                                    <span>≅ {((fulfill / (pref > 0 ? pref : 1)) * 100).formatted('%.1f')}%</span>
+                                    <span>Prio {prio}: {pref}x gewählt, berücksichtigt: {fillup}x</span>
+                                    <span>≅ {((fillup / (pref > 0 ? pref : 1)) * 100).formatted('%.1f')}%</span>
                                 </div>
                             {/if}
                         {/for}
@@ -87,7 +89,7 @@
                 <h6 class="mb-1 text-uppercase small fw-bold">Autom. Auffüllung</h6>
                 <h3 class="mb-0">{stats.anzahl_auffuellung}</h3>
                 <small class="text-muted">{#if stats.anzahl_auffuellung == 1}Platz{#else}Plätze{/if}
-                    nachoptimiert</small>
+                    aufgefüllt</small>
             </div>
         </div>
     </div>
@@ -96,35 +98,36 @@
     <section class="mb-5">
         <h2 class="border-bottom pb-2 mb-3">📅 Vortragsplan & Raumbelegung</h2>
 
-        {#for s_entry in slots.entrySet}
-            {#let s_id = s_entry.key}
-            {#let s_info = s_entry.value}
+        {#for slot_entry in slots.entrySet()}
+            {#let s_oid = slot_entry.key}
+            {#let slot = slot_entry.value}
             <div class="slot-container mb-5 p-3 bg-white shadow-sm rounded">
-                <h4 class="text-primary">{s_info.tag}, {s_info.start} - {s_info.ende}</h4>
+                <h4 class="text-primary">{slot.zeitraumTag}</h4>
                 <div class="row g-3">
-                    {#for r_entry in raeume.entrySet}
-                        {#let r_id = r_entry.key}
-                        {#let r_meta = r_entry.value}
+                    {#for raum_entry in raeume.entrySet()}
+                        {#let r_oid = raum_entry.key}
+                        {#let raum = raum_entry.value}
                         <div class="col-md-3">
-                            {#let b_key = s_id + "_" + r_id}
+                            {#let b_key = str:fmt("%d_%d", s_oid, r_oid)}
                             {#let detail = belegung_details.get(b_key)}
-                            <div class="card h-100 card-vortrag {#if detail && detail.ist_pflicht}border-primary border-2{#else}border-light{/if}">
+                            <div class="card h-100 card-vortrag {#if detail && detail.isPflicht}border-primary
+                            border-2{#else}border-light{/if}">
                                 <div class="card-header py-1 d-flex justify-content-between small bg-light">
-                                    <span>Raum: <strong>{r_meta.name}</strong></span>
-                                    <span class="text-muted">Kap: {r_meta.kapazitaet}</span>
+                                    <span>Raum: <strong>{raum.name}</strong></span>
+                                    <span class="text-muted">Kap: {raum.kapazitaet}</span>
                                 </div>
                                 <div class="card-body p-2">
                                     {#if detail}
-                                        <h6 class="card-title mb-1 text-truncate">{detail.vortrag_name}</h6>
+                                        <h6 class="card-title mb-1 text-truncate">{detail.titel}</h6>
                                         <p class="card-text small mb-1">
                                             <i class="text-primary fw-bold">{detail.referent}</i><br>
                                             <span class="text-muted small">{detail.organisation}</span>
                                         </p>
                                         <div class="d-flex justify-content-between align-items-center mt-2">
-                                            <span class="badge {#if detail.anzahl < 4}bg-danger{#else}bg-success{/if}">
-                                                {detail.anzahl} TN
+                                            <span class="badge {#if detail.teilnehmer.size < 4}bg-danger{#else}bg-success{/if}">
+                                                {detail.teilnehmer.size} TN
                                             </span>
-                                            {#if detail.ist_pflicht}<span class="badge bg-primary">Pflicht</span>{/if}
+                                            {#if detail.isPflicht}<span class="badge bg-primary">Pflicht</span>{/if}
                                         </div>
                                     {#else}
                                         <div class="text-center py-3">
@@ -141,13 +144,13 @@
                     <div class="col-12">
                         <div class="alert alert-warning py-2 px-3 m-0 shadow-sm">
                             <div class="d-flex align-items-center">
-                                {#let frei_liste = n_frei_liste.get(s_id)}
+                                {#let frei_liste = freie_tn_je_slot.get(s_oid)}
                                 <strong class="me-2">⚠️ Aufsicht ({frei_liste.size}):</strong>
                                 <div class="small">
                                     {#if frei_liste.isEmpty}
-                                        Keine Schüler im Haus ohne Programm.
+                                        Keine Teilnehmer ohne Programm.
                                     {#else}
-                                        {#for item in frei_liste}{item}{#if it.hasNext} • {/if}{/for}
+                                        {frei_liste.join(" • ")}
                                     {/if}
                                 </div>
                             </div>
@@ -160,9 +163,9 @@
 </div>
 
 <footer class="text-right py-2 text-muted small">
-    <span class="badge bg-secondary">Stand: {now}</span>
+    <span class="badge bg-secondary">Stand: {geplantAm}</span>
 </footer>
 
-<script src="../../META-INF/resources/js/bootstrap.bundle.min.js"></script>
+<script src="../../../resources/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

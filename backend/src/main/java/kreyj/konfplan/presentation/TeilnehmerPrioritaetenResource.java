@@ -38,7 +38,7 @@ public class TeilnehmerPrioritaetenResource {
     @Operation(summary = "Meine Prioritäten abrufen", description = "Ruft die vom Teilnehmer gesetzten Prioritäten für Wahlvorträge ab.")
     public List<Prioritaet> getPrioritaeten() {
         String email = JwtHelper.getUserPrincipalName(jwt); // Die Email aus dem JWT Token
-        return prioService.getPrioritaetenForUser(email);
+        return prioService.getNutzerPrioritaeten(email);
     }
 
     @POST

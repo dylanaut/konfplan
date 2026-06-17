@@ -10,9 +10,9 @@ public class ReferentVortragDto {
     public String slotZeit;
     public String raumName;
     public String gebaeudeName;
-    public List<TeilnehmerSimpleDto> teilnehmer;
+    public List<TeilnehmerDto> teilnehmer;
 
-    public ReferentVortragDto(String vortragTitel, String slotZeit, String raumName, String gebaeudeName, List<TeilnehmerSimpleDto> teilnehmer) {
+    public ReferentVortragDto(String vortragTitel, String slotZeit, String raumName, String gebaeudeName, List<TeilnehmerDto> teilnehmer) {
         this.vortragTitel = vortragTitel;
         this.slotZeit = slotZeit;
         this.raumName = raumName;

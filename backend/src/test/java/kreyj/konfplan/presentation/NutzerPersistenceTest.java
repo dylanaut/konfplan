@@ -41,22 +41,22 @@ class NutzerPersistenceTest extends DatabaseCleaner {
         g.setOrt("Testort");
         g.setPostleitzahl("12345");
         g.setTyp(Gebaeudetyp.SCHULE);
-        g.persistAndFlush();
+        g.persist();
 
         Admin admin = new Admin();
         admin.setEmail("organisator@test.de");
         admin.setPasswordHash("hash");
-        admin.persistAndFlush();
+        admin.persist();
 
         Veranstaltung v = new Veranstaltung();
         v.setName(TEST_VERANSTALTUNG + "_" + System.currentTimeMillis());
         v.setBeginntAm(LocalDateTime.now());
         v.addGebaeude(g);
-        v.persistAndFlush();
+        v.persist();
         testVid = v.getId();
 
         admin.addVeranstaltung(v);
-        admin.persistAndFlush();
+        admin.persist();
     }
 
     @Test

@@ -83,7 +83,7 @@ class AuthResourceTest {
 
         Mockito.when(Nutzer.findByEmail("test@example.com")).thenReturn(nutzer);
         // Wir müssen sicherstellen, dass persist() auf dem Mock-Nutzer nichts tut
-        Mockito.doNothing().when(Mockito.mock(Nutzer.class)).persistAndFlush();
+        Mockito.doNothing().when(Mockito.mock(Nutzer.class)).persist();
 
         given()
                 .queryParam("email", "test@example.com")

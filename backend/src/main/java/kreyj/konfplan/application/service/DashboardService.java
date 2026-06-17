@@ -1,0 +1,316 @@
+package kreyj.konfplan.application.service;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import kreyj.konfplan.presentation.dto.NutzerDto;
+import kreyj.konfplan.presentation.dto.SlotDto;
+import kreyj.konfplan.presentation.dto.TeilnehmerDto;
+import kreyj.konfplan.presentation.dto.VortragDto;
+import kreyj.konfplan.presentation.dto.templating.Auffueller;
+import kreyj.konfplan.presentation.dto.templating.BelegungDetail;
+import kreyj.konfplan.presentation.dto.templating.DashboardData;
+import kreyj.konfplan.presentation.dto.templating.Planungsstatistik;
+import kreyj.konfplan.presentation.dto.templating.PrioDashboard;
+import kreyj.konfplan.presentation.dto.templating.Stundenplan;
+import kreyj.konfplan.presentation.dto.templating.TeilnehmerDashboard;
+import kreyj.konfplan.presentation.dto.templating.TeilnehmerErfuellung;
+import kreyj.konfplan.presentation.dto.templating.TeilnehmerSlotBelegung;
+import kreyj.konfplan.presentation.dto.templating.TeilnehmerStundenplan;
+import kreyj.konfplan.presentation.dto.templating.WahlErfuellungStats;
+import kreyj.konfplan.presentation.dto.templating.WahlvortragStatus;
+import kreyj.konfplan.util.NameSorting;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static java.time.LocalDateTime.now;
+import static kreyj.konfplan.util.DateHelper.DATE_TIME_FORMATTER;
+
+@ApplicationScoped
+public class DashboardService {
+
+    private final PrioritaetService prioService;
+
+
+    public DashboardService(PrioritaetService prioService) {
+        this.prioService = prioService;
+    }
+
+
+    private void calculatePrefsFillUpStats(DashboardData dd) {
+        Map<Integer, Integer> prioPrefs = new HashMap<>();
+        Map<Long, Integer> wvPrefs = new HashMap<>();
+        int totalPrefs = 0;
+        Map<Integer, Integer> prioFillUps = new HashMap<>();
+        Map<Long, Integer> wvFillUps = new HashMap<>();
+        int totalFillUps = 0;
+
+        for (int tnIdx = 0; tnIdx < dd.besucht.length; tnIdx++) {
+            boolean[][] tn_besucht = dd.besucht[tnIdx];
+            TeilnehmerDto tn = dd.teilnehmer.get(dd.mzTeilnehmerOids[tnIdx]);
+            Map<Long, Integer> prios = prioService.getVortragPrioritaeten(tn.id, dd.veranstaltung.id);
+
+            for (int wvIdx = 0; wvIdx < dd.mzWahlvortragOids.length; wvIdx++) {
+                boolean[] tn_v_besucht = tn_besucht[wvIdx];
+                long wvOid = dd.mzWahlvortragOids[wvIdx];
+                int vPrio = prios.get(wvOid);
+                if (vPrio > 0) {
+                    totalPrefs++;
+                    prioPrefs.merge(vPrio, 1, Integer::sum);
+                    prioFillUps.putIfAbsent(vPrio, 0);
+
+                    wvPrefs.merge(wvOid, 1, Integer::sum);
+                    wvFillUps.putIfAbsent(wvOid, 0);
+
+                    if (IntStream.range(0, tn_v_besucht.length).anyMatch(i -> tn_v_besucht[i])) {
+                        prioFillUps.merge(vPrio, 1, Integer::sum);
+                        wvFillUps.merge(wvOid, 1, Integer::sum);
+                        totalFillUps++;
+                    }
+                }
+            }
+        }
+        dd.wahlErfuellungStats = new WahlErfuellungStats(totalPrefs, prioPrefs, wvPrefs, totalFillUps,
+                prioFillUps, wvFillUps);
+    }
+
+
+    private void berechnePlanungsstatistik(DashboardData dd) {
+        long belegtePlaetze = dd.belegungDetails.values().stream().mapToLong(bd -> bd.anzahl).sum();
+        long kapazitaetTotal = dd.slots.size() * dd.raeume.values().stream().mapToLong(r -> r.kapazitaet).sum();
+
+        long totalWuenscheErfuellt = 0;
+        long unerfuellte = 0;
+        long prio1 = 0;
+        long prio2 = 0;
+        long prio3 = 0;
+
+        for (TeilnehmerErfuellung t : dd.teilnehmerErfuellung) {
+            for (WahlvortragStatus vStatus : t.wvStatuus().values()) {
+                if ("+".equals(vStatus.status())) {
+                    totalWuenscheErfuellt++;
+                    if (vStatus.prio() == 1) {
+                        prio1++;
+                    } else if (vStatus.prio() == 2) {
+                        prio2++;
+                    } else if (vStatus.prio() == 3) {
+                        prio3++;
+                    }
+                } else if ("-".equals(vStatus.status())) {
+                    unerfuellte++;
+                }
+            }
+        }
+
+        dd.planungsstatistik = new Planungsstatistik(belegtePlaetze, kapazitaetTotal,
+                unerfuellte, totalWuenscheErfuellt,
+                prio1, prio2, prio3,
+                dd.auffuellungSet.size());
+    }
+
+
+    private void createTeilnehmerErfuellung(DashboardData dd) {
+        for (int tnIdx = 0; tnIdx < dd.mzTeilnehmerOids.length; tnIdx++) {
+            long tnOid = dd.mzTeilnehmerOids[tnIdx];
+            Map<Long, WahlvortragStatus> wahlVortragStatuus = new LinkedHashMap<>();
+            Map<Long, Integer> wvPrios = prioService.getVortragPrioritaeten(tnOid, dd.veranstaltung.id);
+
+            for (int wvIdx = 0; wvIdx < dd.mzWahlvortragOids.length; wvIdx++) {
+                long wvOid = dd.mzWahlvortragOids[wvIdx];
+                int[] wvInstSlots = dd.instanzSlot[wvIdx];
+                boolean[] besuchteInstanzen = dd.besucht[tnIdx][wvIdx];
+
+                int besuchteInstanz = 0;
+                int besuchtIdx = -1;
+                for (int instIdx = 0; instIdx < wvInstSlots.length; instIdx++) {
+                    boolean slotInstanzBesucht = wvInstSlots[instIdx] > 0;
+                    if (slotInstanzBesucht && besuchteInstanzen[instIdx]) {
+                        besuchteInstanz = instIdx + 1;
+                        besuchtIdx = instIdx;
+                        break;
+                    }
+                }
+
+                String status = "0";
+                int prio = wvPrios.getOrDefault(wvOid, 0);
+                if (prio > 0) {
+                    status = (besuchteInstanz > 0) ? "+" : "-";
+                } else if (dd.auffuellungSet.contains(Auffueller.of(tnOid, wvOid, besuchtIdx))) {
+                    status = "f";
+                }
+                wahlVortragStatuus.put(wvOid, new WahlvortragStatus(status, prio, besuchteInstanz));
+            }
+
+            dd.teilnehmerErfuellung.add(new TeilnehmerErfuellung(dd.teilnehmer.get(tnOid), wahlVortragStatuus));
+        }
+    }
+
+
+    /**
+     * This is the main method to generate all data required for the dashboards.
+     */
+    public void prepareDashboardData(DashboardData dd) {
+        Map<Long, Set<Long>> verplanteTnProSlot
+                = dd.slots.keySet().stream().collect(Collectors.toMap(Function.identity(),
+                k -> new HashSet<>()));
+
+        // Verarbeite Pflichtvorträge: erzeuge Belegungsdetails
+        for (VortragDto pv : dd.pflichtvortraege.values()) {
+            long pflSlotId = pv.pflichtSlotId;
+            long pflRaumId = pv.pflichtRaumId;
+            String pflichtGruppe = pv.pflichtGruppe;
+
+            List<String> namen = new ArrayList<>();
+            for (TeilnehmerDto tn : dd.teilnehmer.values()) {
+                if (tn.gruppen.contains(pflichtGruppe)) {
+                    namen.add(tn.fullname());
+                    verplanteTnProSlot.get(pflSlotId).add(tn.id);
+                }
+            }
+
+            dd.tnNamen = NameSorting.sortNames(namen);
+            dd.tnAnzahl = namen.size();
+
+            NutzerDto ref = dd.referenten.get(pv.referentId);
+            String key = pflSlotId + "_" + pflRaumId;
+            dd.belegungDetails.put(key,
+                    new BelegungDetail(pv.titel, ref.fullName(), ref.organisation, true,
+                            namen, namen.size()));
+        }
+
+        // Verarbeite Wahlvorträge: erzeuge Belegungsdetails
+        for (int wvIdx = 0; wvIdx < dd.instanzSlot.length; wvIdx++) {
+            long wvOid = dd.mzWahlvortragOids[wvIdx];
+            int[] wvInstanzSlot = dd.instanzSlot[wvIdx];
+            for (int instIdx = 0; instIdx < wvInstanzSlot.length; instIdx++) {
+                int slotIdx = wvInstanzSlot[instIdx];
+
+                if (slotIdx > 0) {
+                    long slotOid = dd.mzSlotOids[slotIdx - 1];
+                    int[] wvInstanzRaum = dd.instanzRaum[wvIdx];
+                    int raumIdx = wvInstanzRaum[instIdx];
+                    long raumOid = dd.mzRaumOids[raumIdx - 1];
+                    List<String> wvNamen = new ArrayList<>();
+                    for (int tnIdx = 0; tnIdx < dd.tnAnzahl; tnIdx++) {
+                        if (dd.besucht[tnIdx][wvIdx][instIdx]) {
+                            long tnOid = dd.mzTeilnehmerOids[tnIdx];
+                            TeilnehmerDto tn = dd.teilnehmer.get(tnOid);
+                            wvNamen.add(tn.gName());
+                            verplanteTnProSlot.get(slotOid).add(tnOid);
+                        }
+                    }
+
+                    if (!wvNamen.isEmpty()) {
+                        String key = slotOid + "_" + raumOid;
+                        VortragDto wv = dd.wahlvortraege.get(wvOid);
+                        NutzerDto ref = dd.referenten.get(wv.referentId);
+                        wvNamen = NameSorting.sortNames(wvNamen);
+                        dd.belegungDetails.put(key,
+                                new BelegungDetail(wv.titel, ref.fullName(), ref.organisation, false,
+                                        wvNamen, wvNamen.size()));
+                    }
+                }
+            }
+        }
+
+        // Determine free participants per slot
+        for (Long slotOid : dd.slots.keySet()) {
+            List<String> freieTn = new ArrayList<>();
+            for (long tnOid : dd.teilnehmer.keySet()) {
+                if (!verplanteTnProSlot.get(slotOid).contains(tnOid)
+                        && dd.isVerfuegbarInSlot(tnOid, slotOid)) {
+                    TeilnehmerDto tn = dd.teilnehmer.get(tnOid);
+                    freieTn.add(tn.gName());
+                }
+            }
+
+            dd.freieTnProSlot.put(slotOid, freieTn);
+        }
+
+        // --- 2. Prepare data for Prios and Teilnehmer Dashboards ---
+        createTeilnehmerErfuellung(dd);
+        createTeilnehmerStundenplan(dd);
+
+        // --- 3. Calculate Stats ---
+        calculatePrefsFillUpStats(dd);
+        berechnePlanungsstatistik(dd);
+
+        // --- 4. Assemble final DTOs ---
+        dd.geplantAm = now().format(DATE_TIME_FORMATTER);
+
+        dd.stundenplan = new Stundenplan(dd.slots, dd.raeume, dd.belegungDetails, dd.freieTnProSlot, dd.planungsstatistik,
+                dd.wahlErfuellungStats, dd.wahlvortraege, dd.geplantAm);
+
+        List<String> gruppen = dd.teilnehmer.values().stream()
+                .flatMap(tn -> tn.gruppen.stream())
+                .distinct()
+                .sorted()
+                .toList();
+
+        dd.teilnehmerDashboard = new TeilnehmerDashboard(dd.slots, dd.teilnehmerStundenplan, gruppen);
+
+        List<Integer> numInstanzenProWv =
+                Arrays.stream(dd.instanzSlot).map(sub -> (int) Arrays.stream(sub).filter(x -> x > 0).count()).toList();
+
+        dd.prioDashboard = new PrioDashboard(dd.slots, dd.raeume,
+                dd.instanzRaum, dd.instanzSlot, numInstanzenProWv,
+                dd.teilnehmerErfuellung, dd.wahlvortraege, dd.referenten,
+                gruppen, dd.geplantAm);
+    }
+
+
+    private void createTeilnehmerStundenplan(DashboardData dd) {
+        for (int tnIdx = 0; tnIdx < dd.mzTeilnehmerOids.length; tnIdx++) {
+            TeilnehmerDto tn = dd.teilnehmer.get(dd.mzTeilnehmerOids[tnIdx]);
+            long tnOid = tn.id;
+            Set<String> tnGruppen = tn.gruppen;
+            Map<Long, TeilnehmerSlotBelegung> tnSlotsBelegungen = new LinkedHashMap<>();
+
+            for (int slotIdx = 0; slotIdx < dd.mzSlotOids.length; slotIdx++) {
+                long slotOid = dd.mzSlotOids[slotIdx];
+                SlotDto slot = dd.slots.get(slotOid);
+                TeilnehmerSlotBelegung belegung = new TeilnehmerSlotBelegung("frei", null, "frei");
+
+                if (!dd.isVerfuegbarInSlot(tn, slot)) {
+                    belegung = new TeilnehmerSlotBelegung("Abwesend", null, "abwesend");
+                }
+
+                for (VortragDto pv : dd.pflichtvortraege.values()) {
+                    if (tnGruppen.contains(pv.pflichtGruppe) && Objects.equals(slotOid, pv.pflichtSlotId)) {
+                        belegung = new TeilnehmerSlotBelegung(pv.titel,
+                                dd.raeume.get(pv.pflichtRaumId).name, "pflicht");
+                    }
+                }
+
+                for (int wvIdx = 0; wvIdx < dd.instanzSlot.length; wvIdx++) {
+                    VortragDto wv = dd.wahlvortraege.get(dd.mzWahlvortragOids[wvIdx]);
+                    long wvOid = wv.id;
+                    boolean[] tnVortragBesucht = dd.besucht[tnIdx][wvIdx];
+                    int[] wahlRaumInstanz = dd.instanzRaum[wvIdx];
+
+                    for (int instIdx = 0; instIdx < dd.instanzSlot[wvIdx].length; instIdx++) {
+                        if (dd.instanzSlot[wvIdx][instIdx] == slotIdx && tnVortragBesucht[instIdx]) {
+                            long raumOid = dd.mzRaumOids[wahlRaumInstanz[instIdx] - 1];
+                            String raumName = dd.raeume.get(raumOid).name;
+                            String typ = dd.auffuellungSet.contains(Auffueller.of(tnOid, wvOid, instIdx))
+                                    ? "auffuellung" : "wahl";
+                            belegung = new TeilnehmerSlotBelegung(wv.titel, raumName, typ);
+                        }
+                    }
+                }
+                tnSlotsBelegungen.put(slotOid, belegung);
+            }
+
+            dd.teilnehmerStundenplan.add(new TeilnehmerStundenplan(tn, tnSlotsBelegungen));
+        }
+    }
+}

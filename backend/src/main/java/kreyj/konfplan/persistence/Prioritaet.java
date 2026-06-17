@@ -18,17 +18,14 @@ public class Prioritaet extends IdEntity {
     private Teilnehmer teilnehmer;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    private Vortrag vortrag;
+    private Wahlvortrag vortrag;
 
     private int prioWert;
-
-    private LocalDateTime lastUpdated;
 
 
     public Prioritaet(Teilnehmer teilnehmer, Wahlvortrag wahlvortrag, int prio) {
         this.teilnehmer = teilnehmer;
         this.vortrag = wahlvortrag;
         this.prioWert = prio;
-        this.lastUpdated = LocalDateTime.now();
     }
 }

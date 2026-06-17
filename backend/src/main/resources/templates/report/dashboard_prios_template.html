@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prioritätenanalyse {cfg.messe_titel}</title>
-    <link href="../../META-INF/resources/css/bootstrap.min.css" rel="stylesheet">
+    <title>Prioritätenanalyse {veranstaltung.name} ({veranstaltung.zeitraumTage})</title>
+    <link href="../../../resources/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #f8f9fa;
@@ -36,9 +36,9 @@
 
 <div class="container-fluid py-4">
     <header class="mb-4 d-flex justify-content-between align-items-center">
-        <h1>📅 {cfg.messe_titel} ({cfg.messe_ort}, {cfg.messe_termin})</h1>
-        <a href="{cfg.messe_logo_link}">
-            <img src="{cfg.logo_base64}" alt="Messe Logo" class="header-logo">
+        <h1>📅 {veranstaltung.name} - {veranstaltung.tag}</h1>
+        <a href="{veranstaltung.logo_link}">
+            <img src="{veranstaltung.logo}" alt="Logo" class="header-logo">
         </a>
     </header>
 
@@ -47,10 +47,10 @@
 
         <div class="row mb-3 align-items-center">
             <div class="col-md-4">
-                <label for="classFilter" class="form-label small fw-bold text-muted">Klasse filtern:</label>
+                <label for="classFilter" class="form-label small fw-bold text-muted">Gruppe filtern:</label>
                 <select id="classFilter" class="form-select shadow-sm" onchange="filterTable()">
-                    <option value="all">Alle Klassen anzeigen</option>
-                    {#for k in klassen_liste}
+                    <option value="all">Alle Gruppen anzeigen</option>
+                    {#for k in gruppen}
                         <option value="{k}">{k}</option>
                     {/for}
                 </select>
@@ -68,40 +68,43 @@
                     <thead class="sticky-table-header">
                     <tr class="table-dark">
                         <th class="p-2" style="min-width: 200px;">Teilnehmer</th>
-                        {#for v_id in wahl_ids}
-                            {#let wv = wv_dict.get(v_id)  ref = ref_dict.get(wv.ref_id)}
-                                <th class="text-center p-2" title="{ref.organisation}: {wv.name}">WV{v_id}</th>
-                            {/let}
+                        {#for wv_entry in wv_dict.entrySet()}
+                            {#let wv_oid = wv_entry.key}
+                            {#let wv = wv_entry.value}
+                            {#let ref = ref_dict.get(wv.referentId)}
+                            <th class="text-center p-2" title="{ref.organisation}: {wv.titel}">WV{wv_entry_count}</th>
                         {/for}
                     </tr>
                     </thead>
+
                     <tbody>
-                    {#for t in teilnehmer_erfuellung}
-                    {#let klasse = t.name.substring(t.name.indexOf('(') + 1, t.name.indexOf(')'))}
-                    <tr class="participant-row" data-class="{klasse}">
-                        <td class="fw-bold border-end bg-light">{t.name}</td>
-                        {#for wv_id in wahl_ids}
-                        {#let wv = t.wahl_vortraege.get(wv_id)}
+                    {#for tn_erf in teilnehmer_erfuellung}
+                    {#let gruppen = tn_erf.teilnehmer.gruppen}
+                    <tr class="participant-row" data-class="{gruppen}">
+                        <td class="fw-bold border-end bg-light">{tn_erf.teilnehmer.fullname}</td>
+                        {#for wv_oid in wvOids}
+                        {#let wvs = tn_erf.wvStatuus.get(wv_oid)}
                         <td class="text-center p-2
-                                    {#if wv.status == '+'}bg-success text-white
-                                    {#else if wv.status == 'f'}bg-auffuellung
-                                    {#else if wv.status == '-'}bg-warning
+                                    {#if wvs.status == '+'}bg-success text-white
+                                    {#else if wvs.status == 'f'}bg-auffuellung
+                                    {#else if wvs.status == '-'}bg-warning
                                     {#else}status-unavailable
                                     {/if}">
-                            {#if wv.status != '0'}
-                            {#if wv.instanz != null}
-                            {#let slot_id = instanz_slot.get(wv_id - 1).get(wv.instanz - 1)}
-                            {#let raum_id = instanz_raum.get(wv_id - 1).get(wv.instanz - 1)}
-                            {#let slot = slots.get(slot_id)}}
-                            {#let raum = raeume.get(raum_id)}
+                            {#if wvs.status != '0'}
+                            {#if wvs.instanz != null}
+                            {#let wvs_idx = wvs.instanz.sub(1) }
+                            {#let slot_idx = instanz_slot.get(wv_oid_index).get(wvs_idx) }
+                            {#let slot = slots.get(slotOids.get(slot_idx.sub(1)))}
+                            {#let raum_idx = instanz_raum.get(wv_oid_index).get(wvs_idx) }
+                            {#let raum = raeume.get(raumOids.get(raum_idx.sub(1))) }
                                 <div class="fw-bold">{slot.tag}, {slot.start} @ {raum.name}</div>
+                            {/let}
                                 {/if}
                                 <div class="small">
-                                    {#if wv.prio > 0}<b>Prio {wv.prio}</b> {/if}
-                                    {#if wv.instanz}({num_instanzen_pro_wv.get(wv.instanz)}x){/if}
+                                    {#if wvs.prio > 0}<b>Prio {wvs.prio}</b> {/if}
+                                    {#if wvs.instanz}({num_instanzen_pro_wv.get(wvs.instanz)}x){/if}
                                 </div>
                                 {/if}
-                            {/let}
                         </td>
                         {/for}
                     </tr>
@@ -144,10 +147,10 @@
 </div>
 
 <footer class="text-center py-2 text-muted small">
-    <span class="badge bg-secondary">Stand: {now}</span>
+    <span class="badge bg-secondary">Stand: {geplantAm}</span>
 </footer>
 
-<script src="../../META-INF/resources/js/bootstrap.bundle.min.js"></script>
+<script src="../../../resources/js/bootstrap.bundle.min.js"></script>
 <script>
     function filterTable() {
         const selectedClass = document.getElementById('classFilter').value;
@@ -166,9 +169,9 @@
 
         const countBadge = document.getElementById('visibleCount');
         if (selectedClass === 'all') {
-            countBadge.innerText = `Zeige alle ${rows.length} Teilnehmer`;
+            countBadge.innerText = 'Zeige alle ' + rows.length + ' Teilnehmer';
         } else {
-            countBadge.innerText = `Klasse ${selectedClass}: ${visibleCount} Teilnehmer`;
+            countBadge.innerText = 'Gruppe ' + selectedClass + ':' + visibleCount + ' Teilnehmer';
         }
     }
 

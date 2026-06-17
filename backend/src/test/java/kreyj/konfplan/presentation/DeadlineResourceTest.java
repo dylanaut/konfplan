@@ -45,21 +45,21 @@ class DeadlineResourceTest extends DatabaseCleaner {
         v.setBeginntAm(LocalDateTime.now().plusDays(10));
         v.setDeadlineReferenten(LocalDateTime.now().minusDays(1));
         v.setDeadlineTeilnehmer(LocalDateTime.now().minusDays(1));
-        v.persistAndFlush();
+        v.persist();
         pastEventId = v.getId();
 
         // Referent
         Referent r = new Referent();
         r.setEmail("referent@test.de");
         r.setPasswordHash(BcryptUtil.bcryptHash("test"));
-        r.persistAndFlush();
+        r.persist();
         refId = r.getId();
 
         // Teilnehmer
         Teilnehmer t = new Teilnehmer();
         t.setEmail("teilnehmer@test.de");
         t.setPasswordHash(BcryptUtil.bcryptHash("test"));
-        t.persistAndFlush();
+        t.persist();
         t.addVeranstaltung(v);
         tnId = t.getId();
 
@@ -68,7 +68,7 @@ class DeadlineResourceTest extends DatabaseCleaner {
         wv.setTitel("Testvortrag");
         wv.setVeranstaltung(v);
         wv.setReferent(r);
-        wv.persistAndFlush();
+        wv.persist();
         wahlvortragId = wv.getId();
     }
 

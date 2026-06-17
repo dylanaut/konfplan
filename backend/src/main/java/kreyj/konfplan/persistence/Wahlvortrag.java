@@ -44,7 +44,7 @@ public class Wahlvortrag extends Vortrag {
     }
 
     @Override
-    public void afterPersistAndFlush() {
+    public void afterPersist() {
         provideVortragVerfuegbarkeit();
     }
 
@@ -66,7 +66,7 @@ public class Wahlvortrag extends Vortrag {
     // -------------------------------------------------------------------
 
     /**
-     * VortragVerfuegbarkeit einrichten (afterPersistAndFlush)
+     * VortragVerfuegbarkeit einrichten (afterpersist)
      */
 
     private void provideVortragVerfuegbarkeit() {

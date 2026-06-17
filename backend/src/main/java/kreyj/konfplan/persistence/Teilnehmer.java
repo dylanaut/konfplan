@@ -66,11 +66,11 @@ public class Teilnehmer extends Nutzer {
         gruppen.remove(gruppe);
     }
 
-    public static List<Teilnehmer> getGruppenTeilnehmer(String gruppenName, Long veranstaltungId) {
+    public static List<Teilnehmer> getGruppenTeilnehmer(String gruppenName, Veranstaltung veranstaltung) {
         return Teilnehmer.find("SELECT tn from Teilnehmer tn " +
-                        "JOIN tn.veranstaltungen v " +
+                        " JOIN tn.veranstaltungen v " +
                         " WHERE ?1 MEMBER OF tn.gruppen " +
-                        " AND v.id = ?2 and tn.isActive = true",
-                gruppenName, veranstaltungId).list();
+                        " AND v = ?2 and tn.isActive = true",
+                gruppenName, veranstaltung).list();
     }
 }

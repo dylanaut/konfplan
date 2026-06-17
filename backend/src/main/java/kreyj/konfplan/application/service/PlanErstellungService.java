@@ -20,7 +20,7 @@ import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
-import kreyj.konfplan.presentation.dto.SolverConfigDto;
+import kreyj.konfplan.presentation.dto.SolverConfig;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -42,14 +42,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.joining;
-import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
-import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvId;
+import static java.util.stream.Collectors.toMap;
 
 @ApplicationScoped
 public class PlanErstellungService {
+    public static final String LINE_SEP = System.lineSeparator();
     private static final Logger LOG = Logger.getLogger(PlanErstellungService.class);
     private static final String MZN_MODEL_FILE = "konfplan.mzn";
     private static final DateTimeFormatter WEEKDAY_TIME_FORMAT = DateTimeFormatter.ofPattern("EE,HH:mm");
@@ -67,12 +68,12 @@ public class PlanErstellungService {
         this.objectMapper = objectMapper;
     }
 
-    public void erstellePlan(Long veranstaltungId, SolverConfigDto config) throws Exception {
+    public void erstellePlan(Long veranstaltungId, SolverConfig config) throws Exception {
         erstellePlan(veranstaltungId, config, MZN_MODEL_FILE);
     }
 
     @Transactional
-    public void erstellePlan(Long veranstaltungId, SolverConfigDto config, String modelName) throws Exception {
+    public void erstellePlan(Long veranstaltungId, SolverConfig config, String modelName) throws Exception {
         LOG.info("Starte Planerstellung für Veranstaltung: " + veranstaltungId);
 
         URL modelUrl = getClass().getClassLoader().getResource("minizinc/" + modelName);
@@ -144,12 +145,11 @@ public class PlanErstellungService {
 
         String lastJsonSolution = "";
         StringBuilder fullLog = new StringBuilder();
-        String delimiter = System.lineSeparator();
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                fullLog.append(line).append(delimiter);
+                fullLog.append(line).append(LINE_SEP);
                 // Eine einfache Prüfung, ob die Zeile ein JSON-Objekt sein könnte.
                 // Unsere Modelle sind so konfiguriert, dass sie JSON in einer einzigen Zeile ausgeben.
                 if (line.trim().startsWith("{") && isValidJson(line)) {
@@ -200,14 +200,14 @@ public class PlanErstellungService {
         appendTeilnehmer(teilnehmer, sb);
         appendWahlvortraege(wahlvortraege, slots, sb);
         appendTnPrios(teilnehmer, wahlvortraege, sb);
-        appendTnVerfuegbarkeiten(veranstaltung, teilnehmer, slots, pflichtvortraege, sb);
+        appendTnVerfuegbarkeiten(veranstaltung, teilnehmer, slots, sb);
         appendRaumVerfuegbarkeiten(veranstaltung, raeume, slots, pflichtvortraege, sb);
-        appendOidArrays(teilnehmer, wahlvortraege, slots, raeume, sb);
+        appendEntityOids(teilnehmer, wahlvortraege, slots, raeume, sb);
 
         return sb.toString();
     }
 
-    private static void appendOidArrays(List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege, Set<Slot> slots, List<Raum> raeume, StringBuilder sb) {
+    private static void appendEntityOids(List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege, Set<Slot> slots, List<Raum> raeume, StringBuilder sb) {
         sb.append("teilnehmer_oids = [").append(teilnehmer.stream().map(t -> String.valueOf(t.getId())).collect(joining(","))).append("];\n");
         sb.append("wahlvortrag_oids = [").append(wahlvortraege.stream().map(v -> String.valueOf(v.getId())).collect(joining(","))).append("];\n");
         sb.append("slot_oids = [").append(slots.stream().map(s -> String.valueOf(s.getId())).collect(joining(","))).append("];\n");
@@ -224,6 +224,8 @@ public class PlanErstellungService {
             sb.append(String.format("\n(oid: %d)", s.getId()));
             if (++sIdx < nSlots) {
                 sb.append(",");
+            } else {
+                sb.append(" ");
             }
             sb.append(String.format(" %% %d: %s - %s", sIdx, s.getStartTime().format(WEEKDAY_TIME_FORMAT), s.getEndTime().format(TIME_FORMAT)));
         }
@@ -240,6 +242,8 @@ public class PlanErstellungService {
             sb.append(String.format("\n(oid: %d, kapazitaet: %d)", raum.getId(), raum.getKapazitaet()));
             if (++rIdx < nRaeume) {
                 sb.append(",");
+            } else {
+                sb.append(" ");
             }
             sb.append(String.format(" %% %d: %s, %d", rIdx, raum.getName(), raum.getKapazitaet()));
         }
@@ -256,6 +260,8 @@ public class PlanErstellungService {
             sb.append(String.format("\n(oid: %d)", tn.getId()));
             if (++pIdx < nTNs) {
                 sb.append(",");
+            } else {
+                sb.append(" ");
             }
             sb.append(String.format(" %% %d: %s (%s)", pIdx, tn.getEmail(), tn.getGruppen()));
         }
@@ -283,6 +289,8 @@ public class PlanErstellungService {
             sb.append(String.format("(oid: %d, referent_id: %d, belegbare_slots: [%s])", wv.getId(), refMap.get(wv.getReferent().getId()), constantSlotIds));
             if (++wvIdx < nWVs) {
                 sb.append(",");
+            } else {
+                sb.append(" ");
             }
             sb.append(String.format(" %% %d: %s", wvIdx, wv.getTitel().substring(0, Math.min(25, wv.getTitel().length()))));
         }
@@ -315,16 +323,19 @@ public class PlanErstellungService {
     }
 
     private static void appendTnVerfuegbarkeiten(Veranstaltung veranstaltung, List<Teilnehmer> teilnehmer, Set<Slot> slots,
-                                                 List<Pflichtvortrag> pflichtvortraege, StringBuilder sb) {
-        sb.append("%In welchen Slots jeder Teilnehmer für Wahlvorträge einer Veranstaltung planbar ist:\n");
+                                                 StringBuilder sb) {
+        sb.append("%In welchen Slots jeder Teilnehmer für Wahlvorträge einer Veranstaltung verfügbar ist:\n");
         int tnSize = teilnehmer.size();
         int slotSize = slots.size();
         int tnIdx = 0;
+        Map<Long, NutzerVerfuegbarkeit> nvMap = 
+                NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>list("veranstaltungId = ?1", veranstaltung.getId())
+                                .stream().collect(toMap(NutzerVerfuegbarkeit::getNutzerId, Function.identity()));
         sb.append("tn_verfuegbar = [| %% Slot 1..").append(slots.size());
         for (Teilnehmer tn : teilnehmer) {
             sb.append("\n");
             int sIdx = 0;
-            NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(tn, veranstaltung));
+            NutzerVerfuegbarkeit nv = nvMap.get(tn.getId());
             Set<Long> verfSlotIds = nv.getVerfuegbareSlotIds();
             for (Slot s : slots) {
                 sb.append(verfSlotIds.contains(s.getId()) ? "true" : "false");
@@ -343,14 +354,18 @@ public class PlanErstellungService {
     }
 
     private static void appendRaumVerfuegbarkeiten(Veranstaltung veranstaltung, List<Raum> raeume, Set<Slot> slots, List<Pflichtvortrag> pflichtvortraege, StringBuilder sb) {
-        sb.append("%In welchen Slots Räume für Wahlvorträge planbar ist:\n");
+        sb.append("%In welchen Slots Räume für Wahlvorträge einplanbar ist:\n");
         int raeumeSize = raeume.size();
         int slotSize = slots.size();
+        Map<Long, RaumVerfuegbarkeit> rvMap =
+                RaumVerfuegbarkeit.<RaumVerfuegbarkeit>list("veranstaltungId = ?1", veranstaltung.getId())
+                        .stream().collect(toMap(RaumVerfuegbarkeit::getRaumId, Function.identity()));
+
         int raumIdx = 0;
         sb.append("raum_belegbar = [| %% Slot 1..").append(slots.size());
         for (Raum raum : raeume) {
             sb.append("\n");
-            RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvId(raum, veranstaltung));
+            RaumVerfuegbarkeit rv = rvMap.get(raum.getId());
             Set<Long> verfSlotIds = rv.getVerfuegbareSlotIds();
             int sIdx = 0;
             for (Slot s : slots) {
@@ -370,7 +385,7 @@ public class PlanErstellungService {
     }
 
     @Transactional
-    public void speicherePlanungsergebnis(Veranstaltung veranstaltung, String jsonErgebnis, SolverConfigDto config) {
+    public void speicherePlanungsergebnis(Veranstaltung veranstaltung, String jsonErgebnis, SolverConfig config) {
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
         if (ergebnis == null) {
             ergebnis = new Planungsergebnis();
@@ -379,14 +394,14 @@ public class PlanErstellungService {
 
         try {
             ObjectNode root = (ObjectNode) objectMapper.readTree(jsonErgebnis);
-            JsonNode inputData = root.get("input_data");
-            int tnSize = inputData.get("teilnehmer_oids").size();
-            int wvSize = inputData.get("wahlvortrag_oids").size();
+            int tnSize = root.get("teilnehmer_oids").size();
+            int wvSize = root.get("wahlvortrag_oids").size();
 
             fixflatArrays(root, tnSize, wvSize, config.maxInstanzen);
 
             String fixedJson = objectMapper.writeValueAsString(root);
-            LOG.info("Result (fixed):\n" + fixedJson);
+            LOG.info("###" + fixedJson);
+
             ergebnis.setJsonErgebnis(fixedJson);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -395,6 +410,7 @@ public class PlanErstellungService {
         ergebnis.setSolver(config.solver);
         ergebnis.setTimeout(config.timeout);
         ergebnis.persist();
+
         LOG.info("Planungsergebnis für Veranstaltung '" + veranstaltung.getName() + "' wurde gespeichert/aktualisiert.");
     }
 

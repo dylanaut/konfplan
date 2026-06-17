@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teilnehmer-Stundenpläne {cfg.messe_titel}</title>
-    <link href="../../META-INF/resources/css/bootstrap.min.css" rel="stylesheet">
+    <title>Teilnehmer-Stundenpläne {veranstaltung.name}</title>
+    <link href="../../../resources/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #f8f9fa;
@@ -47,9 +47,9 @@
 
 <div class="container-fluid py-4">
     <header class="mb-4 d-flex justify-content-between align-items-center">
-        <h1>📅 {cfg.messe_titel} ({cfg.messe_ort}, {cfg.messe_termin})</h1>
-        <a href="{cfg.messe_logo_link}">
-            <img src="{cfg.logo_base64}" alt="Messe Logo" class="header-logo">
+        <h1>📅 {veranstaltung.name} ({veranstaltung.zeitraumTage})</h1>
+        <a href="{veranstaltung.logo_link}">
+            <img src="{veranstaltung.logo}" alt="Messe Logo" class="header-logo">
         </a>
     </header>
 
@@ -58,10 +58,10 @@
 
         <div class="row mb-3 align-items-center">
             <div class="col-md-4">
-                <label for="classFilter" class="form-label small fw-bold text-muted">Klasse filtern:</label>
+                <label for="classFilter" class="form-label small fw-bold text-muted">Gruppe filtern:</label>
                 <select id="classFilter" class="form-select shadow-sm" onchange="filterTable()">
-                    <option value="all">Alle Klassen anzeigen</option>
-                    {#for k in klassen_liste}
+                    <option value="all">Alle Gruppen anzeigen</option>
+                    {#for k in gruppen}
                     <option value="{k}">{k}</option>
                     {/for}
                 </select>
@@ -85,29 +85,31 @@
                     </tr>
                     </thead>
                     <tbody>
-                    {#for t in teilnehmer_stundenplan}
-                        {#let klasse = t.name.substring(t.name.indexOf('(') + 1, t.name.indexOf(')'))}
-                        <tr class="participant-row" data-class="{klasse}">
-                            <td class="fw-bold bg-light border-end">{t.name}</td>
-                            {#for s_id in slots.keySet}
-                                {#let s = t.plan.get(s_id)}
+                    {#for tn_sp in teilnehmer_stundenplan}
+                        {#let gruppen = tn_sp.teilnehmer.gruppen}
+                        <tr class="participant-row" data-class="{gruppen}">
+                            <td class="fw-bold bg-light border-end">{tn_sp.teilnehmer.fullname}</td>
+                            {#for slot_oid in slots.keySet}
+                                {#let sb = tn_sp.tnSlotBelegungen.get(slot_oid)}
                                 <td class="text-center p-2
-                                    {#if s.typ == 'pflicht'}bg-primary text-white
-                                    {#else if s.typ == 'wahl'}bg-success text-white
-                                    {#else if s.typ == 'auffuellung'}bg-auffuellung
-                                    {#else if s.typ == 'abwesend'}status-unavailable
+                                    {#if sb.typ == 'pflicht'}bg-primary text-white
+                                    {#else if sb.typ == 'wahl'}bg-success text-white
+                                    {#else if sb.typ == 'auffuellung'}bg-auffuellung
+                                    {#else if sb.typ == 'abwesend'}status-unavailable
                                     {#else}text-muted{/if}"
                                     style="width: 150px; vertical-align: middle;">
 
-                                    {#if s.typ != 'frei' && s.typ != 'abwesend'}
-                                        <small class="d-block fw-bold">{s.name.substring(0, Math.min(20, s.name.length()))}{#if s.name.length() > 20}...{/if}</small>
-                                        <span class="text-muted fw-bold">{s.raum}</span>
+                                    {#if sb.typ != 'frei' && sb.typ != 'abwesend'}
+                                        <small class="d-block fw-bold">{sb.titel.truncTo(20)}</small>
+                                        <span class="text-muted fw-bold">{sb.raum}</span>
                                     {#else}
-                                        <span class="small">{s.name}</span>
+                                        <span class="small">{sb.titel.truncTo(20)}</span>
                                     {/if}
                                 </td>
+                            {/let}
                             {/for}
                         </tr>
+                    {/let}
                     {/for}
                     </tbody>
                 </table>
@@ -147,10 +149,10 @@
 </div>
 
 <footer class="text-center py-2 text-muted small">
-    <span class="badge bg-secondary">Stand: {now}</span>
+    <span class="badge bg-secondary">Stand: {geplantAm}</span>
 </footer>
 
-<script src="../../META-INF/resources/js/bootstrap.bundle.min.js"></script>
+<script src="../../../resources/js/bootstrap.bundle.min.js"></script>
 <script>
     function filterTable() {
         const selectedClass = document.getElementById('classFilter').value;
@@ -169,9 +171,9 @@
 
         const countBadge = document.getElementById('visibleCount');
         if (selectedClass === 'all') {
-            countBadge.innerText = `Zeige alle ${rows.length} Teilnehmer`;
+            countBadge.innerText = 'Zeige alle ' + rows.length + ' Teilnehmer';
         } else {
-            countBadge.innerText = `Klasse ${selectedClass}: ${visibleCount} Teilnehmer`;
+            countBadge.innerText = 'Gruppe ' + selectedClass + ':' + visibleCount + ' Teilnehmer';
         }
     }
     // Initial count on page load

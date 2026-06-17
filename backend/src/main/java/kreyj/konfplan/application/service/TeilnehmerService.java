@@ -11,10 +11,17 @@ import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Prioritaet;
+import kreyj.konfplan.persistence.ProtokollKategorie;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Vortrag;
+import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.presentation.dto.NutzerDto;
+import kreyj.konfplan.presentation.dto.TeilnehmerDto;
 import kreyj.konfplan.presentation.dto.VortragPrioDto;
 import kreyj.konfplan.presentation.dto.csv.TeilnehmerCsvDto;
-import kreyj.konfplan.persistence.*;
 import org.jboss.logging.Logger;
 
 import java.io.FileReader;
@@ -30,17 +37,21 @@ public class TeilnehmerService {
 
     private final ProtokollService protokollService;
 
+
     public TeilnehmerService(ProtokollService protokollService) {
         this.protokollService = protokollService;
     }
+
 
     public List<Teilnehmer> findAll(Long veranstaltungId) {
         return Nutzer.find("role = 'TEILNEHMER' and veranstaltung.id = ?1", veranstaltungId).list();
     }
 
+
     public Teilnehmer findById(Long id) {
         return Nutzer.findById(id);
     }
+
 
     public Teilnehmer findByEmail(String email) {
         if (null == email) {
@@ -48,6 +59,7 @@ public class TeilnehmerService {
         }
         return Teilnehmer.find("email", email.trim().toLowerCase()).firstResult();
     }
+
 
     @Transactional
     public Teilnehmer createTeilnehmer(Teilnehmer user, Long veranstaltungId) {
@@ -77,6 +89,7 @@ public class TeilnehmerService {
         protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer erstellt", "Teilnehmer " + user.getEmail() + " für Veranstaltung " + v.getName() + " erstellt.", user.getId());
         return user;
     }
+
 
     @Transactional
     public int importFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception {
@@ -137,6 +150,7 @@ public class TeilnehmerService {
         return count;
     }
 
+
     @Transactional
     public void deleteUser(Nutzer nutzer) {
         String email = nutzer.getEmail();
@@ -145,12 +159,14 @@ public class TeilnehmerService {
         protokollService.log(ProtokollKategorie.NUTZER, "Nutzer gelöscht", "Nutzer " + email + " gelöscht.", id);
     }
 
+
     @Transactional
     public void toggleActive(Nutzer nutzer) {
         nutzer.setActive(!nutzer.isActive());
         nutzer.persist();
         protokollService.log(ProtokollKategorie.NUTZER, "Nutzer-Status geändert", "Nutzer " + nutzer.getEmail() + " ist jetzt " + (nutzer.isActive() ? "aktiv" : "inaktiv") + ".", nutzer.getId());
     }
+
 
     @Transactional
     public Teilnehmer updateTeilnehmerProfile(Teilnehmer teilnehmer, NutzerDto dto) {
@@ -170,10 +186,11 @@ public class TeilnehmerService {
         dto.gruppen.forEach(teilnehmer::addGruppe);
         teilnehmer.setActive(dto.isActive);
 
-        teilnehmer.persistAndFlush();
+        teilnehmer.persist();
 
         return teilnehmer;
     }
+
 
     @Transactional
     public Teilnehmer updateTeilnehmer(Long id, NutzerDto tnDto, Long veranstaltungId) {
@@ -205,6 +222,7 @@ public class TeilnehmerService {
         return tn;
     }
 
+
     @Transactional
     public void savePriorities(Long userId, Long veranstaltungId, List<VortragPrioDto> priorityDtos) {
         Teilnehmer teilnehmer = Teilnehmer.findById(userId);
@@ -228,7 +246,7 @@ public class TeilnehmerService {
 
         for (VortragPrioDto dto : priorityDtos) {
             if (dto.prioWert > 0) {
-                Vortrag vortrag = Vortrag.findById(dto.vortragId);
+                Wahlvortrag vortrag = Wahlvortrag.findById(dto.vortragId);
                 if (vortrag == null) {
                     LOG.warn("Vortrag mit ID " + dto.vortragId + " für Priorität von Teilnehmer " + userId + " nicht gefunden. Überspringe.");
                     protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung Warnung", "Vortrag " + dto.vortragId + " für Priorität von " + teilnehmer.getEmail() + " nicht gefunden.", teilnehmer.getId());
@@ -247,5 +265,10 @@ public class TeilnehmerService {
             }
         }
         protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten gespeichert", "Prioritäten für Teilnehmer " + teilnehmer.getEmail() + " in Veranstaltung " + veranstaltung.getName() + " gespeichert.", teilnehmer.getId());
+    }
+
+
+    public static TeilnehmerDto mapToDto(Teilnehmer tn) {
+        return new TeilnehmerDto(tn.getId(), tn.getFirstName(), tn.getLastName(), tn.getGruppen());
     }
 }

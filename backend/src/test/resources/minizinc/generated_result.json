@@ -43,7 +43,7 @@
   ],
   "kosten": 504,
   "zuweisungen": 3,
-  "input_data": {
+  "entity_oids": {
     "teilnehmer_oids": [
       212,
       213

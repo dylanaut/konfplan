@@ -51,6 +51,7 @@ public class ReferentService {
         this.protokollService = protokollService;
     }
 
+    @Transactional
     public Referent getProfile(String email) {
         Nutzer nutzer = Nutzer.findByEmail(email);
         if (nutzer instanceof Referent) {
@@ -281,23 +282,23 @@ public class ReferentService {
     @Transactional
     public void deregisterTalkFromEvent(String email, Long vortragId, Long veranstaltungId) {
         Referent referent = Referent.find("email", email).firstResult();
-        Vortrag talk = Vortrag.findById(vortragId);
+        Vortrag vortrag = Vortrag.findById(vortragId);
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
 
-        if (referent == null || talk == null || veranstaltung == null) {
+        if (referent == null || vortrag == null || veranstaltung == null) {
             return;
         }
-        if (!talk.getReferent().getId().equals(referent.getId()) || !talk.getVeranstaltung().getId().equals(veranstaltung.getId())) {
+        if (!vortrag.getReferent().getId().equals(referent.getId()) || !vortrag.getVeranstaltung().getId().equals(veranstaltung.getId())) {
             return;
         }
 
         checkDeadline(veranstaltung);
 
-        String titel = talk.getTitel();
-        talk.delete();
+        String titel = vortrag.getTitel();
+        vortrag.delete();
 
         if (veranstaltung.getBeginntAm().isAfter(LocalDateTime.now())) {
-            mailService.sendVortragsRegistrierung(veranstaltung, referent, talk, false);
+            mailService.sendVortragsRegistrierung(veranstaltung, referent, vortrag, false);
         }
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag von Event abgemeldet", "Referent '" + email + "' hat Vortrag '" + titel + "' von Event '" + veranstaltung.getName() + "' abgemeldet.", vortragId);
     }
@@ -419,7 +420,6 @@ public class ReferentService {
     // -------------------------------------------------------------------
 
 
-
     public static VortragDto mapVortragToDto(Vortrag v) {
         VortragDto dto = new VortragDto();
         dto.id = v.getId();
@@ -449,8 +449,12 @@ public class ReferentService {
         } else if (v instanceof Pflichtvortrag pflichtvortrag) {
             dto.istPflicht = true;
             dto.pflichtGruppe = pflichtvortrag.getPflichtgruppe();
-            if (pflichtvortrag.getPflichtslot() != null) {
-                dto.verfuegbareSlotIds = Set.of(pflichtvortrag.getPflichtslot().getId());
+            dto.pflichtRaumId = pflichtvortrag.getPflichtraum().getId();
+
+            Slot pflichtslot = pflichtvortrag.getPflichtslot();
+            if (pflichtslot != null) {
+                dto.pflichtSlotId = pflichtslot.getId();
+                dto.verfuegbareSlotIds = Set.of(pflichtslot.getId());
             }
         }
 
@@ -478,5 +482,4 @@ public class ReferentService {
         return vortrag;
 
     }
-
 }

@@ -64,7 +64,7 @@ public class Raum extends VersionedEntity {
         if (null == rv) {
             if (createIfMissing) {
                 rv = new RaumVerfuegbarkeit(this, veranstaltung, veranstaltung.getSlotIds());
-                rv.persistAndFlush();
+                rv.persist();
             } else {
                 throw new IllegalStateException("Missing RaumVerfuegbarkeit für " + this.getName()
                         + " in Veranstaltung '" + veranstaltung.getName() + "'");

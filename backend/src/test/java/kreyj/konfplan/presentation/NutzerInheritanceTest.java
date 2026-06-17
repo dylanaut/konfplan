@@ -34,16 +34,16 @@ class NutzerInheritanceTest extends DatabaseCleaner {
         Admin admin = new Admin();
         admin.setEmail("org@test.de");
         admin.setPasswordHash("hash");
-        admin.persistAndFlush();
+        admin.persist();
 
         Veranstaltung v = new Veranstaltung();
         v.setName("Inheritance Test Event " + System.currentTimeMillis());
         v.setBeginntAm(LocalDateTime.now());
-        v.persistAndFlush();
+        v.persist();
         testVid = v.getId();
 
         admin.addVeranstaltung(v);
-        admin.persistAndFlush();
+        admin.persist();
     }
 
     @Test

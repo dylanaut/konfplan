@@ -18,7 +18,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -98,7 +97,7 @@ public abstract class Vortrag extends VersionedEntity {
         veranstaltung.addVortrag(this);
     }
 
-    public abstract void afterPersistAndFlush();
+    public abstract void afterPersist();
 
 
     // -------------------------------------------------------------------

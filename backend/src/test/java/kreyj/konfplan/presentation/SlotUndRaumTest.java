@@ -46,7 +46,7 @@ class SlotUndRaumTest extends DatabaseCleaner {
         v1.setName("Haupt Veranstaltung");
         v1.setBeginntAm(LocalDateTime.of(2025, 10, 1, 8, 0));
         v1.setEndetAm(LocalDateTime.of(2025, 10, 1, 18, 0));
-        v1.persistAndFlush();
+        v1.persist();
         v1_Id = v1.getId();
 
         // Andere Veranstaltung (zeitgleich)
@@ -54,7 +54,7 @@ class SlotUndRaumTest extends DatabaseCleaner {
         v2.setName("Andere Veranstaltung");
         v2.setBeginntAm(LocalDateTime.of(2025, 10, 1, 8, 0));
         v2.setEndetAm(LocalDateTime.of(2025, 10, 1, 18, 0));
-        v2.persistAndFlush();
+        v2.persist();
         v2_Id = v2.getId();
 
         Gebaeude g = new Gebaeude();
@@ -63,13 +63,13 @@ class SlotUndRaumTest extends DatabaseCleaner {
         g.setPostleitzahl("53567");
         g.setStrasse("Wallroth");
         g.setOrt("Buchholz");
-        g.persistAndFlush();
+        g.persist();
 
         v1.addGebaeude(g);
         v2.addGebaeude(g);
 
         Raum raum = new Raum("R1", 20);
-        raum.persistAndFlush();
+        raum.persist();
 
         g.addRaum(raum);
         raumId = raum.getId();
@@ -167,7 +167,7 @@ class SlotUndRaumTest extends DatabaseCleaner {
             Slot s1 = new Slot("Slot E1",
                     LocalDateTime.of(2025, 10, 1, 9, 0),
                     LocalDateTime.of(2025, 10, 1, 10, 0), veranstaltung);
-            s1.persistAndFlush();
+            s1.persist();
             slotIdArray[0] = s1.getId();
             veranstaltung.addSlot(s1);
 
@@ -176,7 +176,7 @@ class SlotUndRaumTest extends DatabaseCleaner {
             Slot s2 = new Slot("Slot E2",
                     LocalDateTime.of(2025, 10, 1, 9, 30),
                     LocalDateTime.of(2025, 10, 1, 10, 30), otherV);
-            s2.persistAndFlush();
+            s2.persist();
             slotIdArray[1] = s2.getId();
             otherV.addSlot(s2);
 

@@ -22,12 +22,16 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static kreyj.konfplan.util.DateHelper.DAY_FORMATTER;
+import static kreyj.konfplan.util.DateHelper.HOUR_FORMATTER;
 
 @Entity
 @NoArgsConstructor
@@ -63,9 +67,11 @@ public class Veranstaltung extends VersionedEntity {
     @Column(name = "gruppen")
     private Set<String> gruppen = new HashSet<>();
 
+
     public Set<String> getGruppen() {
         return Collections.unmodifiableSet(gruppen);
     }
+
 
     public boolean addGruppe(String gruppenName) {
         if (null == gruppenName) {
@@ -74,6 +80,7 @@ public class Veranstaltung extends VersionedEntity {
 
         return gruppen.add(gruppenName);
     }
+
 
     public boolean removeGruppe(String gruppenName) {
         if (null == gruppenName) {
@@ -92,9 +99,11 @@ public class Veranstaltung extends VersionedEntity {
     )
     private Set<Gebaeude> gebaeude = new HashSet<>();
 
+
     public Set<Gebaeude> getGebaeude() {
         return Collections.unmodifiableSet(gebaeude);
     }
+
 
     public void addGebaeude(Gebaeude aGebaeude) {
         if (null == aGebaeude) {
@@ -110,6 +119,7 @@ public class Veranstaltung extends VersionedEntity {
             }
         }
     }
+
 
     public void removeGebaeude(Gebaeude aGebaeude) {
         if (null == aGebaeude) {
@@ -130,14 +140,17 @@ public class Veranstaltung extends VersionedEntity {
     @Setter(AccessLevel.NONE)
     Set<Slot> slots = new HashSet<>();
 
+
     public Set<Slot> getSlots() {
         return Collections.unmodifiableSet(slots);
     }
+
 
     @JsonIgnore
     public Set<Long> getSlotIds() {
         return slots.stream().map(Slot::getId).collect(Collectors.toSet());
     }
+
 
     public void addSlot(Slot slot) {
         if (null == slot) {
@@ -154,6 +167,7 @@ public class Veranstaltung extends VersionedEntity {
                 .filter(v -> !v.istPflicht())
                 .forEach(v -> v.updateVerfuegbarkeit(slot, this, true, true));
     }
+
 
     public void removeSlot(Slot slot) {
         if (null == slot) {
@@ -174,9 +188,11 @@ public class Veranstaltung extends VersionedEntity {
     @OneToMany(mappedBy = "veranstaltung", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
     Set<Vortrag> vortraege = new HashSet<>();
 
+
     public Set<Vortrag> getVortraege() {
         return Collections.unmodifiableSet(vortraege);
     }
+
 
     public void addVortrag(Vortrag aVortrag) {
         if (null == aVortrag) {
@@ -187,6 +203,7 @@ public class Veranstaltung extends VersionedEntity {
         aVortrag.veranstaltung = this;
     }
 
+
     public void removeVortrag(Vortrag aVortrag) {
         if (null == aVortrag) {
             return;
@@ -195,6 +212,7 @@ public class Veranstaltung extends VersionedEntity {
         vortraege.remove(aVortrag);
         aVortrag.veranstaltung = null;
     }
+
 
     public List<Wahlvortrag> getWahlvortraege() {
         return vortraege.stream().filter(v -> v instanceof Wahlvortrag)
@@ -214,9 +232,11 @@ public class Veranstaltung extends VersionedEntity {
     @JsonIgnoreProperties("veranstaltungen")
     Set<Nutzer> nutzer = new HashSet<>();
 
+
     public Set<Nutzer> getNutzer() {
         return Collections.unmodifiableSet(nutzer);
     }
+
 
     public void addNutzer(Nutzer nutzer) {
         if (null == nutzer) {
@@ -225,6 +245,7 @@ public class Veranstaltung extends VersionedEntity {
 
         nutzer.addVeranstaltung(this);
     }
+
 
     public void removeNutzer(Nutzer nutzer) {
         if (null == nutzer) {
@@ -238,6 +259,7 @@ public class Veranstaltung extends VersionedEntity {
     // Helper methods
     // -------------------------------------------------------------------
 
+
     @NotEmpty(message = "Veranstaltung muss mindestens eine/n Organisator/in haben")
     public List<Admin> organisatoren() {
         return nutzer.stream()
@@ -246,12 +268,14 @@ public class Veranstaltung extends VersionedEntity {
                 .toList();
     }
 
+
     public List<Teilnehmer> teilnehmer() {
         return nutzer.stream()
                 .filter(u -> u instanceof Teilnehmer)
                 .map(u -> (Teilnehmer) u)
                 .toList();
     }
+
 
     public List<Referent> referenten() {
         return nutzer.stream()
@@ -260,9 +284,49 @@ public class Veranstaltung extends VersionedEntity {
                 .toList();
     }
 
+
     public List<Raum> getRaeume() {
         return gebaeude.stream()
                 .flatMap(g -> g.getRaeume().stream())
                 .toList();
+    }
+
+
+    public List<String> getOrte() {
+        return gebaeude.stream().map(Gebaeude::getOrt).toList();
+    }
+
+
+    public String startTag() {
+        return DAY_FORMATTER.format(beginntAm);
+    }
+
+
+    public String endeTag() {
+        return DAY_FORMATTER.format(endetAm);
+    }
+
+
+    public String startZeit() {
+        return HOUR_FORMATTER.format(beginntAm);
+    }
+
+
+    public String endeZeit() {
+        return HOUR_FORMATTER.format(endetAm);
+    }
+
+
+    public String zeitraum() {
+        return startZeit() + " - " + endeZeit();
+    }
+
+
+    public String zeitraumTage() {
+        if (LocalDate.from(beginntAm).isEqual(LocalDate.from(endetAm))) {
+            return startTag() + ", " + startZeit() + " - " + endeZeit();
+        } else {
+            return startTag() + ", " + startZeit() + " - " + endeTag() + ", " + endeZeit();
+        }
     }
 }

@@ -21,9 +21,6 @@ public abstract class VeranstaltungsVerfuegbarkeit extends PanacheEntityBase {
     @Column(name = "veranstaltung_id")
     protected Long veranstaltungId;
 
-    @Version
-    private Long version;
-
     Set<Long> verfuegbareSlotIds = new HashSet<>();
 
     public Set<Long> getVerfuegbareSlotIds() {

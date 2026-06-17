@@ -1,8 +1,5 @@
 package kreyj.konfplan.presentation;
 
-import io.quarkus.qute.Location;
-import io.quarkus.qute.Template;
-import io.quarkus.qute.TemplateInstance;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -11,58 +8,55 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.application.service.PdfService;
-import kreyj.konfplan.application.service.PlanService;
+import kreyj.konfplan.application.service.TemplateService;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
-import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto;
-import kreyj.konfplan.presentation.dto.RaumplanEintragDto;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.logging.Logger;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 @Path("/api/reports")
 @Tag(name = "Reports", description = "Endpunkte zum Generieren von Berichten und Plänen (HTML/PDF)")
 public class ReportResource {
     private static final Logger LOG = Logger.getLogger(ReportResource.class);
 
-    private final PlanService planService;
     private final PdfService pdfService;
+    private final TemplateService templateService;
     private final JsonWebToken jwt;
 
-    @Location("report/laufzettel-teilnehmer.html")
-    Template laufzettelTeilnehmer;
-
-    @Location("report/laufzettel-referent.html")
-    Template laufzettelReferent;
-
-    @Location("report/raumbelegungsplan.html")
-    Template raumbelegungsplan;
-
-    @Location("report/uebersicht-raeume.html")
-    Template uebersichtRaeume;
-
-    @Location("report/freie-slots-referenten.html")
-    Template freieSlotsReferenten;
-
-    @Location("report/freie-slots-teilnehmer.html")
-    Template freieSlotsTeilnehmer;
-
-    @Location("report/raumschilder.html")
-    Template raumschilder;
-
-    public ReportResource(PlanService planService, PdfService pdfService, JsonWebToken jwt) {
-        this.planService = planService;
+    public ReportResource(PdfService pdfService, TemplateService templateService, JsonWebToken jwt) {
         this.pdfService = pdfService;
+        this.templateService = templateService;
         this.jwt = jwt;
+    }
+
+    @GET
+    @Path("/{vid}/laufzettel")
+    @Produces(MediaType.TEXT_HTML)
+    @RolesAllowed("ADMIN")
+    @Operation(summary = "Laufzettel für alle (HTML)", description = "Generiert die persönlichen Laufzettel einer Veranstaltung als HTML.")
+    public Response getAlleLaufzettel(@PathParam("vid") Long vid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (veranstaltung == null) {
+            return Response.status(Response.Status.NOT_FOUND).entity("Veranstaltung nicht gefunden.").build();
+        }
+        return Response.ok(templateService.prepareAlleLaufzettelTemplate(veranstaltung).render()).build();
+    }
+
+    @GET
+    @Path("/{vid}/laufzettel-pdf")
+    @Produces("application/pdf")
+    @RolesAllowed("ADMIN")
+    @Operation(summary = "Laufzettel für alle Teilnehmer (PDF)", description = "Generiert die persönlichen Laufzettel einer Veranstaltung als PDF.")
+    public Response getAlleLaufzettelPdf(@PathParam("vid") Long vid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (veranstaltung == null) {
+            return Response.status(Response.Status.NOT_FOUND).entity("Veranstaltung nicht gefunden.").build();
+        }
+        return Response.ok(pdfService.generatePdf(templateService.prepareAlleLaufzettelTemplate(veranstaltung))).build();
     }
 
     @GET
@@ -71,19 +65,15 @@ public class ReportResource {
     @RolesAllowed({"TEILNEHMER", "ADMIN"})
     @Operation(summary = "Laufzettel für Teilnehmer (HTML)", description = "Generiert den persönlichen Laufzettel für einen Teilnehmer als HTML.")
     public Response getLaufzettelTeilnehmer(@PathParam("vid") Long vid, @PathParam("tid") Long tid) {
-        Teilnehmer teilnehmer = Teilnehmer.findById(tid);
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-
+        Teilnehmer teilnehmer = Teilnehmer.findById(tid);
         if (teilnehmer == null || veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).entity("Teilnehmer oder Veranstaltung nicht gefunden.").build();
         }
-
-        TemplateInstance templateInstance = laufzettelTeilnehmer.data(
-                "veranstaltung", veranstaltung,
-                "teilnehmer", teilnehmer,
-                "plan", planService.getPlanFuerTeilnehmer(teilnehmer.getEmail(), vid)
-        );
-        return Response.ok(templateInstance.render()).build();
+        if (!jwt.getGroups().contains("ADMIN") && !teilnehmer.getEmail().equals(jwt.getName())) {
+            return Response.status(Response.Status.FORBIDDEN).build();
+        }
+        return Response.ok(templateService.prepareTnLaufzettelTemplate(veranstaltung, teilnehmer).render()).build();
     }
 
     @GET
@@ -92,20 +82,15 @@ public class ReportResource {
     @RolesAllowed({"TEILNEHMER", "ADMIN"})
     @Operation(summary = "Laufzettel für Teilnehmer (PDF)", description = "Generiert den persönlichen Laufzettel für einen Teilnehmer als PDF.")
     public Response getLaufzettelTeilnehmerPdf(@PathParam("vid") Long vid, @PathParam("tid") Long tid) {
-        Teilnehmer teilnehmer = Teilnehmer.findById(tid);
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-
+        Teilnehmer teilnehmer = Teilnehmer.findById(tid);
         if (teilnehmer == null || veranstaltung == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return Response.status(Response.Status.NOT_FOUND).entity("Teilnehmer oder Veranstaltung nicht gefunden.").build();
         }
-
-        TemplateInstance templateInstance = laufzettelTeilnehmer.data(
-                "veranstaltung", veranstaltung,
-                "teilnehmer", teilnehmer,
-                "plan", planService.getPlanFuerTeilnehmer(teilnehmer.getEmail(), vid)
-        );
-
-        return Response.ok(pdfService.generatePdf(templateInstance)).build();
+        if (!jwt.getGroups().contains("ADMIN") && !teilnehmer.getEmail().equals(jwt.getName())) {
+            return Response.status(Response.Status.FORBIDDEN).build();
+        }
+        return Response.ok(pdfService.generatePdf(templateService.prepareTnLaufzettelTemplate(veranstaltung, teilnehmer))).build();
     }
 
     @GET
@@ -116,21 +101,13 @@ public class ReportResource {
     public Response getLaufzettelReferent(@PathParam("vid") Long vid, @PathParam("rid") Long refId) {
         Referent referent = Referent.findById(refId);
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-
         if (referent == null || veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-
         if (!jwt.getGroups().contains("ADMIN") && !referent.getEmail().equals(jwt.getName())) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
-
-        TemplateInstance templateInstance = laufzettelReferent.data(
-                "veranstaltung", veranstaltung,
-                "referent", referent,
-                "plan", planService.getPlanFuerReferent(referent.getEmail(), veranstaltung)
-        );
-        return Response.ok(templateInstance.render()).build();
+        return Response.ok(templateService.prepareRefLaufzettelTemplate(veranstaltung, referent).render()).build();
     }
 
     @GET
@@ -141,18 +118,13 @@ public class ReportResource {
     public Response getLaufzettelReferentPdf(@PathParam("vid") Long vid, @PathParam("rid") Long rid) {
         Referent referent = Referent.findById(rid);
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-
         if (referent == null || veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-
-        TemplateInstance templateInstance = laufzettelReferent.data(
-                "veranstaltung", veranstaltung,
-                "referent", referent,
-                "plan", planService.getPlanFuerReferent(referent.getEmail(), veranstaltung)
-        );
-
-        return Response.ok(pdfService.generatePdf(templateInstance)).build();
+        if (!jwt.getGroups().contains("ADMIN") && !referent.getEmail().equals(jwt.getName())) {
+            return Response.status(Response.Status.FORBIDDEN).build();
+        }
+        return Response.ok(pdfService.generatePdf(templateService.prepareRefLaufzettelTemplate(veranstaltung, referent))).build();
     }
 
     @GET
@@ -163,20 +135,10 @@ public class ReportResource {
     public Response getRaumbelegungsplan(@PathParam("vid") Long vid, @PathParam("rid") Long rid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         Raum raum = Raum.findById(rid);
-
         if (raum == null || veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-
-        Map<Long, Map<Long, RaumplanEintragDto>> raumplan = planService.getRaumbelegungsplan(veranstaltung);
-        Map<Long, RaumplanEintragDto> belegungFuerRaum = raumplan.getOrDefault(rid, Collections.emptyMap());
-
-        TemplateInstance templateInstance = raumbelegungsplan.data(
-                "veranstaltung", veranstaltung,
-                "raum", raum,
-                "belegung", belegungFuerRaum
-        );
-        return Response.ok(templateInstance.render()).build();
+        return Response.ok(templateService.prepareRaumbelegungTemplate(veranstaltung, raum).render()).build();
     }
 
     @GET
@@ -187,21 +149,10 @@ public class ReportResource {
     public Response getRaumbelegungsplanPdf(@PathParam("vid") Long vid, @PathParam("rid") Long rid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         Raum raum = Raum.findById(rid);
-
         if (raum == null || veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-
-        Map<Long, Map<Long, RaumplanEintragDto>> raumplan = planService.getRaumbelegungsplan(veranstaltung);
-        Map<Long, RaumplanEintragDto> belegungFuerRaum = raumplan.getOrDefault(rid, Collections.emptyMap());
-
-        TemplateInstance templateInstance = raumbelegungsplan.data(
-                "veranstaltung", veranstaltung,
-                "raum", raum,
-                "belegung", belegungFuerRaum
-        );
-
-        return Response.ok(pdfService.generatePdf(templateInstance)).build();
+        return Response.ok(pdfService.generatePdf(templateService.prepareRaumbelegungTemplate(veranstaltung, raum))).build();
     }
 
     @GET
@@ -214,12 +165,7 @@ public class ReportResource {
         if (veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        List<RaumBelegungUebersichtDto> plan = planService.getDetaillierterPlan(veranstaltung);
-
-        TemplateInstance templateInstance = uebersichtRaeume.data("veranstaltung", veranstaltung)
-                .data("plan", plan);
-
-        return Response.ok(templateInstance.render()).build();
+        return Response.ok(templateService.prepareUebersichtRaeumeTemplate(veranstaltung).render()).build();
     }
 
     @GET
@@ -232,10 +178,7 @@ public class ReportResource {
         if (veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        List<RaumBelegungUebersichtDto> plan = planService.getDetaillierterPlan(veranstaltung);
-        TemplateInstance templateInstance = uebersichtRaeume.data("veranstaltung", veranstaltung).data("plan", plan);
-
-        return Response.ok(pdfService.generatePdf(templateInstance)).build();
+        return Response.ok(pdfService.generatePdf(templateService.prepareUebersichtRaeumeTemplate(veranstaltung))).build();
     }
 
     @GET
@@ -248,17 +191,7 @@ public class ReportResource {
         if (veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        Map<Long, Map<Long, RaumplanEintragDto>> raumplan = planService.getRaumbelegungsplan(veranstaltung);
-        List<Raum> raeume = veranstaltung.getRaeume();
-        Set<Slot> slots = veranstaltung.getSlots();
-
-        TemplateInstance templateInstance = raumschilder.data(
-                "veranstaltung", veranstaltung,
-                "raumplan", raumplan,
-                "raeume", raeume,
-                "slots", slots
-        );
-        return Response.ok(templateInstance.render()).build();
+        return Response.ok(templateService.prepareRaumschilderTemplate(veranstaltung).render()).build();
     }
 
     @GET
@@ -271,7 +204,7 @@ public class ReportResource {
         if (veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(planService.generiereAlleRaumschilderPdf(veranstaltung)).build();
+        return Response.ok(pdfService.generatePdf(templateService.prepareRaumschilderTemplate(veranstaltung))).build();
     }
 
     @GET
@@ -284,13 +217,7 @@ public class ReportResource {
         if (veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        Map<Long, List<Slot>> freieSlots = planService.getFreieSlotsReferenten(vid);
-        List<Referent> referenten = veranstaltung.referenten();
-        TemplateInstance templateInstance = freieSlotsReferenten.data("veranstaltung", veranstaltung)
-                .data("freieSlots", freieSlots)
-                .data("referenten", referenten);
-
-        return Response.ok(templateInstance.render()).build();
+        return Response.ok(templateService.prepareFreieSlotsReferentenReport(veranstaltung).render()).build();
     }
 
     @GET
@@ -303,13 +230,7 @@ public class ReportResource {
         if (veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        Map<Long, List<Slot>> freieSlots = planService.getFreieSlotsReferenten(vid);
-        List<Referent> referenten = veranstaltung.referenten();
-        TemplateInstance templateInstance = freieSlotsReferenten.data("veranstaltung", veranstaltung)
-                .data("freieSlots", freieSlots)
-                .data("referenten", referenten);
-
-        return Response.ok(pdfService.generatePdf(templateInstance)).build();
+        return Response.ok(pdfService.generatePdf(templateService.prepareFreieSlotsReferentenReport(veranstaltung))).build();
     }
 
     @GET
@@ -322,14 +243,7 @@ public class ReportResource {
         if (veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        Map<Long, List<Slot>> freieSlots = planService.getFreieSlotsTeilnehmer(veranstaltung);
-        List<Teilnehmer> teilnehmer = veranstaltung.teilnehmer();
-
-        TemplateInstance templateInstance = freieSlotsTeilnehmer.data("veranstaltung", veranstaltung)
-                .data("freieSlots", freieSlots)
-                .data("teilnehmer", teilnehmer);
-
-        return Response.ok(templateInstance.render()).build();
+        return Response.ok(templateService.prepareFreieSlotsTeilnehmerTemplate(veranstaltung).render()).build();
     }
 
     @GET
@@ -342,12 +256,76 @@ public class ReportResource {
         if (veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        Map<Long, List<Slot>> freieSlots = planService.getFreieSlotsTeilnehmer(veranstaltung);
-        List<Teilnehmer> teilnehmer = veranstaltung.teilnehmer();
-        TemplateInstance templateInstance = freieSlotsTeilnehmer.data("veranstaltung", veranstaltung)
-                .data("freieSlots", freieSlots)
-                .data("teilnehmer", teilnehmer);
+        return Response.ok(pdfService.generatePdf(templateService.prepareFreieSlotsTeilnehmerTemplate(veranstaltung))).build();
+    }
 
-        return Response.ok(pdfService.generatePdf(templateInstance)).build();
+    // -------------------------------------------------------------------
+    // Python-Skript Migration: Dashboard Endpoints
+    // -------------------------------------------------------------------
+
+    @GET
+    @Path("/{vid}/dashboard/stundenplan")
+    @Produces(MediaType.TEXT_HTML)
+    @RolesAllowed("ADMIN")
+    @Operation(summary = "Dashboard: Stundenplan (HTML)")
+    public Response getStundenplanDashboard(@PathParam("vid") Long vid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (veranstaltung == null) return Response.status(Response.Status.NOT_FOUND).build();
+        return Response.ok(templateService.prepareStundenplanDashboard(veranstaltung).render()).build();
+    }
+
+    @GET
+    @Path("/{vid}/dashboard/stundenplan-pdf")
+    @Produces("application/pdf")
+    @RolesAllowed("ADMIN")
+    @Operation(summary = "Dashboard: Stundenplan (PDF)")
+    public Response getStundenplanDashboardPdf(@PathParam("vid") Long vid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (veranstaltung == null) return Response.status(Response.Status.NOT_FOUND).build();
+        return Response.ok(pdfService.generatePdf(templateService.prepareStundenplanDashboard(veranstaltung))).build();
+    }
+
+    @GET
+    @Path("/{vid}/dashboard/teilnehmer")
+    @Produces(MediaType.TEXT_HTML)
+    @RolesAllowed("ADMIN")
+    @Operation(summary = "Dashboard: Teilnehmerübersicht (HTML)")
+    public Response getTeilnehmerDashboard(@PathParam("vid") Long vid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (veranstaltung == null) return Response.status(Response.Status.NOT_FOUND).build();
+        return Response.ok(templateService.prepareTeilnehmerDashboard(veranstaltung).render()).build();
+    }
+
+    @GET
+    @Path("/{vid}/dashboard/teilnehmer-pdf")
+    @Produces("application/pdf")
+    @RolesAllowed("ADMIN")
+    @Operation(summary = "Dashboard: Teilnehmerübersicht (PDF)")
+    public Response getTeilnehmerDashboardPdf(@PathParam("vid") Long vid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (veranstaltung == null) return Response.status(Response.Status.NOT_FOUND).build();
+        return Response.ok(pdfService.generatePdf(templateService.prepareTeilnehmerDashboard(veranstaltung))).build();
+    }
+
+    @GET
+    @Path("/{vid}/dashboard/prios")
+    @Produces(MediaType.TEXT_HTML)
+    @RolesAllowed("ADMIN")
+    @Operation(summary = "Dashboard: Prioritätenanalyse (HTML)")
+    public Response getPriosDashboard(@PathParam("vid") Long vid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (veranstaltung == null) return Response.status(Response.Status.NOT_FOUND).build();
+        return Response.ok(templateService.preparePriosDashboard(veranstaltung).render()).build();
+    }
+
+    @GET
+    @Path("/{vid}/dashboard/prios-pdf")
+    @Produces("application/pdf")
+    @RolesAllowed("ADMIN")
+    @Operation(summary = "Dashboard: Prioritätenanalyse (PDF)")
+    public Response getPriosDashboardPdf(@PathParam("vid") Long vid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (veranstaltung == null) return Response.status(Response.Status.NOT_FOUND).build();
+        return Response.ok(pdfService.generatePdf(templateService.preparePriosDashboard(veranstaltung))).build();
     }
 }

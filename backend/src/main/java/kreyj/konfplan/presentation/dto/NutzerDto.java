@@ -2,6 +2,7 @@ package kreyj.konfplan.presentation.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Set;
@@ -62,5 +63,19 @@ public class NutzerDto extends AbstractVersionedDto {
         referent.slogan = slogan;
 
         return referent;
+    }
+
+    public String fullName() {
+        if (StringUtils.isBlank(firstName)) {
+            if (StringUtils.isBlank(lastName)) {
+                return "NONAME";
+            } else {
+                return lastName;
+            }
+        } else if (StringUtils.isBlank(lastName)) {
+            return firstName;
+        } else {
+            return firstName + " " + lastName;
+        }
     }
 }

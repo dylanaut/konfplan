@@ -42,16 +42,16 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
         Admin admin = new Admin();
         admin.setEmail("admin@test.de");
         admin.setPasswordHash("hash");
-        admin.persistAndFlush();
+        admin.persist();
 
         Veranstaltung v = new Veranstaltung();
         v.setName("Test Event " + System.currentTimeMillis());
         v.setBeginntAm(LocalDateTime.now());
-        v.persistAndFlush();
+        v.persist();
         testVid = v.getId();
 
         admin.addVeranstaltung(v);
-        admin.persistAndFlush();
+        admin.persist();
     }
 
     @Test
@@ -71,13 +71,13 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
         Referent r = new Referent();
         r.setEmail("ref-" + System.currentTimeMillis() + "@vresource.de");
         r.setLastName("Mustermann");
-        r.persistAndFlush();
+        r.persist();
 
         Wahlvortrag v = new Wahlvortrag();
         v.setTitel(titel);
         v.setReferent(r);
         v.setVeranstaltung(Veranstaltung.findById(testVid));
-        v.persistAndFlush();
+        v.persist();
     }
 
     @Test

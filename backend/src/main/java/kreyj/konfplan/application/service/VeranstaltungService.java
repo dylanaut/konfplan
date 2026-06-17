@@ -33,6 +33,7 @@ public class VeranstaltungService {
 
     private final ProtokollService protokollService; // Inject ProtokollService
 
+
     public VeranstaltungService(ProtokollService protokollService) {
         this.protokollService = protokollService;
     }
@@ -42,9 +43,11 @@ public class VeranstaltungService {
         return Veranstaltung.listAll();
     }
 
+
     public Veranstaltung findById(Long id) {
         return Veranstaltung.findById(id);
     }
+
 
     @Transactional
     public VeranstaltungDto save(VeranstaltungDto dto) {
@@ -103,11 +106,12 @@ public class VeranstaltungService {
         } else {
             // ZWINGEND ERFORDERLICH FÜR OPTIMISTIC LOCKING RESPONSE:
             // Hibernate zwingen, das Update jetzt durchzuführen, damit persistence.getVersion() hochgezählt wird.
-            v.persistAndFlush();
+            v.persist();
             protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung aktualisiert", "Veranstaltung '" + v.getName() + "' aktualisiert.", v.getId());
         }
         return mapVeranstaltungToDto(v);
     }
+
 
     @Transactional
     public int importFromCsv(Path csvFilePath) throws Exception {
@@ -161,7 +165,7 @@ public class VeranstaltungService {
                     });
                 }
 
-                veranstaltung.persistAndFlush();
+                veranstaltung.persist();
 
                 String[] organisatorenEmails = StringUtils.split(dto.organisatorenEmails, ",");
                 for (String organisatorenEmail : organisatorenEmails) {
@@ -186,6 +190,7 @@ public class VeranstaltungService {
         return count;
     }
 
+
     @Transactional
     public boolean delete(Long id) {
         Veranstaltung veranstaltung = Veranstaltung.findById(id);
@@ -203,6 +208,7 @@ public class VeranstaltungService {
     // -------------------------------------------------------------------
     // mapper methods
     // -------------------------------------------------------------------
+
     public static VeranstaltungDto mapVeranstaltungToDto(Veranstaltung v) {
         VeranstaltungDto dto = new VeranstaltungDto();
         dto.id = v.getId();
@@ -232,6 +238,7 @@ public class VeranstaltungService {
         return dto;
     }
 
+
     public static GebaeudeSimpleDto mapToDto(Gebaeude gebaeude) {
         GebaeudeSimpleDto dto = new GebaeudeSimpleDto();
         dto.id = gebaeude.getId();
@@ -251,6 +258,7 @@ public class VeranstaltungService {
         return dto;
     }
 
+
     public static RaumDto mapRaumToDto(Raum raum) {
         RaumDto dto = new RaumDto();
 
@@ -261,8 +269,8 @@ public class VeranstaltungService {
         dto.etage = raum.getEtage();
 
         dto.gebaeudeId = raum.getGebaeude().getId();
+        dto.gebaeudeName = raum.getGebaeude().getName();
 
         return dto;
     }
-
 }

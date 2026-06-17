@@ -72,17 +72,30 @@ public class TeilnehmerPlanResource {
     @GET
     @Path("/zuweisungen")
     @Operation(summary = "Persönlichen Plan abrufen", description = "Ruft den persönlichen Vortragsplan (Zuweisungen) für eine Veranstaltung ab.")
-    public List<ZuweisungDto> getPlan(@QueryParam("vid") Long vid) {
-        // Hinweis: Aktuell ignoriert PlanService vid und gibt alles zurück. 
-        // Für Multi-Event-Support müsste PlanService angepasst werden.
-        return planService.getPlanFuerTeilnehmer(JwtHelper.getUserPrincipalName(jwt), vid);
+    public Response getPlan(@QueryParam("vid") Long vid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (veranstaltung == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+
+        List<ZuweisungDto> planFuerTeilnehmer = planService.getPlanFuerTeilnehmer(JwtHelper.getUserPrincipalName(jwt),
+                veranstaltung);
+
+        return Response.ok(planFuerTeilnehmer).build();
     }
 
     @GET
     @Path("/prios")
     @Operation(summary = "Meine Prioritäten abrufen", description = "Ruft die vom Teilnehmer gesetzten Prioritäten für Wahlvorträge ab.")
-    public List<Prioritaet> getPrios(@QueryParam("vid") Long vid) {
-        return prioritaetService.getPrioritaetenForUser(JwtHelper.getUserPrincipalName(jwt));
+    public Response getPrios(@QueryParam("vid") Long vid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (veranstaltung == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+
+        List<Prioritaet> prioritaetenForUser = prioritaetService.getNutzerPrioritaeten(JwtHelper.getUserPrincipalName(jwt));
+
+        return Response.ok(prioritaetenForUser).build();
     }
 
     @POST

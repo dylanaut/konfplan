@@ -35,38 +35,38 @@ class PrioritaetImportTest extends DatabaseCleaner {
         Admin admin = new Admin();
         admin.setEmail("admin@test.de");
         admin.setPasswordHash("hash");
-        admin.persistAndFlush();
+        admin.persist();
 
         Veranstaltung v = new Veranstaltung();
         v.setName("Test Event " + System.currentTimeMillis());
         v.setBeginntAm(LocalDateTime.of(2025, 10, 10, 9, 0));
         v.setEndetAm(LocalDateTime.of(2025, 10, 10, 17, 0));
-        v.persistAndFlush();
+        v.persist();
         testVid = v.getId();
 
         admin.addVeranstaltung(v);
-        admin.persistAndFlush();
+        admin.persist();
 
         Teilnehmer t1 = new Teilnehmer();
         t1.setEmail("teilnehmer1@test.de");
         t1.setPasswordHash("hash");
-        t1.persistAndFlush();
+        t1.persist();
         t1.addVeranstaltung(v);
         teilnehmer1Id = t1.getId();
 
         Referent r1 = new Referent();
         r1.setEmail("referent1@test.de");
         r1.setPasswordHash("hash");
-        r1.persistAndFlush();
+        r1.persist();
         r1.addVeranstaltung(v);
 
         Wahlvortrag wv1 = new Wahlvortrag("Wahlvortrag 1", "Inhalt", r1, true, 1, v);
-        wv1.persistAndFlush();
+        wv1.persist();
         wv1.setVeranstaltung(v);
         wv1Id = wv1.getId();
 
         Wahlvortrag wv2 = new Wahlvortrag("Wahlvortrag 2", "Inhalt", r1, true, 2, v);
-        wv2.persistAndFlush();
+        wv2.persist();
         wv2.setVeranstaltung(v);
         wv2Id = wv2.getId();
     }

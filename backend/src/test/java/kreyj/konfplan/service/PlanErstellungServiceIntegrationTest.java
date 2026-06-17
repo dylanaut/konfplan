@@ -21,7 +21,7 @@ import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.presentation.DatabaseCleaner;
 import kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto;
-import kreyj.konfplan.presentation.dto.SolverConfigDto;
+import kreyj.konfplan.presentation.dto.SolverConfig;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,12 +62,12 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
                 "Teststrasse",
                 "4711",
                 Gebaeudetyp.SCHULE);
-        schule.persistAndFlush();
+        schule.persist();
 
         Raum raum1 = new Raum("Raum 1", 1);
-        raum1.persistAndFlush();
+        raum1.persist();
         Raum raum2 = new Raum("Raum 2", 2);
-        raum2.persistAndFlush();
+        raum2.persist();
         schule.addRaum(raum1);
         schule.addRaum(raum2);
     }
@@ -79,11 +79,11 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         veranstaltung.setName((satisfiable ? "E" : "Une") + "rfüllbarer Testlauf");
         veranstaltung.setBeginntAm(LocalDateTime.now());
         veranstaltung.addGebaeude(Gebaeude.findById(schule.getId()));
-        veranstaltung.persistAndFlush();
+        veranstaltung.persist();
 
         Slot slot1 = new Slot("Slot 1", LocalDateTime.now().plusHours(1),
                 LocalDateTime.now().plusHours(2), veranstaltung);
-        slot1.persistAndFlush();
+        slot1.persist();
         veranstaltung.addSlot(slot1);
 
         // 3. Referent und Vorträge
@@ -91,14 +91,14 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         referent.setEmail("referent@test.com");
         referent.setFirstName("Max");
         referent.setLastName("Mustermann");
-        referent.persistAndFlush();
+        referent.persist();
         referent.addVeranstaltung(veranstaltung);
 
         Wahlvortrag wahlvortrag1 = new Wahlvortrag();
         wahlvortrag1.setTitel("Wahlvortrag 1");
         wahlvortrag1.setReferent(referent);
         wahlvortrag1.setVeranstaltung(veranstaltung);
-        wahlvortrag1.persistAndFlush();
+        wahlvortrag1.persist();
 
         // 4. Teilnehmer und Prioritäten
         Teilnehmer teilnehmer1 = new Teilnehmer();
@@ -106,12 +106,12 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         teilnehmer1.setFirstName("Peter");
         teilnehmer1.setLastName("Pan");
         teilnehmer1.addGruppe("A");
-        teilnehmer1.persistAndFlush();
+        teilnehmer1.persist();
         teilnehmer1.addVeranstaltung(veranstaltung);
 
         // Prioritäten für Teilnehmer 1
         new Prioritaet(teilnehmer1, wahlvortrag1, 1)
-                .persistAndFlush();
+                .persist();
 
         return veranstaltung;
     }
@@ -123,21 +123,21 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         veranstaltung.setName("Komplexer Testlauf");
         veranstaltung.setBeginntAm(LocalDateTime.now());
         veranstaltung.addGebaeude(Gebaeude.findById(schule.getId()));
-        veranstaltung.persistAndFlush();
+        veranstaltung.persist();
 
         Slot slot1 = new Slot("Slot 1", LocalDateTime.now().plusHours(1),
                 LocalDateTime.now().plusHours(2), veranstaltung);
-        slot1.persistAndFlush();
+        slot1.persist();
         veranstaltung.addSlot(slot1);
 
         Slot slot2 = new Slot("Slot 2", LocalDateTime.now().plusHours(2),
                 LocalDateTime.now().plusHours(3), veranstaltung);
-        slot2.persistAndFlush();
+        slot2.persist();
         veranstaltung.addSlot(slot2);
 
         Slot slot3 = new Slot("Slot 3", LocalDateTime.now().plusHours(3),
                 LocalDateTime.now().plusHours(4), veranstaltung);
-        slot3.persistAndFlush();
+        slot3.persist();
         veranstaltung.addSlot(slot3);
 
         // 3. Referent und Vorträge
@@ -145,22 +145,22 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         referent.setEmail("referent@test.com");
         referent.setFirstName("Max");
         referent.setLastName("Mustermann");
-        referent.persistAndFlush();
+        referent.persist();
         referent.addVeranstaltung(veranstaltung);
 
         Wahlvortrag wahlvortrag1 = new Wahlvortrag("Wahlvortrag 1", "Inhalt", referent,
                 true, 1, veranstaltung);
-        wahlvortrag1.persistAndFlush();
+        wahlvortrag1.persist();
         veranstaltung.addVortrag(wahlvortrag1);
 
         Wahlvortrag wahlvortrag2 = new Wahlvortrag("Wahlvortrag 2", "Inhalt", referent,
                 true, 1, veranstaltung);
-        wahlvortrag2.persistAndFlush();
+        wahlvortrag2.persist();
         veranstaltung.addVortrag(wahlvortrag2);
 
         Pflichtvortrag pflichtvortrag = new Pflichtvortrag("Pflichtvortrag", referent, veranstaltung,
                 "A", schule.getRaeume().iterator().next(), slot3);
-        pflichtvortrag.persistAndFlush();
+        pflichtvortrag.persist();
         veranstaltung.addVortrag(pflichtvortrag);
 
         // 4. Teilnehmer und Prioritäten
@@ -168,7 +168,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         teilnehmer1.setEmail("tn1@test.com");
         teilnehmer1.setFirstName("Peter");
         teilnehmer1.setLastName("Pan");
-        teilnehmer1.persistAndFlush();
+        teilnehmer1.persist();
 
         teilnehmer1.addGruppe("A");
         teilnehmer1.addVeranstaltung(veranstaltung);
@@ -177,20 +177,20 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         teilnehmer2.setEmail("tn2@test.com");
         teilnehmer2.setFirstName("Wendy");
         teilnehmer2.setLastName("Darling");
-        teilnehmer2.persistAndFlush();
+        teilnehmer2.persist();
 
         teilnehmer2.addGruppe("A");
         teilnehmer2.addVeranstaltung(veranstaltung);
 
         // Prioritäten für TN 1
         new Prioritaet(teilnehmer1, wahlvortrag1, 1)
-                .persistAndFlush();
+                .persist();
         new Prioritaet(teilnehmer1, wahlvortrag2, 2)
-                .persistAndFlush();
+                .persist();
 
         // Priorität für TN 2
         new Prioritaet(teilnehmer2, wahlvortrag2, 1)
-                .persistAndFlush();
+                .persist();
 
         return veranstaltung;
     }
@@ -200,7 +200,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         Veranstaltung veranstaltung = simpleSetup(true);
 
         // 1. PlanErstellung durchführen
-        SolverConfigDto config = new SolverConfigDto("cp-sat", 10, 4, 1);
+        SolverConfig config = new SolverConfig(10, 4, 1);
         planErstellungService.erstellePlan(veranstaltung.getId(), config);
 
         // 2. Ergebnis prüfen
@@ -238,7 +238,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         assertThat(nv.getVerfuegbareSlotIds()).isEmpty();
 
         // 1. PlanErstellung durchführen
-        SolverConfigDto config = new SolverConfigDto("cp-sat", 60, 4, 1);
+        SolverConfig config = new SolverConfig(60, 4, 1);
         planErstellungService.erstellePlan(veranstaltung.getId(), config);
 
         // 2. Ergebnis prüfen
@@ -271,7 +271,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         assertThat(nv).isNotNull();
 
         // 1. PlanErstellung durchführen
-        SolverConfigDto config = new SolverConfigDto("cp-sat", 60, 4, 1);
+        SolverConfig config = new SolverConfig(60, 4, 1);
         planErstellungService.erstellePlan(veranstaltung.getId(), config);
 
         // 2. Ergebnis prüfen
@@ -296,7 +296,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
     public void testPlanerstellung_withComplexSetup() throws Exception {
         Veranstaltung veranstaltung = complexSetup();
         // 1. PlanErstellung durchführen
-        SolverConfigDto config = new SolverConfigDto("cp-sat", 120, 4, 2);
+        SolverConfig config = new SolverConfig(120, 4, 2);
         planErstellungService.erstellePlan(veranstaltung.getId(), config);
 
         // 2. Ergebnis prüfen
@@ -338,7 +338,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
     @Test
     public void testPlanErstellung_withUnsatisfiableModel() {
-        SolverConfigDto config = new SolverConfigDto("cp-sat", 5, 1, 1);
+        SolverConfig config = new SolverConfig(5, 1, 1);
 
         assertThatExceptionOfType(MinizincException.class)
                 .isThrownBy(() -> starteTestPlanErstellung(config, "unsatisfiable.mzn"));
@@ -347,7 +347,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
     @Test
     public void testPlanErstellung_withIntermediateResult() throws Exception {
         // Kurzer Timeout, um sicher eine Zwischenlösung zu erhalten
-        SolverConfigDto config = new SolverConfigDto("cp-sat", 1, 1, 1);
+        SolverConfig config = new SolverConfig(1, 1, 1);
 
         String resultJson = starteTestPlanErstellung(config, "intermediate.mzn");
 
@@ -360,7 +360,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
     @Test
     public void testPlanErstellung_withNoSolutionInTime() {
         // Sehr kurzer Timeout, damit garantiert keine Lösung gefunden wird
-        SolverConfigDto config = new SolverConfigDto("cp-sat", 1, 1, 1);
+        SolverConfig config = new SolverConfig(1, 1, 1);
 
         assertThatExceptionOfType(MinizincException.class)
                 .isThrownBy(() -> starteTestPlanErstellung(config, "no-solution-in-time.mzn"));
@@ -370,7 +370,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
     // Helper-Methoden für Test-Setups
     // -------------------------------------------------------------------
 
-    public String starteTestPlanErstellung(SolverConfigDto config, String modelName) throws Exception {
+    public String starteTestPlanErstellung(SolverConfig config, String modelName) throws Exception {
         URL modelUrl = getClass().getClassLoader().getResource("minizinc/" + modelName);
         if (modelUrl == null) {
             throw new FileNotFoundException("MiniZinc model not found: " + modelName);
