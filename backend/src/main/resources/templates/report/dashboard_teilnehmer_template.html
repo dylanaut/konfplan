@@ -1,50 +1,46 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teilnehmer-Stundenpläne {veranstaltung.name}</title>
-    <link href="../../../resources/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            background-color: white;
-            border-bottom: 1px solid #ddd;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-        .header-logo {
-            width: 72px;
-            height: 72px;
-        }
-        .sticky-table-header {
-            position: sticky;
-            top: 0;
-            background-color: white;
-            z-index: 100;
-        }
-        .status-unavailable {
-            background-color: #e9ecef !important;
-            color: #adb5bd;
-            text-decoration: line-through;
-        }
-        .bg-auffuellung {
-            background-color: rgba(111, 66, 193, 0.7) !important; /* Lila */
-            color: white !important;
-        }
-    </style>
-</head>
-<body>
+{#include report/_base.html}
 
+{#title}Teilnehmer-Stundenpläne {veranstaltung.name}{/title}
+
+{#additional_styles}
+    body {
+        background-color: #f8f9fa;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 20px;
+        background-color: white;
+        border-bottom: 1px solid #ddd;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+    .header-logo {
+        width: 72px;
+        height: 72px;
+    }
+    .sticky-table-header {
+        position: sticky;
+        top: 0;
+        background-color: white;
+        z-index: 100;
+    }
+    .status-unavailable {
+        background-color: #e9ecef !important;
+        color: #adb5bd;
+        text-decoration: line-through;
+    }
+    .bg-auffuellung {
+        background-color: rgba(111, 66, 193, 0.7) !important; /* Lila */
+        color: white !important;
+    }
+{/additional_styles}
+
+{#body}
 <div class="container-fluid py-4">
     <header class="mb-4 d-flex justify-content-between align-items-center">
         <h1>📅 {veranstaltung.name} ({veranstaltung.zeitraumTage})</h1>
@@ -152,7 +148,6 @@
     <span class="badge bg-secondary">Stand: {geplantAm}</span>
 </footer>
 
-<script src="../../../resources/js/bootstrap.bundle.min.js"></script>
 <script>
     function filterTable() {
         const selectedClass = document.getElementById('classFilter').value;
@@ -181,5 +176,4 @@
         filterTable();
     });
 </script>
-</body>
-</html>
+{/body}

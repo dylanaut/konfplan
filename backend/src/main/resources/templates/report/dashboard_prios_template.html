@@ -1,42 +1,37 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prioritätenanalyse {veranstaltung.name} ({veranstaltung.zeitraumTage})</title>
-    <link href="../../../resources/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+{#include report/_base.html}
 
-        .header-logo {
-            width: 72px;
-            height: 72px;
-        }
+{#title}Prioritätenanalyse {veranstaltung.name} ({veranstaltung.zeitraumTage}){/title}
 
-        .sticky-table-header {
-            position: sticky;
-            top: 0;
-            background-color: white;
-            z-index: 100;
-        }
+{#additional_styles}
+    body {
+        background-color: #f8f9fa;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
+    .header-logo {
+        width: 72px;
+        height: 72px;
+    }
 
-        .table-prios td {
-            font-size: 0.7rem;
-            padding: 2px !important;
-            min-width: 40px;
-            border: 1px solid #dee2e6;
-        }
-    </style>
-</head>
-<body>
+    .sticky-table-header {
+        position: sticky;
+        top: 0;
+        background-color: white;
+        z-index: 100;
+    }
 
+    .table-prios td {
+        font-size: 0.7rem;
+        padding: 2px !important;
+        min-width: 40px;
+        border: 1px solid #dee2e6;
+    }
+{/additional_styles}
+
+{#body}
 <div class="container-fluid py-4">
     <header class="mb-4 d-flex justify-content-between align-items-center">
-        <h1>📅 {veranstaltung.name} - {veranstaltung.tag}</h1>
+        <h1>📅 {veranstaltung.name} - {veranstaltung.startTag}</h1>
         <a href="{veranstaltung.logo_link}">
             <img src="{veranstaltung.logo}" alt="Logo" class="header-logo">
         </a>
@@ -68,11 +63,10 @@
                     <thead class="sticky-table-header">
                     <tr class="table-dark">
                         <th class="p-2" style="min-width: 200px;">Teilnehmer</th>
-                        {#for wv_entry in wv_dict.entrySet()}
-                            {#let wv_oid = wv_entry.key}
+                        {#for wv_entry in wv_dict.entrySet}
                             {#let wv = wv_entry.value}
                             {#let ref = ref_dict.get(wv.referentId)}
-                            <th class="text-center p-2" title="{ref.organisation}: {wv.titel}">WV{wv_entry_count}</th>
+                            <th class="text-center p-2" title="{ref.organisation}: {wv.titel}">WV{wv_entry.key}</th>
                         {/for}
                     </tr>
                     </thead>
@@ -93,13 +87,13 @@
                             {#if wvs.status != '0'}
                             {#if wvs.instanz != null}
                             {#let wvs_idx = wvs.instanz.sub(1) }
+                            {#let wv_oid_index = wvOids.indexOf(wv_oid)}
                             {#let slot_idx = instanz_slot.get(wv_oid_index).get(wvs_idx) }
                             {#let slot = slots.get(slotOids.get(slot_idx.sub(1)))}
                             {#let raum_idx = instanz_raum.get(wv_oid_index).get(wvs_idx) }
                             {#let raum = raeume.get(raumOids.get(raum_idx.sub(1))) }
                                 <div class="fw-bold">{slot.tag}, {slot.start} @ {raum.name}</div>
-                            {/let}
-                                {/if}
+                            {/if}
                                 <div class="small">
                                     {#if wvs.prio > 0}<b>Prio {wvs.prio}</b> {/if}
                                     {#if wvs.instanz}({num_instanzen_pro_wv.get(wvs.instanz)}x){/if}
@@ -150,7 +144,6 @@
     <span class="badge bg-secondary">Stand: {geplantAm}</span>
 </footer>
 
-<script src="../../../resources/js/bootstrap.bundle.min.js"></script>
 <script>
     function filterTable() {
         const selectedClass = document.getElementById('classFilter').value;
@@ -180,5 +173,4 @@
         filterTable();
     });
 </script>
-</body>
-</html>
+{/body}

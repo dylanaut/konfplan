@@ -36,6 +36,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
 
     Long testVid;
 
+
     @BeforeEach
     @Transactional
     void setup() {
@@ -54,6 +55,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
         admin.persist();
     }
 
+
     @Test
     void testGetVortraegeHierarchical() {
         createWahlvortrag("Test Vortrag");
@@ -65,6 +67,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
                 .body("size()", is(1))
                 .body("[0].titel", is("Test Vortrag"));
     }
+
 
     @Transactional
     public void createWahlvortrag(String titel) {
@@ -80,6 +83,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
         v.persist();
     }
 
+
     @Test
     void testGetSlotsHierarchical() {
         LocalDateTime now = LocalDateTime.now();
@@ -87,6 +91,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
         QuarkusTransaction.requiringNew().run(() -> {
             Veranstaltung veranstaltung = Veranstaltung.findById(testVid);
             Slot s1 = new Slot("Slot A", now, now.plusHours(1), veranstaltung);
+            s1.persistAndFlush();
             veranstaltung.addSlot(s1);
         });
 
@@ -97,6 +102,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
                 .body("size()", is(1))
                 .body("[0].description", is("Slot A"));
     }
+
 
     @Test
     void testGetStatsHierarchical() {
@@ -109,6 +115,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
                 .body("size()", is(1))
                 .body("[0].titel", is("Vortrag 1"));
     }
+
 
     @Test
     void testCreateNutzerHierarchical() {
@@ -124,6 +131,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
 
         assertThat(Nutzer.findByEmail(nutzerEmail)).isNotNull();
     }
+
 
     @Test
     void testOptimisticLockingForVortrag() {
@@ -210,6 +218,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
                 .isEqualTo(adminUpdate.version);
     }
 
+
     @Test
     void testUpdateVeranstaltung() {
         // 1. Veranstaltung abrufen
@@ -225,7 +234,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
 
         // 2. Veranstaltung aktualisieren
         String updatedName = "Updated Event Name " + System.currentTimeMillis();
-        fetchedVeranstaltung.name = updatedName;
+        fetchedVeranstaltung.setName(updatedName);
 
         given().contentType(ContentType.JSON)
                 .body(fetchedVeranstaltung)
@@ -243,7 +252,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
                 .statusCode(OK.getStatusCode())
                 .extract().as(VeranstaltungDto.class);
 
-        assertThat(finalVeranstaltung.name).isEqualTo(updatedName);
+        assertThat(finalVeranstaltung.getName()).isEqualTo(updatedName);
         assertThat(finalVeranstaltung.version).isEqualTo(initialVersion + 1);
     }
 }

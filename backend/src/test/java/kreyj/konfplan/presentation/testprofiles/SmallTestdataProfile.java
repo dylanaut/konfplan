@@ -2,12 +2,12 @@ package kreyj.konfplan.presentation.testprofiles;
 
 import io.quarkus.test.junit.QuarkusTestProfile;
 
-public class MinimalDataTestProfile implements QuarkusTestProfile {
+public class SmallTestdataProfile implements QuarkusTestProfile {
     @Override
     public java.util.Map<String, String> getConfigOverrides() {
         return java.util.Map.of(
                 "konfplan.dev-data.init", "true",
-                "konfplan.dev-data.csv-path", "src/test/resources/csv_import/minimal_1"
+                "konfplan.dev-data.csv-path", "src/test/resources/csv_import/small"
         );
     }
 }

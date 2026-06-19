@@ -42,7 +42,7 @@ public class VerfuegbarkeitsTest extends DatabaseCleaner {
         veranstaltung.setName("Verfügbarkeits-Test Event");
         veranstaltung.setBeginntAm(LocalDateTime.now());
         veranstaltung.setEndetAm(LocalDateTime.now().plusDays(1));
-        veranstaltung.persist();
+        veranstaltung.persistAndFlush();
         veranstaltung_id = veranstaltung.getId();
 
         Slot slot1 = new Slot("Slot 1", veranstaltung.getBeginntAm().plusHours(1),
@@ -51,7 +51,7 @@ public class VerfuegbarkeitsTest extends DatabaseCleaner {
                 veranstaltung.getBeginntAm().plusHours(4), veranstaltung);
         veranstaltung.addSlot(slot1);
         veranstaltung.addSlot(slot2);
-        veranstaltung.persist();
+        veranstaltung.persistAndFlush();
         slot1_id = slot1.getId();
         slot2_id = slot2.getId();
 
@@ -60,7 +60,7 @@ public class VerfuegbarkeitsTest extends DatabaseCleaner {
         Gebaeude gebaeude = new Gebaeude("Testgebäude", "Ort", "Straße", "12345", Gebaeudetyp.SCHULE);
         gebaeude.addRaum(raum1);
         gebaeude.addRaum(raum2);
-        gebaeude.persist();
+        gebaeude.persistAndFlush();
         raum1_id = raum1.getId();
         raum2_id = raum2.getId();
 
@@ -69,18 +69,18 @@ public class VerfuegbarkeitsTest extends DatabaseCleaner {
         Teilnehmer tn_in_A = new Teilnehmer();
         tn_in_A.setEmail("tn_in_a@test.com");
         tn_in_A.addGruppe("GruppeA");
-        tn_in_A.persist();
+        tn_in_A.persistAndFlush();
         tn_in_A_id = tn_in_A.getId();
 
         Teilnehmer tn_in_B = new Teilnehmer();
         tn_in_B.setEmail("tn_in_b@test.com");
         tn_in_B.addGruppe("GruppeB");
-        tn_in_B.persist();
+        tn_in_B.persistAndFlush();
         tn_in_B_id = tn_in_B.getId();
 
         Referent referent = new Referent();
         referent.setEmail("referent@test.com");
-        referent.persist();
+        referent.persistAndFlush();
         referent_id = referent.getId();
 
         // 3. Add all resources to the event to create initial availabilities
@@ -121,10 +121,10 @@ public class VerfuegbarkeitsTest extends DatabaseCleaner {
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltung_id);
         Slot slot3 = new Slot("Slot 3", veranstaltung.getBeginntAm().plusHours(5),
                 veranstaltung.getBeginntAm().plusHours(6), veranstaltung);
-        slot3.persist();
+        slot3.persistAndFlush();
 
         veranstaltung.addSlot(slot3);
-        veranstaltung.persist();
+        veranstaltung.persistAndFlush();
 
         veranstaltung = Veranstaltung.findById(veranstaltung_id);
         assertThat(veranstaltung.getSlots()).hasSize(3).contains(slot3);
@@ -144,7 +144,7 @@ public class VerfuegbarkeitsTest extends DatabaseCleaner {
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltung_id);
         Slot slot2 = Slot.findById(slot2_id);
         veranstaltung.removeSlot(slot2);
-        veranstaltung.persist();
+        veranstaltung.persistAndFlush();
 
         NutzerVerfuegbarkeit nvA = NutzerVerfuegbarkeit.findById(new NutzerVerfuegbarkeitId(tn_in_A_id,
                 veranstaltung.getId()));
@@ -165,7 +165,7 @@ public class VerfuegbarkeitsTest extends DatabaseCleaner {
         Slot slot1 = Slot.findById(slot1_id);
 
         Pflichtvortrag pv = new Pflichtvortrag("PV", referent, veranstaltung, "GruppeA", raum1, slot1);
-        pv.persist();
+        pv.persistAndFlush();
         pv.afterPersist();
 
         NutzerVerfuegbarkeit nvA = NutzerVerfuegbarkeit.findById(nvIdL(tn_in_A_id, veranstaltung_id));
@@ -190,7 +190,7 @@ public class VerfuegbarkeitsTest extends DatabaseCleaner {
         Slot slot1 = Slot.findById(slot1_id);
 
         Pflichtvortrag pv = new Pflichtvortrag("PV", referent, veranstaltung, "GruppeA", raum1, slot1);
-        pv.persist();
+        pv.persistAndFlush();
         pv.afterPersist();
 
         // Verify initial block
@@ -237,7 +237,7 @@ public class VerfuegbarkeitsTest extends DatabaseCleaner {
         Slot slot1 = Slot.findById(slot1_id);
 
         Pflichtvortrag pv = new Pflichtvortrag("PV", referent, veranstaltung, "GruppeA", raum1, slot1);
-        pv.persist();
+        pv.persistAndFlush();
         pv.afterPersist();
 
         Slot slot2 = Slot.findById(slot2_id);
@@ -258,7 +258,7 @@ public class VerfuegbarkeitsTest extends DatabaseCleaner {
         Raum raum1 = Raum.findById(raum1_id);
         Slot slot1 = Slot.findById(slot1_id);
         Pflichtvortrag pv = new Pflichtvortrag("PV", referent, veranstaltung, "GruppeA", raum1, slot1);
-        pv.persist();
+        pv.persistAndFlush();
         pv.afterPersist();
 
         pv.updatePflichtgruppe("GruppeB");
@@ -278,7 +278,7 @@ public class VerfuegbarkeitsTest extends DatabaseCleaner {
         Raum raum1 = Raum.findById(raum1_id);
         Slot slot1 = Slot.findById(slot1_id);
         Pflichtvortrag pv = new Pflichtvortrag("PV", referent, veranstaltung, "GruppeA", raum1, slot1);
-        pv.persist();
+        pv.persistAndFlush();
         pv.afterPersist();
 
         Raum raum2 = Raum.findById(raum2_id);

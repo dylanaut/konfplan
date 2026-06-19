@@ -465,7 +465,7 @@ public class PlanService {
 
                 RaumplanEintragDto eintrag = new RaumplanEintragDto(
                         slot.getId(),
-                        slot.getSlotZeit() ,
+                        slot.getSlotZeit(),
                         TemplateExtensions.truncTo(pv.getTitel()),
                         pv.getReferent().getFirstName() + " " + pv.getReferent().getLastName(),
                         "PFLICHT",
@@ -655,6 +655,7 @@ public class PlanService {
     // -------------------------------------------------------------------
 
 
+    @Transactional
     public Planungsergebnis.MinizincResult getMinizincResult(Veranstaltung veranstaltung) {
         Objects.requireNonNull(veranstaltung, "veranstaltung must not be null");
         Planungsergebnis planungsergebnis = getPlanungsergebnis(veranstaltung);

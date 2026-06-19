@@ -70,7 +70,7 @@ public class PrioritaetService {
                 entity.setTeilnehmer(teilnehmer);
                 entity.setVortrag(vortrag);
                 entity.setPrioWert(req.prioWert); // Hier umbenannt
-                entity.persist();
+                entity.persistAndFlush();
             }
         }
     }
@@ -106,7 +106,7 @@ public class PrioritaetService {
             p.setVortrag(vortrag);
         }
         p.setPrioWert(prioWert);
-        p.persist();
+        p.persistAndFlush();
     }
 
 

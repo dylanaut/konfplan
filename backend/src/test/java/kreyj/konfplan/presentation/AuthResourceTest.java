@@ -42,16 +42,19 @@ class AuthResourceTest {
     @Inject
     MailService mailService;
 
+
     @BeforeEach
     void setup() {
         PanacheMock.mock(Nutzer.class);
     }
+
 
     @AfterEach
     public void afterEach() {
         // clear the mailbox after each test run if you prefer
         mailbox.clear();
     }
+
 
     @Test
     void shouldSendRegistrationConfirmation() {
@@ -72,6 +75,7 @@ class AuthResourceTest {
         assertThat(message.getTo().getFirst()).isEqualTo("max@example.com");
         assertThat(message.getHtml()).contains("Hallo Max");
     }
+
 
     @Test
     void testForgotPassword_UserExists() {
@@ -98,6 +102,7 @@ class AuthResourceTest {
         assertThat(mailList.getFirst().getSubject()).isEqualTo("Passwort zurücksetzen - KonfPlan");
     }
 
+
     @Test
     void testForgotPassword_UserNotFound() {
         Mockito.when(Nutzer.findByEmail("unknown@example.com")).thenReturn(null);
@@ -108,6 +113,7 @@ class AuthResourceTest {
                 .then()
                 .statusCode(ACCEPTED.getStatusCode());
     }
+
 
     @Test
     void testResetPassword_Success() {
@@ -129,6 +135,7 @@ class AuthResourceTest {
                 .then()
                 .statusCode(OK.getStatusCode());
     }
+
 
     @Test
     void testLogin_Success() {

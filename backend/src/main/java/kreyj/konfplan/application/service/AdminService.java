@@ -14,23 +14,7 @@ import kreyj.konfplan.domain.exception.EntityNotFoundException;
 import kreyj.konfplan.domain.exception.UpdateNutzerException;
 import kreyj.konfplan.domain.exception.UpdateVortragException;
 import kreyj.konfplan.domain.exception.VeranstaltungException;
-import kreyj.konfplan.persistence.Admin;
-import kreyj.konfplan.persistence.Gebaeude;
-import kreyj.konfplan.persistence.IdEntity;
-import kreyj.konfplan.persistence.Nutzer;
-import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
-import kreyj.konfplan.persistence.Pflichtvortrag;
-import kreyj.konfplan.persistence.Prioritaet;
-import kreyj.konfplan.persistence.ProtokollKategorie;
-import kreyj.konfplan.persistence.Raum;
-import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
-import kreyj.konfplan.persistence.Referent;
-import kreyj.konfplan.persistence.Slot;
-import kreyj.konfplan.persistence.Teilnehmer;
-import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Vortrag;
-import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
-import kreyj.konfplan.persistence.Wahlvortrag;
+import kreyj.konfplan.persistence.*;
 import kreyj.konfplan.presentation.dto.NutzerDto;
 import kreyj.konfplan.presentation.dto.RaumVerfuegbarkeitDto;
 import kreyj.konfplan.presentation.dto.SlotDto;
@@ -48,14 +32,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -148,7 +125,7 @@ public class AdminService {
             t.setGruppen(dto.gruppen);
         }
 
-        nutzer.persist();
+        nutzer.persistAndFlush();
 
         if (null != veranstaltungsIds) {
             for (Long veranstaltungId : veranstaltungsIds) {
@@ -240,7 +217,7 @@ public class AdminService {
             t.setGruppen(dto.gruppen);
         }
 
-        nutzer.persist();
+        nutzer.persistAndFlush();
 
         protokollService.log(ProtokollKategorie.NUTZER, "Nutzer aktualisiert", "Nutzer '" + nutzer.getEmail() + "' aktualisiert.", nutzer.getId());
         return mapNutzerToDto(nutzer);
@@ -407,7 +384,8 @@ public class AdminService {
             Pflichtvortrag pv = new Pflichtvortrag(vortragDto.titel, vortragDto.inhalt, referent,
                     veranstaltung, vortragDto.pflichtGruppe, pflichtRaum, pflichtSlot);
             pv.setAusstattung(vortragDto.ausstattung);
-            pv.persist();
+            pv.setBerufsfeld(vortragDto.berufsfeld);
+            pv.persistAndFlush();
             pv.afterPersist();
 
             created = pv;
@@ -426,14 +404,15 @@ public class AdminService {
             Wahlvortrag wv = new Wahlvortrag(vortragDto.titel, vortragDto.inhalt, referent,
                     vortragDto.wiederholbar, vortragDto.maxWiederholungen, veranstaltung);
             wv.setAusstattung(vortragDto.ausstattung);
-            wv.persist();
+            wv.setBerufsfeld(vortragDto.berufsfeld);
+            wv.persistAndFlush();
             wv.afterPersist();
 
             created = wv;
         }
 
         veranstaltung.addVortrag(created);
-        veranstaltung.persist();
+        veranstaltung.persistAndFlush();
 
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag erstellt",
                 "Vortrag '" + created.getTitel() + "' (" + (created.istPflicht() ? "Pflicht" : "Wahl") + ") erstellt.",
@@ -472,7 +451,7 @@ public class AdminService {
                     a.setFirstName(dto.vorname);
                     a.setLastName(dto.nachname);
                     a.setPasswordHash(BcryptUtil.bcryptHash(UUID.randomUUID().toString()));
-                    a.persist();
+                    a.persistAndFlush();
                     count++;
                     protokollService.log(ProtokollKategorie.NUTZER, "Admin importiert", "Admin '" + email + "' via CSV importiert.", a.getId());
                 } else {
@@ -534,7 +513,6 @@ public class AdminService {
                 dto.titel = csvDto.titel;
                 dto.inhalt = csvDto.inhalt;
                 dto.ausstattung = csvDto.ausstattung;
-
                 Nutzer referent = Nutzer.findByEmail(csvDto.referentEmail);
 
                 if (referent instanceof Referent) {
@@ -592,6 +570,16 @@ public class AdminService {
                         dto.maxWiederholungen = csvDto.maxWiederholungen;
                     }
 
+                    if (StringUtils.isNotBlank(csvDto.berufsfeld)) {
+                        Berufsfeld foundBerufsfeld = findBerufsfeldByPrefix(csvDto.berufsfeld);
+                        if (foundBerufsfeld != null) {
+                            dto.berufsfeld = foundBerufsfeld;
+                        } else {
+                            LOG.warn("Vortrag '" + csvDto.titel + "' übersprungen: Ungültiges oder nicht eindeutiges Berufsfeld '" + csvDto.berufsfeld + "'.");
+                            continue;
+                        }
+                    }
+
                     dto.referentId = referent.getId();
 
                     try {
@@ -614,6 +602,23 @@ public class AdminService {
         }
         LOG.info("Vortrag-Import abgeschlossen: " + count + " Vorträge importiert.");
         return count;
+    }
+
+    private Berufsfeld findBerufsfeldByPrefix(String prefix) {
+        if (StringUtils.isBlank(prefix)) {
+            return null;
+        }
+        String normalizedPrefix = prefix.trim().toLowerCase();
+        List<Berufsfeld> matches = new ArrayList<>();
+        for (Berufsfeld feld : Berufsfeld.values()) {
+            if (feld.getName().toLowerCase().startsWith(normalizedPrefix)) {
+                matches.add(feld);
+            }
+        }
+        if (matches.size() == 1) {
+            return matches.getFirst();
+        }
+        return null; // Not found or ambiguous
     }
 
     @Transactional
@@ -704,7 +709,7 @@ public class AdminService {
                             }
 
                             prioritaet.setPrioWert(prioWert);
-                            prioritaet.persist();
+                            prioritaet.persistAndFlush();
                             count++;
                             protokollService.log(ProtokollKategorie.VORTRAEGE, "Priorität importiert", "Priorität für '" + teilnehmer.getEmail() + "' für Vortrag '" + vortrag.getTitel() + "' auf " + prioWert + " gesetzt.", vortrag.getId());
                         } catch (NumberFormatException e) {
@@ -762,9 +767,9 @@ public class AdminService {
         validateSlot(slotDto, v, null);
 
         Slot slot = new Slot(slotDto.description, slotDto.startTime, slotDto.endTime, v);
-        slot.persist();
+        slot.persistAndFlush();
         v.addSlot(slot);
-        v.persist();
+        v.persistAndFlush();
 
         // Create availability for all participants of the event
         for (Nutzer nutzer : v.getNutzer()) {
@@ -773,7 +778,7 @@ public class AdminService {
 
                 if (null != nv) {
                     nv.addSlot(slot);
-                    nv.persist();
+                    nv.persistAndFlush();
                 }
             }
         }
@@ -936,6 +941,7 @@ public class AdminService {
         entity.setTitel(updated.titel);
         entity.setInhalt(updated.inhalt);
         entity.setAusstattung(updated.ausstattung);
+        entity.setBerufsfeld(updated.berufsfeld);
 
         if (entity instanceof Pflichtvortrag pv && updated.istPflicht) {
             pv.updatePflichtgruppe(updated.pflichtGruppe);
@@ -947,12 +953,12 @@ public class AdminService {
 
             VortragVerfuegbarkeit vv = VortragVerfuegbarkeit.findById(vvIdL(updated.id, veranstaltungId));
             if (null == vv) {
-                new VortragVerfuegbarkeit(updated.id, veranstaltungId, updated.verfuegbareSlotIds).persist();
+                new VortragVerfuegbarkeit(updated.id, veranstaltungId, updated.verfuegbareSlotIds).persistAndFlush();
             } else {
                 updated.verfuegbareSlotIds.forEach(vv::addSlot);
             }
         }
-        entity.persist();
+        entity.persistAndFlush();
 
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag aktualisiert", "Vortrag '" + entity.getTitel() + "' aktualisiert.", entity.getId());
         return ReferentService.mapVortragToDto(entity);

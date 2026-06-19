@@ -19,7 +19,6 @@ import java.time.LocalDateTime;
 import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.Response.Status.CREATED;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @QuarkusTest
@@ -27,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class NutzerInheritanceTest extends DatabaseCleaner {
 
     Long testVid;
+
 
     @BeforeEach
     @Transactional
@@ -45,6 +45,7 @@ class NutzerInheritanceTest extends DatabaseCleaner {
         admin.addVeranstaltung(v);
         admin.persist();
     }
+
 
     @Test
     @TestSecurity(user = "admin@test.de", roles = "ADMIN")
@@ -73,6 +74,7 @@ class NutzerInheritanceTest extends DatabaseCleaner {
                 .describedAs("Veranstaltung des Referenten sollte nicht leer sein").isNotEmpty();
         assertThat(ref.getVeranstaltungen().iterator().next().getId()).isEqualTo(testVid);
     }
+
 
     @Test
     @TestSecurity(user = "admin@test.de", roles = "ADMIN")

@@ -85,7 +85,7 @@ public class TeilnehmerService {
         String tempPassword = UUID.randomUUID().toString();
         user.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
 
-        user.persist();
+        user.persistAndFlush();
         protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer erstellt", "Teilnehmer " + user.getEmail() + " für Veranstaltung " + v.getName() + " erstellt.", user.getId());
         return user;
     }
@@ -129,7 +129,7 @@ public class TeilnehmerService {
                     String tempPassword = "start123"; // UUID.randomUUID().toString();
                     tn.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
 
-                    tn.persist();
+                    tn.persistAndFlush();
 
                     tn.addVeranstaltung(v);
 
@@ -163,7 +163,7 @@ public class TeilnehmerService {
     @Transactional
     public void toggleActive(Nutzer nutzer) {
         nutzer.setActive(!nutzer.isActive());
-        nutzer.persist();
+        nutzer.persistAndFlush();
         protokollService.log(ProtokollKategorie.NUTZER, "Nutzer-Status geändert", "Nutzer " + nutzer.getEmail() + " ist jetzt " + (nutzer.isActive() ? "aktiv" : "inaktiv") + ".", nutzer.getId());
     }
 
@@ -186,7 +186,7 @@ public class TeilnehmerService {
         dto.gruppen.forEach(teilnehmer::addGruppe);
         teilnehmer.setActive(dto.isActive);
 
-        teilnehmer.persist();
+        teilnehmer.persistAndFlush();
 
         return teilnehmer;
     }
@@ -216,7 +216,7 @@ public class TeilnehmerService {
             tn.addVeranstaltung(veranstaltung);
         }
 
-        tn.persist();
+        tn.persistAndFlush();
 
         protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer aktualisiert", "Teilnehmer " + oldEmail + " (ID: " + tn.getId() + ") aktualisiert. Neue E-Mail: " + tn.getEmail() + ".", tn.getId());
         return tn;
@@ -261,7 +261,7 @@ public class TeilnehmerService {
                 prioritaet.setTeilnehmer(teilnehmer);
                 prioritaet.setVortrag(vortrag);
                 prioritaet.setPrioWert(dto.prioWert);
-                prioritaet.persist();
+                prioritaet.persistAndFlush();
             }
         }
         protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten gespeichert", "Prioritäten für Teilnehmer " + teilnehmer.getEmail() + " in Veranstaltung " + veranstaltung.getName() + " gespeichert.", teilnehmer.getId());

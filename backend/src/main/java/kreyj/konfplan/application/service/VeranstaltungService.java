@@ -67,18 +67,18 @@ public class VeranstaltungService {
             v = new Veranstaltung();
         }
 
-        v.setName(dto.name);
-        v.setBeginntAm(dto.beginntAm);
-        v.setEndetAm(dto.endetAm);
-        v.setDeadlineReferenten(dto.deadlineReferenten);
-        v.setDeadlineTeilnehmer(dto.deadlineTeilnehmer);
-        v.setLogo(dto.logo);
-        v.setLogo_link(dto.logo_link);
+        v.setName(dto.getName());
+        v.setBeginntAm(dto.getBeginntAm());
+        v.setEndetAm(dto.getEndetAm());
+        v.setDeadlineReferenten(dto.getDeadlineReferenten());
+        v.setDeadlineTeilnehmer(dto.getDeadlineTeilnehmer());
+        v.setLogo(dto.getLogo());
+        v.setLogo_link(dto.getLogo_link());
 
         // Gebäude zuweisen
-        if (dto.gebaeude != null) {
-            for (var gDto : dto.gebaeude) {
-                Gebaeude g = Gebaeude.findById(gDto.id);
+        if (dto.getGebaeude() != null) {
+            for (var gDto : dto.getGebaeude()) {
+                Gebaeude g = Gebaeude.findById(dto.id);
                 if (g != null) {
                     v.addGebaeude(g);
                 }
@@ -86,11 +86,11 @@ public class VeranstaltungService {
         }
 
         // Organisatoren zuweisen
-        if (CollectionUtils.isNotEmpty(dto.organisatorIds)) {
+        if (CollectionUtils.isNotEmpty(dto.getOrganisatorIds())) {
             // alte Admins entfernen und neue zufügen
             v.getNutzer().stream().filter(u -> u instanceof Admin)
                     .forEach(v::removeNutzer);
-            for (Long adminId : dto.organisatorIds) {
+            for (Long adminId : dto.getOrganisatorIds()) {
                 Admin a = Admin.findById(adminId);
                 if (a == null) {
                     LOG.warn("Unbekannter Admin mit ID " + adminId + " beim Aktualisieren der Veranstaltung '" + v.getName() + "'.");
@@ -101,13 +101,15 @@ public class VeranstaltungService {
         }
 
         if (dto.id == null) {
-            v.persist();
-            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung erstellt", "Neue Veranstaltung '" + v.getName() + "' erstellt.", v.getId());
+            v.persistAndFlush();
+            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung erstellt",
+                    "Neue Veranstaltung '" + v.getName() + "' erstellt.", v.getId());
         } else {
             // ZWINGEND ERFORDERLICH FÜR OPTIMISTIC LOCKING RESPONSE:
-            // Hibernate zwingen, das Update jetzt durchzuführen, damit persistence.getVersion() hochgezählt wird.
-            v.persist();
-            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung aktualisiert", "Veranstaltung '" + v.getName() + "' aktualisiert.", v.getId());
+            // Hibernate zwingen, das Update jetzt durchzuführen, damit persistence.version() hochgezählt wird.
+            v.persistAndFlush();
+            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung aktualisiert",
+                    "Veranstaltung '" + v.getName() + "' aktualisiert.", v.getId());
         }
         return mapVeranstaltungToDto(v);
     }
@@ -130,44 +132,44 @@ public class VeranstaltungService {
                     LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
             );
 
-            for (VeranstaltungCsvDto dto : beans) {
-                if (dto.name == null || dto.name.isBlank()) {
+            for (VeranstaltungCsvDto csvDto : beans) {
+                if (StringUtils.isBlank(csvDto.name)) {
                     LOG.warn("Veranstaltung übersprungen: Name fehlt.");
                     continue;
                 }
 
                 Veranstaltung veranstaltung = new Veranstaltung();
-                veranstaltung.setName(dto.name);
+                veranstaltung.setName(csvDto.name);
                 try {
-                    veranstaltung.setBeginntAm(LocalDateTime.parse(dto.beginntAm, DATE_FORMAT));
-                    if (dto.endetAm != null && !dto.endetAm.isEmpty()) {
-                        veranstaltung.setEndetAm(LocalDateTime.parse(dto.endetAm, DATE_FORMAT));
+                    veranstaltung.setBeginntAm(LocalDateTime.parse(csvDto.beginntAm, DATE_FORMAT));
+                    if (csvDto.endetAm != null && !csvDto.endetAm.isEmpty()) {
+                        veranstaltung.setEndetAm(LocalDateTime.parse(csvDto.endetAm, DATE_FORMAT));
                     }
                 } catch (Exception e) {
-                    LOG.error("Fehler beim Parsen des Datums für Veranstaltung '" + dto.name + "': " + e.getMessage());
+                    LOG.error("Fehler beim Parsen des Datums für Veranstaltung '" + csvDto.name + "': " + e.getMessage());
                     continue;
                 }
-                veranstaltung.setLogo(dto.logo);
-                veranstaltung.setLogo_link(dto.logo_link);
+                veranstaltung.setLogo(csvDto.logo);
+                veranstaltung.setLogo_link(csvDto.logo_link);
 
-                if (StringUtils.isNotBlank(dto.gruppen)) {
-                    Arrays.stream(dto.gruppen.split("\\|")).map(String::trim).forEach(veranstaltung::addGruppe);
+                if (StringUtils.isNotBlank(csvDto.gruppen)) {
+                    Arrays.stream(csvDto.gruppen.split("\\|")).map(String::trim).forEach(veranstaltung::addGruppe);
                 }
 
-                if (StringUtils.isNotBlank(dto.gebaeudeNamen)) {
-                    Arrays.stream(dto.gebaeudeNamen.split("\\|")).map(String::trim).forEach(name -> {
+                if (StringUtils.isNotBlank(csvDto.gebaeudeNamen)) {
+                    Arrays.stream(csvDto.gebaeudeNamen.split("\\|")).map(String::trim).forEach(name -> {
                         Gebaeude g = Gebaeude.find("name", name).firstResult();
                         if (g != null) {
                             veranstaltung.addGebaeude(g);
                         } else {
-                            LOG.warn("Veranstaltung '" + dto.name + "': Gebäude nicht gefunden: '" + name + "'");
+                            LOG.warn("Veranstaltung '" + csvDto.name + "': Gebäude nicht gefunden: '" + name + "'");
                         }
                     });
                 }
 
-                veranstaltung.persist();
+                veranstaltung.persistAndFlush();
 
-                String[] organisatorenEmails = StringUtils.split(dto.organisatorenEmails, ",");
+                String[] organisatorenEmails = StringUtils.split(csvDto.organisatorenEmails, ",");
                 for (String organisatorenEmail : organisatorenEmails) {
                     Nutzer admin = Nutzer.findByEmail(organisatorenEmail.trim());
 
@@ -175,12 +177,13 @@ public class VeranstaltungService {
                         // Admin verknüpfen
                         admin.addVeranstaltung(veranstaltung);
                     } else {
-                        LOG.warn("Veranstaltung '" + dto.name + "' übersprungen: Organisator (Admin) mit Email " + organisatorenEmail + " nicht gefunden.");
+                        LOG.warn("Veranstaltung '" + csvDto.name + "' übersprungen: Organisator (Admin) mit Email " + organisatorenEmail + " nicht gefunden.");
                     }
                 }
 
                 count++;
-                protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung importiert", "Veranstaltung '" + veranstaltung.getName() + "' via CSV importiert.", veranstaltung.getId());
+                protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung importiert",
+                        "Veranstaltung '" + veranstaltung.getName() + "' via CSV importiert.", veranstaltung.getId());
             }
         } catch (Exception e) {
             LOG.error("Kritischer Fehler beim Importieren der Veranstaltungen aus CSV: " + csvFilePath, e);
@@ -197,7 +200,8 @@ public class VeranstaltungService {
         if (veranstaltung != null) {
             boolean deleted = Veranstaltung.deleteById(id);
             if (deleted) {
-                protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung gelöscht", "Veranstaltung '" + veranstaltung.getName() + "' gelöscht.", veranstaltung.getId());
+                protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung gelöscht",
+                        "Veranstaltung '" + veranstaltung.getName() + "' gelöscht.", veranstaltung.getId());
             }
             return deleted;
         }
@@ -214,26 +218,26 @@ public class VeranstaltungService {
         dto.id = v.getId();
         dto.version = v.getVersion();
 
-        dto.name = v.getName();
-        dto.beginntAm = v.getBeginntAm();
-        dto.endetAm = v.getEndetAm();
-        dto.deadlineReferenten = v.getDeadlineReferenten();
-        dto.deadlineTeilnehmer = v.getDeadlineTeilnehmer();
-        dto.logo = v.getLogo();
-        dto.logo_link = v.getLogo_link();
+        dto.setName(v.getName());
+        dto.setBeginntAm(v.getBeginntAm());
+        dto.setEndetAm(v.getEndetAm());
+        dto.setDeadlineReferenten(v.getDeadlineReferenten());
+        dto.setDeadlineTeilnehmer(v.getDeadlineTeilnehmer());
+        dto.setLogo(v.getLogo());
+        dto.setLogo_link(v.getLogo_link());
 
         // Organisatoren filtern und hinzufügen
         if (v.getNutzer() != null) {
             v.getNutzer().stream()
                     .filter(u -> u instanceof Admin)
                     .forEach(u -> {
-                        dto.organisatorIds.add(u.getId());
-                        dto.organisatorNamen.add(u.getLastName());
+                        dto.getOrganisatorIds().add(u.getId());
+                        dto.getOrganisatorNamen().add(u.getLastName());
                     });
         }
 
-        dto.gebaeude = v.getGebaeude().stream().map(VeranstaltungService::mapToDto).toList();
-        dto.gruppen = v.getGruppen();
+        dto.setGebaeude(v.getGebaeude().stream().map(VeranstaltungService::mapToDto).toList());
+        dto.setGruppen(v.getGruppen());
 
         return dto;
     }

@@ -45,6 +45,7 @@ class AdminResourceTest extends DatabaseCleaner {
 
     Long adminId;
 
+
     @BeforeEach
     @Transactional
     void setup() {
@@ -55,6 +56,7 @@ class AdminResourceTest extends DatabaseCleaner {
 
         adminId = admin.getId();
     }
+
 
     @Test
     void testGetAllUsersGlobal() {
@@ -72,6 +74,7 @@ class AdminResourceTest extends DatabaseCleaner {
                 .body("size()", is(2)); // setup admin + admin1
     }
 
+
     @Test
     void testCreateUser() {
         NutzerDto dto = NutzerDto.referent("new@test.de", "Max", "Mustermann",
@@ -86,6 +89,7 @@ class AdminResourceTest extends DatabaseCleaner {
 
         assertThat(Nutzer.findByEmail("new@test.de")).isNotNull();
     }
+
 
     @Test
     void testUpdateUser() {
@@ -125,6 +129,7 @@ class AdminResourceTest extends DatabaseCleaner {
         assertThat(((Teilnehmer) user).getGruppen()).contains("New Group");
     }
 
+
     @Test
     void testDeleteUser() {
         NutzerDto dto = NutzerDto.teilnehmer("todelete@test.de", null, null);
@@ -145,6 +150,7 @@ class AdminResourceTest extends DatabaseCleaner {
 
         Assertions.assertNull(Nutzer.findById(created.id));
     }
+
 
     @Test
     void testInviteUser() {
@@ -179,6 +185,7 @@ class AdminResourceTest extends DatabaseCleaner {
         Teilnehmer invitedUser = Teilnehmer.findById(userId);
         assertThat(invitedUser.getVeranstaltungen()).hasSize(1);
     }
+
 
     @Test
     void testVerfuegbarkeitenEndpoints() {
@@ -234,8 +241,9 @@ class AdminResourceTest extends DatabaseCleaner {
         assertThat(nv.isVerfuegbar(slotId[0])).isFalse();
     }
 
+
     @Test
-    void testOptimisticLockingFuerTeilnehmerProfil() {
+    void testOptimisticLockingFuerTeilnehmerUpdate() {
         Long[] tnId = {0L};
 
         QuarkusTransaction.requiringNew().run(() -> {
@@ -301,8 +309,9 @@ class AdminResourceTest extends DatabaseCleaner {
         assertThat(finalUser.version).isEqualTo(adminFetchedUser1.version + 1); // Version should be the one after the first update
     }
 
+
     @Test
-    void testOptimisticLockingForVeranstaltungName() {
+    void testOptimisticLockingForVeranstaltungUpdate() {
         final Long[] vIdArray = {0L};
         String admin2Email = "admin2@example.com";
 
@@ -348,7 +357,7 @@ class AdminResourceTest extends DatabaseCleaner {
         assertThat(admin1FetchedVeranstaltung.version).isNotNull();
 
         // 4. Admin 1 updates veranstaltung name (successful, increments version)
-        admin1FetchedVeranstaltung.name = "Admin1 Updated Event Name";
+        admin1FetchedVeranstaltung.setName("Admin1 Updated Event Name");
         VeranstaltungDto updatedVDto = given()
                 .contentType(ContentType.JSON)
                 .body(admin1FetchedVeranstaltung)
@@ -357,18 +366,20 @@ class AdminResourceTest extends DatabaseCleaner {
                 .statusCode(OK.getStatusCode())
                 .extract().as(VeranstaltungDto.class);
 
-        assertThat(updatedVDto.name).isEqualTo("Admin1 Updated Event Name");
-        assertThat(updatedVDto.version).isEqualTo(admin1FetchedVeranstaltung.version + 1); // Version should increment
+        assertThat(updatedVDto.getName()).isEqualTo("Admin1 Updated Event Name");
+        assertThat(updatedVDto.version)
+                .describedAs("Version should be incremented")
+                .isEqualTo(admin1FetchedVeranstaltung.version + 1);
 
         // 5. Admin 2 attempts to update with outdated version (should fail with CONFLICT.getStatusCode() Conflict)
-        admin2FetchedVeranstaltung.name = "Admin2 Updated Event Name"; // This change should not be saved
+        admin2FetchedVeranstaltung.setName("Admin2 Updated Event Name"); // This change should not be saved
         given()
                 .auth().oauth2(admin2Token)
                 .contentType(ContentType.JSON)
                 .body(admin2FetchedVeranstaltung) // This DTO has the old version
                 .when().put("/api/veranstaltungen/{id}", vId)
                 .then()
-                .statusCode(CONFLICT.getStatusCode()); // Expect conflict
+                .statusCode(CONFLICT.getStatusCode());
 
         // 6. Verify data integrity: only Admin 1's changes should be present
         VeranstaltungDto finalVeranstaltung = given()
@@ -377,9 +388,12 @@ class AdminResourceTest extends DatabaseCleaner {
                 .statusCode(OK.getStatusCode())
                 .extract().as(VeranstaltungDto.class);
 
-        assertThat(finalVeranstaltung.name).isEqualTo("Admin1 Updated Event Name");
-        assertThat(finalVeranstaltung.version).isEqualTo(admin1FetchedVeranstaltung.version + 1); // Version should be the one after admin1's update
+        assertThat(finalVeranstaltung.getName()).isEqualTo("Admin1 Updated Event Name");
+        assertThat(finalVeranstaltung.version)
+                .describedAs("Version should be the one after Admin 1's update")
+                .isEqualTo(admin1FetchedVeranstaltung.version + 1);
     }
+
 
     @Test
     @TestSecurity(user = "nutzer@example.com", roles = "USER")
@@ -389,6 +403,7 @@ class AdminResourceTest extends DatabaseCleaner {
                 .then()
                 .statusCode(FORBIDDEN.getStatusCode());
     }
+
 
     // --- GRUPPEN API TESTS ---
     @Test

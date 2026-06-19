@@ -1,30 +1,26 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stundenplan {veranstaltung.name}</title>
-    <link href="../../../resources/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .header-logo {
-            width: 72px;
-            height: 72px;
-        }
-        .card-vortrag {
-            transition: transform 0.2s;
-        }
-        .card-vortrag:hover {
-            transform: scale(1.02);
-            z-index: 10;
-        }
-    </style>
-</head>
-<body>
+{#include report/_base.html}
 
+{#title}Stundenplan {veranstaltung.name}{/title}
+
+{#additional_styles}
+    body {
+        background-color: #f8f9fa;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .header-logo {
+        width: 72px;
+        height: 72px;
+    }
+    .card-vortrag {
+        transition: transform 0.2s;
+    }
+    .card-vortrag:hover {
+        transform: scale(1.02);
+        z-index: 10;
+    }
+{/additional_styles}
+
+{#body}
 <div class="container-fluid py-4">
     <header class="mb-4 d-flex justify-content-between align-items-center">
         <h1>📅 {veranstaltung.name} ({veranstaltung.zeitraumTage})</h1>
@@ -40,20 +36,19 @@
             <div class="card bg-success text-white shadow-sm">
                 <div class="card-body text-center p-3">
                     <h6 class="mb-1">Erfüllung Wahlvorträge</h6>
-                    <h5 class="mb-0">{wahl_erfuellung_stats.total_prefs} Wünsche, erfüllt: {wahl_erfuellung_stats.total_fillups}x
-                        ≅ {((wahl_erfuellung_stats.total_fillups.div(wahl_erfuellung_stats.total_prefs > 0 ?
-                        wahl_erfuellung_stats.total_prefs : 1)) * 100).formatted('%.1f')}%</h5>
+                    <h5 class="mb-0">{wahl_erfuellung_stats.total_prefs} Wünsche, erfüllt: {wahl_erfuellung_stats.erfuellungen_gesamt}x
+                        ≅ {wahl_erfuellung_stats.gesamt_erfuellungen_prozentual}</h5>
                     <div class="mt-2" style="font-size: 0.8rem; opacity: 0.9;">
-                        {#for entry in wahl_erfuellung_stats.wv_prefs.entrySet()}
+                        {#for entry in wahl_erfuellung_stats.wv_gewaehlte.entrySet}
                             {#let wv_oid = entry.key}
                             {#let pref_cnt = entry.value}
                             {#if pref_cnt > 0}
-                                {#let fillup = wahl_erfuellung_stats.wv_fillups.get(wv_oid)}
+                                {#let erfuellung = wahl_erfuellung_stats.wv_erfuellungen.get(wv_oid)}
                                 <div class="d-flex justify-content-between">
                                     {#let titel = wv_dict.get(wv_oid).titel}
-                                    <span title="{titel}">{titel.padded(12)}: {pref_cnt}x gewählt,
-                                        berücksichtigt {fillup}</span>
-                                    <span>≅ {((fillup / (pref_cnt > 0 ? pref_cnt : 1)) * 100).formatted('%.1f')}%</span>
+                                    <span title="{titel}">{titel.truncTo(12)}: {pref_cnt}x gewählt,
+                                        erf. {erfuellung}</span>
+                                    <span>≅ {wahl_erfuellung_stats.wv_erfuellungen_prozentual.get(wv_oid)}</span>
                                 </div>
                             {/if}
                         {/for}
@@ -67,14 +62,14 @@
                 <div class="card-body text-center p-3">
                     <h6 class="mb-1">Prio-Erfüllung</h6>
                     <div class="mt-2" style="font-size: 0.8rem; opacity: 0.9;">
-                        {#for entry in wahl_erfuellung_stats.prio_prefs.entrySet()}
+                        {#for entry in wahl_erfuellung_stats.prio_prefs.entrySet}
                             {#let prio = entry.key}
-                            {#let pref = entry.value}
-                            {#if pref > 0}
-                                {#let fillup = wahl_erfuellung_stats.prio_fillups.get(prio)}
+                            {#let gewaehlt = entry.value}
+                            {#if gewaehlt > 0}
+                                {#let erfuellt = wahl_erfuellung_stats.prio_erfuellungen.get(prio)}
                                 <div class="d-flex justify-content-between">
-                                    <span>Prio {prio}: {pref}x gewählt, berücksichtigt: {fillup}x</span>
-                                    <span>≅ {((fillup / (pref > 0 ? pref : 1)) * 100).formatted('%.1f')}%</span>
+                                    <span>Prio {prio}: {gewaehlt}x gewählt, erf. {erfuellt}x</span>
+                                    <span>≅ {wahl_erfuellung_stats.prio_erfuellungen_prozentual.get(prio)}</span>
                                 </div>
                             {/if}
                         {/for}
@@ -98,17 +93,17 @@
     <section class="mb-5">
         <h2 class="border-bottom pb-2 mb-3">📅 Vortragsplan & Raumbelegung</h2>
 
-        {#for slot_entry in slots.entrySet()}
+        {#for slot_entry in slots.entrySet}
             {#let s_oid = slot_entry.key}
             {#let slot = slot_entry.value}
             <div class="slot-container mb-5 p-3 bg-white shadow-sm rounded">
                 <h4 class="text-primary">{slot.zeitraumTag}</h4>
                 <div class="row g-3">
-                    {#for raum_entry in raeume.entrySet()}
+                    {#for raum_entry in raeume.entrySet}
                         {#let r_oid = raum_entry.key}
                         {#let raum = raum_entry.value}
                         <div class="col-md-3">
-                            {#let b_key = str:fmt("%d_%d", s_oid, r_oid)}
+                            {#let b_key = s_oid.slotRoomKey(r_oid)}
                             {#let detail = belegung_details.get(b_key)}
                             <div class="card h-100 card-vortrag {#if detail && detail.isPflicht}border-primary
                             border-2{#else}border-light{/if}">
@@ -165,7 +160,4 @@
 <footer class="text-right py-2 text-muted small">
     <span class="badge bg-secondary">Stand: {geplantAm}</span>
 </footer>
-
-<script src="../../../resources/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+{/body}

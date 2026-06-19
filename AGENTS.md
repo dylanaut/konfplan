@@ -78,3 +78,31 @@ cd frontend && npm install && npm run dev
 - Räume werden veranstaltungsübergreifend auf Überschneidungen geprüft.
 - Passwort-Reset per E-Mail (Mailpit-Credentials in `application.properties` setzen).
 - Standard-Passwort bei Erstellung/Import: `start123` (BCrypt-gehasht).
+
+## Arbeitsanweisungen für den Agenten
+
+### Checkliste: Full-Stack-Feature-Slice bei Datenmodell-Änderungen
+
+Wenn eine Änderung am Datenmodell als "Full-Stack-Feature-Slice" angefordert wird, sind die folgenden Schritte durchzuführen:
+
+1.  **Persistenz-Schicht (Backend):**
+    *   **Entität anpassen:** Das neue Feld zur entsprechenden JPA-Entitätsklasse hinzufügen (z.B. `Vortrag.java`).
+    *   **Enum erstellen:** Falls das neue Feld ein Enum ist, die `enum`-Klasse anlegen (z.B. `Berufsfeld.java`).
+    *   **Datenbank-Migration:** Ein neues Flyway-Migrationsskript (`V_... .sql`) erstellen, um das Datenbankschema mit `ALTER TABLE ... ADD COLUMN ...` zu aktualisieren.
+
+2.  **Datenübertragungs-Schicht (Backend):**
+    *   **DTO anpassen:** Die entsprechende(n) DTO-Klasse(n) (z.B. `VortragDto.java`) um das neue Feld erweitern.
+    *   **Mapper-Logik aktualisieren:** Die Methoden, die Entitäten in DTOs umwandeln, anpassen, um das neue Feld zu berücksichtigen (z.B. in `ReferentService.mapVortragToDto`).
+
+3.  **Service- & Business-Logik (Backend):**
+    *   **Importer anpassen:** Falls es einen CSV-Importer gibt, die Logik erweitern (z.B. in `AdminService.importVortraegeFromCsv`).
+    *   **Erstellungs-/Update-Logik:** Die `create...`- und `update...`-Methoden in den relevanten Services anpassen.
+
+4.  **Test-Schicht (Backend):**
+    *   **Test-Daten anpassen:** Bestehende Test-Daten-Generatoren (z.B. `DevDataInitService`) oder CSV-Dateien im `test/resources`-Verzeichnis erweitern.
+    *   **Testfälle erweitern:** Bestehende Unit- und Integrationstests (`*Test.java`) anpassen, um das neue Feld zu berücksichtigen.
+
+5.  **Präsentations-Schicht (Frontend):**
+    *   **Anzeige-Komponenten:** Vue-Komponenten, die die Daten anzeigen (z.B. `VortraegeTab.vue`), erweitern.
+    *   **Bearbeitungs-Komponenten:** Vue-Komponenten, die zum Erstellen oder Bearbeiten verwendet werden (z.B. `AdminVortragEditorModal.vue`), um ein neues Eingabefeld erweitern.
+    *   **Daten-Handling im Frontend:** Das reaktive `form`-Objekt und die `save`-Methoden im Frontend anpassen.

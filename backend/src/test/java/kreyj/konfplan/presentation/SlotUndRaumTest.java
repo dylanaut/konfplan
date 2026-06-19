@@ -1,6 +1,5 @@
 package kreyj.konfplan.presentation;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
@@ -26,7 +25,6 @@ import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 import static jakarta.ws.rs.core.Response.Status.CREATED;
 import static jakarta.ws.rs.core.Response.Status.OK;
 import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvIdL;
-import static kreyj.konfplan.presentation.DatabaseCleaner.isRaumVerfuegbar;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
@@ -37,6 +35,7 @@ class SlotUndRaumTest extends DatabaseCleaner {
     Long v1_Id;
     Long v2_Id;
     Long raumId;
+
 
     @BeforeEach
     @Transactional
@@ -74,6 +73,7 @@ class SlotUndRaumTest extends DatabaseCleaner {
         g.addRaum(raum);
         raumId = raum.getId();
     }
+
 
     @Test
     void testSlotValidation() {
@@ -139,22 +139,23 @@ class SlotUndRaumTest extends DatabaseCleaner {
                 .statusCode(BAD_REQUEST.getStatusCode());
     }
 
+
     /**
      * Testet die Funktionalität der Raumverfügbarkeitshandhabung über verschiedene Veranstaltungen hinweg.
      * Die Methode verifiziert, dass ein Raum, der in einer Veranstaltung gebucht wurde, seine Verfügbarkeit
      * für überlappende Zeitfenster in einer anderen Veranstaltung blockiert.
-     *
+     * <p>
      * Testablauf:
      * - Erstellt ein Zeitfenster in einer Veranstaltung und ein weiteres überlappendes Zeitfenster in einer anderen Veranstaltung.
      * - Markiert den Raum als belegt durch die zweite Veranstaltung.
      * - Verifiziert, dass der Raum für das Zeitfenster der ersten Veranstaltung korrekt als blockiert angezeigt wird
-     *   aufgrund der Überlappung mit der zweiten Veranstaltung.
-     *
+     * aufgrund der Überlappung mit der zweiten Veranstaltung.
+     * <p>
      * Testerwartungen:
      * - Stellt sicher, dass der Raum für die erste Veranstaltung aufgrund der
-     *   konfliktierenden Buchung in der zweiten Veranstaltung als "blockiert" gekennzeichnet ist.
+     * konfliktierenden Buchung in der zweiten Veranstaltung als "blockiert" gekennzeichnet ist.
      * - Validiert, dass die Veranstaltung, die für die Blockierung des Raumes verantwortlich ist, korrekt
-     *   in der Antwort identifiziert wird.
+     * in der Antwort identifiziert wird.
      */
 
     @Test

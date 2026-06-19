@@ -47,6 +47,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
     Referent referent;
     Teilnehmer teilnehmer1, teilnehmer2, teilnehmer3;
 
+
     @BeforeEach
     @Transactional
     void setup() {
@@ -130,6 +131,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         teilnehmer3.addVeranstaltung(veranstaltung);
     }
 
+
     @Test
     void testCreatePflichtvortragSuccess() {
         // Raum 2 hat Kapazität 10, Gruppe A hat 2 TN
@@ -173,6 +175,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         assertThat(Pflichtvortrag.count()).isZero(); // No PV created
     }
 
+
     @Test
     void testCreatePflichtvortragTeilnehmerNichtVerfuegbarFails() {
         QuarkusTransaction.requiringNew().run(() -> teilnehmer1.updateVerfuegbarkeit(slot1, veranstaltung, false, false));
@@ -190,6 +193,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         assertThat(Pflichtvortrag.count()).isZero(); // No PV created
     }
 
+
     @Test
     void testCreatePflichtvortragRaumKapazitaetFails() {
         QuarkusTransaction.requiringNew().run(() -> Raum.<Raum>findById(raum1.getId()).setKapazitaet(1));
@@ -206,6 +210,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
 
         assertThat(Pflichtvortrag.count()).isEqualTo(0L);
     }
+
 
     @Test
     void testCreatePflichtvortragFailsIfRaumAlreadyOccupiedByAnotherPflichtvortrag() {
@@ -235,6 +240,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
                 .isEqualTo(1L);
     }
 
+
     @Test
     void testCreatePflichtvortragFailsIfGruppeAlreadyOccupiedByAnotherPflichtvortrag() {
         VortragDto pv1 = pvDto("PV1", referent, "Gruppe A", raum2, slot1, veranstaltung);
@@ -262,6 +268,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
                 .describedAs("nur PV1 erzeugt")
                 .isEqualTo(1L);
     }
+
 
     @Test
     void testUpdatePflichtvortragChangeSlotSuccess() {
@@ -302,6 +309,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         assertThat(isTeilnehmerVerfuegbar(teilnehmer1, slot2, veranstaltung)).isFalse(); // New slot occupied
         assertThat(isRaumVerfuegbar(raum2, slot2, veranstaltung)).isFalse(); // New room-slot occupied
     }
+
 
     @Test
     void testUpdatePflichtvortragChangeSlotFailsIfNewSlotNotAvailable() {
@@ -418,7 +426,6 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
                 .log().all()
                 .statusCode(BAD_REQUEST.getStatusCode())
                 .body("error", startsWith("Neuer Raum 'Raum 2' ist im Slot 'Slot 1' nicht verfügbar."));
-        ;
 
         // Verify state remains unchanged
         assertThat(isRaumVerfuegbar(raum1, slot1, veranstaltung)).isFalse(); // Raum1 still occupied by PV

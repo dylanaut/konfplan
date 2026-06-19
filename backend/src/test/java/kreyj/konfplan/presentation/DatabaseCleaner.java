@@ -43,6 +43,7 @@ public abstract class DatabaseCleaner {
     // Helper methods
     // -------------------------------------------------------------------
 
+
     public static VortragDto pvDto(String titel, Referent referent, String gruppe, Raum raum, Slot slot,
                                    Veranstaltung veranstaltung) {
         VortragDto dto = new VortragDto();
@@ -57,9 +58,11 @@ public abstract class DatabaseCleaner {
         return dto;
     }
 
+
     public static boolean isTeilnehmerVerfuegbar(Teilnehmer tn, Slot slot, Veranstaltung veranstaltung) {
         return isTeilnehmerVerfuegbar(tn.getId(), slot.getId(), veranstaltung.getId());
     }
+
 
     public static boolean isTeilnehmerVerfuegbar(Long tnId, Long slotId, Long veranstaltungId) {
         final boolean[] resultArr = {false};
@@ -73,9 +76,11 @@ public abstract class DatabaseCleaner {
         return resultArr[0];
     }
 
+
     public static boolean isRaumVerfuegbar(Raum raum, Slot slot, Veranstaltung veranstaltung) {
         return isRaumVerfuegbar(raum.getId(), slot.getId(), veranstaltung.getId());
     }
+
 
     public static boolean isRaumVerfuegbar(Long raumId, Long slotId, Long veranstaltungId) {
         final boolean[] resultArr = {false};

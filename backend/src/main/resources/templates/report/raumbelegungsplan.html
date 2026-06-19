@@ -1,17 +1,16 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <title>Raumbelegungsplan für {raum.name}</title>
-    <style>
+{#include report/_base.html}
+
+{#title}Raumbelegungsplan für {raum.name}{/title}
+
+{#additional_styles}
         body { font-family: sans-serif; }
         h1, h2 { color: #333; }
         table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
-    </style>
-</head>
-<body>
+{/additional_styles}
+
+{#body}
     <h1>Raumbelegungsplan für {raum.name}</h1>
     <h2>Veranstaltung: {veranstaltung.name}</h2>
 
@@ -41,5 +40,4 @@
     {#else}
         <p>Für diesen Raum sind keine Belegungen geplant.</p>
     {/if}
-</body>
-</html>
+{/body}

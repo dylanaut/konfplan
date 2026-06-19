@@ -36,6 +36,7 @@ class DeadlineResourceTest extends DatabaseCleaner {
     Long tnId;
     Long wahlvortragId;
 
+
     @BeforeEach
     @Transactional
     void setup() {
@@ -72,6 +73,7 @@ class DeadlineResourceTest extends DatabaseCleaner {
         wahlvortragId = wv.getId();
     }
 
+
     @Test
     @TestSecurity(user = "referent@test.de", roles = "REFERENT")
     @JwtSecurity(claims = {
@@ -107,6 +109,7 @@ class DeadlineResourceTest extends DatabaseCleaner {
                 .statusCode(FORBIDDEN.getStatusCode());
     }
 
+
     @Test
     @TestSecurity(user = "teilnehmer@test.de", roles = "TEILNEHMER")
     @JwtSecurity(claims = {
@@ -125,15 +128,16 @@ class DeadlineResourceTest extends DatabaseCleaner {
                 .statusCode(FORBIDDEN.getStatusCode());
     }
 
+
     @Test
     @TestSecurity(user = "admin@test.de", roles = "ADMIN")
     void testAdminCanStillEditEvenIfDeadlineExceeded() {
         VeranstaltungDto dto = new VeranstaltungDto();
         dto.id = pastEventId;
-        dto.name = "Abgelaufenes Event (Admin Update)";
-        dto.beginntAm = LocalDateTime.now().plusDays(10);
-        dto.deadlineReferenten = LocalDateTime.now().minusDays(1);
-        dto.deadlineTeilnehmer = LocalDateTime.now().minusDays(1);
+        dto.setName("Abgelaufenes Event (Admin Update)");
+        dto.setBeginntAm(LocalDateTime.now().plusDays(10));
+        dto.setDeadlineReferenten(LocalDateTime.now().minusDays(1));
+        dto.setDeadlineTeilnehmer(LocalDateTime.now().minusDays(1));
 
         given()
                 .contentType(ContentType.JSON)

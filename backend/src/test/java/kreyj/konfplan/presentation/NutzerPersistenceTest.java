@@ -32,6 +32,7 @@ class NutzerPersistenceTest extends DatabaseCleaner {
     public static final String TEST_VERANSTALTUNG = "Test Veranstaltung";
     Long testVid;
 
+
     @BeforeEach
     @Transactional
     void setup() {
@@ -59,6 +60,7 @@ class NutzerPersistenceTest extends DatabaseCleaner {
         admin.persist();
     }
 
+
     @Test
     @TestSecurity(user = "admin@test.de", roles = "ADMIN")
     void testVeranstaltungPresent() {
@@ -69,6 +71,7 @@ class NutzerPersistenceTest extends DatabaseCleaner {
                 .body("name", matchesPattern(TEST_VERANSTALTUNG + "_\\d+"))
                 .log().all();
     }
+
 
     @Test
     @TestSecurity(user = "admin@test.de", roles = "ADMIN")
@@ -97,6 +100,7 @@ class NutzerPersistenceTest extends DatabaseCleaner {
         assertThat(ref.getVeranstaltungen()).describedAs("Veranstaltungen sollten nicht leer sein").isNotNull();
         assertThat(testVid).isEqualTo(ref.getVeranstaltungen().iterator().next().getId());
     }
+
 
     @Test
     @TestSecurity(user = "admin@test.de", roles = "ADMIN")

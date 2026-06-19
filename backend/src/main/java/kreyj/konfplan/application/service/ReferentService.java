@@ -140,7 +140,7 @@ public class ReferentService {
         vortrag.setReferent(referent);
         vortrag.setVeranstaltung(veranstaltung);
         updateVortragFromDto(vortrag, dto);
-        vortrag.persist();
+        vortrag.persistAndFlush();
 
         if (vortrag.getVeranstaltung().getBeginntAm().isAfter(LocalDateTime.now())) {
             mailService.sendVortragsRegistrierung(vortrag.getVeranstaltung(), referent, vortrag, true);
@@ -207,9 +207,10 @@ public class ReferentService {
         vortrag.setTitel(sourceTalk.getTitel());
         vortrag.setInhalt(sourceTalk.getInhalt());
         vortrag.setAusstattung(sourceTalk.getAusstattung());
+        vortrag.setBerufsfeld(sourceTalk.getBerufsfeld());
         vortrag.setReferent(referent);
         vortrag.setVeranstaltung(veranstaltung);
-        vortrag.persist();
+        vortrag.persistAndFlush();
 
         if (veranstaltung.getBeginntAm().isAfter(LocalDateTime.now())) {
             mailService.sendVortragsRegistrierung(veranstaltung, referent, vortrag, true);
@@ -265,9 +266,10 @@ public class ReferentService {
         zielVortrag.setTitel(quellVortrag.getTitel());
         zielVortrag.setInhalt(quellVortrag.getInhalt()); // AbstractText wird kopiert und kann angepasst werden
         zielVortrag.setAusstattung(quellVortrag.getAusstattung());
+        zielVortrag.setBerufsfeld(quellVortrag.getBerufsfeld());
         zielVortrag.setReferent(referent);
         zielVortrag.setVeranstaltung(veranstaltung);
-        zielVortrag.persist();
+        zielVortrag.persistAndFlush();
 
         // Benachrichtigung senden, wenn die Veranstaltung in der Zukunft liegt
         if (veranstaltung.getBeginntAm().isAfter(LocalDateTime.now())) {
@@ -314,6 +316,7 @@ public class ReferentService {
         vortrag.setTitel(dto.titel);
         vortrag.setInhalt(dto.inhalt);
         vortrag.setAusstattung(dto.ausstattung);
+        vortrag.setBerufsfeld(dto.berufsfeld);
 
         if (vortrag instanceof Wahlvortrag wahlvortrag) {
             wahlvortrag.setWiederholbar(dto.wiederholbar);
@@ -327,7 +330,7 @@ public class ReferentService {
                     vv = new VortragVerfuegbarkeit(dto.id, dto.veranstaltungId, dto.verfuegbareSlotIds);
                 }
 
-                vv.persist();
+                vv.persistAndFlush();
             }
         } else if (vortrag instanceof Pflichtvortrag pflichtvortrag) {
             pflichtvortrag.updatePflichtgruppe(dto.pflichtGruppe);
@@ -390,7 +393,7 @@ public class ReferentService {
                     ref.setEmail(dto.email.trim().toLowerCase());
                     String tempPassword = "start123";
                     ref.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
-                    ref.persist();
+                    ref.persistAndFlush();
                 } else if (existingNutzer instanceof Referent) {
                     ref = (Referent) existingNutzer;
                 } else {
@@ -405,7 +408,7 @@ public class ReferentService {
                 ref.setSlogan(dto.slogan);
                 ref.setBiography(dto.biografie);
 
-                ref.persist();
+                ref.persistAndFlush();
                 ref.addVeranstaltung(veranstaltung);
 
                 count++;
@@ -427,6 +430,7 @@ public class ReferentService {
         dto.titel = v.getTitel();
         dto.inhalt = v.getInhalt();
         dto.ausstattung = v.getAusstattung();
+        dto.berufsfeld = v.getBerufsfeld();
         dto.veranstaltungId = v.getVeranstaltung().getId();
         dto.veranstaltungName = v.getVeranstaltung().getName();
         dto.referentId = v.getReferent().getId();
@@ -469,6 +473,7 @@ public class ReferentService {
         vortrag.setTitel(dto.titel);
         vortrag.setInhalt(dto.inhalt);
         vortrag.setAusstattung(dto.ausstattung);
+        vortrag.setBerufsfeld(dto.berufsfeld);
         vortrag.setVeranstaltung(Veranstaltung.findById(dto.veranstaltungId));
         vortrag.setReferent(Referent.findById(dto.referentId));
         if (vortrag instanceof Wahlvortrag wahlvortrag) {

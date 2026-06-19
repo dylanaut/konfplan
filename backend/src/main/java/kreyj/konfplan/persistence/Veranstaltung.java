@@ -15,6 +15,7 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotEmpty;
 import kreyj.konfplan.persistence.converter.LocalDateTimeConverter;
 import lombok.AccessLevel;
@@ -152,6 +153,7 @@ public class Veranstaltung extends VersionedEntity {
     }
 
 
+    @Transactional
     public void addSlot(Slot slot) {
         if (null == slot) {
             return;
@@ -169,6 +171,7 @@ public class Veranstaltung extends VersionedEntity {
     }
 
 
+    @Transactional
     public void removeSlot(Slot slot) {
         if (null == slot) {
             return;

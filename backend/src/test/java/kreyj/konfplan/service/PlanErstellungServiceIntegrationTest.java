@@ -196,7 +196,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
     }
 
     @Test
-    public void testPlanerstellung_withMinimalSetup() throws Exception {
+    public void testPlanerstellungSmallSetup() throws Exception {
         Veranstaltung veranstaltung = simpleSetup(true);
 
         // 1. PlanErstellung durchführen

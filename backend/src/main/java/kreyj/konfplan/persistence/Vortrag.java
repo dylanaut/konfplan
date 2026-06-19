@@ -8,6 +8,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.DiscriminatorType;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
@@ -45,6 +47,11 @@ public abstract class Vortrag extends VersionedEntity {
 
     @Setter
     private String ausstattung;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 100) // Adjust length based on the longest enum constant name
+    @Setter
+    private Berufsfeld berufsfeld;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "referent_id")

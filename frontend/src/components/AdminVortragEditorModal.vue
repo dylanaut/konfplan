@@ -31,6 +31,16 @@
           <textarea v-model="form.inhalt" rows="3" class="input-field"></textarea>
         </div>
 
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Berufsfeld</label>
+          <select v-model="form.berufsfeld" class="input-field">
+            <option :value="null">-- Kein Berufsfeld --</option>
+            <option v-for="feld in BERUFSFELDER" :key="feld.value" :value="feld.value">
+              {{ feld.label }}
+            </option>
+          </select>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Zielgruppe (Info-Text)</label>
@@ -117,6 +127,25 @@
 <script setup>
 import { reactive, watch, ref } from 'vue';
 
+const BERUFSFELDER = [
+    { value: 'LAND_FORST_TIERWIRTSCHAFT_UND_GARTENBAU', label: 'Land-, Forst-, Tierwirtschaft und Gartenbau' },
+    { value: 'ROHSTOFFGEWINNUNG_PRODUKTION_UND_FERTIGUNG', label: 'Rohstoffgewinnung, Produktion und Fertigung' },
+    { value: 'BAU_ARCHITEKTUR_VERMESSUNG_UND_GEBAEUDETECHNIK', label: 'Bau, Architektur, Vermessung und Gebäudetechnik' },
+    { value: 'NATURWISSENSCHAFT_GEOGRAFIE_UND_INFORMATIK', label: 'Naturwissenschaft, Geografie und Informatik' },
+    { value: 'VERKEHR_LOGISTIK_SCHUTZ_UND_SICHERHEIT', label: 'Verkehr, Logistik, Schutz und Sicherheit' },
+    { value: 'ELEKTROTECHNIK', label: 'Elektrotechnik' },
+    { value: 'METALL_MASCHINEN_UND_FAHRZEUGBAU', label: 'Metall-, Maschinen- und Fahrzeugbau' },
+    { value: 'IT_UND_COMPUTER', label: 'IT und Computer' },
+    { value: 'CHEMIE_KUNSTSTOFF_GLAS_TEXTIL_UND_HOLZ', label: 'Chemie, Kunststoff, Glas, Textil und Holz' },
+    { value: 'GASTRONOMIE_LEBENSMITTEL_UND_HAUSWIRTSCHAFT', label: 'Gastronomie, Lebensmittel und Hauswirtschaft' },
+    { value: 'GESUNDHEIT', label: 'Gesundheit' },
+    { value: 'SOZIALES_PAEDAGOGIK_UND_THEOLOGIE', label: 'Soziales, Pädagogik und Theologie' },
+    { value: 'KREATIVBERUFE_MEDIEN_UND_GESTALTUNG', label: 'Kreativberufe, Medien und Gestaltung' },
+    { value: 'WIRTSCHAFT_VERWALTUNG_RECHT_UND_GESELLSCHAFT', label: 'Wirtschaft, Verwaltung, Recht und Gesellschaft' },
+    { value: 'UNTERNEHMENSFUEHRUNG_ORGANISATION_EINKAUF_VERTRIEB_UND_MARKETING', label: 'Unternehmensführung, Organisation, Einkauf, Vertrieb und Marketing' },
+    { value: 'TOURISMUS_SPORT_UND_KULTUR', label: 'Tourismus, Sport und Kultur' },
+];
+
 const props = defineProps({
   isVisible: { type: Boolean, required: true },
   vortrag: { type: Object, default: null },
@@ -136,6 +165,7 @@ const form = reactive({
   titel: '',
   inhalt: '',
   zielgruppe: '',
+  berufsfeld: null,
   referent: { id: null },
   pflichtraum: { id: null },
   pflichtslot: { id: null },
@@ -152,6 +182,7 @@ watch(
       form.titel = val?.titel ?? '';
       form.inhalt = val?.inhalt ?? '';
       form.zielgruppe = val?.zielgruppe ?? '';
+      form.berufsfeld = val?.berufsfeld ?? null;
       form.referent.id = val?.referent?.id ?? null;
       form.pflichtraum.id = val?.pflichtraum?.id ?? null;
       form.pflichtslot.id = val?.pflichtslot?.id ?? null;
@@ -186,8 +217,6 @@ const save = () => {
   } else {
     payload.wahlslots = [];
     payload.wiederholbar = false;
-    // Map objects to IDs for backend if necessary, or keep objects if createVortrag expects them
-    // Based on the existing code, it seems objects are passed
     payload.pflichtraum = props.raeume.find(r => r.id === form.pflichtraum.id);
     payload.pflichtslot = props.slots.find(s => s.id === form.pflichtslot.id);
   }

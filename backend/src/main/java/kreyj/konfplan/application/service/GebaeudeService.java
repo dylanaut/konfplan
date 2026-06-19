@@ -36,7 +36,7 @@ public class GebaeudeService {
     @Transactional
     public Gebaeude save(Gebaeude g) {
         if (g.getId() == null) {
-            g.persist();
+            g.persistAndFlush();
             protokollService.log(ProtokollKategorie.GEBAEUDE, "Gebäude erstellt", "Gebäude '" + g.getName() + "' erstellt.", g.getId());
             return g;
         } else {
@@ -101,7 +101,7 @@ public class GebaeudeService {
                 g.setHausnummer(dto.hausnummer);
                 g.setPostleitzahl(dto.plz);
                 g.setOrt(dto.ort);
-                g.persist();
+                g.persistAndFlush();
 
                 // Räume parsen und zuweisen
                 if (dto.raeumeRaw != null && !dto.raeumeRaw.isBlank()) {
@@ -116,7 +116,7 @@ public class GebaeudeService {
                                 if (parts.length >= 3) {
                                     r.setEtage(parts[2].trim());
                                 }
-                                r.persist();
+                                r.persistAndFlush();
                                 g.addRaum(r);
                                 protokollService.log(ProtokollKategorie.RAUM, "Raum importiert (via Gebäude-Import)", "Raum '" + r.getName() + "' für Gebäude '" + g.getName() + "' importiert.", r.getId());
                             } catch (NumberFormatException e) {

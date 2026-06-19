@@ -1,17 +1,16 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <title>Übersicht Raumbelegung</title>
-    <style>
-        body { font-family: sans-serif; }
-        h1 { color: #333; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-    </style>
-</head>
-<body>
+{#include report/_base.html}
+
+{#title}Übersicht Raumbelegung{/title}
+
+{#additional_styles}
+    body { font-family: sans-serif; }
+    h1 { color: #333; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+{/additional_styles}
+
+{#body}
     <h1>Übersicht Raumbelegung für {veranstaltung.name}</h1>
 
     {#if plan}
@@ -40,5 +39,4 @@
     {#else}
         <p>Kein Plan vorhanden.</p>
     {/if}
-</body>
-</html>
+{/body}

@@ -74,16 +74,17 @@ public class PlanErstellungService {
 
     @Transactional
     public void erstellePlan(Long veranstaltungId, SolverConfig config, String modelName) throws Exception {
-        LOG.info("Starte Planerstellung für Veranstaltung: " + veranstaltungId);
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
+        assert veranstaltung != null;
+        String vName = veranstaltung.getName();
+
+        LOG.info("Starte Planerstellung für Veranstaltung: " + vName);
 
         URL modelUrl = getClass().getClassLoader().getResource("minizinc/" + modelName);
         if (modelUrl == null) {
             throw new FileNotFoundException("MiniZinc model not found: " + modelName);
         }
 
-        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        assert veranstaltung != null;
-        String vName = veranstaltung.getName();
 
         protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung gestartet",
                 "Planerstellung für '" + vName + "' mit Solver '" + config.solver + "' gestartet.", veranstaltungId);
@@ -409,7 +410,7 @@ public class PlanErstellungService {
 
         ergebnis.setSolver(config.solver);
         ergebnis.setTimeout(config.timeout);
-        ergebnis.persist();
+        ergebnis.persistAndFlush();
 
         LOG.info("Planungsergebnis für Veranstaltung '" + veranstaltung.getName() + "' wurde gespeichert/aktualisiert.");
     }

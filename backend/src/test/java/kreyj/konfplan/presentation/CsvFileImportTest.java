@@ -36,6 +36,7 @@ class CsvFileImportTest extends DatabaseCleaner {
     Long testVid;
     String orgEmail;
 
+
     @BeforeEach
     @Transactional
     void setupTransactional() {
@@ -44,6 +45,7 @@ class CsvFileImportTest extends DatabaseCleaner {
         admin.setPasswordHash("hash");
         admin.persist();
     }
+
 
     @BeforeEach
     void setup() {
@@ -67,6 +69,7 @@ class CsvFileImportTest extends DatabaseCleaner {
         orgEmail = organisator.getEmail();
     }
 
+
     private static void setupGebaeude() {
         given()
                 .multiPart("file", getCsvFile("test-gebaeude.csv"))
@@ -79,6 +82,7 @@ class CsvFileImportTest extends DatabaseCleaner {
         assertThat(g).isNotNull();
         assertThat(12).isEqualTo(g.getRaeume().size()).describedAs("Anzahl Räume sollte sein");
     }
+
 
     private void setupVeranstaltungen() {
         given()
@@ -93,6 +97,7 @@ class CsvFileImportTest extends DatabaseCleaner {
         testVid = v.getId();
     }
 
+
     @Test
     void testImportReferenten() {
         given()
@@ -105,6 +110,7 @@ class CsvFileImportTest extends DatabaseCleaner {
         assertThat(r).isNotNull();
         assertThat("msg systems").isEqualTo(r.getOrganisation());
     }
+
 
     @Test
     void testImportTeilnehmer() {
@@ -119,6 +125,7 @@ class CsvFileImportTest extends DatabaseCleaner {
         assertThat(t.getGruppen()).contains("9.1");
     }
 
+
     @Test
     void testImportSlots() {
         given()
@@ -129,6 +136,7 @@ class CsvFileImportTest extends DatabaseCleaner {
 
         assertThat(Slot.count()).isEqualTo(12);
     }
+
 
     @Test
     void testImportVortraege() {
@@ -154,12 +162,15 @@ class CsvFileImportTest extends DatabaseCleaner {
                 .then()
                 .statusCode(OK.getStatusCode());
 
-        assertThat(18).isEqualTo(Pflichtvortrag.count());
+        assertThat(18)
+                .describedAs("Pflichtvortraege sollten importiert worden sein")
+                .isEqualTo(Pflichtvortrag.count());
         Pflichtvortrag pv = Pflichtvortrag.find("titel", "Vortrag Arbeitsagentur für 10.5").firstResult();
         assertThat(pv).describedAs("Pflichtvortrag sollte importiert worden sein").isNotNull();
         assertThat("A-2.04").isEqualTo(pv.getPflichtraum().getName());
         assertThat("9").isEqualTo(pv.getPflichtslot().getDescription());
     }
+
 
     private static File getCsvFile(String fileName) {
         ClassLoader classLoader = ClassLoaderUtils.getClassLoader(CsvFileImportTest.class);

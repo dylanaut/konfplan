@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * adding functions to Qute Template Engine
+ */
 @TemplateExtension
 public class TemplateExtensions {
     private final static Pattern WORD_BOUNDARY_MATCHER = Pattern.compile("[- \t\n\r\f.,!?;:+()*]");
@@ -56,6 +59,26 @@ public class TemplateExtensions {
 
     static String join(List<String> list, String delimiter) {
         return String.join(delimiter, list);
+    }
+
+
+    static String slotRoomKey(Long slotId, long roomId) {
+        return String.format("%d_%d", slotId, roomId);
+    }
+
+
+    static int indexOf(long[] array, long value) {
+        for (int i = 0; i < array.length; i++) {
+            if (array[i] == value) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
+    static boolean contains(long[] array, long value) {
+        return indexOf(array, value) != -1;
     }
 
 

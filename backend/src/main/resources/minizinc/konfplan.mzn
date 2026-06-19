@@ -117,7 +117,7 @@ constraint forall(w in 1..n_wahlvortraege, i in 1..max_instanzen) (
 );
 
 bool: opt_referent_raumtreue;
-int: penalty_raumwechsel = 5;
+int: penalty_raumwechsel = 500;
 
 var int: kosten_raumwechsel =
     if opt_referent_raumtreue then

@@ -29,6 +29,7 @@ class PrioritaetImportTest extends DatabaseCleaner {
     Long wv2Id;
     Long teilnehmer1Id;
 
+
     @BeforeEach
     @Transactional
     void setup() {
@@ -70,6 +71,7 @@ class PrioritaetImportTest extends DatabaseCleaner {
         wv2.setVeranstaltung(v);
         wv2Id = wv2.getId();
     }
+
 
     @Test
     void testImportPrioritaeten() {

@@ -39,6 +39,7 @@ class ReportResourceTest {
     private Teilnehmer mockTeilnehmer;
     private Referent mockReferent;
 
+
     @BeforeEach
     void setUp() {
         // Mock-Objekte für Entitäten erstellen
@@ -61,6 +62,7 @@ class ReportResourceTest {
 
     // --- Testfälle für Teilnehmer-Laufzettel ---
 
+
     @Test
     @TestSecurity(user = "testAdmin", roles = "ADMIN")
     void getLaufzettelTeilnehmer_asAdmin_shouldSucceed() {
@@ -75,6 +77,7 @@ class ReportResourceTest {
                 .statusCode(200)
                 .contentType(MediaType.TEXT_HTML);
     }
+
 
     @Test
     @TestSecurity(user = "teilnehmer@test.com", roles = "TEILNEHMER")
@@ -91,6 +94,7 @@ class ReportResourceTest {
                 .contentType("application/pdf");
     }
 
+
     @Test
     @TestSecurity(user = "testReferent", roles = "REFERENT")
     void getLaufzettelTeilnehmer_asWrongRole_shouldBeForbidden() {
@@ -101,6 +105,7 @@ class ReportResourceTest {
     }
 
     // --- Testfälle für Referenten-Laufzettel ---
+
 
     @Test
     @TestSecurity(user = "testAdmin", roles = "ADMIN")
@@ -117,6 +122,7 @@ class ReportResourceTest {
                 .contentType(MediaType.TEXT_HTML);
     }
 
+
     @Test
     @TestSecurity(user = "referent@test.com", roles = "REFERENT")
     void getLaufzettelReferent_asCorrectReferent_shouldSucceed() {
@@ -130,6 +136,7 @@ class ReportResourceTest {
                 .then()
                 .statusCode(200);
     }
+
 
     @Test
     @TestSecurity(user = "wrong@referent.com", roles = "REFERENT")
@@ -147,6 +154,7 @@ class ReportResourceTest {
 
     // --- Testfälle für Admin-Reports ---
 
+
     @Test
     @TestSecurity(user = "testAdmin", roles = "ADMIN")
     void getUebersichtRaeume_asAdmin_shouldSucceed() {
@@ -161,6 +169,7 @@ class ReportResourceTest {
                 .contentType(MediaType.TEXT_HTML);
     }
 
+
     @Test
     @TestSecurity(user = "testUser", roles = "TEILNEHMER")
     void getUebersichtRaeume_asNonAdmin_shouldBeForbidden() {
@@ -169,6 +178,7 @@ class ReportResourceTest {
                 .then()
                 .statusCode(403);
     }
+
 
     @Test
     @TestSecurity(user = "testAdmin", roles = "ADMIN")
@@ -184,6 +194,7 @@ class ReportResourceTest {
                 .contentType("application/pdf");
     }
 
+
     @Test
     @TestSecurity(user = "testAdmin", roles = "ADMIN")
     void getAlleRaumschilder_asAdmin_shouldSucceed() {
@@ -198,6 +209,7 @@ class ReportResourceTest {
                 .contentType(MediaType.TEXT_HTML);
     }
 
+
     @Test
     @TestSecurity(user = "testAdmin", roles = "ADMIN")
     void getAlleRaumschilderPdf_asAdmin_shouldSucceed() {
@@ -211,6 +223,7 @@ class ReportResourceTest {
                 .contentType("application/pdf");
 
     }
+
 
     @Test
     @TestSecurity(user = "testAdmin", roles = "ADMIN")
@@ -229,6 +242,7 @@ class ReportResourceTest {
                 .statusCode(200)
                 .contentType(MediaType.TEXT_HTML);
     }
+
 
     @Test
     @TestSecurity(user = "testAdmin", roles = "ADMIN")

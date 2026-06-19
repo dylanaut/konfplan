@@ -732,9 +732,9 @@ def calc_prefs_fulfills_stats(tn_list, besucht):
         'total_prefs': total_prefs,
         'prio_prefs': prio_prefs,
         'wv_prefs': wv_prefs,
-        'total_fillups': total_fulfills,
-        'prio_fillups': prio_fulfills,
-        'wv_fillups': wv_fulfills
+        'erfuellungen_gesamt': total_fulfills,
+        'prio_erfuellungen': prio_fulfills,
+        'auffueller': wv_fulfills
     }
     return prefs_fulfills_stats
 

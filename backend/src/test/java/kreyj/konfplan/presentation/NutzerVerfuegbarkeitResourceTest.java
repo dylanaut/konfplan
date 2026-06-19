@@ -29,6 +29,7 @@ class NutzerVerfuegbarkeitResourceTest extends DatabaseCleaner {
     Long testVid;
     Long slotId;
 
+
     @BeforeEach
     @Transactional
     void setup() {
@@ -46,6 +47,7 @@ class NutzerVerfuegbarkeitResourceTest extends DatabaseCleaner {
         v.addSlot(s);
         slotId = s.getId();
     }
+
 
     @Test
     @TestSecurity(user = "admin@test.de", roles = "ADMIN")
@@ -95,6 +97,7 @@ class NutzerVerfuegbarkeitResourceTest extends DatabaseCleaner {
         assertThat(nv).describedAs("Verfügbarkeit für Teilnehmer sollte erstellt worden sein")
                 .isNotNull();
     }
+
 
     @Test
     @Transactional

@@ -31,7 +31,7 @@ public class ProtokollService {
         p.setEreignis(ereignis);
         p.setDetails(details);
         p.setReferenzId(referenzId);
-        p.persist();
+        p.persistAndFlush();
     }
 
     public void log(ProtokollKategorie kategorie, String ereignis, String details) {

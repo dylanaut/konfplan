@@ -1,6 +1,7 @@
 package kreyj.konfplan.presentation.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import kreyj.konfplan.persistence.Berufsfeld;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
@@ -18,6 +19,7 @@ public class VortragDto extends AbstractVersionedDto {
     public String titel;
     public String inhalt;
     public String ausstattung;
+    public Berufsfeld berufsfeld; // Neues Feld
     public boolean istPflicht;
     public boolean wiederholbar;
     public Set<Long> verfuegbareSlotIds = new HashSet<>();
@@ -44,7 +46,7 @@ public class VortragDto extends AbstractVersionedDto {
 
     public VortragDto(String titel, String inhalt, Long referentId, String pflichtGruppe, Long pflichtRaumId, Long pflichtSlotId,
                       Long veranstaltungId) {
-        this(true, titel, inhalt, referentId, veranstaltungId);
+        this(true, titel, inhalt, null, null, referentId, veranstaltungId); // Berufsfeld hinzugefügt
 
         Objects.requireNonNull(pflichtGruppe, "Pflichtgruppe darf nicht null sein");
         Objects.requireNonNull(pflichtRaumId, "PflichtraumId darf nicht null sein");
@@ -56,10 +58,10 @@ public class VortragDto extends AbstractVersionedDto {
     }
 
     public VortragDto(boolean istPflicht, String titel, String inhalt, Long referentId, Long veranstaltungId) {
-        this(istPflicht, titel, inhalt, null, referentId, veranstaltungId);
+        this(istPflicht, titel, inhalt, null, null, referentId, veranstaltungId); // Berufsfeld hinzugefügt
     }
 
-    public VortragDto(boolean istPflicht, String titel, String inhalt, String ausstattung, Long referentId,
+    public VortragDto(boolean istPflicht, String titel, String inhalt, String ausstattung, Berufsfeld berufsfeld, Long referentId,
                       Long veranstaltungId) {
         Objects.requireNonNull(titel, "Titel darf nicht null sein");
         Objects.requireNonNull(veranstaltungId, "VeranstaltungId darf nicht null sein");
@@ -69,6 +71,7 @@ public class VortragDto extends AbstractVersionedDto {
         this.titel = titel;
         this.inhalt = inhalt;
         this.ausstattung = ausstattung;
+        this.berufsfeld = berufsfeld;
         this.referentId = referentId;
         this.veranstaltungId = veranstaltungId;
     }

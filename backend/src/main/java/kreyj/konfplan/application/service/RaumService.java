@@ -46,9 +46,9 @@ public class RaumService {
         }
 
         if (r.getId() == null) {
-            r.persist();
+            r.persistAndFlush();
             gebaeude.addRaum(r);
-            gebaeude.persist();
+            gebaeude.persistAndFlush();
             protokollService.log(ProtokollKategorie.RAUM, "Raum erstellt", "Raum '" + r.getName() + "' im Gebäude '" + gebaeude.getName() + "' erstellt.", r.getId());
             return r;
         } else {
@@ -61,7 +61,7 @@ public class RaumService {
             raum.setKapazitaet(r.getKapazitaet());
             raum.setEtage(r.getEtage());
 
-            raum.persist();
+            raum.persistAndFlush();
             protokollService.log(ProtokollKategorie.RAUM, "Raum aktualisiert", "Raum '" + raum.getName() + "' im Gebäude '" + gebaeude.getName() + "' aktualisiert.", raum.getId());
             return raum;
         }
@@ -103,7 +103,7 @@ public class RaumService {
                 r.setName(dto.name);
                 r.setKapazitaet(dto.kapazitaet);
                 r.setEtage(dto.etage);
-                r.persist();
+                r.persistAndFlush();
 
                 gebaeude.addRaum(r);
                 count++;

@@ -6,6 +6,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Berufsfeld;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.Nutzer;
@@ -32,6 +33,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 class CsvImportTest extends DatabaseCleaner {
 
     Long testVid;
+
 
     @BeforeEach
     @Transactional
@@ -62,6 +64,7 @@ class CsvImportTest extends DatabaseCleaner {
         veranstaltung.addSlot(slot1);
     }
 
+
     private Gebaeude setupGebaeude(String gebaeudeName) {
         Gebaeude gebaeude = new Gebaeude();
 
@@ -75,11 +78,13 @@ class CsvImportTest extends DatabaseCleaner {
         return gebaeude;
     }
 
+
     private Long setupVeranstaltung(Admin admin, List<Gebaeude> gebaeudeList) {
         Veranstaltung v = new Veranstaltung();
         v.setName("Basis Event " + System.currentTimeMillis());
         v.setBeginntAm(LocalDateTime.of(2025, 10, 10, 9, 0));
         v.setEndetAm(LocalDateTime.of(2025, 10, 10, 17, 0));
+        v.addGruppe("Pflichtgruppe");
         gebaeudeList.forEach(v::addGebaeude);
         v.persist();
 
@@ -88,6 +93,7 @@ class CsvImportTest extends DatabaseCleaner {
 
         return v.getId();
     }
+
 
     @Test
     void testImportVeranstaltungen() {
@@ -101,6 +107,7 @@ class CsvImportTest extends DatabaseCleaner {
                 .statusCode(OK.getStatusCode())
                 .body(containsString("1 Veranstaltung(en) angelegt"));
     }
+
 
     @Test
     void testImportGebaeudeMitRaeumen() {
@@ -120,6 +127,7 @@ class CsvImportTest extends DatabaseCleaner {
         assertThat(g.getRaeume().size()).describedAs("Anzahl Räume sollte 2 sein").isEqualTo(2);
     }
 
+
     @Test
     void testImportVeranstalter() {
         String adminEmail = "kathrin.jessen@rks-linz.de";
@@ -135,6 +143,7 @@ class CsvImportTest extends DatabaseCleaner {
         assertThat(organisator).isNotNull();
         assertThat(organisator.getFirstName()).isEqualTo("Kathrin");
     }
+
 
     @Test
     void testImportReferenten() {
@@ -153,6 +162,7 @@ class CsvImportTest extends DatabaseCleaner {
         assertThat(r.getOrganisation()).isEqualTo("TechCorp");
     }
 
+
     @Test
     void testImportTeilnehmer() {
         String tnEmail = "tom@stud.de";
@@ -170,6 +180,7 @@ class CsvImportTest extends DatabaseCleaner {
         assertThat(t.getGruppen()).contains("10b");
     }
 
+
     @Test
     void testImportSlots() {
         String csv = "Bezeichnung;Tag;Beginn;Ende\n" +
@@ -184,13 +195,15 @@ class CsvImportTest extends DatabaseCleaner {
         assertThat(Slot.count()).isEqualTo(2);
     }
 
+
     @Test
     void testImportVortraege() {
         String wvTitel = "Java Kurs";
         String pvTitel = "Berufsorientierung";
-        String csv = "istPflicht;Titel;Referent_Email;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;Pflichtslot\n" +
-                "false;" + wvTitel + ";vortrag@ref.de;Inhalt Text;;true;2;;\n" +
-                "true;" + pvTitel + ";vortrag@ref.de;Inhalt Text;LeereGruppe;false;1;A101;Slot 1";
+        String csv = "istPflicht;Titel;Referent_Email;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;" +
+                "Pflichtslot;Ausstattung;Berufsfeld\n" +
+                "false;" + wvTitel + ";vortrag@ref.de;Wahlinhalt;;true;2;;;Beamer;IT\n" +
+                "true;" + pvTitel + ";vortrag@ref.de;Pflichtinhalt;Pflichtgruppe;false;1;A101;Slot 1;;";
 
         given()
                 .multiPart("file", "vortraege.csv", csv.getBytes())
@@ -201,6 +214,10 @@ class CsvImportTest extends DatabaseCleaner {
         Wahlvortrag wv = Wahlvortrag.find("titel", wvTitel).firstResult();
         assertThat(wv).describedAs("Wahlvortrag '" +
                 wvTitel + "' sollte importiert worden sein").isNotNull();
+        assertThat(wv.getBerufsfeld()).describedAs("Wahlvortrag '" +
+                wvTitel + "' sollte IT Berufsfeld haben").isEqualTo(Berufsfeld.IT_UND_COMPUTER);
+        assertThat(wv.getAusstattung()).describedAs("Wahlvortrag '" +
+                wvTitel + "' sollte Beamer als Ausstattung haben").isEqualTo("Beamer");
         assertThat(wv.isWiederholbar()).isTrue();
         assertThat(wv.getMaxWiederholungen()).isEqualTo(2);
     }

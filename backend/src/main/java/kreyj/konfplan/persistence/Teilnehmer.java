@@ -45,7 +45,7 @@ public class Teilnehmer extends Nutzer {
     // public methods
     // -------------------------------------------------------------------
 
-    public boolean hasGruppe(String gruppe) {
+    public boolean gehoertZuGruppe(String gruppe) {
         if (null == gruppe) {
             return false;
         }
