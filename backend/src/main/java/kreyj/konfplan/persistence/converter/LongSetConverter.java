@@ -3,6 +3,7 @@ package kreyj.konfplan.persistence.converter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -26,7 +27,7 @@ public class LongSetConverter implements AttributeConverter<Set<Long>, String> {
 
     @Override
     public Set<Long> convertToEntityAttribute(String dbData) {
-        if (dbData == null || dbData.isBlank()) {
+        if (StringUtils.isBlank(dbData)) {
             return new HashSet<>();
         }
         try {

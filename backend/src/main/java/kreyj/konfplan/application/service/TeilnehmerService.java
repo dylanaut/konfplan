@@ -22,12 +22,15 @@ import kreyj.konfplan.presentation.dto.NutzerDto;
 import kreyj.konfplan.presentation.dto.TeilnehmerDto;
 import kreyj.konfplan.presentation.dto.VortragPrioDto;
 import kreyj.konfplan.presentation.dto.csv.TeilnehmerCsvDto;
+import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -111,26 +114,38 @@ public class TeilnehmerService {
                 protokollService.log(ProtokollKategorie.SYSTEM, "CSV-Parsing-Fehler", "Teilnehmer-Import: " + e.getMessage() + " in Zeile " + e.getLineNumber());
             });
 
-            for (TeilnehmerCsvDto dto : beans) {
-                if (dto.email == null || dto.email.isBlank()) {
+            for (TeilnehmerCsvDto csvDto : beans) {
+                if (StringUtils.isBlank(csvDto.email)) {
                     LOG.warn("Teilnehmer-Zeile übersprungen: Email fehlt.");
                     protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Import übersprungen", "E-Mail fehlte in CSV-Zeile.");
                     continue;
                 }
 
-                String email = dto.email.trim().toLowerCase();
+                String email = csvDto.email.trim().toLowerCase();
                 if (Nutzer.findByEmail(email) == null) {
                     Teilnehmer tn = new Teilnehmer();
                     tn.setEmail(email);
-                    tn.setFirstName(dto.vorname);
-                    tn.setLastName(dto.nachname);
-                    tn.addGruppe(dto.gruppe);
+                    tn.setFirstName(csvDto.vorname);
+                    tn.setLastName(csvDto.nachname);
+
+                    if (StringUtils.isNotBlank(csvDto.gruppen)) {
+                        Set<String> vGruppen = v.getGruppen();
+
+                        for (String splitter : csvDto.gruppen.split("\\|")) {
+                            String gruppe = splitter.trim();
+                            if (vGruppen.contains(gruppe)) {
+                                tn.addGruppe(gruppe);
+                            } else {
+                                LOG.warn("Unbekannte Gruppe '" + gruppe + "' für Teilnehmer '" + tn.getEmail()
+                                        + "' bei Veranstaltung '" + v.getName() + "'");
+                            }
+                        }
+                    }
 
                     String tempPassword = "start123"; // UUID.randomUUID().toString();
                     tn.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
 
                     tn.persistAndFlush();
-
                     tn.addVeranstaltung(v);
 
                     count++;
@@ -145,7 +160,7 @@ public class TeilnehmerService {
             protokollService.log(ProtokollKategorie.SYSTEM, "Kritischer Fehler beim Teilnehmer-Import", e.getMessage());
             throw e;
         }
-        LOG.info("CSV-Import abgeschlossen: " + count + " Teilnehmer erfolgreich importiert.");
+        LOG.info("CSV-Import abgeschlossen: " + count + " Teilnehmer aus " + csvFilePath + " importiert.");
         protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Import abgeschlossen", count + " Teilnehmer importiert für Veranstaltung " + v.getName() + ".");
         return count;
     }

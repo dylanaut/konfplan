@@ -9,6 +9,7 @@ import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import kreyj.konfplan.persistence.Raum;
+import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 
 import java.io.FileReader;
@@ -57,7 +58,8 @@ public class GebaeudeService {
 
     @Transactional
     public int importGebaeudeWithRaeumeFromCsv(Path csvFilePath) throws Exception {
-        int count = 0;
+        int anzahlGebaeude = 0;
+        int anzahlRaeume = 0;
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             CsvToBean<GebaeudeRaeumeCsvDto> csvToBean = new CsvToBeanBuilder<GebaeudeRaeumeCsvDto>(reader)
                     .withType(GebaeudeRaeumeCsvDto.class)
@@ -74,7 +76,7 @@ public class GebaeudeService {
             });
 
             for (GebaeudeRaeumeCsvDto dto : beans) {
-                if (dto.name == null || dto.name.isBlank()) {
+                if (StringUtils.isBlank(dto.name)) {
                     LOG.warn("Gebäude-Zeile übersprungen: Name fehlt.");
                     protokollService.log(ProtokollKategorie.GEBAEUDE, "Gebäude-Import übersprungen", "Gebäudename fehlte in CSV-Zeile.");
                     continue;
@@ -104,7 +106,7 @@ public class GebaeudeService {
                 g.persistAndFlush();
 
                 // Räume parsen und zuweisen
-                if (dto.raeumeRaw != null && !dto.raeumeRaw.isBlank()) {
+                if (StringUtils.isNotBlank(dto.raeumeRaw)) {
                     String[] raumStrings = dto.raeumeRaw.split("\\|");
                     for (String rs : raumStrings) {
                         String[] parts = rs.trim().split(":");
@@ -118,6 +120,8 @@ public class GebaeudeService {
                                 }
                                 r.persistAndFlush();
                                 g.addRaum(r);
+                                anzahlRaeume++;
+                                g.persistAndFlush();
                                 protokollService.log(ProtokollKategorie.RAUM, "Raum importiert (via Gebäude-Import)", "Raum '" + r.getName() + "' für Gebäude '" + g.getName() + "' importiert.", r.getId());
                             } catch (NumberFormatException e) {
                                 LOG.warn("Gebäude '" + gebaeudeName + "': Raum '" + rs + "' übersprungen: Ungültige Kapazität. " + e.getMessage());
@@ -129,7 +133,7 @@ public class GebaeudeService {
                         }
                     }
                 }
-                count++;
+                anzahlGebaeude++;
                 protokollService.log(ProtokollKategorie.GEBAEUDE, "Gebäude importiert", "Gebäude '" + g.getName() + "' via CSV importiert.", g.getId());
             }
         } catch (Exception e) {
@@ -137,9 +141,11 @@ public class GebaeudeService {
             protokollService.log(ProtokollKategorie.SYSTEM, "Kritischer Fehler beim Gebäude-Import", e.getMessage());
             throw e;
         }
-        LOG.info("Gebäude-Import abgeschlossen: " + count + " Gebäude erfolgreich importiert.");
-        protokollService.log(ProtokollKategorie.GEBAEUDE, "Gebäude-Import abgeschlossen", count + " Gebäude importiert.");
-        return count;
+        LOG.info("Gebäude-Import abgeschlossen: " + anzahlGebaeude + " Gebäude mit " + anzahlRaeume + " Räumen aus " +
+                csvFilePath + " importiert.");
+        protokollService.log(ProtokollKategorie.GEBAEUDE, "Gebäude-Import abgeschlossen", anzahlGebaeude + " Gebäude importiert.");
+
+        return anzahlGebaeude;
     }
 
     @Transactional

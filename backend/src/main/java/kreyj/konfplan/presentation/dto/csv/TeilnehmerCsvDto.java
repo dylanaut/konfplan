@@ -2,6 +2,8 @@ package kreyj.konfplan.presentation.dto.csv;
 
 import com.opencsv.bean.CsvBindByName;
 
+import java.util.List;
+
 public class TeilnehmerCsvDto {
 
     @CsvBindByName(column = "Vorname", required = true)
@@ -13,6 +15,6 @@ public class TeilnehmerCsvDto {
     @CsvBindByName(column = "Email", required = true)
     public String email;
 
-    @CsvBindByName(column = "Gruppe")
-    public String gruppe; // aka Klasse
+    @CsvBindByName(column = "Gruppen") // getrennt durch '|'
+    public String gruppen;
 }

@@ -11,6 +11,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -53,7 +54,7 @@ public class Teilnehmer extends Nutzer {
     }
 
     public void addGruppe(String gruppe) {
-        if (null == gruppe || gruppe.isBlank()) {
+        if (StringUtils.isBlank(gruppe)) {
             return;
         }
         gruppen.add(gruppe);

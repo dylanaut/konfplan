@@ -1,4 +1,5 @@
-Nachname;Vorname;Email;Gruppe
-Alfter;Naja;naja.alfter@rks-linz.de;GruppeA
-Arndt;Franziska;franziska.arndt@rks-linz.de;GruppeA
-Baran;Erdem;erdem.baran@rks-linz.de;GruppeB
+Nachname;Vorname;Email;Gruppen
+Alfa;Alex;alex.alfa@web.de;GruppeA
+Bravo;Bert;bert.bravo@web.de;
+Charlie;Chris;chris.charlie@web.de;
+Delta;Dirk;dirk.delta@web.de;

@@ -3,6 +3,7 @@ package kreyj.konfplan.persistence;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.PreRemove;
+import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,11 +27,25 @@ public class Wahlvortrag extends Vortrag {
     // Konstruktoren
     // -------------------------------------------------------------------
 
-    public Wahlvortrag(String titel, String inhalt, Referent referent, boolean wiederholbar, int maxWiederholungen, Veranstaltung veranstaltung) {
+
+    protected Wahlvortrag(String titel, String inhalt, Referent referent, boolean wiederholbar, int maxWiederholungen,
+                          Veranstaltung veranstaltung) {
         super(titel, inhalt, referent, veranstaltung);
 
         this.wiederholbar = wiederholbar;
         this.maxWiederholungen = maxWiederholungen;
+    }
+
+
+    @Transactional
+    public static Wahlvortrag create(String titel, String inhalt, Referent referent, boolean wiederholbar, int maxWiederholungen,
+                                     Veranstaltung veranstaltung) {
+        Wahlvortrag wv = new Wahlvortrag(titel, inhalt, referent, wiederholbar, maxWiederholungen, veranstaltung);
+
+        wv.persistAndFlush();
+        wv.provideVortragVerfuegbarkeit();
+
+        return wv;
     }
 
     // -------------------------------------------------------------------
@@ -43,15 +58,11 @@ public class Wahlvortrag extends Vortrag {
         return false;
     }
 
-    @Override
-    public void afterPersist() {
-        provideVortragVerfuegbarkeit();
-    }
-
 
     // -------------------------------------------------------------------
     // Verfuegbarkeiten anpassen
     // -------------------------------------------------------------------
+
 
     @PreRemove
     public void deleteVerfuegbarkeit() {
@@ -65,8 +76,9 @@ public class Wahlvortrag extends Vortrag {
     // Helper methods
     // -------------------------------------------------------------------
 
+
     /**
-     * VortragVerfuegbarkeit einrichten (afterpersist)
+     * VortragVerfuegbarkeit einrichten
      */
 
     private void provideVortragVerfuegbarkeit() {

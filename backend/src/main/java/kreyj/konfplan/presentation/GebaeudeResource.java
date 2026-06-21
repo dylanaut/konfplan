@@ -155,18 +155,4 @@ public class GebaeudeResource {
         }
         return Response.noContent().build();
     }
-
-    @POST
-    @Path("/{gid}/raeume/import")
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @Operation(summary = "Räume importieren", description = "Importiert Räume für ein Gebäude aus einer CSV-Datei.")
-    public Response importRaeume(@PathParam("gid") Long gid, FileUploadDto data) {
-        try {
-            int count = raumService.importFromCsv(data.file.uploadedFile().toFile().toPath(), gid);
-            return Response.ok("Import erfolgreich: " + count + " Räume angelegt.").build();
-        } catch (Exception e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
-        }
-    }
-
 }

@@ -21,6 +21,7 @@ import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.presentation.dto.SolverConfig;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -91,7 +92,6 @@ public class PlanErstellungService {
 
         try {
             List<Teilnehmer> teilnehmer = veranstaltung.teilnehmer();
-            List<Pflichtvortrag> pflichtvortraege = Pflichtvortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
             List<Wahlvortrag> wahlvortraege = veranstaltung.getWahlvortraege();
             Set<Slot> slots = veranstaltung.getSlots();
             List<Raum> raeume = veranstaltung.getRaeume();
@@ -103,7 +103,7 @@ public class PlanErstellungService {
             }
 
             String dznContent = generiereDzn(veranstaltung, teilnehmer, wahlvortraege, slots, raeume,
-                    pflichtvortraege, config.maxInstanzen);
+                    config.maxInstanzen);
             Path tempDzn = Files.createTempFile("planung_", ".dzn");
             Files.writeString(tempDzn, dznContent, StandardCharsets.UTF_8);
             LOG.info("MiniZinc Datendatei:\n" + dznContent);
@@ -189,7 +189,7 @@ public class PlanErstellungService {
 
 
     private String generiereDzn(Veranstaltung veranstaltung, List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege,
-                                Set<Slot> slots, List<Raum> raeume, List<Pflichtvortrag> pflichtvortraege,
+                                Set<Slot> slots, List<Raum> raeume,
                                 int maxInstanzen) {
         StringBuilder sb = new StringBuilder();
         sb.append("%Generiert am: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))).append(",Version: 1.0;\n");
@@ -202,7 +202,7 @@ public class PlanErstellungService {
         appendWahlvortraege(wahlvortraege, slots, sb);
         appendTnPrios(teilnehmer, wahlvortraege, sb);
         appendTnVerfuegbarkeiten(veranstaltung, teilnehmer, slots, sb);
-        appendRaumVerfuegbarkeiten(veranstaltung, raeume, slots, pflichtvortraege, sb);
+        appendRaumVerfuegbarkeiten(veranstaltung, raeume, slots, sb);
         appendEntityOids(teilnehmer, wahlvortraege, slots, raeume, sb);
 
         return sb.toString();
@@ -354,13 +354,15 @@ public class PlanErstellungService {
         sb.append("\n\n");
     }
 
-    private static void appendRaumVerfuegbarkeiten(Veranstaltung veranstaltung, List<Raum> raeume, Set<Slot> slots, List<Pflichtvortrag> pflichtvortraege, StringBuilder sb) {
+    private static void appendRaumVerfuegbarkeiten(Veranstaltung veranstaltung, List<Raum> raeume, Set<Slot> slots, StringBuilder sb) {
         sb.append("%In welchen Slots Räume für Wahlvorträge einplanbar ist:\n");
         int raeumeSize = raeume.size();
         int slotSize = slots.size();
         Map<Long, RaumVerfuegbarkeit> rvMap =
                 RaumVerfuegbarkeit.<RaumVerfuegbarkeit>list("veranstaltungId = ?1", veranstaltung.getId())
                         .stream().collect(toMap(RaumVerfuegbarkeit::getRaumId, Function.identity()));
+
+        List<RaumVerfuegbarkeit> alleRVs = RaumVerfuegbarkeit.listAll();
 
         int raumIdx = 0;
         sb.append("raum_belegbar = [| %% Slot 1..").append(slots.size());
@@ -416,7 +418,7 @@ public class PlanErstellungService {
     }
 
     public static boolean isValidJson(String json) {
-        if (json == null || json.isBlank()) {
+        if (StringUtils.isBlank(json)) {
             return false;
         }
         try (var reader = Json.createReader(new StringReader(json))) {

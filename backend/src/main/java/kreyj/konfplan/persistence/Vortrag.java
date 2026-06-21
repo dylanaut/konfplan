@@ -93,7 +93,7 @@ public abstract class Vortrag extends VersionedEntity {
     // Konstruktoren
     // -------------------------------------------------------------------
 
-    public Vortrag(String titel, String inhalt, Referent referent, Veranstaltung veranstaltung) {
+    protected Vortrag(String titel, String inhalt, Referent referent, Veranstaltung veranstaltung) {
         this.titel = titel;
         this.inhalt = inhalt;
         this.referent = referent;
@@ -103,8 +103,6 @@ public abstract class Vortrag extends VersionedEntity {
 
         veranstaltung.addVortrag(this);
     }
-
-    public abstract void afterPersist();
 
 
     // -------------------------------------------------------------------

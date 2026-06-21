@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PreRemove;
+import jakarta.transaction.Transactional;
 import kreyj.konfplan.domain.exception.UpdateVortragException;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,13 +33,8 @@ public class Pflichtvortrag extends Vortrag {
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     private Slot pflichtslot;
 
-    public Pflichtvortrag(String titel, Referent referent, Veranstaltung veranstaltung,
-                          String pflichtgruppe, Raum pflichtraum, Slot pflichtslot) {
-        this(titel, "", referent, veranstaltung, pflichtgruppe, pflichtraum, pflichtslot);
-    }
 
-
-    public Pflichtvortrag(String titel, String inhalt, Referent referent, Veranstaltung veranstaltung,
+    protected Pflichtvortrag(String titel, String inhalt, Referent referent, Veranstaltung veranstaltung,
                           String pflichtgruppe, Raum pflichtraum, Slot pflichtslot) {
         super(titel, inhalt, referent, veranstaltung);
 
@@ -49,8 +45,21 @@ public class Pflichtvortrag extends Vortrag {
         this.pflichtgruppe = pflichtgruppe;
         this.pflichtraum = pflichtraum;
         this.pflichtslot = pflichtslot;
-        // constructor requires invocation of #updateVerfuegbarkeitenAfterPersist() _> refactor with factory pattern
     }
+
+
+    @Transactional
+    public static Pflichtvortrag create(String titel, String inhalt, Referent referent, Veranstaltung veranstaltung,
+                                        String pflichtgruppe, Raum pflichtraum, Slot pflichtslot) {
+        Pflichtvortrag pv = new Pflichtvortrag(titel, inhalt, referent, veranstaltung, pflichtgruppe, pflichtraum, pflichtslot);
+
+        pv.persistAndFlush();
+        pv.initNutzerVerfuegbarkeitFuerGruppe();
+        pv.initRaumVerfuegbarkeiten();
+
+        return pv;
+    }
+
 
     /**
      * Aktualisiert die "Pflichtgruppe" für einen Pflichtvortrag und stellt sicher,
@@ -66,7 +75,7 @@ public class Pflichtvortrag extends Vortrag {
      */
 
     public void updatePflichtgruppe(String neuePflichtgruppe) {
-        if (null == neuePflichtgruppe || neuePflichtgruppe.isBlank()) {
+        if (StringUtils.isBlank(neuePflichtgruppe)) {
             throw new UpdateVortragException("Pflichtgruppe darf nicht leer sein.");
         }
 
@@ -194,14 +203,6 @@ public class Pflichtvortrag extends Vortrag {
     }
 
 
-    @Override
-    public void afterPersist() {
-        initNutzerVerfuegbarkeitFuerGruppe();
-        // todo ist die reihenfolge hier wichtig?
-        initRaumVerfuegbarkeiten();
-    }
-
-
 // -------------------------------------------------------------------
 // Helper methods for Verfuegbarkeiten
 // -------------------------------------------------------------------
@@ -232,10 +233,7 @@ public class Pflichtvortrag extends Vortrag {
 
     /**
      * Set unavailability for the new room
-     * <p>
-     * @ AT deprecated in factory integrieren
      */
-    // TODO in factory integrieren
     private void initRaumVerfuegbarkeiten() {
         RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvId(pflichtraum, veranstaltung));
         if (null != rv) {
@@ -252,7 +250,7 @@ public class Pflichtvortrag extends Vortrag {
                     .filter(slot -> !Objects.equals(slot, pflichtslot))
                     .map(IdEntity::getId)
                     .collect(Collectors.toSet());
-            new RaumVerfuegbarkeit(pflichtraum, veranstaltung, verfuegbareIdsOhnePflicht).persist();
+            new RaumVerfuegbarkeit(pflichtraum, veranstaltung, verfuegbareIdsOhnePflicht).persistAndFlush();
         }
     }
 
