@@ -20,7 +20,7 @@ import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.presentation.DatabaseCleaner;
-import kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto;
+import kreyj.konfplan.presentation.dto.RaumBelegungUebersicht;
 import kreyj.konfplan.presentation.dto.SolverConfig;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,8 +36,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static java.util.stream.Collectors.joining;
-import static kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto.VORTRAG_TITEL_FREI;
-import static kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto.VORTRAG_TYP_FREI;
+import static kreyj.konfplan.presentation.dto.RaumBelegungUebersicht.VORTRAG_TITEL_FREI;
+import static kreyj.konfplan.presentation.dto.RaumBelegungUebersicht.VORTRAG_TYP_FREI;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
@@ -148,18 +148,18 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         referent.persist();
         referent.addVeranstaltung(veranstaltung);
 
-        Wahlvortrag wahlvortrag1 = new Wahlvortrag("Wahlvortrag 1", "Inhalt", referent,
+        Wahlvortrag wahlvortrag1 = Wahlvortrag.create("Wahlvortrag 1", "Inhalt", referent,
                 true, 1, veranstaltung);
         wahlvortrag1.persist();
         veranstaltung.addVortrag(wahlvortrag1);
 
-        Wahlvortrag wahlvortrag2 = new Wahlvortrag("Wahlvortrag 2", "Inhalt", referent,
+        Wahlvortrag wahlvortrag2 = Wahlvortrag.create("Wahlvortrag 2", "Inhalt", referent,
                 true, 1, veranstaltung);
         wahlvortrag2.persist();
         veranstaltung.addVortrag(wahlvortrag2);
 
-        Pflichtvortrag pflichtvortrag = new Pflichtvortrag("Pflichtvortrag", referent, veranstaltung,
-                "A", schule.getRaeume().iterator().next(), slot3);
+        Pflichtvortrag pflichtvortrag = Pflichtvortrag.create("Pflichtvortrag", "Inhalt", referent,
+                "A", schule.getRaeume().iterator().next(), slot3, veranstaltung);
         pflichtvortrag.persist();
         veranstaltung.addVortrag(pflichtvortrag);
 
@@ -210,7 +210,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         assertThat(ergebnis.getJsonErgebnis().contains("instanz_slot")).describedAs("Das JSON-Ergebnis sollte den Schlüssel 'instanz_slot' enthalten.").isTrue();
 
         // 3. Belegungsplan abrufen und prüfen
-        List<RaumBelegungUebersichtDto> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
+        List<RaumBelegungUebersicht> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
         LOG.info("# Belegungsplan:\n  " + belegungsplan.stream().map(Object::toString).collect(joining("\n  ")));
 
         assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht null sein.").isNotNull();
@@ -247,7 +247,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         assertThat(ergebnis.getJsonErgebnis()).describedAs("Das JSON-Ergebnis im Planungsergebnis darf nicht null sein.").isNotNull();
         assertThat(ergebnis.getJsonErgebnis().contains("instanz_slot")).describedAs("Das JSON-Ergebnis sollte den Schlüssel 'instanz_slot' enthalten.").isTrue();
 
-        List<RaumBelegungUebersichtDto> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
+        List<RaumBelegungUebersicht> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
         assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht leer sein.").isNotEmpty();
         assertThat(belegungsplan).hasSize(veranstaltung.getSlots().size()
                 * veranstaltung.getGebaeude().stream().mapToInt(g -> g.getRaeume().size()).sum());
@@ -281,7 +281,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         assertThat(ergebnis.getJsonErgebnis().contains("instanz_slot")).describedAs("Das JSON-Ergebnis sollte den Schlüssel 'instanz_slot' enthalten.").isTrue();
 
         // 3. Belegungsplan abrufen und prüfen
-        List<RaumBelegungUebersichtDto> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
+        List<RaumBelegungUebersicht> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
 
         assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht leer sein.").isNotEmpty();
         assertThat(belegungsplan).hasSize(veranstaltung.getSlots().size()
@@ -307,7 +307,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         LOG.info("####### jsonErgebnis: " + ergebnis.getJsonErgebnis());
 
         // 3. Belegungsplan abrufen und prüfen
-        List<RaumBelegungUebersichtDto> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
+        List<RaumBelegungUebersicht> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
         LOG.info("$$$$$$$ belegungsplan: " + belegungsplan);
 
         assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht null sein.").isNotNull();
@@ -327,7 +327,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         // Beide Teilnehmer sollten im Pflichtvortrag sein
         long anzahlTnImPflichtvortrag = belegungsplan.stream()
                 .filter(b -> "Pflichtvortrag".equals(b.getVortragTitel()))
-                .map(RaumBelegungUebersichtDto::getTeilnehmerNamen)
+                .map(RaumBelegungUebersicht::getTeilnehmerNamen)
                 .flatMap(List::stream)
                 .distinct()
                 .count();

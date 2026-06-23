@@ -11,15 +11,10 @@ import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import kreyj.konfplan.persistence.Nutzer;
-import kreyj.konfplan.persistence.Prioritaet;
-import kreyj.konfplan.persistence.ProtokollKategorie;
-import kreyj.konfplan.persistence.Teilnehmer;
-import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Vortrag;
-import kreyj.konfplan.persistence.Wahlvortrag;
+import kreyj.konfplan.persistence.*;
 import kreyj.konfplan.presentation.dto.NutzerDto;
 import kreyj.konfplan.presentation.dto.TeilnehmerDto;
+import kreyj.konfplan.presentation.dto.TeilnehmerVeranstaltungDto;
 import kreyj.konfplan.presentation.dto.VortragPrioDto;
 import kreyj.konfplan.presentation.dto.csv.TeilnehmerCsvDto;
 import org.apache.commons.lang3.StringUtils;
@@ -28,10 +23,10 @@ import org.jboss.logging.Logger;
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 
 @ApplicationScoped
 public class TeilnehmerService {
@@ -61,6 +56,27 @@ public class TeilnehmerService {
             return null;
         }
         return Teilnehmer.find("email", email.trim().toLowerCase()).firstResult();
+    }
+
+    public List<TeilnehmerVeranstaltungDto> getTeilnehmerVeranstaltungen(String email) {
+        Teilnehmer teilnehmer = findByEmail(email);
+        if (teilnehmer == null) {
+            return Collections.emptyList();
+        }
+
+        return teilnehmer.getVeranstaltungen().stream()
+                .map(e -> {
+                    TeilnehmerVeranstaltungDto dto = new TeilnehmerVeranstaltungDto();
+                    dto.id = e.getId();
+                    dto.name = e.getName();
+                    dto.beginntAm = e.getBeginntAm();
+                    dto.endetAm = e.getEndetAm();
+                    dto.deadlineTeilnehmer = e.getDeadlineTeilnehmer();
+                    dto.planErstellt = Planungsergebnis.count("veranstaltung", e) > 0;
+                    return dto;
+                })
+                .sorted(Comparator.comparing(e -> e.beginntAm))
+                .toList();
     }
 
 

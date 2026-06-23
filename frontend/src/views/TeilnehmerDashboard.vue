@@ -1,355 +1,101 @@
 <template>
-  <div class="max-w-6xl mx-auto space-y-8 pb-20">
+  <div class="max-w-5xl mx-auto space-y-8 pb-20">
     <!-- App Logo -->
     <div class="flex justify-center py-4">
       <img src="/logo/konfplan-light.svg" alt="Konfplan Logo" class="h-16" />
     </div>
 
-    <!-- VERANSTALTUNGS-AUSWAHL -->
-    <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div>
-        <h1 class="text-xl font-bold text-gray-900">Mein Dashboard</h1>
-        <p class="text-sm text-gray-500">Wählen Sie eine Veranstaltung, um Ihren Plan zu sehen oder Prioritäten zu setzen.</p>
+    <!-- Sektion: Mein Zeitplan -->
+    <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <div class="flex items-center justify-between mb-6 text-indigo-600">
+        <div class="flex items-center gap-2">
+          <CalendarCheckIcon class="w-6 h-6" />
+          <h2 class="text-xl font-bold">Mein Zeitplan</h2>
+        </div>
       </div>
-      <div class="flex items-center gap-3">
-        <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Veranstaltung:</label>
-        <select v-model="selectedVid" @change="handleVeranstaltungChange"
-                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 max-w-xs pr-12">
-          <option :value="null">-- Bitte wählen --</option>
-          <option v-for="v in veranstaltungen" :key="v.id" :value="v.id">
-            {{ v.name }} ({{ formatDate(v.beginntAm) }})
-          </option>
-        </select>
+      <div class="space-y-4">
+        <div v-if="events.length === 0" class="text-center text-gray-500 py-8">
+          <p>Sie sind für keine Veranstaltungen angemeldet.</p>
+        </div>
+        <div v-for="event in events" :key="event.id" class="border border-gray-200 rounded-lg p-4 flex justify-between items-center">
+          <div>
+            <h3 class="font-bold text-lg text-gray-800">{{ event.name }}</h3>
+            <p class="text-xs text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
+          </div>
+          <div v-if="event.planErstellt" class="flex gap-2">
+            <button @click="viewMySchedule(event.id)" class="btn-secondary">
+              <PrinterIcon class="w-4 h-4 mr-2" /> Laufzettel
+            </button>
+            <button @click="downloadMySchedule(event.id)" class="btn-primary">
+              <DownloadIcon class="w-4 h-4 mr-2" /> PDF
+            </button>
+          </div>
+          <div v-else>
+            <span class="text-xs text-gray-400 italic">Plan noch nicht verfügbar</span>
+          </div>
+        </div>
       </div>
     </section>
-
-    <div v-if="!selectedVid" class="bg-indigo-50 p-12 rounded-2xl text-center border-2 border-dashed border-indigo-200 animate-fade-in">
-      <CalendarIcon class="w-12 h-12 text-indigo-300 mx-auto mb-4" />
-      <h2 class="text-xl font-bold text-indigo-900">Keine Veranstaltung ausgewählt</h2>
-      <p class="text-indigo-600 mt-2">Bitte wählen Sie oben eine Veranstaltung aus, um fortzufahren.</p>
-    </div>
-
-    <template v-else>
-      <!-- MODUS: MEIN PLAN -->
-      <section v-if="zuweisungen.length > 0" class="bg-indigo-900 text-white p-8 rounded-2xl shadow-2xl animate-fade-in">
-        <div class="flex justify-between items-start mb-6">
-          <div class="flex items-center gap-3">
-            <CalendarCheckIcon class="w-8 h-8 text-indigo-300" />
-            <h2 class="text-3xl font-black">Mein Vortragsplan</h2>
-          </div>
-          <div class="flex gap-2">
-            <button @click="viewMySchedule" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition">
-              <PrinterIcon class="w-4 h-4" /> Druckansicht
-            </button>
-            <button @click="downloadMySchedule" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition">
-              <DownloadIcon class="w-4 h-4" /> PDF
-            </button>
-          </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div v-for="z in zuweisungen" :key="z.id" class="bg-white/10 border border-white/20 p-5 rounded-xl backdrop-blur-sm">
-            <div class="text-[10px] uppercase font-bold text-indigo-300 mb-1">{{ z.slotZeit }}</div>
-            <h3 class="text-lg font-bold mb-2">{{ z.vortragTitel }}</h3>
-            <div class="flex items-center gap-2 text-sm text-indigo-100">
-              <MapPinIcon class="w-4 h-4" />
-              <span>{{ z.raumName }} ({{ z.gebaeudeName }})</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- SEKTION: Meine Verfügbarkeit -->
-      <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 animate-fade-in">
-        <div v-if="selectedEvent && selectedEvent.deadlineTeilnehmer" :class="['mb-4 p-3 rounded-lg text-sm flex items-center gap-2', isDeadlinePassed(selectedEvent.deadlineTeilnehmer) ? 'bg-red-50 border border-red-200 text-red-800' : 'bg-orange-50 border border-orange-200 text-orange-800']">
-          <template v-if="isDeadlinePassed(selectedEvent.deadlineTeilnehmer)">
-            <XIcon class="w-4 h-4" /> Die Deadline für die Verfügbarkeitsangabe ist am {{ formatDateTime(selectedEvent.deadlineTeilnehmer) }} abgelaufen.
-          </template>
-          <template v-else>
-            <CalendarIcon class="w-4 h-4" /> Deadline für Verfügbarkeit: {{ formatDateTime(selectedEvent.deadlineTeilnehmer) }}
-          </template>
-        </div>
-
-        <div class="flex items-center gap-2 mb-6 text-indigo-600">
-          <CheckSquareIcon class="w-6 h-6" />
-          <h2 class="text-xl font-bold">Meine Verfügbarkeit</h2>
-        </div>
-
-        <div v-if="getSlotsForEvent.length === 0" class="text-xs text-gray-500 italic">
-          Noch keine Zeit-Slots für diese Veranstaltung angelegt.
-        </div>
-        <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-          <button
-              v-for="slot in getSlotsForEvent" :key="slot.id"
-              @click="toggleAvailability(slot.id)"
-              :disabled="isDeadlinePassed(selectedEvent?.deadlineTeilnehmer)"
-              :class="['p-2 rounded-lg border text-[10px] transition-all text-center',
-                       isUserAvailable(slot.id) ? 'bg-indigo-600 text-white border-indigo-600 font-bold' : 'bg-gray-50 text-gray-400 border-gray-200',
-                       isDeadlinePassed(selectedEvent?.deadlineTeilnehmer) ? 'opacity-80 cursor-not-allowed' : 'hover:border-indigo-400']"
-          >
-            {{ formatSlotTime(slot.startTime, slot.endTime) }}
-          </button>
-        </div>
-      </section>
-
-      <!-- WAHL-MODUS MIT NEUER UI -->
-      <div class="space-y-6">
-        <header class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
-          <div>
-            <h2 class="text-2xl font-bold text-gray-800 uppercase tracking-tight flex items-center gap-2">
-              <StarIcon class="w-6 h-6 text-orange-500" /> Wahlvorträge & Prioritäten
-            </h2>
-            <p class="text-gray-600 mt-1">Wählen Sie Ihre Top 10 Vorträge aus. 1 = Höchste Priorität.</p>
-          </div>
-          <div class="hidden md:flex gap-2">
-            <div v-for="n in 10" :key="n"
-                 :class="['w-8 h-8 flex items-center justify-center rounded-full border text-[10px] font-black',
-                          isRankTaken(n) ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-gray-100 text-gray-400 border-gray-200']">
-              {{ n }}
-            </div>
-          </div>
-        </header>
-
-        <!-- Legende der Wahlvorträge -->
-        <div v-if="electiveTalks.length > 0" class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 text-[10px] animate-fade-in">
-          <h3 class="font-black text-indigo-900 uppercase mb-2 flex items-center gap-2">
-            <InfoIcon class="w-3.5 h-3.5" /> Legende der Wahlvorträge
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1">
-            <div v-for="(talk, index) in electiveTalks" :key="'legende-'+talk.id" class="flex gap-2 items-start">
-              <span class="font-black text-indigo-600 shrink-0 w-4 text-right">{{ index + 1 }}:</span>
-              <span class="text-gray-700 truncate"
-                    :title="`Referent: ${talk.referent?.lastName || 'N/A'}${talk.referent?.organisation ? ' (' + talk.referent.organisation : ')'}`">
-                {{ talk.titel }}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Prioritäten-Tabelle (Single Row) -->
-        <div v-if="electiveTalks.length > 0" class="bg-white shadow rounded-xl border border-gray-100 overflow-x-auto animate-fade-in">
-          <table class="min-w-full divide-y divide-gray-200 text-xs">
-            <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
-            <tr>
-              <th v-for="(talk, index) in electiveTalks" :key="'header-'+talk.id" class="px-1 py-2 text-center text-[9px] font-black text-indigo-600 w-14 min-w-[56px] border-r border-gray-100" :title="talk.titel">
-                {{ index + 1 }}
-              </th>
-              <th class="w-auto"></th> <!-- Spacer column -->
-            </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-            <tr class="hover:bg-gray-50">
-              <td v-for="talk in electiveTalks" :key="'prio-input-'+talk.id" class="px-1 py-1 text-center border-r border-gray-50">
-                <input type="number" min="1" max="10"
-                       :value="getCurrentPriority(talk.id) || ''"
-                       @input="updatePriority(talk.id, $event.target.value)"
-                       :disabled="zuweisungen.length > 0 || isDeadlinePassed(selectedEvent?.deadlineTeilnehmer)"
-                       class="w-12 text-center border rounded py-0.5 text-[10px] focus:ring-indigo-500 focus:border-indigo-500 border-gray-100" />
-              </td>
-              <td></td>
-            </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Save Button -->
-        <div v-if="zuweisungen.length === 0 && electiveTalks.length > 0" class="flex justify-end mt-8">
-          <button @click="saveAllPriorities"
-                  :disabled="isDeadlinePassed(selectedEvent?.deadlineTeilnehmer)"
-                  class="bg-green-600 hover:bg-green-700 text-white px-10 py-4 rounded-2xl shadow-xl font-black uppercase tracking-widest text-xs flex items-center gap-3 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100">
-            <SaveIcon class="w-5 h-5" /> Auswahl jetzt speichern
-          </button>
-        </div>
-      </div>
-    </template>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import api from '../api/axios';
-import { useEventContextStore } from '../stores/eventContext';
-import { useAuthStore } from '../stores/auth';
-import {
-  User as UserIcon, Save as SaveIcon,
-  CalendarCheck as CalendarCheckIcon, MapPin as MapPinIcon,
-  Calendar as CalendarIcon, CheckSquare as CheckSquareIcon, X as XIcon,
-  Star as StarIcon, Info as InfoIcon, Printer as PrinterIcon, Download as DownloadIcon
-} from '@lucide/vue';
+import { CalendarCheck as CalendarCheckIcon, Printer as PrinterIcon, Download as DownloadIcon } from '@lucide/vue';
 
-const eventContext = useEventContextStore();
-const authStore = useAuthStore();
-const veranstaltungen = ref([]);
-const selectedVid = ref(null);
-const vortraege = ref([]);
-const prios = ref([]);
-const zuweisungen = ref([]);
-const allSlots = ref([]);
-const teilnehmerAvailabilities = ref([]);
-
-const selectedEvent = computed(() => {
-  return veranstaltungen.value.find(v => v.id === selectedVid.value);
-});
-
-const electiveTalks = computed(() => {
-  return vortraege.value.filter(v => !v.istPflicht).sort((a, b) => a.titel.localeCompare(b.titel));
-});
+const events = ref([]);
 
 onMounted(async () => {
-  try {
-    const vRes = await api.get('/api/teilnehmer/veranstaltungen');
-    veranstaltungen.value = vRes.data;
-
-    if (veranstaltungen.value.length === 1) {
-      selectedVid.value = veranstaltungen.value[0].id;
-      await handleVeranstaltungChange();
-    }
-  } catch (err) {
-    console.error("Fehler beim Laden der Veranstaltungen:", err);
-  }
+  await fetchTeilnehmerVeranstaltungen();
 });
 
-const handleVeranstaltungChange = async () => {
-  if (!selectedVid.value) {
-    vortraege.value = [];
-    prios.value = [];
-    zuweisungen.value = [];
-    allSlots.value = [];
-    teilnehmerAvailabilities.value = [];
-    eventContext.clearEvent();
-    return;
-  }
-
+const fetchTeilnehmerVeranstaltungen = async () => {
   try {
-    const ev = veranstaltungen.value.find(v => v.id === selectedVid.value);
-    eventContext.setEvent(ev);
+    const response = await api.get('/api/teilnehmer/veranstaltungen');
+    events.value = response.data;
+  } catch (error) {
+    console.error("Fehler beim Laden der Veranstaltungen:", error);
+  }
+};
 
-    const [zuweisungenRes, vortragRes, prioRes, slotsRes, availabilitiesRes] = await Promise.all([
-      api.get(`/api/teilnehmer/zuweisungen?vid=${selectedVid.value}`),
-      api.get(`/api/veranstaltungen/${selectedVid.value}/vortraege`),
-      api.get(`/api/teilnehmer/prios?vid=${selectedVid.value}`),
-      api.get(`/api/veranstaltungen/${selectedVid.value}/slots`),
-      api.get(`/api/teilnehmer/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`)
-    ]);
-
-    zuweisungen.value = Array.isArray(zuweisungenRes.data) ? zuweisungenRes.data : [];
-    vortraege.value = Array.isArray(vortragRes.data) ? vortragRes.data : [];
-    prios.value = Array.isArray(prioRes.data) ? prioRes.data.map(p => ({ vortragId: p.vortrag.id, prioWert: p.prioWert })) : [];
-    allSlots.value = Array.isArray(slotsRes.data) ? slotsRes.data : [];
-
-    if (availabilitiesRes.data.length === 0 && slotsRes.data.length > 0) {
-      await api.post(`/api/teilnehmer/veranstaltungen/${selectedVid.value}/verfuegbarkeiten/init`);
-      const newAvailabilitiesRes = await api.get(`/api/teilnehmer/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`);
-      teilnehmerAvailabilities.value = newAvailabilitiesRes.data.filter(v => v.isAvailable).map(v => v.slotId);
-    } else {
-      teilnehmerAvailabilities.value = availabilitiesRes.data.filter(v => v.isAvailable).map(v => v.slotId);
+const viewMySchedule = async (vid) => {
+  try {
+    const response = await api.get(`/api/teilnehmer/veranstaltungen/${vid}/laufzettel`, { responseType: 'blob' });
+    const html = await response.data.text();
+    const newWindow = window.open('', '_blank');
+    if (newWindow) {
+      newWindow.document.write(html);
+      newWindow.document.close();
     }
-
-  } catch (err) {
-    console.error("Fehler beim Laden der Veranstaltungsdaten:", err);
+  } catch (error) {
+    console.error('Fehler beim Anzeigen des Laufzettels:', error);
   }
 };
 
-const viewMySchedule = () => {
-  if (!selectedVid.value || !authStore.user) return;
-  window.open(`/api/reports/${selectedVid.value}/teilnehmer/${authStore.user.id}/laufzettel`, '_blank');
-};
-
-const downloadMySchedule = async () => {
-  if (!selectedVid.value || !authStore.user) return;
+const downloadMySchedule = async (vid) => {
   try {
-    const res = await api.get(`/api/reports/${selectedVid.value}/teilnehmer/${authStore.user.id}/laufzettel-pdf`, { responseType: 'blob' });
-    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const res = await api.get(`/api/teilnehmer/veranstaltungen/${vid}/laufzettel-pdf`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'mein-vortragsplan.pdf');
+    link.setAttribute('download', 'mein-laufzettel.pdf');
     document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
   } catch (e) {
-    console.error('Fehler beim Download des Zeitplans:', e);
+    console.error('Fehler beim Download des Laufzettels:', e);
   }
 };
 
-const getCurrentPriority = (vortragId) => prios.value.find(p => p.vortragId === vortragId)?.prioWert;
-const isRankTaken = (rank) => prios.value.some(p => p.prioWert == rank);
-
-const updatePriority = (vortragId, value) => {
-  if (zuweisungen.value.length > 0 || isDeadlinePassed(selectedEvent.value?.deadlineTeilnehmer)) return;
-
-  prios.value = prios.value.filter(p => p.vortragId !== vortragId);
-
-  if (value !== "" && value > 0) {
-    const val = parseInt(value);
-    prios.value = prios.value.filter(p => p.prioWert !== val);
-    prios.value.push({ vortragId, prioWert: val });
-  }
-};
-
-const saveAllPriorities = async () => {
-  if (isDeadlinePassed(selectedEvent.value?.deadlineTeilnehmer)) {
-    alert("Die Deadline für die Prioritätenangabe ist abgelaufen. Speichern nicht möglich.");
-    return;
-  }
-  try {
-    const payload = prios.value.map(p => ({ vortragId: p.vortragId, prioWert: p.prioWert }));
-    await api.post('/api/teilnehmer/priorities', payload);
-    await handleVeranstaltungChange();
-    alert("Erfolgreich gespeichert!");
-  } catch (e) {
-    alert("Fehler beim Speichern.");
-  }
-};
-
-const getSlotsForEvent = computed(() => {
-  return allSlots.value.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
-});
-
-const isUserAvailable = (slotId) => {
-  return teilnehmerAvailabilities.value.includes(slotId);
-};
-
-const toggleAvailability = async (slotId) => {
-  if (isDeadlinePassed(selectedEvent.value?.deadlineTeilnehmer)) return;
-
-  const current = isUserAvailable(slotId);
-  const newValue = !current;
-
-  try {
-    await api.post(`/api/teilnehmer/veranstaltungen/${selectedVid.value}/verfuegbarkeiten`, {
-      slotId: slotId,
-      isAvailable: newValue
-    });
-
-    if (newValue) {
-      teilnehmerAvailabilities.value.push(slotId);
-    } else {
-      teilnehmerAvailabilities.value = teilnehmerAvailabilities.value.filter(id => id !== slotId);
-    }
-  } catch (e) {
-    alert("Fehler beim Aktualisieren der Verfügbarkeit: " + (e.response?.data || e.message));
-  }
-};
-
-const isDeadlinePassed = (deadline) => {
-  if (!deadline) return false;
-  return new Date(deadline) < new Date();
-};
-
-const formatDate = (d) => d ? new Date(d).toLocaleDateString('de-DE') : '';
-const formatDateTime = (dt) => dt ? new Date(dt).toLocaleTimeString('de-DE', {weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'}) : '';
-const formatTime = (t) => t ? new Date(t).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'}) : '';
-
-const formatSlotTime = (start, end) => {
-  const startDate = new Date(start);
-  const endDate = new Date(end);
-  const weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-  const day = weekdays[startDate.getDay()];
-  const startTime = startDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-  const endTime = endDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-  return `${day} ${startTime} - ${endTime}`;
-};
+const formatDate = (d) => new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 </script>
 
 <style scoped>
-.animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+.btn-primary {
+  @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50;
+}
+.btn-secondary {
+  @apply inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500;
+}
 </style>

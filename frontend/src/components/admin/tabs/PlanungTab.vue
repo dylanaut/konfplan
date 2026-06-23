@@ -62,7 +62,7 @@
             <input v-model.number="solverConfig.maxInstanzen" type="number" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
           </div>
           <div>
-            <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">Threads</label>
+            <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">Leistung (1-5)</label>
             <input v-model.number="solverConfig.numThreads" type="number" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
           </div>
           <div class="flex items-center justify-center pt-3" title="Freie Plätze sollen in Wahlvorträgen mit nicht-verplanten Teilnehmern aufgefüllt werden">

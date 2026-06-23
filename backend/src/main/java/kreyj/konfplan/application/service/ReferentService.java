@@ -7,17 +7,7 @@ import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
-import kreyj.konfplan.persistence.IdEntity;
-import kreyj.konfplan.persistence.Nutzer;
-import kreyj.konfplan.persistence.Pflichtvortrag;
-import kreyj.konfplan.persistence.ProtokollKategorie;
-import kreyj.konfplan.persistence.Raum;
-import kreyj.konfplan.persistence.Referent;
-import kreyj.konfplan.persistence.Slot;
-import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Vortrag;
-import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
-import kreyj.konfplan.persistence.Wahlvortrag;
+import kreyj.konfplan.persistence.*;
 import kreyj.konfplan.presentation.dto.NutzerDto;
 import kreyj.konfplan.presentation.dto.ReferentVeranstaltungDto;
 import kreyj.konfplan.presentation.dto.VortragDto;
@@ -27,12 +17,7 @@ import org.jboss.logging.Logger;
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvId;
@@ -50,6 +35,7 @@ public class ReferentService {
         this.mailService = mailService;
         this.protokollService = protokollService;
     }
+
 
     @Transactional
     public Referent getProfile(String email) {
@@ -117,6 +103,7 @@ public class ReferentService {
                     .filter(t -> t.getVeranstaltung().getId().equals(e.getId()))
                     .map(IdEntity::getId)
                     .toList();
+            dto.planErstellt = Planungsergebnis.count("veranstaltung", e) > 0; // Prüfen, ob ein Ergebnis existiert
             return dto;
         }).sorted(Comparator.comparing(e -> e.beginntAm)).toList();
     }
@@ -171,7 +158,7 @@ public class ReferentService {
     }
 
     @Transactional
-    public void registriereVortragFuerVeranstaltung(String email, Long vortragId, Long veranstaltungId) {
+    public void meldeVortragFuerVeranstaltungAn(String email, Long vortragId, Long veranstaltungId) {
         Referent referent = Referent.find("email", email).firstResult();
         Vortrag sourceTalk = Vortrag.findById(vortragId);
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
@@ -219,7 +206,7 @@ public class ReferentService {
     }
 
     @Transactional
-    public VortragDto cloneTalkForEvent(String email, Long sourceVortragId, Long veranstaltungId) {
+    public VortragDto uebernimmVortragInVeranstaltung(String email, Long sourceVortragId, Long veranstaltungId) {
         Referent referent = Referent.find("email", email).firstResult();
         if (referent == null) {
             throw new WebApplicationException("Referent nicht gefunden.", Response.Status.NOT_FOUND);
@@ -282,7 +269,7 @@ public class ReferentService {
     }
 
     @Transactional
-    public void deregisterTalkFromEvent(String email, Long vortragId, Long veranstaltungId) {
+    public void meldeVortragFuerVeranstaltungAb(String email, Long vortragId, Long veranstaltungId) {
         Referent referent = Referent.find("email", email).firstResult();
         Vortrag vortrag = Vortrag.findById(vortragId);
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);

@@ -27,7 +27,7 @@ public abstract class VeranstaltungsVerfuegbarkeit extends PanacheEntityBase {
         return Collections.unmodifiableSet(verfuegbareSlotIds);
     }
 
-    public void setVerfuegbareSlotIds(Set<Long> verfuegbareSlotIds) {
+    public void  setVerfuegbareSlotIds(Set<Long> verfuegbareSlotIds) {
         if (null == verfuegbareSlotIds) {
             this.verfuegbareSlotIds = Collections.emptySet();
         } else {

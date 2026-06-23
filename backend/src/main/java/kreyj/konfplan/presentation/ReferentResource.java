@@ -3,19 +3,10 @@ package kreyj.konfplan.presentation;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.DELETE;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.PUT;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -29,12 +20,7 @@ import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.presentation.dto.EmailChangeRequestDto;
-import kreyj.konfplan.presentation.dto.NutzerDto;
-import kreyj.konfplan.presentation.dto.NutzerVerfuegbarkeitDto;
-import kreyj.konfplan.presentation.dto.ReferentVeranstaltungDto;
-import kreyj.konfplan.presentation.dto.ReferentVortragDto;
-import kreyj.konfplan.presentation.dto.VortragDto;
+import kreyj.konfplan.presentation.dto.*;
 import kreyj.konfplan.util.JwtHelper;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -67,6 +53,9 @@ public class ReferentResource {
 
     private final MailService mailService;
 
+    @Inject
+    ReportResource reportResource;
+
     public ReferentResource(JsonWebToken jwt, ReferentService referentService, PlanService planService, MailService mailService, VeranstaltungService veranstaltungService) {
         this.jwt = jwt;
         this.referentService = referentService;
@@ -78,17 +67,17 @@ public class ReferentResource {
     @GET
     @Path("/profile")
     @Operation(summary = "Referentenprofil abrufen", description = "Ruft das Profil des aktuell angemeldeten Referenten ab.")
-    public NutzerDto getReferent() { // Changed return type
+    public Response getReferent() { // Changed return type
         Referent referent = referentService.getProfile(JwtHelper.getUserPrincipalName(jwt));
         if (referent == null) {
             throw new WebApplicationException("Referent not found", Response.Status.NOT_FOUND);
         }
-        return AdminService.mapReferentToNutzerDto(referent); // Use mapper
+        return Response.ok(AdminService.mapNutzerToDto(referent)).build();
     }
 
     @PUT
     @Path("/profile")
-    @Operation(summary = "Referentenprofil aktualisieren", description = "Aktualisiert das Profil des aktuell angemeldeten Referenten.")
+    @Operation(summary = "Referent aktualisieren", description = "Aktualisiert das Profil des aktuell angemeldeten Referenten.")
     public Response updateProfile(@RequestBody(description = "Die aktualisierten Profildaten") NutzerDto dto) {
         try {
             referentService.updateProfile(JwtHelper.getUserPrincipalName(jwt), dto);
@@ -212,7 +201,7 @@ public class ReferentResource {
     @Operation(summary = "Vortrag für eine andere Veranstaltung klonen", description = "Klont einen bestehenden Vortrag für eine neue Veranstaltung.")
     public Response cloneTalkForEvent(@PathParam("targetEventId") Long targetEventId, @PathParam("sourceVortragId") Long sourceVortragId) {
         try {
-            VortragDto clonedTalk = referentService.cloneTalkForEvent(JwtHelper.getUserPrincipalName(jwt), sourceVortragId, targetEventId);
+            VortragDto clonedTalk = referentService.uebernimmVortragInVeranstaltung(JwtHelper.getUserPrincipalName(jwt), sourceVortragId, targetEventId);
             return Response.status(Response.Status.CREATED).entity(clonedTalk).build();
         } catch (WebApplicationException e) {
             return e.getResponse();
@@ -235,6 +224,30 @@ public class ReferentResource {
     }
 
     @GET
+    @Path("/veranstaltungen/{vid}/laufzettel")
+    @Produces(MediaType.TEXT_HTML)
+    @Operation(summary = "Persönlichen Laufzettel abrufen (HTML)", description = "Ruft den persönlichen Laufzettel des angemeldeten Referenten für eine Veranstaltung ab.")
+    public Response getMyLaufzettel(@PathParam("vid") Long vid) {
+        Referent referent = referentService.getProfile(JwtHelper.getUserPrincipalName(jwt));
+        if (referent == null) {
+            return Response.status(Response.Status.NOT_FOUND).entity("Referent nicht gefunden.").build();
+        }
+        return reportResource.getLaufzettelReferent(vid, referent.getId());
+    }
+
+    @GET
+    @Path("/veranstaltungen/{vid}/laufzettel-pdf")
+    @Produces("application/pdf")
+    @Operation(summary = "Persönlichen Laufzettel abrufen (PDF)", description = "Ruft den persönlichen Laufzettel des angemeldeten Referenten für eine Veranstaltung als PDF ab.")
+    public Response getMyLaufzettelPdf(@PathParam("vid") Long vid) {
+        Referent referent = referentService.getProfile(JwtHelper.getUserPrincipalName(jwt));
+        if (referent == null) {
+            return Response.status(Response.Status.NOT_FOUND).entity("Referent nicht gefunden.").build();
+        }
+        return reportResource.getLaufzettelReferentPdf(vid, referent.getId());
+    }
+
+    @GET
     @Path("/veranstaltungen")
     @Operation(summary = "Veranstaltungen des Referenten abrufen", description = "Ruft alle Veranstaltungen ab, bei denen der Referent registriert ist.")
     public List<ReferentVeranstaltungDto> getReferentVeranstaltungen() {
@@ -244,16 +257,16 @@ public class ReferentResource {
     @POST
     @Path("/veranstaltungen/{eventId}/vortraege/{vortragId}/register")
     @Operation(summary = "Vortrag für Veranstaltung registrieren", description = "Registriert einen Vortrag des Referenten für eine Veranstaltung.")
-    public Response registerTalkForEvent(@PathParam("eventId") Long eventId, @PathParam("vortragId") Long vortragId) {
-        referentService.registriereVortragFuerVeranstaltung(JwtHelper.getUserPrincipalName(jwt), vortragId, eventId);
+    public Response meldeVortragFuerVeranstaltungAn(@PathParam("eventId") Long eventId, @PathParam("vortragId") Long vortragId) {
+        referentService.meldeVortragFuerVeranstaltungAn(JwtHelper.getUserPrincipalName(jwt), vortragId, eventId);
         return Response.ok().build();
     }
 
     @DELETE
     @Path("/veranstaltungen/{eventId}/vortraege/{vortragId}/deregister")
     @Operation(summary = "Vortrag von Veranstaltung deregistrieren", description = "Entfernt die Registrierung eines Vortrags von einer Veranstaltung.")
-    public Response deregisterTalkFromEvent(@PathParam("eventId") Long eventId, @PathParam("vortragId") Long vortragId) {
-        referentService.deregisterTalkFromEvent(JwtHelper.getUserPrincipalName(jwt), vortragId, eventId);
+    public Response meldeVortragFuerVeranstaltungAb(@PathParam("eventId") Long eventId, @PathParam("vortragId") Long vortragId) {
+        referentService.meldeVortragFuerVeranstaltungAb(JwtHelper.getUserPrincipalName(jwt), vortragId, eventId);
         return Response.ok().build();
     }
 

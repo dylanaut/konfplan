@@ -1,0 +1,39 @@
+# EditorConfig helps developers define and maintain consistent
+# coding styles between different editors and IDEs.
+# editorconfig.org
+
+# Top-most EditorConfig file
+root = true
+
+# Global settings for all file types
+[*]
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+
+# Java files
+[*.java]
+indent_size = 4
+
+# XML files (e.g., pom.xml)
+[*.xml]
+indent_size = 4
+
+# Frontend files (Vue, JavaScript, TypeScript, HTML, CSS)
+[*.{js,ts,vue,html,css,scss}]
+indent_size = 2
+
+# Markdown files
+[*.md]
+trim_trailing_whitespace = false
+
+# CSV files - Specific rule to prevent line wrapping
+[*.csv]
+max_line_length = off
+
+# Properties files
+[*.properties]
+indent_size = 4

@@ -34,8 +34,8 @@ public class Pflichtvortrag extends Vortrag {
     private Slot pflichtslot;
 
 
-    protected Pflichtvortrag(String titel, String inhalt, Referent referent, Veranstaltung veranstaltung,
-                          String pflichtgruppe, Raum pflichtraum, Slot pflichtslot) {
+    protected Pflichtvortrag(String titel, String inhalt, Referent referent,
+                             String pflichtgruppe, Raum pflichtraum, Slot pflichtslot, Veranstaltung veranstaltung) {
         super(titel, inhalt, referent, veranstaltung);
 
         Objects.requireNonNull(pflichtgruppe);
@@ -49,13 +49,16 @@ public class Pflichtvortrag extends Vortrag {
 
 
     @Transactional
-    public static Pflichtvortrag create(String titel, String inhalt, Referent referent, Veranstaltung veranstaltung,
-                                        String pflichtgruppe, Raum pflichtraum, Slot pflichtslot) {
-        Pflichtvortrag pv = new Pflichtvortrag(titel, inhalt, referent, veranstaltung, pflichtgruppe, pflichtraum, pflichtslot);
+    public static Pflichtvortrag create(String titel, String inhalt, Referent referent, String pflichtgruppe, Raum pflichtraum, Slot pflichtslot, Veranstaltung veranstaltung) {
+        Objects.requireNonNull(veranstaltung);
+        Pflichtvortrag pv = new Pflichtvortrag(titel, inhalt, referent, pflichtgruppe, pflichtraum, pflichtslot, veranstaltung);
 
         pv.persistAndFlush();
+        veranstaltung.addVortrag(pv);
+
         pv.initNutzerVerfuegbarkeitFuerGruppe();
         pv.initRaumVerfuegbarkeiten();
+        pv.persist();
 
         return pv;
     }
@@ -70,8 +73,8 @@ public class Pflichtvortrag extends Vortrag {
      *
      * @param neuePflichtgruppe Die Kennung der neuen obligatorischen Gruppe, die zugewiesen werden soll. Darf nicht null oder leer sein.
      * @throws UpdateVortragException Wenn die neue obligatorische Gruppe null oder leer ist
-     *                                  oder wenn nicht alle Teilnehmer der neuen Gruppe
-     *                                  für den obligatorischen Slot verfügbar sind.
+     *                                oder wenn nicht alle Teilnehmer der neuen Gruppe
+     *                                für den obligatorischen Slot verfügbar sind.
      */
 
     public void updatePflichtgruppe(String neuePflichtgruppe) {
@@ -117,6 +120,7 @@ public class Pflichtvortrag extends Vortrag {
         }
     }
 
+
     public void updatePflichtraum(Raum neuerRaum) {
         if (Objects.equals(pflichtraum, neuerRaum) || getVeranstaltung() == null) {
             return;
@@ -150,6 +154,7 @@ public class Pflichtvortrag extends Vortrag {
 
         pflichtraum = neuerRaum;
     }
+
 
     public void updatePflichtslot(Slot neuerSlot) {
         if (Objects.equals(pflichtslot, neuerSlot) || veranstaltung == null) {
@@ -197,6 +202,7 @@ public class Pflichtvortrag extends Vortrag {
 // Overrides
 // -------------------------------------------------------------------
 
+
     @Override
     public boolean istPflicht() {
         return true;
@@ -206,6 +212,7 @@ public class Pflichtvortrag extends Vortrag {
 // -------------------------------------------------------------------
 // Helper methods for Verfuegbarkeiten
 // -------------------------------------------------------------------
+
 
     @PreRemove
     public void wiederherstelleVerfuegbarkeiten() {
@@ -231,6 +238,7 @@ public class Pflichtvortrag extends Vortrag {
 // Helper methods
 // -------------------------------------------------------------------
 
+
     /**
      * Set unavailability for the new room
      */
@@ -253,6 +261,7 @@ public class Pflichtvortrag extends Vortrag {
             new RaumVerfuegbarkeit(pflichtraum, veranstaltung, verfuegbareIdsOhnePflicht).persistAndFlush();
         }
     }
+
 
     /**
      * Remove availability for participants of the new group - after persist()

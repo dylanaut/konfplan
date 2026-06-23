@@ -3,15 +3,13 @@ package kreyj.konfplan.presentation.dto;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @RegisterForReflection
-public class ReferentVeranstaltungDto extends AbstractVersionedDto {
+public class TeilnehmerVeranstaltungDto {
     public Long id;
     public String name;
     public LocalDateTime beginntAm;
     public LocalDateTime endetAm;
-    public LocalDateTime deadlineReferenten;
-    public List<Long> vortraegeIds;
-    public boolean planErstellt; // Neues Feld
+    public LocalDateTime deadlineTeilnehmer;
+    public boolean planErstellt;
 }

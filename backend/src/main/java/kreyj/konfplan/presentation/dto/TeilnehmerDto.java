@@ -34,7 +34,7 @@ public class TeilnehmerDto {
 
 
     public String gName() {
-        return String.format("%s (%s)", fullname(),
+        return String.format("%s %s", fullname(),
                 gruppen.stream().sorted().collect(Collectors.joining(",")));
     }
 

@@ -61,14 +61,12 @@ class PrioritaetImportTest extends DatabaseCleaner {
         r1.persist();
         r1.addVeranstaltung(v);
 
-        Wahlvortrag wv1 = new Wahlvortrag("Wahlvortrag 1", "Inhalt", r1, true, 1, v);
+        Wahlvortrag wv1 = Wahlvortrag.create("Wahlvortrag 1", "Inhalt", r1, true, 1, v);
         wv1.persist();
-        wv1.setVeranstaltung(v);
         wv1Id = wv1.getId();
 
-        Wahlvortrag wv2 = new Wahlvortrag("Wahlvortrag 2", "Inhalt", r1, true, 2, v);
+        Wahlvortrag wv2 = Wahlvortrag.create("Wahlvortrag 2", "Inhalt", r1, true, 2, v);
         wv2.persist();
-        wv2.setVeranstaltung(v);
         wv2Id = wv2.getId();
     }
 

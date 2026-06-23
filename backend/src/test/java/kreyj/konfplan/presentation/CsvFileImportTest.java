@@ -115,7 +115,7 @@ class CsvFileImportTest extends DatabaseCleaner {
     @Test
     void testImportTeilnehmer() {
         given()
-                .multiPart("file", getCsvFile("teilnehmer_9.1.csv"))
+                .multiPart("file", getCsvFile("teilnehmer.csv"))
                 .when().post("/api/veranstaltungen/{vid}/teilnehmer/import", testVid)
                 .then()
                 .statusCode(OK.getStatusCode());
@@ -129,7 +129,7 @@ class CsvFileImportTest extends DatabaseCleaner {
     @Test
     void testImportSlots() {
         given()
-                .multiPart("file", getCsvFile("slots_2026.csv"))
+                .multiPart("file", getCsvFile("slots.csv"))
                 .when().post("/api/veranstaltungen/{vid}/slots/import", testVid)
                 .then()
                 .statusCode(OK.getStatusCode());

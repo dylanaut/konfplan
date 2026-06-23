@@ -49,17 +49,36 @@ Es entstehen *keine* Lizenzkosten für OpenSource Produkte.
 
 Díe Anwendung wurde unter MacOS / Linux entwickelt und ist portierbar auf alle gängigen Betriebssysteme.
 
-Die gewählte Datenbank kann auf den meisten gängigen Betriebssysteme installiert werden.
+Die gewählte Datenbank PostgreSQL kann auf den meisten gängigen Betriebssysteme installiert werden.
 
+=== Ausstattung
 
-=== CPU
+.Empfohlene Server-Ausstattung
+[cols="1,2,2,3",options="header"]
+|===
+| Komponente | Empfehlung (Komfortabel) | Minimum (Sparsam) | Begründung
 
-Im Betrieb sollten 1-2 CPUs mit 1 GHz ausreichen.
+| *CPU / Cores*
+| `4 Cores`
+| `2 Cores`
+| **Wichtigster Punkt.** 4 Cores erlauben es MiniZinc, mit mehreren Threads zu arbeiten, ohne die Quarkus-Anwendung oder die Datenbank zu blockieren.
 
-=== Speicher/RAM
+| *RAM*
+| `8 GB`
+| `4 GB`
+| Java-Anwendungen und PostgreSQL profitieren stark von mehr Arbeitsspeicher. 8 GB bieten genug Puffer für das Betriebssystem (~2 GB), PostgreSQL (~2 GB), die Quarkus App (~2 GB) und rechenintensive Prozesse.
 
-Server mit 512 MB RAM  für Anwendung
-Datenbank-Installation 512 MB, dazu mit 2GB RAM im Betrieb und 200 MB Storage.
+| *Festplattenspeicher*
+| `80 GB SSD`
+| `40 GB SSD`
+| **SSD ist ein Muss** für die Datenbank-Performance. 80 GB bieten ausreichend Platz für Betriebssystem, Logs, Datenbank-Wachstum und temporäre Dateien.
+
+| *Betriebssystem*
+| `Linux` (z.B. Ubuntu 22.04 LTS)
+| `Linux` (z.B. Ubuntu 22.04 LTS)
+| Ressourcenschonender, sicherer und der Industriestandard für das Hosting von Java-Anwendungen und PostgreSQL.
+|===
+
 
 === Netzwerk
 
@@ -96,3 +115,17 @@ Nutzer können die Änderung ihres Kennworts per Email anfordern, insbesondere b
 
 * 1./2.-Level Support: wie können Nutzer Fehler und Verbesserungen melden?
 
+
+== Ansprechpartner
+
+.Technische Anwendung
+Jürgen Krey, juergenkrey@yahoo.de
+
+.Fachliche Betreuung
+Kathrin Jessen, kathrin.jessen@rks-linz.de
+
+.RKS-Linz IT
+Martin Schunkert, martin.schunkert@rks-linz.de
+
+.Schul-IT Neuwied
+Jan Otto, jan.otto@kreis-neuwied.de

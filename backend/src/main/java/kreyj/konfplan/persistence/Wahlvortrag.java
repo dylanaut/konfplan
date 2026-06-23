@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Objects;
 import java.util.Set;
 
 import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvId;
@@ -40,10 +41,16 @@ public class Wahlvortrag extends Vortrag {
     @Transactional
     public static Wahlvortrag create(String titel, String inhalt, Referent referent, boolean wiederholbar, int maxWiederholungen,
                                      Veranstaltung veranstaltung) {
+        Objects.requireNonNull(veranstaltung);
         Wahlvortrag wv = new Wahlvortrag(titel, inhalt, referent, wiederholbar, maxWiederholungen, veranstaltung);
 
         wv.persistAndFlush();
+
+        veranstaltung.addVortrag(wv);
+
         wv.provideVortragVerfuegbarkeit();
+
+        wv.persist();
 
         return wv;
     }

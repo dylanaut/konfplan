@@ -164,7 +164,7 @@ public class VerfuegbarkeitsTest extends DatabaseCleaner {
         Raum raum1 = Raum.findById(raum1_id);
         Slot slot1 = Slot.findById(slot1_id);
 
-        Pflichtvortrag.create("PV", "Inhalt", referent, veranstaltung, "GruppeA", raum1, slot1);
+        Pflichtvortrag.create("PV", "Inhalt", referent, "GruppeA", raum1, slot1, veranstaltung);
 
         NutzerVerfuegbarkeit nvA = NutzerVerfuegbarkeit.findById(nvIdL(tn_in_A_id, veranstaltung_id));
         assertThat(nvA.getVerfuegbareSlotIds()).doesNotContain(slot1_id).contains(slot2_id);
@@ -187,7 +187,7 @@ public class VerfuegbarkeitsTest extends DatabaseCleaner {
         Raum raum1 = Raum.findById(raum1_id);
         Slot slot1 = Slot.findById(slot1_id);
 
-        Pflichtvortrag pv = Pflichtvortrag.create("PV", "Inhalt", referent, veranstaltung, "GruppeA", raum1, slot1);
+        Pflichtvortrag pv = Pflichtvortrag.create("PV", "Inhalt", referent, "GruppeA", raum1, slot1, veranstaltung);
 
 
         // Verify initial block
@@ -233,7 +233,7 @@ public class VerfuegbarkeitsTest extends DatabaseCleaner {
         Raum raum1 = Raum.findById(raum1_id);
         Slot slot1 = Slot.findById(slot1_id);
 
-        Pflichtvortrag pv = Pflichtvortrag.create("PV", "Inhalt", referent, veranstaltung, "GruppeA", raum1, slot1);
+        Pflichtvortrag pv = Pflichtvortrag.create("PV", "Inhalt", referent, "GruppeA", raum1, slot1, veranstaltung);
 
         Slot slot2 = Slot.findById(slot2_id);
         pv.updatePflichtslot(slot2);
@@ -252,7 +252,7 @@ public class VerfuegbarkeitsTest extends DatabaseCleaner {
         Referent referent = Referent.findById(referent_id);
         Raum raum1 = Raum.findById(raum1_id);
         Slot slot1 = Slot.findById(slot1_id);
-        Pflichtvortrag pv = Pflichtvortrag.create("PV", "Inhalt", referent, veranstaltung, "GruppeA", raum1, slot1);
+        Pflichtvortrag pv = Pflichtvortrag.create("PV", "Inhalt", referent, "GruppeA", raum1, slot1, veranstaltung);
 
         pv.updatePflichtgruppe("GruppeB");
 
@@ -270,7 +270,7 @@ public class VerfuegbarkeitsTest extends DatabaseCleaner {
         Referent referent = Referent.findById(referent_id);
         Raum raum1 = Raum.findById(raum1_id);
         Slot slot1 = Slot.findById(slot1_id);
-        Pflichtvortrag pv = Pflichtvortrag.create("PV", "Inhalt", referent, veranstaltung, "GruppeA", raum1, slot1);
+        Pflichtvortrag pv = Pflichtvortrag.create("PV", "Inhalt", referent, "GruppeA", raum1, slot1, veranstaltung);
 
         Raum raum2 = Raum.findById(raum2_id);
         pv.updatePflichtraum(raum2);

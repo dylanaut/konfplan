@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTestResource(H2DatabaseTestResource.class)
 abstract class AbstractTemplateRenderTest {
-    @ConfigProperty(name = "test.render-template.open-browser", defaultValue = "false")
+    @ConfigProperty(name = "test.render-template.open-browser", defaultValue = "true")
     boolean openBrowser;
 
     protected final TemplateService templateService;
@@ -45,7 +45,6 @@ abstract class AbstractTemplateRenderTest {
 
     protected final PlanErstellungService planSvc;
 
-    private final ObjectMapper mapper = new ObjectMapper();
     private Veranstaltung veranstaltung;
 
     // -------------------------------------------------------------------

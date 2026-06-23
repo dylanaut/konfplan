@@ -97,11 +97,7 @@ public abstract class Vortrag extends VersionedEntity {
         this.titel = titel;
         this.inhalt = inhalt;
         this.referent = referent;
-
-        Objects.requireNonNull(veranstaltung);
         this.veranstaltung = veranstaltung;
-
-        veranstaltung.addVortrag(this);
     }
 
 

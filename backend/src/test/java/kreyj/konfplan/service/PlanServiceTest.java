@@ -8,8 +8,7 @@ import kreyj.konfplan.application.service.PlanService;
 import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.presentation.DatabaseCleaner;
-import kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto;
-import kreyj.konfplan.presentation.dto.ZuweisungDto;
+import kreyj.konfplan.presentation.dto.RaumBelegungUebersicht;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -56,7 +55,7 @@ public class PlanServiceTest extends DatabaseCleaner {
 
     @Test
     public void testGetDetaillierterPlanDoesNotThrowLobException() {
-        List<RaumBelegungUebersichtDto> detaillierterPlan = planService.getDetaillierterPlan(veranstaltung);
+        List<RaumBelegungUebersicht> detaillierterPlan = planService.getDetaillierterPlan(veranstaltung);
 
         assertThat(detaillierterPlan).describedAs("The returned plan should not be null.")
                 .isNotNull();

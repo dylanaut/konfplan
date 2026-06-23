@@ -62,7 +62,7 @@ public class DashboardService {
             for (int wvIdx = 0; wvIdx < dd.mzWahlvortragOids.length; wvIdx++) {
                 boolean[] tn_v_besucht = tn_besucht[wvIdx];
                 long wvOid = dd.mzWahlvortragOids[wvIdx];
-                int vPrio = prios.get(wvOid);
+                int vPrio = prios.getOrDefault(wvOid, 0);
                 if (vPrio > 0) {
                     totalPrefs++;
                     prioPrefs.merge(vPrio, 1, Integer::sum);

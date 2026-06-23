@@ -42,6 +42,34 @@
         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div class="flex items-center space-x-2">
             <img src="/logo/konfplan-light_footer.svg" alt="Icon" class="w-5 h-5"/>
+            <span class="font-semibold">Laufzettel (Teilnehmer)</span>
+          </div>
+          <div class="space-x-2">
+            <button @click="preview('laufzettel/teilnehmer')"
+                    class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">Vorschau
+            </button>
+            <button @click="download('laufzettel/teilnehmer-pdf')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">
+              PDF
+            </button>
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div class="flex items-center space-x-2">
+            <img src="/logo/konfplan-light_footer.svg" alt="Icon" class="w-5 h-5"/>
+            <span class="font-semibold">Laufzettel (Referenten)</span>
+          </div>
+          <div class="space-x-2">
+            <button @click="preview('laufzettel/referenten')"
+                    class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">Vorschau
+            </button>
+            <button @click="download('laufzettel/referenten-pdf')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">
+              PDF
+            </button>
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div class="flex items-center space-x-2">
+            <img src="/logo/konfplan-light_footer.svg" alt="Icon" class="w-5 h-5"/>
             <span class="font-semibold">Freie Slots (Referenten)</span>
           </div>
           <div class="space-x-2">

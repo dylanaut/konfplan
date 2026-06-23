@@ -248,6 +248,13 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <properties>
+                        <!-- Quinoa-Konfiguration, um das Manifest einzuschließen -->
+                        <quarkus.quinoa.build-dir>dist</quarkus.quinoa.build-dir>
+                        <quarkus.quinoa.include-files>manifest.json</quarkus.quinoa.include-files>
+                    </properties>
+                </configuration>
             </plugin>
 
             <plugin>

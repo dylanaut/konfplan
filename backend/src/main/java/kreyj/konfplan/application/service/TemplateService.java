@@ -13,7 +13,7 @@ import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.VeranstaltungsVerfuegbarkeit;
-import kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto;
+import kreyj.konfplan.presentation.dto.RaumBelegungUebersicht;
 import kreyj.konfplan.presentation.dto.RaumplanEintragDto;
 import kreyj.konfplan.presentation.dto.templating.DashboardData;
 import kreyj.konfplan.presentation.dto.templating.PrioDashboard;
@@ -112,7 +112,7 @@ public class TemplateService {
 
 
     public TemplateInstance prepareUebersichtRaeumeTemplate(Veranstaltung veranstaltung) {
-        List<RaumBelegungUebersichtDto> plan = planService.getDetaillierterPlan(veranstaltung);
+        List<RaumBelegungUebersicht> plan = planService.getDetaillierterPlan(veranstaltung);
         return uebersichtRaeumeTemplate
                 .data("veranstaltung", veranstaltung)
                 .data("plan", plan);

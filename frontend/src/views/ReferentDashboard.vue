@@ -57,13 +57,16 @@
             <h3 class="font-bold text-lg text-gray-800">{{ event.name }}</h3>
             <p class="text-xs text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
           </div>
-          <div class="flex gap-2">
+          <div v-if="event.planErstellt" class="flex gap-2">
             <button @click="viewMySchedule(event.id)" class="btn-secondary">
-              <PrinterIcon class="w-4 h-4 mr-2" /> Druckansicht
+              <PrinterIcon class="w-4 h-4 mr-2" /> Laufzettel
             </button>
             <button @click="downloadMySchedule(event.id)" class="btn-primary">
               <DownloadIcon class="w-4 h-4 mr-2" /> PDF
             </button>
+          </div>
+          <div v-else>
+            <span class="text-xs text-gray-400 italic">Plan noch nicht verfügbar</span>
           </div>
         </div>
       </div>
@@ -528,23 +531,32 @@ const saveAll = async () => {
   }
 };
 
-const viewMySchedule = (vid) => {
-  if (!vid || !authStore.user) return;
-  window.open(`/api/reports/${vid}/referent/${authStore.user.id}/laufzettel`, '_blank');
+const viewMySchedule = async (vid) => {
+  try {
+    const response = await api.get(`/api/referenten/veranstaltungen/${vid}/laufzettel`, { responseType: 'blob' });
+    const html = await response.data.text();
+    const newWindow = window.open('', '_blank');
+    if (newWindow) {
+      newWindow.document.write(html);
+      newWindow.document.close();
+    }
+  } catch (error) {
+    console.error('Fehler beim Anzeigen des Laufzettels:', error);
+  }
 };
 
 const downloadMySchedule = async (vid) => {
-  if (!vid || !authStore.user) return;
   try {
-    const res = await api.get(`/api/reports/${vid}/referent/${authStore.user.id}/laufzettel-pdf`, { responseType: 'blob' });
-    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const res = await api.get(`/api/referenten/veranstaltungen/${vid}/laufzettel-pdf`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'mein-zeitplan.pdf');
+    link.setAttribute('download', 'mein-laufzettel.pdf');
     document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
   } catch (e) {
-    console.error('Fehler beim Download des Zeitplans:', e);
+    console.error('Fehler beim Download des Laufzettels:', e);
   }
 };
 

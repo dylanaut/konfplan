@@ -14,33 +14,14 @@ import kreyj.konfplan.domain.exception.EntityNotFoundException;
 import kreyj.konfplan.domain.exception.UpdateNutzerException;
 import kreyj.konfplan.domain.exception.UpdateVortragException;
 import kreyj.konfplan.domain.exception.VeranstaltungException;
-import kreyj.konfplan.persistence.Admin;
-import kreyj.konfplan.persistence.Berufsfeld;
-import kreyj.konfplan.persistence.Gebaeude;
-import kreyj.konfplan.persistence.IdEntity;
-import kreyj.konfplan.persistence.Nutzer;
-import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
-import kreyj.konfplan.persistence.Pflichtvortrag;
-import kreyj.konfplan.persistence.Prioritaet;
-import kreyj.konfplan.persistence.ProtokollKategorie;
-import kreyj.konfplan.persistence.Raum;
-import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
-import kreyj.konfplan.persistence.Referent;
-import kreyj.konfplan.persistence.Slot;
-import kreyj.konfplan.persistence.Teilnehmer;
-import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Vortrag;
-import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
-import kreyj.konfplan.persistence.Wahlvortrag;
+import kreyj.konfplan.persistence.*;
 import kreyj.konfplan.presentation.dto.NutzerDto;
 import kreyj.konfplan.presentation.dto.RaumVerfuegbarkeitDto;
 import kreyj.konfplan.presentation.dto.SlotDto;
 import kreyj.konfplan.presentation.dto.VortragDto;
 import kreyj.konfplan.presentation.dto.VortragPrioDto;
 import kreyj.konfplan.presentation.dto.VortragStatDto;
-import kreyj.konfplan.presentation.dto.csv.AdminCsvDto;
-import kreyj.konfplan.presentation.dto.csv.SlotCsvDto;
-import kreyj.konfplan.presentation.dto.csv.VortragCsvDto;
+import kreyj.konfplan.presentation.dto.csv.*;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
@@ -49,14 +30,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -420,7 +394,7 @@ public class AdminService {
 
             // map vortragDTO to Vortrag
             created = Pflichtvortrag.create(vortragDto.titel, vortragDto.inhalt, referent,
-                    veranstaltung, vortragDto.pflichtGruppe, pflichtRaum, pflichtSlot);
+                    vortragDto.pflichtGruppe, pflichtRaum, pflichtSlot, veranstaltung);
 
             // Update availabilities
             RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvId(pflichtRaum, veranstaltung));
@@ -1223,6 +1197,113 @@ public class AdminService {
         protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Gruppe gelöscht", "Gruppe '" + gruppenName + "' aus Veranstaltung '" + veranstaltung.getName() + "' entfernt.", veranstaltungId);
     }
 
+    // ... am Ende der AdminService.java Klasse ...
+
+    @Transactional
+    public int importNutzerVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId) {
+        int count = 0;
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
+        if (veranstaltung == null) {
+            throw new CsvImportException(csvFilePath, "Veranstaltung nicht gefunden.");
+        }
+
+        List<Slot> sortedSlots = veranstaltung.getSlots().stream()
+            .sorted(Comparator.comparing(Slot::getStartTime))
+            .toList();
+        List<Long> sortedSlotIds = sortedSlots.stream().map(Slot::getId).toList();
+
+        try (FileReader reader = new FileReader(csvFilePath.toFile())) {
+            CsvToBean<NutzerVerfuegbarkeitCsvDto> csvToBean = new CsvToBeanBuilder<NutzerVerfuegbarkeitCsvDto>(reader)
+                .withType(NutzerVerfuegbarkeitCsvDto.class)
+                .withSeparator(';')
+                .withIgnoreLeadingWhiteSpace(true)
+                .build();
+
+            for (NutzerVerfuegbarkeitCsvDto dto : csvToBean) {
+                Nutzer nutzer = Nutzer.findByEmail(dto.email);
+                if (nutzer == null) {
+                    LOG.warn("Nutzer-Verfügbarkeit übersprungen: Nutzer mit E-Mail '" + dto.email + "' nicht gefunden.");
+                    continue;
+                }
+
+                Set<Long> verfuegbareSlotIds = parseSlotIndices(dto.verfuegbareSlots, sortedSlotIds);
+                NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(nutzer, veranstaltung));
+                if (nv == null) {
+                    nv = new NutzerVerfuegbarkeit(nutzer.getId(), veranstaltungId, verfuegbareSlotIds);
+                } else {
+                    nv.setVerfuegbareSlotIds(verfuegbareSlotIds);
+                }
+                nv.persist();
+                count++;
+            }
+        } catch (Exception e) {
+            throw new CsvImportException(csvFilePath, e.getMessage());
+        }
+        LOG.info("Nutzer-Verfügbarkeiten-Import abgeschlossen: " + count + " Einträge verarbeitet.");
+        return count;
+    }
+
+    @Transactional
+    public int importRaumVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId) {
+        int count = 0;
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
+        if (veranstaltung == null) {
+            throw new CsvImportException(csvFilePath, "Veranstaltung nicht gefunden.");
+        }
+
+        List<Slot> sortedSlots = veranstaltung.getSlots().stream()
+            .sorted(Comparator.comparing(Slot::getStartTime))
+            .toList();
+        List<Long> sortedSlotIds = sortedSlots.stream().map(Slot::getId).toList();
+
+        try (FileReader reader = new FileReader(csvFilePath.toFile())) {
+            CsvToBean<RaumVerfuegbarkeitCsvDto> csvToBean = new CsvToBeanBuilder<RaumVerfuegbarkeitCsvDto>(reader)
+                .withType(RaumVerfuegbarkeitCsvDto.class)
+                .withSeparator(';')
+                .withIgnoreLeadingWhiteSpace(true)
+                .build();
+
+            for (RaumVerfuegbarkeitCsvDto dto : csvToBean) {
+                Raum raum = Raum.find("name = ?1 and gebaeude.name = ?2", dto.raum, dto.gebaeude).firstResult();
+                if (raum == null) {
+                    LOG.warn("Raum-Verfügbarkeit übersprungen: Raum '" + dto.raum + "' in Gebäude '" + dto.gebaeude + "' nicht gefunden.");
+                    continue;
+                }
+
+                Set<Long> verfuegbareSlotIds = parseSlotIndices(dto.verfuegbareSlots, sortedSlotIds);
+                RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvId(raum, veranstaltung));
+                if (rv == null) {
+                    rv = new RaumVerfuegbarkeit(raum.getId(), veranstaltungId, verfuegbareSlotIds);
+                } else {
+                    rv.setVerfuegbareSlotIds(verfuegbareSlotIds);
+                }
+                rv.persist();
+                count++;
+            }
+        } catch (Exception e) {
+            throw new CsvImportException(csvFilePath, e.getMessage());
+        }
+        LOG.info("Raum-Verfügbarkeiten-Import abgeschlossen: " + count + " Einträge verarbeitet.");
+        return count;
+    }
+
+    private Set<Long> parseSlotIndices(String indicesString, List<Long> sortedSlotIds) {
+        if (StringUtils.isBlank(indicesString)) {
+            return new HashSet<>();
+        }
+        try {
+            return Arrays.stream(indicesString.split(","))
+                .map(String::trim)
+                .mapToInt(Integer::parseInt)
+                .mapToObj(i -> sortedSlotIds.get(i - 1)) // 1-based index to 0-based
+                .collect(Collectors.toSet());
+        } catch (Exception e) {
+            LOG.warn("Fehler beim Parsen der Slot-Indizes: '" + indicesString + "'. " + e.getMessage());
+            return new HashSet<>();
+        }
+    }
+
+
 // -------------------------------------------------------------------
 // Mapper methods
 // -------------------------------------------------------------------
@@ -1270,7 +1351,6 @@ public class AdminService {
 // -------------------------------------------------------------------
 // Helper methods
 // -------------------------------------------------------------------
-
 
     private boolean kapazitaetZuGering(Raum raum, String gruppe, Veranstaltung veranstaltung) {
         if (raum == null || raum.getKapazitaet() == null) {

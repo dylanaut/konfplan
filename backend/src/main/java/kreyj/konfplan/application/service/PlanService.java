@@ -16,7 +16,7 @@ import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.presentation.dto.PlanQualitaetDto;
-import kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto;
+import kreyj.konfplan.presentation.dto.RaumBelegungUebersicht;
 import kreyj.konfplan.presentation.dto.RaumDto;
 import kreyj.konfplan.presentation.dto.RaumplanEintragDto;
 import kreyj.konfplan.presentation.dto.ReferentVortragDto;
@@ -43,8 +43,8 @@ import java.util.stream.Collectors;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toMap;
 import static kreyj.konfplan.persistence.Planungsergebnis.getPlanungsergebnis;
-import static kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto.VORTRAG_TITEL_FREI;
-import static kreyj.konfplan.presentation.dto.RaumBelegungUebersichtDto.VORTRAG_TYP_FREI;
+import static kreyj.konfplan.presentation.dto.RaumBelegungUebersicht.VORTRAG_TITEL_FREI;
+import static kreyj.konfplan.presentation.dto.RaumBelegungUebersicht.VORTRAG_TYP_FREI;
 
 @ApplicationScoped
 public class PlanService {
@@ -159,9 +159,9 @@ public class PlanService {
 
 
     @Transactional
-    public List<RaumBelegungUebersichtDto> getDetaillierterPlan(Veranstaltung veranstaltung) {
+    public List<RaumBelegungUebersicht> getDetaillierterPlan(Veranstaltung veranstaltung) {
         Map<Long, Map<Long, RaumplanEintragDto>> raumplan = getRaumbelegungsplan(veranstaltung);
-        List<RaumBelegungUebersichtDto> detaillierterPlan = new ArrayList<>();
+        List<RaumBelegungUebersicht> detaillierterPlan = new ArrayList<>();
 
         List<Slot> sortedSlots = veranstaltung.getSlots().stream()
                 .sorted(comparing(Slot::getStartTime)).toList();
@@ -179,11 +179,11 @@ public class PlanService {
                 }
 
                 if (eintrag != null) {
-                    List<String> tnNamen = eintrag.teilnehmer != null ?
-                            eintrag.teilnehmer.stream().map(TeilnehmerDto::fullname).toList() :
-                            new ArrayList<>();
+                    List<String> tnNamen = eintrag.teilnehmer != null
+                            ? eintrag.teilnehmer.stream().map(TeilnehmerDto::fullname).toList()
+                            : new ArrayList<>();
 
-                    detaillierterPlan.add(new RaumBelegungUebersichtDto(
+                    detaillierterPlan.add(new RaumBelegungUebersicht(
                             slot.getId(),
                             slot.getStartTime().format(TIME_FORMAT),
                             raum.getId(),
@@ -195,7 +195,7 @@ public class PlanService {
                             raum.getKapazitaet()
                     ));
                 } else {
-                    detaillierterPlan.add(new RaumBelegungUebersichtDto(
+                    detaillierterPlan.add(new RaumBelegungUebersicht(
                             slot.getId(),
                             slot.getStartTime().format(TIME_FORMAT),
                             raum.getId(),
@@ -212,7 +212,7 @@ public class PlanService {
 
         LOG.info("Detaillierter Plan für Veranstaltung " + veranstaltung.getName() + ":\n" +
                 detaillierterPlan.stream()
-                        .map(RaumBelegungUebersichtDto::toString)
+                        .map(RaumBelegungUebersicht::toString)
                         .collect(Collectors.joining("\n")));
 
         return detaillierterPlan;

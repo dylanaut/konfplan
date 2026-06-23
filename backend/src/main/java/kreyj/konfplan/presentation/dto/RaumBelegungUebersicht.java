@@ -4,7 +4,7 @@ import lombok.Getter;
 
 import java.util.List;
 
-public class RaumBelegungUebersichtDto {
+public class RaumBelegungUebersicht {
     public static final String VORTRAG_TYP_FREI = "FREI";
     public static final String VORTRAG_TITEL_FREI = "Frei";
 
@@ -21,7 +21,7 @@ public class RaumBelegungUebersichtDto {
     public List<String> teilnehmerNamen;
     public Integer kapazitaet;
 
-    public RaumBelegungUebersichtDto(Long slotId, String slotZeit, Long raumId, String raumName, String vortragTitel, String referentName, String vortragTyp, List<String> teilnehmerNamen, Integer kapazitaet) {
+    public RaumBelegungUebersicht(Long slotId, String slotZeit, Long raumId, String raumName, String vortragTitel, String referentName, String vortragTyp, List<String> teilnehmerNamen, Integer kapazitaet) {
         this.slotId = slotId;
         this.slotZeit = slotZeit;
         this.raumId = raumId;

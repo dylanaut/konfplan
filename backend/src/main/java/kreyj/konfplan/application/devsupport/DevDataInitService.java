@@ -1,6 +1,7 @@
 package kreyj.konfplan.application.devsupport;
 
 import io.agroal.api.AgroalDataSource;
+import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -17,7 +18,9 @@ import org.jboss.logging.Logger;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @ApplicationScoped
 public class DevDataInitService {
@@ -26,8 +29,11 @@ public class DevDataInitService {
     @ConfigProperty(name = "konfplan.dev-data.init", defaultValue = "false")
     boolean devInitEnabled;
 
-    @ConfigProperty(name = "konfplan.dev-data.csv-path", defaultValue = "src/test/resources/csv_import/bo_26_09")
+    @ConfigProperty(name = "konfplan.dev-data.csv-path", defaultValue = "src/test/resources/csv_import/")
     String csvBasePath;
+
+    @ConfigProperty(name = "konfplan.dev-data.datasets", defaultValue = "medium")
+    List<String> dataSets;
 
     private final AgroalDataSource datasource;
 
@@ -68,44 +74,59 @@ public class DevDataInitService {
             throw new RuntimeException(e);
         }
 
-        try {
-            Path basePath = Paths.get(csvBasePath);
+        Set<Long> importierteVeranstaltungen = new HashSet<>();
 
-            // 1. Gebäude & Räume
-            gebaeudeService.importGebaeudeWithRaeumeFromCsv(basePath.resolve("gebaeude.csv"));
+        for (String dataSet : dataSets) {
+            Log.info("Lade DataSet >>> " + dataSet + " <<<");
+            try {
+                Path basePath = Paths.get(csvBasePath, dataSet);
 
-            // 2. Organisatoren (Admins)
-            adminService.importAdminsFromCsv(basePath.resolve("organisatoren.csv"));
+                // 1. Gebäude & Räume
+                gebaeudeService.importGebaeudeWithRaeumeFromCsv(basePath.resolve("gebaeude.csv"));
 
-            // 3. Veranstaltungen
-            veranstaltungService.importFromCsv(basePath.resolve("veranstaltungen.csv"));
+                // 2. Organisatoren (Admins)
+                adminService.importAdminsFromCsv(basePath.resolve("organisatoren.csv"));
 
-            // Wir nehmen die erste Veranstaltung für die weiteren Importe
-            List<Veranstaltung> veranstaltungen = Veranstaltung.listAll();
-            if (veranstaltungen.isEmpty()) {
-                LOG.error("Keine Veranstaltung importiert. Breche Dev-Daten-Initialisierung ab.");
-                return;
+                // 3. Veranstaltungen
+                int anzahlVeranstaltungen = veranstaltungService.importFromCsv(basePath.resolve("veranstaltungen.csv"));
+
+                if (anzahlVeranstaltungen == 0) {
+                    LOG.warn("Keine Veranstaltung für DataSet '" + dataSet + "' gefunden");
+                } else if (anzahlVeranstaltungen > 1) {
+                    LOG.warn("Bitte in DEV-Mode nur eine Veranstaltung pro DataSet importieren");
+                }
+
+                Veranstaltung dataSetEvent = Veranstaltung.find("ORDER BY id DESC").firstResult();
+                if (importierteVeranstaltungen.contains(dataSetEvent.getId())) {
+                    LOG.error("Veranstaltung '" + dataSetEvent.getName() + "' wurde schon importiert.");
+                    continue;
+                }
+
+                Long vid = dataSetEvent.getId();
+                // 4. Slots - gilt für *ALLE* Veranstaltungen
+                adminService.importSlotsFromCsv(basePath.resolve("slots.csv"), vid);
+
+                // 5. Referenten
+                referentService.importFromCsv(basePath.resolve("referenten.csv"), vid);
+
+                // 6. Teilnehmer
+                teilnehmerService.importFromCsv(basePath.resolve("teilnehmer.csv"), vid);
+
+                // 7. Vorträge (Pflicht & Wahl)
+                adminService.importVortraegeFromCsv(basePath.resolve("wahl_vortraege.csv"), vid);
+                adminService.importVortraegeFromCsv(basePath.resolve("pflicht_vortraege.csv"), vid);
+                adminService.importPrioritaetenFromCsv(basePath.resolve("tn_prios.csv"), vid);
+
+                // 8. Verfügbarkeiten
+                adminService.importRaumVerfuegbarkeitenFromCsv(basePath.resolve("raum_verfuegbarkeiten.csv"), vid);
+                adminService.importNutzerVerfuegbarkeitenFromCsv(basePath.resolve("nutzer_verfuegbarkeiten.csv"), vid);
+
+                importierteVeranstaltungen.add(vid);
+            } catch (Exception e) {
+                LOG.error("Fehler beim Laden von " + dataSet, e);
             }
-            Long vid = veranstaltungen.getFirst().getId();
-
-            // 4. Slots - für *ALLE* Veranstaltungen
-            adminService.importSlotsFromCsv(basePath.resolve("slots_2026.csv"), vid);
-
-            // 5. Referenten
-            referentService.importFromCsv(basePath.resolve("referenten.csv"), vid);
-
-            // 6. Teilnehmer
-            teilnehmerService.importFromCsv(basePath.resolve("teilnehmer_9.1.csv"), vid);
-
-            // 7. Vorträge (Pflicht & Wahl)
-            adminService.importVortraegeFromCsv(basePath.resolve("wahl_vortraege.csv"), vid);
-            adminService.importVortraegeFromCsv(basePath.resolve("pflicht_vortraege.csv"), vid);
-            adminService.importPrioritaetenFromCsv(basePath.resolve("tn_9.1_prios.csv"), vid);
-
-            LOG.info("Dev-Daten-Initialisierung erfolgreich abgeschlossen.");
-            LOG.info("###\n### Mailpit: http://localhost:9000/q/dev-ui/quarkus-mailpit/mailpit-ui");
-        } catch (Exception e) {
-            LOG.error("Fehler bei der Dev-Daten-Initialisierung", e);
         }
+
+        LOG.info("###\n### Mailpit: http://localhost:9000/q/dev-ui/quarkus-mailpit/mailpit-ui");
     }
 }

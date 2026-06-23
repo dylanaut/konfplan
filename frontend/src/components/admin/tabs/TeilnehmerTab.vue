@@ -243,7 +243,7 @@
 </template>
 
 <script setup>
-import {computed, reactive, ref, watch} from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import {
   ArrowUpDown as ArrowUpDownIcon,
   Check as CheckIcon,
@@ -297,7 +297,7 @@ const filters = reactive({
 });
 
 const sorts = reactive({
-  teilnehmer: {key: 'lastName', dir: 'asc'}
+  teilnehmer: { key: 'lastName', dir: 'asc' }
 });
 
 const expandedSections = reactive({
@@ -311,6 +311,12 @@ const selectedParticipantIds = ref([]);
 const showPlanOverlay = ref(false);
 const planHtmlContent = ref('');
 const planOverlayTitle = ref('');
+
+watch(() => props.selectedVid, (newVid) => {
+  if (newVid) {
+    availabilityStore.fetchAvailabilities(newVid);
+  }
+}, { immediate: true });
 
 watch(() => filters.teilnehmer, () => {
   pages.teilnehmer = 1;

@@ -22,8 +22,10 @@ import org.jboss.logging.Logger;
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static kreyj.konfplan.util.DateHelper.DATE_FORMAT;
 
@@ -88,7 +90,9 @@ public class VeranstaltungService {
         // Organisatoren zuweisen
         if (CollectionUtils.isNotEmpty(dto.getOrganisatorIds())) {
             // alte Admins entfernen und neue zufügen
-            v.getNutzer().stream().filter(u -> u instanceof Admin)
+            ArrayList<Nutzer> alteNutzer = new ArrayList<>(v.getNutzer());
+            alteNutzer.stream()
+                    .filter(u -> u instanceof Admin)
                     .forEach(v::removeNutzer);
             for (Long adminId : dto.getOrganisatorIds()) {
                 Admin a = Admin.findById(adminId);
