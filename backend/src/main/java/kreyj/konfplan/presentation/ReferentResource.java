@@ -6,7 +6,16 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -20,7 +29,12 @@ import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.presentation.dto.*;
+import kreyj.konfplan.presentation.dto.EmailChangeRequestDto;
+import kreyj.konfplan.presentation.dto.NutzerDto;
+import kreyj.konfplan.presentation.dto.NutzerVerfuegbarkeitDto;
+import kreyj.konfplan.presentation.dto.ReferentVeranstaltungDto;
+import kreyj.konfplan.presentation.dto.ReferentVortragDto;
+import kreyj.konfplan.presentation.dto.VortragDto;
 import kreyj.konfplan.util.JwtHelper;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -42,6 +56,7 @@ import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 @Tag(name = "Referenten", description = "Endpunkte für Referenten zur Verwaltung ihres Profils und ihrer Vorträge")
 public class ReferentResource {
     private final VeranstaltungService veranstaltungService;
+
     @Context
     UriInfo uriInfo;
 
@@ -56,6 +71,7 @@ public class ReferentResource {
     @Inject
     ReportResource reportResource;
 
+
     public ReferentResource(JsonWebToken jwt, ReferentService referentService, PlanService planService, MailService mailService, VeranstaltungService veranstaltungService) {
         this.jwt = jwt;
         this.referentService = referentService;
@@ -64,16 +80,18 @@ public class ReferentResource {
         this.veranstaltungService = veranstaltungService;
     }
 
+
     @GET
     @Path("/profile")
     @Operation(summary = "Referentenprofil abrufen", description = "Ruft das Profil des aktuell angemeldeten Referenten ab.")
     public Response getReferent() { // Changed return type
-        Referent referent = referentService.getProfile(JwtHelper.getUserPrincipalName(jwt));
+        Referent referent = referentService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (referent == null) {
             throw new WebApplicationException("Referent not found", Response.Status.NOT_FOUND);
         }
         return Response.ok(AdminService.mapNutzerToDto(referent)).build();
     }
+
 
     @PUT
     @Path("/profile")
@@ -86,6 +104,7 @@ public class ReferentResource {
         }
         return Response.ok().build();
     }
+
 
     @POST
     @Path("/email-change-request")
@@ -124,6 +143,7 @@ public class ReferentResource {
         return Response.ok("Bestätigungs-E-Mail an neue Adresse gesendet. Bitte überprüfen Sie Ihr Postfach.").build();
     }
 
+
     @GET
     @Path("/email-change-confirm")
     @PermitAll // Dieser Endpunkt muss ohne Authentifizierung erreichbar sein
@@ -147,12 +167,14 @@ public class ReferentResource {
         return Response.ok("Ihre E-Mail-Adresse wurde erfolgreich geändert.").build();
     }
 
+
     @GET
     @Path("/vortraege")
     @Operation(summary = "Vorträge des Referenten abrufen", description = "Ruft alle Vorträge ab, die dem aktuell angemeldeten Referenten zugeordnet sind.")
     public List<VortragDto> getReferentenVortraege() {
         return referentService.getReferentVortraege(JwtHelper.getUserPrincipalName(jwt));
     }
+
 
     @POST
     @Path("/vortraege")
@@ -163,9 +185,10 @@ public class ReferentResource {
             return Response.ok(saved).build();
         } catch (Exception e) {
             return Response.status(FORBIDDEN)
-                    .entity(e.getMessage()).build();
+                .entity(e.getMessage()).build();
         }
     }
+
 
     @PUT
     @Path("/vortraege/{vortragId}")
@@ -181,9 +204,10 @@ public class ReferentResource {
             return e.getResponse();
         } catch (Exception e) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage()).build();
+                .entity(e.getMessage()).build();
         }
     }
+
 
     @DELETE
     @Path("/vortraege/{vortragId}")
@@ -196,6 +220,7 @@ public class ReferentResource {
         return Response.noContent().build();
     }
 
+
     @POST
     @Path("/veranstaltungen/{targetEventId}/vortraege/{sourceVortragId}/clone")
     @Operation(summary = "Vortrag für eine andere Veranstaltung klonen", description = "Klont einen bestehenden Vortrag für eine neue Veranstaltung.")
@@ -207,52 +232,67 @@ public class ReferentResource {
             return e.getResponse();
         } catch (Exception e) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(e.getMessage()).build();
+                .entity(e.getMessage()).build();
         }
     }
+
 
     @GET
     @Path("/plaene")
     @Operation(summary = "Persönlichen Plan abrufen", description = "Ruft den persönlichen Vortragsplan des Referenten für eine Veranstaltung ab.")
     public Response getMyPlan(@QueryParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (veranstaltung == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+        if (null == veranstaltung) {
+            return Response.status(Response.Status.NOT_FOUND).entity("Veranstaltung nicht gefunden.").build();
         }
-        List<ReferentVortragDto> planFuerReferent = planService.getPlanFuerReferent(JwtHelper.getUserPrincipalName(jwt), veranstaltung);
+        Referent referent = referentService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
+        if (null == referent) {
+            return Response.status(Response.Status.NOT_FOUND).entity("Referent nicht gefunden.").build();
+        }
+        List<ReferentVortragDto> planFuerReferent = planService.getPlanFuerReferent(referent, veranstaltung);
         return Response.ok(planFuerReferent).build();
     }
+
 
     @GET
     @Path("/veranstaltungen/{vid}/laufzettel")
     @Produces(MediaType.TEXT_HTML)
     @Operation(summary = "Persönlichen Laufzettel abrufen (HTML)", description = "Ruft den persönlichen Laufzettel des angemeldeten Referenten für eine Veranstaltung ab.")
     public Response getMyLaufzettel(@PathParam("vid") Long vid) {
-        Referent referent = referentService.getProfile(JwtHelper.getUserPrincipalName(jwt));
-        if (referent == null) {
+        Referent referent = referentService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
+        if (null == referent) {
             return Response.status(Response.Status.NOT_FOUND).entity("Referent nicht gefunden.").build();
         }
         return reportResource.getLaufzettelReferent(vid, referent.getId());
     }
+
 
     @GET
     @Path("/veranstaltungen/{vid}/laufzettel-pdf")
     @Produces("application/pdf")
     @Operation(summary = "Persönlichen Laufzettel abrufen (PDF)", description = "Ruft den persönlichen Laufzettel des angemeldeten Referenten für eine Veranstaltung als PDF ab.")
     public Response getMyLaufzettelPdf(@PathParam("vid") Long vid) {
-        Referent referent = referentService.getProfile(JwtHelper.getUserPrincipalName(jwt));
+        Referent referent = referentService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (referent == null) {
             return Response.status(Response.Status.NOT_FOUND).entity("Referent nicht gefunden.").build();
         }
         return reportResource.getLaufzettelReferentPdf(vid, referent.getId());
     }
 
+
     @GET
     @Path("/veranstaltungen")
     @Operation(summary = "Veranstaltungen des Referenten abrufen", description = "Ruft alle Veranstaltungen ab, bei denen der Referent registriert ist.")
-    public List<ReferentVeranstaltungDto> getReferentVeranstaltungen() {
-        return referentService.getReferentVeranstaltungen(JwtHelper.getUserPrincipalName(jwt));
+    public Response getReferentVeranstaltungen() {
+        Referent referent =
+            referentService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
+        if (referent == null) {
+            return Response.status(Response.Status.NOT_FOUND).entity("Referent nicht gefunden.").build();
+        }
+        List<ReferentVeranstaltungDto> referentVeranstaltungen = referentService.getReferentVeranstaltungen(referent);
+        return Response.ok().entity(referentVeranstaltungen).build();
     }
+
 
     @POST
     @Path("/veranstaltungen/{eventId}/vortraege/{vortragId}/register")
@@ -262,6 +302,7 @@ public class ReferentResource {
         return Response.ok().build();
     }
 
+
     @DELETE
     @Path("/veranstaltungen/{eventId}/vortraege/{vortragId}/deregister")
     @Operation(summary = "Vortrag von Veranstaltung deregistrieren", description = "Entfernt die Registrierung eines Vortrags von einer Veranstaltung.")
@@ -269,6 +310,7 @@ public class ReferentResource {
         referentService.meldeVortragFuerVeranstaltungAb(JwtHelper.getUserPrincipalName(jwt), vortragId, eventId);
         return Response.ok().build();
     }
+
 
     @GET
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
@@ -283,11 +325,12 @@ public class ReferentResource {
 
         if (null == nv) {
             throw new WebApplicationException("Keine Verfügbarkeit für diesen Nutzer und diese Veranstaltung gefunden.",
-                    Response.Status.NOT_FOUND);
+                Response.Status.NOT_FOUND);
         } else {
             return new NutzerVerfuegbarkeitDto(nv);
         }
     }
+
 
     @POST
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
@@ -307,7 +350,7 @@ public class ReferentResource {
         // Deadline Check
         if (veranstaltung.getDeadlineReferenten() != null && veranstaltung.getDeadlineReferenten().isBefore(LocalDateTime.now())) {
             return Response.status(FORBIDDEN)
-                    .entity("Die Deadline für Referenten ist bereits abgelaufen.").build();
+                .entity("Die Deadline für Referenten ist bereits abgelaufen.").build();
         }
 
         NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(nutzer.getId(), vid));

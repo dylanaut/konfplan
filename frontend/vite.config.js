@@ -16,7 +16,7 @@ export default defineConfig({
     build: {
         sourcemap: true,
         outDir: 'dist',
-        manifest: true, // Erzeugt eine manifest.json Datei
+        manifest: 'manifest.json'
     },
     css: {
         devSourcemap: true

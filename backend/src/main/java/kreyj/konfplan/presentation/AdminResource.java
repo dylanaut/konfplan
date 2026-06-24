@@ -67,7 +67,7 @@ public class AdminResource {
     @POST
     @Path("/nutzer")
     @Operation(summary = "Neuen Nutzer erstellen", description = "Erstellt einen neuen Nutzer und sendet eine Bestätigungs-E-Mail.")
-    public NutzerDto ocreateUser(@RequestBody(description = "Die Daten des neuen Nutzers") NutzerDto dto) {
+    public NutzerDto createUser(@RequestBody(description = "Die Daten des neuen Nutzers") NutzerDto dto) {
         NutzerDto createdNutzerDto = adminService.createUser(dto, dto.veranstaltungIds);
         // E-Mail nach erfolgreicher Erstellung senden
         Nutzer createdNutzer = Nutzer.findById(createdNutzerDto.id);

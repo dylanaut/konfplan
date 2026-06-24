@@ -1,2 +1,0 @@
-ALTER TABLE vortrag
-ADD COLUMN berufsfeld VARCHAR(100);

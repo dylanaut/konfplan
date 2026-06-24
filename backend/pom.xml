@@ -27,6 +27,7 @@
         <quarkus-mailpit.version>2.0.0</quarkus-mailpit.version>
         <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
         <lombok.version>1.18.46</lombok.version>
+        <p6spy.version>3.9.1</p6spy.version>
     </properties>
 
     <dependencies>
@@ -212,7 +213,7 @@
         <dependency>
             <groupId>p6spy</groupId>
             <artifactId>p6spy</artifactId>
-            <version>3.9.1</version> <!-- Eine aktuelle, stabile Version -->
+            <version>${p6spy.version}</version> <!-- Eine aktuelle, stabile Version -->
             <scope>test</scope> <!-- Wichtig: Nur für Tests, nicht für Produktion -->
         </dependency>
     </dependencies>
@@ -228,7 +229,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>1.18.46</version>
+                            <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
@@ -256,6 +257,23 @@
                     </properties>
                 </configuration>
             </plugin>
+
+<!--            <plugin>-->
+<!--                <groupId>org.hibernate.orm</groupId>-->
+<!--                <artifactId>hibernate-maven-plugin</artifactId>-->
+<!--                <version>7.3.2.Final</version>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <configuration>-->
+<!--                            <enableLazyInitialization>true</enableLazyInitialization>-->
+<!--                            <enableDirtyTracking>true</enableDirtyTracking>-->
+<!--                        </configuration>-->
+<!--                        <goals>-->
+<!--                            <goal>enhance</goal>-->
+<!--                        </goals>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
 
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>

@@ -256,7 +256,7 @@ public class DashboardService {
                 .sorted()
                 .toList();
 
-        dd.teilnehmerDashboard = new TeilnehmerDashboard(dd.slots, dd.teilnehmerStundenplan, gruppen);
+        dd.teilnehmerDashboard = new TeilnehmerDashboard(null, dd.slots, dd.teilnehmerStundenplan, gruppen);
 
         List<Integer> numInstanzenProWv =
                 Arrays.stream(dd.instanzSlot).map(sub -> (int) Arrays.stream(sub).filter(x -> x > 0).count()).toList();

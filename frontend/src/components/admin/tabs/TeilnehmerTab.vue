@@ -367,7 +367,7 @@ const toggleSort = (key, field) => {
 };
 
 const filteredParticipants = computed(() => {
-  let list = [...props.teilnehmer];
+  let list = props.teilnehmer.filter(t => t.veranstaltungIds.includes(props.selectedVid));
   if (filters.participantGroup) {
     list = list.filter(t => t.gruppe === filters.participantGroup);
   }

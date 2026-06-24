@@ -1,7 +1,10 @@
 package kreyj.konfplan.persistence;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PreRemove;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
@@ -24,10 +27,15 @@ public class Wahlvortrag extends Vortrag {
 
     private int maxWiederholungen = 1;
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "vortrag", orphanRemoval = true, fetch = FetchType.LAZY)
+    private Set<Prioritaet> prioritaeten;
+
+
+
     // -------------------------------------------------------------------
     // Konstruktoren
     // -------------------------------------------------------------------
-
 
     protected Wahlvortrag(String titel, String inhalt, Referent referent, boolean wiederholbar, int maxWiederholungen,
                           Veranstaltung veranstaltung) {

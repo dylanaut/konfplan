@@ -241,9 +241,8 @@ public class PlanService {
 
 
     @Transactional
-    public List<ZuweisungDto> getPlanFuerTeilnehmer(String email, Veranstaltung veranstaltung) {
+    public List<ZuweisungDto> getPlanFuerTeilnehmer(Teilnehmer teilnehmer, Veranstaltung veranstaltung) {
         Objects.requireNonNull(veranstaltung);
-        Teilnehmer teilnehmer = Teilnehmer.find("email", email).firstResult();
         if (teilnehmer == null) {
             return Collections.emptyList();
         }
@@ -330,15 +329,14 @@ public class PlanService {
                     .toList();
 
         } catch (Exception e) {
-            LOG.error("Fehler beim Erstellen des Teilnehmerplans für " + email, e);
+            LOG.error("Fehler beim Erstellen des Teilnehmerplans für " + teilnehmer.getEmail(), e);
             return Collections.emptyList();
         }
     }
 
 
     @Transactional
-    public List<ReferentVortragDto> getPlanFuerReferent(String email, Veranstaltung veranstaltung) {
-        Referent referent = Referent.find("email", email).firstResult();
+    public List<ReferentVortragDto> getPlanFuerReferent(Referent referent, Veranstaltung veranstaltung) {
         if (referent == null) {
             return Collections.emptyList();
         }
@@ -416,7 +414,7 @@ public class PlanService {
                     .toList();
 
         } catch (Exception e) {
-            LOG.error("Fehler beim Erstellen des Referentenplans für " + email, e);
+            LOG.error("Fehler beim Erstellen des Referentenplans für " + referent.getEmail(), e);
             return Collections.emptyList();
         }
     }

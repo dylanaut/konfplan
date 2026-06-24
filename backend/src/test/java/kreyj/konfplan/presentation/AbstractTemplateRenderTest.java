@@ -173,7 +173,8 @@ abstract class AbstractTemplateRenderTest {
 
     @Test
     void testTeilnehmerDashboard() {
-        String html = templateService.prepareTeilnehmerDashboard(veranstaltung).render();
+        Teilnehmer teilnehmer1 = veranstaltung.teilnehmer().getFirst();
+        String html = templateService.prepareTeilnehmerDashboard(veranstaltung, teilnehmer1).render();
         assertThat(html).contains("<body>");
 
         showInBrowser(html);

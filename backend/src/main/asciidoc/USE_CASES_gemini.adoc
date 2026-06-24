@@ -4,7 +4,7 @@
 :icons: font
 
 == Übersicht
-Dieses Dokument beschreibt die funktionalen Anforderungen des Vortragsmanagers, unterteilt nach den drei Hauptrollen: **Administrator**, **Referent** und **Teilnehmer**.
+Dieses Dokument beschreibt die funktionalen Anforderungen der KonfPlan Anwendung, unterteilt nach den drei Hauptrollen: **Administrator**, **Referent** und **Teilnehmer**.
 
 == UseCase Diagramm (PlantUML)
 

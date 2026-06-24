@@ -83,7 +83,7 @@
 </template>
 
 <script setup>
-import { reactive, watch, ref } from 'vue';
+import { reactive, watchEffect, ref } from 'vue';
 
 const props = defineProps({
   isVisible: { type: Boolean, required: true },
@@ -108,23 +108,20 @@ const form = reactive({
   version: 0
 });
 
-watch(
-    () => props.veranstaltung,
-    (val) => {
-      form.id = val?.id ?? null;
-      form.name = val?.name ?? '';
-      form.beginntAm = val?.beginntAm ? val.beginntAm.slice(0, 16) : '';
-      form.endetAm = val?.endetAm ? val.endetAm.slice(0, 16) : '';
-      form.deadlineReferenten = val?.deadlineReferenten ? val.deadlineReferenten.slice(0, 16) : '';
-      form.deadlineTeilnehmer = val?.deadlineTeilnehmer ? val.deadlineTeilnehmer.slice(0, 16) : '';
-      form.logo = val?.logo ?? '';
-      form.logo_link = val?.logo_link ?? '';
-      form.organisatorIds = val?.organisatorIds ?? [];
-      form.version = val?.version ?? 0;
-      selectedGebaeudeIds.value = val?.gebaeude?.map(g => g.id) ?? [];
-    },
-    { immediate: true }
-);
+watchEffect(() => {
+  const val = props.veranstaltung;
+  form.id = val?.id ?? null;
+  form.name = val?.name ?? '';
+  form.beginntAm = val?.beginntAm ? val.beginntAm.slice(0, 16) : '';
+  form.endetAm = val?.endetAm ? val.endetAm.slice(0, 16) : '';
+  form.deadlineReferenten = val?.deadlineReferenten ? val.deadlineReferenten.slice(0, 16) : '';
+  form.deadlineTeilnehmer = val?.deadlineTeilnehmer ? val.deadlineTeilnehmer.slice(0, 16) : '';
+  form.logo = val?.logo ?? '';
+  form.logo_link = val?.logo_link ?? '';
+  form.organisatorIds = val?.organisatorIds ?? [];
+  form.version = val?.version ?? 0;
+  selectedGebaeudeIds.value = val?.gebaeude?.map(g => g.id) ?? [];
+});
 
 const save = () => {
   const gebaeude = selectedGebaeudeIds.value.map(id => ({ id }));

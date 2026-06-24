@@ -100,10 +100,10 @@ const handleForgot = async () => {
   try {
     await api.post(`/api/auth/forgot-password?email=${forgotEmail.value}`);
     forgotSuccess.value = true;
-    toast.success("Anforderung erfolgreich. Bitte prüfen Sie Ihr Postfach.");
+    toast.success("Email versendet. Bitte prüfen Sie Ihr Postfach.");
   } catch (e) {
     console.error(e);
-    toast.error("Anforderung fehlgeschlagen. Bitte versuchen Sie es später erneut.");
+    toast.error("Emailversand fehlgeschlagen. Bitte versuchen Sie es später erneut.");
   } finally {
     loading.value = false;
   }

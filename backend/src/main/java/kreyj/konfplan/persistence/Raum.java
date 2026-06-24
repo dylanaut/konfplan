@@ -1,15 +1,21 @@
 package kreyj.konfplan.persistence;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvId;
 
@@ -30,6 +36,11 @@ public class Raum extends VersionedEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "gebaeude_id")
     Gebaeude gebaeude;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "pflichtraum", orphanRemoval = true, fetch = FetchType.LAZY)
+    @Setter(AccessLevel.NONE)
+    private Set<Pflichtvortrag> pflichtvortraege = new HashSet<>();
 
 
     // -------------------------------------------------------------------

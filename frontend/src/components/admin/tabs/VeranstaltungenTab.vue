@@ -105,32 +105,36 @@
                   </div>
                 </div>
 
-                <!-- Teilnehmer & Prioritäten -->
+                <!-- Teilnehmer -->
                 <div class="space-y-2">
                   <button @click="expandedSections.teilnehmer = !expandedSections.teilnehmer"
                           class="w-full flex items-center gap-3 text-[10px] font-black text-indigo-700 uppercase tracking-widest border-b border-indigo-100 pb-1 hover:bg-indigo-50 transition-colors">
                     <ChevronDownIcon v-if="!expandedSections.teilnehmer" class="w-3 h-3 shrink-0"/>
                     <ChevronUpIcon v-else class="w-3 h-3 shrink-0"/>
                     <div class="flex items-center gap-2">
-                      <UsersIcon class="w-3 h-3"/> Teilnehmer & Prioritäten ({{ teilnehmer.length }})
+                      <UsersIcon class="w-3 h-3"/> Teilnehmer ({{ filteredVSubParticipants.length }})
                     </div>
                   </button>
                   <div v-if="expandedSections.teilnehmer" class="animate-fade-in space-y-2">
-                    <div v-if="teilnehmer.length > 0" class="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                    <div v-if="filteredVSubParticipants.length > 0" class="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
                       <table class="min-w-full divide-y divide-gray-200 text-[10px]">
                         <thead class="bg-gray-50 text-[8px] uppercase font-bold text-gray-500">
                         <tr>
                           <th @click="toggleSort('v_teilnehmer', 'lastName')" class="px-3 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition">Name <ArrowUpDownIcon class="w-2.5 h-2.5 inline ml-0.5"/></th>
                           <th @click="toggleSort('v_teilnehmer', 'gruppen')"
                               class="px-3 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition">Gruppen <ArrowUpDownIcon class="w-2.5 h-2.5 inline ml-0.5"/></th>
-                          <th class="px-3 py-1.5 text-left">Prios</th>
+                          <th class="px-3 py-1.5 text-right">Aktionen</th>
                         </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                         <tr v-for="part in paginatedVSubParticipants" :key="part.id" class="hover:bg-indigo-50/30 transition">
                           <td class="px-3 py-1.5 font-semibold text-gray-800" :title="part.email">{{ part.lastName }}, {{ part.firstName }}</td>
                           <td class="px-3 py-1.5 text-gray-600">{{ part.gruppen.join(', ') }}</td>
-                          <td class="px-3 py-1.5 text-gray-500">{{ part.prioritaeten?.map(p => `${p.vortragId}:${p.prioWert}`).join(', ') || '-' }}</td>
+                          <td class="px-3 py-1.5 text-right">
+                            <button @click="emit('openUserModal', part)" class="text-indigo-600" title="Bearbeiten">
+                              <PencilIcon class="w-3.5 h-3.5 inline"/>
+                            </button>
+                          </td>
                         </tr>
                         </tbody>
                       </table>
@@ -177,7 +181,7 @@ const props = defineProps({
   canImportVeranstaltung: Boolean
 });
 
-const emit = defineEmits(['triggerUpload', 'openVeranstaltungEditor', 'deleteVeranstaltung', 'selectVeranstaltung']);
+const emit = defineEmits(['triggerUpload', 'openVeranstaltungEditor', 'deleteVeranstaltung', 'selectVeranstaltung', 'openUserModal']);
 
 const groupStore = useGroupStore();
 const newGroupName = ref('');
@@ -283,7 +287,8 @@ const filteredVSubVortraege = computed(() => {
 const paginatedVSubVortraege = computed(() => paginate(filteredVSubVortraege.value, pages.v_vortraege));
 
 const filteredVSubParticipants = computed(() => {
-  return processList(props.teilnehmer, '', sorts.v_teilnehmer);
+  const eventParticipants = props.teilnehmer.filter(t => t.veranstaltungIds.includes(props.selectedVid));
+  return processList(eventParticipants, '', sorts.v_teilnehmer);
 });
 const paginatedVSubParticipants = computed(() => paginate(filteredVSubParticipants.value, pages.v_teilnehmer));
 

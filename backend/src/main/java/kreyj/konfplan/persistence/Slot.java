@@ -1,10 +1,12 @@
 package kreyj.konfplan.persistence;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import kreyj.konfplan.persistence.converter.LocalDateTimeConverter;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -13,6 +15,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.Set;
 
 import static kreyj.konfplan.util.DateHelper.DAY_FORMATTER;
 import static kreyj.konfplan.util.DateHelper.HOUR_FORMATTER;
@@ -34,6 +37,9 @@ public class Slot extends VersionedEntity {
     @Setter(AccessLevel.NONE)
     Veranstaltung veranstaltung;
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "pflichtslot", orphanRemoval = true, fetch = FetchType.LAZY)
+    private Set<Pflichtvortrag> pflichtvortraege;
 
     // -------------------------------------------------------------------
     // Konstruktoren

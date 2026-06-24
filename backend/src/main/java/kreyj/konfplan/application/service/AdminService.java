@@ -14,14 +14,35 @@ import kreyj.konfplan.domain.exception.EntityNotFoundException;
 import kreyj.konfplan.domain.exception.UpdateNutzerException;
 import kreyj.konfplan.domain.exception.UpdateVortragException;
 import kreyj.konfplan.domain.exception.VeranstaltungException;
-import kreyj.konfplan.persistence.*;
+import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Berufsfeld;
+import kreyj.konfplan.persistence.Gebaeude;
+import kreyj.konfplan.persistence.IdEntity;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
+import kreyj.konfplan.persistence.Pflichtvortrag;
+import kreyj.konfplan.persistence.Prioritaet;
+import kreyj.konfplan.persistence.ProtokollKategorie;
+import kreyj.konfplan.persistence.Raum;
+import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Slot;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Vortrag;
+import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
+import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.presentation.dto.NutzerDto;
 import kreyj.konfplan.presentation.dto.RaumVerfuegbarkeitDto;
 import kreyj.konfplan.presentation.dto.SlotDto;
 import kreyj.konfplan.presentation.dto.VortragDto;
 import kreyj.konfplan.presentation.dto.VortragPrioDto;
 import kreyj.konfplan.presentation.dto.VortragStatDto;
-import kreyj.konfplan.presentation.dto.csv.*;
+import kreyj.konfplan.presentation.dto.csv.AdminCsvDto;
+import kreyj.konfplan.presentation.dto.csv.NutzerVerfuegbarkeitCsvDto;
+import kreyj.konfplan.presentation.dto.csv.RaumVerfuegbarkeitCsvDto;
+import kreyj.konfplan.presentation.dto.csv.SlotCsvDto;
+import kreyj.konfplan.presentation.dto.csv.VortragCsvDto;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
@@ -30,7 +51,16 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -74,9 +104,9 @@ public class AdminService {
     @Transactional
     public List<NutzerDto> getAllUsers() {
         return new HashSet<>(Nutzer.<Nutzer>listAll()) // Duplikate entfernen
-                .stream()
-                .map(AdminService::mapNutzerToDto)
-                .toList();
+            .stream()
+            .map(AdminService::mapNutzerToDto)
+            .toList();
     }
 
 
@@ -86,9 +116,9 @@ public class AdminService {
         List<Nutzer> vNutzers = Nutzer.find("SELECT u FROM Nutzer u JOIN u.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
 
         return Stream.concat(admins.stream(), vNutzers.stream())
-                .distinct()
-                .map(AdminService::mapNutzerToDto)
-                .toList();
+            .distinct()
+            .map(AdminService::mapNutzerToDto)
+            .toList();
     }
 
 
@@ -180,7 +210,7 @@ public class AdminService {
             mailService.sendEmailChangeNotificationOldAddress(nutzer, oldEmail, dto.email);
 
             protokollService.log(ProtokollKategorie.NUTZER, "E-Mail-Änderung eingeleitet",
-                    "E-Mail-Änderung für Nutzer '" + oldEmail + "' zu '" + dto.email + "' eingeleitet.", nutzer.getId());
+                "E-Mail-Änderung für Nutzer '" + oldEmail + "' zu '" + dto.email + "' eingeleitet.", nutzer.getId());
         }
 
         nutzer.setFirstName(dto.firstName);
@@ -252,7 +282,7 @@ public class AdminService {
         nutzer.setEmailChangeTokenExpiry(null);
 
         protokollService.log(ProtokollKategorie.NUTZER, "E-Mail-Adresse bestätigt",
-                "E-Mail-Adresse für Nutzer von '" + oldEmail + "' zu '" + nutzer.getEmail() + "' geändert.", nutzer.getId());
+            "E-Mail-Adresse für Nutzer von '" + oldEmail + "' zu '" + nutzer.getEmail() + "' geändert.", nutzer.getId());
 
         return true;
     }
@@ -314,7 +344,7 @@ public class AdminService {
         if (entity != null) {
             entity.setActive(!entity.isActive());
             protokollService.log(ProtokollKategorie.NUTZER, "Nutzer-Status geändert", "Status von '" + entity.getEmail() + "' auf " + (entity.isActive() ?
-                    "aktiv" : "inaktiv") + " geändert.", id);
+                "aktiv" : "inaktiv") + " geändert.", id);
         }
     }
 
@@ -348,8 +378,8 @@ public class AdminService {
 
         if (vortragDto.istPflicht) {
             if (vortragDto.pflichtSlotId == null
-                    || vortragDto.pflichtRaumId == null
-                    || StringUtils.isBlank(vortragDto.pflichtGruppe)) {
+                || vortragDto.pflichtRaumId == null
+                || StringUtils.isBlank(vortragDto.pflichtGruppe)) {
                 throw new CreateVortragException("Für Pflichtvorträge müssen Slot, Raum und Gruppe angegeben werden.");
             }
 
@@ -361,40 +391,40 @@ public class AdminService {
             // Vorbedingungen prüfen
             if (RaumVerfuegbarkeit.isRaumGebucht(vortragDto.pflichtRaumId, vortragDto.pflichtSlotId, veranstaltungId)) {
                 throw new CreateVortragException("Raum '" + pflichtRaum.getName() + "' ist im Slot '"
-                        + pflichtSlot.getDescription() + "' bereits belegt. (" +
-                        veranstaltung.getName() + ")");
+                    + pflichtSlot.getDescription() + "' bereits belegt. (" +
+                    veranstaltung.getName() + ")");
             }
 
             List<Teilnehmer> teilnehmerDerGruppe = getGruppenTeilnehmer(vortragDto.pflichtGruppe, veranstaltung);
             List<String> nichtVerfuegbareTeilnehmer =
-                    teilnehmerDerGruppe.stream()
-                            .map(tn -> {
-                                        NutzerVerfuegbarkeit nv = tn.getVerfuegbarkeit(veranstaltung);
-                                        if (nv == null || nv.isVerfuegbar(vortragDto.pflichtSlotId)) {
-                                            return null;
-                                        } else {
-                                            return tn.getEmail();
-                                        }
-                                    }
-                            )
-                            .filter(Objects::nonNull)
-                            .toList();
+                teilnehmerDerGruppe.stream()
+                    .map(tn -> {
+                            NutzerVerfuegbarkeit nv = tn.getVerfuegbarkeit(veranstaltung);
+                            if (nv == null || nv.isVerfuegbar(vortragDto.pflichtSlotId)) {
+                                return null;
+                            } else {
+                                return tn.getEmail();
+                            }
+                        }
+                    )
+                    .filter(Objects::nonNull)
+                    .toList();
 
             if (!nichtVerfuegbareTeilnehmer.isEmpty()) {
                 throw new CreateVortragException("Teilnehmer der Gruppe '" + vortragDto.pflichtGruppe
-                        + "' sind im Slot '" + pflichtSlot.getDescription() + "' für '"
-                        + veranstaltung.getName() + "'  nicht verfügbar: "
-                        + String.join(", ", nichtVerfuegbareTeilnehmer) + ".");
+                    + "' sind im Slot '" + pflichtSlot.getDescription() + "' für '"
+                    + veranstaltung.getName() + "'  nicht verfügbar: "
+                    + String.join(", ", nichtVerfuegbareTeilnehmer) + ".");
             }
 
             if (kapazitaetZuGering(pflichtRaum, vortragDto.pflichtGruppe, veranstaltung)) {
                 throw new CreateVortragException("Raumkapazität von '" + pflichtRaum.getName() + "' reicht für die Gruppe '"
-                        + vortragDto.pflichtGruppe + "' nicht aus. (" + veranstaltung.getName() + ")");
+                    + vortragDto.pflichtGruppe + "' nicht aus. (" + veranstaltung.getName() + ")");
             }
 
             // map vortragDTO to Vortrag
             created = Pflichtvortrag.create(vortragDto.titel, vortragDto.inhalt, referent,
-                    vortragDto.pflichtGruppe, pflichtRaum, pflichtSlot, veranstaltung);
+                vortragDto.pflichtGruppe, pflichtRaum, pflichtSlot, veranstaltung);
 
             // Update availabilities
             RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvId(pflichtRaum, veranstaltung));
@@ -408,7 +438,7 @@ public class AdminService {
             }
         } else {
             created = Wahlvortrag.create(vortragDto.titel, vortragDto.inhalt, referent,
-                    vortragDto.wiederholbar, vortragDto.maxWiederholungen, veranstaltung);
+                vortragDto.wiederholbar, vortragDto.maxWiederholungen, veranstaltung);
         }
 
 
@@ -421,8 +451,8 @@ public class AdminService {
         veranstaltung.persistAndFlush();
 
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag erstellt",
-                "Vortrag '" + created.getTitel() + "' (" + (created.istPflicht() ? "Pflicht" : "Wahl") + ") erstellt.",
-                created.getId());
+            "Vortrag '" + created.getTitel() + "' (" + (created.istPflicht() ? "Pflicht" : "Wahl") + ") erstellt.",
+            created.getId());
 
         return created;
     }
@@ -433,16 +463,16 @@ public class AdminService {
         int count = 0;
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             CsvToBean<AdminCsvDto> csvToBean = new CsvToBeanBuilder<AdminCsvDto>(reader)
-                    .withType(AdminCsvDto.class)
-                    .withSeparator(';')
-                    .withIgnoreLeadingWhiteSpace(true)
-                    .withThrowExceptions(false)
-                    .build();
+                .withType(AdminCsvDto.class)
+                .withSeparator(';')
+                .withIgnoreLeadingWhiteSpace(true)
+                .withThrowExceptions(false)
+                .build();
 
             List<AdminCsvDto> beans = csvToBean.parse();
 
             csvToBean.getCapturedExceptions().forEach(e ->
-                    LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
+                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
             );
 
             for (AdminCsvDto dto : beans) {
@@ -497,16 +527,16 @@ public class AdminService {
 
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             CsvToBean<VortragCsvDto> csvToBean = new CsvToBeanBuilder<VortragCsvDto>(reader)
-                    .withType(VortragCsvDto.class)
-                    .withSeparator(';')
-                    .withIgnoreLeadingWhiteSpace(true)
-                    .withThrowExceptions(false) // Allow parsing to continue on errors
-                    .build();
+                .withType(VortragCsvDto.class)
+                .withSeparator(';')
+                .withIgnoreLeadingWhiteSpace(true)
+                .withThrowExceptions(false) // Allow parsing to continue on errors
+                .build();
 
             List<VortragCsvDto> beans = csvToBean.parse();
 
             csvToBean.getCapturedExceptions().forEach(e ->
-                    LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
+                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
             );
 
             for (VortragCsvDto csvDto : beans) {
@@ -527,23 +557,23 @@ public class AdminService {
                     if (csvDto.istPflicht) {
                         if (StringUtils.isBlank(csvDto.pflichtGruppe)) {
                             LOG.warn("Vortrag '" + csvDto.titel + "': Gruppe fehlt." +
-                                    PV_FAIL_MESSAGE);
+                                PV_FAIL_MESSAGE);
                             continue;
                         } else {
                             if (veranstaltung.getGruppen().contains(csvDto.pflichtGruppe)) {
                                 dto.pflichtGruppe = csvDto.pflichtGruppe;
                             } else {
                                 LOG.warn("Unbekannte Gruppe '" + csvDto.pflichtGruppe + "' für '" +
-                                        dto.titel + "' in Veranstaltung '" + veranstaltung.getName() + "'" +
-                                        PV_FAIL_MESSAGE);
+                                    dto.titel + "' in Veranstaltung '" + veranstaltung.getName() + "'" +
+                                    PV_FAIL_MESSAGE);
                                 continue;
                             }
                         }
 
                         if (StringUtils.isBlank(csvDto.pflichtSlot)
-                                || !slotsByName.containsKey(csvDto.pflichtSlot)) {
+                            || !slotsByName.containsKey(csvDto.pflichtSlot)) {
                             LOG.warn("Vortrag '" + csvDto.titel + "': Slot '" + csvDto.pflichtSlot + "' nicht gefunden"
-                                    + PV_FAIL_MESSAGE);
+                                + PV_FAIL_MESSAGE);
                             continue;
                         }
 
@@ -557,18 +587,18 @@ public class AdminService {
                             continue;
                         } else {
                             Set<Gebaeude> gebaeudeSet = veranstaltung.getGebaeude().stream()
-                                    .filter(gebaeudeRaumMap::containsKey)
-                                    .collect(Collectors.toSet());
+                                .filter(gebaeudeRaumMap::containsKey)
+                                .collect(Collectors.toSet());
 
                             if (gebaeudeSet.isEmpty()) {
                                 LOG.warn("Vortrag '" + csvDto.titel + "': Raum '" + csvDto.pflichtRaum + "' nicht gefunden in Veranstaltungsgebäuden"
-                                        + PV_FAIL_MESSAGE);
+                                    + PV_FAIL_MESSAGE);
                                 continue;
                             } else if (gebaeudeSet.size() == 1) {
                                 dto.pflichtRaumId = gebaeudeRaumMap.get(gebaeudeSet.iterator().next()).getId();
                             } else {
                                 LOG.warn("Vortrag '" + csvDto.titel + "': Raum '" + csvDto.pflichtRaum + "' nicht eindeutig in Veranstaltungsgebäuden"
-                                        + PV_FAIL_MESSAGE);
+                                    + PV_FAIL_MESSAGE);
                                 continue;
                             }
                         }
@@ -595,7 +625,7 @@ public class AdminService {
 
                         count++;
                         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag importiert",
-                                "Vortrag '" + dto.titel + "' via CSV importiert.", vortrag.getId());
+                            "Vortrag '" + dto.titel + "' via CSV importiert.", vortrag.getId());
                     } catch (IllegalArgumentException e) {
                         LOG.warn("Vortrag '" + csvDto.titel + "' übersprungen aufgrund von Validierungsfehler: " + e.getMessage());
                     }
@@ -648,9 +678,9 @@ public class AdminService {
 
             if (line.startsWith(LEGENDE)) {
                 List<Wahlvortrag> wahlvortraege = veranstaltung.getVortraege().stream()
-                        .filter(v -> v instanceof Wahlvortrag)
-                        .map(v -> (Wahlvortrag) v)
-                        .toList();
+                    .filter(v -> v instanceof Wahlvortrag)
+                    .map(v -> (Wahlvortrag) v)
+                    .toList();
                 legendIndexMap = parseLegende(line.substring(LEGENDE.length()), wahlvortraege);
             } else {
                 LOG.error("CSV-Import (Prioritäten) abgebrochen: Legende fehlt.");
@@ -670,7 +700,7 @@ public class AdminService {
                     } else {
                         LOG.error("CSV-Import (Prioritäten) abgebrochen: Ungültiger Header");
                         throw new CsvImportException(csvFilePath,
-                                "Ungültiger Header für Prio-Import in " + csvFilePath.getFileName());
+                            "Ungültiger Header für Prio-Import in " + csvFilePath.getFileName());
                     }
                 }
 
@@ -704,7 +734,7 @@ public class AdminService {
 
                         if (vortrag == null || !vortrag.getVeranstaltung().getId().equals(veranstaltungId)) {
                             LOG.warn("Priorität für '" + teilnehmerEmail + "' übersprungen: legendenIndex " + index + " ist" +
-                                    " ungültig oder kein Wahlvortrag dieser Veranstaltung.");
+                                " ungültig oder kein Wahlvortrag dieser Veranstaltung.");
                             continue;
                         }
 
@@ -747,9 +777,9 @@ public class AdminService {
             } else {
                 String titelPrefix = parts[1].trim();
                 Wahlvortrag wv = wvs.stream()
-                        .filter(v -> v.getTitel().startsWith(titelPrefix))
-                        .findFirst()
-                        .orElse(null);
+                    .filter(v -> v.getTitel().startsWith(titelPrefix))
+                    .findFirst()
+                    .orElse(null);
 
                 if (wv != null) {
                     indexToVortragsIdMap.put(Integer.parseInt(parts[0].trim()), wv);
@@ -796,7 +826,7 @@ public class AdminService {
         }
 
         protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot erstellt",
-                "Slot '" + slotDto.description + "' für '" + v.getName() + "' erstellt.", slot.getId());
+            "Slot '" + slotDto.description + "' für '" + v.getName() + "' erstellt.", slot.getId());
 
         return slot;
     }
@@ -868,9 +898,9 @@ public class AdminService {
 
             // Delete all availabilities associated with this slot
             NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>find("veranstaltungId", veranstaltung.getId()).stream()
-                    .forEach(v -> v.removeSlot(id));
+                .forEach(v -> v.removeSlot(id));
             RaumVerfuegbarkeit.<RaumVerfuegbarkeit>find("veranstaltungId", veranstaltung.getId()).stream()
-                    .forEach(v -> v.removeSlot(id));
+                .forEach(v -> v.removeSlot(id));
 
 
             long count = Slot.delete("id = ?1", id);
@@ -893,16 +923,16 @@ public class AdminService {
         }
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             CsvToBean<SlotCsvDto> csvToBean = new CsvToBeanBuilder<SlotCsvDto>(reader)
-                    .withType(SlotCsvDto.class)
-                    .withSeparator(';')
-                    .withIgnoreLeadingWhiteSpace(true)
-                    .withThrowExceptions(false)
-                    .build();
+                .withType(SlotCsvDto.class)
+                .withSeparator(';')
+                .withIgnoreLeadingWhiteSpace(true)
+                .withThrowExceptions(false)
+                .build();
 
             List<SlotCsvDto> beans = csvToBean.parse();
 
             csvToBean.getCapturedExceptions().forEach(e ->
-                    LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
+                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
             );
 
             for (SlotCsvDto dto : beans) {
@@ -924,7 +954,7 @@ public class AdminService {
                     Slot created = createSlot(slotDto, veranstaltungId);
                     count++;
                     protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot importiert",
-                            "Slot '" + slotDto.description + "' via CSV importiert.", created.getId());
+                        "Slot '" + slotDto.description + "' via CSV importiert.", created.getId());
                 } catch (IllegalArgumentException e) {
                     LOG.warn("Slot '" + dto.bezeichnung + "' übersprungen aufgrund von Validierungsfehler: " + e.getMessage());
                 }
@@ -934,7 +964,7 @@ public class AdminService {
             throw new CsvImportException(csvFilePath, e.getMessage());
         }
         LOG.info("Slot-Import abgeschlossen: " + count + " Slots " + csvFilePath +
-                " importiert.");
+            " importiert.");
         return count;
     }
 
@@ -1046,30 +1076,30 @@ public class AdminService {
         List<Raum> relevanteRaeume = aktuelleVeranstaltung.getRaeume();
         List<RaumVerfuegbarkeit> alleBelegungen = RaumVerfuegbarkeit.listAll();
         Map<Long, RaumVerfuegbarkeit> eigeneBelegungen = alleBelegungen.stream()
-                .filter(rv -> rv.getVeranstaltungId().equals(veranstaltungId))
-                .collect(Collectors.toMap(RaumVerfuegbarkeit::getRaumId, rv -> rv));
+            .filter(rv -> rv.getVeranstaltungId().equals(veranstaltungId))
+            .collect(Collectors.toMap(RaumVerfuegbarkeit::getRaumId, rv -> rv));
 
         // 2. Erstelle eine Map aller blockierten Zeitintervalle pro Raum (durch fremde Veranstaltungen)
         Map<Long, List<BlockingInfo>> blockierteIntervalleProRaum = new HashMap<>();
         alleBelegungen.stream()
-                .filter(rv -> !rv.getVeranstaltungId().equals(veranstaltungId))
-                .forEach(fremdeBelegung -> {
-                    Veranstaltung fremdeVeranstaltung = Veranstaltung.findById(fremdeBelegung.getVeranstaltungId());
-                    Set<Long> verfuegbareSlots = new HashSet<>(fremdeBelegung.getVerfuegbareSlotIds());
+            .filter(rv -> !rv.getVeranstaltungId().equals(veranstaltungId))
+            .forEach(fremdeBelegung -> {
+                Veranstaltung fremdeVeranstaltung = Veranstaltung.findById(fremdeBelegung.getVeranstaltungId());
+                Set<Long> verfuegbareSlots = new HashSet<>(fremdeBelegung.getVerfuegbareSlotIds());
 
-                    fremdeVeranstaltung.getSlots().stream()
-                            .filter(slot -> !verfuegbareSlots.contains(slot.getId())) // Finde die blockierten Slots
-                            .forEach(blockierterSlot -> {
-                                BlockingInfo info = new BlockingInfo(
-                                        blockierterSlot.getStartTime(),
-                                        blockierterSlot.getEndTime(),
-                                        fremdeVeranstaltung.getName()
-                                );
-                                blockierteIntervalleProRaum
-                                        .computeIfAbsent(fremdeBelegung.getRaumId(), k -> new ArrayList<>())
-                                        .add(info);
-                            });
-                });
+                fremdeVeranstaltung.getSlots().stream()
+                    .filter(slot -> !verfuegbareSlots.contains(slot.getId())) // Finde die blockierten Slots
+                    .forEach(blockierterSlot -> {
+                        BlockingInfo info = new BlockingInfo(
+                            blockierterSlot.getStartTime(),
+                            blockierterSlot.getEndTime(),
+                            fremdeVeranstaltung.getName()
+                        );
+                        blockierteIntervalleProRaum
+                            .computeIfAbsent(fremdeBelegung.getRaumId(), k -> new ArrayList<>())
+                            .add(info);
+                    });
+            });
 
         // 3. Erstelle die DTOs und prüfe auf Kollisionen
         List<RaumVerfuegbarkeitDto> dtos = new ArrayList<>();
@@ -1199,6 +1229,7 @@ public class AdminService {
 
     // ... am Ende der AdminService.java Klasse ...
 
+
     @Transactional
     public int importNutzerVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId) {
         int count = 0;
@@ -1242,6 +1273,7 @@ public class AdminService {
         LOG.info("Nutzer-Verfügbarkeiten-Import abgeschlossen: " + count + " Einträge verarbeitet.");
         return count;
     }
+
 
     @Transactional
     public int importRaumVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId) {
@@ -1287,6 +1319,7 @@ public class AdminService {
         return count;
     }
 
+
     private Set<Long> parseSlotIndices(String indicesString, List<Long> sortedSlotIds) {
         if (StringUtils.isBlank(indicesString)) {
             return new HashSet<>();
@@ -1309,6 +1342,7 @@ public class AdminService {
 // -------------------------------------------------------------------
 
 
+    @Transactional
     public static NutzerDto mapNutzerToDto(Nutzer u) {
         NutzerDto dto = new NutzerDto();
         dto.id = u.getId();
@@ -1351,6 +1385,7 @@ public class AdminService {
 // -------------------------------------------------------------------
 // Helper methods
 // -------------------------------------------------------------------
+
 
     private boolean kapazitaetZuGering(Raum raum, String gruppe, Veranstaltung veranstaltung) {
         if (raum == null || raum.getKapazitaet() == null) {

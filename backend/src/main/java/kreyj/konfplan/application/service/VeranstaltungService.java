@@ -25,7 +25,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 
 import static kreyj.konfplan.util.DateHelper.DATE_FORMAT;
 
@@ -70,10 +69,17 @@ public class VeranstaltungService {
         }
 
         v.setName(dto.getName());
+
         v.setBeginntAm(dto.getBeginntAm());
         v.setEndetAm(dto.getEndetAm());
-        v.setDeadlineReferenten(dto.getDeadlineReferenten());
-        v.setDeadlineTeilnehmer(dto.getDeadlineTeilnehmer());
+
+        if (dto.getBeginntAm() != null && dto.getEndetAm() != null && dto.getBeginntAm().isAfter(dto.getEndetAm())) {
+            throw new IllegalArgumentException("Beginn der Veranstaltung muss vor Ende liegen.");
+        }
+
+        v.setDeadlineReferenten(smartDeadLine(dto.getDeadlineReferenten(), dto.getBeginntAm(), 7));
+        v.setDeadlineTeilnehmer(smartDeadLine(dto.getDeadlineTeilnehmer(), dto.getBeginntAm(), 3));
+
         v.setLogo(dto.getLogo());
         v.setLogo_link(dto.getLogo_link());
 
@@ -92,8 +98,8 @@ public class VeranstaltungService {
             // alte Admins entfernen und neue zufügen
             ArrayList<Nutzer> alteNutzer = new ArrayList<>(v.getNutzer());
             alteNutzer.stream()
-                    .filter(u -> u instanceof Admin)
-                    .forEach(v::removeNutzer);
+                .filter(u -> u instanceof Admin)
+                .forEach(v::removeNutzer);
             for (Long adminId : dto.getOrganisatorIds()) {
                 Admin a = Admin.findById(adminId);
                 if (a == null) {
@@ -107,15 +113,28 @@ public class VeranstaltungService {
         if (dto.id == null) {
             v.persistAndFlush();
             protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung erstellt",
-                    "Neue Veranstaltung '" + v.getName() + "' erstellt.", v.getId());
+                "Neue Veranstaltung '" + v.getName() + "' erstellt.", v.getId());
         } else {
             // ZWINGEND ERFORDERLICH FÜR OPTIMISTIC LOCKING RESPONSE:
             // Hibernate zwingen, das Update jetzt durchzuführen, damit persistence.version() hochgezählt wird.
             v.persistAndFlush();
             protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung aktualisiert",
-                    "Veranstaltung '" + v.getName() + "' aktualisiert.", v.getId());
+                "Veranstaltung '" + v.getName() + "' aktualisiert.", v.getId());
         }
         return mapVeranstaltungToDto(v);
+    }
+
+
+    private static LocalDateTime smartDeadLine(LocalDateTime dtoDeadline, LocalDateTime beginntAm, int numDays) {
+        if (null == dtoDeadline) {
+            if (null == beginntAm) {
+                return LocalDateTime.now().minusDays(numDays);
+            } else {
+                return beginntAm.minusDays(numDays);
+            }
+        } else {
+            return dtoDeadline;
+        }
     }
 
 
@@ -124,16 +143,16 @@ public class VeranstaltungService {
         int count = 0;
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             CsvToBean<VeranstaltungCsvDto> csvToBean = new CsvToBeanBuilder<VeranstaltungCsvDto>(reader)
-                    .withType(VeranstaltungCsvDto.class)
-                    .withSeparator(';')
-                    .withIgnoreLeadingWhiteSpace(true)
-                    .withThrowExceptions(false)
-                    .build();
+                .withType(VeranstaltungCsvDto.class)
+                .withSeparator(';')
+                .withIgnoreLeadingWhiteSpace(true)
+                .withThrowExceptions(false)
+                .build();
 
             List<VeranstaltungCsvDto> beans = csvToBean.parse();
 
             csvToBean.getCapturedExceptions().forEach(e ->
-                    LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
+                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
             );
 
             for (VeranstaltungCsvDto csvDto : beans) {
@@ -153,6 +172,10 @@ public class VeranstaltungService {
                     LOG.error("Fehler beim Parsen des Datums für Veranstaltung '" + csvDto.name + "': " + e.getMessage());
                     continue;
                 }
+
+                veranstaltung.setDeadlineReferenten(veranstaltung.getBeginntAm().minusDays(7));
+                veranstaltung.setDeadlineTeilnehmer(veranstaltung.getBeginntAm().minusDays(3));
+
                 veranstaltung.setLogo(csvDto.logo);
                 veranstaltung.setLogo_link(csvDto.logo_link);
 
@@ -187,7 +210,7 @@ public class VeranstaltungService {
 
                 count++;
                 protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung importiert",
-                        "Veranstaltung '" + veranstaltung.getName() + "' via CSV importiert.", veranstaltung.getId());
+                    "Veranstaltung '" + veranstaltung.getName() + "' via CSV importiert.", veranstaltung.getId());
             }
         } catch (Exception e) {
             LOG.error("Kritischer Fehler beim Importieren der Veranstaltungen aus CSV: " + csvFilePath, e);
@@ -205,7 +228,7 @@ public class VeranstaltungService {
             boolean deleted = Veranstaltung.deleteById(id);
             if (deleted) {
                 protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung gelöscht",
-                        "Veranstaltung '" + veranstaltung.getName() + "' gelöscht.", veranstaltung.getId());
+                    "Veranstaltung '" + veranstaltung.getName() + "' gelöscht.", veranstaltung.getId());
             }
             return deleted;
         }
@@ -234,11 +257,11 @@ public class VeranstaltungService {
         // Organisatoren filtern und hinzufügen
         if (v.getNutzer() != null) {
             v.getNutzer().stream()
-                    .filter(u -> u instanceof Admin)
-                    .forEach(u -> {
-                        dto.getOrganisatorIds().add(u.getId());
-                        dto.getOrganisatorNamen().add(u.getLastName());
-                    });
+                .filter(u -> u instanceof Admin)
+                .forEach(u -> {
+                    dto.getOrganisatorIds().add(u.getId());
+                    dto.getOrganisatorNamen().add(u.getLastName());
+                });
         }
 
         dto.setGebaeude(v.getGebaeude().stream().map(VeranstaltungService::mapToDto).toList());
@@ -261,8 +284,8 @@ public class VeranstaltungService {
         dto.typ = gebaeude.getTyp();
 
         dto.raeume = gebaeude.getRaeume().stream()
-                .map(VeranstaltungService::mapRaumToDto)
-                .toList();
+            .map(VeranstaltungService::mapRaumToDto)
+            .toList();
 
         return dto;
     }

@@ -15,7 +15,6 @@
               <span class="font-black text-xs uppercase tracking-tighter truncate">{{ eventContext.selectedEvent.name }}</span>
               <span class="text-[10px] text-indigo-200 font-bold whitespace-nowrap">{{ formatDate(eventContext.selectedEvent.beginntAm) }}</span>
             </div>
-<!--            <span style="color: red">&gt;{{eventContext.selectedEvent.logo}}&lt;</span>-->
           </div>
         </div>
 
@@ -26,18 +25,18 @@
 
         <!-- Desktop Menu -->
         <div class="hidden md:flex gap-6 items-center">
-          <router-link v-if="auth.isParticipant" to="/teilnehmer" class="hover:underline text-sm font-bold">Vorträge</router-link>
-          <router-link v-if="auth.isSpeaker" to="/referent" class="hover:underline text-sm font-bold">Mein Vorträge</router-link>
-          <router-link v-if="auth.isAdmin" to="/admin" class="hover:underline text-sm font-bold">Admin</router-link>
+          <router-link v-if="auth.isParticipant" to="/teilnehmer" class="hover:underline text-sm font-bold">tn</router-link>
+          <router-link v-if="auth.isSpeaker" to="/referent" class="hover:underline text-sm font-bold">ref</router-link>
+          <router-link v-if="auth.isAdmin" to="/admin" class="hover:underline text-sm font-bold">adm</router-link>
           <button @click="auth.logout()" class="bg-indigo-700 hover:bg-indigo-800 px-3 py-1 rounded text-xs font-black transition-colors uppercase">Logout</button>
         </div>
       </div>
 
       <!-- Mobile Menu Content -->
       <div v-if="mobileMenuOpen" class="md:hidden mt-4 flex flex-col gap-2 pb-2">
-        <router-link v-if="auth.isParticipant" to="/teilnehmer" @click="mobileMenuOpen = false">Vorträge</router-link>
-        <router-link v-if="auth.isSpeaker" to="/referent" @click="mobileMenuOpen = false">Meine Vorträge</router-link>
-        <router-link v-if="auth.isAdmin" to="/admin" @click="mobileMenuOpen = false">Admin</router-link>
+        <router-link v-if="auth.isParticipant" to="/teilnehmer" @click="mobileMenuOpen = false">tn</router-link>
+        <router-link v-if="auth.isSpeaker" to="/referent" @click="mobileMenuOpen = false">ref</router-link>
+        <router-link v-if="auth.isAdmin" to="/admin" @click="mobileMenuOpen = false">adm</router-link>
         <button @click="auth.logout()" class="text-left text-red-200">Logout</button>
       </div>
     </nav>

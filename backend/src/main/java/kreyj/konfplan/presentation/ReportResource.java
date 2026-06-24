@@ -5,14 +5,17 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.application.service.PdfService;
+import kreyj.konfplan.application.service.TeilnehmerService;
 import kreyj.konfplan.application.service.TemplateService;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.util.JwtHelper;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
@@ -25,11 +28,13 @@ public class ReportResource {
 
     private final PdfService pdfService;
     private final TemplateService templateService;
+    private final TeilnehmerService teilnehmerService;
     private final JsonWebToken jwt;
 
-    public ReportResource(PdfService pdfService, TemplateService templateService, JsonWebToken jwt) {
+    public ReportResource(PdfService pdfService, TemplateService templateService, TeilnehmerService teilnehmerService, JsonWebToken jwt) {
         this.pdfService = pdfService;
         this.templateService = templateService;
+        this.teilnehmerService = teilnehmerService;
         this.jwt = jwt;
     }
 
@@ -288,23 +293,31 @@ public class ReportResource {
     @GET
     @Path("/{vid}/dashboard/teilnehmer")
     @Produces(MediaType.TEXT_HTML)
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ADMIN", "TEILNEHMER"})
     @Operation(summary = "Dashboard: Teilnehmerübersicht (HTML)")
     public Response getTeilnehmerDashboard(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (veranstaltung == null) return Response.status(Response.Status.NOT_FOUND).build();
-        return Response.ok(templateService.prepareTeilnehmerDashboard(veranstaltung).render()).build();
+        Teilnehmer teilnehmer = teilnehmerService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
+        if (null == teilnehmer) {
+            throw new WebApplicationException("Teilnehmer not found", Response.Status.NOT_FOUND);
+        }
+        return Response.ok(templateService.prepareTeilnehmerDashboard(veranstaltung, teilnehmer).render()).build();
     }
 
     @GET
     @Path("/{vid}/dashboard/teilnehmer-pdf")
     @Produces("application/pdf")
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ADMIN","TEILNEHMER"})
     @Operation(summary = "Dashboard: Teilnehmerübersicht (PDF)")
     public Response getTeilnehmerDashboardPdf(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (veranstaltung == null) return Response.status(Response.Status.NOT_FOUND).build();
-        return Response.ok(pdfService.generatePdf(templateService.prepareTeilnehmerDashboard(veranstaltung))).build();
+        Teilnehmer teilnehmer = teilnehmerService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
+        if (null == teilnehmer) {
+            throw new WebApplicationException("Teilnehmer not found", Response.Status.NOT_FOUND);
+        }
+        return Response.ok(pdfService.generatePdf(templateService.prepareTeilnehmerDashboard(veranstaltung, teilnehmer))).build();
     }
 
     @GET

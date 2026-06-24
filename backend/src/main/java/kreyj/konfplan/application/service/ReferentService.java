@@ -16,6 +16,7 @@ import org.jboss.logging.Logger;
 
 import java.io.FileReader;
 import java.nio.file.Path;
+import java.sql.Ref;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,7 +39,7 @@ public class ReferentService {
 
 
     @Transactional
-    public Referent getProfile(String email) {
+    public Referent findByEmail(String email) {
         Nutzer nutzer = Nutzer.findByEmail(email);
         if (nutzer instanceof Referent) {
             return (Referent) nutzer;
@@ -79,20 +80,19 @@ public class ReferentService {
         return vortraege.stream().map(ReferentService::mapVortragToDto).toList();
     }
 
-    public List<ReferentVeranstaltungDto> getReferentVeranstaltungen(String email) {
-        Referent referent = Referent.find("email", email).firstResult();
+    public List<ReferentVeranstaltungDto> getReferentVeranstaltungen(Referent referent) {
         if (referent == null) {
             return new ArrayList<>();
         }
 
         // Alle Veranstaltungen, bei denen der Referent gelistet ist
-        Set<Veranstaltung> events = new HashSet<>(referent.getVeranstaltungen());
+        Set<Veranstaltung> veranstaltungen = new HashSet<>(referent.getVeranstaltungen());
 
         // Und alle Veranstaltungen, für die er bereits einen Vortrag hat
         List<Vortrag> vortraege = Vortrag.find("referent", referent).list();
-        vortraege.stream().map(Vortrag::getVeranstaltung).forEach(events::add);
+        vortraege.stream().map(Vortrag::getVeranstaltung).forEach(veranstaltungen::add);
 
-        return events.stream().map(e -> {
+        return veranstaltungen.stream().map(e -> {
             ReferentVeranstaltungDto dto = new ReferentVeranstaltungDto();
             dto.id = e.getId();
             dto.name = e.getName();

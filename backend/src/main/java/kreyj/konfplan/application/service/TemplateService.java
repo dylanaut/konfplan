@@ -89,7 +89,7 @@ public class TemplateService {
     public TemplateInstance prepareTnLaufzettelTemplate(Veranstaltung veranstaltung, Teilnehmer teilnehmer) {
         return laufzettelTeilnehmerTemplate.data("veranstaltung", veranstaltung)
                 .data("teilnehmer", teilnehmer)
-                .data("plan", planService.getPlanFuerTeilnehmer(teilnehmer.getEmail(), veranstaltung));
+                .data("plan", planService.getPlanFuerTeilnehmer(teilnehmer, veranstaltung));
     }
 
 
@@ -97,7 +97,7 @@ public class TemplateService {
         return laufzettelReferentTemplate
                 .data("veranstaltung", veranstaltung)
                 .data("referent", referent)
-                .data("plan", planService.getPlanFuerReferent(referent.getEmail(), veranstaltung));
+                .data("plan", planService.getPlanFuerReferent(referent, veranstaltung));
     }
 
 
@@ -204,12 +204,19 @@ public class TemplateService {
     }
 
 
-    public TemplateInstance prepareTeilnehmerDashboard(Veranstaltung veranstaltung) {
+    public TemplateInstance prepareTeilnehmerDashboard(Veranstaltung veranstaltung, Teilnehmer teilnehmer) {
         DashboardData dd = getDashboardData(veranstaltung);
         TeilnehmerDashboard db = dd.teilnehmerDashboard;
 
+        TeilnehmerDashboard.TeilnehmerInfoDto teilnehmerInfo = new TeilnehmerDashboard.TeilnehmerInfoDto(
+                teilnehmer.getFirstName(),
+                teilnehmer.getLastName(),
+                teilnehmer.getGruppen()
+        );
+
         return teilnehmerDashboardTemplate.data(Map.of(
                 "veranstaltung", veranstaltung,
+                "teilnehmer", teilnehmerInfo,
                 "slots", dd.slots,
                 "teilnehmer_stundenplan", db.teilnehmer_stundenplan(),
                 "gruppen", db.gruppen(),

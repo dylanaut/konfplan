@@ -41,16 +41,19 @@ public class TeilnehmerService {
     }
 
 
+    @Transactional
     public List<Teilnehmer> findAll(Long veranstaltungId) {
         return Nutzer.find("role = 'TEILNEHMER' and veranstaltung.id = ?1", veranstaltungId).list();
     }
 
 
+    @Transactional
     public Teilnehmer findById(Long id) {
         return Nutzer.findById(id);
     }
 
 
+    @Transactional
     public Teilnehmer findByEmail(String email) {
         if (null == email) {
             return null;
@@ -58,6 +61,7 @@ public class TeilnehmerService {
         return Teilnehmer.find("email", email.trim().toLowerCase()).firstResult();
     }
 
+    @Transactional
     public List<TeilnehmerVeranstaltungDto> getTeilnehmerVeranstaltungen(String email) {
         Teilnehmer teilnehmer = findByEmail(email);
         if (teilnehmer == null) {

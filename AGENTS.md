@@ -53,13 +53,14 @@ cd frontend && npm install && npm run dev
 
 - **Veranstaltung** – Zentrale Entität; hat EventSlots, Gebäude, Nutzer; besitzt Deadlines für Referenten/Teilnehmer.
 - **Nutzer** (SINGLE_TABLE) → Admin | Referent | Teilnehmer
-- **Vortrag** (SINGLE_TABLE) → Pflichtvortrag | Wahlvortrag
+- **Vortrag** (SINGLE_TABLE) → Pflichtvortrag | Wahlvortrag; hat optional ein `Berufsfeld`.
+- **Berufsfeld** - Enum zur Kategorisierung von Vorträgen.
 - **EventSlot** – Zeitfenster innerhalb einer Veranstaltung; mit Überschneidungsprüfung.
 - **Zuweisung** – Ordnet Teilnehmer einem Vortrag + Slot + Raum zu.
 - **Prioritaet** – Präferenz eines Teilnehmers für einen Wahlvortrag (Ranking 1-10).
 - **Verfuegbarkeit** – Gibt an, ob Nutzer in einem Slot verfügbar ist (Default: true bei Zuweisung).
 - **RaumVerfuegbarkeit** – Modelliert die Verfügbarkeit von Räumen pro Slot inklusive veranstaltungsübergreifender Prüfung.
-- **AdminPrioritaetUpdateRequestDto** - DTO für die Aktualisierung einer einzelnen Teilnehmerpriorität durch Administratoren.
+- **TeilnehmerDashboardDto** - DTO, das alle Daten für das persönliche Dashboard eines Teilnehmers bündelt.
 
 ## Wichtige Konventionen
 
@@ -69,15 +70,17 @@ cd frontend && npm install && npm run dev
 - Datum/Zeit: `LocalDateTime` mit Custom `LocalDateTimeConverter`.
 - Fehlerbehandlung: `CustomExceptionMapper` mappt Exceptions auf HTTP-Responses.
 - Alle REST-Endpunkte unter `/api/...`; Security via `@RolesAllowed`.
-- Neuer Admin-Endpunkt: `PUT /api/admin/veranstaltungen/{vid}/teilnehmer/{tid}/priorities` zur individuellen Aktualisierung von Teilnehmerprioritäten.
+- CSV-Import von Verfügbarkeiten erfolgt über 1-basierte Slot-Indizes.
+- `.editorconfig` im Root-Verzeichnis definiert den Code-Stil für das gesamte Projekt.
 
 ## Bekannte Besonderheiten
 
 - MiniZinc muss auf dem System installiert sein (`minizinc` im PATH) für `PlanErstellungService`.
-- Deadlines verhindern Eingaben/Änderungen für Referenten und Teilnehmer nach Ablauf.
+- Deadlines (`deadlineReferenten`, `deadlineTeilnehmer`) steuern die Bearbeitbarkeit von Daten in den jeweiligen Dashboards.
 - Räume werden veranstaltungsübergreifend auf Überschneidungen geprüft.
 - Passwort-Reset per E-Mail (Mailpit-Credentials in `application.properties` setzen).
 - Standard-Passwort bei Erstellung/Import: `start123` (BCrypt-gehasht).
+- Vite (`vite.config.js`) ist so konfiguriert, dass eine `manifest.json` für die dynamische Einbindung von Assets in Qute-Templates erzeugt wird.
 
 ## Arbeitsanweisungen für den Agenten
 

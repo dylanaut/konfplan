@@ -41,7 +41,6 @@ public class Gebaeude extends VersionedEntity {
 
 
     @OneToMany(mappedBy = "gebaeude", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
-    @Setter(AccessLevel.NONE)
     Set<Raum> raeume = new HashSet<>();
 
     public Set<Raum> getRaeume() {

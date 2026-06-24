@@ -7,7 +7,7 @@
 :source-highlighter: highlight.js
 :icons: font
 
-Dieses Handbuch bietet einen Überblick über die Architektur, Technologien und Entwicklungspraktiken des Vortragsmanagers. Es richtet sich an Entwickler, die an diesem Projekt mitarbeiten.
+Dieses Handbuch bietet einen Überblick über die Architektur, Technologien und Entwicklungspraktiken der KonfPlan Anwendung. Es richtet sich an Entwickler, die an diesem Projekt mitarbeiten.
 
 [[_projektuebersicht]]
 == 1. Projektübersicht
@@ -27,8 +27,8 @@ konfplan/
 └── pom.xml           # Maven Multi-Module Parent
 ----
 
-[[_schluesseltechnologien]]
-== 3. Schlüsseltechnologien
+[[_kerntechnologien]]
+== 3. Kerntechnologien
 
 Die Anwendung setzt auf folgende Kerntechnologien:
 

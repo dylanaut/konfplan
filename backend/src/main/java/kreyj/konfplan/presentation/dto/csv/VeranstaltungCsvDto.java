@@ -18,7 +18,6 @@ public class VeranstaltungCsvDto {
     @CsvBindByName(column = "Logo_Link")
     public String logo_link;
 
-
     @CsvBindByName(column = "Organisatoren_Emails", required = true)
     public String organisatorenEmails;
 
