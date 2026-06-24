@@ -5,16 +5,17 @@ import com.opencsv.bean.CsvToBeanBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.adapter.in.web.dto.GebaeudeSimpleDto;
+import kreyj.konfplan.adapter.in.web.dto.RaumDto;
+import kreyj.konfplan.adapter.in.web.dto.VeranstaltungDto;
+import kreyj.konfplan.adapter.in.web.dto.csv.VeranstaltungCsvDto;
+import kreyj.konfplan.application.port.in.VeranstaltungServiceInterface;
 import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.presentation.dto.GebaeudeSimpleDto;
-import kreyj.konfplan.presentation.dto.RaumDto;
-import kreyj.konfplan.presentation.dto.VeranstaltungDto;
-import kreyj.konfplan.presentation.dto.csv.VeranstaltungCsvDto;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
@@ -29,7 +30,7 @@ import java.util.List;
 import static kreyj.konfplan.util.DateHelper.DATE_FORMAT;
 
 @ApplicationScoped
-public class VeranstaltungService {
+public class VeranstaltungService implements VeranstaltungServiceInterface {
     private static final Logger LOG = Logger.getLogger(VeranstaltungService.class);
 
     private final ProtokollService protokollService; // Inject ProtokollService
@@ -40,17 +41,20 @@ public class VeranstaltungService {
     }
 
 
+    @Override
     public List<Veranstaltung> listAll() {
         return Veranstaltung.listAll();
     }
 
 
+    @Override
     public Veranstaltung findById(Long id) {
         return Veranstaltung.findById(id);
     }
 
 
     @Transactional
+    @Override
     public VeranstaltungDto save(VeranstaltungDto dto) {
         Veranstaltung v;
 
@@ -139,6 +143,7 @@ public class VeranstaltungService {
 
 
     @Transactional
+    @Override
     public int importFromCsv(Path csvFilePath) throws Exception {
         int count = 0;
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
@@ -222,6 +227,7 @@ public class VeranstaltungService {
 
 
     @Transactional
+    @Override
     public boolean delete(Long id) {
         Veranstaltung veranstaltung = Veranstaltung.findById(id);
         if (veranstaltung != null) {

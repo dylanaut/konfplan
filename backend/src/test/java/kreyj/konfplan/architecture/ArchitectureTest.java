@@ -25,7 +25,7 @@ public class ArchitectureTest {
     @ArchTest
     static final ArchRule no_dtos_in_services = noClasses()
             .that().resideInAPackage("..application.service..")
-            .should().dependOnClassesThat().resideInAPackage("..presentation.dto..");
+            .should().dependOnClassesThat().resideInAPackage("..adapter.in.web.dto..");
 
     @ArchTest
     static final ArchRule no_panache_in_resources = noClasses()

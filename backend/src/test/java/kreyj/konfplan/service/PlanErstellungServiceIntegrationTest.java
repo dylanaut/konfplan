@@ -20,8 +20,8 @@ import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.presentation.DatabaseCleaner;
-import kreyj.konfplan.presentation.dto.RaumBelegungUebersicht;
-import kreyj.konfplan.presentation.dto.SolverConfig;
+import kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht;
+import kreyj.konfplan.adapter.in.web.dto.SolverConfig;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,8 +36,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static java.util.stream.Collectors.joining;
-import static kreyj.konfplan.presentation.dto.RaumBelegungUebersicht.VORTRAG_TITEL_FREI;
-import static kreyj.konfplan.presentation.dto.RaumBelegungUebersicht.VORTRAG_TYP_FREI;
+import static kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht.VORTRAG_TITEL_FREI;
+import static kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht.VORTRAG_TYP_FREI;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 

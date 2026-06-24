@@ -15,14 +15,14 @@ import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.Wahlvortrag;
-import kreyj.konfplan.presentation.dto.PlanQualitaetDto;
-import kreyj.konfplan.presentation.dto.RaumBelegungUebersicht;
-import kreyj.konfplan.presentation.dto.RaumDto;
-import kreyj.konfplan.presentation.dto.RaumplanEintragDto;
-import kreyj.konfplan.presentation.dto.ReferentVortragDto;
-import kreyj.konfplan.presentation.dto.SlotDto;
-import kreyj.konfplan.presentation.dto.TeilnehmerDto;
-import kreyj.konfplan.presentation.dto.ZuweisungDto;
+import kreyj.konfplan.adapter.in.web.dto.PlanQualitaetDto;
+import kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht;
+import kreyj.konfplan.adapter.in.web.dto.RaumDto;
+import kreyj.konfplan.adapter.in.web.dto.RaumplanEintragDto;
+import kreyj.konfplan.adapter.in.web.dto.ReferentVortragDto;
+import kreyj.konfplan.adapter.in.web.dto.SlotDto;
+import kreyj.konfplan.adapter.in.web.dto.TeilnehmerDto;
+import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
 import kreyj.konfplan.util.TemplateExtensions;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jboss.logging.Logger;
@@ -43,8 +43,8 @@ import java.util.stream.Collectors;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toMap;
 import static kreyj.konfplan.persistence.Planungsergebnis.getPlanungsergebnis;
-import static kreyj.konfplan.presentation.dto.RaumBelegungUebersicht.VORTRAG_TITEL_FREI;
-import static kreyj.konfplan.presentation.dto.RaumBelegungUebersicht.VORTRAG_TYP_FREI;
+import static kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht.VORTRAG_TITEL_FREI;
+import static kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht.VORTRAG_TYP_FREI;
 
 @ApplicationScoped
 public class PlanService {
