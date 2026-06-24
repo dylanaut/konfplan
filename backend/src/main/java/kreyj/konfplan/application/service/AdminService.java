@@ -6,6 +6,18 @@ import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
+import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
+import kreyj.konfplan.adapter.in.web.dto.SlotDto;
+import kreyj.konfplan.adapter.in.web.dto.VortragDto;
+import kreyj.konfplan.adapter.in.web.dto.VortragPrioDto;
+import kreyj.konfplan.adapter.in.web.dto.VortragStatDto;
+import kreyj.konfplan.adapter.in.web.dto.csv.AdminCsvDto;
+import kreyj.konfplan.adapter.in.web.dto.csv.NutzerVerfuegbarkeitCsvDto;
+import kreyj.konfplan.adapter.in.web.dto.csv.RaumVerfuegbarkeitCsvDto;
+import kreyj.konfplan.adapter.in.web.dto.csv.SlotCsvDto;
+import kreyj.konfplan.adapter.in.web.dto.csv.VortragCsvDto;
+import kreyj.konfplan.application.port.in.AdminServiceInterface;
 import kreyj.konfplan.domain.exception.CreateSlotException;
 import kreyj.konfplan.domain.exception.CreateVortragException;
 import kreyj.konfplan.domain.exception.CsvImportException;
@@ -32,17 +44,6 @@ import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
 import kreyj.konfplan.persistence.Wahlvortrag;
-import kreyj.konfplan.presentation.dto.NutzerDto;
-import kreyj.konfplan.presentation.dto.RaumVerfuegbarkeitDto;
-import kreyj.konfplan.presentation.dto.SlotDto;
-import kreyj.konfplan.presentation.dto.VortragDto;
-import kreyj.konfplan.presentation.dto.VortragPrioDto;
-import kreyj.konfplan.presentation.dto.VortragStatDto;
-import kreyj.konfplan.presentation.dto.csv.AdminCsvDto;
-import kreyj.konfplan.presentation.dto.csv.NutzerVerfuegbarkeitCsvDto;
-import kreyj.konfplan.presentation.dto.csv.RaumVerfuegbarkeitCsvDto;
-import kreyj.konfplan.presentation.dto.csv.SlotCsvDto;
-import kreyj.konfplan.presentation.dto.csv.VortragCsvDto;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
@@ -75,7 +76,7 @@ import static kreyj.konfplan.util.DateHelper.DATE_FORMAT;
 import static org.apache.commons.collections4.SetUtils.difference;
 
 @ApplicationScoped
-public class AdminService {
+public class AdminService implements AdminServiceInterface {
     private static final Logger LOG = Logger.getLogger(AdminService.class);
     public static final String CSV_PRIO_HEADER = "Teilnehmer E-Mail;Prioritäten";
     public static final String PV_FAIL_MESSAGE = ". Pflichtvortrag kann nicht erstellt werden.";
@@ -102,6 +103,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public List<NutzerDto> getAllUsers() {
         return new HashSet<>(Nutzer.<Nutzer>listAll()) // Duplikate entfernen
             .stream()
@@ -111,6 +113,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public List<NutzerDto> getAllUsers(Long veranstaltungId) {
         List<Nutzer> admins = Nutzer.list("role = 'ADMIN'");
         List<Nutzer> vNutzers = Nutzer.find("SELECT u FROM Nutzer u JOIN u.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
@@ -123,12 +126,14 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public Nutzer findNutzer(Long id) {
         return Nutzer.findById(id);
     }
 
 
     @Transactional
+    @Override
     public NutzerDto createUser(NutzerDto dto, List<Long> veranstaltungsIds) {
         Nutzer nutzer;
         if ("REFERENT".equals(dto.role)) {
@@ -180,6 +185,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public NutzerDto updateUser(Long id, NutzerDto dto, List<Long> vUpdateIds) {
         Nutzer nutzer = Nutzer.findById(id);
         if (nutzer == null) {
@@ -259,6 +265,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public boolean confirmEmailChange(String token) {
         Nutzer nutzer = Nutzer.find("emailChangeToken", token).firstResult();
 
@@ -289,6 +296,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public void inviteUserToEvent(Long nutzerId, Long veranstaltungId) {
         Objects.requireNonNull(nutzerId, "userId darf nicht null sein.");
         Objects.requireNonNull(veranstaltungId, "veranstaltungId darf nicht null sein.");
@@ -321,6 +329,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public boolean deleteUser(Long id) {
         Nutzer nutzer = Nutzer.findById(id);
         if (nutzer != null) {
@@ -339,6 +348,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public void toggleUserStatus(Long id) {
         Nutzer entity = Nutzer.findById(id);
         if (entity != null) {
@@ -349,22 +359,26 @@ public class AdminService {
     }
 
 
+    @Override
     public List<Vortrag> getAllVortraege(Long veranstaltungId) {
         return Vortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
     }
 
 
+    @Override
     public Vortrag getVeranstaltungsVortrag(Long veranstaltungId, Long vortragId) {
         return Vortrag.find("veranstaltung.id = ?1 and id = ?2", veranstaltungId, vortragId).firstResult();
     }
 
 
+    @Override
     public List<Referent> getAllReferenten(Long veranstaltungId) {
         return Nutzer.find("role = 'REFERENT' AND veranstaltung.id = ?1", veranstaltungId).list();
     }
 
 
     @Transactional
+    @Override
     public Vortrag createVortrag(VortragDto vortragDto) {
         Objects.requireNonNull(vortragDto, "VortragDTO darf nicht null sein.");
         Long veranstaltungId = vortragDto.veranstaltungId;
@@ -459,6 +473,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public int importAdminsFromCsv(Path csvFilePath) throws Exception {
         int count = 0;
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
@@ -505,6 +520,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public int importVortraegeFromCsv(Path csvFilePath, Long veranstaltungId) {
         int count = 0;
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
@@ -662,6 +678,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public int importPrioritaetenFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception {
         int count = 0;
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
@@ -793,12 +810,14 @@ public class AdminService {
     }
 
 
+    @Override
     public List<Slot> getAllEventSlots(Long veranstaltungId) {
         return Slot.find("veranstaltung.id = ?1", veranstaltungId).list();
     }
 
 
     @Transactional
+    @Override
     public Slot createSlot(SlotDto slotDto, Long veranstaltungId) {
         Objects.requireNonNull(veranstaltungId, "veranstaltungId darf nicht NULL sein");
         if (slotDto.veranstaltungId != null && !slotDto.veranstaltungId.equals(veranstaltungId)) {
@@ -833,6 +852,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public Slot updateSlot(Long slotId, SlotDto updated, Long veranstaltungId) {
         Objects.requireNonNull(slotId, "slotId darf nicht NULL sein");
         Slot entity = Slot.findById(slotId);
@@ -891,6 +911,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public boolean deleteSlot(Long id, Veranstaltung veranstaltung) {
         Slot slot = Slot.findById(id);
         if (slot != null && slot.getVeranstaltung().getId().equals(veranstaltung)) {
@@ -914,6 +935,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public int importSlotsFromCsv(Path csvFilePath, Long veranstaltungId) {
         int count = 0;
         Veranstaltung v = Veranstaltung.findById(veranstaltungId);
@@ -970,6 +992,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public VortragDto updateVortrag(Long vortragId, Long veranstaltungId, VortragDto updated) {
         Vortrag entity = Vortrag.findById(vortragId);
         if (entity == null || !entity.getVeranstaltung().getId().equals(veranstaltungId)) {
@@ -1014,6 +1037,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public boolean deleteVortrag(Long id, Veranstaltung veranstaltung) {
         Objects.requireNonNull(id, "ID darf nicht NULL sein");
         Objects.requireNonNull(veranstaltung, "Veranstaltung darf nicht NULL sein");
@@ -1059,6 +1083,7 @@ public class AdminService {
     }
 
 
+    @Override
     public List<VortragStatDto> getStats(Long veranstaltungId) {
         List<Vortrag> all = Vortrag.find("veranstaltung.id = ?1", veranstaltungId).list();
         return all.stream().map(v -> new VortragStatDto(v.getTitel(), 0, 0, 0, 0, 0)).toList();
@@ -1066,6 +1091,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public List<RaumVerfuegbarkeitDto> getRaumVerfuegbarkeiten(Long veranstaltungId) {
         Veranstaltung aktuelleVeranstaltung = Veranstaltung.findById(veranstaltungId);
         if (aktuelleVeranstaltung == null) {
@@ -1143,6 +1169,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public List<String> getGruppen(Long veranstaltungId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
         if (veranstaltung == null) {
@@ -1153,6 +1180,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public void createGruppe(Long veranstaltungId, String gruppenName) {
         if (StringUtils.isBlank(gruppenName)) {
             throw new CreateVortragException("Gruppenname darf nicht leer sein.");
@@ -1169,6 +1197,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public void renameGruppe(Long veranstaltungId, String alterName, String neuerName) {
         if (StringUtils.isBlank(alterName) || StringUtils.isBlank(neuerName)) {
             throw new UpdateVortragException("Gruppenname darf nicht leer sein.");
@@ -1204,6 +1233,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public void deleteGruppe(Long veranstaltungId, String gruppenName) {
         if (StringUtils.isBlank(gruppenName)) {
             throw new DeleteVortragsgruppeException("Gruppenname darf nicht leer sein.");
@@ -1231,6 +1261,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public int importNutzerVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId) {
         int count = 0;
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
@@ -1276,6 +1307,7 @@ public class AdminService {
 
 
     @Transactional
+    @Override
     public int importRaumVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId) {
         int count = 0;
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);

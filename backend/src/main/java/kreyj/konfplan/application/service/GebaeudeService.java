@@ -4,7 +4,7 @@ import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.presentation.dto.csv.GebaeudeRaeumeCsvDto;
+import kreyj.konfplan.adapter.in.web.dto.csv.GebaeudeRaeumeCsvDto;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.ProtokollKategorie;

@@ -13,7 +13,7 @@ import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.presentation.dto.RaumVerfuegbarkeitDto;
+import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

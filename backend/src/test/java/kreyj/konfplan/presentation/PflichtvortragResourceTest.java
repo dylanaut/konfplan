@@ -8,6 +8,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.MediaType;
+import kreyj.konfplan.adapter.in.web.VeranstaltungResource;
 import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
@@ -17,7 +18,7 @@ import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.presentation.dto.VortragDto;
+import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

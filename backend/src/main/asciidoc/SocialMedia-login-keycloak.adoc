@@ -1,0 +1,666 @@
+= Social Login mit Keycloak in einer Quarkus-App
+:toc: left
+:toclevels: 3
+:source-highlighter: rouge
+:icons: font
+
+Chat-Verlauf: Integration von Social-Media-Logins (Google, Facebook, Instagram) über Keycloak als Identity-Broker in eine Quarkus-Anwendung mit eigener Nutzerverwaltung.
+
+== Frage 1: Social Login statt eigener Nutzerverwaltung
+
+[quote]
+____
+Ich habe eine APP mit Quarkus entwickelt, die eine eigene Nutzerverwaltung besitzt, und Nutzer identifizieren sich mit ihrer Email-Adresse. Was muss ich tun, damit sie sich leichter über einen ihrer SocialMedia Accounts (Google, Facebook, Instagram, etc.) registrieren und anmelden können. Entstehen mir dabei Kosten?
+____
+
+=== Antwort
+
+==== Grundprinzip
+
+Benötigt wird *OAuth2/OpenID Connect (OIDC)* als "Login mit X"-Mechanismus. Der Nutzer authentifiziert sich beim Anbieter (Google, Facebook, ...), die App erhält danach ein Token mit grundlegenden Infos (meist E-Mail, Name, manchmal Profilbild).
+
+==== Technische Umsetzung in Quarkus
+
+Wichtigste Extension:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc</artifactId>
+</dependency>
+----
+
+Für mehrere Anbieter gleichzeitig (Google + Facebook + ...) werden *named OIDC tenants* benötigt – Quarkus unterstützt das über `quarkus.oidc.<tenant-name>.*`-Konfiguration. Pro Anbieter wird konfiguriert:
+
+* `auth-server-url` (z. B. Googles OIDC-Endpoint)
+* `client-id` und `client-secret` (vom jeweiligen Anbieter)
+* `redirect-uri`
+* `scopes` (z. B. `email`, `profile`)
+
+Ablauf:
+
+. Registrierung der App bei jedem Anbieter als "OAuth-Client" → Client-ID/Secret
+. Nutzer klickt "Mit Google anmelden" → Redirect zu Google
+. Google fragt nach Zustimmung, schickt Nutzer mit Code zurück
+. Quarkus tauscht Code gegen Token, extrahiert E-Mail/Name
+. Verknüpfung des externen Logins mit der bestehenden Nutzerverwaltung – meist über die E-Mail-Adresse als Schlüssel (oder eine separate "linked accounts"-Tabelle)
+
+TIP: Da eine eigene Nutzerverwaltung existiert, muss eigene Logik geschrieben werden, die nach erfolgreichem OIDC-Login prüft: "Gibt es schon einen Nutzer mit dieser E-Mail? Wenn ja, einloggen. Wenn nein, neuen Account anlegen." Das übernimmt Quarkus nicht automatisch.
+
+==== Pro Anbieter unterschiedlich
+
+* *Google*: Standard-OIDC, relativ einfach, gute Doku
+* *Facebook*: nutzt OAuth2, aber kein vollständiges OIDC – eher `quarkus-rest-client` oder eine Facebook-spezifische Integration nötig, da die Endpoints leicht abweichen
+* *Instagram*: aktuell kein eigenständiges "Login mit Instagram für Drittanbieter-Apps" im Sinne klassischer Social-Login-Flows – läuft über die Facebook-/Meta-Plattform
+
+==== Kosten
+
+Die OIDC-Logins selbst sind bei Google und Facebook *kostenlos*. Es entstehen keine direkten Kosten an Google oder Meta für die Nutzung ihres Logins.
+
+Mögliche indirekte Kosten:
+
+* Entwicklungszeit für die Integration (mehrere Anbieter = mehr Aufwand)
+* App-Verifizierung bei manchen Anbietern (z. B. bei vielen Nutzern oder bestimmten Datenbereichen) – meist kostenlos, aber zeitaufwändig
+* Bei Nutzung eines Identity-Provider-Dienstes wie Auth0, Keycloak (selbst gehostet, kostenlos) oder AWS Cognito können ab bestimmten Nutzerzahlen Kosten anfallen
+
+==== Alternative: Identity-Abstraktion nutzen
+
+Empfehlung: *Keycloak* (Open Source, kostenlos selbst hostbar) als zentrale Identity-Plattform davor. Keycloak kann selbst als "Broker" zu Google/Facebook/etc. fungieren; die Quarkus-App spricht dann nur noch mit einem einzigen OIDC-Endpoint (Keycloak). Das reduziert den Wartungsaufwand erheblich, bringt aber einen zusätzlichen Service mit sich, der betrieben werden muss.
+
+---
+
+== Frage 2: Aufbau, Integration und Konfiguration von Keycloak
+
+[quote]
+____
+Kannst Du bitte Aufbau, Integration und Konfiguration von Keykloak skizzieren?
+____
+
+=== Antwort
+
+==== 1. Architektur-Überblick
+
+----
+Nutzer → Quarkus-App → Keycloak (Realm "meine-app")
+                              ↓
+                    Identity Provider Broker
+                         ↓     ↓      ↓
+                     Google  Facebook  (Instagram via Meta)
+----
+
+Die Quarkus-App spricht nur noch mit Keycloak über einen einzigen OIDC-Endpoint. Keycloak übernimmt die komplette "Brokering"-Logik zu den Social-Media-Anbietern. Vorteil: ein weiterer Anbieter kann später hinzugefügt werden, ohne die App-Konfiguration zu ändern – nur Keycloak wird angepasst.
+
+==== 2. Keycloak aufsetzen
+
+*Lokal/Entwicklung – über Quarkus Dev Services:*
+
+Mit `quarkus-oidc` und Docker/Podman kann Quarkus im Dev-Modus automatisch einen Keycloak-Container starten und vorkonfigurieren.
+
+*Produktion – als eigener Service:*
+
+[source,bash]
+----
+docker run -p 8081:8080 \
+  -e KEYCLOAK_ADMIN=admin \
+  -e KEYCLOAK_ADMIN_PASSWORD=changeit \
+  quay.io/keycloak/keycloak:latest start-dev
+----
+
+In Produktion: echte Datenbank (Postgres) statt eingebauter H2, TLS-Konfiguration, und `start` statt `start-dev`.
+
+==== 3. Realm und Client in Keycloak anlegen
+
+. *Realm erstellen* (z. B. `meine-app`) – isolierter Mandant, getrennt vom Standard-Realm `master`
+. *Client registrieren* für die Quarkus-App:
+* Client-ID: z. B. `meine-quarkus-app`
+* Client-Typ: "confidential" (mit Secret) für eine klassische Webanwendung
+* Valid Redirect URIs: `https://deine-app.de/*`
+. *Rollen* ggf. anlegen, falls Berechtigungsstufen innerhalb der App benötigt werden (optional)
+
+==== 4. Identity Provider (Google, Facebook, ...) in Keycloak konfigurieren
+
+Zentraler Schritt – hier, nicht in Quarkus, werden die Social-Provider angebunden:
+
+Im Keycloak Admin Console: *Identity Providers → Add provider*
+
+* *Google*: vorgefertigter Provider-Typ, nur `Client ID` und `Client Secret` aus der Google Cloud Console eintragen
+* *Facebook*: ebenfalls vorgefertigter Provider-Typ, Client-ID/Secret aus dem Facebook Developer Portal
+* *Weitere (generisch via OIDC/OAuth2)*: ohne vorgefertigten Typ als "OpenID Connect v1.0" oder "OAuth v2.0"-Provider mit den jeweiligen Endpoint-URLs eintragbar
+
+IMPORTANT: Bei jedem Social-Anbieter muss selbst dort eine App/Client registriert werden (Google Cloud Console, Meta for Developers etc.), um Client-ID/Secret zu erhalten – das entfällt nicht durch Keycloak.
+
+==== 5. Quarkus-Seite konfigurieren
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc</artifactId>
+</dependency>
+----
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=https://keycloak.deine-domain.de/realms/meine-app
+quarkus.oidc.client-id=meine-quarkus-app
+quarkus.oidc.credentials.secret=${KEYCLOAK_CLIENT_SECRET}
+quarkus.oidc.application-type=web-app
+quarkus.oidc.authentication.redirect-path=/callback
+----
+
+Die App leitet bei Login einfach zu Keycloak weiter. Keycloak zeigt selbst die Auswahl "Mit Google anmelden" / "Mit Facebook anmelden" / klassisches Login mit Passwort an – die Standard-Login-Seite von Keycloak, anpassbar per Theme.
+
+==== 6. Verknüpfung mit der eigenen Nutzerverwaltung
+
+* Nach erfolgreichem Login: ID-Token mit Claims (`email`, `name`, `sub` = eindeutige Keycloak-User-ID)
+* Prüfung: Existiert in der DB schon ein Nutzer mit dieser E-Mail?
+** Ja → einloggen, ggf. Keycloak-`sub`-ID als externe Referenz speichern
+** Nein → neuen Nutzer-Datensatz anlegen
+* Empfehlung: zusätzlich zur E-Mail die Keycloak-`sub`-ID als stabilen Schlüssel speichern, falls ein Nutzer später seine E-Mail beim Social-Provider ändert
+
+==== 7. Betriebsaufwand – ehrlich eingeordnet
+
+Keycloak ist kostenlos (Open Source), aber nicht aufwandsfrei:
+
+* Zusätzlicher Service nötig, der betrieben, überwacht und gepatcht werden muss
+* Eigene Datenbank für Keycloak nötig
+* Hochverfügbarkeit/Clustering ist bei höherer Last ein eigenes Thema
+
+Für eine kleine bis mittlere App gut machbar; bei sehr kleinem Umfang (nur 1-2 Social-Provider) kann die direkte `quarkus-oidc`-Multi-Tenant-Lösung ohne Keycloak auch ausreichen und den Betrieb eines zusätzlichen Dienstes sparen.
+
+---
+
+== Frage 3: Detailskizze Google-Provider und Verknüpfungs-Code
+
+[quote]
+____
+ich schätze ich benötige beides!
+____
+
+=== Antwort
+
+==== Teil A: Google Identity Provider in Keycloak einrichten
+
+===== A1. Google-seitig: OAuth-Client erzeugen
+
+. Google Cloud Console → *APIs & Services → Credentials*
+. Falls noch nicht vorhanden: Projekt anlegen
+. *OAuth consent screen* konfigurieren (App-Name, Support-E-Mail, Scopes `email` und `profile`)
+. *Create Credentials → OAuth Client ID* → Typ: *Web application*
+. *Authorized redirect URIs* – Keycloak-Callback-URL eintragen:
++
+----
+https://keycloak.deine-domain.de/realms/meine-app/broker/google/endpoint
+----
++
+Muster: `{keycloak-base}/realms/{realm}/broker/{alias}/endpoint`
+. Resultat: *Client ID* und *Client Secret* für Keycloak
+
+===== A2. Keycloak-seitig: Identity Provider anlegen
+
+Im Keycloak Admin Console:
+
+. *Identity providers → Add provider → Google*
+. Felder:
+* *Alias*: `google` (taucht in der Redirect-URI auf, vorher festlegen!)
+* *Client ID*: aus Google Cloud Console
+* *Client Secret*: aus Google Cloud Console
+* *Default Scopes*: `openid profile email`
+. Optional, empfehlenswert:
+* *Trust Email*: aktivieren, wenn Googles E-Mail-Verifizierung vertraut wird (spart eigene Verifizierungsmail)
+* *Sync mode*: `import` (Standard) – Keycloak importiert Nutzerdaten einmalig beim ersten Login
+
+===== A3. Testen
+
+Aufruf der Keycloak-Login-Seite für den Realm:
+
+----
+https://keycloak.deine-domain.de/realms/meine-app/account
+----
+
+Dort sollte zusätzlich zum Standard-Login ein *"Google"-Button* erscheinen. Klick führt zu Google, nach Zustimmung zurück zu Keycloak, Landung eingeloggt im Account-Bereich.
+
+NOTE: Facebook läuft nach demselben Muster – nur die Redirect-URI im Facebook Developer Portal und der Provider-Typ in Keycloak ("Facebook" statt "Google") unterscheiden sich.
+
+==== Teil B: Verknüpfung mit der Nutzerverwaltung in Quarkus
+
+===== B1. Ausgangslage
+
+Nach dem Login über Keycloak liefert das ID-Token (JWT) Claims wie:
+
+[source,json]
+----
+{
+  "sub": "f47ac10b-58cc-...",
+  "email": "max@example.com",
+  "email_verified": true,
+  "name": "Max Mustermann",
+  "preferred_username": "max@example.com"
+}
+----
+
+`sub` ist die stabile, eindeutige Keycloak-User-ID – diese sollte gemerkt werden, nicht nur die E-Mail (E-Mail kann sich ändern, `sub` nie).
+
+===== B2. User-Entity erweitern
+
+Ausgangspunkt:
+
+[source,java]
+----
+@Entity
+public class User {
+    @Id
+    @GeneratedValue
+    public Long id;
+
+    @Column(unique = true, nullable = false)
+    public String email;
+
+    public String passwordHash; // für die bisherige eigene Anmeldung
+    public String name;
+    // ...
+}
+----
+
+Erweiterung um Feld für die externe ID:
+
+[source,java]
+----
+@Entity
+public class User {
+    @Id
+    @GeneratedValue
+    public Long id;
+
+    @Column(unique = true, nullable = false)
+    public String email;
+
+    public String passwordHash; // bleibt für klassische Anmeldung nutzbar, kann null sein
+
+    @Column(unique = true)
+    public String keycloakSub; // NEU: stabile externe ID
+
+    public String name;
+}
+----
+
+`passwordHash` darf jetzt `null` sein, falls sich jemand ausschließlich über Google registriert und nie ein eigenes Passwort vergibt.
+
+===== B3. Security-Annotation und Token-Zugriff
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc</artifactId>
+</dependency>
+----
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=https://keycloak.deine-domain.de/realms/meine-app
+quarkus.oidc.client-id=meine-quarkus-app
+quarkus.oidc.credentials.secret=${KEYCLOAK_CLIENT_SECRET}
+quarkus.oidc.application-type=web-app
+quarkus.oidc.authentication.redirect-path=/callback
+----
+
+===== B4. Verknüpfungslogik (Just-in-Time Provisioning)
+
+Kernstück: ein Filter/Interceptor, der bei jedem authentifizierten Request prüft, ob der Nutzer schon existiert, und ihn sonst anlegt.
+
+[source,java]
+----
+import io.quarkus.oidc.IdToken;
+import io.quarkus.security.identity.SecurityIdentity;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
+import jakarta.interceptor.Interceptor;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.ext.Provider;
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
+@Provider
+@Priority(Priorities.AUTHENTICATION + 10) // läuft NACH der eigentlichen Auth
+@RequestScoped
+public class UserProvisioningFilter implements ContainerRequestFilter {
+
+    @Inject
+    SecurityIdentity identity;
+
+    @Inject
+    @IdToken
+    JsonWebToken idToken;
+
+    @Override
+    @Transactional
+    public void filter(ContainerRequestContext requestContext) {
+        if (identity.isAnonymous()) {
+            return; // öffentlicher Endpoint, nichts zu tun
+        }
+
+        String sub = idToken.getSubject();
+        String email = idToken.getClaim("email");
+        String name = idToken.getClaim("name");
+
+        User user = User.find("keycloakSub", sub).firstResult();
+
+        if (user == null) {
+            // Fallback: vielleicht existiert der Nutzer schon aus alter Anmeldung per E-Mail
+            user = User.find("email", email).firstResult();
+            if (user != null) {
+                // Bestehenden Account nachträglich verknüpfen
+                user.keycloakSub = sub;
+            } else {
+                // Komplett neuer Nutzer
+                user = new User();
+                user.email = email;
+                user.name = name;
+                user.keycloakSub = sub;
+            }
+            user.persist();
+        }
+
+        // Optional: User-Objekt für den Request greifbar machen,
+        // z.B. über einen eigenen RequestScoped-Bean/CDI-Producer
+    }
+}
+----
+
+CAUTION: Der Fallback über `email` (bestehenden Account per E-Mail verknüpfen) ist bequem, aber riskant, wenn `email_verified` nicht geprüft wird – sonst könnte sich theoretisch jemand mit einer fremden, aber beim Provider unverifizierten E-Mail einloggen und einen bestehenden Account übernehmen. Zusätzliche Prüfung:
+
+[source,java]
+----
+Boolean emailVerified = idToken.getClaim("email_verified");
+if (user == null && Boolean.TRUE.equals(emailVerified)) {
+    user = User.find("email", email).firstResult();
+    // ...
+}
+----
+
+===== B5. Aktuellen Nutzer in REST-Endpoints verwenden
+
+[source,java]
+----
+@Path("/profile")
+public class ProfileResource {
+
+    @Inject
+    JsonWebToken idToken;
+
+    @GET
+    @Authenticated
+    public Response getProfile() {
+        String sub = idToken.getSubject();
+        User user = User.find("keycloakSub", sub).firstResult();
+        if (user == null) {
+            return Response.status(404).build();
+        }
+        return Response.ok(user).build();
+    }
+}
+----
+
+===== B6. Ablauf im Überblick
+
+----
+1. Nutzer klickt "Anmelden" → Redirect zu Keycloak
+2. Keycloak zeigt Login-Seite mit "Google"-Button
+3. Nutzer wählt Google → Redirect zu Google → Zustimmung
+4. Google → zurück zu Keycloak → Keycloak → zurück zu Quarkus (mit Code)
+5. Quarkus tauscht Code gegen Tokens (passiert automatisch via quarkus-oidc)
+6. UserProvisioningFilter prüft/erstellt den User-Datensatz
+7. Request wird normal weiterverarbeitet
+----
+
+==== Offene Frage am Ende der Antwort
+
+Was passiert, wenn ein Nutzer sich sowohl per Google als auch per klassischem Passwort mit derselben E-Mail anmelden will? Mit obigem Code funktioniert das (beide laufen auf denselben `User`-Datensatz) – aber soll das überhaupt zugelassen werden, oder soll ein Account fest an eine Anmeldemethode gebunden sein?
+
+---
+
+== Frage 4: Vor- und Nachteile verknüpfter vs. getrennter Accounts
+
+[quote]
+____
+Ich verstehe deinen Hinweis nicht ganz. Kannst Du Vorteile und Nachteile der beiden Varianten darstellen?
+____
+
+=== Antwort
+
+==== Kernfrage
+
+Wenn ein Nutzer mit der E-Mail `max@example.com` sich einmal per Passwort registriert hat und später "Mit Google anmelden" mit derselben Adresse klickt – landet er dann im *selben* Account oder bekommt er einen *zweiten, separaten* Account?
+
+==== Variante 1: Verknüpfung erlauben (ein Account, mehrere Logins)
+
+Über die E-Mail als gemeinsamen Schlüssel, wie im Code zuvor gezeigt.
+
+*Vorteile:*
+
+* Komfortabel: nur ein Account, egal welche Anmeldemethode, gleiche Daten/Bestellungen/Einstellungen überall
+* Kein verwirrendes "ich habe mich schon registriert, aber jetzt existiert der Account angeblich nicht"
+* Entspricht der Erwartungshaltung der meisten Nutzer bei modernen Apps
+
+*Nachteile:*
+
+* Sicherheitsrisiko, wenn die E-Mail-Verifizierung nicht wasserdicht ist: Bei unverifizierter E-Mail-Adresse beim Provider könnte sich theoretisch jemand in einen fremden bestehenden Account einklinken
+* Mehr Logik nötig: Anzeige/Verwaltung mehrerer Login-Methoden an einem Account, ggf. Selbstverwaltung durch den Nutzer ("Login-Methode entfernen")
+* Uneindeutig, welche Daten führend sind, falls Google einen anderen Namen liefert als ursprünglich eingetragen – Überschreiben des Namens bei jedem Login?
+
+*Geeignet für:* Die meisten Consumer-Apps (Shops, SaaS-Tools, Communities) – Nutzerkomfort im Vordergrund, Risiko mit `email_verified`-Prüfung gut eindämmbar.
+
+==== Variante 2: Strikt getrennt (jede Login-Methode = eigener Account)
+
+"Mit Google anmelden" führt bei gleicher E-Mail-Adresse zu einem *neuen, unabhängigen* Account, selbst wenn schon ein Passwort-Account mit derselben E-Mail existiert.
+
+*Vorteile:*
+
+* Keine Verknüpfungslogik nötig → weniger Angriffsfläche, einfacherer Code
+* Eindeutig: jede Anmeldemethode hat ihre eigene, isolierte Identität – keine Frage, welche Daten "gewinnen"
+* Keine Auseinandersetzung mit `email_verified`-Edge-Cases nötig
+
+*Nachteile:*
+
+* Klassiker: Nutzer registriert sich erst klassisch, vergisst das, klickt Monate später "Login mit Google" – landet auf leerem, neuem Account, Daten scheinen "weg"
+* Potenziell doppelte Datensätze für dieselbe Person → Mehraufwand bei Support-Anfragen ("ich finde meine Bestellung nicht")
+* Schlechtere User Experience auf lange Sicht – die meisten erfolgreichen Apps gehen heute den Weg der Verknüpfung
+
+*Geeignet für:* Sehr sicherheitskritische Anwendungen (z. B. Banking, Gesundheitsdaten), wo bewusst manuelle Account-Zusammenführung mit zusätzlicher Verifizierung angeboten wird, statt automatischer Verknüpfung.
+
+==== Dritte Option: Hybrid mit explizitem Opt-in
+
+Bei der ersten Erkennung einer doppelten E-Mail wird dem Nutzer eine explizite Nachfrage gezeigt:
+
+[quote]
+____
+"Wir haben bereits einen Account mit dieser E-Mail-Adresse. Möchtest du diesen mit deinem Google-Konto verknüpfen?"
+____
+
+(ggf. mit zusätzlicher Bestätigung per Passwort-Eingabe oder E-Mail-Link)
+
+Das kombiniert die Sicherheit von Variante 2 mit dem Komfort von Variante 1, kostet aber zusätzliche UI/UX-Arbeit.
+
+==== Empfehlung
+
+Für eine "normale" App ohne extreme Sicherheitsanforderungen: *automatische Verknüpfung mit `email_verified`-Prüfung* (Variante 1) – deckt den Komfort-Aspekt ab, Risiko bei verifizierten E-Mails von Google/Facebook gering.
+
+[NOTE]
+====
+Offene Rückfrage am Ende der Antwort: Was für eine Art App ist es – eher Consumer-Anwendung oder etwas mit sensibleren Daten?
+====
+
+---
+
+== Frage 5: Weitere Social-Media-Plattformen neben Google
+
+[quote]
+____
+Die Anleitung für Google hab ich verstanden. Was muss ich für andere SocialMedia Plattformen tun, um dem Benutzer die Registrierung und Anmeldung zu erleichtern?
+____
+
+=== Antwort
+
+==== Das Muster ist immer dasselbe
+
+Unabhängig vom Anbieter:
+
+. Beim Anbieter selbst eine "App"/"OAuth-Client" registrieren
+. Redirect-URI im Schema `{keycloak-base}/realms/{realm}/broker/{alias}/endpoint` eintragen
+. Client-ID + Client-Secret in Keycloak unter *Identity Providers → Add provider → [Anbieter]* eintragen
+. Der Login-Button erscheint automatisch auf der Keycloak-Login-Seite
+
+Keycloak bietet vorgefertigte Provider-Typen für: Google, Facebook, GitHub, GitLab, Bitbucket, Microsoft, LinkedIn, Instagram, Twitter/X, PayPal, Stack Overflow.
+
+==== Unterschiede im Detail
+
+===== Facebook
+
+Registrierung über *Meta for Developers*. Facebook verlangt seit einiger Zeit strengere App-Review-Prozesse, wenn über Basis-Daten (E-Mail, Name) hinaus etwas abgefragt werden soll – für reinen Login meist nicht nötig.
+
+===== Microsoft (Outlook/Office365-Konten)
+
+Registrierung im *Azure Portal* unter "App registrations". Sinnvoll, falls die Zielgruppe viele Business-Nutzer mit Microsoft-Konten umfasst.
+
+===== Instagram
+
+Läuft technisch über die Meta-Plattform (gleiches Developer-Portal wie Facebook) – kein eigenständiger "Instagram Login" mehr getrennt von Facebook/Meta. In der Praxis wird meist nur der *Facebook-Provider* angeboten, da viele Instagram-Nutzer ohnehin ihr Meta-Konto nutzen.
+
+===== GitHub / GitLab
+
+Bei Entwickler-Zielgruppen (z. B. Dev-Tool) macht GitHub-Login oft mehr Sinn als Google. Registrierung unter *Settings → Developer settings → OAuth Apps* bei GitHub.
+
+===== Apple ("Sign in with Apple")
+
+Technisch aufwändiger, da Apple vom OIDC-Standard abweicht:
+
+* Kein klassischer Provider-Typ in Keycloak von Haus aus enthalten – eine *Community-Extension* (z. B. `klausbetz/apple-identity-provider-keycloak`) wird als zusätzliches JAR in Keycloak installiert
+* Apple Developer-Konto erforderlich (kostenpflichtig, ca. 99 USD/Jahr)
+* Authentifizierung läuft über ein signiertes JWT mit einem privaten Schlüssel statt eines einfachen Client-Secrets
+* Nutzerdaten (E-Mail, Name) werden nur beim *allerersten* Login übermittelt – danach nie wieder, müssen also direkt beim ersten Mal gespeichert werden
+
+[WARNING]
+====
+Wenn die App auf iOS im Apple App Store landet und *irgendeine* andere Social-Login-Option anbietet, verlangt Apple unter Umständen, dass auch "Sign in with Apple" angeboten wird – das ist eine App-Store-Richtlinie, keine technische Notwendigkeit.
+====
+
+==== Praktischer Vorschlag: Mapper nutzen
+
+Damit Profildaten verschiedener Anbieter einheitlich im System landen, können in Keycloak pro Provider *Attribute-Mapper* konfiguriert werden – z. B. Googles `picture`-Claim auf ein einheitliches `profilePictureUrl`-Attribut abbilden, unabhängig davon, wie der jeweilige Anbieter das Feld nennt. Das hält die `UserProvisioningFilter`-Logik aus Frage 3 unverändert, unabhängig vom genutzten Anbieter.
+
+==== Kostenüberblick je Anbieter
+
+[cols="1,2", options="header"]
+|===
+| Anbieter | Kosten für die Integration
+| Google | kostenlos
+| Facebook/Instagram (Meta) | kostenlos
+| Microsoft | kostenlos
+| GitHub/GitLab | kostenlos
+| Apple | Apple Developer Program nötig (~99 USD/Jahr)
+|===
+
+---
+
+== Frage 6: Technische Einrichtungsdetails – Facebook, Azure, GitHub, GitLab
+
+[quote]
+____
+Kannst Du bitte technische Details zur Einrichtung bei Facebook, Azure, gthub und gitlab zusammenstellen? Und bitte anschliessend das asciidoc Dokument aktualisieren?
+____
+
+=== Antwort
+
+==== Facebook (Meta for Developers)
+
+. *Meta for Developers Portal* (developers.facebook.com) → *Create App*
+. Use-Case auswählen (z. B. "Authenticate and request data from users with Facebook Login")
+. Unter *App Settings → Basic*: App-Domain und Kontakt-E-Mail eintragen
+. Produkt *"Facebook Login"* hinzufügen → *Settings*:
+* *Valid OAuth Redirect URIs*: `https://keycloak.deine-domain.de/realms/meine-app/broker/facebook/endpoint`
+* *Client OAuth Login* und *Web OAuth Login* aktivieren
+. Unter *App Review → Permissions and Features*: Berechtigungen `email` und `public_profile` von "Standard Access" auf *"Advanced Access"* umstellen – notwendig, um die E-Mail-Adresse der Nutzer zu erhalten
+. App von *Development* auf *Live* umschalten, sonst können nur Test-Nutzer sich einloggen
+. *App ID* und *App Secret* aus *Settings → Basic* in Keycloak unter `Identity Providers → Add provider → Facebook` eintragen
+
+[WARNING]
+====
+Facebook hat seit einiger Zeit *"Strict Mode"* für Redirect-URIs aktiv – die URI muss exakt mit der eingetragenen übereinstimmen, kein Prefix-Matching mehr.
+====
+
+==== Microsoft / Azure (Entra ID)
+
+. *Microsoft Entra Admin Center* (entra.microsoft.com) → *App registrations → New registration*
+. Name eingeben, *Supported account types* wählen (z. B. "Accounts in any organizational directory and personal Microsoft accounts" für breite Nutzerbasis)
+. *Redirect URI* (Plattform: Web): `https://keycloak.deine-domain.de/realms/meine-app/broker/microsoft/endpoint`
+. Nach Erstellung: *Application (client) ID* von der Overview-Seite kopieren
+. *Certificates & secrets → Client secrets → New client secret*: Beschreibung + Ablaufdatum festlegen, Value sofort kopieren (wird nur einmal angezeigt!)
+. In Keycloak: `Identity Providers → Add provider → Microsoft` – Client-ID und Secret eintragen
+
+[WARNING]
+====
+Client-Secrets bei Azure laufen ab (typisch 6–24 Monate) und müssen rechtzeitig erneuert werden – ein wiederkehrender Wartungspunkt, den Google/Facebook/GitHub so nicht haben.
+====
+
+==== GitHub
+
+. *GitHub → Settings → Developer settings → OAuth Apps → New OAuth App*
+. Felder:
+* *Homepage URL*: App-URL
+* *Authorization callback URL*: `https://keycloak.deine-domain.de/realms/meine-app/broker/github/endpoint`
+. Nach Erstellung: *Client ID* sichtbar, *Client Secret* über "Generate a new client secret" erzeugen
+. In Keycloak: `Identity Providers → Add provider → GitHub` – beide Werte eintragen
+
+NOTE: Kein Review-Prozess nötig, sofort produktiv nutzbar – am unkompliziertesten von allen vier Anbietern.
+
+==== GitLab
+
+. *GitLab → Edit Profile → Applications* (oder als Admin: Admin Area → Applications, falls für alle Nutzer gedacht)
+. *Add new application*:
+* *Redirect URI*: `https://keycloak.deine-domain.de/realms/meine-app/broker/gitlab/endpoint`
+* *Scopes*: mind. `read_user`, `openid`, `profile`, `email`
+. Nach dem Speichern: *Application ID* und *Secret* angezeigt
+. In Keycloak: `Identity Providers → Add provider → GitLab` – Werte eintragen
+
+NOTE: Genauso unkompliziert wie GitHub, ebenfalls kein Review-Prozess.
+
+==== Zusammenfassung: Aufwand im Vergleich
+
+[cols="1,2,2,1", options="header"]
+|===
+| Anbieter | Vorbereitungsaufwand | Besonderheit | Wiederkehrende Wartung
+
+| Google
+| gering
+| OAuth Consent Screen einmalig konfigurieren
+| keine
+
+| Facebook
+| mittel
+| App Review für `email`-Permission (Advanced Access), Live-Modus nötig
+| gelegentlich bei Permission-Änderungen
+
+| Microsoft/Azure
+| gering
+| Account-Typ-Auswahl beeinflusst Nutzerkreis
+| Client-Secret läuft ab, muss erneuert werden
+
+| GitHub
+| sehr gering
+| kein Review-Prozess
+| keine
+
+| GitLab
+| sehr gering
+| kein Review-Prozess
+| keine
+
+| Apple
+| hoch
+| Community-Extension nötig, kostenpflichtiges Developer-Konto, abweichender OIDC-Flow
+| jährliche Entwickler-Mitgliedschaft
+|===

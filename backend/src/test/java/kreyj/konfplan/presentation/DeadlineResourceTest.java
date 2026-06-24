@@ -13,9 +13,9 @@ import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
-import kreyj.konfplan.presentation.dto.PrioritaetRequest;
-import kreyj.konfplan.presentation.dto.VeranstaltungDto;
-import kreyj.konfplan.presentation.dto.VortragDto;
+import kreyj.konfplan.adapter.in.web.dto.PrioritaetRequest;
+import kreyj.konfplan.adapter.in.web.dto.VeranstaltungDto;
+import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

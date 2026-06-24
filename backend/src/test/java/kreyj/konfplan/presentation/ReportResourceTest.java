@@ -9,6 +9,7 @@ import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.ws.rs.core.MediaType;
+import kreyj.konfplan.adapter.in.web.ReportResource;
 import kreyj.konfplan.application.service.PdfService;
 import kreyj.konfplan.application.service.PlanService;
 import kreyj.konfplan.persistence.Referent;

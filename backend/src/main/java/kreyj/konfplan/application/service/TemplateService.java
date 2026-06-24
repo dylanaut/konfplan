@@ -13,12 +13,12 @@ import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.VeranstaltungsVerfuegbarkeit;
-import kreyj.konfplan.presentation.dto.RaumBelegungUebersicht;
-import kreyj.konfplan.presentation.dto.RaumplanEintragDto;
-import kreyj.konfplan.presentation.dto.templating.DashboardData;
-import kreyj.konfplan.presentation.dto.templating.PrioDashboard;
-import kreyj.konfplan.presentation.dto.templating.Stundenplan;
-import kreyj.konfplan.presentation.dto.templating.TeilnehmerDashboard;
+import kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht;
+import kreyj.konfplan.adapter.in.web.dto.RaumplanEintragDto;
+import kreyj.konfplan.adapter.in.web.dto.templating.DashboardData;
+import kreyj.konfplan.adapter.in.web.dto.templating.PrioDashboard;
+import kreyj.konfplan.adapter.in.web.dto.templating.Stundenplan;
+import kreyj.konfplan.adapter.in.web.dto.templating.TeilnehmerDashboard;
 
 import java.util.HashMap;
 import java.util.List;

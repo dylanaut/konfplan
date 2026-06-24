@@ -11,12 +11,13 @@ import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
+import kreyj.konfplan.adapter.in.web.dto.TeilnehmerDto;
+import kreyj.konfplan.adapter.in.web.dto.TeilnehmerVeranstaltungDto;
+import kreyj.konfplan.adapter.in.web.dto.VortragPrioDto;
+import kreyj.konfplan.adapter.in.web.dto.csv.TeilnehmerCsvDto;
+import kreyj.konfplan.application.port.in.TeilnehmerServiceInterface;
 import kreyj.konfplan.persistence.*;
-import kreyj.konfplan.presentation.dto.NutzerDto;
-import kreyj.konfplan.presentation.dto.TeilnehmerDto;
-import kreyj.konfplan.presentation.dto.TeilnehmerVeranstaltungDto;
-import kreyj.konfplan.presentation.dto.VortragPrioDto;
-import kreyj.konfplan.presentation.dto.csv.TeilnehmerCsvDto;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 
@@ -29,7 +30,7 @@ import java.util.stream.Collectors;
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 
 @ApplicationScoped
-public class TeilnehmerService {
+public class TeilnehmerService implements TeilnehmerServiceInterface {
 
     private static final Logger LOG = Logger.getLogger(TeilnehmerService.class);
 
@@ -42,18 +43,21 @@ public class TeilnehmerService {
 
 
     @Transactional
+    @Override
     public List<Teilnehmer> findAll(Long veranstaltungId) {
         return Nutzer.find("role = 'TEILNEHMER' and veranstaltung.id = ?1", veranstaltungId).list();
     }
 
 
     @Transactional
+    @Override
     public Teilnehmer findById(Long id) {
         return Nutzer.findById(id);
     }
 
 
     @Transactional
+    @Override
     public Teilnehmer findByEmail(String email) {
         if (null == email) {
             return null;
@@ -62,6 +66,7 @@ public class TeilnehmerService {
     }
 
     @Transactional
+    @Override
     public List<TeilnehmerVeranstaltungDto> getTeilnehmerVeranstaltungen(String email) {
         Teilnehmer teilnehmer = findByEmail(email);
         if (teilnehmer == null) {
@@ -85,6 +90,7 @@ public class TeilnehmerService {
 
 
     @Transactional
+    @Override
     public Teilnehmer createTeilnehmer(Teilnehmer user, Long veranstaltungId) {
         if (user == null || user.getEmail() == null) {
             protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Erstellung fehlgeschlagen", "Ungültige Nutzerdaten.");
@@ -115,6 +121,7 @@ public class TeilnehmerService {
 
 
     @Transactional
+    @Override
     public int importFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception {
         Veranstaltung v = Veranstaltung.findById(veranstaltungId);
         if (v == null) {
@@ -187,6 +194,7 @@ public class TeilnehmerService {
 
 
     @Transactional
+    @Override
     public void deleteUser(Nutzer nutzer) {
         String email = nutzer.getEmail();
         Long id = nutzer.getId();
@@ -196,6 +204,7 @@ public class TeilnehmerService {
 
 
     @Transactional
+    @Override
     public void toggleActive(Nutzer nutzer) {
         nutzer.setActive(!nutzer.isActive());
         nutzer.persistAndFlush();
@@ -204,6 +213,7 @@ public class TeilnehmerService {
 
 
     @Transactional
+    @Override
     public Teilnehmer updateTeilnehmerProfile(Teilnehmer teilnehmer, NutzerDto dto) {
         if (teilnehmer == null) {
             throw new WebApplicationException("Teilnehmer nicht gefunden", Response.Status.NOT_FOUND);
@@ -228,6 +238,7 @@ public class TeilnehmerService {
 
 
     @Transactional
+    @Override
     public Teilnehmer updateTeilnehmer(Long id, NutzerDto tnDto, Long veranstaltungId) {
         Nutzer existing = Nutzer.findById(id);
         if (!(existing instanceof Teilnehmer tn)) {
@@ -259,6 +270,7 @@ public class TeilnehmerService {
 
 
     @Transactional
+    @Override
     public void savePriorities(Long userId, Long veranstaltungId, List<VortragPrioDto> priorityDtos) {
         Teilnehmer teilnehmer = Teilnehmer.findById(userId);
         if (teilnehmer == null) {

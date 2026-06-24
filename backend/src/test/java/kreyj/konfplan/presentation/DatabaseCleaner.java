@@ -15,7 +15,7 @@ import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
-import kreyj.konfplan.presentation.dto.VortragDto;
+import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import org.junit.jupiter.api.BeforeEach;
 
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;

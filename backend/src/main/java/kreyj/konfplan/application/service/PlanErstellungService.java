@@ -20,7 +20,7 @@ import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
-import kreyj.konfplan.presentation.dto.SolverConfig;
+import kreyj.konfplan.adapter.in.web.dto.SolverConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -329,7 +329,7 @@ public class PlanErstellungService {
         int tnSize = teilnehmer.size();
         int slotSize = slots.size();
         int tnIdx = 0;
-        Map<Long, NutzerVerfuegbarkeit> nvMap = 
+        Map<Long, NutzerVerfuegbarkeit> nvMap =
                 NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>list("veranstaltungId = ?1", veranstaltung.getId())
                                 .stream().collect(toMap(NutzerVerfuegbarkeit::getNutzerId, Function.identity()));
         sb.append("tn_verfuegbar = [| %% Slot 1..").append(slots.size());

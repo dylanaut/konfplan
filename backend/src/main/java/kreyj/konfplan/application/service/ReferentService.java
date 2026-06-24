@@ -7,11 +7,12 @@ import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
+import kreyj.konfplan.adapter.in.web.dto.ReferentVeranstaltungDto;
+import kreyj.konfplan.adapter.in.web.dto.VortragDto;
+import kreyj.konfplan.adapter.in.web.dto.csv.ReferentCsvDto;
+import kreyj.konfplan.application.port.in.ReferentServiceInterface;
 import kreyj.konfplan.persistence.*;
-import kreyj.konfplan.presentation.dto.NutzerDto;
-import kreyj.konfplan.presentation.dto.ReferentVeranstaltungDto;
-import kreyj.konfplan.presentation.dto.VortragDto;
-import kreyj.konfplan.presentation.dto.csv.ReferentCsvDto;
 import org.jboss.logging.Logger;
 
 import java.io.FileReader;
@@ -25,7 +26,7 @@ import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvId;
 import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvIdL;
 
 @ApplicationScoped
-public class ReferentService {
+public class ReferentService implements ReferentServiceInterface {
     private static final Logger LOG = Logger.getLogger(ReferentService.class);
 
     private final MailService mailService;
@@ -39,6 +40,7 @@ public class ReferentService {
 
 
     @Transactional
+    @Override
     public Referent findByEmail(String email) {
         Nutzer nutzer = Nutzer.findByEmail(email);
         if (nutzer instanceof Referent) {
@@ -48,6 +50,7 @@ public class ReferentService {
     }
 
     @Transactional
+    @Override
     public void updateProfile(String email, NutzerDto dto) {
         if (null == dto) {
             return;
@@ -70,6 +73,7 @@ public class ReferentService {
         }
     }
 
+    @Override
     public List<VortragDto> getReferentVortraege(String email) {
         Referent referent = Referent.find("email", email).firstResult();
         if (referent == null) {
@@ -80,6 +84,7 @@ public class ReferentService {
         return vortraege.stream().map(ReferentService::mapVortragToDto).toList();
     }
 
+    @Override
     public List<ReferentVeranstaltungDto> getReferentVeranstaltungen(Referent referent) {
         if (referent == null) {
             return new ArrayList<>();
@@ -110,6 +115,7 @@ public class ReferentService {
 
 
     @Transactional
+    @Override
     public VortragDto createVortrag(String email, VortragDto dto) {
         Referent referent = Referent.find("email", email).firstResult();
         if (referent == null) {
@@ -138,6 +144,7 @@ public class ReferentService {
     }
 
     @Transactional
+    @Override
     public VortragDto updateVortrag(String email, Long vortragId, VortragDto dto) {
         Referent referent = Referent.find("email", email).firstResult();
         Vortrag vortrag = Vortrag.findById(vortragId);
@@ -158,6 +165,7 @@ public class ReferentService {
     }
 
     @Transactional
+    @Override
     public void meldeVortragFuerVeranstaltungAn(String email, Long vortragId, Long veranstaltungId) {
         Referent referent = Referent.find("email", email).firstResult();
         Vortrag sourceTalk = Vortrag.findById(vortragId);
@@ -206,6 +214,7 @@ public class ReferentService {
     }
 
     @Transactional
+    @Override
     public VortragDto uebernimmVortragInVeranstaltung(String email, Long sourceVortragId, Long veranstaltungId) {
         Referent referent = Referent.find("email", email).firstResult();
         if (referent == null) {
@@ -269,6 +278,7 @@ public class ReferentService {
     }
 
     @Transactional
+    @Override
     public void meldeVortragFuerVeranstaltungAb(String email, Long vortragId, Long veranstaltungId) {
         Referent referent = Referent.find("email", email).firstResult();
         Vortrag vortrag = Vortrag.findById(vortragId);
@@ -327,6 +337,7 @@ public class ReferentService {
     }
 
     @Transactional
+    @Override
     public boolean deleteVortrag(String email, Long vortragId) {
         Referent referent = Referent.find("email", email).firstResult();
         Vortrag vortrag = Vortrag.findById(vortragId);
@@ -357,6 +368,7 @@ public class ReferentService {
     }
 
     @Transactional
+    @Override
     public int importFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception {
         int count = 0;
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);

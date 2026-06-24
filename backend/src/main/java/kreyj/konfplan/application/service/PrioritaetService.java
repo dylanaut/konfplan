@@ -5,12 +5,13 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
+import kreyj.konfplan.adapter.in.web.dto.PrioritaetRequest;
+import kreyj.konfplan.application.port.in.PrioritaetServiceInterface;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
-import kreyj.konfplan.presentation.dto.PrioritaetRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,9 +24,10 @@ import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 
 @ApplicationScoped
-public class PrioritaetService {
+public class PrioritaetService implements PrioritaetServiceInterface {
 
     @Transactional
+    @Override
     public void savePrioritaeten(String email, List<PrioritaetRequest> requests) {
         Nutzer nutzer = Nutzer.findByEmail(email);
         if (!(nutzer instanceof Teilnehmer teilnehmer)) {
@@ -77,6 +79,7 @@ public class PrioritaetService {
 
 
     @Transactional
+    @Override
     public void updateSinglePrioritaet(Long userId, Long vortragId, int prioWert) {
         Teilnehmer teilnehmer = Teilnehmer.findById(userId);
         if (teilnehmer == null) {
@@ -111,6 +114,7 @@ public class PrioritaetService {
 
 
     @Transactional
+    @Override
     public List<Prioritaet> getNutzerPrioritaeten(String email) {
         Nutzer nutzer = Nutzer.findByEmail(email);
 
@@ -123,6 +127,7 @@ public class PrioritaetService {
 
 
     @Transactional
+    @Override
     public List<Prioritaet> getNutzerPrioritaeten(Long userId) {
         Nutzer nutzer = Nutzer.findById(userId);
 
@@ -144,6 +149,7 @@ public class PrioritaetService {
 
 
     @Transactional
+    @Override
     public Map<Long, Integer> getVortragPrioritaeten(Long nutzerId, Long veranstaltungId) {
         Objects.requireNonNull(nutzerId);
         Objects.requireNonNull(veranstaltungId);
