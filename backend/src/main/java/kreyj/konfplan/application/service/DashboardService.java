@@ -17,7 +17,7 @@ import kreyj.konfplan.adapter.in.web.dto.templating.TeilnehmerSlotBelegung;
 import kreyj.konfplan.adapter.in.web.dto.templating.TeilnehmerStundenplan;
 import kreyj.konfplan.adapter.in.web.dto.templating.WahlErfuellungStats;
 import kreyj.konfplan.adapter.in.web.dto.templating.WahlvortragStatus;
-import kreyj.konfplan.util.NameSorting;
+import kreyj.konfplan.util.StringHelper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -177,7 +177,7 @@ public class DashboardService {
                 }
             }
 
-            dd.tnNamen = NameSorting.sortNames(namen);
+            dd.tnNamen = StringHelper.sortNames(namen);
             dd.tnAnzahl = namen.size();
 
             NutzerDto ref = dd.referenten.get(pv.referentId);
@@ -213,7 +213,7 @@ public class DashboardService {
                         String key = slotOid + "_" + raumOid;
                         VortragDto wv = dd.wahlvortraege.get(wvOid);
                         NutzerDto ref = dd.referenten.get(wv.referentId);
-                        wvNamen = NameSorting.sortNames(wvNamen);
+                        wvNamen = StringHelper.sortNames(wvNamen);
                         dd.belegungDetails.put(key,
                                 new BelegungDetail(wv.titel, ref.fullName(), ref.organisation, false,
                                         wvNamen, wvNamen.size()));

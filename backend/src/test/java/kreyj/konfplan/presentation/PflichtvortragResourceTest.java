@@ -111,7 +111,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         teilnehmer1.setEmail("tn1@example.com");
         teilnehmer1.setFirstName("TN1");
         teilnehmer1.setLastName("GruppeA");
-        teilnehmer1.setGruppen(Set.of("Gruppe A"));
+        teilnehmer1.addGruppe("Gruppe A");
         teilnehmer1.persist();
         teilnehmer1.addVeranstaltung(veranstaltung);
 
@@ -119,7 +119,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         teilnehmer2.setEmail("tn2@example.com");
         teilnehmer2.setFirstName("TN2");
         teilnehmer2.setLastName("GruppeA");
-        teilnehmer2.setGruppen(Set.of("Gruppe A"));
+        teilnehmer2.addGruppe("Gruppe A");
         teilnehmer2.persist();
         teilnehmer2.addVeranstaltung(veranstaltung);
 
@@ -127,7 +127,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         teilnehmer3.setEmail("tn3@example.com");
         teilnehmer3.setFirstName("TN3");
         teilnehmer3.setLastName("GruppeB");
-        teilnehmer3.setGruppen(Set.of("Gruppe B"));
+        teilnehmer3.addGruppe("Gruppe B");;
         teilnehmer3.persist();
         teilnehmer3.addVeranstaltung(veranstaltung);
     }

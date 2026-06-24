@@ -28,9 +28,9 @@
         </div>
       </div>
       <div class="flex gap-2">
-        <select v-model="filters.participantGroup" class="input-field text-xs py-1 px-2">
+        <select v-model="filters.gruppen" class="input-field text-xs py-1 px-2">
           <option value="">Alle Gruppen</option>
-          <option v-for="g in participantGroups" :key="g" :value="g">{{ g }}</option>
+          <option v-for="g in teilnehmerGruppen" :key="g" :value="g">{{ g }}</option>
         </select>
         <input v-model="filters.teilnehmer" placeholder="Suchen..." class="input-field text-xs py-1 px-2"/>
         <button @click="emit('triggerUpload', `/api/veranstaltungen/${selectedVid}/teilnehmer/import`)"
@@ -293,7 +293,7 @@ const pages = reactive({
 
 const filters = reactive({
   teilnehmer: '',
-  participantGroup: ''
+  gruppen: ''
 });
 
 const sorts = reactive({
@@ -321,12 +321,12 @@ watch(() => props.selectedVid, (newVid) => {
 watch(() => filters.teilnehmer, () => {
   pages.teilnehmer = 1;
 });
-watch(() => filters.participantGroup, () => {
+watch(() => filters.gruppen, () => {
   pages.teilnehmer = 1;
   selectedParticipantIds.value = [];
 });
 
-const participantGroups = computed(() => {
+const teilnehmerGruppen = computed(() => {
   const groups = new Set(props.teilnehmer.map(t => t.gruppe).filter(Boolean));
   return Array.from(groups).sort();
 });
@@ -368,8 +368,8 @@ const toggleSort = (key, field) => {
 
 const filteredParticipants = computed(() => {
   let list = props.teilnehmer.filter(t => t.veranstaltungIds.includes(props.selectedVid));
-  if (filters.participantGroup) {
-    list = list.filter(t => t.gruppe === filters.participantGroup);
+  if (filters.gruppen) {
+    list = list.filter(t => t.gruppe === filters.gruppen);
   }
   return processList(list, filters.teilnehmer, sorts.teilnehmer);
 });

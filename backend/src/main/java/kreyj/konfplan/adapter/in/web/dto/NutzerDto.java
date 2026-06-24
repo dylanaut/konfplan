@@ -24,7 +24,7 @@ public class NutzerDto extends AbstractVersionedDto {
     public String slogan;
 
     // Teilnehmer-spezifisch
-    public Set<String> gruppen;
+    public List<String> gruppen;
     public List<VortragPrioDto> prioritaeten;
 
     public NutzerDto(String role, String email, String firstName, String lastName, boolean active) {
@@ -40,7 +40,7 @@ public class NutzerDto extends AbstractVersionedDto {
     }
 
     public static NutzerDto teilnehmer(String email, String firstName, String lastName,
-                                       Set<String> gruppen, List<VortragPrioDto> prioritaeten) {
+                                       List<String> gruppen, List<VortragPrioDto> prioritaeten) {
         NutzerDto teilnehmer = teilnehmer(email, firstName, lastName);
 
         teilnehmer.gruppen = gruppen;

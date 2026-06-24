@@ -3,6 +3,7 @@ package kreyj.konfplan.application.service;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import io.quarkus.elytron.security.common.BcryptUtil;
+import io.quarkus.runtime.LaunchMode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
@@ -12,19 +13,34 @@ import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
+import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerVeranstaltungDto;
+import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragPrioDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.TeilnehmerCsvDto;
 import kreyj.konfplan.application.port.in.TeilnehmerServiceInterface;
-import kreyj.konfplan.persistence.*;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
+import kreyj.konfplan.persistence.Pflichtvortrag;
+import kreyj.konfplan.persistence.Planungsergebnis;
+import kreyj.konfplan.persistence.Prioritaet;
+import kreyj.konfplan.persistence.ProtokollKategorie;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Vortrag;
+import kreyj.konfplan.persistence.Wahlvortrag;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
@@ -35,10 +51,14 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
     private static final Logger LOG = Logger.getLogger(TeilnehmerService.class);
 
     private final ProtokollService protokollService;
+    private final MailService mailService;
+    private final LaunchMode launchMode;
 
 
-    public TeilnehmerService(ProtokollService protokollService) {
+    public TeilnehmerService(ProtokollService protokollService, MailService mailService, LaunchMode launchMode) {
         this.protokollService = protokollService;
+        this.mailService = mailService;
+        this.launchMode = launchMode;
     }
 
 
@@ -65,6 +85,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         return Teilnehmer.find("email", email.trim().toLowerCase()).firstResult();
     }
 
+
     @Transactional
     @Override
     public List<TeilnehmerVeranstaltungDto> getTeilnehmerVeranstaltungen(String email) {
@@ -74,18 +95,46 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         }
 
         return teilnehmer.getVeranstaltungen().stream()
-                .map(e -> {
-                    TeilnehmerVeranstaltungDto dto = new TeilnehmerVeranstaltungDto();
-                    dto.id = e.getId();
-                    dto.name = e.getName();
-                    dto.beginntAm = e.getBeginntAm();
-                    dto.endetAm = e.getEndetAm();
-                    dto.deadlineTeilnehmer = e.getDeadlineTeilnehmer();
-                    dto.planErstellt = Planungsergebnis.count("veranstaltung", e) > 0;
-                    return dto;
-                })
-                .sorted(Comparator.comparing(e -> e.beginntAm))
-                .toList();
+            .map(e -> {
+                TeilnehmerVeranstaltungDto dto = new TeilnehmerVeranstaltungDto();
+                dto.id = e.getId();
+                dto.name = e.getName();
+                dto.beginntAm = e.getBeginntAm();
+                dto.endetAm = e.getEndetAm();
+                dto.deadlineTeilnehmer = e.getDeadlineTeilnehmer();
+                dto.planErstellt = Planungsergebnis.count("veranstaltung", e) > 0;
+                return dto;
+            })
+            .sorted(Comparator.comparing(e -> e.beginntAm))
+            .toList();
+    }
+
+
+    @Transactional
+    @Override
+    public List<VortragDto> getMeineVortraege(Long veranstaltungId, String email) {
+        Teilnehmer teilnehmer = findByEmail(email);
+        if (teilnehmer == null) {
+            throw new NotFoundException("Teilnehmer nicht gefunden.");
+        }
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
+        if (veranstaltung == null) {
+            throw new NotFoundException("Veranstaltung nicht gefunden.");
+        }
+
+        Set<Vortrag> alleVortraege = veranstaltung.getVortraege();
+        Set<String> teilnehmerGruppen = teilnehmer.getGruppen();
+
+        return alleVortraege.stream()
+            .filter(vortrag -> {
+                if (vortrag instanceof Pflichtvortrag pv) {
+                    return teilnehmerGruppen.contains(pv.getPflichtgruppe());
+                } else {
+                    return true;
+                }
+            })
+            .map(ReferentService::mapVortragToDto)
+            .collect(Collectors.toList());
     }
 
 
@@ -111,7 +160,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         }
 
         user.addVeranstaltung(v);
-        String tempPassword = UUID.randomUUID().toString();
+        String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
         user.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
 
         user.persistAndFlush();
@@ -164,12 +213,12 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
                                 tn.addGruppe(gruppe);
                             } else {
                                 LOG.warn("Unbekannte Gruppe '" + gruppe + "' für Teilnehmer '" + tn.getEmail()
-                                        + "' bei Veranstaltung '" + v.getName() + "'");
+                                    + "' bei Veranstaltung '" + v.getName() + "'");
                             }
                         }
                     }
 
-                    String tempPassword = "start123"; // UUID.randomUUID().toString();
+                    String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
                     tn.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
 
                     tn.persistAndFlush();
@@ -312,6 +361,32 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
             }
         }
         protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten gespeichert", "Prioritäten für Teilnehmer " + teilnehmer.getEmail() + " in Veranstaltung " + veranstaltung.getName() + " gespeichert.", teilnehmer.getId());
+    }
+
+
+    @Transactional
+    @Override
+    public void updateVerfuegbarkeit(Long veranstaltungId, NutzerVerfuegbarkeitDto dto, String userEmail) {
+        Nutzer nutzer = Nutzer.findByEmail(userEmail);
+        if (!(nutzer instanceof Teilnehmer) || !nutzer.getId().equals(dto.nutzerId)) {
+            throw new ForbiddenException("Keine Berechtigung.");
+        }
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
+        if (veranstaltung == null) {
+            throw new NotFoundException("Veranstaltung nicht gefunden.");
+        }
+        if (veranstaltung.getDeadlineTeilnehmer() != null && veranstaltung.getDeadlineTeilnehmer().isBefore(LocalDateTime.now())) {
+            throw new ForbiddenException("Die Deadline für Teilnehmer ist bereits abgelaufen.");
+        }
+        NutzerVerfuegbarkeit v = NutzerVerfuegbarkeit.findById(nvIdL(nutzer.getId(), veranstaltungId));
+        if (v == null) {
+            throw new NotFoundException("Verfügbarkeitseintrag nicht gefunden.");
+        }
+        v.getVerfuegbareSlotIds().clear();
+        v.getVerfuegbareSlotIds().addAll(dto.verfuegbareSlotIds);
+        v.persist();
+
+        mailService.sendVerfuegbarkeitChangedNotification(nutzer, veranstaltung);
     }
 
 

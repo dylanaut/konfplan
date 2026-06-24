@@ -16,6 +16,7 @@ import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.util.StringHelper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
@@ -270,14 +271,14 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
                 });
         }
 
-        dto.setGebaeude(v.getGebaeude().stream().map(VeranstaltungService::mapToDto).toList());
-        dto.setGruppen(v.getGruppen());
+        dto.setGebaeude(v.getGebaeude().stream().map(VeranstaltungService::mapGebaeudeToDto).toList());
+        dto.setGruppen(v.getGruppen().stream().sorted(StringHelper.NUM_OR_ALPHA_COMPARATOR).toList());
 
         return dto;
     }
 
 
-    public static GebaeudeSimpleDto mapToDto(Gebaeude gebaeude) {
+    public static GebaeudeSimpleDto mapGebaeudeToDto(Gebaeude gebaeude) {
         GebaeudeSimpleDto dto = new GebaeudeSimpleDto();
         dto.id = gebaeude.getId();
         dto.version = gebaeude.getVersion();

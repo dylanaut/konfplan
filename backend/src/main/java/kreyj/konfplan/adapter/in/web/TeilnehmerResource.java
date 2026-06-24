@@ -17,7 +17,13 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import kreyj.konfplan.adapter.in.web.dto.*;
+import kreyj.konfplan.adapter.in.web.dto.FileUploadDto;
+import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
+import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
+import kreyj.konfplan.adapter.in.web.dto.PrioritaetRequest;
+import kreyj.konfplan.adapter.in.web.dto.TeilnehmerVeranstaltungDto;
+import kreyj.konfplan.adapter.in.web.dto.VortragDto;
+import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
 import kreyj.konfplan.application.port.in.TeilnehmerServiceInterface;
 import kreyj.konfplan.application.service.AdminService;
 import kreyj.konfplan.application.service.PlanService;
@@ -33,7 +39,6 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
@@ -65,6 +70,7 @@ public class TeilnehmerResource {
     // -------------------------------------------------------------------
     // ADMIN Endpunkte
     // -------------------------------------------------------------------
+
 
     @GET
     @RolesAllowed("ADMIN")
@@ -162,6 +168,7 @@ public class TeilnehmerResource {
     // TEILNEHMER Endpunkte
     // -------------------------------------------------------------------
 
+
     @GET
     @Path("/profile")
     @RolesAllowed("TEILNEHMER")
@@ -208,6 +215,15 @@ public class TeilnehmerResource {
 
 
     @GET
+    @Path("/veranstaltungen/{vid}/vortraege")
+    @RolesAllowed("TEILNEHMER")
+    @Operation(summary = "Meine Vorträge für eine Veranstaltung abrufen")
+    public List<VortragDto> getMeineVortraege(@PathParam("vid") Long vid) {
+        return teilnehmerService.getMeineVortraege(vid, JwtHelper.getUserPrincipalName(jwt));
+    }
+
+
+    @GET
     @Path("/veranstaltungen/{vid}/laufzettel")
     @RolesAllowed("TEILNEHMER")
     @Produces(MediaType.TEXT_HTML)
@@ -244,10 +260,10 @@ public class TeilnehmerResource {
 
 
     @GET
-    @Path("/zuweisungen")
+    @Path("/veranstaltungen/{vid}/zuweisungen")
     @RolesAllowed("TEILNEHMER")
     @Operation(summary = "Persönlichen Plan abrufen")
-    public Response getPlan(@QueryParam("vid") Long vid) {
+    public Response getPlan(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (null == veranstaltung) {
             throw new WebApplicationException("Veranstaltung not found", Response.Status.NOT_FOUND);
@@ -258,30 +274,6 @@ public class TeilnehmerResource {
         }
         List<ZuweisungDto> planFuerTeilnehmer = planService.getPlanFuerTeilnehmer(teilnehmer, veranstaltung);
         return Response.ok(planFuerTeilnehmer).build();
-    }
-
-
-    @GET
-    @Path("/prios")
-    @RolesAllowed("TEILNEHMER")
-    @Operation(summary = "Meine Prioritäten abrufen")
-    public Response getPrios(@QueryParam("vid") Long vid) {
-        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (veranstaltung == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        List<Prioritaet> prioritaetenForUser = prioritaetService.getNutzerPrioritaeten(JwtHelper.getUserPrincipalName(jwt));
-        return Response.ok(prioritaetenForUser).build();
-    }
-
-
-    @POST
-    @Path("/prios")
-    @RolesAllowed("TEILNEHMER")
-    @Operation(summary = "Prioritäten speichern")
-    public Response savePriorities(@RequestBody(description = "Liste der Prioritäts-Anfragen") List<PrioritaetRequest> requests) {
-        prioritaetService.savePrioritaeten(JwtHelper.getUserPrincipalName(jwt), requests);
-        return Response.ok().build();
     }
 
 
@@ -304,28 +296,10 @@ public class TeilnehmerResource {
 
     @POST
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
-    @Transactional
     @RolesAllowed("TEILNEHMER")
     @Operation(summary = "Verfügbarkeit aktualisieren")
     public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten") NutzerVerfuegbarkeitDto dto) {
-        Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
-        if (!(nutzer instanceof Teilnehmer) || !nutzer.getId().equals(dto.nutzerId)) {
-            return Response.status(FORBIDDEN).build();
-        }
-        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (veranstaltung == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        if (veranstaltung.getDeadlineTeilnehmer() != null && veranstaltung.getDeadlineTeilnehmer().isBefore(LocalDateTime.now())) {
-            return Response.status(FORBIDDEN).entity("Die Deadline für Teilnehmer ist bereits abgelaufen.").build();
-        }
-        NutzerVerfuegbarkeit v = NutzerVerfuegbarkeit.findById(nvIdL(nutzer.getId(), vid));
-        if (v == null) {
-            return Response.status(Response.Status.NOT_FOUND).entity("Verfügbarkeitseintrag nicht gefunden.").build();
-        }
-        v.getVerfuegbareSlotIds().clear();
-        v.getVerfuegbareSlotIds().addAll(dto.verfuegbareSlotIds);
-        v.persist();
+        teilnehmerService.updateVerfuegbarkeit(vid, dto, JwtHelper.getUserPrincipalName(jwt));
         return Response.ok().build();
     }
 }

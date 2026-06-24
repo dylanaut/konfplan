@@ -17,7 +17,7 @@
           <p class="font-bold text-gray-600">Gebäude & Räume</p>
           <div v-if="gebaeudeDetails.length > 0">
             <div v-for="g in gebaeudeDetails" :key="g.name">
-              <p><strong>{{ g.name }}:</strong> {{ g.raumCount }} Räume (Σ {{ g.kapazitaetSum }} Plätze)</p>
+              <p><strong>{{ g.name }}:</strong> {{ g.raumCount }} Räume (Σ {{ g.kapazitaetGesamt }} Plätze)</p>
             </div>
           </div>
           <p v-else class="text-gray-500 italic">Keine Gebäude zugewiesen.</p>

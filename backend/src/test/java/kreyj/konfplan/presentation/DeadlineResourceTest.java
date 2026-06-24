@@ -123,7 +123,7 @@ class DeadlineResourceTest extends DatabaseCleaner {
         given()
                 .contentType(ContentType.JSON)
                 .body(List.of(req))
-                .when().post("/api/teilnehmer/prios")
+                .when().post("/api/prios")
                 .then()
                 .statusCode(FORBIDDEN.getStatusCode());
     }

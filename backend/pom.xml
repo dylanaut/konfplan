@@ -88,6 +88,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-mailer</artifactId>
         </dependency>
+<!--        keykloak integration-->
+<!--        <dependency>-->
+<!--            <groupId>io.quarkus</groupId>-->
+<!--            <artifactId>quarkus-oidc</artifactId>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>io.quarkiverse.mailpit</groupId>
             <artifactId>quarkus-mailpit</artifactId>

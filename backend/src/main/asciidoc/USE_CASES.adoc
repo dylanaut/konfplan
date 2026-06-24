@@ -545,15 +545,15 @@ TEILNEHMER --> getVortraege
 | Aktion | Method | Pfad | Rollen
 | getPlan
 | GET
-| `/api/teilnehmer/zuweisungen`
+| `/api/teilnehmer/veranstaltungen/{vid}/zuweisungen`
 | TEILNEHMER, ADMIN
 | getPrios
 | GET
-| `/api/teilnehmer/prios`
+| `/api/prios/{vid}`
 | TEILNEHMER, ADMIN
 | savePriorities
 | POST
-| `/api/teilnehmer/prios`
+| `/api/prios`
 | TEILNEHMER, ADMIN
 | getVerfuegbarkeiten
 | GET
@@ -576,11 +576,11 @@ TEILNEHMER --> getVortraege
 | Aktion | Method | Pfad | Rollen
 | getPrioritaeten
 | GET
-| `/api/teilnehmer/prios`
+| `/api/teilnehmer/veranstaltungen/{vid}/prios`
 | TEILNEHMER
 | updatePrioritaeten
 | POST
-| `/api/teilnehmer/prios`
+| `/api/teilnehmer/veranstaltungen/{vid}/prios`
 | TEILNEHMER
 |===
 

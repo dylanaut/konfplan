@@ -113,32 +113,6 @@ public class PrioritaetService implements PrioritaetServiceInterface {
     }
 
 
-    @Transactional
-    @Override
-    public List<Prioritaet> getNutzerPrioritaeten(String email) {
-        Nutzer nutzer = Nutzer.findByEmail(email);
-
-        if (!(nutzer instanceof Teilnehmer teilnehmer)) {
-            throw new WebApplicationException("Nutzer ist kein Teilnehmer", BAD_REQUEST.getStatusCode());
-        }
-
-        return Prioritaet.list("teilnehmer", teilnehmer);
-    }
-
-
-    @Transactional
-    @Override
-    public List<Prioritaet> getNutzerPrioritaeten(Long userId) {
-        Nutzer nutzer = Nutzer.findById(userId);
-
-        if (!(nutzer instanceof Teilnehmer teilnehmer)) {
-            throw new WebApplicationException("Nutzer ist kein Teilnehmer", BAD_REQUEST.getStatusCode());
-        }
-
-        return Prioritaet.list("teilnehmer", teilnehmer);
-    }
-
-
     @RegisterForReflection
     record VortragPrio(
             @ProjectedFieldName("vortrag.id")

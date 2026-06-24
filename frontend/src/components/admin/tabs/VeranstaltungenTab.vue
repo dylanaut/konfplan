@@ -210,8 +210,8 @@ const expandedSections = reactive({
 
 watch(() => props.selectedVid, (newVid) => {
   if (newVid) {
-    groupStore.fetchGruppen(newVid);
     expandedSections.gruppen = true;
+    expandedSections.vortraege = true;
   }
 });
 

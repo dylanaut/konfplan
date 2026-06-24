@@ -160,9 +160,14 @@ public class PlanService {
 
     @Transactional
     public List<RaumBelegungUebersicht> getDetaillierterPlan(Veranstaltung veranstaltung) {
-        Map<Long, Map<Long, RaumplanEintragDto>> raumplan = getRaumbelegungsplan(veranstaltung);
-        List<RaumBelegungUebersicht> detaillierterPlan = new ArrayList<>();
+        Objects.requireNonNull(veranstaltung);
 
+        Map<Long, Map<Long, RaumplanEintragDto>> raumplan = getRaumbelegungsplan(veranstaltung);
+        if (raumplan.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<RaumBelegungUebersicht> detaillierterPlan = new ArrayList<>();
         List<Slot> sortedSlots = veranstaltung.getSlots().stream()
                 .sorted(comparing(Slot::getStartTime)).toList();
         List<Raum> sortedRaeume =

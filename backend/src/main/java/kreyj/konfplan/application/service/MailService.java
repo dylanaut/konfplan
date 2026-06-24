@@ -194,6 +194,20 @@ public class MailService {
             );
     }
 
+    public void sendVerfuegbarkeitChangedNotification(Nutzer nutzer, Veranstaltung veranstaltung) {
+        String subject = "Verfügbarkeit geändert für " + veranstaltung.getName();
+        String body = String.format(
+            "Hallo,\n\nder Teilnehmer %s %s hat seine Verfügbarkeit für die Veranstaltung '%s' geändert.\n\nDies ist eine automatische Benachrichtigung.",
+            nutzer.getFirstName(), nutzer.getLastName(),
+            veranstaltung.getName()
+        );
+
+        veranstaltung.organisatoren().forEach(organisator -> {
+            mailer.send(Mail.withText(organisator.getEmail(), subject, body)
+                .setFrom(senderEmail(veranstaltung)));
+        });
+    }
+
     // -------------------------------------------------------------------
     // Helper methods
     // -------------------------------------------------------------------

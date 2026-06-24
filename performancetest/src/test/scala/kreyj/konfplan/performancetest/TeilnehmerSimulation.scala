@@ -27,14 +27,14 @@ class TeilnehmerSimulation extends Simulation {
     .pause(1.second, 5.seconds) // Simulate user think time
     .exec(
       http("2. Prioritäten laden")
-        .get("/api/teilnehmer/prios")
+        .get("/api/prios/" + "${vid}")
         .header("Authorization", "Bearer ${jwtToken}")
         .check(status.is(200))
     )
     .pause(5.seconds, 10.seconds) // Simulate user think time before updating
     .exec(
       http("3. Prioritäten aktualisieren")
-        .post("/api/teilnehmer/prios")
+        .post("/api/prios")
         .header("Authorization", "Bearer ${jwtToken}")
         .body(StringBody("""[
           { "vortragId": 1, "prioritaet": 1 },

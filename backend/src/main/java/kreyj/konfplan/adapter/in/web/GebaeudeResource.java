@@ -50,7 +50,7 @@ public class GebaeudeResource {
                                           @QueryParam("sortDirectionRooms") @DefaultValue("asc") String sortDirectionRooms) {
         return gebaeudeService.listAll()
                 .stream()
-                .map(VeranstaltungService::mapToDto)
+                .map(VeranstaltungService::mapGebaeudeToDto)
                 .toList();
     }
 

@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
 import static io.restassured.RestAssured.given;
@@ -107,7 +108,7 @@ class AdminResourceTest extends DatabaseCleaner {
         assertThat(created.version).isEqualTo(0L);
 
         String newEmail = "updated@test.de";
-        NutzerDto tnUpdate = NutzerDto.teilnehmer(newEmail, "Max", "Mustermann", Set.of("New Group"), emptyList());
+        NutzerDto tnUpdate = NutzerDto.teilnehmer(newEmail, "Max", "Mustermann", List.of("New Group"), emptyList());
         tnUpdate.version = created.version;
 
         NutzerDto updated =

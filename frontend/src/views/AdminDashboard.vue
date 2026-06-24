@@ -18,13 +18,6 @@
           </select>
         </div>
       </div>
-      <div v-if="selectedVid" class="flex gap-2">
-        <button @click="downloadTuerschilder"
-                class="flex items-center gap-2 bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition shadow-md text-xs font-bold">
-          <FileTextIcon class="w-3.5 h-3.5"/>
-          Türschilder
-        </button>
-      </div>
     </div>
 
     <!-- Tab-Navigation -->
@@ -60,7 +53,7 @@
 
     <!-- TABS CONTENT -->
     <ErgebnisseTab v-if="activeTab === 'ergebnisse' && selectedVid"
-                   :belegungsPlan="belegungsPlan"
+                   :belegungsPlan="belegungsplan"
                    :qualitaet="qualitaet"
                    :eventSlots="eventSlots"
                    :raeume="filteredRaeume"
@@ -105,7 +98,7 @@
                    :pageSize="pageSize"
                    :sortedSlots="sortedSlots"
                    :isEventFinished="isEventFinished"
-                   :electiveTalks="electiveTalks"
+                   :electiveTalks="wahlvortraege"
                    :participantPriorities="participantPriorities"
                    :changedPriorities="changedPriorities"
                    @triggerUpload="triggerUpload"
@@ -183,7 +176,7 @@
     <UserEditorModal :isVisible="showUserModal" :nutzer="selectedUser" :eventSlots="eventSlots"
                      @close="showUserModal = false" @save="handleSaveUser"/>
     <AdminVortragEditorModal :isVisible="showVortragModal" :vortrag="selectedVortrag" :referenten="referenten"
-                             :raeume="raeume" :slots="eventSlots" :participantGroups="participantGroups"
+                             :raeume="raeume" :slots="eventSlots" :participantGroups="teilnehmerGruppen"
                              :error="vortragModalError" @close="closeVortragModal" @save="handleSaveVortrag"/>
     <EventSlotEditorModal :isVisible="showSlotModal" :slot="selectedSlot" @close="showSlotModal = false"
                           @save="handleSaveSlot"/>
@@ -222,6 +215,7 @@ import {computed, onMounted, reactive, ref} from 'vue';
 import api from '../api/axios';
 import {useEventContextStore} from '../stores/eventContext';
 import {useAvailabilityStore} from '../stores/availability';
+import { useGroupStore } from '../stores/group';
 import {
   Calendar as CalendarIcon,
   FileText as FileTextIcon,
@@ -252,6 +246,7 @@ import InviteUserModal from '../components/InviteUserModal.vue';
 
 const eventContext = useEventContextStore();
 const availabilityStore = useAvailabilityStore();
+const groupStore = useGroupStore();
 
 const tabLabels = {
   administratoren: 'Organisatoren',
@@ -275,7 +270,7 @@ const raeume = ref([]); // This will hold ALL rooms
 const users = ref([]);
 const vortraege = ref([]);
 const eventSlots = ref([]);
-const belegungsPlan = ref([]);
+const belegungsplan = ref([]);
 const qualitaet = ref({});
 const protokolle = ref([]);
 const participantPriorities = ref({});
@@ -343,7 +338,7 @@ const admins = computed(() => users.value.filter(u => u.role === 'ADMIN'));
 const referenten = computed(() => users.value.filter(u => u.role === 'REFERENT'));
 const teilnehmer = computed(() => users.value.filter(u => u.role === 'TEILNEHMER'));
 
-const participantGroups = computed(() => {
+const teilnehmerGruppen = computed(() => {
   const groups = new Set(teilnehmer.value.flatMap(t => t.gruppen).filter(Boolean));
   return Array.from(groups).sort();
 });
@@ -352,7 +347,7 @@ const sortedSlots = computed(() => {
   return [...eventSlots.value].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 });
 
-const electiveTalks = computed(() => {
+const wahlvortraege = computed(() => {
   return vortraege.value.filter(v => !v.istPflicht).sort((a, b) => a.titel.localeCompare(b.titel));
 });
 
@@ -373,11 +368,11 @@ const gebaeudeDetails = computed(() => {
     const fullGebaeude = gebaeude.value.find(g => g.id === eventGebaeude.id);
     if (!fullGebaeude) return null;
     const raumCount = fullGebaeude.raeume ? fullGebaeude.raeume.length : 0;
-    const kapazitaetSum = fullGebaeude.raeume ? fullGebaeude.raeume.reduce((sum, r) => sum + (r.kapazitaet || 0), 0) : 0;
+    const kapazitaetGesamt = fullGebaeude.raeume ? fullGebaeude.raeume.reduce((sum, r) => sum + (r.kapazitaet || 0), 0) : 0;
     return {
       name: fullGebaeude.name,
       raumCount,
-      kapazitaetSum
+      kapazitaetSum: kapazitaetGesamt
     };
   }).filter(Boolean);
 });
@@ -479,7 +474,8 @@ const loadData = async () => {
       api.get(`${base}/slots`),
       api.get(`${base}/plan/details`),
       api.get(`${base}/plan/qualitaet`),
-      api.get('/api/admin/nutzer')
+      api.get('/api/admin/nutzer'),
+      groupStore.fetchGruppen(selectedVid.value)
     ]);
 
     await availabilityStore.fetchAvailabilities(selectedVid.value);
@@ -491,7 +487,7 @@ const loadData = async () => {
 
     vortraege.value = vRes.data;
     eventSlots.value = sRes.data;
-    belegungsPlan.value = pRes.data;
+    belegungsplan.value = pRes.data;
     qualitaet.value = qRes.data;
 
     const prioMap = {};
@@ -863,20 +859,6 @@ const downloadRaumschilder = async () => {
     link.click();
   } catch (e) {
     console.error('Fehler beim Download der Raumschilder:', e);
-  }
-};
-
-const downloadTuerschilder = async () => {
-  try {
-    const res = await api.get(`/api/reports/${selectedVid.value}/tuerschilder-pdf`, {responseType: 'blob'});
-    const url = window.URL.createObjectURL(new Blob([res.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'tuerschilder.pdf');
-    document.body.appendChild(link);
-    link.click();
-  } catch (e) {
-    console.error('Fehler beim Download der Türschilder:', e);
   }
 };
 

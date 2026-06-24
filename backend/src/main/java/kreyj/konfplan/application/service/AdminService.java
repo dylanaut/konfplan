@@ -3,6 +3,7 @@ package kreyj.konfplan.application.service;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import io.quarkus.elytron.security.common.BcryptUtil;
+import io.quarkus.runtime.LaunchMode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
@@ -44,6 +45,7 @@ import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
 import kreyj.konfplan.persistence.Wahlvortrag;
+import kreyj.konfplan.util.StringHelper;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
@@ -83,13 +85,14 @@ public class AdminService implements AdminServiceInterface {
     public static final String LEGENDE = "# Legende:";
 
     private final MailService mailService;
-
     private final ProtokollService protokollService;
+    private final LaunchMode launchMode;
 
 
-    public AdminService(MailService mailService, ProtokollService protokollService) {
+    public AdminService(MailService mailService, ProtokollService protokollService, LaunchMode launchMode) {
         this.mailService = mailService;
         this.protokollService = protokollService;
+        this.launchMode = launchMode;
     }
 
 
@@ -150,8 +153,8 @@ public class AdminService implements AdminServiceInterface {
         nutzer.setActive(dto.isActive);
 
         if (dto.email != null) {
-            // todo replace with uuid string for PROD
-            nutzer.setPasswordHash(BcryptUtil.bcryptHash("start123"));
+            String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
+            nutzer.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
         }
 
         if (nutzer instanceof Referent r) {
@@ -160,7 +163,17 @@ public class AdminService implements AdminServiceInterface {
             r.setOrganisation(dto.organisation);
             r.setSlogan(dto.slogan);
         } else if (nutzer instanceof Teilnehmer t) {
-            t.setGruppen(dto.gruppen);
+            dto.gruppen.forEach(t::addGruppe);
+            dto.prioritaeten.forEach(prioDto -> {
+                Wahlvortrag wv = Wahlvortrag.findById(prioDto.vortragId);
+                if (wv == null) {
+                    LOG.error("Unbekannter Wahlvortrag zu id: " + prioDto.vortragId);
+                } else {
+                    Prioritaet prioritaet = new Prioritaet(t, Wahlvortrag.findById(prioDto.vortragId), prioDto.prioWert);
+                    prioritaet.persist();
+                    t.addPrioritaet(prioritaet);
+                }
+            });
         }
 
         nutzer.persistAndFlush();
@@ -254,7 +267,17 @@ public class AdminService implements AdminServiceInterface {
             r.setOrganisation(dto.organisation);
             r.setSlogan(dto.slogan);
         } else if (nutzer instanceof Teilnehmer t) {
-            t.setGruppen(dto.gruppen);
+            dto.gruppen.forEach(t::addGruppe);
+            dto.prioritaeten.forEach(prioDto -> {
+                Wahlvortrag wv = Wahlvortrag.findById(prioDto.vortragId);
+                if (wv == null) {
+                    LOG.error("Unbekannter Wahlvortrag zu id: " + prioDto.vortragId);
+                } else {
+                    Prioritaet prioritaet = new Prioritaet(t, Wahlvortrag.findById(prioDto.vortragId), prioDto.prioWert);
+                    prioritaet.persist();
+                    t.addPrioritaet(prioritaet);
+                }
+            });
         }
 
         nutzer.persistAndFlush();
@@ -1175,7 +1198,7 @@ public class AdminService implements AdminServiceInterface {
         if (veranstaltung == null) {
             throw new EntityNotFoundException(Veranstaltung.class, "ID " + veranstaltungId + " nicht gefunden.");
         }
-        return veranstaltung.getGruppen().stream().sorted().toList();
+        return veranstaltung.getGruppen().stream().sorted(StringHelper.NUM_OR_ALPHA_COMPARATOR).toList();
     }
 
 
@@ -1392,8 +1415,8 @@ public class AdminService implements AdminServiceInterface {
             dto.organisation = r.getOrganisation();
             dto.slogan = r.getSlogan();
         } else if (u instanceof Teilnehmer tn) {
-            dto.gruppen = tn.getGruppen();
-            if (tn.getPrioritaeten() != null) {
+            dto.gruppen = tn.getGruppen().stream().sorted(StringHelper.NUM_OR_ALPHA_COMPARATOR).toList();
+            if (!tn.getPrioritaeten().isEmpty()) {
                 dto.prioritaeten = tn.getPrioritaeten().stream().map(VortragPrioDto::from).toList();
             }
         }

@@ -3,10 +3,39 @@ package kreyj.konfplan.util;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public final class NameSorting {
-    private NameSorting() {
+public final class StringHelper {
+    private static final Pattern DIGIT_PATTERN = Pattern.compile("(\\d+)|(\\D+)");
+    public static final Comparator<String> NUM_OR_ALPHA_COMPARATOR =
+        (s1, s2) -> {
+            Matcher m1 = DIGIT_PATTERN.matcher(s1);
+            Matcher m2 = DIGIT_PATTERN.matcher(s2);
+
+            while (m1.find() && m2.find()) {
+                // Beide Teile sind Zahlen -> Numerischer Vergleich
+                if (m1.group(1) != null && m2.group(1) != null) {
+                    int num1 = Integer.parseInt(m1.group(1));
+                    int num2 = Integer.parseInt(m2.group(1));
+                    if (num1 != num2) {
+                        return Integer.compare(num1, num2);
+                    }
+                } else {
+                    // Textanteil oder gemischter Vergleich
+                    int cmp = m1.group().compareTo(m2.group());
+                    if (cmp != 0) {
+                        return cmp;
+                    }
+                }
+            }
+            return Integer.compare(s1.length(), s2.length());
+        };
+
+
+    private StringHelper() {
         // never instantiate
     }
 

@@ -29,7 +29,7 @@ public class VeranstaltungDto extends AbstractVersionedDto {
     private List<Long> organisatorIds = new ArrayList<>();
     private List<String> organisatorNamen = new ArrayList<>();
     private List<GebaeudeSimpleDto> gebaeude = new ArrayList<>();
-    private Set<String> gruppen = new HashSet<>();
+    private List<String> gruppen = new ArrayList<>();
 
 
     public List<String> getOrte() {
