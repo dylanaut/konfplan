@@ -10,9 +10,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class VortragPrioDto {
     public Long vortragId;
-    public int prioWert;
+    public int prio;
 
     public static VortragPrioDto from(Prioritaet p) {
-        return new VortragPrioDto(p.getVortrag().getId(), p.getPrioWert());
+        return new VortragPrioDto(p.getVortrag().getId(), p.getPrio());
     }
 }

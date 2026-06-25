@@ -12,7 +12,7 @@
           <UserIcon class="w-6 h-6" />
           <h2 class="text-xl font-bold">Mein Profil</h2>
         </div>
-        <button @click="saveProfile" class="btn-primary">
+        <button @click="saveProfile" :disabled="!hasProfileChanges" class="btn-primary">
           <SaveIcon class="w-4 h-4 mr-2" /> Profil speichern
         </button>
       </div>
@@ -57,10 +57,13 @@
               <h3 class="font-bold text-lg text-gray-800">{{ event.name }}</h3>
               <p class="text-xs text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
               <p v-if="event.deadlineTeilnehmer" :class="['text-[10px] font-bold mt-1', isDeadlinePassed(event.deadlineTeilnehmer) ? 'text-red-600' : 'text-orange-600']">
-                Deadline für Prioritätenwahl: {{ formatDateTime(event.deadlineTeilnehmer) }}
+                Deadline für Änderungen: {{ formatDateTime(event.deadlineTeilnehmer) }}
               </p>
             </div>
              <div class="flex gap-2">
+               <button v-if="event.planErstellt" @click="downloadIcs(event.id)" class="btn-secondary">
+                 <CalendarPlus class="w-4 h-4 mr-2" /> ICS
+               </button>
               <button v-if="event.planErstellt" @click="viewMySchedule(event.id)" class="btn-secondary">
                 <PrinterIcon class="w-4 h-4 mr-2" /> Laufzettel
               </button>
@@ -79,27 +82,26 @@
             </button>
             <div v-if="activeAvailabilityEventId === event.id" class="p-4 border-t border-gray-200 bg-white animate-fade-in">
               <div class="flex justify-end mb-4">
-                <button @click="saveAvailabilities" class="btn-save-all">
+                <button @click="saveAvailabilities" :disabled="isDeadlinePassed(event.deadlineTeilnehmer) || !hasAvailabilityChanges" class="btn-save-all">
                   <SaveAllIcon class="w-3.5 h-3.5"/>
                   Verfügbarkeit speichern
                 </button>
               </div>
-              <table class="min-w-full text-xs">
-                <thead class="text-[9px] uppercase font-bold text-gray-500 bg-gray-50">
-                  <tr>
-                    <th class="py-2 px-4 text-left">Slot</th>
-                    <th class="py-2 px-4 text-center w-24">Verfügbar</th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white">
-                  <tr v-for="slot in eventSlots" :key="slot.id" class="border-b border-gray-100">
-                    <td class="px-4 py-3 font-bold">{{ formatSlot(slot.startTime) }}</td>
-                    <td class="px-4 py-3 text-center">
-                      <input type="checkbox" v-model="availabilities[slot.id]" @change="markAvailabilityChanged(slot.id)" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <div class="flex space-x-4 overflow-x-auto pb-4">
+                <div v-for="(daySlots, day) in groupedSlots" :key="day" class="bg-gray-50 p-3 rounded-lg">
+                  <h4 class="font-bold text-sm mb-3 text-center">{{ day }}</h4>
+                  <table class="text-xs">
+                    <tr>
+                      <td v-for="slot in daySlots" :key="slot.id" class="px-2 py-1 font-bold text-center">{{ formatTime(slot.startTime) }}</td>
+                    </tr>
+                    <tr>
+                      <td v-for="slot in daySlots" :key="slot.id" class="px-2 py-1 text-center">
+                        <input type="checkbox" v-model="availabilities[slot.id]" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
             </div>
 
             <!-- Prioritäten Section -->
@@ -112,12 +114,17 @@
               <div v-if="vortraege.length > 0">
                 <div class="mb-6">
                   <h4 class="font-bold text-sm mb-2">Alle Vorträge</h4>
-                  <ol class="list-decimal list-inside space-y-1 text-xs">
-                    <li v-for="talk in vortraege" :key="talk.id">
-                      <span class="font-semibold">{{ talk.titel }}</span> bei {{ talk.referentName }}
-                      <span v-if="talk.istPflicht" class="ml-2 text-white bg-blue-500 text-[9px] font-bold px-1.5 py-0.5 rounded-full">Pflicht</span>
-                    </li>
-                  </ol>
+                  <div class="space-y-2">
+                    <div v-for="group in groupedVortraege" :key="group.berufsfeld">
+                      <h5 class="font-semibold text-xs text-indigo-700 uppercase mt-2">{{ group.berufsfeld }}</h5>
+                      <ol class="list-decimal list-inside space-y-1 text-xs pl-2">
+                        <li v-for="talk in group.vortraege" :key="talk.id">
+                          <span class="font-semibold">{{ talk.titel }}</span> bei {{ talk.referentName }}
+                          <span v-if="talk.istPflicht" class="ml-2 text-white bg-blue-500 text-[9px] font-bold px-1.5 py-0.5 rounded-full">Pflicht</span>
+                        </li>
+                      </ol>
+                    </div>
+                  </div>
                 </div>
 
                 <h4 class="font-bold text-sm mb-2">Meine Prioritäten</h4>
@@ -186,7 +193,8 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   CalendarIcon,
-  StarIcon
+  StarIcon,
+  CalendarPlus,
 } from '@lucide/vue';
 
 const events = ref([]);
@@ -196,7 +204,7 @@ const vortraege = ref([]);
 const priorities = ref({});
 const changedPriorities = ref(new Set());
 const availabilities = ref({});
-const changedAvailabilities = ref(new Set());
+const initialAvailabilities = ref({});
 const eventSlots = ref([]);
 const schedule = ref([]);
 const profile = ref({
@@ -206,6 +214,43 @@ const profile = ref({
   email: '',
   gruppen: [],
   version: 0
+});
+const initialProfile = ref({});
+
+const hasAvailabilityChanges = computed(() => {
+  return JSON.stringify(availabilities.value) !== JSON.stringify(initialAvailabilities.value);
+});
+
+const hasProfileChanges = computed(() => {
+  if (!initialProfile.value) return false;
+  return profile.value.email !== initialProfile.value.email;
+});
+
+const groupedVortraege = computed(() => {
+  const grouped = vortraege.value.reduce((acc, vortrag) => {
+    const key = vortrag.berufsfeld || 'Sonstige';
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+    acc[key].push(vortrag);
+    return acc;
+  }, {});
+
+  return Object.keys(grouped).sort().map(key => ({
+    berufsfeld: key,
+    vortraege: grouped[key]
+  }));
+});
+
+const groupedSlots = computed(() => {
+  return eventSlots.value.reduce((acc, slot) => {
+    const day = new Date(slot.startTime).toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' });
+    if (!acc[day]) {
+      acc[day] = [];
+    }
+    acc[day].push(slot);
+    return acc;
+  }, {});
 });
 
 onMounted(async () => {
@@ -217,6 +262,7 @@ const fetchTeilnehmerProfile = async () => {
   try {
     const response = await api.get('/api/teilnehmer/profile');
     profile.value = response.data;
+    initialProfile.value = { ...response.data };
   } catch (error) {
     console.error("Fehler beim Laden des Profils:", error);
   }
@@ -268,20 +314,17 @@ const toggleAvailability = async (eventId) => {
     ]);
     eventSlots.value = slotsRes.data.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
     const availabilityData = availabilityRes.data;
-    availabilities.value = eventSlots.value.reduce((acc, slot) => {
+    const currentAvailabilities = eventSlots.value.reduce((acc, slot) => {
         acc[slot.id] = availabilityData.verfuegbareSlotIds.includes(slot.id);
         return acc;
     }, {});
-    changedAvailabilities.value.clear();
+    availabilities.value = {...currentAvailabilities};
+    initialAvailabilities.value = {...currentAvailabilities};
     activeAvailabilityEventId.value = eventId;
     activeEventId.value = null; // close other section
   } catch (error) {
     console.error("Fehler beim Laden der Verfügbarkeits-Daten:", error);
   }
-};
-
-const markAvailabilityChanged = (slotId) => {
-  changedAvailabilities.value.add(slotId);
 };
 
 const saveAvailabilities = async () => {
@@ -297,7 +340,7 @@ const saveAvailabilities = async () => {
 
   try {
     await api.post(`/api/teilnehmer/veranstaltungen/${activeAvailabilityEventId.value}/verfuegbarkeiten`, payload);
-    changedAvailabilities.value.clear();
+    initialAvailabilities.value = {...availabilities.value};
     alert('Verfügbarkeit erfolgreich gespeichert!');
   } catch (error) {
     console.error('Fehler beim Speichern der Verfügbarkeit:', error);
@@ -326,7 +369,7 @@ const savePriorities = async () => {
     prioWert: priorities.value[talkId].prioWert
   }));
   try {
-    await api.post('/api/prios', payload);
+    await api.post('/api/teilnehmer/prios', payload);
     changedPriorities.value.clear();
     alert('Prioritäten erfolgreich gespeichert!');
   } catch (error) {
@@ -337,9 +380,10 @@ const savePriorities = async () => {
 
 const saveProfile = async () => {
   try {
-    await api.put('/api/teilnehmer/profile', profile.value);
+    const response = await api.put('/api/teilnehmer/profile', profile.value);
+    profile.value = response.data;
+    initialProfile.value = { ...response.data };
     alert('Profil erfolgreich gespeichert!');
-    await fetchTeilnehmerProfile(); // Refresh data
   } catch (error) {
     console.error('Fehler beim Speichern des Profils:', error);
     alert('Fehler: ' + (error.response?.data?.message || error.message));
@@ -375,6 +419,21 @@ const downloadMySchedule = async (vid) => {
   }
 };
 
+const downloadIcs = async (vid) => {
+  try {
+    const res = await api.get(`/api/ics/teilnehmer/${vid}`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/calendar' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `veranstaltung_${vid}.ics`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (e) {
+    console.error('Fehler beim Download der ICS-Datei:', e);
+  }
+};
+
 const isDeadlinePassed = (deadline) => {
     if (!deadline) return false;
     return new Date(deadline) < new Date();
@@ -382,11 +441,7 @@ const isDeadlinePassed = (deadline) => {
 
 const formatDate = (d) => new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const formatDateTime = (d) => new Date(d).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-const formatSlot = (d) => {
-  const date = new Date(d);
-  const options = { weekday: 'short', hour: '2-digit', minute: '2-digit' };
-  return date.toLocaleDateString('de-DE', options);
-}
+const formatTime = (d) => new Date(d).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 </script>
 
 <style scoped>

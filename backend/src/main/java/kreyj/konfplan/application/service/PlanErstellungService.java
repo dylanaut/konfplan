@@ -10,7 +10,6 @@ import jakarta.json.Json;
 import jakarta.json.JsonException;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
-import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.ProtokollKategorie;
@@ -308,7 +307,7 @@ public class PlanErstellungService {
             int wvIdx = 0;
             for (Wahlvortrag v : wahlvortraege) {
                 Prioritaet p = Prioritaet.find("teilnehmer = ?1 and vortrag = ?2", tn, v).firstResult();
-                sb.append(p != null ? p.getPrioWert() : 0);
+                sb.append(p != null ? p.getPrio() : 0);
                 if (++wvIdx < wvSize) {
                     sb.append(",");
                 } else {

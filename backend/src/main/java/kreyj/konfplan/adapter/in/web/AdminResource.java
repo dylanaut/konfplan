@@ -35,7 +35,6 @@ import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 import java.util.List;
 
-import static kreyj.konfplan.application.service.AdminService.mapNutzerToDto;
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvIdL;
 
@@ -52,11 +51,13 @@ public class AdminResource {
 
     private final MailService mailService;
 
+
     public AdminResource(AdminServiceInterface adminService, PrioritaetService prioritaetService, MailService mailService) {
         this.adminService = adminService;
         this.prioritaetService = prioritaetService;
         this.mailService = mailService;
     }
+
 
     @GET
     @Path("/nutzer")
@@ -64,6 +65,7 @@ public class AdminResource {
     public List<NutzerDto> getAllUsers() {
         return adminService.getAllUsers();
     }
+
 
     @POST
     @Path("/nutzer")
@@ -78,6 +80,7 @@ public class AdminResource {
         return createdNutzerDto;
     }
 
+
     @GET
     @Path("/nutzer/{id}")
     @Transactional
@@ -89,8 +92,9 @@ public class AdminResource {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        return Response.ok().entity(mapNutzerToDto(nutzer)).build();
+        return Response.ok().entity(adminService.mapNutzerToDto(nutzer)).build();
     }
+
 
     @PUT
     @Path("/nutzer/{id}")
@@ -104,6 +108,7 @@ public class AdminResource {
         }
     }
 
+
     @DELETE
     @Path("/nutzer/{id}")
     @Operation(summary = "Nutzer löschen", description = "Löscht einen Nutzer und sendet eine Benachrichtigungs-E-Mail.")
@@ -114,6 +119,7 @@ public class AdminResource {
             adminService.deleteUser(id);
         }
     }
+
 
     @POST
     @Path("/nutzer/{userId}/einladen/{eventId}")
@@ -127,6 +133,7 @@ public class AdminResource {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
     }
+
 
     @POST
     @Path("/admins/import")
@@ -142,6 +149,7 @@ public class AdminResource {
         }
     }
 
+
     @POST
     @Path("/veranstaltungen/{vid}/prioritaeten/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -156,6 +164,7 @@ public class AdminResource {
         }
     }
 
+
     @GET
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Operation(summary = "Verfügbarkeiten abrufen", description = "Ruft die Verfügbarkeiten aller Nutzer für eine Veranstaltung ab.")
@@ -163,9 +172,10 @@ public class AdminResource {
         List<NutzerVerfuegbarkeit> nvs = NutzerVerfuegbarkeit.find("veranstaltungId", vid).list();
 
         return nvs.stream()
-                .map(NutzerVerfuegbarkeitDto::new)
-                .toList();
+            .map(NutzerVerfuegbarkeitDto::new)
+            .toList();
     }
+
 
     @POST
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
@@ -182,12 +192,14 @@ public class AdminResource {
         return Response.ok().build();
     }
 
+
     @GET
     @Path("/veranstaltungen/{vid}/raeume/verfuegbarkeiten")
     @Operation(summary = "Raum-Verfügbarkeiten abrufen", description = "Ruft die Verfügbarkeiten (Belegungen) aller Räume für eine Veranstaltung ab.")
     public List<RaumVerfuegbarkeitDto> getRaumVerfuegbarkeiten(@PathParam("vid") Long vid) {
         return adminService.getRaumVerfuegbarkeiten(vid);
     }
+
 
     @POST
     @Path("/veranstaltungen/{vid}/raeume/verfuegbarkeiten")
@@ -203,14 +215,15 @@ public class AdminResource {
         return Response.ok().build();
     }
 
+
     @PUT
     @Path("/veranstaltungen/{vid}/teilnehmer/{tid}/priorities")
     @Transactional
     @Operation(summary = "Teilnehmer-Prioritäten aktualisieren", description = "Aktualisiert eine oder mehrere Prioritäten eines Teilnehmers für eine Veranstaltung.")
     public Response updateTeilnehmerPrioritaet(
-            @PathParam("vid") Long vid,
-            @PathParam("tid") Long tid,
-            @RequestBody(description = "Eine Liste von Prioritäts-Updates") List<AdminPrioritaetUpdateRequestDto> dtoList) { // Changed to List
+        @PathParam("vid") Long vid,
+        @PathParam("tid") Long tid,
+        @RequestBody(description = "Eine Liste von Prioritäts-Updates") List<AdminPrioritaetUpdateRequestDto> dtoList) { // Changed to List
 
         Teilnehmer teilnehmer = Teilnehmer.findById(tid);
         if (teilnehmer == null) {
@@ -230,7 +243,7 @@ public class AdminResource {
                 if (!vortrag.getVeranstaltung().getId().equals(vid)) {
                     return Response.status(Response.Status.BAD_REQUEST).entity("Vortrag mit ID " + dto.vortragId + " gehört nicht zu dieser Veranstaltung.").build();
                 }
-                prioritaetService.updateSinglePrioritaet(tid, dto.vortragId, dto.prioWert);
+                prioritaetService.updateSinglePrioritaet(tid, dto.vortragId, dto.prio);
             }
             return Response.ok().build();
         } catch (WebApplicationException e) {
@@ -243,6 +256,7 @@ public class AdminResource {
 
     // --- GRUPPEN-VERWALTUNG ---
 
+
     @GET
     @Path("/veranstaltungen/{vid}/gruppen")
     @Operation(summary = "Alle Gruppen einer Veranstaltung abrufen")
@@ -253,6 +267,7 @@ public class AdminResource {
             return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
         }
     }
+
 
     @POST
     @Path("/veranstaltungen/{vid}/gruppen")
@@ -266,6 +281,7 @@ public class AdminResource {
         }
     }
 
+
     @PUT
     @Path("/veranstaltungen/{vid}/gruppen")
     @Operation(summary = "Eine Gruppe umbenennen")
@@ -277,6 +293,7 @@ public class AdminResource {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
     }
+
 
     @DELETE
     @Path("/veranstaltungen/{vid}/gruppen/{gruppenName}")

@@ -90,10 +90,10 @@
                         </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                        <tr v-for="talk in paginatedVSubVortraege" :key="talk.id" class="hover:bg-indigo-50/30 transition">
-                          <td class="px-3 py-1.5 font-semibold text-gray-800">{{ talk.titel }}</td>
-                          <td class="px-3 py-1.5 text-gray-600">{{ talk.referentName }}</td>
-                          <td class="px-3 py-1.5 text-gray-600">{{ talk.referentOrganisation }}</td>
+                        <tr v-for="vortrag in paginatedVSubVortraege" :key="vortrag.id" class="hover:bg-indigo-50/30 transition">
+                          <td class="px-3 py-1.5 font-semibold text-gray-800">{{ vortrag.titel }}</td>
+                          <td class="px-3 py-1.5 text-gray-600">{{ vortrag.referentName }}</td>
+                          <td class="px-3 py-1.5 text-gray-600">{{ vortrag.referentOrganisation }}</td>
                         </tr>
                         </tbody>
                       </table>

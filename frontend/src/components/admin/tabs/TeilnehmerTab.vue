@@ -28,7 +28,7 @@
         </div>
       </div>
       <div class="flex gap-2">
-        <select v-model="filters.gruppen" class="input-field text-xs py-1 px-2">
+        <select v-model="filters.gruppen" class="input-field text-xs py-1 px-2 pr-8">
           <option value="">Alle Gruppen</option>
           <option v-for="g in teilnehmerGruppen" :key="g" :value="g">{{ g }}</option>
         </select>
@@ -58,7 +58,7 @@
           <button @click.stop="emit('triggerUpload', `/api/admin/veranstaltungen/${selectedVid}/prioritaeten/import`)"
                   class="btn-secondary text-xs py-1 px-2 flex items-center gap-1">
             <UploadIcon class="w-3.5 h-3.5"/>
-            Prios Import
+            Prio Import
           </button>
           <button v-if="changedPriorities.size > 0" @click="emit('saveAllParticipantPriorities')"
                   :disabled="isEventFinished" class="btn-save-all">
@@ -70,19 +70,24 @@
 
       <div v-if="expandedSections.teilnehmerPrioritaeten" class="animate-fade-in space-y-4">
         <!-- Legende für Wahlvorträge -->
-        <div v-if="electiveTalks.length > 0"
+        <div v-if="sortedWahlvortraege.length > 0"
              class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 text-[10px]">
           <h3 class="font-black text-indigo-900 uppercase mb-2 flex items-center gap-2">
             <InfoIcon class="w-3.5 h-3.5"/>
             Legende der Wahlvorträge
           </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1">
-            <div v-for="(talk, index) in electiveTalks" :key="'legende-'+talk.id" class="flex gap-2 items-start">
-              <span class="font-black text-indigo-600 shrink-0 w-4 text-right">{{ index + 1 }}:</span>
-              <span class="text-gray-700 truncate"
-                    :title="`${talk.referentName || 'N/A'}${talk.referentOrganisation ? ' [' + talk.referentOrganisation + ']' : ''}`">
-                {{ talk.titel }}
-              </span>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
+            <div v-for="group in groupedWahlvortraege" :key="group.berufsfeld">
+              <h4 class="font-bold text-indigo-800 uppercase text-[9px] mb-1">{{ group.berufsfeld }}</h4>
+              <div class="space-y-1">
+                <div v-for="vortrag in group.vortraege" :key="'legende-'+vortrag.id" class="flex gap-2 items-start">
+                  <span class="font-black text-indigo-600 shrink-0 w-4 text-right">{{ sortedWahlvortraege.indexOf(vortrag) + 1 }}:</span>
+                  <span class="text-gray-700 truncate"
+                        :title="`${vortrag.referentName || 'N/A'}${vortrag.referentOrganisation ? ' [' + vortrag.referentOrganisation + ']' : ''}`">
+                    {{ vortrag.titel }}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -95,9 +100,9 @@
               <th class="px-4 py-1.5 text-left font-bold sticky left-0 bg-gray-50 z-10 w-48 border-r border-gray-100">
                 Name
               </th>
-              <th v-for="(talk, index) in electiveTalks" :key="talk.id"
+              <th v-for="(vortrag, index) in sortedWahlvortraege" :key="vortrag.id"
                   class="px-1 py-2 text-center text-[9px] font-black text-indigo-600 w-14 min-w-[56px] border-r border-gray-100"
-                  :title="talk.titel">
+                  :title="vortrag.titel">
                 {{ index + 1 }}
               </th>
               <th class="w-auto"></th> <!-- Spacer column to prevent stretching -->
@@ -120,10 +125,10 @@
                   </button>
                 </div>
               </td>
-              <td v-for="talk in electiveTalks" :key="'prio-'+u.id+'-'+talk.id"
+              <td v-for="vortrag in sortedWahlvortraege" :key="'prio-'+u.id+'-'+vortrag.id"
                   class="px-1 py-1 text-center border-r border-gray-50">
                 <input type="number" min="0" max="10"
-                       v-model.number="getParticipantPrio(u.id, talk.id).prioWert"
+                       v-model.number="getParticipantPrio(u.id, vortrag.id).prio"
                        @input="markPrioChanged(u.id)"
                        :disabled="isEventFinished"
                        class="w-12 text-center border rounded py-0.5 text-[10px] focus:ring-indigo-500 focus:border-indigo-500 border-gray-100"/>
@@ -273,7 +278,7 @@ const props = defineProps({
   pageSize: Number,
   sortedSlots: Array,
   isEventFinished: Boolean,
-  electiveTalks: Array,
+  wahlvortraege: Array,
   participantPriorities: Object,
   changedPriorities: Set,
 });
@@ -329,6 +334,32 @@ watch(() => filters.gruppen, () => {
 const teilnehmerGruppen = computed(() => {
   const groups = new Set(props.teilnehmer.map(t => t.gruppe).filter(Boolean));
   return Array.from(groups).sort();
+});
+
+const sortedWahlvortraege = computed(() => {
+  return [...props.wahlvortraege].sort((a, b) => {
+    const berufsfeldA = a.berufsfeld || 'Sonstige';
+    const berufsfeldB = b.berufsfeld || 'Sonstige';
+    if (berufsfeldA < berufsfeldB) return -1;
+    if (berufsfeldA > berufsfeldB) return 1;
+    return a.titel.localeCompare(b.titel);
+  });
+});
+
+const groupedWahlvortraege = computed(() => {
+  const grouped = sortedWahlvortraege.value.reduce((acc, vortrag) => {
+    const key = vortrag.berufsfeld || 'Sonstige';
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+    acc[key].push(vortrag);
+    return acc;
+  }, {});
+
+  return Object.keys(grouped).sort().map(key => ({
+    berufsfeld: key,
+    vortraege: grouped[key]
+  }));
 });
 
 const processList = (list, filterText, sortConfig) => {
@@ -401,7 +432,7 @@ const isAvailabilityChanged = (userId) => {
 
 const getParticipantPrio = (userId, talkId) => {
   if (!props.participantPriorities[userId]) props.participantPriorities[userId] = {};
-  if (!props.participantPriorities[userId][talkId]) props.participantPriorities[userId][talkId] = {prioWert: 0};
+  if (!props.participantPriorities[userId][talkId]) props.participantPriorities[userId][talkId] = {prio: 0};
   return props.participantPriorities[userId][talkId];
 };
 

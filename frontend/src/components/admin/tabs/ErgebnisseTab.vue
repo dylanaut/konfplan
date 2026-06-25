@@ -18,6 +18,7 @@
             <span class="font-semibold">Gesamt-Stundenplan</span>
           </div>
           <div class="space-x-2">
+            <button @click="downloadIcs()" class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">ICS</button>
             <button @click="preview('raeume')"
                     class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">Vorschau
             </button>
@@ -288,6 +289,22 @@ const download = async (report) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
+};
+
+const downloadIcs = async () => {
+  try {
+    const vid = eventContext.selectedEvent.id;
+    const res = await api.get(`/api/ics/admin/${vid}`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/calendar' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `veranstaltung_${vid}.ics`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (e) {
+    console.error('Fehler beim Download der ICS-Datei:', e);
   }
 };
 

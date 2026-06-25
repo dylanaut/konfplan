@@ -98,7 +98,7 @@
                    :pageSize="pageSize"
                    :sortedSlots="sortedSlots"
                    :isEventFinished="isEventFinished"
-                   :electiveTalks="wahlvortraege"
+                   :wahlvortraege="wahlvortraege"
                    :participantPriorities="participantPriorities"
                    :changedPriorities="changedPriorities"
                    @triggerUpload="triggerUpload"
@@ -150,8 +150,8 @@
                 :organisatoren="organisatoren"
                 :eventSlotsCount="eventSlots.length"
                 :gebaeudeDetails="gebaeudeDetails"
-                :referentenDetails="referentenDetails"
-                :teilnehmerCount="teilnehmer.length"
+                :referentenDetails="filteredReferenten"
+                :teilnehmerCount="filteredTeilnehmer.length"
                 :wahlvortraegeCount="wahlvortraegeCount"
                 :pflichtvortraegeCount="pflichtvortraegeCount"
                 :teilnehmerMitPrioritaetenCount="teilnehmerMitPrioritaetenCount"
@@ -338,6 +338,16 @@ const admins = computed(() => users.value.filter(u => u.role === 'ADMIN'));
 const referenten = computed(() => users.value.filter(u => u.role === 'REFERENT'));
 const teilnehmer = computed(() => users.value.filter(u => u.role === 'TEILNEHMER'));
 
+const filteredReferenten = computed(() => {
+  if (!selectedVid.value) return [];
+  return referenten.value.filter(r => r.veranstaltungIds.includes(selectedVid.value));
+});
+
+const filteredTeilnehmer = computed(() => {
+  if (!selectedVid.value) return [];
+  return teilnehmer.value.filter(t => t.veranstaltungIds.includes(selectedVid.value));
+});
+
 const teilnehmerGruppen = computed(() => {
   const groups = new Set(teilnehmer.value.flatMap(t => t.gruppen).filter(Boolean));
   return Array.from(groups).sort();
@@ -372,7 +382,7 @@ const gebaeudeDetails = computed(() => {
     return {
       name: fullGebaeude.name,
       raumCount,
-      kapazitaetSum: kapazitaetGesamt
+      kapazitaetGesamt: kapazitaetGesamt
     };
   }).filter(Boolean);
 });
@@ -388,7 +398,7 @@ const wahlvortraegeCount = computed(() => vortraege.value.filter(v => !v.istPfli
 const pflichtvortraegeCount = computed(() => vortraege.value.filter(v => v.istPflicht).length);
 
 const teilnehmerMitPrioritaetenCount = computed(() => {
-  return Object.values(participantPriorities.value).filter(prios => Object.values(prios).some(p => p.prioWert > 0)).length;
+  return Object.values(participantPriorities.value).filter(prios => Object.values(prios).some(p => p.prio > 0)).length;
 });
 
 onMounted(async () => {
@@ -496,8 +506,8 @@ const loadData = async () => {
       prioMap[u.id] = {};
       originalPrioMap[u.id] = {};
       u.prioritaeten?.forEach(p => {
-        prioMap[u.id][p.vortragId] = {prioWert: p.prioWert};
-        originalPrioMap[u.id][p.vortragId] = {prioWert: p.prioWert};
+        prioMap[u.id][p.vortragId] = {prio: p.prio};
+        originalPrioMap[u.id][p.vortragId] = {prio: p.prio};
       });
     });
     participantPriorities.value = prioMap;
@@ -777,17 +787,17 @@ const saveParticipantPriorities = async (userId) => {
   const changedPayload = [];
 
   for (const talkId in currentUserPrios) {
-    const currentPrio = currentUserPrios[talkId].prioWert;
-    const originalPrio = originalUserPrios[talkId]?.prioWert;
+    const currentPrio = currentUserPrios[talkId].prio;
+    const originalPrio = originalUserPrios[talkId]?.prio;
     if (currentPrio !== originalPrio) {
-      changedPayload.push({vortragId: parseInt(talkId), prioWert: currentPrio});
+      changedPayload.push({vortragId: parseInt(talkId), prio: currentPrio});
     }
   }
 
   for (const talkId in originalUserPrios) {
-    if (!(talkId in currentUserPrios) || currentUserPrios[talkId].prioWert === 0 && originalUserPrios[talkId].prioWert !== 0) {
+    if (!(talkId in currentUserPrios) || currentUserPrios[talkId].prio === 0 && originalUserPrios[talkId].prio !== 0) {
       if (!changedPayload.some(item => item.vortragId === parseInt(talkId))) {
-        changedPayload.push({vortragId: parseInt(talkId), prioWert: 0});
+        changedPayload.push({vortragId: parseInt(talkId), prio: 0});
       }
     }
   }

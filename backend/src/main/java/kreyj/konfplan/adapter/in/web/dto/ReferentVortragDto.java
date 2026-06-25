@@ -1,22 +1,21 @@
 package kreyj.konfplan.adapter.in.web.dto;
 
-import lombok.Getter;
+import io.quarkus.runtime.annotations.RegisterForReflection;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
+@RegisterForReflection
+@NoArgsConstructor
+@AllArgsConstructor
 public class ReferentVortragDto {
     public String vortragTitel;
-    @Getter
-    public String slotZeit;
+    public LocalDateTime slotBeginn;
+    public LocalDateTime slotEnde;
     public String raumName;
     public String gebaeudeName;
+    public String referentName;
     public List<TeilnehmerDto> teilnehmer;
-
-    public ReferentVortragDto(String vortragTitel, String slotZeit, String raumName, String gebaeudeName, List<TeilnehmerDto> teilnehmer) {
-        this.vortragTitel = vortragTitel;
-        this.slotZeit = slotZeit;
-        this.raumName = raumName;
-        this.gebaeudeName = gebaeudeName;
-        this.teilnehmer = teilnehmer;
-    }
 }

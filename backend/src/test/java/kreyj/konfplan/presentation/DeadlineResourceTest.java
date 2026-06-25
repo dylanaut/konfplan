@@ -118,7 +118,7 @@ class DeadlineResourceTest extends DatabaseCleaner {
     void testTeilnehmerDeadlineExceeded() {
         PrioritaetRequest req = new PrioritaetRequest();
         req.vortragId = wahlvortragId;
-        req.prioWert = 1;
+        req.prio = 1;
 
         given()
                 .contentType(ContentType.JSON)

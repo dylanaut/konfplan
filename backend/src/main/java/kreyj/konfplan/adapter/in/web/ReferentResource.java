@@ -3,7 +3,6 @@ package kreyj.konfplan.adapter.in.web;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.inject.Inject;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
@@ -20,9 +19,14 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
-import kreyj.konfplan.adapter.in.web.dto.*;
+import kreyj.konfplan.adapter.in.web.dto.EmailChangeRequestDto;
+import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
+import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
+import kreyj.konfplan.adapter.in.web.dto.ReferentVeranstaltungDto;
+import kreyj.konfplan.adapter.in.web.dto.ReferentVortragDto;
+import kreyj.konfplan.adapter.in.web.dto.VortragDto;
+import kreyj.konfplan.application.port.in.AdminServiceInterface;
 import kreyj.konfplan.application.port.in.ReferentServiceInterface;
-import kreyj.konfplan.application.service.AdminService;
 import kreyj.konfplan.application.service.MailService;
 import kreyj.konfplan.application.service.PlanService;
 import kreyj.konfplan.application.service.VeranstaltungService;
@@ -58,21 +62,20 @@ public class ReferentResource {
     private final JsonWebToken jwt;
 
     private final ReferentServiceInterface referentService;
-
     private final PlanService planService;
-
     private final MailService mailService;
+    private final ReportResource reportResource;
+    private final AdminServiceInterface adminService;
 
-    @Inject
-    ReportResource reportResource;
 
-
-    public ReferentResource(JsonWebToken jwt, ReferentServiceInterface referentService, PlanService planService, MailService mailService, VeranstaltungService veranstaltungService) {
+    public ReferentResource(JsonWebToken jwt, ReferentServiceInterface referentService, PlanService planService, MailService mailService, VeranstaltungService veranstaltungService, ReportResource reportResource, AdminServiceInterface adminService) {
         this.jwt = jwt;
         this.referentService = referentService;
         this.planService = planService;
         this.mailService = mailService;
         this.veranstaltungService = veranstaltungService;
+        this.reportResource = reportResource;
+        this.adminService = adminService;
     }
 
 
@@ -84,7 +87,7 @@ public class ReferentResource {
         if (referent == null) {
             throw new WebApplicationException("Referent not found", Response.Status.NOT_FOUND);
         }
-        return Response.ok(AdminService.mapNutzerToDto(referent)).build();
+        return Response.ok(adminService.mapNutzerToDto(referent)).build();
     }
 
 

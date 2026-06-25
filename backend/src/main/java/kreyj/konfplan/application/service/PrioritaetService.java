@@ -22,6 +22,8 @@ import java.util.stream.Collectors;
 import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
+import static kreyj.konfplan.persistence.Prioritaet.PRIO_MAX;
+import static kreyj.konfplan.persistence.Prioritaet.PRIO_MIN;
 
 @ApplicationScoped
 public class PrioritaetService implements PrioritaetServiceInterface {
@@ -47,16 +49,17 @@ public class PrioritaetService implements PrioritaetServiceInterface {
 
         // 1. Validierung: Nur Werte 1-10 erlaubt
         boolean invalidRange = requests.stream()
-                .anyMatch(r -> r.prioWert < 1 || r.prioWert > 10); // Hier umbenannt
+            .anyMatch(r -> r.prio < PRIO_MIN || r.prio > PRIO_MAX);
         if (invalidRange) {
-            throw new WebApplicationException("Priorität muss zwischen 1 und 10 liegen", BAD_REQUEST.getStatusCode());
+            throw new WebApplicationException("Priorität muss zwischen "
+                + PRIO_MIN + " und " + PRIO_MAX + " liegen", BAD_REQUEST.getStatusCode());
         }
 
         // 2. Validierung: Keine doppelten Prioritäten (Ranking-Check)
         long uniquePriorities = requests.stream()
-                .map(r -> r.prioWert) // Hier umbenannt
-                .distinct()
-                .count();
+            .map(r -> r.prio) // Hier umbenannt
+            .distinct()
+            .count();
         if (uniquePriorities < requests.size()) {
             throw new WebApplicationException("Jede Priorität darf nur einmal vergeben werden", BAD_REQUEST.getStatusCode());
         }
@@ -67,11 +70,11 @@ public class PrioritaetService implements PrioritaetServiceInterface {
         // 4. Neue Prioritäten speichern
         for (PrioritaetRequest req : requests) {
             Wahlvortrag vortrag = Wahlvortrag.findById(req.vortragId);
-            if (vortrag != null) {
+            if (vortrag != null && req.prio > PRIO_MIN) {
                 Prioritaet entity = new Prioritaet();
                 entity.setTeilnehmer(teilnehmer);
                 entity.setVortrag(vortrag);
-                entity.setPrioWert(req.prioWert); // Hier umbenannt
+                entity.setPrio(req.prio);
                 entity.persistAndFlush();
             }
         }
@@ -80,7 +83,7 @@ public class PrioritaetService implements PrioritaetServiceInterface {
 
     @Transactional
     @Override
-    public void updateSinglePrioritaet(Long userId, Long vortragId, int prioWert) {
+    public void updateSinglePrioritaet(Long userId, Long vortragId, int prio) {
         Teilnehmer teilnehmer = Teilnehmer.findById(userId);
         if (teilnehmer == null) {
             throw new WebApplicationException("Teilnehmer nicht gefunden", NOT_FOUND.getStatusCode());
@@ -91,13 +94,13 @@ public class PrioritaetService implements PrioritaetServiceInterface {
             throw new WebApplicationException("Wahlvortrag nicht gefunden", NOT_FOUND.getStatusCode());
         }
 
-        if (prioWert < 0 || prioWert > 10) {
+        if (prio < 0 || prio > 10) {
             throw new WebApplicationException("Priorität muss zwischen 0 und 10 liegen", BAD_REQUEST.getStatusCode());
         }
 
         Prioritaet p = Prioritaet.find("teilnehmer = ?1 and vortrag = ?2", teilnehmer, vortrag).firstResult();
 
-        if (prioWert == 0) {
+        if (prio == 0) {
             if (p != null) {
                 p.delete();
             }
@@ -108,17 +111,17 @@ public class PrioritaetService implements PrioritaetServiceInterface {
             p.setTeilnehmer(teilnehmer);
             p.setVortrag(vortrag);
         }
-        p.setPrioWert(prioWert);
+        p.setPrio(prio);
         p.persistAndFlush();
     }
 
 
     @RegisterForReflection
     record VortragPrio(
-            @ProjectedFieldName("vortrag.id")
-            Long vortragId,
-            @ProjectedFieldName("prioWert")
-            Integer prioWert) {
+        @ProjectedFieldName("vortrag.id")
+        Long vortragId,
+        @ProjectedFieldName("prio")
+        Integer prio) {
     }
 
 
@@ -129,16 +132,16 @@ public class PrioritaetService implements PrioritaetServiceInterface {
         Objects.requireNonNull(veranstaltungId);
 
         Map<Long, Integer> vortragIdToPrioWert = Prioritaet
-                .find("FROM Prioritaet p " +
-                                "JOIN p.teilnehmer tn " +
-                                "JOIN p.vortrag v " +
-                                "JOIN v.veranstaltung e " +
-                                "WHERE tn.id = ?1 AND e.id = ?2",
-                        nutzerId, veranstaltungId
-                )
-                .project(VortragPrio.class)
-                .list().stream()
-                .collect(Collectors.toMap(VortragPrio::vortragId, VortragPrio::prioWert));
+            .find("FROM Prioritaet p " +
+                    "JOIN p.teilnehmer tn " +
+                    "JOIN p.vortrag v " +
+                    "JOIN v.veranstaltung e " +
+                    "WHERE tn.id = ?1 AND e.id = ?2",
+                nutzerId, veranstaltungId
+            )
+            .project(VortragPrio.class)
+            .list().stream()
+            .collect(Collectors.toMap(VortragPrio::vortragId, VortragPrio::prio));
 
         return vortragIdToPrioWert;
     }

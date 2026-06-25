@@ -21,7 +21,7 @@ public interface TeilnehmerServiceInterface {
 
     List<TeilnehmerVeranstaltungDto> getTeilnehmerVeranstaltungen(String email);
 
-    List<VortragDto> getMeineVortraege(Long veranstaltungId, String email);
+    List<VortragDto> getVortraegeFuerTeilnehmerInVeranstaltung(Long veranstaltungId, String email);
 
     Teilnehmer createTeilnehmer(Teilnehmer user, Long veranstaltungId);
 

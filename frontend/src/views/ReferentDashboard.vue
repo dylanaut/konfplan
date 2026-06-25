@@ -58,6 +58,9 @@
             <p class="text-xs text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
           </div>
           <div v-if="event.planErstellt" class="flex gap-2">
+            <button @click="downloadIcs(event.id)" class="btn-secondary">
+              <CalendarPlus class="w-4 h-4 mr-2" /> ICS
+            </button>
             <button @click="viewMySchedule(event.id)" class="btn-secondary">
               <PrinterIcon class="w-4 h-4 mr-2" /> Laufzettel
             </button>
@@ -266,7 +269,7 @@
 import { ref, onMounted, computed, reactive } from 'vue';
 import api from '../api/axios';
 import { useAuthStore } from '../stores/auth';
-import { User as UserIcon, FileText as FileTextIcon, Calendar as CalendarIcon, Save as SaveIcon, Plus as PlusIcon, Edit as EditIcon, Trash2 as Trash2Icon, ListChecks as ListChecksIcon, Check as CheckIcon, X as XIcon, CalendarCheck as CalendarCheckIcon, Printer as PrinterIcon, Download as DownloadIcon } from '@lucide/vue';
+import { User as UserIcon, FileText as FileTextIcon, Calendar as CalendarIcon, Save as SaveIcon, Plus as PlusIcon, Edit as EditIcon, Trash2 as Trash2Icon, ListChecks as ListChecksIcon, Check as CheckIcon, X as XIcon, CalendarCheck as CalendarCheckIcon, Printer as PrinterIcon, Download as DownloadIcon, CalendarPlus } from '@lucide/vue';
 
 const authStore = useAuthStore();
 const referent = ref({
@@ -557,6 +560,21 @@ const downloadMySchedule = async (vid) => {
     document.body.removeChild(link);
   } catch (e) {
     console.error('Fehler beim Download des Laufzettels:', e);
+  }
+};
+
+const downloadIcs = async (vid) => {
+  try {
+    const res = await api.get(`/api/ics/referent/${vid}`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/calendar' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `meine_vortraege_${vid}.ics`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (e) {
+    console.error('Fehler beim Download der ICS-Datei:', e);
   }
 };
 

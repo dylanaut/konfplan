@@ -1,7 +1,6 @@
 package kreyj.konfplan.adapter.in.web;
 
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.inject.Inject;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
@@ -20,17 +19,15 @@ import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.FileUploadDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
-import kreyj.konfplan.adapter.in.web.dto.PrioritaetRequest;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerVeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
+import kreyj.konfplan.application.port.in.AdminServiceInterface;
 import kreyj.konfplan.application.port.in.TeilnehmerServiceInterface;
-import kreyj.konfplan.application.service.AdminService;
 import kreyj.konfplan.application.service.PlanService;
 import kreyj.konfplan.application.service.PrioritaetService;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
-import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.util.JwtHelper;
@@ -54,16 +51,18 @@ public class TeilnehmerResource {
     private final TeilnehmerServiceInterface teilnehmerService;
     private final PlanService planService;
     private final PrioritaetService prioritaetService;
+    private final ReportResource reportResource;
+    private final AdminServiceInterface adminService;
 
-    @Inject
-    ReportResource reportResource;
 
-
-    public TeilnehmerResource(JsonWebToken jwt, TeilnehmerServiceInterface teilnehmerService, PlanService planService, PrioritaetService prioritaetService) {
+    public TeilnehmerResource(JsonWebToken jwt, TeilnehmerServiceInterface teilnehmerService, PlanService planService,
+                              PrioritaetService prioritaetService, ReportResource reportResource, AdminServiceInterface adminService) {
         this.jwt = jwt;
         this.teilnehmerService = teilnehmerService;
         this.planService = planService;
         this.prioritaetService = prioritaetService;
+        this.reportResource = reportResource;
+        this.adminService = adminService;
     }
 
 
@@ -89,7 +88,7 @@ public class TeilnehmerResource {
         if (null == nutzer) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(AdminService.mapNutzerToDto(nutzer)).build();
+        return Response.ok(adminService.mapNutzerToDto(nutzer)).build();
     }
 
 
@@ -173,12 +172,13 @@ public class TeilnehmerResource {
     @Path("/profile")
     @RolesAllowed("TEILNEHMER")
     @Operation(summary = "Eigenes Teilnehmerprofil abrufen")
+    @Transactional
     public Response getTeilnehmerProfile() {
         Teilnehmer teilnehmer = teilnehmerService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (null == teilnehmer) {
             throw new WebApplicationException("Teilnehmer not found", Response.Status.NOT_FOUND);
         }
-        return Response.ok(AdminService.mapNutzerToDto(teilnehmer)).build();
+        return Response.ok(adminService.mapNutzerToDto(teilnehmer)).build();
     }
 
 
@@ -198,7 +198,7 @@ public class TeilnehmerResource {
             if (updated == null) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
-            return Response.ok(AdminService.mapNutzerToDto(updated)).build();
+            return Response.ok(adminService.mapNutzerToDto(updated)).build();
         } catch (OptimisticLockException e) {
             return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
         }
@@ -218,8 +218,9 @@ public class TeilnehmerResource {
     @Path("/veranstaltungen/{vid}/vortraege")
     @RolesAllowed("TEILNEHMER")
     @Operation(summary = "Meine Vorträge für eine Veranstaltung abrufen")
-    public List<VortragDto> getMeineVortraege(@PathParam("vid") Long vid) {
-        return teilnehmerService.getMeineVortraege(vid, JwtHelper.getUserPrincipalName(jwt));
+    public Response getMeineVortraege(@PathParam("vid") Long vid) {
+        List<VortragDto> meineVortraege = teilnehmerService.getVortraegeFuerTeilnehmerInVeranstaltung(vid, JwtHelper.getUserPrincipalName(jwt));
+        return Response.ok(meineVortraege).build();
     }
 
 

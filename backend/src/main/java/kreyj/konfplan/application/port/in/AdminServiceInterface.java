@@ -1,5 +1,6 @@
 package kreyj.konfplan.application.port.in;
 
+import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
@@ -79,4 +80,6 @@ public interface AdminServiceInterface {
     int importNutzerVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId);
 
     int importRaumVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId);
+
+    NutzerDto mapNutzerToDto(Nutzer u);
 }

@@ -8,7 +8,7 @@
         <div class="space-y-2 bg-gray-50 p-3 rounded-lg border border-gray-200">
           <p class="font-bold text-gray-600">Allgemein</p>
           <p><strong>Organisatoren:</strong> {{ organisatoren.join(', ') || 'N/A' }}</p>
-          <p><strong>Zeitraum:</strong> {{ veranstaltung?.beginntAm ? formatDate(veranstaltung.beginntAm) : '' }} - {{ veranstaltung?.endetAm ? formatDate(veranstaltung.endetAm) : '' }}</p>
+          <p><strong>Zeitraum:</strong> {{ zeitraumAnzeige }}</p>
           <p><strong>Zeit-Slots:</strong> {{ eventSlotsCount }}</p>
         </div>
 
@@ -88,7 +88,7 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue';
+import { reactive, computed } from 'vue';
 import { Loader as LoaderIcon, Zap as ZapIcon } from '@lucide/vue';
 
 const props = defineProps({
@@ -115,6 +115,21 @@ const solverConfig = reactive({
 });
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('de-DE') : '';
+
+const zeitraumAnzeige = computed(() => {
+  if (!props.veranstaltung) return '';
+  const start = props.veranstaltung.beginntAm;
+  const end = props.veranstaltung.endetAm;
+  if (!start) return '';
+
+  const startDate = new Date(start).toDateString();
+  const endDate = end ? new Date(end).toDateString() : startDate;
+
+  if (startDate === endDate) {
+    return formatDate(start);
+  }
+  return `${formatDate(start)} - ${formatDate(end)}`;
+});
 </script>
 
 <style scoped>

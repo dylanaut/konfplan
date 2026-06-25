@@ -90,7 +90,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
     @Override
     public List<TeilnehmerVeranstaltungDto> getTeilnehmerVeranstaltungen(String email) {
         Teilnehmer teilnehmer = findByEmail(email);
-        if (teilnehmer == null) {
+        if (null == teilnehmer) {
             return Collections.emptyList();
         }
 
@@ -112,13 +112,13 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
 
     @Transactional
     @Override
-    public List<VortragDto> getMeineVortraege(Long veranstaltungId, String email) {
+    public List<VortragDto> getVortraegeFuerTeilnehmerInVeranstaltung(Long veranstaltungId, String email) {
         Teilnehmer teilnehmer = findByEmail(email);
-        if (teilnehmer == null) {
+        if (null == teilnehmer) {
             throw new NotFoundException("Teilnehmer nicht gefunden.");
         }
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             throw new NotFoundException("Veranstaltung nicht gefunden.");
         }
 
@@ -141,7 +141,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
     @Transactional
     @Override
     public Teilnehmer createTeilnehmer(Teilnehmer user, Long veranstaltungId) {
-        if (user == null || user.getEmail() == null) {
+        if (null == user || null == user.getEmail()) {
             protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Erstellung fehlgeschlagen", "Ungültige Nutzerdaten.");
             return null;
         }
@@ -154,7 +154,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         }
 
         Veranstaltung v = Veranstaltung.findById(veranstaltungId);
-        if (v == null) {
+        if (null == v) {
             protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Erstellung fehlgeschlagen", "Veranstaltung nicht gefunden: " + veranstaltungId);
             throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
         }
@@ -341,7 +341,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         Prioritaet.delete("teilnehmer = ?1 and vortrag.veranstaltung = ?2", teilnehmer, veranstaltung);
 
         for (VortragPrioDto dto : priorityDtos) {
-            if (dto.prioWert > 0) {
+            if (dto.prio > 0) {
                 Wahlvortrag vortrag = Wahlvortrag.findById(dto.vortragId);
                 if (vortrag == null) {
                     LOG.warn("Vortrag mit ID " + dto.vortragId + " für Priorität von Teilnehmer " + userId + " nicht gefunden. Überspringe.");
@@ -356,7 +356,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
                 Prioritaet prioritaet = new Prioritaet();
                 prioritaet.setTeilnehmer(teilnehmer);
                 prioritaet.setVortrag(vortrag);
-                prioritaet.setPrioWert(dto.prioWert);
+                prioritaet.setPrio(dto.prio);
                 prioritaet.persistAndFlush();
             }
         }

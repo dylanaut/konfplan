@@ -28,6 +28,7 @@
         <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
         <lombok.version>1.18.46</lombok.version>
         <p6spy.version>3.9.1</p6spy.version>
+        <ical4j.version>4.2.5</ical4j.version>
     </properties>
 
     <dependencies>
@@ -131,6 +132,12 @@
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
             <version>${jsoup.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mnode.ical4j</groupId>
+            <artifactId>ical4j</artifactId>
+            <version>${ical4j.version}</version>
         </dependency>
 
         <dependency>

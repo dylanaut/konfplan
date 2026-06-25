@@ -87,12 +87,14 @@ public class AdminService implements AdminServiceInterface {
     private final MailService mailService;
     private final ProtokollService protokollService;
     private final LaunchMode launchMode;
+    private final AdminService adminService;
 
 
-    public AdminService(MailService mailService, ProtokollService protokollService, LaunchMode launchMode) {
+    public AdminService(MailService mailService, ProtokollService protokollService, LaunchMode launchMode, AdminService adminService) {
         this.mailService = mailService;
         this.protokollService = protokollService;
         this.launchMode = launchMode;
+        this.adminService = adminService;
     }
 
 
@@ -110,7 +112,7 @@ public class AdminService implements AdminServiceInterface {
     public List<NutzerDto> getAllUsers() {
         return new HashSet<>(Nutzer.<Nutzer>listAll()) // Duplikate entfernen
             .stream()
-            .map(AdminService::mapNutzerToDto)
+            .map(adminService::mapNutzerToDto)
             .toList();
     }
 
@@ -123,7 +125,7 @@ public class AdminService implements AdminServiceInterface {
 
         return Stream.concat(admins.stream(), vNutzers.stream())
             .distinct()
-            .map(AdminService::mapNutzerToDto)
+            .map(adminService::mapNutzerToDto)
             .toList();
     }
 
@@ -169,7 +171,7 @@ public class AdminService implements AdminServiceInterface {
                 if (wv == null) {
                     LOG.error("Unbekannter Wahlvortrag zu id: " + prioDto.vortragId);
                 } else {
-                    Prioritaet prioritaet = new Prioritaet(t, Wahlvortrag.findById(prioDto.vortragId), prioDto.prioWert);
+                    Prioritaet prioritaet = new Prioritaet(t, Wahlvortrag.findById(prioDto.vortragId), prioDto.prio);
                     prioritaet.persist();
                     t.addPrioritaet(prioritaet);
                 }
@@ -273,7 +275,7 @@ public class AdminService implements AdminServiceInterface {
                 if (wv == null) {
                     LOG.error("Unbekannter Wahlvortrag zu id: " + prioDto.vortragId);
                 } else {
-                    Prioritaet prioritaet = new Prioritaet(t, Wahlvortrag.findById(prioDto.vortragId), prioDto.prioWert);
+                    Prioritaet prioritaet = new Prioritaet(t, Wahlvortrag.findById(prioDto.vortragId), prioDto.prio);
                     prioritaet.persist();
                     t.addPrioritaet(prioritaet);
                 }
@@ -779,7 +781,7 @@ public class AdminService implements AdminServiceInterface {
                         }
 
                         try {
-                            int prioWert = Integer.parseInt(data[1].trim());
+                            int prio = Integer.parseInt(data[1].trim());
 
                             Prioritaet prioritaet = Prioritaet.find("teilnehmer = ?1 and vortrag = ?2", teilnehmer, vortrag).firstResult();
                             if (prioritaet == null) {
@@ -788,10 +790,10 @@ public class AdminService implements AdminServiceInterface {
                                 prioritaet.setVortrag(vortrag);
                             }
 
-                            prioritaet.setPrioWert(prioWert);
+                            prioritaet.setPrio(prio);
                             prioritaet.persistAndFlush();
                             count++;
-                            protokollService.log(ProtokollKategorie.VORTRAEGE, "Priorität importiert", "Priorität für '" + teilnehmer.getEmail() + "' für Vortrag '" + vortrag.getTitel() + "' auf " + prioWert + " gesetzt.", vortrag.getId());
+                            protokollService.log(ProtokollKategorie.VORTRAEGE, "Priorität importiert", "Priorität für '" + teilnehmer.getEmail() + "' für Vortrag '" + vortrag.getTitel() + "' auf " + prio + " gesetzt.", vortrag.getId());
                         } catch (NumberFormatException e) {
                             LOG.warn("Ungültiger Prioritätswert für Teilnehmer " + teilnehmerEmail + " und Vortrag " + vortrag.getTitel() + ": " + e.getMessage());
                         }
@@ -1392,13 +1394,12 @@ public class AdminService implements AdminServiceInterface {
     }
 
 
-// -------------------------------------------------------------------
-// Mapper methods
-// -------------------------------------------------------------------
+    // -------------------------------------------------------------------
+    // Mapper methods
+    // -------------------------------------------------------------------
 
-
-    @Transactional
-    public static NutzerDto mapNutzerToDto(Nutzer u) {
+    @Override
+    public NutzerDto mapNutzerToDto(Nutzer u) {
         NutzerDto dto = new NutzerDto();
         dto.id = u.getId();
         dto.version = u.getVersion();
@@ -1407,7 +1408,8 @@ public class AdminService implements AdminServiceInterface {
         dto.lastName = u.getLastName();
         dto.role = u.getRole();
         dto.isActive = u.isActive();
-        dto.veranstaltungIds = null != u.getVeranstaltungen() ? u.getVeranstaltungen().stream().map(IdEntity::getId).toList() : emptyList();
+        Set<Veranstaltung> veranstaltungen = u.getVeranstaltungen();
+        dto.veranstaltungIds = null != veranstaltungen ? veranstaltungen.stream().map(IdEntity::getId).toList() : emptyList();
 
         if (u instanceof Referent r) {
             dto.biography = r.getBiography();

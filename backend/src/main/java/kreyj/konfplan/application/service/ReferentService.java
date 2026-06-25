@@ -433,7 +433,7 @@ public class ReferentService implements ReferentServiceInterface {
         dto.veranstaltungId = v.getVeranstaltung().getId();
         dto.veranstaltungName = v.getVeranstaltung().getName();
         dto.referentId = v.getReferent().getId();
-        dto.referentName = v.getReferent().getLastName() + ", " + v.getReferent().getFirstName();
+        dto.referentName = v.getReferent().getLastName();
         dto.referentOrganisation = v.getReferent().getOrganisation();
 
         if (v instanceof Wahlvortrag wahlvortrag) {

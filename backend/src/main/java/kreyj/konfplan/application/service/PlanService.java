@@ -5,6 +5,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.adapter.in.web.dto.PlanQualitaetDto;
+import kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht;
+import kreyj.konfplan.adapter.in.web.dto.RaumDto;
+import kreyj.konfplan.adapter.in.web.dto.RaumplanEintragDto;
+import kreyj.konfplan.adapter.in.web.dto.ReferentVortragDto;
+import kreyj.konfplan.adapter.in.web.dto.SlotDto;
+import kreyj.konfplan.adapter.in.web.dto.TeilnehmerDto;
+import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Planungsergebnis;
@@ -15,14 +23,6 @@ import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.Wahlvortrag;
-import kreyj.konfplan.adapter.in.web.dto.PlanQualitaetDto;
-import kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht;
-import kreyj.konfplan.adapter.in.web.dto.RaumDto;
-import kreyj.konfplan.adapter.in.web.dto.RaumplanEintragDto;
-import kreyj.konfplan.adapter.in.web.dto.ReferentVortragDto;
-import kreyj.konfplan.adapter.in.web.dto.SlotDto;
-import kreyj.konfplan.adapter.in.web.dto.TeilnehmerDto;
-import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
 import kreyj.konfplan.util.TemplateExtensions;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jboss.logging.Logger;
@@ -42,9 +42,9 @@ import java.util.stream.Collectors;
 
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toMap;
-import static kreyj.konfplan.persistence.Planungsergebnis.getPlanungsergebnis;
 import static kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht.VORTRAG_TITEL_FREI;
 import static kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht.VORTRAG_TYP_FREI;
+import static kreyj.konfplan.persistence.Planungsergebnis.getPlanungsergebnis;
 
 @ApplicationScoped
 public class PlanService {
@@ -94,11 +94,13 @@ public class PlanService {
             for (Pflichtvortrag pv : veranstaltung.getPflichtvortraege()) {
                 for (Teilnehmer tn : vTeilnehmer) {
                     zuweisungen.add(new ZuweisungDto(
-                            tn.getLastName(),
-                            pv.getTitel(),
-                            pv.getPflichtslot().getStartTime().format(TIME_FORMAT),
-                            pv.getPflichtraum().getName(),
-                            pv.getPflichtraum().getGebaeude().getName()
+                        tn.getLastName(),
+                        pv.getTitel(),
+                        pv.getPflichtslot().getStartTime(),
+                        pv.getPflichtslot().getEndTime(),
+                        pv.getPflichtraum().getName(),
+                        pv.getPflichtraum().getGebaeude().getName(),
+                        pv.getReferent().getLastName()
                     ));
                 }
             }
@@ -133,11 +135,13 @@ public class PlanService {
 
                                 if (slot != null && raum != null) {
                                     zuweisungen.add(new ZuweisungDto(
-                                            teilnehmer.getLastName(),
-                                            vortrag.getTitel(),
-                                            slot.getStartTime().format(TIME_FORMAT),
-                                            raum.getName(),
-                                            raum.getGebaeude().getName()
+                                        teilnehmer.getLastName(),
+                                        vortrag.getTitel(),
+                                        slot.getStartTime(),
+                                        slot.getEndTime(),
+                                        raum.getName(),
+                                        raum.getGebaeude().getName(),
+                                        vortrag.getReferent().getLastName()
                                     ));
                                 }
                             }
@@ -147,7 +151,7 @@ public class PlanService {
             }
 
             LOG.info("Zuweisungen im Gesamtplan für Veranstaltung " + veranstaltung.getName() + ":\n" +
-                    zuweisungen.stream().map(ZuweisungDto::toString).collect(Collectors.joining("\n")));
+                zuweisungen.stream().map(ZuweisungDto::toString).collect(Collectors.joining("\n")));
 
             return zuweisungen;
 
@@ -169,12 +173,12 @@ public class PlanService {
 
         List<RaumBelegungUebersicht> detaillierterPlan = new ArrayList<>();
         List<Slot> sortedSlots = veranstaltung.getSlots().stream()
-                .sorted(comparing(Slot::getStartTime)).toList();
+            .sorted(comparing(Slot::getStartTime)).toList();
         List<Raum> sortedRaeume =
-                veranstaltung.getRaeume().stream()
-                        .sorted(comparing((Raum r) -> r.getGebaeude().getName())
-                                .thenComparing(Raum::getName))
-                        .toList();
+            veranstaltung.getRaeume().stream()
+                .sorted(comparing((Raum r) -> r.getGebaeude().getName())
+                    .thenComparing(Raum::getName))
+                .toList();
 
         for (Slot slot : sortedSlots) {
             for (Raum raum : sortedRaeume) {
@@ -185,40 +189,40 @@ public class PlanService {
 
                 if (eintrag != null) {
                     List<String> tnNamen = eintrag.teilnehmer != null
-                            ? eintrag.teilnehmer.stream().map(TeilnehmerDto::fullname).toList()
-                            : new ArrayList<>();
+                        ? eintrag.teilnehmer.stream().map(TeilnehmerDto::fullname).toList()
+                        : new ArrayList<>();
 
                     detaillierterPlan.add(new RaumBelegungUebersicht(
-                            slot.getId(),
-                            slot.getStartTime().format(TIME_FORMAT),
-                            raum.getId(),
-                            raum.getName(),
-                            eintrag.vortragTitel,
-                            eintrag.referentName,
-                            eintrag.vortragTyp,
-                            tnNamen,
-                            raum.getKapazitaet()
+                        slot.getId(),
+                        slot.getStartTime().format(TIME_FORMAT),
+                        raum.getId(),
+                        raum.getName(),
+                        eintrag.vortragTitel,
+                        eintrag.referentName,
+                        eintrag.vortragTyp,
+                        tnNamen,
+                        raum.getKapazitaet()
                     ));
                 } else {
                     detaillierterPlan.add(new RaumBelegungUebersicht(
-                            slot.getId(),
-                            slot.getStartTime().format(TIME_FORMAT),
-                            raum.getId(),
-                            raum.getName(),
-                            VORTRAG_TITEL_FREI,
-                            null,
-                            VORTRAG_TYP_FREI,
-                            new ArrayList<>(),
-                            raum.getKapazitaet()
+                        slot.getId(),
+                        slot.getStartTime().format(TIME_FORMAT),
+                        raum.getId(),
+                        raum.getName(),
+                        VORTRAG_TITEL_FREI,
+                        null,
+                        VORTRAG_TYP_FREI,
+                        new ArrayList<>(),
+                        raum.getKapazitaet()
                     ));
                 }
             }
         }
 
         LOG.info("Detaillierter Plan für Veranstaltung " + veranstaltung.getName() + ":\n" +
-                detaillierterPlan.stream()
-                        .map(RaumBelegungUebersicht::toString)
-                        .collect(Collectors.joining("\n")));
+            detaillierterPlan.stream()
+                .map(RaumBelegungUebersicht::toString)
+                .collect(Collectors.joining("\n")));
 
         return detaillierterPlan;
     }
@@ -259,7 +263,7 @@ public class PlanService {
 
         try {
             Planungsergebnis.MinizincResult result =
-                    getMinizincResult(planungsergebnis);
+                getMinizincResult(planungsergebnis);
 
             long[] tnOids = result.teilnehmer_oids;
             long[] wvOids = result.wahlvortrag_oids;
@@ -288,11 +292,13 @@ public class PlanService {
                 Set<String> tnGruppe = teilnehmer.getGruppen();
                 if (tnGruppe != null && tnGruppe.contains(pv.getPflichtgruppe())) {
                     zuweisungen.add(new ZuweisungDto(
-                            teilnehmer.getLastName(),
-                            pv.getTitel(),
-                            pv.getPflichtslot().getStartTime().format(TIME_FORMAT),
-                            pv.getPflichtraum().getName(),
-                            pv.getPflichtraum().getGebaeude().getName()
+                        teilnehmer.getLastName(),
+                        pv.getTitel(),
+                        pv.getPflichtslot().getStartTime(),
+                        pv.getPflichtslot().getEndTime(),
+                        pv.getPflichtraum().getName(),
+                        pv.getPflichtraum().getGebaeude().getName(),
+                        pv.getReferent().getLastName()
                     ));
                 }
             }
@@ -318,11 +324,13 @@ public class PlanService {
 
                             if (slot != null && raum != null) {
                                 zuweisungen.add(new ZuweisungDto(
-                                        teilnehmer.getLastName(),
-                                        vortrag.getTitel(),
-                                        slot.getStartTime().format(TIME_FORMAT),
-                                        raum.getName(),
-                                        raum.getGebaeude().getName()
+                                    teilnehmer.getLastName(),
+                                    vortrag.getTitel(),
+                                    slot.getStartTime(),
+                                    slot.getEndTime(),
+                                    raum.getName(),
+                                    raum.getGebaeude().getName(),
+                                    vortrag.getReferent().getLastName()
                                 ));
                             }
                         }
@@ -330,8 +338,8 @@ public class PlanService {
                 }
             }
             return zuweisungen.stream()
-                    .sorted(comparing(ZuweisungDto::getSlotZeit))
-                    .toList();
+                .sorted(comparing(d -> d.slotBeginn))
+                .toList();
 
         } catch (Exception e) {
             LOG.error("Fehler beim Erstellen des Teilnehmerplans für " + teilnehmer.getEmail(), e);
@@ -353,7 +361,7 @@ public class PlanService {
 
         try {
             Planungsergebnis.MinizincResult result =
-                    getMinizincResult(planungsergebnis);
+                getMinizincResult(planungsergebnis);
 
             long[] tnOids = result.teilnehmer_oids;
             long[] wvOids = result.wahlvortrag_oids;
@@ -364,7 +372,7 @@ public class PlanService {
             int[][] instanzRaum = result.instanz_raum;
 
             Map<Long, TeilnehmerDto> teilnehmerMap = veranstaltung.teilnehmer().stream()
-                    .collect(toMap(IdEntity::getId, TeilnehmerService::mapToDto));
+                .collect(toMap(IdEntity::getId, TeilnehmerService::mapToDto));
             Map<Long, SlotDto> slotMap = veranstaltung.getSlots().stream().collect(toMap(IdEntity::getId, AdminService::mapSlotToDto));
             Map<Long, RaumDto> raumMap = veranstaltung.getRaeume().stream().collect(toMap(IdEntity::getId, VeranstaltungService::mapRaumToDto));
 
@@ -374,10 +382,11 @@ public class PlanService {
             for (Pflichtvortrag pv : pflichtvortraege) {
                 List<Teilnehmer> gruppenTeilnehmer = Teilnehmer.getGruppenTeilnehmer(pv.getPflichtgruppe(), veranstaltung);
                 List<TeilnehmerDto> teilnehmerDtos = gruppenTeilnehmer.stream()
-                        .map(TeilnehmerService::mapToDto)
-                        .toList();
-                referentPlan.add(new ReferentVortragDto(pv.getTitel(), pv.getPflichtslot().getStartTime().format(TIME_FORMAT),
-                        pv.getPflichtraum().getName(), pv.getPflichtraum().getGebaeude().getName(), teilnehmerDtos));
+                    .map(TeilnehmerService::mapToDto)
+                    .toList();
+                referentPlan.add(new ReferentVortragDto(pv.getTitel(), pv.getPflichtslot().getStartTime(), pv.getPflichtslot().getEndTime(),
+                    pv.getPflichtraum().getName(), pv.getPflichtraum().getGebaeude().getName(),
+                    pv.getReferent().getLastName(), teilnehmerDtos));
             }
 
             List<Wahlvortrag> referentenWahlvortraege = Wahlvortrag.find("veranstaltung = ?1 and referent = ?2", veranstaltung, referent).list();
@@ -409,14 +418,16 @@ public class PlanService {
                                 }
                             }
                         }
-                        referentPlan.add(new ReferentVortragDto(wv.getTitel(), slot.startTime.format(TIME_FORMAT),
-                                raum.name, raum.gebaeudeName, zugewieseneTeilnehmer));
+                        referentPlan.add(new ReferentVortragDto(wv.getTitel(), slot.startTime, slot.endTime,
+                            raum.name, raum.gebaeudeName,
+                            wv.getReferent().getLastName(),
+                            zugewieseneTeilnehmer));
                     }
                 }
             }
             return referentPlan.stream()
-                    .sorted(comparing(ReferentVortragDto::getSlotZeit))
-                    .toList();
+                .sorted(comparing(d -> d.slotBeginn))
+                .toList();
 
         } catch (Exception e) {
             LOG.error("Fehler beim Erstellen des Referentenplans für " + referent.getEmail(), e);
@@ -434,7 +445,7 @@ public class PlanService {
 
         try {
             Planungsergebnis.MinizincResult result =
-                    getMinizincResult(planungsergebnis);
+                getMinizincResult(planungsergebnis);
 
             long[] tnOids = result.teilnehmer_oids;
             long[] wvOids = result.wahlvortrag_oids;
@@ -463,16 +474,16 @@ public class PlanService {
 
                 List<Teilnehmer> gruppenTeilnehmer = Teilnehmer.getGruppenTeilnehmer(pv.getPflichtgruppe(), veranstaltung);
                 List<TeilnehmerDto> teilnehmerDtos = gruppenTeilnehmer.stream()
-                        .map(TeilnehmerService::mapToDto)
-                        .toList();
+                    .map(TeilnehmerService::mapToDto)
+                    .toList();
 
                 RaumplanEintragDto eintrag = new RaumplanEintragDto(
-                        slot.getId(),
-                        slot.getSlotZeit(),
-                        TemplateExtensions.truncTo(pv.getTitel()),
-                        pv.getReferent().getFirstName() + " " + pv.getReferent().getLastName(),
-                        "PFLICHT",
-                        teilnehmerDtos);
+                    slot.getId(),
+                    slot.getSlotZeit(),
+                    TemplateExtensions.truncTo(pv.getTitel()),
+                    pv.getReferent().getFirstName() + " " + pv.getReferent().getLastName(),
+                    "PFLICHT",
+                    teilnehmerDtos);
                 raumplan.computeIfAbsent(raum.getId(), k -> new HashMap<>()).put(slot.getId(), eintrag);
             }
 
@@ -508,12 +519,12 @@ public class PlanService {
                             }
                         }
                         RaumplanEintragDto eintrag = new RaumplanEintragDto(
-                                slot.getId(),
-                                slot.getSlotZeit(),
-                                vortrag.getTitel(),
-                                vortrag.getReferent().getFirstName() + " " + vortrag.getReferent().getLastName(),
-                                "WAHL",
-                                zugewieseneTeilnehmer);
+                            slot.getId(),
+                            slot.getSlotZeit(),
+                            vortrag.getTitel(),
+                            vortrag.getReferent().getFirstName() + " " + vortrag.getReferent().getLastName(),
+                            "WAHL",
+                            zugewieseneTeilnehmer);
                         raumplan.computeIfAbsent(raum.getId(), k -> new HashMap<>()).put(slot.getId(), eintrag);
                     }
                 }
@@ -540,7 +551,7 @@ public class PlanService {
 
         try {
             Planungsergebnis.MinizincResult result =
-                    getMinizincResult(planungsergebnis);
+                getMinizincResult(planungsergebnis);
 
             long[] wvOids = result.wahlvortrag_oids;
             long[] slotOids = result.slot_oids;
@@ -580,9 +591,9 @@ public class PlanService {
                 }
 
                 List<Slot> freieSlots = vSlots.stream()
-                        .filter(slot -> !belegteSlotIdsFuerRef.contains(slot.getId()))
-                        .sorted(comparing(Slot::getStartTime))
-                        .toList();
+                    .filter(slot -> !belegteSlotIdsFuerRef.contains(slot.getId()))
+                    .sorted(comparing(Slot::getStartTime))
+                    .toList();
                 freieSlotsReferenten.put(referent.getId(), freieSlots);
             }
 
@@ -641,9 +652,9 @@ public class PlanService {
                 }
 
                 List<Slot> freieSlots = alleSlots.stream()
-                        .filter(slot -> !belegteSlotIds.contains(slot.getId()))
-                        .sorted(comparing(Slot::getStartTime))
-                        .toList();
+                    .filter(slot -> !belegteSlotIds.contains(slot.getId()))
+                    .sorted(comparing(Slot::getStartTime))
+                    .toList();
                 freieSlotsTeilnehmer.put(teilnehmer.getId(), freieSlots);
             }
 
@@ -673,7 +684,7 @@ public class PlanService {
 
         try {
             return objectMapper.readValue(planungsergebnis.getJsonErgebnis(),
-                    Planungsergebnis.MinizincResult.class);
+                Planungsergebnis.MinizincResult.class);
         } catch (JsonProcessingException e) {
             LOG.warn("Failed to parse Minizinc result for Veranstaltung" + planungsergebnis.getJsonErgebnis());
             throw new RuntimeException(e);
@@ -682,19 +693,19 @@ public class PlanService {
 
 
     private static @NonNull String raumplanDebug(Veranstaltung veranstaltung, Map<Long, Map<Long, RaumplanEintragDto>> raumplan
-            , Map<Long, Raum> raumMap, Map<Long, Slot> slotMap) {
+        , Map<Long, Raum> raumMap, Map<Long, Slot> slotMap) {
         StringBuilder sb =
-                new StringBuilder("Raumbelegungsplan für Veranstaltung '%s':\n"
-                        .formatted(veranstaltung.getName()));
+            new StringBuilder("Raumbelegungsplan für Veranstaltung '%s':\n"
+                .formatted(veranstaltung.getName()));
 
         raumplan.forEach((raumId, slotEntries) -> {
             sb.append("Raum ").append(raumMap.get(raumId).getName())
-                    .append(" (").append(raumId)
-                    .append("):\n");
+                .append(" (").append(raumId)
+                .append("):\n");
             slotEntries.forEach((slotId, eintrag) -> {
                 sb.append("Slot ").append(slotMap.get(slotId).getDescription())
-                        .append(" (").append(slotId)
-                        .append("): ").append(eintrag).append("\n");
+                    .append(" (").append(slotId)
+                    .append("): ").append(eintrag).append("\n");
             });
         });
 

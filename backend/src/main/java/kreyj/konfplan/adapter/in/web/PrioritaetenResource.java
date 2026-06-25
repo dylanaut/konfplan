@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 @Path("/api/prios")
-@RolesAllowed({"TEILNEHMER"})
+@RolesAllowed({"TEILNEHMER", "ADMIN"})
 @Tag(name = "Teilnehmer-Prioritäten", description = "Endpunkte für Teilnehmer zur Verwaltung ihrer Vortragsprioritäten")
 public class PrioritaetenResource {
 

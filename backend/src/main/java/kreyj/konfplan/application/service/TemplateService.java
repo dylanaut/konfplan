@@ -5,6 +5,7 @@ import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.application.port.in.AdminServiceInterface;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Raum;
@@ -32,6 +33,7 @@ import static java.util.stream.Collectors.toMap;
 public class TemplateService {
     private final PlanService planService;
     private final DashboardService dashboardService;
+    private final AdminServiceInterface adminService;
 
 
     // Templates for standard reports
@@ -67,9 +69,10 @@ public class TemplateService {
     Template priosDashboardTemplate;
 
 
-    public TemplateService(PlanService planService, DashboardService dashboardService) {
+    public TemplateService(PlanService planService, DashboardService dashboardService, AdminServiceInterface adminService) {
         this.planService = planService;
         this.dashboardService = dashboardService;
+        this.adminService = adminService;
     }
 
     // --- Methods for standard reports ---
@@ -177,7 +180,7 @@ public class TemplateService {
                 .map(VeranstaltungService::mapRaumToDto)
                 .collect(toMap(r -> r.id, Function.identity()));
         dashboardData.referenten = veranstaltung.referenten().stream()
-                .map(AdminService::mapNutzerToDto)
+                .map(adminService::mapNutzerToDto)
                 .collect(toMap(r -> r.id, Function.identity()));
 
 
