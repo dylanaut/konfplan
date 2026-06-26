@@ -47,27 +47,27 @@ public class TemplateExtensions {
     }
 
 
-    static String padded(String src, int len) {
+    public static String padded(String src, int len) {
         return padded(src, len, ' ');
     }
 
 
-    static String padded(String src, int len, char ch) {
+    public static String padded(String src, int len, char ch) {
         return StringUtils.rightPad(src, len, ch);
     }
 
 
-    static String join(List<String> list, String delimiter) {
+    public static String join(List<String> list, String delimiter) {
         return String.join(delimiter, list);
     }
 
 
-    static String slotRoomKey(Long slotId, long roomId) {
+    public static String slotRoomKey(Long slotId, long roomId) {
         return String.format("%d_%d", slotId, roomId);
     }
 
 
-    static int indexOf(long[] array, long value) {
+    public static int indexOf(long[] array, long value) {
         for (int i = 0; i < array.length; i++) {
             if (array[i] == value) {
                 return i;
@@ -77,22 +77,22 @@ public class TemplateExtensions {
     }
 
 
-    static boolean contains(long[] array, long value) {
+    public static boolean contains(long[] array, long value) {
         return indexOf(array, value) != -1;
     }
 
 
-    static int add(int value, int amount) {
+    public static int add(int value, int amount) {
         return value + amount;
     }
 
 
-    static int sub(int value, int amount) {
+    public static int sub(int value, int amount) {
         return value - amount;
     }
 
 
-    static float div(int dividend, int divisor) {
+    public static float div(int dividend, int divisor) {
         return (float) dividend / divisor;
     }
 }

@@ -262,7 +262,7 @@ const tabLabels = {
 };
 
 // State
-const activeTab = ref('ergebnisse');
+const activeTab = ref('veranstaltungen');
 const selectedVid = ref(null);
 const veranstaltungen = ref([]);
 const gebaeude = ref([]);

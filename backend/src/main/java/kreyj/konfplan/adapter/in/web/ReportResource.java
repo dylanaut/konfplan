@@ -1,6 +1,7 @@
 package kreyj.konfplan.adapter.in.web;
 
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -23,6 +24,7 @@ import org.jboss.logging.Logger;
 
 @Path("/api/reports")
 @Tag(name = "Reports", description = "Endpunkte zum Generieren von Berichten und Plänen (HTML/PDF)")
+@Transactional
 public class ReportResource {
     private static final Logger LOG = Logger.getLogger(ReportResource.class);
 
@@ -269,7 +271,7 @@ public class ReportResource {
     // -------------------------------------------------------------------
 
     @GET
-    @Path("/{vid}/dashboard/stundenplan")
+    @Path("/{vid}/admin-dashboard")
     @Produces(MediaType.TEXT_HTML)
     @RolesAllowed("ADMIN")
     @Operation(summary = "Dashboard: Stundenplan (HTML)")
@@ -280,7 +282,7 @@ public class ReportResource {
     }
 
     @GET
-    @Path("/{vid}/dashboard/stundenplan-pdf")
+    @Path("/{vid}/admin-dashboard-pdf")
     @Produces("application/pdf")
     @RolesAllowed("ADMIN")
     @Operation(summary = "Dashboard: Stundenplan (PDF)")
@@ -291,7 +293,7 @@ public class ReportResource {
     }
 
     @GET
-    @Path("/{vid}/dashboard/teilnehmer")
+    @Path("/{vid}/teilnehmer-dashboard")
     @Produces(MediaType.TEXT_HTML)
     @RolesAllowed({"ADMIN", "TEILNEHMER"})
     @Operation(summary = "Dashboard: Teilnehmerübersicht (HTML)")
@@ -306,7 +308,7 @@ public class ReportResource {
     }
 
     @GET
-    @Path("/{vid}/dashboard/teilnehmer-pdf")
+    @Path("/{vid}/teilnehmer-dashboard-pdf")
     @Produces("application/pdf")
     @RolesAllowed({"ADMIN","TEILNEHMER"})
     @Operation(summary = "Dashboard: Teilnehmerübersicht (PDF)")
@@ -321,7 +323,7 @@ public class ReportResource {
     }
 
     @GET
-    @Path("/{vid}/dashboard/prios")
+    @Path("/{vid}/prios-dashboard")
     @Produces(MediaType.TEXT_HTML)
     @RolesAllowed("ADMIN")
     @Operation(summary = "Dashboard: Prioritätenanalyse (HTML)")
@@ -332,7 +334,7 @@ public class ReportResource {
     }
 
     @GET
-    @Path("/{vid}/dashboard/prios-pdf")
+    @Path("/{vid}/prios-dashboard-pdf")
     @Produces("application/pdf")
     @RolesAllowed("ADMIN")
     @Operation(summary = "Dashboard: Prioritätenanalyse (PDF)")

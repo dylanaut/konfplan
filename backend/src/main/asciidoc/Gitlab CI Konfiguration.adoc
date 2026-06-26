@@ -1,0 +1,112 @@
+= GitLab CI/CD Variablen: Herkunft, Zweck und Konfiguration
+
+Eine professionelle CI/CD-Pipeline lebt von Variablen. Sie ermöglichen es, Skripte dynamisch und sicher zu gestalten. In GitLab CI/CD gibt es grundsätzlich zwei Haupttypen von Variablen, die in Ihrer `.gitlab-ci.yml` verwendet werden.
+
+.Zwei Arten von CI/CD-Variablen
+Predefined Variables:: Werden von GitLab automatisch bereitgestellt und enthalten kontextbezogene Informationen über den Job, den Commit, das Projekt usw.
+Custom Variables:: Müssen Sie als Benutzer selbst definieren. Sie werden typischerweise für Geheimnisse (wie Passwörter, API-Keys) oder umgebungsspezifische Konfigurationen verwendet.
+
+Hier ist eine detaillierte Aufschlüsselung der Variablen aus der `.gitlab-ci.yml`-Datei.
+
+== Übersichtstabelle der Variablen
+
+[cols="1,1,2,1", options="header"]
+|===
+| Variable | Quelle | Zweck und Erklärung | Wer definiert sie?
+
+| `*$CI_REGISTRY_IMAGE*`
+| GitLab
+| Der vollständige Pfad zur Container Registry Ihres Projekts.
+Beispiel: `registry.gitlab.com/kreyj/konfplan`.
+| *GitLab*
+
+| `*$CI_COMMIT_SHA*`
+| GitLab
+| Die eindeutige ID (Hash) des Commits, der die Pipeline ausgelöst hat. Perfekt für das Taggen von Docker-Images.
+| *GitLab*
+
+| `*$CI_REGISTRY_USER*`
+| GitLab
+| Ein spezieller Benutzername (`gitlab-ci-token`), der nur innerhalb der Pipeline gültig ist, um sich an der Registry anzumelden.
+| *GitLab*
+
+| `*$CI_REGISTRY_PASSWORD*`
+| GitLab
+| Ein temporäres Passwort (CI/CD-Job-Token), das zu `$CI_REGISTRY_USER` gehört.
+| *GitLab*
+
+| `*$CI_REGISTRY*`
+| GitLab
+| Die Adresse der GitLab-Registry selbst.
+Beispiel: `registry.gitlab.com`.
+| *GitLab*
+
+| `*$CI_COMMIT_BRANCH*`
+| GitLab
+| Der Name des Branches, auf dem die Pipeline läuft (z.B. `main`, `feature/neue-funktion`).
+| *GitLab*
+
+| `*$SSH_PRIVATE_KEY*`
+| *Benutzer*
+| *Dies ist die wichtigste Variable, die Sie definieren müssen.* Sie enthält den privaten SSH-Schlüssel, mit dem sich die Pipeline auf Ihrem Produktionsserver anmelden kann.
+| *Sie*
+|===
+
+== Detaillierte Erläuterung
+
+=== Vordefinierte Variablen (von GitLab bereitgestellt)
+
+Diese Variablen sind wie eine "Visitenkarte", die GitLab jedem Pipeline-Job mitgibt. Sie ermöglichen es Ihren Skripten, dynamisch auf den Kontext zu reagieren.
+
+`$CI_REGISTRY_...` Variablen::
+*Zweck*:: Diese Gruppe von Variablen ermöglicht es Ihrem `package_docker_image`-Job, sich sicher bei der integrierten Docker-Registry von GitLab anzumelden, ohne dass Sie Passwörter in Ihr Skript schreiben müssen.
+*Verwendung im Skript*::
++
+[source,sh]
+----
+# Meldet sich mit den von GitLab bereitgestellten, temporären Zugangsdaten an
+docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+----
+
+`$CI_COMMIT_...` Variablen::
+*Zweck*:: Sie identifizieren den genauen Code-Stand. `$CI_COMMIT_SHA` ist ideal, um jedem Docker-Image ein einzigartiges und nachverfolgbares Tag zu geben. `$CI_COMMIT_BRANCH` wird verwendet, um zu entscheiden, ob ein Job überhaupt laufen soll (z.B. nur auf dem `main`-Branch).
+*Verwendung im Skript*::
++
+[source,yaml]
+----
+rules:
+  # Führe diesen Job nur aus, wenn der Commit auf dem 'main'-Branch ist
+  - if: '$CI_COMMIT_BRANCH == "main"'
+----
++
+[source,sh]
+----
+# Baut ein Image mit einem Tag wie "registry.gitlab.com/kreyj/konfplan:a1b2c3d4"
+docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
+----
+
+=== Benutzerdefinierte Variablen (von Ihnen zu definieren)
+
+Diese Variablen sind Ihr "Geheimtresor". Sie werden außerhalb der `.gitlab-ci.yml`-Datei in den Projekteinstellungen gespeichert, damit sensible Daten nicht im Code-Repository landen.
+
+`$SSH_PRIVATE_KEY`::
+*Zweck*:: Dies ist der private Teil eines SSH-Schlüsselpaars. Der `deploy_to_production`-Job verwendet diesen Schlüssel, um sich auf Ihrem Server zu authentifizieren und die Deployment-Befehle auszuführen. Der öffentliche Teil des Schlüssels muss auf Ihrem Server in der `~/.ssh/authorized_keys`-Datei hinterlegt sein.
+*Wo definieren?*::
+. Gehen Sie in Ihrem GitLab-Projekt zu *Settings -> CI/CD*.
+. Erweitern Sie den Abschnitt *Variables*.
+. Klicken Sie auf *Add variable*.
+. *Key:* `SSH_PRIVATE_KEY`
+. *Value:* Fügen Sie den *gesamten Inhalt* Ihrer privaten SSH-Schlüsseldatei ein (inklusive `-----BEGIN OPENSSH PRIVATE KEY-----` und `-----END OPENSSH PRIVATE KEY-----`).
+. *Flags:* Aktivieren Sie *"Protect variable"* (damit sie nur in geschützten Branches wie `main` verfügbar ist) und *"Mask variable"* (damit der Schlüssel nicht in den Job-Logs angezeigt wird).
+*Verwendung im Skript*::
++
+[source,sh]
+----
+# Richtet den SSH-Agenten ein und fügt den Schlüssel aus der Variable hinzu
+- eval $(ssh-agent -s)
+- echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+----
+
+== Zusammenfassung: Ihre einzige Aufgabe
+
+Die gute Nachricht ist: Sie müssen *nur eine einzige Variable selbst definieren*, damit die Pipeline wie vorgeschlagen funktioniert: `$SSH_PRIVATE_KEY`. Alle anderen Variablen werden von GitLab automatisch und sicher zur Verfügung gestellt.

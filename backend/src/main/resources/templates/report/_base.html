@@ -3,11 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <title>{#insert title}Standardtitel{/insert}</title>
-  <link rel="stylesheet" href="{asset('src/main.css')}">
-
+    <link rel="icon" type="image/x-icon" href="/favicon.ico"/>
+    <link rel="stylesheet" href="style.css/">
+    {!<link rel="stylesheet" href="assets/index-D8Vw3lSI.css/">!}
+    {!<link rel="stylesheet" href="{asset:asset('index.html').css[0]}">!}
   <style>
     {#insert additional_styles}{/insert}
   </style>
+  {!{#if isDev()}!}
+    {!<script type="module" src="/@vite/client"></script>!}
+    {!<script type="module" src="{asset:asset('index.html').file}"></script>!}
+  {!{#for cssFile in asset:asset['index.html'].css}!}
+  {!<link rel="stylesheet" href="{cssFile}">!}
+  {!{/for}!}
+  {!{#else}!}
+    {!<script type="module" src="{asset:asset('index.html').file}"></script>!}
+  {!{#for cssFile in asset:asset['index.html'].css}!}
+  {!<link rel="stylesheet" href="{cssFile}">!}
+  {!{/for}!}
+  {!{/if}!}
 </head>
 <body>
 <div class="container py-4">
@@ -15,6 +29,8 @@
     <p>Standardinhalt.</p>
   {/insert}
 </div>
-<script src="{asset('src/main.js')}"></script>
 </body>
+<script type="module" src="main.js"></script>
+{!<script type="module" src="assets/indexBmm9DrDz.js"></script>!}
+{!<script type="module" src="{asset:asset('index.html').file}"></script>!}
 </html>

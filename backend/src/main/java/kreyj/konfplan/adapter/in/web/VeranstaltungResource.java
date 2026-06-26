@@ -2,6 +2,7 @@ package kreyj.konfplan.adapter.in.web;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.persistence.OptimisticLockException;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -45,6 +46,7 @@ import static kreyj.konfplan.application.service.AdminService.mapSlotToDto;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "Veranstaltungen", description = "Zentrale Endpunkte für die Verwaltung von Veranstaltungen und deren Inhalten")
+@Transactional
 public class VeranstaltungResource {
     private static final Logger LOG = Logger.getLogger(VeranstaltungResource.class);
 
@@ -70,8 +72,6 @@ public class VeranstaltungResource {
         this.planErstellungService = planErstellungService;
         this.planService = planService;
     }
-
-    // --- BASIS: VERANSTALTUNGEN ---
 
 
     @GET

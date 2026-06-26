@@ -1,49 +1,130 @@
-# This file is a template, and might need editing before it works on your project.
-# This is a sample GitLab CI/CD configuration file that should run without any modifications.
-# It demonstrates a basic 3 stage CI/CD pipeline. Instead of real tests or scripts,
-# it uses echo commands to simulate the pipeline execution.
-#
-# A pipeline is composed of independent jobs that run scripts, grouped into stages.
-# Stages run in sequential order, but jobs within stages run in parallel.
-#
-# For more information, see: https://docs.gitlab.com/ee/ci/yaml/#stages
-#
-# You can copy and paste this template into a new `.gitlab-ci.yml` file.
-# You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
-#
-# To contribute improvements to CI/CD templates, please follow the Development guide at:
-# https://docs.gitlab.com/development/cicd/templates/
-# This specific template is located at:
-# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
+# Definiert das Standard-Docker-Image für alle Jobs.
+# Wir verwenden ein Maven-Image mit Java 21, passend zu Ihrem Quarkus-Backend.
+default:
+    image: maven:3.9-eclipse-temurin-21
 
-stages:          # List of stages for jobs, and their order of execution
+# Definiert die Phasen der Pipeline. Jobs werden in dieser Reihenfolge ausgeführt.
+stages:
     - build
     - test
+    - dependency_scanning
+    - package
     - deploy
 
-build-job:       # This job runs in the build stage, which runs first.
+# Cache-Konfiguration, um die Pipeline zu beschleunigen.
+# Gespeichert werden die Maven- und npm-Abhängigkeiten.
+cache:
+    key:
+        files:
+            - backend/pom.xml
+            - frontend/package-lock.json
+    paths:
+        - .m2/
+        - frontend/node_modules/
+
+# --- STAGE: build ---
+# Dieser Job kompiliert das gesamte Projekt (Backend und Frontend).
+build_project:
     stage: build
     script:
-        - echo "Compiling the code..."
-        - echo "Compile complete."
+        - echo "Kompiliere das gesamte Projekt..."
+        # Der Befehl 'install' kompiliert alles und bereitet die Artefakte vor.
+        # -DskipTests überspringt die Tests, da wir dafür eine separate Stage haben.
+        - ./mvnw clean install -DskipTests
+    artifacts:
+        # Speichert das Ergebnis des Builds für nachfolgende Jobs.
+        paths:
+            - backend/target/
 
-unit-test-job:   # This job runs in the test stage.
-    stage: test    # It only starts when the job in the build stage completes successfully.
+# --- STAGE: test ---
+# Dieser Job führt die Backend-Tests aus.
+test_backend:
+    stage: test
     script:
-        - echo "Running unit tests... This will take about 60 seconds."
-        - sleep 60
-        - echo "Code coverage is 90%"
+        - echo "Führe Backend-Tests aus..."
+        # Führt die in der AGENTS.md definierten Tests aus.
+        - cd backend && ../mvnw test
+    # Dieser Job benötigt die kompilierten Klassen aus dem 'build_project'-Job.
+    needs:
+        - build_project
 
-lint-test-job:   # This job also runs in the test stage.
-    stage: test    # It can run at the same time as unit-test-job (in parallel).
-    script:
-        - echo "Linting code... This will take about 10 seconds."
-        - sleep 10
-        - echo "No lint issues found."
+# --- STAGE: dependency_scanning ---
+# Dieser Job sucht nach bekannten Schwachstellen in Ihren Abhängigkeiten.
+# Er wird automatisch von GitLab konfiguriert.
+include:
+    - template: Dependency-Scanning.gitlab-ci.yml
 
-deploy-job:      # This job runs in the deploy stage.
-    stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
-    environment: production
+# --- STAGE: package ---
+# Dieser Job erstellt ein Docker-Image Ihrer Anwendung und lädt es in die
+# GitLab Container Registry hoch. Er wird nur für den 'main'-Branch ausgeführt.
+package_docker_image:
+    stage: package
+    # Wir benötigen ein Docker-Image, um Docker-Befehle auszuführen.
+    image: docker:24.0
+    services:
+        - docker:24.0-dind # Docker-in-Docker Service
+    variables:
+        # Definiert den Namen des Docker-Images.
+        IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    before_script:
+        # Meldet sich bei der GitLab Container Registry an.
+        - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     script:
-        - echo "Deploying application..."
-        - echo "Application successfully deployed."
+        - echo "Erstelle Docker-Image: $IMAGE_TAG"
+        # Quarkus generiert standardmäßig ein passendes Dockerfile.
+        # Wir bauen das Image mit diesem Dockerfile.
+        - docker build -f backend/src/main/docker/Dockerfile.jvm -t $IMAGE_TAG .
+        - echo "Lade Docker-Image hoch..."
+        - docker push $IMAGE_TAG
+    rules:
+        # Führe diesen Job nur aus, wenn ein Commit auf den 'main'-Branch erfolgt.
+        - if: '$CI_COMMIT_BRANCH == "main"'
+
+# --- STAGE: deploy ---
+# Dieser Job ist ein Beispiel für ein manuelles Deployment auf einen Server.
+# Er wird nur für den 'main'-Branch angezeigt und muss von Hand gestartet werden.
+deploy_to_production:
+    stage: deploy
+    # Ein leichtgewichtiges Image mit SSH-Client.
+    image: alpine:latest
+    # Definiert die GitLab-Umgebung, um Deployments nachzuverfolgen.
+    environment:
+        name: production
+        url: http://Ihre-Produktions-URL.com # Optional: URL Ihrer Anwendung
+    before_script:
+        # SSH-Schlüssel für den Server-Zugriff sicher einrichten.
+        # Fügen Sie den privaten Schlüssel als geschützte Variable in den CI/CD-Einstellungen
+        # Ihres GitLab-Projekts unter dem Namen 'SSH_PRIVATE_KEY' hinzu.
+        - apk add --no-cache openssh-client
+        - eval $(ssh-agent -s)
+        - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+        - mkdir -p ~/.ssh
+        - chmod 700 ~/.ssh
+        - echo "Host *" > ~/.ssh/config
+        - echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+        - echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
+    script:
+        - echo "Starte Deployment auf den Produktionsserver..."
+        # Beispiel-Skript für ein Deployment via SSH:
+        # 1. SSH zum Server
+        # 2. Docker-Image aus der GitLab Registry pullen
+        # 3. Alten Container stoppen und neuen starten
+        - |
+            ssh user@server-ip "
+              docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY} && \
+              docker pull ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA} && \
+              docker stop konfplan-app || true && \
+              docker rm konfplan-app || true && \
+              docker run -d --name konfplan-app -p 9000:8080 \
+                --restart always \
+                -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://db-host/konfplan \
+                -e QUARKUS_DATASOURCE_USERNAME=db_user \
+                -e QUARKUS_DATASOURCE_PASSWORD=db_pass \
+                ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}
+            "
+        - echo "Deployment erfolgreich."
+    rules:
+        # Zeige diesen Job nur für den 'main'-Branch an.
+        - if: '$CI_COMMIT_BRANCH == "main"'
+            # Erlaube manuellen Start.
+          when: manual

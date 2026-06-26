@@ -1,10 +1,13 @@
 /** @type {import('tailwindcss').Config} */
 export default {
     // Pfade zu allen Dateien, die Tailwind-Klassen enthalten
-    content: [
-        "./index.html",
-        "./src/**/*.{vue,js,ts,jsx,tsx}",
-    ],
+    content: process.env.NODE_ENV === 'production'
+      ? [
+        './index.html',
+        './src/**/*.{vue,js,ts,jsx,tsx}'
+    ]
+    : [ './src/**/*.{js,ts}' ]
+  ,
     theme: {
         extend: {
             colors: {

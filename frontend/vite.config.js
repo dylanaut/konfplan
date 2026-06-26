@@ -5,20 +5,26 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 
 export default defineConfig({
-    plugins: [
-        vue(),
-        vueDevTools(),
-        createHtmlPlugin({})],
-    server: {
-        port: 5173,
-        strictPort: true, // Wichtig, damit Vite nicht auf 5174 ausweicht
+  plugins: [
+    vue(),
+    vueDevTools(),
+    createHtmlPlugin({})],
+  server: {
+    host: '127.0.0.1',
+    port: 5173,
+    strictPort: true,
+    hmr: {
+      host: '127.0.0.1',
+      port: 5173,
     },
-    build: {
-        sourcemap: true,
-        outDir: 'dist',
-        manifest: 'manifest.json'
-    },
-    css: {
-        devSourcemap: true
-    }
+    open: false
+  },
+  build: {
+    sourcemap: true,
+    outDir: 'dist',
+    manifest: true
+  },
+  css: {
+    devSourcemap: true
+  }
 })

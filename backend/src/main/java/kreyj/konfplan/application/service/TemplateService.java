@@ -4,6 +4,7 @@ import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.application.port.in.AdminServiceInterface;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
@@ -34,7 +35,6 @@ public class TemplateService {
     private final PlanService planService;
     private final DashboardService dashboardService;
     private final AdminServiceInterface adminService;
-
 
     // Templates for standard reports
     @Location("report/laufzettel-teilnehmer.html")
