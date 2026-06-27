@@ -23,7 +23,6 @@ import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.Wahlvortrag;
-import kreyj.konfplan.util.TemplateExtensions;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.NonNull;
@@ -45,6 +44,7 @@ import static java.util.stream.Collectors.toMap;
 import static kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht.VORTRAG_TITEL_FREI;
 import static kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht.VORTRAG_TYP_FREI;
 import static kreyj.konfplan.persistence.Planungsergebnis.getPlanungsergebnis;
+import static kreyj.konfplan.util.TemplateExtensions.truncTo;
 
 @ApplicationScoped
 public class PlanService {
@@ -480,7 +480,7 @@ public class PlanService {
                 RaumplanEintragDto eintrag = new RaumplanEintragDto(
                     slot.getId(),
                     slot.getSlotZeit(),
-                    TemplateExtensions.truncTo(pv.getTitel()),
+                    truncTo(pv.getTitel()),
                     pv.getReferent().getFirstName() + " " + pv.getReferent().getLastName(),
                     "PFLICHT",
                     teilnehmerDtos);
@@ -545,9 +545,6 @@ public class PlanService {
     public Map<Long, List<Slot>> getFreieSlotsReferenten(Veranstaltung veranstaltung) {
         Map<Long, List<Slot>> freieSlotsReferenten = new HashMap<>();
         Planungsergebnis planungsergebnis = getPlanungsergebnis(veranstaltung);
-        if (planungsergebnis == null) {
-            return Collections.emptyMap();
-        }
 
         try {
             Planungsergebnis.MinizincResult result =

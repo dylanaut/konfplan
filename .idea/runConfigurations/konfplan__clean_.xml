@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="konfplan [install]" type="MavenRunConfiguration" factoryName="Maven" nameIsGenerated="true">
+  <configuration default="false" name="konfplan [clean]" type="MavenRunConfiguration" factoryName="Maven">
     <MavenSettings>
       <option name="myGeneralSettings" />
       <option name="myRunnerSettings" />
@@ -11,7 +11,7 @@
           </option>
           <option name="goals">
             <list>
-              <option value="install" />
+              <option value="clean" />
             </list>
           </option>
           <option name="multimoduleDir" />
@@ -23,7 +23,7 @@
             <list />
           </option>
           <option name="resolveToWorkspace" value="false" />
-          <option name="workingDirPath" value="$PROJECT_DIR$" />
+          <option name="workingDirPath" value="$PROJECT_DIR$/backend" />
         </MavenRunnerParameters>
       </option>
     </MavenSettings>

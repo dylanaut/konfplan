@@ -64,11 +64,8 @@
                <button v-if="event.planErstellt" @click="downloadIcs(event.id)" class="btn-secondary">
                  <CalendarPlus class="w-4 h-4 mr-2" /> ICS
                </button>
-              <button v-if="event.planErstellt" @click="viewMySchedule(event.id)" class="btn-secondary">
-                <PrinterIcon class="w-4 h-4 mr-2" /> Laufzettel
-              </button>
-              <button v-if="event.planErstellt" @click="downloadMySchedule(event.id)" class="btn-primary">
-                <DownloadIcon class="w-4 h-4 mr-2" /> PDF
+              <button v-if="event.planErstellt" @click="viewMySchedule(event.id)" class="btn-primary">
+                <PrinterIcon class="w-4 h-4 mr-2" /> Laufzettel anzeigen
               </button>
             </div>
           </div>
@@ -181,6 +178,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import api from '../api/axios';
 import {
   User as UserIcon,
@@ -197,6 +195,7 @@ import {
   CalendarPlus,
 } from '@lucide/vue';
 
+const router = useRouter();
 const events = ref([]);
 const activeEventId = ref(null);
 const activeAvailabilityEventId = ref(null);
@@ -390,32 +389,9 @@ const saveProfile = async () => {
   }
 };
 
-const viewMySchedule = async (vid) => {
-  try {
-    const response = await api.get(`/api/teilnehmer/veranstaltungen/${vid}/laufzettel`, { responseType: 'blob' });
-    const html = await response.data.text();
-    const newWindow = window.open('', '_blank');
-    if (newWindow) {
-      newWindow.document.write(html);
-      newWindow.document.close();
-    }
-  } catch (error) {
-    console.error('Fehler beim Anzeigen des Laufzettels:', error);
-  }
-};
-
-const downloadMySchedule = async (vid) => {
-  try {
-    const res = await api.get(`/api/teilnehmer/veranstaltungen/${vid}/laufzettel-pdf`, { responseType: 'blob' });
-    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'mein-laufzettel.pdf');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } catch (e) {
-    console.error('Fehler beim Download des Laufzettels:', e);
+const viewMySchedule = (vid) => {
+  if (profile.value && profile.value.id) {
+    router.push({ name: 'LaufzettelTeilnehmer', params: { vid, tid: profile.value.id } });
   }
 };
 

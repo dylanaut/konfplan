@@ -61,11 +61,8 @@
             <button @click="downloadIcs(event.id)" class="btn-secondary">
               <CalendarPlus class="w-4 h-4 mr-2" /> ICS
             </button>
-            <button @click="viewMySchedule(event.id)" class="btn-secondary">
-              <PrinterIcon class="w-4 h-4 mr-2" /> Laufzettel
-            </button>
-            <button @click="downloadMySchedule(event.id)" class="btn-primary">
-              <DownloadIcon class="w-4 h-4 mr-2" /> PDF
+            <button @click="viewMySchedule(event.id)" class="btn-primary">
+              <PrinterIcon class="w-4 h-4 mr-2" /> Laufzettel anzeigen
             </button>
           </div>
           <div v-else>
@@ -267,10 +264,12 @@
 
 <script setup>
 import { ref, onMounted, computed, reactive } from 'vue';
+import { useRouter } from 'vue-router';
 import api from '../api/axios';
 import { useAuthStore } from '../stores/auth';
 import { User as UserIcon, FileText as FileTextIcon, Calendar as CalendarIcon, Save as SaveIcon, Plus as PlusIcon, Edit as EditIcon, Trash2 as Trash2Icon, ListChecks as ListChecksIcon, Check as CheckIcon, X as XIcon, CalendarCheck as CalendarCheckIcon, Printer as PrinterIcon, Download as DownloadIcon, CalendarPlus } from '@lucide/vue';
 
+const router = useRouter();
 const authStore = useAuthStore();
 const referent = ref({
   id: null,
@@ -534,32 +533,9 @@ const saveAll = async () => {
   }
 };
 
-const viewMySchedule = async (vid) => {
-  try {
-    const response = await api.get(`/api/referenten/veranstaltungen/${vid}/laufzettel`, { responseType: 'blob' });
-    const html = await response.data.text();
-    const newWindow = window.open('', '_blank');
-    if (newWindow) {
-      newWindow.document.write(html);
-      newWindow.document.close();
-    }
-  } catch (error) {
-    console.error('Fehler beim Anzeigen des Laufzettels:', error);
-  }
-};
-
-const downloadMySchedule = async (vid) => {
-  try {
-    const res = await api.get(`/api/referenten/veranstaltungen/${vid}/laufzettel-pdf`, { responseType: 'blob' });
-    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'mein-laufzettel.pdf');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } catch (e) {
-    console.error('Fehler beim Download des Laufzettels:', e);
+const viewMySchedule = (vid) => {
+  if (referent.value && referent.value.id) {
+    router.push({ name: 'LaufzettelReferent', params: { vid, rid: referent.value.id } });
   }
 };
 

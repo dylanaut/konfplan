@@ -8,9 +8,78 @@
       </div>
     </div>
 
-    <!-- Artefakte (PDFs) -->
-    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-      <h3 class="text-sm font-bold mb-3">Downloads & Berichte</h3>
+    <!-- Belegungsplan pro Tag -->
+    <div v-if="belegungsplanProTag && Object.keys(belegungsplanProTag).length > 0">
+      <div v-for="(day, date) in belegungsplanProTag" :key="date"
+           class="bg-white shadow-lg rounded-2xl overflow-hidden border border-gray-100 mb-6">
+        <h3 class="text-lg font-bold p-4 bg-gray-50 border-b border-gray-200 text-indigo-800">{{ formatDate(date) }}</h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-100 text-xs uppercase font-semibold text-gray-600">
+            <tr>
+              <th class="px-3 py-2 text-left sticky left-0 bg-gray-100 z-10 w-32 min-w-[128px]">Zeit</th>
+              <template v-for="(group, gebaeudeName) in raeumeGruppiert" :key="gebaeudeName">
+                <th :colspan="group.length" class="px-3 py-2 text-center border-l border-gray-200 whitespace-nowrap bg-gray-200">
+                  {{ gebaeudeName }}
+                </th>
+              </template>
+            </tr>
+            <tr>
+              <th class="px-3 py-2 text-left sticky left-0 bg-gray-100 z-10 w-32 min-w-[128px]"></th>
+              <template v-for="(group, gebaeudeName) in raeumeGruppiert" :key="gebaeudeName">
+                <th v-for="raum in group" :key="raum.id" class="px-3 py-2 text-center border-l border-gray-200 whitespace-nowrap">
+                  {{ raum.name }}
+                </th>
+              </template>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 text-xs">
+            <tr v-for="(slot, slotIndex) in day.slots" :key="slot.id"
+                :class="['hover:bg-gray-50 transition-colors duration-150', { 'first-row': slotIndex === 0 }]">
+              <td class="px-3 py-2 font-mono text-indigo-700 sticky left-0 bg-white z-10 w-32 min-w-[128px]">{{ slot.zeit }}</td>
+              <template v-for="(group, gebaeudeName) in raeumeGruppiert" :key="gebaeudeName">
+                <td v-for="raum in group" :key="raum.id"
+                    class="px-2 py-2 text-center border-l border-gray-200 align-top relative group">
+                  <div v-if="day.belegungen[slot.id] && day.belegungen[slot.id][raum.id]"
+                       class="p-2 rounded-lg h-full flex flex-col justify-center"
+                       :style="{ backgroundColor: getVortragColor(day.belegungen[slot.id][raum.id].vortragTitel) }">
+                    <p class="font-bold text-white text-[10px] leading-tight">{{
+                        day.belegungen[slot.id][raum.id].referentNachname
+                      }}</p>
+                    <p class="text-white/80 text-[9px] leading-tight mt-1">{{
+                        day.belegungen[slot.id][raum.id].vortragTitelShort
+                      }}</p>
+                    <!-- Tooltip -->
+                    <div
+                        class="tooltip-content absolute left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-gray-800 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 pointer-events-none">
+                      <p class="font-bold border-b border-gray-600 pb-1 mb-1">{{
+                          day.belegungen[slot.id][raum.id].vortragTitel
+                        }}</p>
+                      <p><strong>Referent:</strong> {{ day.belegungen[slot.id][raum.id].referentNachname }}</p>
+                      <p><strong>Auslastung:</strong> {{ day.belegungen[slot.id][raum.id].teilnehmerNamen.length }} /
+                        {{ raum.kapazitaet }}</p>
+                      <p class="mt-2 text-gray-300 text-[10px]">{{
+                          day.belegungen[slot.id][raum.id].teilnehmerNamen.join(', ')
+                        }}</p>
+                      <div class="tooltip-arrow absolute left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></div>
+                    </div>
+                  </div>
+                </td>
+              </template>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div v-else class="text-center text-gray-500 py-12 bg-white rounded-xl shadow-sm border border-gray-100">
+      <p class="font-bold">Kein Planungsergebnis vorhanden.</p>
+      <p class="text-xs mt-1">Bitte erstellen Sie zuerst einen Plan im Tab "Planerstellung".</p>
+    </div>
+
+    <!-- Artefakte -->
+    <div v-if="belegungsPlan && belegungsPlan.length > 0" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+      <h3 class="text-sm font-bold mb-3">Berichte</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div class="flex items-center space-x-2">
@@ -19,11 +88,7 @@
           </div>
           <div class="space-x-2">
             <button @click="downloadIcs()" class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">ICS</button>
-            <button @click="preview('raeume')"
-                    class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">Vorschau
-            </button>
-            <button @click="download('raeume-pdf')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">PDF
-            </button>
+            <button @click="navigateToReport('UebersichtRaeume')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">Anzeigen</button>
           </div>
         </div>
         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -32,40 +97,16 @@
             <span class="font-semibold">Raumschilder</span>
           </div>
           <div class="space-x-2">
-            <button @click="preview('raumschilder')"
-                    class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">Vorschau
-            </button>
-            <button @click="download('raumschilder-pdf')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">
-              PDF
-            </button>
+            <button @click="navigateToReport('Raumschilder')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">Anzeigen</button>
           </div>
         </div>
         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div class="flex items-center space-x-2">
             <img src="/logo/konfplan-light_footer.svg" alt="Icon" class="w-5 h-5"/>
-            <span class="font-semibold">Laufzettel (Teilnehmer)</span>
+            <span class="font-semibold">Laufzettel (Alle)</span>
           </div>
           <div class="space-x-2">
-            <button @click="preview('laufzettel/teilnehmer')"
-                    class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">Vorschau
-            </button>
-            <button @click="download('laufzettel/teilnehmer-pdf')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">
-              PDF
-            </button>
-          </div>
-        </div>
-        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-          <div class="flex items-center space-x-2">
-            <img src="/logo/konfplan-light_footer.svg" alt="Icon" class="w-5 h-5"/>
-            <span class="font-semibold">Laufzettel (Referenten)</span>
-          </div>
-          <div class="space-x-2">
-            <button @click="preview('laufzettel/referenten')"
-                    class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">Vorschau
-            </button>
-            <button @click="download('laufzettel/referenten-pdf')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">
-              PDF
-            </button>
+            <button @click="navigateToReport('LaufzettelAlle')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">Anzeigen</button>
           </div>
         </div>
         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -74,13 +115,7 @@
             <span class="font-semibold">Freie Slots (Referenten)</span>
           </div>
           <div class="space-x-2">
-            <button @click="preview('freie-slots-referenten')"
-                    class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">Vorschau
-            </button>
-            <button @click="download('freie-slots-referenten-pdf')"
-                    class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">
-              PDF
-            </button>
+            <button @click="navigateToReport('FreieSlotsReferenten')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">Anzeigen</button>
           </div>
         </div>
         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -89,103 +124,19 @@
             <span class="font-semibold">Freie Slots (Teilnehmer)</span>
           </div>
           <div class="space-x-2">
-            <button @click="preview('freie-slots-teilnehmer')"
-                    class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">Vorschau
-            </button>
-            <button @click="download('freie-slots-teilnehmer-pdf')"
-                    class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">PDF
-            </button>
-          </div>
-        </div>
-
-        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-          <div class="flex items-center space-x-2">
-            <img src="/logo/konfplan-light_footer.svg" alt="Icon" class="w-5 h-5"/>
-            <span class="font-semibold">Messeplaner</span>
-          </div>
-          <div class="space-x-2">
-            <button @click="preview('admin-dashboard')"
-                    class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">Dashboard
-            </button>
-            <button @click="preview('teilnehmer-dashboard')"
-                    class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">Teilnehmer
-            </button>
-            <button @click="preview('prios-dashboard')"
-                    class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">Prios
-            </button>
+            <button @click="navigateToReport('FreieSlotsTeilnehmer')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">Anzeigen</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Belegungsplan pro Tag -->
-    <div v-for="(day, date) in belegungsplanProTag" :key="date"
-         class="bg-white shadow-lg rounded-2xl overflow-hidden border border-gray-100">
-      <h3 class="text-lg font-bold p-4 bg-gray-50 border-b border-gray-200 text-indigo-800">{{ formatDate(date) }}</h3>
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-100 text-xs uppercase font-semibold text-gray-600">
-          <tr>
-            <th class="px-3 py-2 text-left sticky left-0 bg-gray-100 z-10 w-32 min-w-[128px]">Zeit</th>
-            <template v-for="(group, gebaeudeName) in raeumeGruppiert" :key="gebaeudeName">
-              <th :colspan="group.length" class="px-3 py-2 text-center border-l border-gray-200 whitespace-nowrap bg-gray-200">
-                {{ gebaeudeName }}
-              </th>
-            </template>
-          </tr>
-          <tr>
-            <th class="px-3 py-2 text-left sticky left-0 bg-gray-100 z-10 w-32 min-w-[128px]"></th>
-            <template v-for="(group, gebaeudeName) in raeumeGruppiert" :key="gebaeudeName">
-              <th v-for="raum in group" :key="raum.id" class="px-3 py-2 text-center border-l border-gray-200 whitespace-nowrap">
-                {{ raum.name }}
-              </th>
-            </template>
-          </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100 text-xs">
-          <tr v-for="(slot, slotIndex) in day.slots" :key="slot.id"
-              :class="['hover:bg-gray-50 transition-colors duration-150', { 'first-row': slotIndex === 0 }]">
-            <td class="px-3 py-2 font-mono text-indigo-700 sticky left-0 bg-white z-10 w-32 min-w-[128px]">{{ slot.zeit }}</td>
-            <template v-for="(group, gebaeudeName) in raeumeGruppiert" :key="gebaeudeName">
-              <td v-for="raum in group" :key="raum.id"
-                  class="px-2 py-2 text-center border-l border-gray-200 align-top relative group">
-                <div v-if="day.belegungen[slot.id] && day.belegungen[slot.id][raum.id]"
-                     class="p-2 rounded-lg h-full flex flex-col justify-center"
-                     :style="{ backgroundColor: getVortragColor(day.belegungen[slot.id][raum.id].vortragTitel) }">
-                  <p class="font-bold text-white text-[10px] leading-tight">{{
-                      day.belegungen[slot.id][raum.id].referentNachname
-                    }}</p>
-                  <p class="text-white/80 text-[9px] leading-tight mt-1">{{
-                      day.belegungen[slot.id][raum.id].vortragTitelShort
-                    }}</p>
-                  <!-- Tooltip -->
-                  <div
-                      class="tooltip-content absolute left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-gray-800 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 pointer-events-none">
-                    <p class="font-bold border-b border-gray-600 pb-1 mb-1">{{
-                        day.belegungen[slot.id][raum.id].vortragTitel
-                      }}</p>
-                    <p><strong>Referent:</strong> {{ day.belegungen[slot.id][raum.id].referentNachname }}</p>
-                    <p><strong>Auslastung:</strong> {{ day.belegungen[slot.id][raum.id].teilnehmerNamen.length }} /
-                      {{ raum.kapazitaet }}</p>
-                    <p class="mt-2 text-gray-300 text-[10px]">{{
-                        day.belegungen[slot.id][raum.id].teilnehmerNamen.join(', ')
-                      }}</p>
-                    <div class="tooltip-arrow absolute left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></div>
-                  </div>
-                </div>
-              </td>
-            </template>
-          </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
   </section>
 </template>
 
 <script setup>
-import {computed} from 'vue';
-import {useEventContextStore} from '../../../stores/eventContext';
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useEventContextStore } from '../../../stores/eventContext';
 import api from '../../../api/axios';
 
 const props = defineProps({
@@ -195,6 +146,7 @@ const props = defineProps({
   raeume: {type: Array, required: true}
 });
 
+const router = useRouter();
 const eventContext = useEventContextStore();
 
 const raeumeGruppiert = computed(() => {
@@ -215,7 +167,7 @@ const raeumeGruppiert = computed(() => {
 
 const belegungsplanProTag = computed(() => {
   const plan = {};
-  if (!props.eventSlots || !props.belegungsPlan) return plan;
+  if (!props.eventSlots || !props.belegungsPlan || props.belegungsPlan.length === 0) return plan;
 
   // Slots nach Datum gruppieren
   const slotsProTag = props.eventSlots.reduce((acc, slot) => {
@@ -248,47 +200,10 @@ const belegungsplanProTag = computed(() => {
   return plan;
 });
 
-const fetchReport = async (report, blobType) => {
-  try {
-    const vid = eventContext.selectedEvent.id;
-    const response = await api.get(`/api/reports/${vid}/${report}`, {responseType: 'blob'});
-    return new Blob([response.data], {type: blobType});
-  } catch (error) {
-    console.error(`Fehler beim Abrufen von ${report}:`, error);
-    return null;
-  }
-};
-
-const preview = async (report) => {
-  const file = await fetchReport(report, 'text/html;charset=utf-8');
-  if (file) {
-    // Für PDFs weiterhin die Blob-URL verwenden, da sie den PDF-Viewer des Browsers korrekt initialisiert.
-    if (file.type.includes('pdf')) {
-      const fileURL = URL.createObjectURL(file);
-      window.open(fileURL, '_blank');
-    } else {
-      // Für HTML den Inhalt manuell in ein neues Fenster schreiben, um den Tab-Titel korrekt zu setzen.
-      const htmlContent = await file.text();
-      const newWindow = window.open('', '_blank');
-      if (newWindow) {
-        newWindow.document.writeln(htmlContent);
-        newWindow.document.close(); // Wichtig, um das Laden abzuschließen
-      }
-    }
-  }
-};
-
-const download = async (report) => {
-  const file = await fetchReport(report, 'application/pdf');
-  if (file) {
-    const downloadName = report.replace('-pdf', '') + '.pdf';
-    const fileURL = URL.createObjectURL(file);
-    const link = document.createElement('a');
-    link.href = fileURL;
-    link.setAttribute('download', downloadName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+const navigateToReport = (routeName) => {
+  const vid = eventContext.selectedEvent.id;
+  if (vid) {
+    router.push({ name: routeName, params: { vid } });
   }
 };
 

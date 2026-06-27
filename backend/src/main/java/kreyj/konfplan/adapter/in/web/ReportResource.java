@@ -9,7 +9,11 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import kreyj.konfplan.application.service.PdfService;
+import kreyj.konfplan.adapter.in.web.dto.RaumDto;
+import kreyj.konfplan.adapter.in.web.dto.ReportDto;
+import kreyj.konfplan.adapter.in.web.dto.SlotDto;
+import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
+import kreyj.konfplan.application.service.PlanService;
 import kreyj.konfplan.application.service.TeilnehmerService;
 import kreyj.konfplan.application.service.TemplateService;
 import kreyj.konfplan.persistence.Raum;
@@ -22,325 +26,201 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.logging.Logger;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Path("/api/reports")
 @Tag(name = "Reports", description = "Endpunkte zum Generieren von Berichten und Plänen (HTML/PDF)")
 @Transactional
 public class ReportResource {
     private static final Logger LOG = Logger.getLogger(ReportResource.class);
 
-    private final PdfService pdfService;
     private final TemplateService templateService;
     private final TeilnehmerService teilnehmerService;
+    private final PlanService planService;
     private final JsonWebToken jwt;
 
-    public ReportResource(PdfService pdfService, TemplateService templateService, TeilnehmerService teilnehmerService, JsonWebToken jwt) {
-        this.pdfService = pdfService;
+
+    public ReportResource(TemplateService templateService, TeilnehmerService teilnehmerService, PlanService planService, JsonWebToken jwt) {
         this.templateService = templateService;
         this.teilnehmerService = teilnehmerService;
+        this.planService = planService;
         this.jwt = jwt;
     }
 
-    @GET
-    @Path("/{vid}/laufzettel")
-    @Produces(MediaType.TEXT_HTML)
-    @RolesAllowed("ADMIN")
-    @Operation(summary = "Laufzettel für alle (HTML)", description = "Generiert die persönlichen Laufzettel einer Veranstaltung als HTML.")
-    public Response getAlleLaufzettel(@PathParam("vid") Long vid) {
-        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (veranstaltung == null) {
-            return Response.status(Response.Status.NOT_FOUND).entity("Veranstaltung nicht gefunden.").build();
-        }
-        return Response.ok(templateService.prepareAlleLaufzettelTemplate(veranstaltung).render()).build();
-    }
 
     @GET
-    @Path("/{vid}/laufzettel-pdf")
-    @Produces("application/pdf")
+    @Path("/{vid}/laufzettel-alle-data")
+    @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed("ADMIN")
-    @Operation(summary = "Laufzettel für alle Teilnehmer (PDF)", description = "Generiert die persönlichen Laufzettel einer Veranstaltung als PDF.")
-    public Response getAlleLaufzettelPdf(@PathParam("vid") Long vid) {
+    @Operation(summary = "Daten für alle Laufzettel (JSON)")
+    public Response getAlleLaufzettelData(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (veranstaltung == null) {
-            return Response.status(Response.Status.NOT_FOUND).entity("Veranstaltung nicht gefunden.").build();
+            return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(pdfService.generatePdf(templateService.prepareAlleLaufzettelTemplate(veranstaltung))).build();
+        Map<Long, List<ZuweisungDto>> plaene = veranstaltung.teilnehmer().stream()
+            .collect(Collectors.toMap(t -> t.id, t -> planService.getPlanFuerTeilnehmer(t, veranstaltung)));
+
+        return Response.ok(plaene).build();
     }
 
+
     @GET
-    @Path("/{vid}/teilnehmer/{tid}/laufzettel")
-    @Produces(MediaType.TEXT_HTML)
+    @Path("/{vid}/teilnehmer/{tid}/laufzettel-data")
+    @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({"TEILNEHMER", "ADMIN"})
-    @Operation(summary = "Laufzettel für Teilnehmer (HTML)", description = "Generiert den persönlichen Laufzettel für einen Teilnehmer als HTML.")
-    public Response getLaufzettelTeilnehmer(@PathParam("vid") Long vid, @PathParam("tid") Long tid) {
+    @Operation(summary = "Daten für Teilnehmer-Laufzettel (JSON)")
+    public Response getLaufzettelTeilnehmerData(@PathParam("vid") Long vid, @PathParam("tid") Long tid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         Teilnehmer teilnehmer = Teilnehmer.findById(tid);
         if (teilnehmer == null || veranstaltung == null) {
-            return Response.status(Response.Status.NOT_FOUND).entity("Teilnehmer oder Veranstaltung nicht gefunden.").build();
+            return Response.status(Response.Status.NOT_FOUND).build();
         }
         if (!jwt.getGroups().contains("ADMIN") && !teilnehmer.getEmail().equals(jwt.getName())) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
-        return Response.ok(templateService.prepareTnLaufzettelTemplate(veranstaltung, teilnehmer).render()).build();
+        List<ZuweisungDto> plan = planService.getPlanFuerTeilnehmer(teilnehmer, veranstaltung);
+        return Response.ok(new ReportDto.LaufzettelTeilnehmerDto(veranstaltung, teilnehmer, plan)).build();
     }
 
-    @GET
-    @Path("/{vid}/teilnehmer/{tid}/laufzettel-pdf")
-    @Produces("application/pdf")
-    @RolesAllowed({"TEILNEHMER", "ADMIN"})
-    @Operation(summary = "Laufzettel für Teilnehmer (PDF)", description = "Generiert den persönlichen Laufzettel für einen Teilnehmer als PDF.")
-    public Response getLaufzettelTeilnehmerPdf(@PathParam("vid") Long vid, @PathParam("tid") Long tid) {
-        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        Teilnehmer teilnehmer = Teilnehmer.findById(tid);
-        if (teilnehmer == null || veranstaltung == null) {
-            return Response.status(Response.Status.NOT_FOUND).entity("Teilnehmer oder Veranstaltung nicht gefunden.").build();
-        }
-        if (!jwt.getGroups().contains("ADMIN") && !teilnehmer.getEmail().equals(jwt.getName())) {
-            return Response.status(Response.Status.FORBIDDEN).build();
-        }
-        return Response.ok(pdfService.generatePdf(templateService.prepareTnLaufzettelTemplate(veranstaltung, teilnehmer))).build();
-    }
 
     @GET
-    @Path("/{vid}/referent/{rid}/laufzettel")
-    @Produces(MediaType.TEXT_HTML)
+    @Path("/{vid}/referent/{rid}/laufzettel-data")
+    @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({"REFERENT", "ADMIN"})
-    @Operation(summary = "Laufzettel für Referent (HTML)", description = "Generiert den persönlichen Laufzettel für einen Referenten als HTML.")
-    public Response getLaufzettelReferent(@PathParam("vid") Long vid, @PathParam("rid") Long refId) {
+    @Operation(summary = "Daten für Referenten-Laufzettel (JSON)")
+    public Response getLaufzettelReferentData(@PathParam("vid") Long vid, @PathParam("rid") Long refId) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         Referent referent = Referent.findById(refId);
-        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (referent == null || veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         if (!jwt.getGroups().contains("ADMIN") && !referent.getEmail().equals(jwt.getName())) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
-        return Response.ok(templateService.prepareRefLaufzettelTemplate(veranstaltung, referent).render()).build();
+        List<ZuweisungDto> plan = planService.getPlanFuerReferent(referent, veranstaltung);
+        return Response.ok(new ReportDto.LaufzettelReferentDto(veranstaltung, referent, plan)).build();
     }
 
-    @GET
-    @Path("/{vid}/referent/{rid}/laufzettel-pdf")
-    @Produces("application/pdf")
-    @RolesAllowed({"REFERENT", "ADMIN"})
-    @Operation(summary = "Laufzettel für Referent (PDF)", description = "Generiert den persönlichen Laufzettel für einen Referenten als PDF.")
-    public Response getLaufzettelReferentPdf(@PathParam("vid") Long vid, @PathParam("rid") Long rid) {
-        Referent referent = Referent.findById(rid);
-        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (referent == null || veranstaltung == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        if (!jwt.getGroups().contains("ADMIN") && !referent.getEmail().equals(jwt.getName())) {
-            return Response.status(Response.Status.FORBIDDEN).build();
-        }
-        return Response.ok(pdfService.generatePdf(templateService.prepareRefLaufzettelTemplate(veranstaltung, referent))).build();
-    }
 
     @GET
-    @Path("/{vid}/raum/{rid}/belegungsplan")
-    @Produces(MediaType.TEXT_HTML)
+    @Path("/{vid}/raum/{rid}/belegungsplan-data")
+    @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed("ADMIN")
-    @Operation(summary = "Raumbelegungsplan (HTML)", description = "Generiert den Belegungsplan für einen einzelnen Raum als HTML.")
-    public Response getRaumbelegungsplan(@PathParam("vid") Long vid, @PathParam("rid") Long rid) {
+    @Operation(summary = "Daten für Raumbelegungsplan (JSON)")
+    public Response getRaumbelegungsplanData(@PathParam("vid") Long vid, @PathParam("rid") Long rid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         Raum raum = Raum.findById(rid);
         if (raum == null || veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(templateService.prepareRaumbelegungTemplate(veranstaltung, raum).render()).build();
+        var belegung = planService.getRaumbelegungsplan(veranstaltung).getOrDefault(raum.getId(), Map.of());
+        return Response.ok(new ReportDto.RaumbelegungsplanDto(veranstaltung, RaumDto.from(raum), belegung)).build();
     }
 
-    @GET
-    @Path("/{vid}/raum/{rid}/belegungsplan-pdf")
-    @Produces("application/pdf")
-    @RolesAllowed("ADMIN")
-    @Operation(summary = "Raumbelegungsplan (PDF)", description = "Generiert den Belegungsplan für einen einzelnen Raum als PDF.")
-    public Response getRaumbelegungsplanPdf(@PathParam("vid") Long vid, @PathParam("rid") Long rid) {
-        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        Raum raum = Raum.findById(rid);
-        if (raum == null || veranstaltung == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(pdfService.generatePdf(templateService.prepareRaumbelegungTemplate(veranstaltung, raum))).build();
-    }
 
     @GET
-    @Path("/{vid}/raeume")
-    @Produces(MediaType.TEXT_HTML)
+    @Path("/{vid}/raeume-data")
+    @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed("ADMIN")
-    @Operation(summary = "Übersicht aller Räume (HTML)", description = "Generiert eine detaillierte Belegungsübersicht aller Räume als HTML.")
-    public Response getUebersichtRaeume(@PathParam("vid") Long vid) {
+    @Operation(summary = "Daten für Übersicht aller Räume (JSON)")
+    public Response getUebersichtRaeumeData(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(templateService.prepareUebersichtRaeumeTemplate(veranstaltung).render()).build();
+        return Response.ok(new ReportDto.UebersichtRaeumeDto(veranstaltung, planService.getDetaillierterPlan(veranstaltung))).build();
     }
 
+
     @GET
-    @Path("/{vid}/raeume-pdf")
-    @Produces("application/pdf")
+    @Path("/{vid}/raumschilder-data")
+    @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed("ADMIN")
-    @Operation(summary = "Übersicht aller Räume (PDF)", description = "Generiert eine detaillierte Belegungsübersicht aller Räume als PDF.")
-    public Response getUebersichtRaeumePdf(@PathParam("vid") Long vid) {
+    @Operation(summary = "Daten für alle Raumschilder (JSON)")
+    public Response getAlleRaumschilderData(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(pdfService.generatePdf(templateService.prepareUebersichtRaeumeTemplate(veranstaltung))).build();
+        var raeume = veranstaltung.getRaeume().stream().map(RaumDto::from).toList();
+        var slots = veranstaltung.getSlots().stream().map(SlotDto::from).toList();
+        return Response.ok(new ReportDto.RaumschilderDto(veranstaltung, planService.getRaumbelegungsplan(veranstaltung), raeume, slots)).build();
     }
 
+
     @GET
-    @Path("/{vid}/raumschilder")
-    @Produces(MediaType.TEXT_HTML)
+    @Path("/{vid}/freie-slots-referenten-data")
+    @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed("ADMIN")
-    @Operation(summary = "Alle Raumschilder als HTML", description = "Generiert eine Vorschau der Türschilder für alle Räume einer Veranstaltung.")
-    public Response getAlleRaumschilder(@PathParam("vid") Long vid) {
+    @Operation(summary = "Daten für freie Slots der Referenten (JSON)")
+    public Response getFreieSlotsReferentenData(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(templateService.prepareRaumschilderTemplate(veranstaltung).render()).build();
+        return Response.ok(new ReportDto.FreieSlotsDto(veranstaltung, planService.getFreieSlotsReferenten(veranstaltung), veranstaltung.referenten())).build();
     }
 
+
     @GET
-    @Path("/{vid}/raumschilder-pdf")
-    @Produces("application/pdf")
+    @Path("/{vid}/freie-slots-teilnehmer-data")
+    @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed("ADMIN")
-    @Operation(summary = "Alle Raumschilder als PDF", description = "Generiert ein einziges PDF mit den Türschildern für alle Räume einer Veranstaltung.")
-    public Response getAlleRaumschilderPdf(@PathParam("vid") Long vid) {
+    @Operation(summary = "Daten für freie Slots der Teilnehmer (JSON)")
+    public Response getFreieSlotsTeilnehmerData(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(pdfService.generatePdf(templateService.prepareRaumschilderTemplate(veranstaltung))).build();
+        return Response.ok(new ReportDto.FreieSlotsDto(veranstaltung, planService.getFreieSlotsTeilnehmer(veranstaltung), veranstaltung.teilnehmer())).build();
     }
 
+
     @GET
-    @Path("/{vid}/freie-slots-referenten")
-    @Produces(MediaType.TEXT_HTML)
+    @Path("/{vid}/admin-dashboard-data")
+    @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed("ADMIN")
-    @Operation(summary = "Freie Slots für Referenten (HTML)", description = "Zeigt eine Übersicht der freien Slots für alle Referenten einer Veranstaltung als HTML.")
-    public Response getFreieSlotsReferenten(@PathParam("vid") Long vid) {
+    @Operation(summary = "Daten für Admin-Dashboard (JSON)")
+    public Response getStundenplanDashboardData(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (veranstaltung == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(templateService.prepareFreieSlotsReferentenReport(veranstaltung).render()).build();
+        return Response.ok(templateService.getDashboardData(veranstaltung).stundenplan).build();
     }
 
-    @GET
-    @Path("/{vid}/freie-slots-referenten-pdf")
-    @Produces("application/pdf")
-    @RolesAllowed("ADMIN")
-    @Operation(summary = "Freie Slots für Referenten (PDF)", description = "Zeigt eine Übersicht der freien Slots für alle Referenten einer Veranstaltung als PDF.")
-    public Response getFreieSlotsReferentenPdf(@PathParam("vid") Long vid) {
-        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (veranstaltung == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(pdfService.generatePdf(templateService.prepareFreieSlotsReferentenReport(veranstaltung))).build();
-    }
 
     @GET
-    @Path("/{vid}/freie-slots-teilnehmer")
-    @Produces(MediaType.TEXT_HTML)
-    @RolesAllowed("ADMIN")
-    @Operation(summary = "Freie Slots für Teilnehmer (HTML)", description = "Zeigt eine Übersicht der freien Slots für alle Teilnehmer einer Veranstaltung als HTML.")
-    public Response getFreieSlotsTeilnehmer(@PathParam("vid") Long vid) {
-        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (veranstaltung == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(templateService.prepareFreieSlotsTeilnehmerTemplate(veranstaltung).render()).build();
-    }
-
-    @GET
-    @Path("/{vid}/freie-slots-teilnehmer-pdf")
-    @Produces("application/pdf")
-    @RolesAllowed("ADMIN")
-    @Operation(summary = "Freie Slots für Teilnehmer (PDF)", description = "Zeigt eine Übersicht der freien Slots für alle Teilnehmer einer Veranstaltung als PDF.")
-    public Response getFreieSlotsTeilnehmerPdf(@PathParam("vid") Long vid) {
-        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (veranstaltung == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        return Response.ok(pdfService.generatePdf(templateService.prepareFreieSlotsTeilnehmerTemplate(veranstaltung))).build();
-    }
-
-    // -------------------------------------------------------------------
-    // Python-Skript Migration: Dashboard Endpoints
-    // -------------------------------------------------------------------
-
-    @GET
-    @Path("/{vid}/admin-dashboard")
-    @Produces(MediaType.TEXT_HTML)
-    @RolesAllowed("ADMIN")
-    @Operation(summary = "Dashboard: Stundenplan (HTML)")
-    public Response getStundenplanDashboard(@PathParam("vid") Long vid) {
-        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (veranstaltung == null) return Response.status(Response.Status.NOT_FOUND).build();
-        return Response.ok(templateService.prepareStundenplanDashboard(veranstaltung).render()).build();
-    }
-
-    @GET
-    @Path("/{vid}/admin-dashboard-pdf")
-    @Produces("application/pdf")
-    @RolesAllowed("ADMIN")
-    @Operation(summary = "Dashboard: Stundenplan (PDF)")
-    public Response getStundenplanDashboardPdf(@PathParam("vid") Long vid) {
-        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (veranstaltung == null) return Response.status(Response.Status.NOT_FOUND).build();
-        return Response.ok(pdfService.generatePdf(templateService.prepareStundenplanDashboard(veranstaltung))).build();
-    }
-
-    @GET
-    @Path("/{vid}/teilnehmer-dashboard")
-    @Produces(MediaType.TEXT_HTML)
+    @Path("/{vid}/teilnehmer-dashboard-data")
+    @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({"ADMIN", "TEILNEHMER"})
-    @Operation(summary = "Dashboard: Teilnehmerübersicht (HTML)")
-    public Response getTeilnehmerDashboard(@PathParam("vid") Long vid) {
+    @Operation(summary = "Daten für Teilnehmer-Dashboard (JSON)")
+    public Response getTeilnehmerDashboardData(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (veranstaltung == null) return Response.status(Response.Status.NOT_FOUND).build();
+        if (veranstaltung == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
         Teilnehmer teilnehmer = teilnehmerService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
         if (null == teilnehmer) {
             throw new WebApplicationException("Teilnehmer not found", Response.Status.NOT_FOUND);
         }
-        return Response.ok(templateService.prepareTeilnehmerDashboard(veranstaltung, teilnehmer).render()).build();
+        return Response.ok(templateService.getDashboardData(veranstaltung).teilnehmerDashboard).build();
     }
 
+
     @GET
-    @Path("/{vid}/teilnehmer-dashboard-pdf")
-    @Produces("application/pdf")
-    @RolesAllowed({"ADMIN","TEILNEHMER"})
-    @Operation(summary = "Dashboard: Teilnehmerübersicht (PDF)")
-    public Response getTeilnehmerDashboardPdf(@PathParam("vid") Long vid) {
+    @Path("/{vid}/prios-dashboard-data")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed("ADMIN")
+    @Operation(summary = "Daten für Prioritäten-Dashboard (JSON)")
+    public Response getPriosDashboardData(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (veranstaltung == null) return Response.status(Response.Status.NOT_FOUND).build();
-        Teilnehmer teilnehmer = teilnehmerService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
-        if (null == teilnehmer) {
-            throw new WebApplicationException("Teilnehmer not found", Response.Status.NOT_FOUND);
+        if (veranstaltung == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(pdfService.generatePdf(templateService.prepareTeilnehmerDashboard(veranstaltung, teilnehmer))).build();
-    }
-
-    @GET
-    @Path("/{vid}/prios-dashboard")
-    @Produces(MediaType.TEXT_HTML)
-    @RolesAllowed("ADMIN")
-    @Operation(summary = "Dashboard: Prioritätenanalyse (HTML)")
-    public Response getPriosDashboard(@PathParam("vid") Long vid) {
-        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (veranstaltung == null) return Response.status(Response.Status.NOT_FOUND).build();
-        return Response.ok(templateService.preparePriosDashboard(veranstaltung).render()).build();
-    }
-
-    @GET
-    @Path("/{vid}/prios-dashboard-pdf")
-    @Produces("application/pdf")
-    @RolesAllowed("ADMIN")
-    @Operation(summary = "Dashboard: Prioritätenanalyse (PDF)")
-    public Response getPriosDashboardPdf(@PathParam("vid") Long vid) {
-        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (veranstaltung == null) return Response.status(Response.Status.NOT_FOUND).build();
-        return Response.ok(pdfService.generatePdf(templateService.preparePriosDashboard(veranstaltung))).build();
+        return Response.ok(templateService.getDashboardData(veranstaltung).prioDashboard).build();
     }
 }

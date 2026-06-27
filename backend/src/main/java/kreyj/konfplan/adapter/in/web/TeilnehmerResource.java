@@ -16,7 +16,6 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import kreyj.konfplan.adapter.in.web.dto.FileUploadDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerVeranstaltungDto;
@@ -148,21 +147,6 @@ public class TeilnehmerResource {
     }
 
 
-    @POST
-    @Path("/import")
-    @RolesAllowed("ADMIN")
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @Operation(summary = "Teilnehmer importieren")
-    public Response uploadCsv(FileUploadDto data, @QueryParam("vid") Long vid) {
-        try {
-            int count = teilnehmerService.importFromCsv(data.file.uploadedFile().toFile().toPath(), vid);
-            return Response.ok("Import erfolgreich: " + count + " Teilnehmer angelegt.").build();
-        } catch (Exception e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity("Fehler beim Import: " + e.getMessage()).build();
-        }
-    }
-
-
     // -------------------------------------------------------------------
     // TEILNEHMER Endpunkte
     // -------------------------------------------------------------------
@@ -221,42 +205,6 @@ public class TeilnehmerResource {
     public Response getMeineVortraege(@PathParam("vid") Long vid) {
         List<VortragDto> meineVortraege = teilnehmerService.getVortraegeFuerTeilnehmerInVeranstaltung(vid, JwtHelper.getUserPrincipalName(jwt));
         return Response.ok(meineVortraege).build();
-    }
-
-
-    @GET
-    @Path("/veranstaltungen/{vid}/laufzettel")
-    @RolesAllowed("TEILNEHMER")
-    @Produces(MediaType.TEXT_HTML)
-    @Operation(summary = "Persönlichen Laufzettel abrufen (HTML)")
-    public Response getLaufzettel(@PathParam("vid") Long vid) {
-        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (null == veranstaltung) {
-            throw new WebApplicationException("Veranstaltung not found", Response.Status.NOT_FOUND);
-        }
-        Teilnehmer teilnehmer = teilnehmerService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
-        if (null == teilnehmer) {
-            throw new WebApplicationException("Teilnehmer not found", Response.Status.NOT_FOUND);
-        }
-        return reportResource.getLaufzettelTeilnehmer(vid, teilnehmer.getId());
-    }
-
-
-    @GET
-    @Path("/veranstaltungen/{vid}/laufzettel-pdf")
-    @RolesAllowed("TEILNEHMER")
-    @Produces("application/pdf")
-    @Operation(summary = "Persönlichen Laufzettel abrufen (PDF)")
-    public Response getLaufzettelPdf(@PathParam("vid") Long vid) {
-        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (null == veranstaltung) {
-            throw new WebApplicationException("Veranstaltung not found", Response.Status.NOT_FOUND);
-        }
-        Teilnehmer teilnehmer = teilnehmerService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
-        if (null == teilnehmer) {
-            throw new WebApplicationException("Teilnehmer not found", Response.Status.NOT_FOUND);
-        }
-        return reportResource.getLaufzettelTeilnehmerPdf(vid, teilnehmer.getId());
     }
 
 

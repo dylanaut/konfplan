@@ -4,6 +4,27 @@ End-to-End (E2E) Test mit Playwright: +
 simuliert einen typischen Planungsablauf in der Anwendung.
 NOTE: Dieser Test dient dazu, den kompletten Workflow von der Anlage einer Veranstaltung bis zur Vorbereitung der PlanErstellung zu verifizieren.
 
+== Installation von Playwright
+
+*   **Playwright-Installation**: Stellen Sie sicher, dass Playwright in Ihrem Frontend-Projekt installiert ist. Falls nicht, führen Sie im Frontend-Projektverzeichnis aus:
+
+----
+npm init playwright@latest
+# bzw.
+npx playwright install
+----
+
+Die Installation liefert
+* den Interpreter für die Test-Spezifikation
+* die Browser-Treiber zum Bedienen der HTML-Oberflächen
+* Test-Assertions für UI-Regressionen
+
+== Ausführung eines Testfalls
+
+Zur Ausführung verwendet Playwright eine `*.spec.js` Datei, die das Test-Szenario spezifiziert.
+Ausserdem kann Playwright mit Testdaten über sog. `fixtures` präpariert werden.
+
+
 == Testfall: `PlanungsWorkflow.spec.js`
 
 Der Test simuliert die folgenden Schritte im Frontend:
@@ -39,10 +60,7 @@ Der Test simuliert die folgenden Schritte im Frontend:
 include::../tests/PlanungsWorkflow.spec.js[]
 ----
 
-== Wichtige Hinweise zur Ausführung
 
-*   **Playwright-Installation**: Stellen Sie sicher, dass Playwright in Ihrem Frontend-Projekt installiert ist. Falls nicht, führen Sie im Frontend-Projektverzeichnis aus:
+== Testfall: Reporterzeugung (Pläne, Laufzettel etc.) `report.spec.js`
 
-----
-npm init playwright@latest
-----
+

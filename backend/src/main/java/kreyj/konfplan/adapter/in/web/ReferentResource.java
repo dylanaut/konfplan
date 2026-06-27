@@ -64,17 +64,15 @@ public class ReferentResource {
     private final ReferentServiceInterface referentService;
     private final PlanService planService;
     private final MailService mailService;
-    private final ReportResource reportResource;
     private final AdminServiceInterface adminService;
 
 
-    public ReferentResource(JsonWebToken jwt, ReferentServiceInterface referentService, PlanService planService, MailService mailService, VeranstaltungService veranstaltungService, ReportResource reportResource, AdminServiceInterface adminService) {
+    public ReferentResource(JsonWebToken jwt, ReferentServiceInterface referentService, PlanService planService, MailService mailService, VeranstaltungService veranstaltungService, AdminServiceInterface adminService) {
         this.jwt = jwt;
         this.referentService = referentService;
         this.planService = planService;
         this.mailService = mailService;
         this.veranstaltungService = veranstaltungService;
-        this.reportResource = reportResource;
         this.adminService = adminService;
     }
 
@@ -249,32 +247,6 @@ public class ReferentResource {
         }
         List<ReferentVortragDto> planFuerReferent = planService.getPlanFuerReferent(referent, veranstaltung);
         return Response.ok(planFuerReferent).build();
-    }
-
-
-    @GET
-    @Path("/veranstaltungen/{vid}/laufzettel")
-    @Produces(MediaType.TEXT_HTML)
-    @Operation(summary = "Persönlichen Laufzettel abrufen (HTML)", description = "Ruft den persönlichen Laufzettel des angemeldeten Referenten für eine Veranstaltung ab.")
-    public Response getMyLaufzettel(@PathParam("vid") Long vid) {
-        Referent referent = referentService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
-        if (null == referent) {
-            return Response.status(Response.Status.NOT_FOUND).entity("Referent nicht gefunden.").build();
-        }
-        return reportResource.getLaufzettelReferent(vid, referent.getId());
-    }
-
-
-    @GET
-    @Path("/veranstaltungen/{vid}/laufzettel-pdf")
-    @Produces("application/pdf")
-    @Operation(summary = "Persönlichen Laufzettel abrufen (PDF)", description = "Ruft den persönlichen Laufzettel des angemeldeten Referenten für eine Veranstaltung als PDF ab.")
-    public Response getMyLaufzettelPdf(@PathParam("vid") Long vid) {
-        Referent referent = referentService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
-        if (referent == null) {
-            return Response.status(Response.Status.NOT_FOUND).entity("Referent nicht gefunden.").build();
-        }
-        return reportResource.getLaufzettelReferentPdf(vid, referent.getId());
     }
 
 

@@ -1,0 +1,18 @@
+{
+  "veranstaltung": {
+    "id": 1,
+    "name": "Berufsorientierungstag 2025"
+  },
+  "referent": {
+    "id": 202,
+    "firstName": "Dr. Eva",
+    "lastName": "Weiss"
+  },
+  "plan": [
+    {
+      "slot": { "id": 3, "startTime": "2025-10-10T12:00:00", "endTime": "2025-10-10T13:00:00" },
+      "vortrag": { "titel": "Moderne Web-Architekturen", "referent": { "firstName": "Dr. Eva", "lastName": "Weiss" } },
+      "raum": { "name": "Aula" }
+    }
+  ]
+}

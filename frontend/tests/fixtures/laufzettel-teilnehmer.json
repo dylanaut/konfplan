@@ -1,0 +1,23 @@
+{
+  "veranstaltung": {
+    "id": 1,
+    "name": "Berufsorientierungstag 2025"
+  },
+  "teilnehmer": {
+    "id": 101,
+    "firstName": "Max",
+    "lastName": "Mustermann"
+  },
+  "plan": [
+    {
+      "slot": { "id": 1, "startTime": "2025-10-10T09:00:00", "endTime": "2025-10-10T10:00:00" },
+      "vortrag": { "titel": "Einführung in die Softwareentwicklung", "referent": { "firstName": "Anna", "lastName": "Schmidt" } },
+      "raum": { "name": "Raum A101" }
+    },
+    {
+      "slot": { "id": 2, "startTime": "2025-10-10T10:30:00", "endTime": "2025-10-10T11:30:00" },
+      "vortrag": { "titel": "Datenbanken für Anfänger", "referent": { "firstName": "Peter", "lastName": "Klein" } },
+      "raum": { "name": "Raum B203" }
+    }
+  ]
+}

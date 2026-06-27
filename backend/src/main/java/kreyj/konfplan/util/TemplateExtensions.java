@@ -1,6 +1,7 @@
 package kreyj.konfplan.util;
 
 import io.quarkus.qute.TemplateExtension;
+import jakarta.enterprise.context.ApplicationScoped;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
@@ -10,14 +11,10 @@ import java.util.regex.Pattern;
 /**
  * adding functions to Qute Template Engine
  */
+@ApplicationScoped
 @TemplateExtension
 public class TemplateExtensions {
     private final static Pattern WORD_BOUNDARY_MATCHER = Pattern.compile("[- \t\n\r\f.,!?;:+()*]");
-
-
-    private TemplateExtensions() {
-        // never instantiate
-    }
 
 
     public static String truncTo(String titel) {
