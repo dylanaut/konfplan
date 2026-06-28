@@ -12,45 +12,34 @@
 
     <div v-else>
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
-        <h1 class="h3">Raumschilder</h1>
+        <h1 class="h3">Freie Slots für Referenten</h1>
         <button @click="window.print()" class="btn btn-secondary">
           <i class="bi bi-printer"></i> Drucken
         </button>
       </div>
       <p class="lead mb-4 print-only">Veranstaltung: {{ reportData.veranstaltung.name }}</p>
 
-      <div class="row">
-        <div v-for="raum in sortedRaeume" :key="raum.id" class="col-12 page-break-after">
-          <div class="card h-100">
-            <div class="card-header text-center">
-              <h2>Raum: {{ raum.name }}</h2>
-            </div>
-            <div class="card-body">
-              <table class="table table-striped">
-                <thead>
-                  <tr>
-                    <th>Zeit</th>
-                    <th>Vortrag</th>
-                    <th>Referent</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="slot in sortedSlots" :key="slot.id">
-                    <td>{{ formatSlot(slot) }}</td>
-                    <template v-if="reportData.raumplan[raum.id] && reportData.raumplan[raum.id][slot.id]">
-                      <td>{{ reportData.raumplan[raum.id][slot.id].vortrag.titel }}</td>
-                      <td>{{ reportData.raumplan[raum.id][slot.id].vortrag.referent.firstName }} {{ reportData.raumplan[raum.id][slot.id].vortrag.referent.lastName }}</td>
-                    </template>
-                    <template v-else>
-                      <td colspan="2" class="text-muted">Frei</td>
-                    </template>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
+      <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+          <tr>
+            <th scope="col">Referent</th>
+            <th scope="col">Freie Slots</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="referent in sortedReferenten" :key="referent.id" class="page-break-inside-avoid">
+            <td>{{ referent.firstName }} {{ referent.lastName }}</td>
+            <td>
+              <ul v-if="reportData.freieSlots[referent.id] && reportData.freieSlots[referent.id].length > 0" class="list-unstyled mb-0">
+                <li v-for="slot in sortedSlots(reportData.freieSlots[referent.id])" :key="slot.id">
+                  {{ formatSlot(slot) }}
+                </li>
+              </ul>
+              <span v-else class="text-muted">Keine freien Slots</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Druck-spezifischer Footer -->
@@ -63,22 +52,23 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
-import api from '../api/axios';
+import api from '../../api/axios';
 
 const route = useRoute();
-const reportData = ref({ veranstaltung: {}, raumplan: {}, raeume: [], slots: [] });
+const reportData = ref({ veranstaltung: {}, freieSlots: {}, referenten: [] });
 const loading = ref(true);
 const error = ref(null);
 
-const sortedRaeume = computed(() => {
-  if (!reportData.value.raeume) return [];
-  return [...reportData.value.raeume].sort((a, b) => a.name.localeCompare(b.name));
+const sortedReferenten = computed(() => {
+  if (!reportData.value.referenten) return [];
+  return [...reportData.value.referenten].sort((a, b) => {
+    return a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName);
+  });
 });
 
-const sortedSlots = computed(() => {
-  if (!reportData.value.slots) return [];
-  return [...reportData.value.slots].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
-});
+const sortedSlots = (slots) => {
+  return [...slots].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+};
 
 onMounted(async () => {
   const veranstaltungId = route.params.vid;
@@ -88,7 +78,7 @@ onMounted(async () => {
     return;
   }
   try {
-    const response = await api.get(`/api/reports/${veranstaltungId}/raumschilder-data`);
+    const response = await api.get(`/api/reports/${veranstaltungId}/freie-slots-referenten-data`);
     reportData.value = response.data;
   } catch (err) {
     error.value = 'Fehler beim Laden der Daten: ' + (err.response?.data?.message || err.message);
@@ -98,9 +88,9 @@ onMounted(async () => {
 });
 
 const formatSlot = (slot) => {
-  const options = { hour: '2-digit', minute: '2-digit' };
+  const options = { weekday: 'long', hour: '2-digit', minute: '2-digit' };
   const start = new Date(slot.startTime).toLocaleTimeString('de-DE', options);
-  const end = new Date(slot.endTime).toLocaleTimeString('de-DE', options);
+  const end = new Date(slot.endTime).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
   return `${start} - ${end}`;
 };
 </script>
@@ -108,9 +98,12 @@ const formatSlot = (slot) => {
 <style>
 /* Globale Druck-Styles */
 @media print {
+  /* Versteckt Elemente, die nicht gedruckt werden sollen */
   .no-print {
     display: none !important;
   }
+
+  /* Stellt sicher, dass der Druck-Footer nur beim Drucken sichtbar ist */
   .print-footer {
     position: fixed;
     bottom: 0;
@@ -120,12 +113,17 @@ const formatSlot = (slot) => {
     color: #6c757d;
     display: block !important;
   }
+
   .print-only {
     display: block !important;
   }
-  .page-break-after {
-    page-break-after: always;
+
+  /* Verhindert, dass Tabellenzeilen über Seitenumbrüche getrennt werden */
+  .page-break-inside-avoid {
+    page-break-inside: avoid;
   }
+
+  /* Allgemeine Druck-Optimierungen */
   body {
     background-color: #fff;
   }
@@ -139,6 +137,7 @@ const formatSlot = (slot) => {
   }
 }
 
+/* Standardmäßig sind Druck-spezifische Elemente versteckt */
 .print-footer, .print-only {
   display: none;
 }

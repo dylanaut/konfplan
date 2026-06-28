@@ -42,7 +42,7 @@ class UseCaseScanner {
 
         for (Class<?> clazz : classes.stream().sorted(Comparator.comparing(Class::getName)).toList()) {
             Path classPathAnno = clazz.getAnnotation(Path.class);
-            if (classPathAnno == null) {
+            if (null == classPathAnno) {
                 continue;
             }
 
@@ -52,7 +52,7 @@ class UseCaseScanner {
             List<EndpointInfo> endpoints = new ArrayList<>();
             for (Method method : clazz.getDeclaredMethods()) {
                 String httpMethod = getHttpMethod(method);
-                if (httpMethod == null) {
+                if (null == httpMethod) {
                     continue;
                 }
 

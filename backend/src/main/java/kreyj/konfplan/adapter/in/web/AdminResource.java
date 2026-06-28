@@ -92,7 +92,7 @@ public class AdminResource {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        return Response.ok().entity(adminService.mapNutzerToDto(nutzer)).build();
+        return Response.ok().entity(NutzerDto.from(nutzer)).build();
     }
 
 
@@ -185,7 +185,7 @@ public class AdminResource {
                                          @RequestBody(description = "Verfügbarkeitsdaten für einen Nutzer") NutzerVerfuegbarkeitDto dto) {
         NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(dto.nutzerId, vid));
 
-        if (nv == null) {
+        if (null == nv) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         nv.setVerfuegbareSlotIds(dto.verfuegbareSlotIds);
@@ -207,7 +207,7 @@ public class AdminResource {
     @Operation(summary = "Raum-Verfügbarkeit aktualisieren", description = "Aktualisiert die Belegung eines Raumes für einen bestimmten Slot.")
     public Response updateRaumVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Raum-Verfügbarkeitsdaten") RaumVerfuegbarkeitDto dto) {
         RaumVerfuegbarkeit verfuegbarkeit = RaumVerfuegbarkeit.findById(rvIdL(dto.raumId, vid));
-        if (verfuegbarkeit == null) {
+        if (null == verfuegbarkeit) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         verfuegbarkeit.setVerfuegbareSlotIds(dto.verfuegbareSlotIds);
@@ -226,7 +226,7 @@ public class AdminResource {
         @RequestBody(description = "Eine Liste von Prioritäts-Updates") List<AdminPrioritaetUpdateRequestDto> dtoList) { // Changed to List
 
         Teilnehmer teilnehmer = Teilnehmer.findById(tid);
-        if (teilnehmer == null) {
+        if (null == teilnehmer) {
             return Response.status(Response.Status.NOT_FOUND).entity("Teilnehmer nicht gefunden.").build();
         }
 
@@ -237,7 +237,7 @@ public class AdminResource {
         try {
             for (AdminPrioritaetUpdateRequestDto dto : dtoList) {
                 Vortrag vortrag = Vortrag.findById(dto.vortragId);
-                if (vortrag == null) {
+                if (null == vortrag) {
                     return Response.status(Response.Status.NOT_FOUND).entity("Vortrag mit ID " + dto.vortragId + " nicht gefunden.").build();
                 }
                 if (!vortrag.getVeranstaltung().getId().equals(vid)) {

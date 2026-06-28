@@ -224,7 +224,7 @@ public class JpaConventionRulesTest {
                 @Override
                 public void check(JavaField field, ConditionEvents events) {
                     ManyToMany ann = field.reflect().getAnnotation(ManyToMany.class);
-                    if (ann == null) {
+                    if (null == ann) {
                         return;
                     }
                     for (CascadeType ct : ann.cascade()) {
@@ -276,7 +276,7 @@ public class JpaConventionRulesTest {
                     }
 
                     CascadeType[] cascades = getCascades(field);
-                    if (cascades == null || cascades.length == 0 ||
+                    if (null == cascades || cascades.length == 0 ||
                             !cascades[0].equals(CascadeType.ALL)) {
                         events.add(SimpleConditionEvent.violated(field,
                                 field.getOwner().getName() + "." + field.getName()
@@ -299,7 +299,7 @@ public class JpaConventionRulesTest {
                     }
 
                     OneToMany ann = field.reflect().getAnnotation(OneToMany.class);
-                    if (ann == null || !ann.orphanRemoval()) {
+                    if (null == ann || !ann.orphanRemoval()) {
                         events.add(SimpleConditionEvent.violated(field,
                                 field.getOwner().getName() + "." + field.getName()
                                         + " ist die 'mapped' Seite, definiert aber nicht: orphanRemoval=true"));
@@ -522,7 +522,7 @@ public class JpaConventionRulesTest {
 
     private static boolean isOwnerSide(JavaField field) {
         String mappedBy = getMappedBy(field);
-        return mappedBy == null || mappedBy.isEmpty();
+        return null == mappedBy || mappedBy.isEmpty();
     }
 
     private static boolean isMappedSide(JavaField field) {

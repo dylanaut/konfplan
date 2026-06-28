@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.json.Json;
 import jakarta.json.JsonException;
@@ -57,23 +58,33 @@ public class PlanErstellungService {
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     private final ProtokollService protokollService;
-
     private final ObjectMapper objectMapper;
 
     @ConfigProperty(name = "minizinc.path", defaultValue = "/opt/homebrew/bin/minizinc")
     String miniZincPath;
+
+    private volatile Process runningProcess;
 
     public PlanErstellungService(ProtokollService protokollService, ObjectMapper objectMapper) {
         this.protokollService = protokollService;
         this.objectMapper = objectMapper;
     }
 
-    public void erstellePlan(Long veranstaltungId, SolverConfig config) throws Exception {
-        erstellePlan(veranstaltungId, config, MZN_MODEL_FILE);
+    @PreDestroy
+    public void shutdown() {
+        cancel();
+    }
+
+    public boolean isPlanning() {
+        return runningProcess != null && runningProcess.isAlive();
+    }
+
+    public void erstellePlan(Long veranstaltungId, SolverConfig config, String username) throws Exception {
+        erstellePlan(veranstaltungId, config, MZN_MODEL_FILE, username);
     }
 
     @Transactional
-    public void erstellePlan(Long veranstaltungId, SolverConfig config, String modelName) throws Exception {
+    public void erstellePlan(Long veranstaltungId, SolverConfig config, String modelName, String username) throws Exception {
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
         assert veranstaltung != null;
         String vName = veranstaltung.getName();
@@ -81,13 +92,12 @@ public class PlanErstellungService {
         LOG.info("Starte Planerstellung für Veranstaltung: " + vName);
 
         URL modelUrl = getClass().getClassLoader().getResource("minizinc/" + modelName);
-        if (modelUrl == null) {
+        if (null == modelUrl) {
             throw new FileNotFoundException("MiniZinc model not found: " + modelName);
         }
 
-
         protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung gestartet",
-                "Planerstellung für '" + vName + "' mit Solver '" + config.solver + "' gestartet.", veranstaltungId);
+                "Planerstellung für '" + vName + "' mit Solver '" + config.solver + "' von " + username + " gestartet.", veranstaltungId, username);
 
         try {
             List<Teilnehmer> teilnehmer = veranstaltung.teilnehmer();
@@ -97,7 +107,7 @@ public class PlanErstellungService {
 
             if (slots.isEmpty() || teilnehmer.isEmpty() || wahlvortraege.isEmpty()) {
                 LOG.warn("Keine Wahlvorträge, Slots oder Teilnehmer vorhanden. Planerstellung wird nicht gestartet.");
-                protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung abgebrochen", "Voraussetzungen (Teilnehmer, Slots, Wahlvorträge) nicht erfüllt.", veranstaltungId);
+                protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung abgebrochen", "Voraussetzungen (Teilnehmer, Slots, Wahlvorträge) nicht erfüllt.", veranstaltungId, username);
                 return;
             }
 
@@ -113,15 +123,15 @@ public class PlanErstellungService {
                 if (resultJson.contains("instanz_slot") && isValidJson(resultJson)) {
                     speicherePlanungsergebnis(veranstaltung, resultJson, config);
                     protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung erfolgreich",
-                            "Planerstellung für '" + vName + "' abgeschlossen. Ergebnis wurde gespeichert.", veranstaltungId);
+                            "Planerstellung für '" + vName + "' abgeschlossen. Ergebnis wurde gespeichert.", veranstaltungId, username);
                 } else {
-                    protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung fehlgeschlagen", "MiniZinc konnte keine Lösung finden.", veranstaltungId);
+                    protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung fehlgeschlagen", "MiniZinc konnte keine Lösung finden.", veranstaltungId, username);
                 }
             } finally {
                 Files.deleteIfExists(tempDzn);
             }
         } catch (Exception e) {
-            protokollService.log(ProtokollKategorie.PLANUNG, "Fehler bei Planerstellung", e.getMessage(), veranstaltungId);
+            protokollService.log(ProtokollKategorie.PLANUNG, "Fehler bei Planerstellung", e.getMessage(), veranstaltungId, username);
             throw e;
         }
     }
@@ -133,59 +143,60 @@ public class PlanErstellungService {
                 "--time-limit", String.valueOf(timeoutSeconds * 1000),
                 "--parallel", String.valueOf(numThreads)
         ));
-        // Bei Planerstellungsproblemen sorgt dieses Flag dafür, dass Zwischenlösungen ausgegeben werden.
         command.add("--intermediate");
         command.add(modelPath.toAbsolutePath().toString());
         command.add(dznPath.toAbsolutePath().toString());
 
         ProcessBuilder pb = new ProcessBuilder(command);
-
         pb.redirectErrorStream(true);
-        Process process = pb.start();
 
         String lastJsonSolution = "";
         StringBuilder fullLog = new StringBuilder();
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                fullLog.append(line).append(LINE_SEP);
-                // Eine einfache Prüfung, ob die Zeile ein JSON-Objekt sein könnte.
-                // Unsere Modelle sind so konfiguriert, dass sie JSON in einer einzigen Zeile ausgeben.
-                if (line.trim().startsWith("{") && isValidJson(line)) {
-                    lastJsonSolution = line;
-                    LOG.debugf("Zwischenlösung gefunden: %s", line);
+        try {
+            runningProcess = pb.start();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(runningProcess.getInputStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    fullLog.append(line).append(LINE_SEP);
+                    if (line.trim().startsWith("{") && isValidJson(line)) {
+                        lastJsonSolution = line;
+                        LOG.debugf("Zwischenlösung gefunden: %s", line);
+                    }
                 }
             }
-        }
 
-        // Warten, bis der Prozess beendet ist und den Exit-Code abrufen.
-        // Der Prozess wird durch das --time-limit von selbst beendet.
-        int exitCode = process.waitFor();
-        LOG.info("MiniZinc-Prozess beendet mit Exit-Code: " + exitCode);
+            int exitCode = runningProcess.waitFor();
+            LOG.info("MiniZinc-Prozess beendet mit Exit-Code: " + exitCode);
+
+        } finally {
+            runningProcess = null;
+        }
 
         String output = fullLog.toString();
         LOG.info("Vollständige MiniZinc-Ausgabe:\n" + output);
 
-        // Fehlerbehandlung basierend auf der vollständigen Ausgabe.
         if (output.contains("=====UNSATISFIABLE=====")) {
             throw new MinizincException(MinizincException.MZ_Exception.UNSATISFIABLE);
         }
 
         if (output.contains("Error:")) {
-            // Fängt MiniZinc-Modellfehler, nicht gefundene Solver usw. ab.
             throw new MinizincException(MinizincException.MZ_Exception.INVOCATION_ERROR, output);
         }
 
-        // Wenn wir eine Lösung haben, geben wir sie zurück. Dies ist der Erfolgsfall.
         if (!lastJsonSolution.isEmpty()) {
             return lastJsonSolution;
         }
 
-        // Gibt einen leeren String zurück, wenn keine Lösung gefunden wurde, aber kein expliziter Fehler aufgetreten ist.
         return "";
     }
 
+    public void cancel() {
+        if (runningProcess != null && runningProcess.isAlive()) {
+            runningProcess.destroyForcibly();
+            LOG.info("MiniZinc-Prozess wurde abgebrochen.");
+        }
+    }
 
     private String generiereDzn(Veranstaltung veranstaltung, List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege,
                                 Set<Slot> slots, List<Raum> raeume,
@@ -389,7 +400,7 @@ public class PlanErstellungService {
     @Transactional
     public void speicherePlanungsergebnis(Veranstaltung veranstaltung, String jsonErgebnis, SolverConfig config) {
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
-        if (ergebnis == null) {
+        if (null == ergebnis) {
             ergebnis = new Planungsergebnis();
             ergebnis.setVeranstaltung(veranstaltung);
         }
@@ -435,7 +446,7 @@ public class PlanErstellungService {
     public void restructure2DArray(ObjectNode root, String fieldName,
                                    int rows, int cols) {
         JsonNode flat = root.get(fieldName);
-        if (flat == null || !flat.isArray()) {
+        if (null == flat || !flat.isArray()) {
             return;
         }
 
@@ -456,7 +467,7 @@ public class PlanErstellungService {
     public void restructure3DArray(ObjectNode root, String fieldName,
                                    int dim1, int dim2, int dim3) {
         JsonNode flat = root.get(fieldName);
-        if (flat == null || !flat.isArray()) {
+        if (null == flat || !flat.isArray()) {
             return;
         }
 

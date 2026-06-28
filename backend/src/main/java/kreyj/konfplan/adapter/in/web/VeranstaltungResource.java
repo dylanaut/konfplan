@@ -21,11 +21,7 @@ import kreyj.konfplan.application.port.in.AdminServiceInterface;
 import kreyj.konfplan.application.port.in.ReferentServiceInterface;
 import kreyj.konfplan.application.port.in.TeilnehmerServiceInterface;
 import kreyj.konfplan.application.port.in.VeranstaltungServiceInterface;
-import kreyj.konfplan.application.service.AdminService;
-import kreyj.konfplan.application.service.PlanErstellungService;
 import kreyj.konfplan.application.service.PlanService;
-import kreyj.konfplan.application.service.ReferentService;
-import kreyj.konfplan.application.service.VeranstaltungService;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
@@ -39,7 +35,7 @@ import org.jboss.resteasy.reactive.multipart.FileUpload;
 import java.util.List;
 
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
-import static kreyj.konfplan.application.service.AdminService.mapSlotToDto;
+import static kreyj.konfplan.adapter.in.web.dto.SlotDto.from;
 
 @Path("/api/veranstaltungen")
 @RolesAllowed("ADMIN")
@@ -51,25 +47,17 @@ public class VeranstaltungResource {
     private static final Logger LOG = Logger.getLogger(VeranstaltungResource.class);
 
     private final VeranstaltungServiceInterface veranstaltungService;
-
     private final AdminServiceInterface adminService;
-
     private final ReferentServiceInterface referentService;
-
     private final TeilnehmerServiceInterface teilnehmerService;
-
-    private final PlanErstellungService planErstellungService;
-
     private final PlanService planService;
 
-
     public VeranstaltungResource(VeranstaltungServiceInterface veranstaltungService, AdminServiceInterface adminService, ReferentServiceInterface referentService,
-                                 TeilnehmerServiceInterface teilnehmerService, PlanErstellungService planErstellungService, PlanService planService) {
+                                 TeilnehmerServiceInterface teilnehmerService, PlanService planService) {
         this.veranstaltungService = veranstaltungService;
         this.adminService = adminService;
         this.referentService = referentService;
         this.teilnehmerService = teilnehmerService;
-        this.planErstellungService = planErstellungService;
         this.planService = planService;
     }
 
@@ -78,7 +66,7 @@ public class VeranstaltungResource {
     @Operation(summary = "Alle Veranstaltungen abrufen", description = "Gibt eine Liste aller Veranstaltungen zurück.")
     public List<VeranstaltungDto> getAll() {
         return veranstaltungService.listAll().stream()
-                .map(VeranstaltungService::mapVeranstaltungToDto)
+                .map(VeranstaltungDto::from)
                 .toList();
     }
 
@@ -88,10 +76,10 @@ public class VeranstaltungResource {
     @Operation(summary = "Eine Veranstaltung abrufen", description = "Ruft eine einzelne Veranstaltung anhand ihrer ID ab.")
     public Response getOne(@PathParam("vid") Long vid) {
         Veranstaltung vEntity = veranstaltungService.findById(vid);
-        if (vEntity == null) {
+        if (null == vEntity) {
             return Response.status(NOT_FOUND).build();
         }
-        return Response.ok(VeranstaltungService.mapVeranstaltungToDto(vEntity)).build();
+        return Response.ok(VeranstaltungDto.from(vEntity)).build();
     }
 
 
@@ -115,7 +103,7 @@ public class VeranstaltungResource {
         vDto.id = id;
         try {
             VeranstaltungDto updated = veranstaltungService.save(vDto);
-            if (updated == null) {
+            if (null == updated) {
                 return Response.status(NOT_FOUND).build();
             }
             return Response.ok(updated).build();
@@ -181,7 +169,7 @@ public class VeranstaltungResource {
         try {
             NutzerDto updated = adminService.updateUser(id, nutzerDto, List.of(vid));
 
-            if (updated == null) {
+            if (null == updated) {
                 return Response.status(NOT_FOUND).build();
             }
 
@@ -260,7 +248,7 @@ public class VeranstaltungResource {
     @Operation(summary = "Vorträge einer Veranstaltung abrufen", description = "Ruft alle Vorträge ab, die zu einer Veranstaltung gehören.")
     public List<VortragDto> getVortraege(@PathParam("vid") Long vid) {
         List<Vortrag> allVortraege = adminService.getAllVortraege(vid);
-        return allVortraege.stream().map(ReferentService::mapVortragToDto).toList();
+        return allVortraege.stream().map(VortragDto::from).toList();
     }
 
 
@@ -272,7 +260,7 @@ public class VeranstaltungResource {
         if (null == vortrag) {
             return Response.status(NOT_FOUND).build();
         }
-        return Response.ok(ReferentService.mapVortragToDto(vortrag)).build();
+        return Response.ok(VortragDto.from(vortrag)).build();
     }
 
 
@@ -282,7 +270,7 @@ public class VeranstaltungResource {
     public Response createVortrag(@PathParam("vid") Long vid,
                                   @RequestBody(description = "Der zu erstellende Vortrag") VortragDto vDto) {
         Vortrag created = adminService.createVortrag(vDto);
-        return Response.status(Response.Status.CREATED).entity(ReferentService.mapVortragToDto(created)).build();
+        return Response.status(Response.Status.CREATED).entity(VortragDto.from(created)).build();
     }
 
 
@@ -307,11 +295,11 @@ public class VeranstaltungResource {
     @Path("/{vid}/vortraege/{id}")
     @Operation(summary = "Vortrag aus Veranstaltung löschen", description = "Löscht einen Vortrag aus einer Veranstaltung.")
     public Response deleteVortrag(@PathParam("vid") Long vid, @PathParam("id") Long id) {
-        if (vid == null || id == null) {
+        if (null == vid || null == id) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             return Response.status(NOT_FOUND).build();
         }
         boolean deleted = adminService.deleteVortrag(id, veranstaltung);
@@ -344,7 +332,7 @@ public class VeranstaltungResource {
     public List<SlotDto> getSlots(@PathParam("vid") Long vid) {
         return adminService.getAllEventSlots(vid)
                 .stream()
-                .map(AdminService::mapSlotToDto).toList();
+                .map(SlotDto::from).toList();
     }
 
 
@@ -355,7 +343,7 @@ public class VeranstaltungResource {
                                @RequestBody(description = "Der zu erstellende Slot") SlotDto slotDto) {
         try {
             Slot created = adminService.createSlot(slotDto, vid);
-            return Response.status(Response.Status.CREATED).entity(mapSlotToDto(created)).build();
+            return Response.status(Response.Status.CREATED).entity(from(created)).build();
         } catch (IllegalArgumentException e) {
             LOG.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
@@ -370,10 +358,10 @@ public class VeranstaltungResource {
                                @RequestBody(description = "Die aktualisierten Slot-Daten") SlotDto slotDto) {
         try {
             Slot updated = adminService.updateSlot(id, slotDto, vid);
-            if (updated == null) {
+            if (null == updated) {
                 return Response.status(NOT_FOUND).build();
             }
-            return Response.ok(mapSlotToDto(updated)).build();
+            return Response.ok(from(updated)).build();
         } catch (OptimisticLockException e) {
             return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
         } catch (IllegalArgumentException e) {
@@ -387,12 +375,12 @@ public class VeranstaltungResource {
     @Path("/{vid}/slots/{id}")
     @Operation(summary = "Slot aus Veranstaltung löschen", description = "Löscht einen Zeit-Slot aus einer Veranstaltung.")
     public Response deleteSlot(@PathParam("vid") Long vid, @PathParam("id") Long id) {
-        if (vid == null || id == null) {
+        if (null == vid || null == id) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
 
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             return Response.status(NOT_FOUND).build();
         }
 
@@ -435,7 +423,7 @@ public class VeranstaltungResource {
     public Response getDetaillierterPlan(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung =
                 Veranstaltung.findById(vid);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             return Response.status(NOT_FOUND).build();
         }
         return Response.ok(planService.getDetaillierterPlan(veranstaltung)).build();
@@ -447,7 +435,7 @@ public class VeranstaltungResource {
     @Operation(summary = "Qualität des Plans abrufen", description = "Ruft Kennzahlen zur Qualität der aktuellen Zuweisungsplanung ab.")
     public Response getPlanQualitaet(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             return Response.status(NOT_FOUND).build();
         }
 
@@ -460,7 +448,7 @@ public class VeranstaltungResource {
     @Operation(summary = "Gesamtplan (Zuweisungen) abrufen", description = "Ruft die vollständige Liste aller Zuweisungen (Teilnehmer zu Vorträgen) ab.")
     public Response getGesamtplan(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = veranstaltungService.findById(vid);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             return Response.status(NOT_FOUND).build();
         }
 
@@ -468,23 +456,6 @@ public class VeranstaltungResource {
 
         return Response.ok(plan).build();
     }
-
-
-    @POST
-    @Path("/{vid}/planungen")
-    @Operation(summary = "Planerstellung starten", description = "Startet den Planerstellungsprozess (MiniZinc), um die " +
-            "Teilnehmer den Vorträgen zuzuordnen.")
-    public Response erstellePlan(@PathParam("vid") Long vid, @RequestBody(description = "Konfiguration für den Solver") SolverConfig config) {
-        try {
-            planErstellungService.erstellePlan(vid, config);
-            return Response.ok("Planerstellung erfolgreich abgeschlossen.").build();
-        } catch (Exception e) {
-            LOG.error(e.getMessage(), e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Fehler bei der Planerstellung: " + e.getMessage()).build();
-        }
-    }
-
 
     @GET
     @Path("/{vid}/raum-verfuegbarkeiten")

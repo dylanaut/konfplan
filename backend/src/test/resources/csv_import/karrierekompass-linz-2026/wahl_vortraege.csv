@@ -1,0 +1,4 @@
+istPflicht;Titel;Referent_Email;wahlSlots;Inhalt;wiederholbar;maxWiederholungen;Pflichtgruppe;Pflichtraum;Pflichtslot;Ausstattung;Berufsfeld
+false;Traumberuf Berater?;ref2@gmail.com;[Slot_2,Slot_3];Inhalt Wahlvortrag 1;true;2;;;;Beamer;IT
+false;Traumberuf Informatiker?;ref1@gmail.com;[Slot_1,Slot_2,Slot_3];Inhalt Wahlvortrag 2;true;2;;;;Beamer;IT
+false;Mechatroniker;ref1@gmail.com;[Slot_1,Slot_2,Slot_3];Inhalt Wahlvortrag 2;true;2;;;;Beamer;METALL

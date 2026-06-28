@@ -150,7 +150,7 @@ public class MailService {
      */
 
     public void sendEmailChangeNotificationOldAddress(Nutzer nutzer, String oldEmail, String newEmail) {
-        if (oldEmail == null) {
+        if (null == oldEmail) {
             return;
         }
         emailChangeNotificationOldAddressTemplate.to(oldEmail)
@@ -177,7 +177,7 @@ public class MailService {
      */
 
     public void sendEmailChangeConfirmationNewAddress(Nutzer nutzer, String newEmail, String confirmationLink) {
-        if (newEmail == null) {
+        if (null == newEmail) {
             return;
         }
         emailChangeConfirmationNewAddressTemplate.to(newEmail)

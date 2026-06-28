@@ -11,7 +11,6 @@ import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.SlotDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
-import kreyj.konfplan.adapter.in.web.dto.VortragPrioDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragStatDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.AdminCsvDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.NutzerVerfuegbarkeitCsvDto;
@@ -112,7 +111,7 @@ public class AdminService implements AdminServiceInterface {
     public List<NutzerDto> getAllUsers() {
         return new HashSet<>(Nutzer.<Nutzer>listAll()) // Duplikate entfernen
             .stream()
-            .map(adminService::mapNutzerToDto)
+            .map(NutzerDto::from)
             .toList();
     }
 
@@ -125,7 +124,7 @@ public class AdminService implements AdminServiceInterface {
 
         return Stream.concat(admins.stream(), vNutzers.stream())
             .distinct()
-            .map(adminService::mapNutzerToDto)
+            .map(NutzerDto::from)
             .toList();
     }
 
@@ -168,7 +167,7 @@ public class AdminService implements AdminServiceInterface {
             dto.gruppen.forEach(t::addGruppe);
             dto.prioritaeten.forEach(prioDto -> {
                 Wahlvortrag wv = Wahlvortrag.findById(prioDto.vortragId);
-                if (wv == null) {
+                if (null == wv) {
                     LOG.error("Unbekannter Wahlvortrag zu id: " + prioDto.vortragId);
                 } else {
                     Prioritaet prioritaet = new Prioritaet(t, Wahlvortrag.findById(prioDto.vortragId), prioDto.prio);
@@ -195,7 +194,7 @@ public class AdminService implements AdminServiceInterface {
         mailService.sendRegistrationConfirmation(nutzer);
 
         protokollService.log(ProtokollKategorie.NUTZER, "Nutzer erstellt", "Neuer Nutzer '" + nutzer.getEmail() + "' mit Rolle '" + nutzer.getRole() + "' erstellt.", nutzer.getId());
-        return mapNutzerToDto(nutzer);
+        return NutzerDto.from(nutzer);
     }
 
 
@@ -203,7 +202,7 @@ public class AdminService implements AdminServiceInterface {
     @Override
     public NutzerDto updateUser(Long id, NutzerDto dto, List<Long> vUpdateIds) {
         Nutzer nutzer = Nutzer.findById(id);
-        if (nutzer == null) {
+        if (null == nutzer) {
             return null;
         }
 
@@ -272,7 +271,7 @@ public class AdminService implements AdminServiceInterface {
             dto.gruppen.forEach(t::addGruppe);
             dto.prioritaeten.forEach(prioDto -> {
                 Wahlvortrag wv = Wahlvortrag.findById(prioDto.vortragId);
-                if (wv == null) {
+                if (null == wv) {
                     LOG.error("Unbekannter Wahlvortrag zu id: " + prioDto.vortragId);
                 } else {
                     Prioritaet prioritaet = new Prioritaet(t, Wahlvortrag.findById(prioDto.vortragId), prioDto.prio);
@@ -285,7 +284,7 @@ public class AdminService implements AdminServiceInterface {
         nutzer.persistAndFlush();
 
         protokollService.log(ProtokollKategorie.NUTZER, "Nutzer aktualisiert", "Nutzer '" + nutzer.getEmail() + "' aktualisiert.", nutzer.getId());
-        return mapNutzerToDto(nutzer);
+        return NutzerDto.from(nutzer);
     }
 
 
@@ -294,7 +293,7 @@ public class AdminService implements AdminServiceInterface {
     public boolean confirmEmailChange(String token) {
         Nutzer nutzer = Nutzer.find("emailChangeToken", token).firstResult();
 
-        if (nutzer == null) {
+        if (null == nutzer) {
             LOG.warn("Ungültiger Token für E-Mail-Änderung: " + token);
             return false;
         }
@@ -327,12 +326,12 @@ public class AdminService implements AdminServiceInterface {
         Objects.requireNonNull(veranstaltungId, "veranstaltungId darf nicht null sein.");
 
         Nutzer nutzer = Nutzer.findById(nutzerId);
-        if (nutzer == null) {
+        if (null == nutzer) {
             throw new EntityNotFoundException(Nutzer.class, "Nutzer nicht gefunden.");
         }
 
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             throw new EntityNotFoundException(Veranstaltung.class, "Nutzer oder Veranstaltung nicht gefunden.");
         }
 
@@ -416,8 +415,8 @@ public class AdminService implements AdminServiceInterface {
         Vortrag created;
 
         if (vortragDto.istPflicht) {
-            if (vortragDto.pflichtSlotId == null
-                || vortragDto.pflichtRaumId == null
+            if (null == vortragDto.pflichtSlotId
+                || null == vortragDto.pflichtRaumId
                 || StringUtils.isBlank(vortragDto.pflichtGruppe)) {
                 throw new CreateVortragException("Für Pflichtvorträge müssen Slot, Raum und Gruppe angegeben werden.");
             }
@@ -439,7 +438,7 @@ public class AdminService implements AdminServiceInterface {
                 teilnehmerDerGruppe.stream()
                     .map(tn -> {
                             NutzerVerfuegbarkeit nv = tn.getVerfuegbarkeit(veranstaltung);
-                            if (nv == null || nv.isVerfuegbar(vortragDto.pflichtSlotId)) {
+                            if (null == nv || nv.isVerfuegbar(vortragDto.pflichtSlotId)) {
                                 return null;
                             } else {
                                 return tn.getEmail();
@@ -522,7 +521,7 @@ public class AdminService implements AdminServiceInterface {
                 }
                 String email = dto.email.trim().toLowerCase();
                 Nutzer byEmail = Nutzer.findByEmail(email);
-                if (byEmail == null) {
+                if (null == byEmail) {
                     Admin a = new Admin();
                     a.setEmail(email);
                     a.setFirstName(dto.vorname);
@@ -550,7 +549,7 @@ public class AdminService implements AdminServiceInterface {
         int count = 0;
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
 
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             LOG.error("CSV-Import (Vorträge) abgebrochen: Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
             throw new CsvImportException(csvFilePath, "Veranstaltung '" + veranstaltungId + "' nicht gefunden.");
         }
@@ -707,7 +706,7 @@ public class AdminService implements AdminServiceInterface {
     public int importPrioritaetenFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception {
         int count = 0;
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             LOG.error("CSV-Import (Prioritäten) abgebrochen: Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
             throw new CsvImportException(csvFilePath, "Veranstaltung '" + veranstaltungId + "' nicht gefunden.");
         }
@@ -774,7 +773,7 @@ public class AdminService implements AdminServiceInterface {
                         Integer index = Integer.parseInt(data[0].trim());
                         Wahlvortrag vortrag = legendIndexMap.get(index);
 
-                        if (vortrag == null || !vortrag.getVeranstaltung().getId().equals(veranstaltungId)) {
+                        if (null == vortrag || !vortrag.getVeranstaltung().getId().equals(veranstaltungId)) {
                             LOG.warn("Priorität für '" + teilnehmerEmail + "' übersprungen: legendenIndex " + index + " ist" +
                                 " ungültig oder kein Wahlvortrag dieser Veranstaltung.");
                             continue;
@@ -784,7 +783,7 @@ public class AdminService implements AdminServiceInterface {
                             int prio = Integer.parseInt(data[1].trim());
 
                             Prioritaet prioritaet = Prioritaet.find("teilnehmer = ?1 and vortrag = ?2", teilnehmer, vortrag).firstResult();
-                            if (prioritaet == null) {
+                            if (null == prioritaet) {
                                 prioritaet = new Prioritaet();
                                 prioritaet.setTeilnehmer(teilnehmer);
                                 prioritaet.setVortrag(vortrag);
@@ -908,7 +907,7 @@ public class AdminService implements AdminServiceInterface {
         Objects.requireNonNull(slotDto.description, "Slot-Beschreibung darf nicht NULL sein");
         Objects.requireNonNull(v, "Veranstaltung darf nicht NULL sein");
 
-        if (slotDto.startTime == null || slotDto.endTime == null) {
+        if (null == slotDto.startTime || null == slotDto.endTime) {
             throw new CreateSlotException("Beginn und Ende müssen gesetzt sein.");
         }
         if (!slotDto.endTime.isAfter(slotDto.startTime)) {
@@ -964,7 +963,7 @@ public class AdminService implements AdminServiceInterface {
     public int importSlotsFromCsv(Path csvFilePath, Long veranstaltungId) {
         int count = 0;
         Veranstaltung v = Veranstaltung.findById(veranstaltungId);
-        if (v == null) {
+        if (null == v) {
             LOG.error("CSV-Import (Slots) abgebrochen: Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
             throw new IllegalArgumentException("Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
         }
@@ -1020,7 +1019,7 @@ public class AdminService implements AdminServiceInterface {
     @Override
     public VortragDto updateVortrag(Long vortragId, Long veranstaltungId, VortragDto updated) {
         Vortrag entity = Vortrag.findById(vortragId);
-        if (entity == null || !entity.getVeranstaltung().getId().equals(veranstaltungId)) {
+        if (null == entity || !entity.getVeranstaltung().getId().equals(veranstaltungId)) {
             return null;
         }
 
@@ -1057,7 +1056,7 @@ public class AdminService implements AdminServiceInterface {
         entity.persistAndFlush();
 
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag aktualisiert", "Vortrag '" + entity.getTitel() + "' aktualisiert.", entity.getId());
-        return ReferentService.mapVortragToDto(entity);
+        return VortragDto.from(entity);
     }
 
 
@@ -1068,7 +1067,7 @@ public class AdminService implements AdminServiceInterface {
         Objects.requireNonNull(veranstaltung, "Veranstaltung darf nicht NULL sein");
 
         Vortrag entity = Vortrag.findById(id);
-        if (entity == null || !entity.getVeranstaltung().getId().equals(veranstaltung.getId())) {
+        if (null == entity || !entity.getVeranstaltung().getId().equals(veranstaltung.getId())) {
             return false;
         }
 
@@ -1119,7 +1118,7 @@ public class AdminService implements AdminServiceInterface {
     @Override
     public List<RaumVerfuegbarkeitDto> getRaumVerfuegbarkeiten(Long veranstaltungId) {
         Veranstaltung aktuelleVeranstaltung = Veranstaltung.findById(veranstaltungId);
-        if (aktuelleVeranstaltung == null) {
+        if (null == aktuelleVeranstaltung) {
             return emptyList();
         }
 
@@ -1197,7 +1196,7 @@ public class AdminService implements AdminServiceInterface {
     @Override
     public List<String> getGruppen(Long veranstaltungId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             throw new EntityNotFoundException(Veranstaltung.class, "ID " + veranstaltungId + " nicht gefunden.");
         }
         return veranstaltung.getGruppen().stream().sorted(StringHelper.NUM_OR_ALPHA_COMPARATOR).toList();
@@ -1211,7 +1210,7 @@ public class AdminService implements AdminServiceInterface {
             throw new CreateVortragException("Gruppenname darf nicht leer sein.");
         }
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             throw new CreateVortragException("Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
         }
         if (!veranstaltung.addGruppe(gruppenName)) {
@@ -1232,7 +1231,7 @@ public class AdminService implements AdminServiceInterface {
         }
 
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             throw new UpdateVortragException("Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
         }
         if (!veranstaltung.getGruppen().contains(alterName)) {
@@ -1264,7 +1263,7 @@ public class AdminService implements AdminServiceInterface {
             throw new DeleteVortragsgruppeException("Gruppenname darf nicht leer sein.");
         }
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             throw new DeleteVortragsgruppeException("Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
         }
 
@@ -1290,7 +1289,7 @@ public class AdminService implements AdminServiceInterface {
     public int importNutzerVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId) {
         int count = 0;
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             throw new CsvImportException(csvFilePath, "Veranstaltung nicht gefunden.");
         }
 
@@ -1308,14 +1307,14 @@ public class AdminService implements AdminServiceInterface {
 
             for (NutzerVerfuegbarkeitCsvDto dto : csvToBean) {
                 Nutzer nutzer = Nutzer.findByEmail(dto.email);
-                if (nutzer == null) {
+                if (null == nutzer) {
                     LOG.warn("Nutzer-Verfügbarkeit übersprungen: Nutzer mit E-Mail '" + dto.email + "' nicht gefunden.");
                     continue;
                 }
 
                 Set<Long> verfuegbareSlotIds = parseSlotIndices(dto.verfuegbareSlots, sortedSlotIds);
                 NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(nutzer, veranstaltung));
-                if (nv == null) {
+                if (null == nv) {
                     nv = new NutzerVerfuegbarkeit(nutzer.getId(), veranstaltungId, verfuegbareSlotIds);
                 } else {
                     nv.setVerfuegbareSlotIds(verfuegbareSlotIds);
@@ -1336,7 +1335,7 @@ public class AdminService implements AdminServiceInterface {
     public int importRaumVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId) {
         int count = 0;
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             throw new CsvImportException(csvFilePath, "Veranstaltung nicht gefunden.");
         }
 
@@ -1354,14 +1353,14 @@ public class AdminService implements AdminServiceInterface {
 
             for (RaumVerfuegbarkeitCsvDto dto : csvToBean) {
                 Raum raum = Raum.find("name = ?1 and gebaeude.name = ?2", dto.raum, dto.gebaeude).firstResult();
-                if (raum == null) {
+                if (null == raum) {
                     LOG.warn("Raum-Verfügbarkeit übersprungen: Raum '" + dto.raum + "' in Gebäude '" + dto.gebaeude + "' nicht gefunden.");
                     continue;
                 }
 
                 Set<Long> verfuegbareSlotIds = parseSlotIndices(dto.verfuegbareSlots, sortedSlotIds);
                 RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvId(raum, veranstaltung));
-                if (rv == null) {
+                if (null == rv) {
                     rv = new RaumVerfuegbarkeit(raum.getId(), veranstaltungId, verfuegbareSlotIds);
                 } else {
                     rv.setVerfuegbareSlotIds(verfuegbareSlotIds);
@@ -1395,57 +1394,12 @@ public class AdminService implements AdminServiceInterface {
 
 
     // -------------------------------------------------------------------
-    // Mapper methods
+    // Helper methods
     // -------------------------------------------------------------------
-
-    @Override
-    public NutzerDto mapNutzerToDto(Nutzer u) {
-        NutzerDto dto = new NutzerDto();
-        dto.id = u.getId();
-        dto.version = u.getVersion();
-        dto.email = u.getEmail();
-        dto.firstName = u.getFirstName();
-        dto.lastName = u.getLastName();
-        dto.role = u.getRole();
-        dto.isActive = u.isActive();
-        Set<Veranstaltung> veranstaltungen = u.getVeranstaltungen();
-        dto.veranstaltungIds = null != veranstaltungen ? veranstaltungen.stream().map(IdEntity::getId).toList() : emptyList();
-
-        if (u instanceof Referent r) {
-            dto.biography = r.getBiography();
-            dto.jobRole = r.getJobRole();
-            dto.organisation = r.getOrganisation();
-            dto.slogan = r.getSlogan();
-        } else if (u instanceof Teilnehmer tn) {
-            dto.gruppen = tn.getGruppen().stream().sorted(StringHelper.NUM_OR_ALPHA_COMPARATOR).toList();
-            if (!tn.getPrioritaeten().isEmpty()) {
-                dto.prioritaeten = tn.getPrioritaeten().stream().map(VortragPrioDto::from).toList();
-            }
-        }
-        return dto;
-    }
-
-
-    public static SlotDto mapSlotToDto(Slot slot) {
-        SlotDto dto = new SlotDto();
-
-        dto.id = slot.getId();
-        dto.version = slot.getVersion();
-        dto.description = slot.getDescription();
-        dto.startTime = slot.getStartTime();
-        dto.endTime = slot.getEndTime();
-        dto.veranstaltungId = slot.getVeranstaltung().getId();
-
-        return dto;
-    }
-
-// -------------------------------------------------------------------
-// Helper methods
-// -------------------------------------------------------------------
 
 
     private boolean kapazitaetZuGering(Raum raum, String gruppe, Veranstaltung veranstaltung) {
-        if (raum == null || raum.getKapazitaet() == null) {
+        if (null == raum || raum.getKapazitaet() == null) {
             return false;
         }
         long activeTeilnehmerCount = getGruppenTeilnehmer(gruppe, veranstaltung).size();

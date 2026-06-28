@@ -15,7 +15,7 @@ public class LongSetConverter implements AttributeConverter<Set<Long>, String> {
 
     @Override
     public String convertToDatabaseColumn(Set<Long> attribute) {
-        if (attribute == null || attribute.isEmpty()) {
+        if (null == attribute || attribute.isEmpty()) {
             return "[]";
         }
         try {

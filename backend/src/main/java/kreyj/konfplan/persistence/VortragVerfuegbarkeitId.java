@@ -39,7 +39,7 @@ public class VortragVerfuegbarkeitId implements Serializable {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (null == o || getClass() != o.getClass()) {
             return false;
         }
         VortragVerfuegbarkeitId that = (VortragVerfuegbarkeitId) o;

@@ -85,12 +85,12 @@ public class PrioritaetService implements PrioritaetServiceInterface {
     @Override
     public void updateSinglePrioritaet(Long userId, Long vortragId, int prio) {
         Teilnehmer teilnehmer = Teilnehmer.findById(userId);
-        if (teilnehmer == null) {
+        if (null == teilnehmer) {
             throw new WebApplicationException("Teilnehmer nicht gefunden", NOT_FOUND.getStatusCode());
         }
 
         Wahlvortrag vortrag = Wahlvortrag.findById(vortragId);
-        if (vortrag == null) {
+        if (null == vortrag) {
             throw new WebApplicationException("Wahlvortrag nicht gefunden", NOT_FOUND.getStatusCode());
         }
 

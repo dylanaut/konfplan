@@ -133,7 +133,7 @@ public class Pflichtvortrag extends Vortrag {
             if (null != rvAlterRaum) {
                 RaumVerfuegbarkeit rvNeuerRaum = RaumVerfuegbarkeit.findById(rvId(neuerRaum, veranstaltung));
 
-                if (rvNeuerRaum == null) {
+                if (null == rvNeuerRaum) {
                     throw new UpdateVortragException("Keine RaumVerfuegbarkeit für neuen Raum '%s' in Slot '%s' (%s)"
                             .formatted(neuerRaum.getName(), pflichtslot.getDescription(), veranstaltung.getName()));
                 } else {
@@ -157,7 +157,7 @@ public class Pflichtvortrag extends Vortrag {
 
 
     public void updatePflichtslot(Slot neuerSlot) {
-        if (Objects.equals(pflichtslot, neuerSlot) || veranstaltung == null) {
+        if (Objects.equals(pflichtslot, neuerSlot) || null == veranstaltung) {
             return;
         }
 

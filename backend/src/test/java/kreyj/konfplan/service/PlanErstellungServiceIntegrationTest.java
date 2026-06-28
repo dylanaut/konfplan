@@ -201,7 +201,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
         // 1. PlanErstellung durchführen
         SolverConfig config = new SolverConfig(10, 4, 1);
-        planErstellungService.erstellePlan(veranstaltung.getId(), config);
+        planErstellungService.erstellePlan(veranstaltung.getId(), config, "username");
 
         // 2. Ergebnis prüfen
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
@@ -239,7 +239,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
         // 1. PlanErstellung durchführen
         SolverConfig config = new SolverConfig(60, 4, 1);
-        planErstellungService.erstellePlan(veranstaltung.getId(), config);
+        planErstellungService.erstellePlan(veranstaltung.getId(), config, "username");
 
         // 2. Ergebnis prüfen
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
@@ -272,7 +272,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
         // 1. PlanErstellung durchführen
         SolverConfig config = new SolverConfig(60, 4, 1);
-        planErstellungService.erstellePlan(veranstaltung.getId(), config);
+        planErstellungService.erstellePlan(veranstaltung.getId(), config, "username");
 
         // 2. Ergebnis prüfen
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
@@ -297,7 +297,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         Veranstaltung veranstaltung = complexSetup();
         // 1. PlanErstellung durchführen
         SolverConfig config = new SolverConfig(120, 4, 2);
-        planErstellungService.erstellePlan(veranstaltung.getId(), config);
+        planErstellungService.erstellePlan(veranstaltung.getId(), config, "username");
 
         // 2. Ergebnis prüfen
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
@@ -372,7 +372,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
     public String starteTestPlanErstellung(SolverConfig config, String modelName) throws Exception {
         URL modelUrl = getClass().getClassLoader().getResource("minizinc/" + modelName);
-        if (modelUrl == null) {
+        if (null == modelUrl) {
             throw new FileNotFoundException("MiniZinc model not found: " + modelName);
         }
 

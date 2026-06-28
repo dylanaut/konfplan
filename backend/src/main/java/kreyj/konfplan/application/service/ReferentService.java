@@ -17,12 +17,9 @@ import org.jboss.logging.Logger;
 
 import java.io.FileReader;
 import java.nio.file.Path;
-import java.sql.Ref;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
-import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvId;
 import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvIdL;
 
 @ApplicationScoped
@@ -76,17 +73,17 @@ public class ReferentService implements ReferentServiceInterface {
     @Override
     public List<VortragDto> getReferentVortraege(String email) {
         Referent referent = Referent.find("email", email).firstResult();
-        if (referent == null) {
+        if (null == referent) {
             return new ArrayList<>();
         }
 
         List<Vortrag> vortraege = Vortrag.find("referent", referent).list();
-        return vortraege.stream().map(ReferentService::mapVortragToDto).toList();
+        return vortraege.stream().map(VortragDto::from).toList();
     }
 
     @Override
     public List<ReferentVeranstaltungDto> getReferentVeranstaltungen(Referent referent) {
-        if (referent == null) {
+        if (null == referent) {
             return new ArrayList<>();
         }
 
@@ -118,12 +115,12 @@ public class ReferentService implements ReferentServiceInterface {
     @Override
     public VortragDto createVortrag(String email, VortragDto dto) {
         Referent referent = Referent.find("email", email).firstResult();
-        if (referent == null) {
+        if (null == referent) {
             return null;
         }
 
         Veranstaltung veranstaltung = Veranstaltung.findById(dto.veranstaltungId);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
         }
 
@@ -140,7 +137,7 @@ public class ReferentService implements ReferentServiceInterface {
         }
 
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent erstellt", "Referent '" + email + "' hat Vortrag '" + vortrag.getTitel() + "' für Event '" + veranstaltung.getName() + "' erstellt.", vortrag.getId());
-        return mapVortragToDto(vortrag);
+        return VortragDto.from(vortrag);
     }
 
     @Transactional
@@ -149,7 +146,7 @@ public class ReferentService implements ReferentServiceInterface {
         Referent referent = Referent.find("email", email).firstResult();
         Vortrag vortrag = Vortrag.findById(vortragId);
 
-        if (vortrag == null || !vortrag.getReferent().getId().equals(referent.getId())) {
+        if (null == vortrag || !vortrag.getReferent().getId().equals(referent.getId())) {
             return null;
         }
 
@@ -161,7 +158,7 @@ public class ReferentService implements ReferentServiceInterface {
 
         updateVortragFromDto(vortrag, dto);
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent aktualisiert", "Referent '" + email + "' hat Vortrag '" + vortrag.getTitel() + "' aktualisiert.", vortrag.getId());
-        return mapVortragToDto(vortrag);
+        return VortragDto.from(vortrag);
     }
 
     @Transactional
@@ -171,7 +168,7 @@ public class ReferentService implements ReferentServiceInterface {
         Vortrag sourceTalk = Vortrag.findById(vortragId);
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
 
-        if (referent == null || sourceTalk == null || veranstaltung == null) {
+        if (null == referent || null == sourceTalk || null == veranstaltung) {
             return;
         }
         if (!sourceTalk.getReferent().getId().equals(referent.getId())) {
@@ -217,17 +214,17 @@ public class ReferentService implements ReferentServiceInterface {
     @Override
     public VortragDto uebernimmVortragInVeranstaltung(String email, Long sourceVortragId, Long veranstaltungId) {
         Referent referent = Referent.find("email", email).firstResult();
-        if (referent == null) {
+        if (null == referent) {
             throw new WebApplicationException("Referent nicht gefunden.", Response.Status.NOT_FOUND);
         }
 
         Vortrag quellVortrag = Vortrag.findById(sourceVortragId);
-        if (quellVortrag == null) {
+        if (null == quellVortrag) {
             throw new WebApplicationException("Quell-Vortrag nicht gefunden.", Response.Status.NOT_FOUND);
         }
 
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             throw new WebApplicationException("Ziel-Veranstaltung nicht gefunden.", Response.Status.NOT_FOUND);
         }
 
@@ -274,7 +271,7 @@ public class ReferentService implements ReferentServiceInterface {
 
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag geklont", "Referent '" + email + "' hat Vortrag '" + zielVortrag.getTitel() + "' von Event '" + quellVortrag.getVeranstaltung().getName() + "' nach Event '" + veranstaltung.getName() + "' geklont.", zielVortrag.getId());
 
-        return mapVortragToDto(zielVortrag);
+        return VortragDto.from(zielVortrag);
     }
 
     @Transactional
@@ -284,7 +281,7 @@ public class ReferentService implements ReferentServiceInterface {
         Vortrag vortrag = Vortrag.findById(vortragId);
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
 
-        if (referent == null || vortrag == null || veranstaltung == null) {
+        if (null == referent || null == vortrag || null == veranstaltung) {
             return;
         }
         if (!vortrag.getReferent().getId().equals(referent.getId()) || !vortrag.getVeranstaltung().getId().equals(veranstaltung.getId())) {
@@ -342,7 +339,7 @@ public class ReferentService implements ReferentServiceInterface {
         Referent referent = Referent.find("email", email).firstResult();
         Vortrag vortrag = Vortrag.findById(vortragId);
 
-        if (vortrag == null || !vortrag.getReferent().getId().equals(referent.getId())) {
+        if (null == vortrag || !vortrag.getReferent().getId().equals(referent.getId())) {
             return false;
         }
 
@@ -372,7 +369,7 @@ public class ReferentService implements ReferentServiceInterface {
     public int importFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception {
         int count = 0;
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
         }
 
@@ -387,7 +384,7 @@ public class ReferentService implements ReferentServiceInterface {
             for (ReferentCsvDto dto : beans) {
                 Nutzer existingNutzer = Nutzer.findByEmail(dto.email);
                 Referent ref;
-                if (existingNutzer == null) {
+                if (null == existingNutzer) {
                     ref = new Referent();
                     ref.setEmail(dto.email.trim().toLowerCase());
                     String tempPassword = "start123";
@@ -415,75 +412,5 @@ public class ReferentService implements ReferentServiceInterface {
             }
         }
         return count;
-    }
-
-    // -------------------------------------------------------------------
-    // Mapper methods
-    // -------------------------------------------------------------------
-
-
-    public static VortragDto mapVortragToDto(Vortrag v) {
-        VortragDto dto = new VortragDto();
-        dto.id = v.getId();
-        dto.version = v.getVersion();
-        dto.titel = v.getTitel();
-        dto.inhalt = v.getInhalt();
-        dto.ausstattung = v.getAusstattung();
-        dto.berufsfeld = v.getBerufsfeld();
-        dto.veranstaltungId = v.getVeranstaltung().getId();
-        dto.veranstaltungName = v.getVeranstaltung().getName();
-        dto.referentId = v.getReferent().getId();
-        dto.referentName = v.getReferent().getLastName();
-        dto.referentOrganisation = v.getReferent().getOrganisation();
-
-        if (v instanceof Wahlvortrag wahlvortrag) {
-            dto.wiederholbar = wahlvortrag.isWiederholbar();
-            dto.maxWiederholungen = wahlvortrag.getMaxWiederholungen();
-            VortragVerfuegbarkeit vv = VortragVerfuegbarkeit.findById(vvId(
-                    wahlvortrag, wahlvortrag.getVeranstaltung()));
-            if (null == vv) {
-                dto.verfuegbareSlotIds = Slot.<Slot>find("veranstaltung", v.getVeranstaltung())
-                        .stream()
-                        .map(Slot::getId)
-                        .collect(Collectors.toSet());
-            } else {
-                dto.verfuegbareSlotIds = vv.getVerfuegbareSlotIds();
-            }
-        } else if (v instanceof Pflichtvortrag pflichtvortrag) {
-            dto.istPflicht = true;
-            dto.pflichtGruppe = pflichtvortrag.getPflichtgruppe();
-            dto.pflichtRaumId = pflichtvortrag.getPflichtraum().getId();
-
-            Slot pflichtslot = pflichtvortrag.getPflichtslot();
-            if (pflichtslot != null) {
-                dto.pflichtSlotId = pflichtslot.getId();
-                dto.verfuegbareSlotIds = Set.of(pflichtslot.getId());
-            }
-        }
-
-        return dto;
-    }
-
-    public static Vortrag mapDtoToVortrag(VortragDto dto) {
-        Vortrag vortrag = dto.istPflicht ? new Pflichtvortrag() : new Wahlvortrag();
-
-        vortrag.setId(dto.id);
-        vortrag.setVersion(dto.version);
-        vortrag.setTitel(dto.titel);
-        vortrag.setInhalt(dto.inhalt);
-        vortrag.setAusstattung(dto.ausstattung);
-        vortrag.setBerufsfeld(dto.berufsfeld);
-        vortrag.setVeranstaltung(Veranstaltung.findById(dto.veranstaltungId));
-        vortrag.setReferent(Referent.findById(dto.referentId));
-        if (vortrag instanceof Wahlvortrag wahlvortrag) {
-            wahlvortrag.setWiederholbar(dto.wiederholbar);
-            wahlvortrag.setMaxWiederholungen(dto.maxWiederholungen);
-        } else {
-            Pflichtvortrag pflichtvortrag = (Pflichtvortrag) vortrag;
-            pflichtvortrag.updatePflichtgruppe(dto.pflichtGruppe);
-        }
-
-        return vortrag;
-
     }
 }

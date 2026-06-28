@@ -64,7 +64,7 @@ public class PlanService {
     public List<ZuweisungDto> getGesamtplan(Veranstaltung veranstaltung) {
         Objects.requireNonNull(veranstaltung);
         Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
-        if (planungsergebnis == null) {
+        if (null == planungsergebnis) {
             return Collections.emptyList();
         }
 
@@ -108,7 +108,7 @@ public class PlanService {
             for (int tnIdx = 0; tnIdx < tnOids.length; tnIdx++) {
                 Long teilnehmerId = tnOids[tnIdx];
                 Teilnehmer teilnehmer = teilnehmerMap.get(teilnehmerId);
-                if (teilnehmer == null) {
+                if (null == teilnehmer) {
                     LOG.warn("Teilnehmer mit ID " + teilnehmerId + " konnte nicht gefunden werden.");
                     continue;
                 }
@@ -116,7 +116,7 @@ public class PlanService {
                 for (int wvIdx = 0; wvIdx < wvOids.length; wvIdx++) {
                     Long vortragId = wvOids[wvIdx];
                     Vortrag vortrag = vortragMap.get(vortragId);
-                    if (vortrag == null) {
+                    if (null == vortrag) {
                         LOG.warn("Vortrag mit ID " + vortragId + " konnte nicht gefunden werden.");
                         continue;
                     }
@@ -231,7 +231,7 @@ public class PlanService {
     @Transactional
     public PlanQualitaetDto getPlanQualitaet(Veranstaltung veranstaltung) {
         Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
-        if (planungsergebnis == null) {
+        if (null == planungsergebnis) {
             return new PlanQualitaetDto(0, 0, "Kein Ergebnis vorhanden");
         }
 
@@ -252,12 +252,12 @@ public class PlanService {
     @Transactional
     public List<ZuweisungDto> getPlanFuerTeilnehmer(Teilnehmer teilnehmer, Veranstaltung veranstaltung) {
         Objects.requireNonNull(veranstaltung);
-        if (teilnehmer == null) {
+        if (null == teilnehmer) {
             return Collections.emptyList();
         }
 
         Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
-        if (planungsergebnis == null) {
+        if (null == planungsergebnis) {
             return Collections.emptyList();
         }
 
@@ -306,7 +306,7 @@ public class PlanService {
             for (int wvIdx = 0; wvIdx < wvOids.length; wvIdx++) {
                 Long vortragId = wvOids[wvIdx];
                 Vortrag vortrag = vortragMap.get(vortragId);
-                if (vortrag == null) {
+                if (null == vortrag) {
                     continue;
                 }
 
@@ -350,12 +350,12 @@ public class PlanService {
 
     @Transactional
     public List<ReferentVortragDto> getPlanFuerReferent(Referent referent, Veranstaltung veranstaltung) {
-        if (referent == null) {
+        if (null == referent) {
             return Collections.emptyList();
         }
 
         Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
-        if (planungsergebnis == null) {
+        if (null == planungsergebnis) {
             return Collections.emptyList();
         }
 
@@ -372,9 +372,9 @@ public class PlanService {
             int[][] instanzRaum = result.instanz_raum;
 
             Map<Long, TeilnehmerDto> teilnehmerMap = veranstaltung.teilnehmer().stream()
-                .collect(toMap(IdEntity::getId, TeilnehmerService::mapToDto));
-            Map<Long, SlotDto> slotMap = veranstaltung.getSlots().stream().collect(toMap(IdEntity::getId, AdminService::mapSlotToDto));
-            Map<Long, RaumDto> raumMap = veranstaltung.getRaeume().stream().collect(toMap(IdEntity::getId, VeranstaltungService::mapRaumToDto));
+                .collect(toMap(IdEntity::getId, TeilnehmerDto::from));
+            Map<Long, SlotDto> slotMap = veranstaltung.getSlots().stream().collect(toMap(IdEntity::getId, SlotDto::from));
+            Map<Long, RaumDto> raumMap = veranstaltung.getRaeume().stream().collect(toMap(IdEntity::getId, RaumDto::from));
 
             List<ReferentVortragDto> referentPlan = new ArrayList<>();
 
@@ -382,7 +382,7 @@ public class PlanService {
             for (Pflichtvortrag pv : pflichtvortraege) {
                 List<Teilnehmer> gruppenTeilnehmer = Teilnehmer.getGruppenTeilnehmer(pv.getPflichtgruppe(), veranstaltung);
                 List<TeilnehmerDto> teilnehmerDtos = gruppenTeilnehmer.stream()
-                    .map(TeilnehmerService::mapToDto)
+                    .map(TeilnehmerDto::from)
                     .toList();
                 referentPlan.add(new ReferentVortragDto(pv.getTitel(), pv.getPflichtslot().getStartTime(), pv.getPflichtslot().getEndTime(),
                     pv.getPflichtraum().getName(), pv.getPflichtraum().getGebaeude().getName(),
@@ -439,7 +439,7 @@ public class PlanService {
     @Transactional
     public Map<Long, Map<Long, RaumplanEintragDto>> getRaumbelegungsplan(Veranstaltung veranstaltung) {
         Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
-        if (planungsergebnis == null) {
+        if (null == planungsergebnis) {
             return Collections.emptyMap();
         }
 
@@ -474,7 +474,7 @@ public class PlanService {
 
                 List<Teilnehmer> gruppenTeilnehmer = Teilnehmer.getGruppenTeilnehmer(pv.getPflichtgruppe(), veranstaltung);
                 List<TeilnehmerDto> teilnehmerDtos = gruppenTeilnehmer.stream()
-                    .map(TeilnehmerService::mapToDto)
+                    .map(TeilnehmerDto::from)
                     .toList();
 
                 RaumplanEintragDto eintrag = new RaumplanEintragDto(
@@ -492,7 +492,7 @@ public class PlanService {
             for (int wIdx = 0; wIdx < wvOids.length; wIdx++) {
                 Long vortragId = wvOids[wIdx];
                 Vortrag vortrag = vortragMap.get(vortragId);
-                if (vortrag == null) {
+                if (null == vortrag) {
                     continue;
                 }
 
@@ -514,7 +514,7 @@ public class PlanService {
                             if (besucht[pIdx][wIdx][iIdx]) {
                                 Teilnehmer tn = teilnehmerMap.get(tnOids[pIdx]);
                                 if (tn != null) {
-                                    zugewieseneTeilnehmer.add(TeilnehmerService.mapToDto(tn));
+                                    zugewieseneTeilnehmer.add(TeilnehmerDto.from(tn));
                                 }
                             }
                         }
@@ -605,7 +605,7 @@ public class PlanService {
     public Map<Long, List<Slot>> getFreieSlotsTeilnehmer(Veranstaltung veranstaltung) {
         Map<Long, List<Slot>> freieSlotsTeilnehmer = new HashMap<>();
         Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
-        if (planungsergebnis == null) {
+        if (null == planungsergebnis) {
             return Collections.emptyMap();
         }
 

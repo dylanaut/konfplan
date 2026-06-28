@@ -14,7 +14,6 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
-import kreyj.konfplan.adapter.in.web.dto.TeilnehmerDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerVeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragPrioDto;
@@ -133,7 +132,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
                     return true;
                 }
             })
-            .map(ReferentService::mapVortragToDto)
+            .map(VortragDto::from)
             .collect(Collectors.toList());
     }
 
@@ -173,7 +172,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
     @Override
     public int importFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception {
         Veranstaltung v = Veranstaltung.findById(veranstaltungId);
-        if (v == null) {
+        if (null == v) {
             LOG.error("CSV-Import abgebrochen: Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
             protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Import fehlgeschlagen", "Veranstaltung nicht gefunden: " + veranstaltungId);
             throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
@@ -264,7 +263,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
     @Transactional
     @Override
     public Teilnehmer updateTeilnehmerProfile(Teilnehmer teilnehmer, NutzerDto dto) {
-        if (teilnehmer == null) {
+        if (null == teilnehmer) {
             throw new WebApplicationException("Teilnehmer nicht gefunden", Response.Status.NOT_FOUND);
         }
         if (!teilnehmer.getEmail().equals(dto.email)) {
@@ -302,7 +301,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         String oldEmail = tn.getEmail();
         tn.setFirstName(tnDto.firstName);
         tn.setLastName(tnDto.lastName);
-        tn.setEmail(tnDto.email == null ? existing.getEmail() : tnDto.email.trim().toLowerCase());
+        tn.setEmail(null == tnDto.email ? existing.getEmail() : tnDto.email.trim().toLowerCase());
         tnDto.gruppen.forEach(tn::addGruppe);
         tn.setActive(tnDto.isActive);
 
@@ -322,13 +321,13 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
     @Override
     public void savePriorities(Long userId, Long veranstaltungId, List<VortragPrioDto> priorityDtos) {
         Teilnehmer teilnehmer = Teilnehmer.findById(userId);
-        if (teilnehmer == null) {
+        if (null == teilnehmer) {
             protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung fehlgeschlagen", "Teilnehmer mit ID " + userId + " nicht gefunden.");
             throw new NotFoundException("Teilnehmer mit ID " + userId + " nicht gefunden.");
         }
 
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung fehlgeschlagen", "Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
             throw new NotFoundException("Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
         }
@@ -343,7 +342,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         for (VortragPrioDto dto : priorityDtos) {
             if (dto.prio > 0) {
                 Wahlvortrag vortrag = Wahlvortrag.findById(dto.vortragId);
-                if (vortrag == null) {
+                if (null == vortrag) {
                     LOG.warn("Vortrag mit ID " + dto.vortragId + " für Priorität von Teilnehmer " + userId + " nicht gefunden. Überspringe.");
                     protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung Warnung", "Vortrag " + dto.vortragId + " für Priorität von " + teilnehmer.getEmail() + " nicht gefunden.", teilnehmer.getId());
                     continue;
@@ -372,14 +371,14 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
             throw new ForbiddenException("Keine Berechtigung.");
         }
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             throw new NotFoundException("Veranstaltung nicht gefunden.");
         }
         if (veranstaltung.getDeadlineTeilnehmer() != null && veranstaltung.getDeadlineTeilnehmer().isBefore(LocalDateTime.now())) {
             throw new ForbiddenException("Die Deadline für Teilnehmer ist bereits abgelaufen.");
         }
         NutzerVerfuegbarkeit v = NutzerVerfuegbarkeit.findById(nvIdL(nutzer.getId(), veranstaltungId));
-        if (v == null) {
+        if (null == v) {
             throw new NotFoundException("Verfügbarkeitseintrag nicht gefunden.");
         }
         v.getVerfuegbareSlotIds().clear();
@@ -387,10 +386,5 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         v.persist();
 
         mailService.sendVerfuegbarkeitChangedNotification(nutzer, veranstaltung);
-    }
-
-
-    public static TeilnehmerDto mapToDto(Teilnehmer tn) {
-        return new TeilnehmerDto(tn.getId(), tn.getFirstName(), tn.getLastName(), tn.getGruppen());
     }
 }

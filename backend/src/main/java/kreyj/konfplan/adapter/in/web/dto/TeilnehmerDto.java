@@ -1,6 +1,7 @@
 package kreyj.konfplan.adapter.in.web.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import kreyj.konfplan.persistence.Teilnehmer;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -35,12 +36,26 @@ public class TeilnehmerDto {
 
     public String gName() {
         return String.format("%s %s", fullname(),
-                gruppen.stream().sorted().collect(Collectors.joining(",")));
+            gruppen.stream().sorted().collect(Collectors.joining(",")));
     }
+
+    // -------------------------------------------------------------------
+    // Override methods
+    // -------------------------------------------------------------------
 
 
     @Override
     public String toString() {
         return fullname();
+    }
+
+
+    // -------------------------------------------------------------------
+    // Mapper methods
+    // -------------------------------------------------------------------
+
+
+    public static TeilnehmerDto from(Teilnehmer tn) {
+        return new TeilnehmerDto(tn.getId(), tn.getFirstName(), tn.getLastName(), tn.getGruppen());
     }
 }

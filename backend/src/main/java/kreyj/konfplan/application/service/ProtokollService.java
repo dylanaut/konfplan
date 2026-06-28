@@ -8,6 +8,7 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @ApplicationScoped
 public class ProtokollService {
@@ -23,10 +24,10 @@ public class ProtokollService {
     }
 
     @Transactional
-    public void log(ProtokollKategorie kategorie, String ereignis, String details, Long referenzId) {
+    public void log(ProtokollKategorie kategorie, String ereignis, String details, Long referenzId, String akteur) {
         Protokoll p = new Protokoll();
         p.setZeitpunkt(LocalDateTime.now());
-        p.setAkteur(getAkteur());
+        p.setAkteur(Optional.ofNullable(akteur).orElseGet(this::getAkteur));
         p.setKategorie(kategorie);
         p.setEreignis(ereignis);
         p.setDetails(details);
@@ -34,12 +35,16 @@ public class ProtokollService {
         p.persistAndFlush();
     }
 
+    public void log(ProtokollKategorie kategorie, String ereignis, String details, Long referenzId) {
+        log(kategorie, ereignis, details, referenzId, null);
+    }
+
     public void log(ProtokollKategorie kategorie, String ereignis, String details) {
-        log(kategorie, ereignis, details, null);
+        log(kategorie, ereignis, details, null, null);
     }
 
     public void log(ProtokollKategorie kategorie, String ereignis) {
-        log(kategorie, ereignis, null, null);
+        log(kategorie, ereignis, null, null, null);
     }
 
     private String getAkteur() {

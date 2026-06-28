@@ -9,9 +9,9 @@ import kreyj.konfplan.adapter.in.web.dto.templating.Auffueller;
 import kreyj.konfplan.adapter.in.web.dto.templating.BelegungDetail;
 import kreyj.konfplan.adapter.in.web.dto.templating.DashboardData;
 import kreyj.konfplan.adapter.in.web.dto.templating.Planungsstatistik;
-import kreyj.konfplan.adapter.in.web.dto.templating.PrioDashboard;
+import kreyj.konfplan.adapter.in.web.dto.templating.PrioReport;
 import kreyj.konfplan.adapter.in.web.dto.templating.Stundenplan;
-import kreyj.konfplan.adapter.in.web.dto.templating.TeilnehmerDashboard;
+import kreyj.konfplan.adapter.in.web.dto.templating.TeilnehmerReport;
 import kreyj.konfplan.adapter.in.web.dto.templating.TeilnehmerErfuellung;
 import kreyj.konfplan.adapter.in.web.dto.templating.TeilnehmerSlotBelegung;
 import kreyj.konfplan.adapter.in.web.dto.templating.TeilnehmerStundenplan;
@@ -80,7 +80,7 @@ public class DashboardService {
             }
         }
         dd.wahlErfuellungStats = new WahlErfuellungStats(totalPrefs, prioPrefs, wvPrefs, totalFillUps,
-                prioFillUps, wvFillUps);
+            prioFillUps, wvFillUps);
     }
 
 
@@ -112,9 +112,9 @@ public class DashboardService {
         }
 
         dd.planungsstatistik = new Planungsstatistik(belegtePlaetze, kapazitaetTotal,
-                unerfuellte, totalWuenscheErfuellt,
-                prio1, prio2, prio3,
-                dd.auffuellungSet.size());
+            unerfuellte, totalWuenscheErfuellt,
+            prio1, prio2, prio3,
+            dd.auffuellungSet.size());
     }
 
 
@@ -160,8 +160,8 @@ public class DashboardService {
      */
     public void prepareDashboardData(DashboardData dd) {
         Map<Long, Set<Long>> verplanteTnProSlot
-                = dd.slots.keySet().stream().collect(Collectors.toMap(Function.identity(),
-                k -> new HashSet<>()));
+            = dd.slots.keySet().stream().collect(Collectors.toMap(Function.identity(),
+            k -> new HashSet<>()));
 
         // Verarbeite Pflichtvorträge: erzeuge Belegungsdetails
         for (VortragDto pv : dd.pflichtvortraege.values()) {
@@ -183,8 +183,8 @@ public class DashboardService {
             NutzerDto ref = dd.referenten.get(pv.referentId);
             String key = pflSlotId + "_" + pflRaumId;
             dd.belegungDetails.put(key,
-                    new BelegungDetail(pv.titel, ref.fullName(), ref.organisation, true,
-                            namen, namen.size()));
+                new BelegungDetail(pv.titel, ref.fullName(), ref.organisation, true,
+                    namen, namen.size()));
         }
 
         // Verarbeite Wahlvorträge: erzeuge Belegungsdetails
@@ -215,8 +215,8 @@ public class DashboardService {
                         NutzerDto ref = dd.referenten.get(wv.referentId);
                         wvNamen = StringHelper.sortNames(wvNamen);
                         dd.belegungDetails.put(key,
-                                new BelegungDetail(wv.titel, ref.fullName(), ref.organisation, false,
-                                        wvNamen, wvNamen.size()));
+                            new BelegungDetail(wv.titel, ref.fullName(), ref.organisation, false,
+                                wvNamen, wvNamen.size()));
                     }
                 }
             }
@@ -227,7 +227,7 @@ public class DashboardService {
             List<String> freieTn = new ArrayList<>();
             for (long tnOid : dd.teilnehmer.keySet()) {
                 if (!verplanteTnProSlot.get(slotOid).contains(tnOid)
-                        && dd.isVerfuegbarInSlot(tnOid, slotOid)) {
+                    && dd.isVerfuegbarInSlot(tnOid, slotOid)) {
                     TeilnehmerDto tn = dd.teilnehmer.get(tnOid);
                     freieTn.add(tn.gName());
                 }
@@ -247,24 +247,26 @@ public class DashboardService {
         // --- 4. Assemble final DTOs ---
         dd.geplantAm = now().format(DATE_TIME_FORMATTER);
 
-        dd.stundenplan = new Stundenplan(dd.slots, dd.raeume, dd.belegungDetails, dd.freieTnProSlot, dd.planungsstatistik,
-                dd.wahlErfuellungStats, dd.wahlvortraege, dd.geplantAm);
+        dd.stundenplan = new Stundenplan(dd.veranstaltung, dd.slots, dd.raeume, dd.belegungDetails,
+            dd.freieTnProSlot, dd.planungsstatistik,
+            dd.wahlErfuellungStats, dd.wahlvortraege, dd.geplantAm);
 
         List<String> gruppen = dd.teilnehmer.values().stream()
-                .flatMap(tn -> tn.gruppen.stream())
-                .distinct()
-                .sorted()
-                .toList();
+            .flatMap(tn -> tn.gruppen.stream())
+            .distinct()
+            .sorted()
+            .toList();
 
-        dd.teilnehmerDashboard = new TeilnehmerDashboard(null, dd.slots, dd.teilnehmerStundenplan, gruppen);
+        dd.teilnehmerReport = new TeilnehmerReport(dd.veranstaltung,
+            dd.teilnehmer.get(dd.mzTeilnehmerOids[0]), dd.slots, dd.teilnehmerStundenplan, gruppen);
 
         List<Integer> numInstanzenProWv =
-                Arrays.stream(dd.instanzSlot).map(sub -> (int) Arrays.stream(sub).filter(x -> x > 0).count()).toList();
+            Arrays.stream(dd.instanzSlot).map(sub -> (int) Arrays.stream(sub).filter(x -> x > 0).count()).toList();
 
-        dd.prioDashboard = new PrioDashboard(dd.slots, dd.raeume,
-                dd.instanzRaum, dd.instanzSlot, numInstanzenProWv,
-                dd.teilnehmerErfuellung, dd.wahlvortraege, dd.referenten,
-                gruppen, dd.geplantAm);
+        dd.prioReport = new PrioReport(dd.veranstaltung, dd.slots, dd.raeume,
+            dd.instanzRaum, dd.instanzSlot, numInstanzenProWv,
+            dd.teilnehmerErfuellung, dd.wahlvortraege, dd.referenten,
+            gruppen, dd.geplantAm);
     }
 
 
@@ -287,7 +289,7 @@ public class DashboardService {
                 for (VortragDto pv : dd.pflichtvortraege.values()) {
                     if (tnGruppen.contains(pv.pflichtGruppe) && Objects.equals(slotOid, pv.pflichtSlotId)) {
                         belegung = new TeilnehmerSlotBelegung(pv.titel,
-                                dd.raeume.get(pv.pflichtRaumId).name, "pflicht");
+                            dd.raeume.get(pv.pflichtRaumId).name, "pflicht");
                     }
                 }
 
@@ -302,7 +304,7 @@ public class DashboardService {
                             long raumOid = dd.mzRaumOids[wahlRaumInstanz[instIdx] - 1];
                             String raumName = dd.raeume.get(raumOid).name;
                             String typ = dd.auffuellungSet.contains(Auffueller.of(tnOid, wvOid, instIdx))
-                                    ? "auffuellung" : "wahl";
+                                ? "auffuellung" : "wahl";
                             belegung = new TeilnehmerSlotBelegung(wv.titel, raumName, typ);
                         }
                     }

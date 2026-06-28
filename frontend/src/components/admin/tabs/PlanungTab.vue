@@ -77,10 +77,13 @@
         <p v-if="teilnehmerMitPrioritaetenCount === 0" class="text-red-300 text-center text-[10px] mt-1.5 font-bold animate-pulse">
           Keine Prioritäten vorhanden.
         </p>
-        <button @click="emit('startOptimization', solverConfig)" :disabled="isPlanning || teilnehmerMitPrioritaetenCount === 0" class="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-white px-8 py-4 rounded-xl font-black text-lg shadow-2xl transition-all transform hover:scale-105 flex items-center gap-3">
-          <ZapIcon v-if="!isPlanning" class="w-5 h-5"/>
-          <LoaderIcon v-else class="animate-spin w-5 h-5"/>
-          {{ isPlanning ? 'Erstellung...' : 'Pläne erstellen' }}
+        <button v-if="!isPlanning" @click="emit('startOptimization', solverConfig)" :disabled="teilnehmerMitPrioritaetenCount === 0" class="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-white px-8 py-4 rounded-xl font-black text-lg shadow-2xl transition-all transform hover:scale-105 flex items-center gap-3">
+          <ZapIcon class="w-5 h-5"/>
+          Pläne erstellen
+        </button>
+        <button v-else @click="emit('cancelOptimization')" class="bg-red-500 hover:bg-red-400 text-white px-8 py-4 rounded-xl font-black text-lg shadow-2xl transition-all transform hover:scale-105 flex items-center gap-3">
+          <LoaderIcon class="animate-spin w-5 h-5"/>
+          Erstellung abbrechen
         </button>
       </div>
     </div>
@@ -89,7 +92,7 @@
 
 <script setup>
 import { reactive, computed } from 'vue';
-import { Loader as LoaderIcon, Zap as ZapIcon } from '@lucide/vue';
+import { Loader as LoaderIcon, Zap as ZapIcon, XCircle as CancelIcon } from '@lucide/vue';
 
 const props = defineProps({
   isPlanning: Boolean,
@@ -104,7 +107,7 @@ const props = defineProps({
   teilnehmerMitPrioritaetenCount: Number,
 });
 
-const emit = defineEmits(['startOptimization']);
+const emit = defineEmits(['startOptimization', 'cancelOptimization']);
 
 const solverConfig = reactive({
   solver: 'cp-sat',

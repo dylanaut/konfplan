@@ -23,7 +23,7 @@ public class TemplateExtensions {
 
 
     public static String truncTo(String titel, int maxLen) {
-        if (titel == null || titel.length() <= maxLen) {
+        if (null == titel || titel.length() <= maxLen) {
             return titel;
         }
 

@@ -12,7 +12,7 @@
 
     <div v-else>
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
-        <h1 class="h3">Raumübersicht</h1>
+        <h1 class="h3">Laufzettel für {{ reportData.teilnehmer.firstName }} {{ reportData.teilnehmer.lastName }}</h1>
         <button @click="window.print()" class="btn btn-secondary">
           <i class="bi bi-printer"></i> Drucken
         </button>
@@ -22,21 +22,19 @@
       <table class="table table-striped table-bordered">
         <thead class="table-dark">
           <tr>
-            <th scope="col">Raum</th>
-            <th scope="col">Slot</th>
+            <th scope="col">Zeit</th>
             <th scope="col">Vortrag</th>
+            <th scope="col">Raum</th>
             <th scope="col">Referent</th>
           </tr>
         </thead>
         <tbody>
-          <template v-for="raum in sortedPlan" :key="raum.raumId">
-            <tr v-for="(belegung, index) in raum.belegungen" :key="belegung.slotId" class="page-break-inside-avoid">
-              <td v-if="index === 0" :rowspan="raum.belegungen.length">{{ raum.raumName }}</td>
-              <td>{{ formatSlot(belegung.slot) }}</td>
-              <td>{{ belegung.vortragTitel }}</td>
-              <td>{{ belegung.referentName }}</td>
-            </tr>
-          </template>
+          <tr v-for="eintrag in sortedPlan" :key="eintrag.slot.id" class="page-break-inside-avoid">
+            <td>{{ formatSlot(eintrag.slot) }}</td>
+            <td>{{ eintrag.vortrag.titel }}</td>
+            <td>{{ eintrag.raum.name }}</td>
+            <td>{{ eintrag.vortrag.referent.firstName }} {{ eintrag.vortrag.referent.lastName }}</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -51,27 +49,28 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
-import api from '../api/axios';
+import api from '../../api/axios';
 
 const route = useRoute();
-const reportData = ref({ veranstaltung: {}, plan: [] });
+const reportData = ref({ veranstaltung: {}, teilnehmer: {}, plan: [] });
 const loading = ref(true);
 const error = ref(null);
 
 const sortedPlan = computed(() => {
   if (!reportData.value.plan) return [];
-  return [...reportData.value.plan].sort((a, b) => a.raumName.localeCompare(b.raumName));
+  return [...reportData.value.plan].sort((a, b) => new Date(a.slot.startTime) - new Date(b.slot.startTime));
 });
 
 onMounted(async () => {
   const veranstaltungId = route.params.vid;
-  if (!veranstaltungId) {
-    error.value = "Keine Veranstaltungs-ID in der URL gefunden.";
+  const teilnehmerId = route.params.tid;
+  if (!veranstaltungId || !teilnehmerId) {
+    error.value = "Veranstaltungs- oder Teilnehmer-ID in der URL nicht gefunden.";
     loading.value = false;
     return;
   }
   try {
-    const response = await api.get(`/api/reports/${veranstaltungId}/raeume-data`);
+    const response = await api.get(`/api/reports/${veranstaltungId}/teilnehmer/${teilnehmerId}/laufzettel-data`);
     reportData.value = response.data;
   } catch (err) {
     error.value = 'Fehler beim Laden der Daten: ' + (err.response?.data?.message || err.message);

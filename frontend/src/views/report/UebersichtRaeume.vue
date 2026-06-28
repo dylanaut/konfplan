@@ -12,7 +12,7 @@
 
     <div v-else>
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
-        <h1 class="h3">Freie Slots für Referenten</h1>
+        <h1 class="h3">Raumübersicht</h1>
         <button @click="window.print()" class="btn btn-secondary">
           <i class="bi bi-printer"></i> Drucken
         </button>
@@ -22,22 +22,21 @@
       <table class="table table-striped table-bordered">
         <thead class="table-dark">
           <tr>
+            <th scope="col">Raum</th>
+            <th scope="col">Slot</th>
+            <th scope="col">Vortrag</th>
             <th scope="col">Referent</th>
-            <th scope="col">Freie Slots</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="referent in sortedReferenten" :key="referent.id" class="page-break-inside-avoid">
-            <td>{{ referent.firstName }} {{ referent.lastName }}</td>
-            <td>
-              <ul v-if="reportData.freieSlots[referent.id] && reportData.freieSlots[referent.id].length > 0" class="list-unstyled mb-0">
-                <li v-for="slot in sortedSlots(reportData.freieSlots[referent.id])" :key="slot.id">
-                  {{ formatSlot(slot) }}
-                </li>
-              </ul>
-              <span v-else class="text-muted">Keine freien Slots</span>
-            </td>
-          </tr>
+          <template v-for="raum in sortedPlan" :key="raum.raumId">
+            <tr v-for="(belegung, index) in raum.belegungen" :key="belegung.slotId" class="page-break-inside-avoid">
+              <td v-if="index === 0" :rowspan="raum.belegungen.length">{{ raum.raumName }}</td>
+              <td>{{ formatSlot(belegung.slot) }}</td>
+              <td>{{ belegung.vortragTitel }}</td>
+              <td>{{ belegung.referentName }}</td>
+            </tr>
+          </template>
         </tbody>
       </table>
     </div>
@@ -52,23 +51,17 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
-import api from '../api/axios';
+import api from '../../api/axios';
 
 const route = useRoute();
-const reportData = ref({ veranstaltung: {}, freieSlots: {}, referenten: [] });
+const reportData = ref({ veranstaltung: {}, plan: [] });
 const loading = ref(true);
 const error = ref(null);
 
-const sortedReferenten = computed(() => {
-  if (!reportData.value.referenten) return [];
-  return [...reportData.value.referenten].sort((a, b) => {
-    return a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName);
-  });
+const sortedPlan = computed(() => {
+  if (!reportData.value.plan) return [];
+  return [...reportData.value.plan].sort((a, b) => a.raumName.localeCompare(b.raumName));
 });
-
-const sortedSlots = (slots) => {
-  return [...slots].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
-};
 
 onMounted(async () => {
   const veranstaltungId = route.params.vid;
@@ -78,7 +71,7 @@ onMounted(async () => {
     return;
   }
   try {
-    const response = await api.get(`/api/reports/${veranstaltungId}/freie-slots-referenten-data`);
+    const response = await api.get(`/api/reports/${veranstaltungId}/raeume-data`);
     reportData.value = response.data;
   } catch (err) {
     error.value = 'Fehler beim Laden der Daten: ' + (err.response?.data?.message || err.message);
@@ -88,9 +81,9 @@ onMounted(async () => {
 });
 
 const formatSlot = (slot) => {
-  const options = { weekday: 'long', hour: '2-digit', minute: '2-digit' };
+  const options = { hour: '2-digit', minute: '2-digit' };
   const start = new Date(slot.startTime).toLocaleTimeString('de-DE', options);
-  const end = new Date(slot.endTime).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const end = new Date(slot.endTime).toLocaleTimeString('de-DE', options);
   return `${start} - ${end}`;
 };
 </script>
@@ -98,12 +91,9 @@ const formatSlot = (slot) => {
 <style>
 /* Globale Druck-Styles */
 @media print {
-  /* Versteckt Elemente, die nicht gedruckt werden sollen */
   .no-print {
     display: none !important;
   }
-
-  /* Stellt sicher, dass der Druck-Footer nur beim Drucken sichtbar ist */
   .print-footer {
     position: fixed;
     bottom: 0;
@@ -113,17 +103,12 @@ const formatSlot = (slot) => {
     color: #6c757d;
     display: block !important;
   }
-
   .print-only {
     display: block !important;
   }
-
-  /* Verhindert, dass Tabellenzeilen über Seitenumbrüche getrennt werden */
   .page-break-inside-avoid {
     page-break-inside: avoid;
   }
-
-  /* Allgemeine Druck-Optimierungen */
   body {
     background-color: #fff;
   }
@@ -137,7 +122,6 @@ const formatSlot = (slot) => {
   }
 }
 
-/* Standardmäßig sind Druck-spezifische Elemente versteckt */
 .print-footer, .print-only {
   display: none;
 }

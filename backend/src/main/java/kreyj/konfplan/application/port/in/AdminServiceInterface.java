@@ -80,6 +80,4 @@ public interface AdminServiceInterface {
     int importNutzerVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId);
 
     int importRaumVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId);
-
-    NutzerDto mapNutzerToDto(Nutzer u);
 }

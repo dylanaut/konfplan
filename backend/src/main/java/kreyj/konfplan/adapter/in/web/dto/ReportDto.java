@@ -13,9 +13,9 @@ public class ReportDto {
     public static class LaufzettelTeilnehmerDto {
         public VeranstaltungDto veranstaltung;
         public NutzerDto teilnehmer;
-        public List<PlanEintragDto> plan;
+        public List<ZuweisungDto> plan;
 
-        public LaufzettelTeilnehmerDto(Veranstaltung veranstaltung, Teilnehmer teilnehmer, List<PlanEintragDto> plan) {
+        public LaufzettelTeilnehmerDto(Veranstaltung veranstaltung, Teilnehmer teilnehmer, List<ZuweisungDto> plan) {
             this.veranstaltung = VeranstaltungDto.from(veranstaltung);
             this.teilnehmer = NutzerDto.from(teilnehmer);
             this.plan = plan;
@@ -25,9 +25,9 @@ public class ReportDto {
     public static class LaufzettelReferentDto {
         public VeranstaltungDto veranstaltung;
         public NutzerDto referent;
-        public List<PlanEintragDto> plan;
+        public List<ReferentVortragDto> plan;
 
-        public LaufzettelReferentDto(Veranstaltung veranstaltung, Referent referent, List<PlanEintragDto> plan) {
+        public LaufzettelReferentDto(Veranstaltung veranstaltung, Referent referent, List<ReferentVortragDto> plan) {
             this.veranstaltung = VeranstaltungDto.from(veranstaltung);
             this.referent = NutzerDto.from(referent);
             this.plan = plan;
@@ -37,9 +37,9 @@ public class ReportDto {
     public static class RaumbelegungsplanDto {
         public VeranstaltungDto veranstaltung;
         public RaumDto raum;
-        public Map<Long, PlanEintragDto> belegung;
+        public Map<Long, Map<Long, RaumplanEintragDto>> belegung;
 
-        public RaumbelegungsplanDto(Veranstaltung veranstaltung, RaumDto raum, Map<Long, PlanEintragDto> belegung) {
+        public RaumbelegungsplanDto(Veranstaltung veranstaltung, RaumDto raum, Map<Long, Map<Long, RaumplanEintragDto>> belegung) {
             this.veranstaltung = VeranstaltungDto.from(veranstaltung);
             this.raum = raum;
             this.belegung = belegung;
@@ -73,12 +73,12 @@ public class ReportDto {
     public static class FreieSlotsDto {
         public VeranstaltungDto veranstaltung;
         public Map<Long, List<Slot>> freieSlots;
-        public List<NutzerDto> personen; // Kann Teilnehmer oder Referenten enthalten
+        public List<NutzerDto> nutzer; // Kann Teilnehmer oder Referenten enthalten
 
-        public FreieSlotsDto(Veranstaltung veranstaltung, Map<Long, List<Slot>> freieSlots, List<? extends Nutzer> personen) {
+        public FreieSlotsDto(Veranstaltung veranstaltung, Map<Long, List<Slot>> freieSlots, List<NutzerDto> nutzer) {
             this.veranstaltung = VeranstaltungDto.from(veranstaltung);
             this.freieSlots = freieSlots;
-            this.personen = personen.stream().map(NutzerDto::from).toList();
+            this.nutzer = nutzer;
         }
     }
 }

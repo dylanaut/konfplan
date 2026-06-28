@@ -3,6 +3,7 @@ package kreyj.konfplan.adapter.in.web.dto.templating;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import kreyj.konfplan.adapter.in.web.dto.RaumDto;
 import kreyj.konfplan.adapter.in.web.dto.SlotDto;
+import kreyj.konfplan.adapter.in.web.dto.VeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,6 +16,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Getter
 public class Stundenplan {
+    private final VeranstaltungDto veranstaltung;
     private final Map<Long, SlotDto> slots;
     private final Map<Long, RaumDto> raeume;
     private final Map<String, BelegungDetail> belegung_details;

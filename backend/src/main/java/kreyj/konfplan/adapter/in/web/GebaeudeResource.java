@@ -15,7 +15,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.application.service.GebaeudeService;
 import kreyj.konfplan.application.service.RaumService;
-import kreyj.konfplan.application.service.VeranstaltungService;
 import kreyj.konfplan.adapter.in.web.dto.FileUploadDto;
 import kreyj.konfplan.adapter.in.web.dto.GebaeudeSimpleDto;
 import kreyj.konfplan.adapter.in.web.dto.RaumDto;
@@ -50,7 +49,7 @@ public class GebaeudeResource {
                                           @QueryParam("sortDirectionRooms") @DefaultValue("asc") String sortDirectionRooms) {
         return gebaeudeService.listAll()
                 .stream()
-                .map(VeranstaltungService::mapGebaeudeToDto)
+                .map(GebaeudeSimpleDto::from)
                 .toList();
     }
 
@@ -72,7 +71,7 @@ public class GebaeudeResource {
     @Operation(summary = "Ein Gebäude abrufen", description = "Ruft ein einzelnes Gebäude anhand seiner ID ab.")
     public Response getOne(@PathParam("id") Long id) {
         Gebaeude g = gebaeudeService.findById(id);
-        if (g == null) {
+        if (null == g) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         return Response.ok(g).build();
@@ -91,7 +90,7 @@ public class GebaeudeResource {
     public Response update(@PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Gebäudedaten") Gebaeude g) {
         g.setId(id);
         Gebaeude updated = gebaeudeService.save(g);
-        if (updated == null) {
+        if (null == updated) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         return Response.ok(updated).build();
@@ -114,7 +113,7 @@ public class GebaeudeResource {
     @Path("/{gid}/raeume")
     @Operation(summary = "Räume eines Gebäudes abrufen", description = "Ruft alle Räume ab, die zu einem bestimmten Gebäude gehören.")
     public List<RaumDto> getRaeumeByGebaeude(@PathParam("gid") Long gid) {
-        return raumService.listByGebaeude(gid).stream().map(VeranstaltungService::mapRaumToDto).toList();
+        return raumService.listByGebaeude(gid).stream().map(RaumDto::from).toList();
     }
 
     @POST
@@ -136,7 +135,7 @@ public class GebaeudeResource {
         r.setId(rid);
         try {
             Raum saved = raumService.save(r, gid);
-            if (saved == null) {
+            if (null == saved) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
             return Response.ok(saved).build();

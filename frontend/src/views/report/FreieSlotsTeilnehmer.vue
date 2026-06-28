@@ -12,7 +12,7 @@
 
     <div v-else>
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
-        <h1 class="h3">Laufzettel für {{ reportData.referent.firstName }} {{ reportData.referent.lastName }}</h1>
+        <h1 class="h3">Freie Slots für Teilnehmer</h1>
         <button @click="window.print()" class="btn btn-secondary">
           <i class="bi bi-printer"></i> Drucken
         </button>
@@ -22,16 +22,21 @@
       <table class="table table-striped table-bordered">
         <thead class="table-dark">
           <tr>
-            <th scope="col">Zeit</th>
-            <th scope="col">Vortrag</th>
-            <th scope="col">Raum</th>
+            <th scope="col">Teilnehmer</th>
+            <th scope="col">Freie Slots</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="eintrag in sortedPlan" :key="eintrag.slot.id" class="page-break-inside-avoid">
-            <td>{{ formatSlot(eintrag.slot) }}</td>
-            <td>{{ eintrag.vortrag.titel }}</td>
-            <td>{{ eintrag.raum.name }}</td>
+          <tr v-for="teilnehmer in sortedTeilnehmer" :key="teilnehmer.id" class="page-break-inside-avoid">
+            <td>{{ teilnehmer.firstName }} {{ teilnehmer.lastName }}</td>
+            <td>
+              <ul v-if="reportData.freieSlots[teilnehmer.id] && reportData.freieSlots[teilnehmer.id].length > 0" class="list-unstyled mb-0">
+                <li v-for="slot in sortedSlots(reportData.freieSlots[teilnehmer.id])" :key="slot.id">
+                  {{ formatSlot(slot) }}
+                </li>
+              </ul>
+              <span v-else class="text-muted">Keine freien Slots</span>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -47,28 +52,33 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
-import api from '../api/axios';
+import api from '../../api/axios';
 
 const route = useRoute();
-const reportData = ref({ veranstaltung: {}, referent: {}, plan: [] });
+const reportData = ref({ veranstaltung: {}, freieSlots: {}, teilnehmer: [] });
 const loading = ref(true);
 const error = ref(null);
 
-const sortedPlan = computed(() => {
-  if (!reportData.value.plan) return [];
-  return [...reportData.value.plan].sort((a, b) => new Date(a.slot.startTime) - new Date(b.slot.startTime));
+const sortedTeilnehmer = computed(() => {
+  if (!reportData.value.teilnehmer) return [];
+  return [...reportData.value.teilnehmer].sort((a, b) => {
+    return a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName);
+  });
 });
+
+const sortedSlots = (slots) => {
+  return [...slots].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+};
 
 onMounted(async () => {
   const veranstaltungId = route.params.vid;
-  const referentId = route.params.rid;
-  if (!veranstaltungId || !referentId) {
-    error.value = "Veranstaltungs- oder Referenten-ID in der URL nicht gefunden.";
+  if (!veranstaltungId) {
+    error.value = "Keine Veranstaltungs-ID in der URL gefunden.";
     loading.value = false;
     return;
   }
   try {
-    const response = await api.get(`/api/reports/${veranstaltungId}/referent/${referentId}/laufzettel-data`);
+    const response = await api.get(`/api/reports/${veranstaltungId}/freie-slots-teilnehmer-data`);
     reportData.value = response.data;
   } catch (err) {
     error.value = 'Fehler beim Laden der Daten: ' + (err.response?.data?.message || err.message);
@@ -78,9 +88,9 @@ onMounted(async () => {
 });
 
 const formatSlot = (slot) => {
-  const options = { hour: '2-digit', minute: '2-digit' };
+  const options = { weekday: 'long', hour: '2-digit', minute: '2-digit' };
   const start = new Date(slot.startTime).toLocaleTimeString('de-DE', options);
-  const end = new Date(slot.endTime).toLocaleTimeString('de-DE', options);
+  const end = new Date(slot.endTime).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
   return `${start} - ${end}`;
 };
 </script>

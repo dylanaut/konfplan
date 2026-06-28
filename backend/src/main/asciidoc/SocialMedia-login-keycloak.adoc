@@ -349,7 +349,7 @@ public class UserProvisioningFilter implements ContainerRequestFilter {
 
         User user = User.find("keycloakSub", sub).firstResult();
 
-        if (user == null) {
+        if (null == user) {
             // Fallback: vielleicht existiert der Nutzer schon aus alter Anmeldung per E-Mail
             user = User.find("email", email).firstResult();
             if (user != null) {
@@ -376,7 +376,7 @@ CAUTION: Der Fallback über `email` (bestehenden Account per E-Mail verknüpfen)
 [source,java]
 ----
 Boolean emailVerified = idToken.getClaim("email_verified");
-if (user == null && Boolean.TRUE.equals(emailVerified)) {
+if (null == user && Boolean.TRUE.equals(emailVerified)) {
     user = User.find("email", email).firstResult();
     // ...
 }
@@ -397,7 +397,7 @@ public class ProfileResource {
     public Response getProfile() {
         String sub = idToken.getSubject();
         User user = User.find("keycloakSub", sub).firstResult();
-        if (user == null) {
+        if (null == user) {
             return Response.status(404).build();
         }
         return Response.ok(user).build();

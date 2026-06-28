@@ -87,7 +87,7 @@ public class TeilnehmerResource {
         if (null == nutzer) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(adminService.mapNutzerToDto(nutzer)).build();
+        return Response.ok(NutzerDto.from(nutzer)).build();
     }
 
 
@@ -109,7 +109,7 @@ public class TeilnehmerResource {
     public Response updateTeilnehmer(@PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Teilnehmerdaten") NutzerDto user, @QueryParam("vid") Long vid) {
         try {
             Teilnehmer updated = teilnehmerService.updateTeilnehmer(id, user, vid);
-            if (updated == null) {
+            if (null == updated) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
             return Response.ok(updated).build();
@@ -125,7 +125,7 @@ public class TeilnehmerResource {
     @Operation(summary = "Teilnehmer löschen")
     public Response deleteTeilnehmer(@PathParam("id") Long id) {
         Nutzer nutzer = teilnehmerService.findById(id);
-        if (nutzer == null) {
+        if (null == nutzer) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         teilnehmerService.deleteUser(nutzer);
@@ -139,7 +139,7 @@ public class TeilnehmerResource {
     @Operation(summary = "Aktivierungsstatus umschalten")
     public Response toggleActive(@PathParam("id") Long id) {
         Nutzer byId = teilnehmerService.findById(id);
-        if (byId == null) {
+        if (null == byId) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         teilnehmerService.toggleActive(byId);
@@ -162,7 +162,7 @@ public class TeilnehmerResource {
         if (null == teilnehmer) {
             throw new WebApplicationException("Teilnehmer not found", Response.Status.NOT_FOUND);
         }
-        return Response.ok(adminService.mapNutzerToDto(teilnehmer)).build();
+        return Response.ok(NutzerDto.from(teilnehmer)).build();
     }
 
 
@@ -172,17 +172,17 @@ public class TeilnehmerResource {
     @Transactional
     @Operation(summary = "Eigenes Teilnehmerprofil aktualisieren")
     public Response updateTeilnehmerProfile(@RequestBody(description = "Die aktualisierten Profildaten") NutzerDto teilnehmerDto) {
-        if (teilnehmerDto == null) {
+        if (null == teilnehmerDto) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
         String email = JwtHelper.getUserPrincipalName(jwt);
         Teilnehmer teilnehmer = teilnehmerService.findByEmail(email);
         try {
             Teilnehmer updated = teilnehmerService.updateTeilnehmerProfile(teilnehmer, teilnehmerDto);
-            if (updated == null) {
+            if (null == updated) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
-            return Response.ok(adminService.mapNutzerToDto(updated)).build();
+            return Response.ok(NutzerDto.from(updated)).build();
         } catch (OptimisticLockException e) {
             return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
         }

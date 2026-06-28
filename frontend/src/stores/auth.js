@@ -64,7 +64,7 @@ export const useAuthStore = defineStore('auth', () => {
         const eventContext = useEventContextStore();
         eventContext.clearEvent();
 
-        toast.info('Sie wurden ausgeloggt.');
+        toast.info('Sie haben sich erfolgreich abgemeldet.');
         router.push('/login');
     }
 

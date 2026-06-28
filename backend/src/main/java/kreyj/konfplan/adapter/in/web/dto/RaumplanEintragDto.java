@@ -19,7 +19,7 @@ public class RaumplanEintragDto {
 
 
     public int anzahlTeilnehmer() {
-        return teilnehmer == null ? 0 : teilnehmer.size();
+        return null == teilnehmer ? 0 : teilnehmer.size();
     }
 
 

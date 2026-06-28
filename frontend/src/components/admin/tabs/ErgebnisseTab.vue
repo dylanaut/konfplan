@@ -71,6 +71,8 @@
           </table>
         </div>
       </div>
+<!--      <Stundenplan :reportData="{ belegungsPlan: props.belegungsPlan, raeume: props.raeume, slots: props.eventSlots,-->
+<!--      veranstaltung: eventContext.selectedEvent }" />-->
     </div>
     <div v-else class="text-center text-gray-500 py-12 bg-white rounded-xl shadow-sm border border-gray-100">
       <p class="font-bold">Kein Planungsergebnis vorhanden.</p>
@@ -84,11 +86,19 @@
         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div class="flex items-center space-x-2">
             <img src="/logo/konfplan-light_footer.svg" alt="Icon" class="w-5 h-5"/>
-            <span class="font-semibold">Gesamt-Stundenplan</span>
+            <span class="font-semibold">Prioritäten Auswertung</span>
           </div>
           <div class="space-x-2">
-            <button @click="downloadIcs()" class="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-100">ICS</button>
-            <button @click="navigateToReport('UebersichtRaeume')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">Anzeigen</button>
+            <button @click="navigateToReport('Prioritaeten')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">Anzeigen</button>
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div class="flex items-center space-x-2">
+            <img src="/logo/konfplan-light_footer.svg" alt="Icon" class="w-5 h-5"/>
+            <span class="font-semibold">Teilnehmer-Zuordnungen</span>
+          </div>
+          <div class="space-x-2">
+            <button @click="navigateToReport('TeilnehmerZuordnungen')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">Anzeigen</button>
           </div>
         </div>
         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -138,6 +148,7 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEventContextStore } from '../../../stores/eventContext';
 import api from '../../../api/axios';
+import Stundenplan from '../../../views/report/Stundenplan.vue';
 
 const props = defineProps({
   belegungsPlan: {type: Array, required: true},

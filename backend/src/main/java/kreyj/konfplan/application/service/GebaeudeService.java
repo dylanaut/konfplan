@@ -42,7 +42,7 @@ public class GebaeudeService {
             return g;
         } else {
             Gebaeude entity = Gebaeude.findById(g.getId());
-            if (entity == null) {
+            if (null == entity) {
                 return null;
             }
             entity.setName(g.getName());

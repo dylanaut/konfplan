@@ -52,115 +52,116 @@
     </div>
 
     <!-- TABS CONTENT -->
-    <ErgebnisseTab v-if="activeTab === 'ergebnisse' && selectedVid"
-                   :belegungsPlan="belegungsplan"
-                   :qualitaet="qualitaet"
-                   :eventSlots="eventSlots"
-                   :raeume="filteredRaeume"
-                   @downloadStundenplan="downloadStundenplan"
-                   @downloadRaumschilder="downloadRaumschilder"
-    />
+    <div>
+      <ErgebnisseTab v-if="activeTab === 'ergebnisse' && selectedVid"
+                     :belegungsPlan="belegungsplan"
+                     :qualitaet="qualitaet"
+                     :eventSlots="eventSlots"
+                     :raeume="filteredRaeume"
+      />
 
-    <VeranstaltungenTab v-if="activeTab === 'veranstaltungen'"
-                        :veranstaltungen="veranstaltungen"
-                        :selectedVid="selectedVid"
-                        :vortraege="vortraege"
-                        :teilnehmer="teilnehmer"
-                        :pageSize="pageSize"
-                        :canImportVeranstaltung="canImportVeranstaltung"
-                        @triggerUpload="triggerUpload"
-                        @openVeranstaltungEditor="openVeranstaltungEditor"
-                        @deleteVeranstaltung="deleteVeranstaltung"
-                        @selectVeranstaltung="handleVeranstaltungSelection"
-    />
+      <VeranstaltungenTab v-if="activeTab === 'veranstaltungen'"
+                          :veranstaltungen="veranstaltungen"
+                          :selectedVid="selectedVid"
+                          :vortraege="vortraege"
+                          :teilnehmer="teilnehmer"
+                          :pageSize="pageSize"
+                          :canImportVeranstaltung="canImportVeranstaltung"
+                          @triggerUpload="triggerUpload"
+                          @openVeranstaltungEditor="openVeranstaltungEditor"
+                          @deleteVeranstaltung="deleteVeranstaltung"
+                          @selectVeranstaltung="handleVeranstaltungSelection"
+      />
 
-    <GebaeudeTab v-if="activeTab === 'gebaeude'"
-                 :gebaeude="gebaeude"
-                 :pageSize="pageSize"
-                 @triggerUpload="triggerUpload"
-                 @openGebaeudeEditor="openGebaeudeEditor"
-                 @deleteGebaeude="deleteGebaeude"
-                 @openRaumEditor="openRaumEditor"
-                 @deleteRaum="deleteRaum"
-    />
-
-    <AdministratorenTab v-if="activeTab === 'administratoren'"
-                        :admins="admins"
-                        :pageSize="pageSize"
-                        @triggerUpload="triggerUpload"
-                        @openUserModal="openUserModal"
-                        @deleteUser="deleteUser"
-    />
-
-    <TeilnehmerTab v-if="activeTab === 'teilnehmer' && selectedVid"
-                   :teilnehmer="teilnehmer"
-                   :selectedVid="selectedVid"
+      <GebaeudeTab v-if="activeTab === 'gebaeude'"
+                   :gebaeude="gebaeude"
                    :pageSize="pageSize"
-                   :sortedSlots="sortedSlots"
-                   :isEventFinished="isEventFinished"
-                   :wahlvortraege="wahlvortraege"
-                   :participantPriorities="participantPriorities"
-                   :changedPriorities="changedPriorities"
                    @triggerUpload="triggerUpload"
-                   @openUserModal="openUserModal"
-                   @deleteUser="deleteUser"
-                   @toggleParticipantActive="toggleParticipantActive"
-                   @batchDeactivateParticipants="batchDeactivateParticipants"
-                   @batchDeleteParticipants="batchDeleteParticipants"
-                   @batchEmailParticipants="batchEmailParticipants"
-                   @openInviteModal="openInviteModal"
-                   @saveParticipantPriorities="saveParticipantPriorities"
-                   @saveAllParticipantPriorities="saveAllParticipantPriorities"
-    />
+                   @openGebaeudeEditor="openGebaeudeEditor"
+                   @deleteGebaeude="deleteGebaeude"
+                   @openRaumEditor="openRaumEditor"
+                   @deleteRaum="deleteRaum"
+      />
 
-    <ReferentenTab v-if="activeTab === 'referenten' && selectedVid"
-                   :referenten="referenten"
-                   :selectedVid="selectedVid"
-                   :pageSize="pageSize"
-                   :sortedSlots="sortedSlots"
-                   :isEventFinished="isEventFinished"
-                   @triggerUpload="triggerUpload"
-                   @openUserModal="openUserModal"
-                   @deleteUser="deleteUser"
-                   @openInviteModal="openInviteModal"
-    />
+      <AdministratorenTab v-if="activeTab === 'administratoren'"
+                          :admins="admins"
+                          :pageSize="pageSize"
+                          @triggerUpload="triggerUpload"
+                          @openUserModal="openUserModal"
+                          @deleteUser="deleteUser"
+      />
 
-    <VortraegeTab v-if="activeTab === 'vortraege' && selectedVid"
-                  :vortraege="vortraege"
-                  :selectedVid="selectedVid"
-                  :pageSize="pageSize"
-                  :canImportVortraege="canImportVortraege"
-                  @triggerUpload="triggerUpload"
-                  @openVortragEditor="openVortragEditor"
-                  @deleteVortrag="deleteVortrag"
-    />
+      <TeilnehmerTab v-if="activeTab === 'teilnehmer' && selectedVid"
+                     :teilnehmer="teilnehmer"
+                     :selectedVid="selectedVid"
+                     :pageSize="pageSize"
+                     :sortedSlots="sortedSlots"
+                     :isEventFinished="isEventFinished"
+                     :wahlvortraege="wahlvortraege"
+                     :participantPriorities="participantPriorities"
+                     :changedPriorities="changedPriorities"
+                     @triggerUpload="triggerUpload"
+                     @openUserModal="openUserModal"
+                     @deleteUser="deleteUser"
+                     @toggleParticipantActive="toggleParticipantActive"
+                     @batchDeactivateParticipants="batchDeactivateParticipants"
+                     @batchDeleteParticipants="batchDeleteParticipants"
+                     @batchEmailParticipants="batchEmailParticipants"
+                     @openInviteModal="openInviteModal"
+                     @saveParticipantPriorities="saveParticipantPriorities"
+                     @saveAllParticipantPriorities="saveAllParticipantPriorities"
+      />
 
-    <SlotsTab v-if="activeTab === 'slots' && selectedVid"
-              :eventSlots="eventSlots"
-              :selectedVid="selectedVid"
-              :pageSize="pageSize"
-              @triggerUpload="triggerUpload"
-              @openSlotEditor="openSlotEditor"
-              @deleteSlot="deleteSlot"
-    />
+      <ReferentenTab v-if="activeTab === 'referenten' && selectedVid"
+                     :referenten="referenten"
+                     :selectedVid="selectedVid"
+                     :pageSize="pageSize"
+                     :sortedSlots="sortedSlots"
+                     :isEventFinished="isEventFinished"
+                     @triggerUpload="triggerUpload"
+                     @openUserModal="openUserModal"
+                     @deleteUser="deleteUser"
+                     @openInviteModal="openInviteModal"
+      />
 
-    <PlanungTab v-if="activeTab === 'planung' && selectedVid"
-                :isPlanning="isOptimizing"
-                :veranstaltung="eventContext.selectedEvent"
-                :organisatoren="organisatoren"
-                :eventSlotsCount="eventSlots.length"
-                :gebaeudeDetails="gebaeudeDetails"
-                :referentenDetails="filteredReferenten"
-                :teilnehmerCount="filteredTeilnehmer.length"
-                :wahlvortraegeCount="wahlvortraegeCount"
-                :pflichtvortraegeCount="pflichtvortraegeCount"
-                :teilnehmerMitPrioritaetenCount="teilnehmerMitPrioritaetenCount"
-                @startOptimization="startPlanning"
-    />
+      <VortraegeTab v-if="activeTab === 'vortraege' && selectedVid"
+                    :vortraege="vortraege"
+                    :selectedVid="selectedVid"
+                    :pageSize="pageSize"
+                    :canImportVortraege="canImportVortraege"
+                    @triggerUpload="triggerUpload"
+                    @openVortragEditor="openVortragEditor"
+                    @deleteVortrag="deleteVortrag"
+      />
 
-    <ProtokollTab v-if="activeTab === 'protokoll'"
-                  :protokolle="protokolle"
-    />
+      <SlotsTab v-if="activeTab === 'slots' && selectedVid"
+                :eventSlots="eventSlots"
+                :selectedVid="selectedVid"
+                :pageSize="pageSize"
+                @triggerUpload="triggerUpload"
+                @openSlotEditor="openSlotEditor"
+                @deleteSlot="deleteSlot"
+      />
+
+      <PlanungTab v-if="activeTab === 'planung' && selectedVid"
+                  :isPlanning="isOptimizing"
+                  :veranstaltung="eventContext.selectedEvent"
+                  :organisatoren="organisatoren"
+                  :eventSlotsCount="eventSlots.length"
+                  :gebaeudeDetails="gebaeudeDetails"
+                  :referentenDetails="filteredReferenten"
+                  :teilnehmerCount="filteredTeilnehmer.length"
+                  :wahlvortraegeCount="wahlvortraegeCount"
+                  :pflichtvortraegeCount="pflichtvortraegeCount"
+                  :teilnehmerMitPrioritaetenCount="teilnehmerMitPrioritaetenCount"
+                  @startOptimization="startPlanning"
+                  @cancelOptimization="cancelPlanning"
+      />
+
+      <ProtokollTab v-if="activeTab === 'protokoll'"
+                    :protokolle="protokolle"
+      />
+    </div>
 
     <!-- Global File Input -->
     <input type="file" ref="fileInput" class="hidden" @change="handleGlobalUpload" accept=".csv"/>
@@ -211,7 +212,7 @@
 </template>
 
 <script setup>
-import {computed, onMounted, reactive, ref} from 'vue';
+import {computed, onMounted, reactive, ref, nextTick} from 'vue';
 import api from '../api/axios';
 import {useEventContextStore} from '../stores/eventContext';
 import {useAvailabilityStore} from '../stores/availability';
@@ -297,6 +298,7 @@ const showInviteModal = ref(false);
 const selectedUserForInvite = ref(null);
 
 const isOptimizing = ref(false);
+let pollingInterval = null;
 const fileInput = ref(null);
 const currentUploadEndpoint = ref('');
 
@@ -833,70 +835,48 @@ const saveAllParticipantPriorities = async () => {
 const startPlanning = async (solverConfig) => {
   isOptimizing.value = true;
   try {
-    await api.post(`/api/veranstaltungen/${selectedVid.value}/planungen`, solverConfig);
-    await loadData();
-    activeTab.value = 'ergebnisse';
+    await api.post(`/api/planungen/${selectedVid.value}`, solverConfig);
+    pollPlanningStatus();
   } catch (e) {
     console.error('Fehler bei der Planerstellung:', e);
-  } finally {
     isOptimizing.value = false;
   }
 };
 
-const downloadStundenplan = async () => {
-  try {
-    alert("Download des Stundenplans nicht implementiert"); // TODO Download des Stundenplans implementieren
-    const res = await api.get(`/api/reports/${selectedVid.value}/raeume-pdf`, {responseType: 'blob'});
-    const url = window.URL.createObjectURL(new Blob([res.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'stundenplan.pdf');
-    document.body.appendChild(link);
-    link.click();
-  } catch (e) {
-    console.error('Fehler beim Download des Stundenplans:', e);
-  }
+const pollPlanningStatus = () => {
+  pollingInterval = setInterval(async () => {
+    try {
+      const response = await api.get('/api/planungen/status');
+      if (!response.data.isPlanning) {
+        clearInterval(pollingInterval);
+        isOptimizing.value = false;
+        await loadData();
+
+        renderTabs.value = false;
+        await nextTick();
+        activeTab.value = 'ergebnisse';
+        renderTabs.value = true;
+      }
+    } catch (error) {
+      console.error('Fehler beim Abrufen des Planungsstatus:', error);
+      clearInterval(pollingInterval);
+      isOptimizing.value = false;
+    }
+  }, 2000);
 };
 
-const downloadRaumschilder = async () => {
-  try {
-    const res = await api.get(`/api/reports/${selectedVid.value}/raeume-pdf`, {responseType: 'blob'});
-    const url = window.URL.createObjectURL(new Blob([res.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'raumschilder.pdf');
-    document.body.appendChild(link);
-    link.click();
-  } catch (e) {
-    console.error('Fehler beim Download der Raumschilder:', e);
-  }
-};
-
-const downloadFreieSlotsReferenten = async () => {
-  try {
-    const res = await api.get(`/api/reports/${selectedVid.value}/freie-slots-referenten-pdf`, {responseType: 'blob'});
-    const url = window.URL.createObjectURL(new Blob([res.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'Referenten_freie_Slots.pdf');
-    document.body.appendChild(link);
-    link.click();
-  } catch (e) {
-    console.error('Fehler beim Download der freien Slots für Referenten:', e);
-  }
-};
-
-const downloadFreieSlotsTeilnehmer = async () => {
-  try {
-    const res = await api.get(`/api/reports/${selectedVid.value}/freie-slots-teilnehmer-pdf`, {responseType: 'blob'});
-    const url = window.URL.createObjectURL(new Blob([res.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'Teilnehmer_freie_Slots.pdf');
-    document.body.appendChild(link);
-    link.click();
-  } catch (e) {
-    console.error('Fehler beim Download der freien Slots für Teilnehmer:', e);
+const cancelPlanning = async () => {
+  if (confirm('Sind Sie sicher, dass Sie die Planerstellung abbrechen möchten?')) {
+    try {
+      await api.delete('/api/planungen');
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+      isOptimizing.value = false;
+      alert('Planerstellung wurde abgebrochen.');
+    } catch (e) {
+      console.error('Fehler beim Abbrechen der Planerstellung:', e);
+    }
   }
 };
 

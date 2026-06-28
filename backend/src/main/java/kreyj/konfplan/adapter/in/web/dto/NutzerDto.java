@@ -1,11 +1,19 @@
 package kreyj.konfplan.adapter.in.web.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import kreyj.konfplan.persistence.IdEntity;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.util.StringHelper;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Set;
+
+import static java.util.Collections.emptyList;
 
 @RegisterForReflection
 @NoArgsConstructor
@@ -65,6 +73,7 @@ public class NutzerDto extends AbstractVersionedDto {
         return referent;
     }
 
+
     public String fullName() {
         if (StringUtils.isBlank(firstName)) {
             if (StringUtils.isBlank(lastName)) {
@@ -77,5 +86,35 @@ public class NutzerDto extends AbstractVersionedDto {
         } else {
             return firstName + " " + lastName;
         }
+    }
+
+    // -------------------------------------------------------------------
+    // Mapper methods
+    // -------------------------------------------------------------------
+
+    public static NutzerDto from(Nutzer u) {
+        NutzerDto dto = new NutzerDto();
+        dto.id = u.getId();
+        dto.version = u.getVersion();
+        dto.email = u.getEmail();
+        dto.firstName = u.getFirstName();
+        dto.lastName = u.getLastName();
+        dto.role = u.getRole();
+        dto.isActive = u.isActive();
+        Set<Veranstaltung> veranstaltungen = u.getVeranstaltungen();
+        dto.veranstaltungIds = null != veranstaltungen ? veranstaltungen.stream().map(IdEntity::getId).toList() : emptyList();
+
+        if (u instanceof Referent r) {
+            dto.biography = r.getBiography();
+            dto.jobRole = r.getJobRole();
+            dto.organisation = r.getOrganisation();
+            dto.slogan = r.getSlogan();
+        } else if (u instanceof Teilnehmer tn) {
+            dto.gruppen = tn.getGruppen().stream().sorted(StringHelper.NUM_OR_ALPHA_COMPARATOR).toList();
+            if (!tn.getPrioritaeten().isEmpty()) {
+                dto.prioritaeten = tn.getPrioritaeten().stream().map(VortragPrioDto::from).toList();
+            }
+        }
+        return dto;
     }
 }

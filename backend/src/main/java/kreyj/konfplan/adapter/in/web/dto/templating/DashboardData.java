@@ -62,8 +62,8 @@ public class DashboardData {
 
     public Planungsstatistik planungsstatistik;
     public List<TeilnehmerStundenplan> teilnehmerStundenplan = new ArrayList<>();
-    public TeilnehmerDashboard teilnehmerDashboard;
-    public PrioDashboard prioDashboard;
+    public TeilnehmerReport teilnehmerReport;
+    public PrioReport prioReport;
     public Stundenplan stundenplan;
 
     public String geplantAm;

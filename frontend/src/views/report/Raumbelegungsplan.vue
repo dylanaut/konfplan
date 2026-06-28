@@ -12,17 +12,32 @@
 
     <div v-else>
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
-        <h1 class="h3">Teilnehmer-Dashboard</h1>
+        <h1 class="h3">Belegungsplan für Raum: {{ reportData.raum.name }}</h1>
         <button @click="window.print()" class="btn btn-secondary">
           <i class="bi bi-printer"></i> Drucken
         </button>
       </div>
       <p class="lead mb-4 print-only">Veranstaltung: {{ reportData.veranstaltung.name }}</p>
+      <p class="lead mb-4 print-only">Raum: {{ reportData.raum.name }}</p>
 
-      <!-- Hier die Logik und das Markup aus dem alten Template einfügen und an Vue anpassen -->
-      <div class="alert alert-info">
-        Die detaillierte Ansicht des Teilnehmer-Dashboards wird hier implementiert.
-      </div>
+      <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+          <tr>
+            <th scope="col">Zeit</th>
+            <th scope="col">Vortrag</th>
+            <th scope="col">Referent</th>
+            <th scope="col">Teilnehmer</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="eintrag in sortedBelegung" :key="eintrag.slot.id" class="page-break-inside-avoid">
+            <td>{{ formatSlot(eintrag.slot) }}</td>
+            <td>{{ eintrag.vortrag.titel }}</td>
+            <td>{{ eintrag.vortrag.referent.firstName }} {{ eintrag.vortrag.referent.lastName }}</td>
+            <td>{{ eintrag.teilnehmerNamen.join(', ') }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Druck-spezifischer Footer -->
@@ -33,24 +48,30 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
-import api from '../api/axios';
+import api from '../../api/axios';
 
 const route = useRoute();
-const reportData = ref({});
+const reportData = ref({ veranstaltung: {}, raum: {}, belegung: {} });
 const loading = ref(true);
 const error = ref(null);
 
+const sortedBelegung = computed(() => {
+  if (!reportData.value.belegung) return [];
+  return Object.values(reportData.value.belegung).sort((a, b) => new Date(a.slot.startTime) - new Date(b.slot.startTime));
+});
+
 onMounted(async () => {
   const veranstaltungId = route.params.vid;
-  if (!veranstaltungId) {
-    error.value = "Keine Veranstaltungs-ID in der URL gefunden.";
+  const raumId = route.params.rid;
+  if (!veranstaltungId || !raumId) {
+    error.value = "Veranstaltungs- oder Raum-ID in der URL nicht gefunden.";
     loading.value = false;
     return;
   }
   try {
-    const response = await api.get(`/api/reports/${veranstaltungId}/teilnehmer-dashboard-data`);
+    const response = await api.get(`/api/reports/${veranstaltungId}/raum/${raumId}/belegungsplan-data`);
     reportData.value = response.data;
   } catch (err) {
     error.value = 'Fehler beim Laden der Daten: ' + (err.response?.data?.message || err.message);
@@ -58,6 +79,13 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+const formatSlot = (slot) => {
+  const options = { hour: '2-digit', minute: '2-digit' };
+  const start = new Date(slot.startTime).toLocaleTimeString('de-DE', options);
+  const end = new Date(slot.endTime).toLocaleTimeString('de-DE', options);
+  return `${start} - ${end}`;
+};
 </script>
 
 <style>

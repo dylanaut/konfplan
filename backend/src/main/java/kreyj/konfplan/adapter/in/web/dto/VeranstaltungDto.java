@@ -1,15 +1,16 @@
 package kreyj.konfplan.adapter.in.web.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.util.StringHelper;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import static kreyj.konfplan.util.DateHelper.DAY_FORMATTER;
 import static kreyj.konfplan.util.DateHelper.HOUR_FORMATTER;
@@ -68,5 +69,38 @@ public class VeranstaltungDto extends AbstractVersionedDto {
         } else {
             return startTag() + ", " + startZeit() + " - " + endeTag() + ", " + endeZeit();
         }
+    }
+
+    // -------------------------------------------------------------------
+    // Mapping methods
+    // -------------------------------------------------------------------
+
+    public static VeranstaltungDto from(Veranstaltung v) {
+        VeranstaltungDto dto = new VeranstaltungDto();
+        dto.id = v.getId();
+        dto.version = v.getVersion();
+
+        dto.setName(v.getName());
+        dto.setBeginntAm(v.getBeginntAm());
+        dto.setEndetAm(v.getEndetAm());
+        dto.setDeadlineReferenten(v.getDeadlineReferenten());
+        dto.setDeadlineTeilnehmer(v.getDeadlineTeilnehmer());
+        dto.setLogo(v.getLogo());
+        dto.setLogo_link(v.getLogo_link());
+
+        // Organisatoren filtern und hinzufügen
+        if (v.getNutzer() != null) {
+            v.getNutzer().stream()
+                .filter(u -> u instanceof Admin)
+                .forEach(u -> {
+                    dto.getOrganisatorIds().add(u.getId());
+                    dto.getOrganisatorNamen().add(u.getLastName());
+                });
+        }
+
+        dto.setGebaeude(v.getGebaeude().stream().map(GebaeudeSimpleDto::from).toList());
+        dto.setGruppen(v.getGruppen().stream().sorted(StringHelper.NUM_OR_ALPHA_COMPARATOR).toList());
+
+        return dto;
     }
 }

@@ -1,17 +1,34 @@
 istPflicht;Titel;Referent_Email;wahlSlots;Inhalt;wiederholbar;maxWiederholungen;Pflichtgruppe;Pflichtraum;Pflichtslot;Ausstattung;Berufsfeld
-false;Analysieren, Programmieren, Elektrisieren;juergenkrey-manuel_janzen@yahoo.de;[1,2,3,4,5,6,7,8,9,10,11,12];Elektroniker fürBetriebstechnik, Fachinformatiker Anwendungsentwicklung, Fachinformatiker Systemintegration;true;5;;;;Beamer;IT
-false;Organisieren, Strukturieren, Kommunizieren;juergenkrey-mareike_mueller@yahoo.de;[1,2,3,4,5,6,7,8,9,10,11,12];Industriekaufleute, Fachkraft für Lagerlogistik;true;5;;;;Beamer;WIRTSCHAFT
-false;Weltweit für Durchblick sorgen;juergenkrey-jan_novak@yahoo.de;[1,2,3,4,5,6,7,8,9,10,11,12];Industriemechaniker, FachkraftMetalltechnik, Werkzeugmechaniker, Technischer Produktdesigner, Zerspanungsmechaniker;true;5;;;;Beamer;METALL
-false;Kabelverlegesysteme und Befestigungsmaterial;juergenkrey-manuela_schuetzeichel@yahoo.de;[1,2,3,4,5,6,7,8,9,10,11,12];Zerspanungsmechaniker;true;5;;;;Beamer;METALL
-false;Maschinen für den Straßenbau;juergenkrey-andreas_weissenfels@yahoo.de;[7,8,9,10,11,12];Industriemechaniker,Konstruktionsmechaniker, Elektroniker/Industrieelektriker, Fachkraft f. Metalltechnik, Fahrzeuglackierer, Technischer Produktdesigner, Zerspanungsmechaniker, Fachkraft f. Lagerlogistik, Fachinformatiker, Dualer Studiengänge Industriemechaniker/-in(Bachelor of Engineering/Maschinenbau) und Elektroniker/-in (Bachelor of Engineering/Elektrotechnik);true;5;;;;Beamer;METALL
-false;Bring die Energiewende mit uns voran!;juergenkrey-christiane_proff@yahoo.de;[3,4,5,10,11];Elektroniker (m/w/d) für Maschinen und Antriebstechnik, Fachkraft (m/w/d) für Lagerlogistik;true;5;;;;Beamer;ELEKTROTECHNIK
-false;Verwaltung mit Zukunft – dein Platz im öffentlichen Dienst;juergenkrey-sarah_jansen@yahoo.de;[1,2,3,4,5,6];Verwaltungsfachangestellte/r, Studium für den mittleren Dienst;true;5;;;;Beamer;WIRTSCHAFT
-false;Werde zum Schreibtischdetektiv...;juergenkrey-federkiel_boschmann_isaak@yahoo.de;[1,2,3,4,5,6,7,8,9,10,11,12];Finanzwirt,Diplom Finanzwirt;true;5;;;;Beamer;WIRTSCHAFT
-false;Grundstein für deine Zukunft;juergenkrey-alicia_kurz_alexandra_merks@yahoo.de;[1,2,3,4,5,6];Industriekaufmann (m/w/d),Feinwerkmechaniker (m/w/d) Maschinenbau;true;5;;;;Beamer;METALL
-false;Schwamm drüber!;juergenkrey-katrin_rascher@yahoo.de;[7,8,9,10,11,12];Maschinen- und Anlagenführer, Kunststoff- undKautschuktechnologe;true;5;;;;Beamer;CHEMIE
-false;Pflegehände, die die Zukunft tragen;juergenkrey-katharina_heidrich@yahoo.de;[1,2,3,4,5,6,7,8,9,10,11,12];Pflegefachmann bzw. Pflegefachfrau, Medizinische Fachangestellte, Operationstechnische Assistenten, Medizinische Technologie für Radiologie, Medizinische Technologie für Laboratoriumsanalytik, Pharmazeutisch technische / kaufmännische Angestellte;true;5;;;;Beamer;GESUNDHEIT
-false;Geh' deine ersten Karriereschritte mit uns!;juergenkrey-andreas_schneider@yahoo.de;[1,2,3,4,5,6,7,8,9,10,11,12];Elektroniker für Automatisierungstechnik, Industriemechaniker;true;5;;;;Beamer;ELEKTROTECHNIK
-false;Handel 2.0: Zwischen Kundenkontakt und digitaler Logistik;juergenkrey-nils_dillmann@yahoo.de;[1,2,3,4,5,6,7,8,9,10,11,12];Groß- und Außenhandels Management, Mechaniker für Landmaschinen, Zweiradmechatroniker, Einzelhandelskaufmann(-frau);true;5;;;;Beamer;WIRTSCHAFT
-false;Traumberuf Polizei?;juergenkrey-david_puetz@yahoo.de;[1,2,3,4,5,6,7,8,9,10,11,12];Polizeidienst;true;5;;;;Beamer;VERKEHR
-false;Deine Karriere bei der Bundeswehr;juergenkrey-ulf_bonszkowski@yahoo.de;[1,2,3,4,5,6,7,8,9,10,11,12];Ausbildungs- und Studienmöglichkeiten bei der Bundeswehr;true;5;;;;Beamer;VERKEHR
-false;Berufe mit Zukunft in der Gesundheitsbranche für Medizin-, Sport- und Bewegungsbegeisterte junge Menschen;juergenkrey-anna_czernik@yahoo.de;[1,2,3,4,5,6];Physiotherapeuten und Ergotherapeuten;true;5;;;;Beamer;GESUNDHEIT
+false;Rechtsanwalt / Jura Studium / Studium Wirtschaftsrecht ;stephan.arens@th-koeln.de;1,2,3,4;Rechtsanwalt / Jura Studium / Studium Wirtschaftsrecht ;true;2;;;;Beamer;
+false;Entwicklungszusammenarbeit ;mart.schaefer@gmail.com;1,2,3,4;Entwicklungszusammenarbeit ;true;2;;;;Beamer;
+false;Luft- und Raumfahrtingenieur;anke.pagels-kerp@dlr.de;1,2,3,4;Luft- und Raumfahrtingenieur;true;2;;;;Beamer;
+false;Fachkraft für Arbeitssicherheit ;chrisumilgl@freenet.de;1,2,3,4;Fachkraft für Arbeitssicherheit ;true;2;;;;Beamer;
+false;Operationstechnische/Anästhesietechnische Assistenz;madleen883.schneider@gmx.de;1,2,3,4;Operationstechnische/Anästhesietechnische Assistenz;true;2;;;;Beamer;
+false;Pflegefachmann/Pflegefachfrau; medizinische Fachangestellte; operationstechnische Assistenten; medizinische Technologie für Radiologie; medizinische Technologie für Laboratoriumsanalytik; Pharmazeutisch technische Angestellte oder p. kaufmännische Angestellte;kheidrich@pflegefachschule-linz.de;1,2,3,4;Pflegefachmann/Pflegefachfrau; medizinische Fachangestellte; operationstechnische Assistenten; medizinische Technologie für Radiologie; medizinische Technologie für Laboratoriumsanalytik; Pharmazeutisch technische Angestellte oder p. kaufmännische Angestellte;true;2;;;;Beamer;
+false;Bankkaufmann/ Bankkauffrau ;bianca-eileen.koenig@vr-rae.de;1,2,3,4;Bankkaufmann/ Bankkauffrau ;true;2;;;;Beamer;
+false;Kaufmann (m/w/d) für Groß- und Außenhandelsmanagement;messenverwaltung@brillux.de;1,2,3,4;Kaufmann (m/w/d) für Groß- und Außenhandelsmanagement;true;2;;;;Beamer;
+false;Süßwarentechnologie | Lebensmittelchemie | Industriekaufleute ;l.diederich@coppeneur.de;1,2,3,4;Süßwarentechnologie | Lebensmittelchemie | Industriekaufleute ;true;2;;;;Beamer;
+false;Allgemeine Studienorientierung, Bewerbung an der H-BRS;sarah.kloth@h-brs.de;1,2,3,4;Allgemeine Studienorientierung, Bewerbung an der H-BRS;true;2;;;;Beamer;
+false;Anästhesietechnischer Assistent/ Operationstechnischer Assistent/ Generalistische Pflegeausbildung/ Medizinischer Technologe in der Radiologie/ Physiotherapeut;joanna.fait@marienhaus.de;1,2,3,4;Anästhesietechnischer Assistent/ Operationstechnischer Assistent/ Generalistische Pflegeausbildung/ Medizinischer Technologe in der Radiologie/ Physiotherapeut;true;2;;;;Beamer;
+false;Kaufmann/-frau für Versicherungen und Finanzen;Michael.Jung@debeka.de;1,2,3,4;Kaufmann/-frau für Versicherungen und Finanzen;true;2;;;;Beamer;
+false;Polizeibeamt*innen;pilinz.einstellungsberatung@polizei.rlp.de;1,2,3,4;Polizeibeamt*innen;true;2;;;;Beamer;
+false;Elektroniker / Industriemechaniker;andreas.schneider@birkenstock.com;1,2,3,4;Elektroniker / Industriemechaniker;true;2;;;;Beamer;
+false;Bundespolizist;michael.diesner@polizei.bund.de;1,2,3,4;Bundespolizist;true;2;;;;Beamer;
+false;Chemikant, Fachlagerist/Fachkraft Lagerlogistik, Fachinformatiker für Systemintegration;krossa@noelken.de;1,2,3,4;Chemikant, Fachlagerist/Fachkraft Lagerlogistik, Fachinformatiker für Systemintegration;true;2;;;;Beamer;
+false;Finanzwirt-in / Diplomfinanzwirt-in ;ausbildung@fa-nr.fin-rlp.de;1,2,3,4;Finanzwirt-in / Diplomfinanzwirt-in ;true;2;;;;Beamer;
+false;Physiker;frank@bensch-erpel.de;1,2,3,4;Physiker;true;2;;;;Beamer;
+false;Klimaschutz;andrea.schlueter@vg-linz.de;1,2,3,4;Klimaschutz;true;2;;;;Beamer;
+false;Jugendvertretung;pascal.labonde@vg-linz.de;1,2,3,4;Jugendvertretung;true;2;;;;Beamer;
+false;Werkzeugmechaniker, Industriemechaniker, Elektroniker, Maschinen- u. Anlagenführer,  Industriekauffrau;manuela.schuetzeichel@niedax.de;1,2,3,4;Werkzeugmechaniker, Industriemechaniker, Elektroniker, Maschinen- u. Anlagenführer,  Industriekauffrau;true;2;;;;Beamer;
+false;SHK Anlagenmechaniker, Wasser, Wärme, Klima, Lüftung;markusbouillon@siebersgmbh.de;1,2,3,4;SHK Anlagenmechaniker, Wasser, Wärme, Klima, Lüftung;true;2;;;;Beamer;
+false;Militärische und zivile Karrieremöglichkeiten;KarrBBBonn@bundeswehr.org;1,2,3,4;Militärische und zivile Karrieremöglichkeiten;true;2;;;;Beamer;
+false;Naturwissenschaftler;philip.born@jade-hs.de;1,2,3,4;Naturwissenschaftler;true;2;;;;Beamer;
+false;Bachelorstudiengang Management, Führung, Innovation;weber3@hs-koblenz.de;1,2,3,4;Bachelorstudiengang Management, Führung, Innovation;true;2;;;;Beamer;
+false;Ausbildung und duales Studium im Bereich Metall und Elektronik ;alexander.gross@fst.com;1,2,3,4;Ausbildung und duales Studium im Bereich Metall und Elektronik ;true;2;;;;Beamer;
+false;Bankkaufleute ;anne.bollinger@sparkasse-neuwied.de;1,2,3,4;Bankkaufleute ;true;2;;;;Beamer;
+false;Herzchirurgie;matthiasendlich@yahoo.de;1,2,3,4;Herzchirurgie;true;2;;;;Beamer;
+false;Grafikdesigner ;simon.design@gmx.de;1,2,3,4;Grafikdesigner ;true;2;;;;Beamer;
+false;ErzieherIn;anka.kuntze@gmail.com;1,2,3,4;ErzieherIn;true;2;;;;Beamer;
+false;Eventmanager;benedikt@feltens-events.de;1,2,3,4;Eventmanager;true;2;;;;Beamer;
+false;Forstwirtschaft;bmanns@zuwied.net;1,2,3,4;Forstwirtschaft;true;2;;;;Beamer;
+false;Sportmanagement;schneider1@hs-koblenz.de;1,2,3,4;Sportmanagement;true;2;;;;Beamer;

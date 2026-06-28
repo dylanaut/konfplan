@@ -6,17 +6,16 @@ const ResetPassword = () => import('../views/ResetPassword.vue');
 const TeilnehmerDashboard = () => import('../views/TeilnehmerDashboard.vue');
 const ReferentDashboard = () => import('../views/ReferentDashboard.vue');
 const AdminDashboard = () => import('../views/AdminDashboard.vue');
-const FreieSlotsReferenten = () => import('../views/FreieSlotsReferenten.vue');
-const LaufzettelTeilnehmer = () => import('../views/LaufzettelTeilnehmer.vue');
-const LaufzettelReferent = () => import('../views/LaufzettelReferent.vue');
-const Raumbelegungsplan = () => import('../views/Raumbelegungsplan.vue');
-const UebersichtRaeume = () => import('../views/UebersichtRaeume.vue');
-const Raumschilder = () => import('../views/Raumschilder.vue');
-const FreieSlotsTeilnehmer = () => import('../views/FreieSlotsTeilnehmer.vue');
-const StundenplanDashboard = () => import('../views/StundenplanDashboard.vue');
-const TeilnehmerDashboardReport = () => import('../views/TeilnehmerDashboardReport.vue');
-const PriosDashboard = () => import('../views/PriosDashboard.vue');
-const LaufzettelAlle = () => import('../views/LaufzettelAlle.vue');
+const FreieSlotsReferenten = () => import('../views/report/FreieSlotsReferenten.vue');
+const LaufzettelTeilnehmer = () => import('../views/report/LaufzettelTeilnehmer.vue');
+const LaufzettelReferent = () => import('../views/report/LaufzettelReferent.vue');
+const Raumbelegungsplan = () => import('../views/report/Raumbelegungsplan.vue');
+const UebersichtRaeume = () => import('../views/report/UebersichtRaeume.vue');
+const Raumschilder = () => import('../views/report/Raumschilder.vue');
+const FreieSlotsTeilnehmer = () => import('../views/report/FreieSlotsTeilnehmer.vue');
+const TeilnehmerZuordnungen = () => import('../views/report/TeilnehmerZuordnungen.vue');
+const Prioritaeten = () => import('../views/report/Prioritaeten.vue');
+const LaufzettelAlle = () => import('../views/report/LaufzettelAlle.vue');
 
 const routes = [
     {
@@ -96,21 +95,15 @@ const routes = [
         meta: { requiresAuth: true, role: 'ADMIN' }
     },
     {
-        path: '/admin/veranstaltung/:vid/dashboard/stundenplan',
-        name: 'StundenplanDashboard',
-        component: StundenplanDashboard,
-        meta: { requiresAuth: true, role: 'ADMIN' }
-    },
-    {
         path: '/veranstaltung/:vid/dashboard/teilnehmer',
-        name: 'TeilnehmerDashboardReport',
-        component: TeilnehmerDashboardReport,
+        name: 'TeilnehmerZuordnungen',
+        component: TeilnehmerZuordnungen,
         meta: { requiresAuth: true }
     },
     {
         path: '/admin/veranstaltung/:vid/dashboard/prios',
-        name: 'PriosDashboard',
-        component: PriosDashboard,
+        name: 'Prioritaeten',
+        component: Prioritaeten,
         meta: { requiresAuth: true, role: 'ADMIN' }
     },
     {

@@ -82,10 +82,10 @@ public class ReferentResource {
     @Operation(summary = "Referentenprofil abrufen", description = "Ruft das Profil des aktuell angemeldeten Referenten ab.")
     public Response getReferent() { // Changed return type
         Referent referent = referentService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
-        if (referent == null) {
+        if (null == referent) {
             throw new WebApplicationException("Referent not found", Response.Status.NOT_FOUND);
         }
-        return Response.ok(adminService.mapNutzerToDto(referent)).build();
+        return Response.ok(NutzerDto.from(referent)).build();
     }
 
 
@@ -108,7 +108,7 @@ public class ReferentResource {
     @Operation(summary = "E-Mail-Änderung anfordern", description = "Fordert eine Änderung der E-Mail-Adresse an und sendet Bestätigungs-E-Mails.")
     public Response requestEmailChange(@RequestBody(description = "Anfrage zur E-Mail-Änderung") EmailChangeRequestDto requestDto) {
         Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
-        if (nutzer == null) {
+        if (null == nutzer) {
             return Response.status(Response.Status.NOT_FOUND).entity("Nutzer nicht gefunden.").build();
         }
 
@@ -148,7 +148,7 @@ public class ReferentResource {
     public Response confirmEmailChange(@QueryParam("token") String token) {
         Nutzer nutzer = Nutzer.find("emailChangeToken", token).firstResult();
 
-        if (nutzer == null || nutzer.getEmailChangeTokenExpiry() == null || nutzer.getEmailChangeTokenExpiry().isBefore(LocalDateTime.now())) {
+        if (null == nutzer || nutzer.getEmailChangeTokenExpiry() == null || nutzer.getEmailChangeTokenExpiry().isBefore(LocalDateTime.now())) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Ungültiger oder abgelaufener Bestätigungslink.").build();
         }
 
@@ -192,7 +192,7 @@ public class ReferentResource {
     public Response updateVortrag(@PathParam("vortragId") Long vortragId, @RequestBody(description = "Die aktualisierten Vortragsdaten") VortragDto dto) {
         try {
             VortragDto updated = referentService.updateVortrag(JwtHelper.getUserPrincipalName(jwt), vortragId, dto);
-            if (updated == null) {
+            if (null == updated) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
             return Response.ok(updated).build();
@@ -256,7 +256,7 @@ public class ReferentResource {
     public Response getReferentVeranstaltungen() {
         Referent referent =
             referentService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
-        if (referent == null) {
+        if (null == referent) {
             return Response.status(Response.Status.NOT_FOUND).entity("Referent nicht gefunden.").build();
         }
         List<ReferentVeranstaltungDto> referentVeranstaltungen = referentService.getReferentVeranstaltungen(referent);
@@ -313,7 +313,7 @@ public class ReferentResource {
         }
 
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (veranstaltung == null) {
+        if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
@@ -324,7 +324,7 @@ public class ReferentResource {
         }
 
         NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(nutzer.getId(), vid));
-        if (nv == null) {
+        if (null == nv) {
             return Response.status(Response.Status.NOT_FOUND).entity("NutzerVerfuegbarkeit nicht gefunden.").build();
         }
 

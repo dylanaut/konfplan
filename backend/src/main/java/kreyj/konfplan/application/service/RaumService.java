@@ -35,7 +35,7 @@ public class RaumService {
     @Transactional
     public Raum save(Raum r, Long gebaeudeId) {
         Gebaeude gebaeude = Gebaeude.findById(gebaeudeId);
-        if (gebaeude == null) {
+        if (null == gebaeude) {
             protokollService.log(ProtokollKategorie.RAUM, "Raum-Speicherung fehlgeschlagen", "Gebäude mit ID " + gebaeudeId + " nicht gefunden.");
             throw new IllegalArgumentException("Gebäude mit ID " + gebaeudeId + " nicht gefunden.");
         }
@@ -48,7 +48,7 @@ public class RaumService {
             return r;
         } else {
             Raum raum = Raum.findById(r.getId());
-            if (raum == null) {
+            if (null == raum) {
                 return null;
             }
 

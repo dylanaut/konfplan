@@ -151,7 +151,7 @@ public abstract class Nutzer extends VersionedEntity {
 
         NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(this, veranstaltung));
 
-        if (nv == null) {
+        if (null == nv) {
             if (createIfMissing) {
                 nv = new NutzerVerfuegbarkeit(this, veranstaltung, veranstaltung.getSlotIds());
                 nv.persist();

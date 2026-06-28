@@ -5,8 +5,6 @@ import com.opencsv.bean.CsvToBeanBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.adapter.in.web.dto.GebaeudeSimpleDto;
-import kreyj.konfplan.adapter.in.web.dto.RaumDto;
 import kreyj.konfplan.adapter.in.web.dto.VeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.VeranstaltungCsvDto;
 import kreyj.konfplan.application.port.in.VeranstaltungServiceInterface;
@@ -14,9 +12,7 @@ import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.ProtokollKategorie;
-import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.util.StringHelper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
@@ -61,7 +57,7 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
 
         if (dto.id != null) {
             v = Veranstaltung.findById(dto.id);
-            if (v == null) {
+            if (null == v) {
                 return null;
             }
 
@@ -107,7 +103,7 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
                 .forEach(v::removeNutzer);
             for (Long adminId : dto.getOrganisatorIds()) {
                 Admin a = Admin.findById(adminId);
-                if (a == null) {
+                if (null == a) {
                     LOG.warn("Unbekannter Admin mit ID " + adminId + " beim Aktualisieren der Veranstaltung '" + v.getName() + "'.");
                 } else {
                     v.addNutzer(a);
@@ -115,7 +111,7 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
             }
         }
 
-        if (dto.id == null) {
+        if (null == dto.id) {
             v.persistAndFlush();
             protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung erstellt",
                 "Neue Veranstaltung '" + v.getName() + "' erstellt.", v.getId());
@@ -126,7 +122,7 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
             protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung aktualisiert",
                 "Veranstaltung '" + v.getName() + "' aktualisiert.", v.getId());
         }
-        return mapVeranstaltungToDto(v);
+        return VeranstaltungDto.from(v);
     }
 
 
@@ -240,76 +236,5 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
             return deleted;
         }
         return false;
-    }
-
-
-    // -------------------------------------------------------------------
-    // mapper methods
-    // -------------------------------------------------------------------
-
-
-    public static VeranstaltungDto mapVeranstaltungToDto(Veranstaltung v) {
-        VeranstaltungDto dto = new VeranstaltungDto();
-        dto.id = v.getId();
-        dto.version = v.getVersion();
-
-        dto.setName(v.getName());
-        dto.setBeginntAm(v.getBeginntAm());
-        dto.setEndetAm(v.getEndetAm());
-        dto.setDeadlineReferenten(v.getDeadlineReferenten());
-        dto.setDeadlineTeilnehmer(v.getDeadlineTeilnehmer());
-        dto.setLogo(v.getLogo());
-        dto.setLogo_link(v.getLogo_link());
-
-        // Organisatoren filtern und hinzufügen
-        if (v.getNutzer() != null) {
-            v.getNutzer().stream()
-                .filter(u -> u instanceof Admin)
-                .forEach(u -> {
-                    dto.getOrganisatorIds().add(u.getId());
-                    dto.getOrganisatorNamen().add(u.getLastName());
-                });
-        }
-
-        dto.setGebaeude(v.getGebaeude().stream().map(VeranstaltungService::mapGebaeudeToDto).toList());
-        dto.setGruppen(v.getGruppen().stream().sorted(StringHelper.NUM_OR_ALPHA_COMPARATOR).toList());
-
-        return dto;
-    }
-
-
-    public static GebaeudeSimpleDto mapGebaeudeToDto(Gebaeude gebaeude) {
-        GebaeudeSimpleDto dto = new GebaeudeSimpleDto();
-        dto.id = gebaeude.getId();
-        dto.version = gebaeude.getVersion();
-
-        dto.name = gebaeude.getName();
-        dto.strasse = gebaeude.getStrasse();
-        dto.hausnummer = gebaeude.getHausnummer();
-        dto.ort = gebaeude.getOrt();
-        dto.postleitzahl = gebaeude.getPostleitzahl();
-        dto.typ = gebaeude.getTyp();
-
-        dto.raeume = gebaeude.getRaeume().stream()
-            .map(VeranstaltungService::mapRaumToDto)
-            .toList();
-
-        return dto;
-    }
-
-
-    public static RaumDto mapRaumToDto(Raum raum) {
-        RaumDto dto = new RaumDto();
-
-        dto.id = raum.getId();
-        dto.version = raum.getVersion();
-        dto.name = raum.getName();
-        dto.kapazitaet = raum.getKapazitaet();
-        dto.etage = raum.getEtage();
-
-        dto.gebaeudeId = raum.getGebaeude().getId();
-        dto.gebaeudeName = raum.getGebaeude().getName();
-
-        return dto;
     }
 }

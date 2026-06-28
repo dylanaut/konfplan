@@ -39,7 +39,7 @@ public class Planungsergebnis extends VersionedEntity {
     public static Planungsergebnis getPlanungsergebnis(Veranstaltung veranstaltung) {
         Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
 
-        if (planungsergebnis == null) {
+        if (null == planungsergebnis) {
             throw new EntityNotFoundException(Planungsergebnis.class, "Kein Planungsergebnis für Veranstaltung '" +
                     veranstaltung.getName() + "' gefunden");
         }

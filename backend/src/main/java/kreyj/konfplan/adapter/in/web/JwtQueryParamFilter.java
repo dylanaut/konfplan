@@ -25,7 +25,7 @@ public class JwtQueryParamFilter implements ContainerRequestFilter {
         // Prüfen, ob der Authorization-Header bereits gesetzt ist
         String authorizationHeader = requestContext.getHeaderString(HttpHeaders.AUTHORIZATION);
 
-        if (authorizationHeader == null || authorizationHeader.isEmpty()) {
+        if (null == authorizationHeader || authorizationHeader.isEmpty()) {
             // Wenn nicht, prüfen, ob ein JWT-Token als Query-Parameter vorhanden ist
             String jwtFromQuery = requestContext.getUriInfo().getQueryParameters().getFirst(JWT_QUERY_PARAM);
 
