@@ -342,7 +342,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         Prioritaet.delete("teilnehmer = ?1 and vortrag.veranstaltung = ?2", teilnehmer, veranstaltung);
 
         for (VortragPrioDto dto : priorityDtos) {
-            if (dto.prio > 0) {
+            if (dto.prioWert > 0) {
                 Wahlvortrag vortrag = Wahlvortrag.findById(dto.vortragId);
                 if (null == vortrag) {
                     LOG.warn("Vortrag mit ID " + dto.vortragId + " für Priorität von Teilnehmer " + userId + " nicht gefunden. Überspringe.");
@@ -357,7 +357,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
                 Prioritaet prioritaet = new Prioritaet();
                 prioritaet.setTeilnehmer(teilnehmer);
                 prioritaet.setVortrag(vortrag);
-                prioritaet.setPrio(dto.prio);
+                prioritaet.setPrioWert(dto.prioWert);
                 prioritaet.persistAndFlush();
             }
         }

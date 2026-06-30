@@ -13,7 +13,7 @@ import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
-import kreyj.konfplan.adapter.in.web.dto.PrioritaetRequest;
+import kreyj.konfplan.adapter.in.web.dto.VortragPrioDto;
 import kreyj.konfplan.adapter.in.web.dto.VeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import org.junit.jupiter.api.BeforeEach;
@@ -116,9 +116,9 @@ class DeadlineResourceTest extends DatabaseCleaner {
             @Claim(key = "upn", value = "teilnehmer@test.de")
     })
     void testTeilnehmerDeadlineExceeded() {
-        PrioritaetRequest req = new PrioritaetRequest();
+        VortragPrioDto req = new VortragPrioDto();
         req.vortragId = wahlvortragId;
-        req.prio = 1;
+        req.prioWert = 1;
 
         given()
                 .contentType(ContentType.JSON)

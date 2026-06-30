@@ -9,5 +9,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AdminPrioritaetUpdateRequestDto {
     public Long vortragId;
-    public int prio;
+    public int prioWert;
 }

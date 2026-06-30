@@ -9,7 +9,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import kreyj.konfplan.adapter.in.web.dto.PrioritaetRequest;
+import kreyj.konfplan.adapter.in.web.dto.VortragPrioDto;
 import kreyj.konfplan.domain.service.PrioritaetService;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -61,7 +61,7 @@ public class PrioritaetenResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Operation(summary = "Prioritäten aktualisieren", description = "Aktualisiert die Prioritäten des Teilnehmers für die Wahlvorträge.")
-    public Response updatePrioritaeten(@RequestBody(description = "Liste der Prioritäts-Anfragen") List<PrioritaetRequest> requests) {
+    public Response updatePrioritaeten(@RequestBody(description = "Liste der Prioritäts-Anfragen") List<VortragPrioDto> requests) {
         String email = JwtHelper.getUserPrincipalName(jwt);
 
         prioService.savePrioritaeten(email, requests);

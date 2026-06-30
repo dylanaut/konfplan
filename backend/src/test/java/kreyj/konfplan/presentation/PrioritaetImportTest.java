@@ -89,10 +89,10 @@ class PrioritaetImportTest extends DatabaseCleaner {
 
         Prioritaet p1 = Prioritaet.find("teilnehmer.id = ?1 and vortrag.id = ?2", teilnehmer1Id, wv1Id).firstResult();
         assertNotNull(p1);
-        assertEquals(5, p1.getPrio());
+        assertEquals(5, p1.getPrioWert());
 
         Prioritaet p2 = Prioritaet.find("teilnehmer.id = ?1 and vortrag.id = ?2", teilnehmer1Id, wv2Id).firstResult();
         assertNotNull(p2);
-        assertEquals(3, p2.getPrio());
+        assertEquals(3, p2.getPrioWert());
     }
 }

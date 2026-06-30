@@ -3,6 +3,7 @@ package kreyj.konfplan.adapter.in.web.dto;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -111,8 +112,13 @@ public class NutzerDto extends AbstractVersionedDto {
             dto.slogan = r.getSlogan();
         } else if (u instanceof Teilnehmer tn) {
             dto.gruppen = tn.getGruppen().stream().sorted(StringHelper.NUM_OR_ALPHA_COMPARATOR).toList();
-            if (!tn.getPrioritaeten().isEmpty()) {
-                dto.prioritaeten = tn.getPrioritaeten().stream().map(VortragPrioDto::from).toList();
+            Set<Prioritaet> tnPrioritaeten = tn.getPrioritaeten();
+            List<VortragPrioDto> mappedPrios = tnPrioritaeten.stream()
+                .filter(p -> p.getPrioWert() > 0)
+                .map(VortragPrioDto::from)
+                .toList();
+            if (!mappedPrios.isEmpty()) {
+                dto.prioritaeten = mappedPrios;
             }
         }
         return dto;

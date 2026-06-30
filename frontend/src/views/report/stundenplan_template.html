@@ -63,13 +63,13 @@ z-index: 10;
           <h6 class="mb-1">Prio-Erfüllung</h6>
           <div class="mt-2" style="font-size: 0.8rem; opacity: 0.9;">
             {#for entry in wahl_erfuellung_stats.prio_prefs.entrySet}
-            {#let prio = entry.key}
+            {#let prioWert = entry.key}
             {#let gewaehlt = entry.value}
             {#if gewaehlt > 0}
-            {#let erfuellt = wahl_erfuellung_stats.prio_erfuellungen.get(prio)}
+            {#let erfuellt = wahl_erfuellung_stats.prio_erfuellungen.get(prioWert)}
             <div class="d-flex justify-content-between">
-              <span>Prio {prio}: {gewaehlt}x gewählt, erf. {erfuellt}x</span>
-              <span>≅ {wahl_erfuellung_stats.prio_erfuellungen_prozentual.get(prio)}</span>
+              <span>Prio {prioWert}: {gewaehlt}x gewählt, erf. {erfuellt}x</span>
+              <span>≅ {wahl_erfuellung_stats.prio_erfuellungen_prozentual.get(prioWert)}</span>
             </div>
             {/if}
             {/for}

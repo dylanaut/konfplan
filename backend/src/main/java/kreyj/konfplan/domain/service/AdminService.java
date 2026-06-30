@@ -173,7 +173,8 @@ public class AdminService implements AdminServiceInterface {
                     if (null == wv) {
                         LOG.error("Unbekannter Wahlvortrag zu id: " + prioDto.vortragId);
                     } else {
-                        Prioritaet prioritaet = new Prioritaet(t, Wahlvortrag.findById(prioDto.vortragId), prioDto.prio);
+                        Prioritaet prioritaet = new Prioritaet(t, Wahlvortrag.findById(prioDto.vortragId),
+                            prioDto.prioWert);
                         prioritaet.persist();
                         t.addPrioritaet(prioritaet);
                     }
@@ -281,7 +282,7 @@ public class AdminService implements AdminServiceInterface {
                     if (null == wv) {
                         LOG.error("Unbekannter Wahlvortrag zu id: " + prioDto.vortragId);
                     } else {
-                        Prioritaet prioritaet = new Prioritaet(t, Wahlvortrag.findById(prioDto.vortragId), prioDto.prio);
+                        Prioritaet prioritaet = new Prioritaet(t, Wahlvortrag.findById(prioDto.vortragId), prioDto.prioWert);
                         prioritaet.persist();
                         t.addPrioritaet(prioritaet);
                     }
@@ -788,7 +789,7 @@ public class AdminService implements AdminServiceInterface {
                         }
 
                         try {
-                            int prio = Integer.parseInt(data[1].trim());
+                            int prioWert = Integer.parseInt(data[1].trim());
 
                             Prioritaet prioritaet = Prioritaet.find("teilnehmer = ?1 and vortrag = ?2", teilnehmer, vortrag).firstResult();
                             if (null == prioritaet) {
@@ -797,10 +798,10 @@ public class AdminService implements AdminServiceInterface {
                                 prioritaet.setVortrag(vortrag);
                             }
 
-                            prioritaet.setPrio(prio);
+                            prioritaet.setPrioWert(prioWert);
                             prioritaet.persistAndFlush();
                             count++;
-                            protokollService.log(ProtokollKategorie.VORTRAEGE, "Priorität importiert", "Priorität für '" + teilnehmer.getEmail() + "' für Vortrag '" + vortrag.getTitel() + "' auf " + prio + " gesetzt.", vortrag.getId());
+                            protokollService.log(ProtokollKategorie.VORTRAEGE, "Priorität importiert", "Priorität für '" + teilnehmer.getEmail() + "' für Vortrag '" + vortrag.getTitel() + "' auf " + prioWert + " gesetzt.", vortrag.getId());
                         } catch (NumberFormatException e) {
                             LOG.warn("Ungültiger Prioritätswert für Teilnehmer " + teilnehmerEmail + " und Vortrag " + vortrag.getTitel() + ": " + e.getMessage());
                         }

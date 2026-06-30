@@ -37,7 +37,7 @@ DTOs (Data Transfer Objects) entkoppeln die API-Schicht von den JPA-Entitäten. 
 | `RaumCsvDto`           | `;`          | Räume einzeln importieren      |
 | `EventSlotCsvDto`      | `;`          | Zeitslots importieren          |
 | `AdminCsvDto`          | `;`          | Admins/Veranstalter importieren |
-| `PrioritaetRequest`    | –            | Priorität setzen (POST-Body)   |
+| `VortragPrioDto`    | –            | Priorität setzen (POST-Body)   |
 
 ## Konventionen
 

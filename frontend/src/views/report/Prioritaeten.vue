@@ -54,7 +54,7 @@
                       {{ getSlotInfo(tn_erf.wvStatuus[wv_oid], wv_oid) }}
                     </div>
                     <div class="small">
-                      <b v-if="tn_erf.wvStatuus[wv_oid].prio > 0">Prio {{ tn_erf.wvStatuus[wv_oid].prio }}</b>
+                      <b v-if="tn_erf.wvStatuus[wv_oid].prioWert > 0">Prio {{ tn_erf.wvStatuus[wv_oid].prio }}</b>
                       <span v-if="tn_erf.wvStatuus[wv_oid].instanz">({{ reportData.num_instanzen_pro_wv[tn_erf.wvStatuus[wv_oid].instanz] }}x)</span>
                     </div>
                   </template>

@@ -45,10 +45,11 @@
             <div class="card-body text-center p-3">
               <h6 class="mb-1">Prio-Erfüllung</h6>
               <div class="mt-2" style="font-size: 0.8rem; opacity: 0.9;">
-                <div v-for="(gewaehlt, prio) in reportData.wahlErfuellungStats.prioPrefs" :key="prio">
+                <div v-for="(gewaehlt, prioWert) in reportData.wahlErfuellungStats.prioPrefs" :key="prioWert">
                   <div v-if="gewaehlt > 0" class="d-flex justify-content-between">
-                    <span>Prio {{ prio }}: {{ gewaehlt }}x gewählt, erf. {{ reportData.wahlErfuellungStats.prioErfuellungen[prio] }}x</span>
-                    <span>≅ {{ reportData.wahlErfuellungStats.prioErfuellungenProzentual[prio] }}</span>
+                    <span>Prio {{ prioWert }}: {{ gewaehlt }}x gewählt, erf. {{
+                        reportData.wahlErfuellungStats.prioErfuellungen[prioWert] }}x</span>
+                    <span>≅ {{ reportData.wahlErfuellungStats.prioErfuellungenProzentual[prioWert] }}</span>
                   </div>
                 </div>
               </div>

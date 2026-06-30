@@ -25,12 +25,12 @@ public class Prioritaet extends IdEntity {
 
     @Min(PRIO_MIN)
     @Max(PRIO_MAX)
-    private int prio;
+    private int prioWert;
 
 
-    public Prioritaet(Teilnehmer teilnehmer, Wahlvortrag wahlvortrag, int prio) {
+    public Prioritaet(Teilnehmer teilnehmer, Wahlvortrag wahlvortrag, int prioWert) {
         this.teilnehmer = teilnehmer;
         this.vortrag = wahlvortrag;
-        this.prio = prio;
+        this.prioWert = prioWert;
     }
 }

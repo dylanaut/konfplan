@@ -98,11 +98,11 @@ public class DashboardService {
             for (WahlvortragStatus vStatus : t.wvStatuus().values()) {
                 if ("+".equals(vStatus.status())) {
                     totalWuenscheErfuellt++;
-                    if (vStatus.prio() == 1) {
+                    if (vStatus.prioWert() == 1) {
                         prio1++;
-                    } else if (vStatus.prio() == 2) {
+                    } else if (vStatus.prioWert() == 2) {
                         prio2++;
-                    } else if (vStatus.prio() == 3) {
+                    } else if (vStatus.prioWert() == 3) {
                         prio3++;
                     }
                 } else if ("-".equals(vStatus.status())) {
@@ -141,13 +141,13 @@ public class DashboardService {
                 }
 
                 String status = "0";
-                int prio = wvPrios.getOrDefault(wvOid, 0);
-                if (prio > 0) {
+                int prioWert = wvPrios.getOrDefault(wvOid, 0);
+                if (prioWert > 0) {
                     status = (besuchteInstanz > 0) ? "+" : "-";
                 } else if (dd.auffuellungSet.contains(Auffueller.of(tnOid, wvOid, besuchtIdx))) {
                     status = "f";
                 }
-                wahlVortragStatuus.put(wvOid, new WahlvortragStatus(status, prio, besuchteInstanz));
+                wahlVortragStatuus.put(wvOid, new WahlvortragStatus(status, prioWert, besuchteInstanz));
             }
 
             dd.teilnehmerErfuellung.add(new TeilnehmerErfuellung(dd.teilnehmer.get(tnOid), wahlVortragStatuus));

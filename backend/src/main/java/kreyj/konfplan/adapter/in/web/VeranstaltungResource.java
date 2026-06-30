@@ -426,7 +426,9 @@ public class VeranstaltungResource {
         if (null == veranstaltung) {
             return Response.status(NOT_FOUND).build();
         }
-        return Response.ok(planService.getDetaillierterPlan(veranstaltung)).build();
+        List<RaumBelegungUebersicht> detaillierterPlan = planService.getDetaillierterPlan(veranstaltung);
+
+        return Response.ok(detaillierterPlan).build();
     }
 
 
@@ -439,7 +441,9 @@ public class VeranstaltungResource {
             return Response.status(NOT_FOUND).build();
         }
 
-        return Response.ok(planService.getPlanQualitaet(veranstaltung)).build();
+        PlanQualitaetDto planQualitaet = planService.getPlanQualitaet(veranstaltung);
+
+        return Response.ok(planQualitaet).build();
     }
 
 

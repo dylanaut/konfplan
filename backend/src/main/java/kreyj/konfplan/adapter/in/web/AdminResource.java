@@ -243,7 +243,7 @@ public class AdminResource {
                 if (!vortrag.getVeranstaltung().getId().equals(vid)) {
                     return Response.status(Response.Status.BAD_REQUEST).entity("Vortrag mit ID " + dto.vortragId + " gehört nicht zu dieser Veranstaltung.").build();
                 }
-                prioritaetService.updateSinglePrioritaet(tid, dto.vortragId, dto.prio);
+                prioritaetService.updateSinglePrioritaet(tid, dto.vortragId, dto.prioWert);
             }
             return Response.ok().build();
         } catch (WebApplicationException e) {

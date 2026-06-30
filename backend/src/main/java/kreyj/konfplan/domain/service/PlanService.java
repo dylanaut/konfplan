@@ -63,112 +63,58 @@ public class PlanService {
     @Transactional
     public List<ZuweisungDto> getGesamtplan(Veranstaltung veranstaltung) {
         Objects.requireNonNull(veranstaltung);
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
-        if (null == planungsergebnis) {
+
+        Map<Long, Map<Long, RaumplanEintragDto>> raumplan = getRaumbelegungsplan(veranstaltung);
+        if (raumplan.isEmpty()) {
             return Collections.emptyList();
         }
 
-        try {
-            Planungsergebnis.MinizincResult result = getMinizincResult(planungsergebnis);
+        Map<Long, Slot> slotMap = veranstaltung.getSlots().stream()
+            .collect(toMap(IdEntity::getId, Function.identity()));
+        Map<Long, Raum> raumMap = veranstaltung.getRaeume().stream()
+            .collect(toMap(IdEntity::getId, Function.identity()));
 
-            long[] tnOids = result.teilnehmer_oids;
-            long[] wvOids = result.wahlvortrag_oids;
-            long[] slotOids = result.slot_oids;
-            long[] raumOids = result.raum_oids;
-            boolean[][][] besucht = result.besucht;
-            int[][] instanzSlot = result.instanz_slot;
-            int[][] instanzRaum = result.instanz_raum;
+        List<ZuweisungDto> zuweisungen = new ArrayList<>();
 
-            List<Teilnehmer> vTeilnehmer = veranstaltung.teilnehmer();
-            Set<Vortrag> vVortraege = veranstaltung.getVortraege();
-            Set<Slot> vSlots = veranstaltung.getSlots();
-            List<Raum> vRaeume = veranstaltung.getRaeume();
-
-            Map<Long, Teilnehmer> teilnehmerMap = vTeilnehmer.stream().collect(toMap(IdEntity::getId, Function.identity()));
-            Map<Long, Vortrag> vortragMap = vVortraege.stream().collect(toMap(IdEntity::getId, Function.identity()));
-            Map<Long, Slot> slotMap = vSlots.stream().collect(toMap(IdEntity::getId, Function.identity()));
-            Map<Long, Raum> raumMap = vRaeume.stream().collect(toMap(IdEntity::getId, Function.identity()));
-
-            List<ZuweisungDto> zuweisungen = new ArrayList<>();
-
-            for (Pflichtvortrag pv : veranstaltung.getPflichtvortraege()) {
-                for (Teilnehmer tn : vTeilnehmer) {
+        for (var raumEntry : raumplan.entrySet()) {
+            Raum raum = raumMap.get(raumEntry.getKey());
+            if (raum == null) {
+                continue;
+            }
+            for (var slotEntry : raumEntry.getValue().entrySet()) {
+                Slot slot = slotMap.get(slotEntry.getKey());
+                RaumplanEintragDto eintrag = slotEntry.getValue();
+                if (slot == null || eintrag.teilnehmer == null) {
+                    continue;
+                }
+                for (TeilnehmerDto tn : eintrag.teilnehmer) {
                     zuweisungen.add(new ZuweisungDto(
-                        tn.getLastName(),
-                        pv.getTitel(),
-                        pv.getPflichtslot().getStartTime(),
-                        pv.getPflichtslot().getEndTime(),
-                        pv.getPflichtraum().getName(),
-                        pv.getPflichtraum().getGebaeude().getName(),
-                        pv.getReferent().getLastName()
+                        tn.lastName,
+                        eintrag.vortragTitel,
+                        slot.getStartTime(),
+                        slot.getEndTime(),
+                        raum.getName(),
+                        raum.getGebaeude().getName(),
+                        eintrag.referentName
                     ));
                 }
             }
-
-            for (int tnIdx = 0; tnIdx < tnOids.length; tnIdx++) {
-                Long teilnehmerId = tnOids[tnIdx];
-                Teilnehmer teilnehmer = teilnehmerMap.get(teilnehmerId);
-                if (null == teilnehmer) {
-                    LOG.warn("Teilnehmer mit ID " + teilnehmerId + " konnte nicht gefunden werden.");
-                    continue;
-                }
-
-                for (int wvIdx = 0; wvIdx < wvOids.length; wvIdx++) {
-                    Long vortragId = wvOids[wvIdx];
-                    Vortrag vortrag = vortragMap.get(vortragId);
-                    if (null == vortrag) {
-                        LOG.warn("Vortrag mit ID " + vortragId + " konnte nicht gefunden werden.");
-                        continue;
-                    }
-
-                    for (int iIdx = 0; iIdx < besucht[tnIdx][wvIdx].length; iIdx++) {
-                        if (besucht[tnIdx][wvIdx][iIdx]) {
-                            int sIdx = instanzSlot[wvIdx][iIdx] - 1;
-                            int rIdx = instanzRaum[wvIdx][iIdx] - 1;
-
-                            if (sIdx >= 0 && sIdx < slotOids.length && rIdx >= 0 && rIdx < raumOids.length) {
-                                long slotId = slotOids[sIdx];
-                                long raumId = raumOids[rIdx];
-
-                                Slot slot = slotMap.get(slotId);
-                                Raum raum = raumMap.get(raumId);
-
-                                if (slot != null && raum != null) {
-                                    zuweisungen.add(new ZuweisungDto(
-                                        teilnehmer.getLastName(),
-                                        vortrag.getTitel(),
-                                        slot.getStartTime(),
-                                        slot.getEndTime(),
-                                        raum.getName(),
-                                        raum.getGebaeude().getName(),
-                                        vortrag.getReferent().getLastName()
-                                    ));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            LOG.info("Zuweisungen im Gesamtplan für Veranstaltung " + veranstaltung.getName() + ":\n" +
-                zuweisungen.stream().map(ZuweisungDto::toString).collect(Collectors.joining("\n")));
-
-            return zuweisungen;
-
-        } catch (Exception e) {
-            LOG.error("Fehler beim Parsen des Planungsergebnisses für Veranstaltung " + veranstaltung.getName(), e);
-            return Collections.emptyList();
         }
+
+        LOG.info("Zuweisungen im Gesamtplan für Veranstaltung " + veranstaltung.getName() + ":\n" +
+            zuweisungen.stream().map(ZuweisungDto::toString).collect(Collectors.joining("\n")));
+        return zuweisungen;
     }
 
 
     @Transactional
     public List<RaumBelegungUebersicht> getDetaillierterPlan(Veranstaltung veranstaltung) {
+        assert veranstaltung != null;
         Objects.requireNonNull(veranstaltung);
 
         // Nur wenn gar kein Plan existiert, leere Liste liefern. Existiert ein Ergebnis ohne
         // Zuweisungen, soll trotzdem das vollständige Raster (alle Plätze "FREI") gebaut werden.
-        if (getPlanungsergebnis(veranstaltung) == null) {
+        if (null == getPlanungsergebnis(veranstaltung)) {
             return Collections.emptyList();
         }
         Map<Long, Map<Long, RaumplanEintragDto>> raumplan = getRaumbelegungsplan(veranstaltung);

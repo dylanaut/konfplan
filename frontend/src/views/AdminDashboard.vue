@@ -52,7 +52,7 @@
     </div>
 
     <!-- TABS CONTENT -->
-    <div v-if="renderTabs">
+    <div :key="activeTab">
       <ErgebnisseTab v-if="activeTab === 'ergebnisse' && selectedVid"
                      :belegungsPlan="belegungsplan"
                      :qualitaet="qualitaet"
@@ -264,7 +264,6 @@ const tabLabels = {
 
 // State
 const activeTab = ref('veranstaltungen');
-const renderTabs = ref(true);
 const selectedVid = ref(null);
 const veranstaltungen = ref([]);
 const gebaeude = ref([]);
@@ -401,7 +400,7 @@ const wahlvortraegeCount = computed(() => vortraege.value.filter(v => !v.istPfli
 const pflichtvortraegeCount = computed(() => vortraege.value.filter(v => v.istPflicht).length);
 
 const teilnehmerMitPrioritaetenCount = computed(() => {
-  return Object.values(participantPriorities.value).filter(prios => Object.values(prios).some(p => p.prio > 0)).length;
+  return Object.values(participantPriorities.value).filter(prios => Object.values(prios).some(p => p.prioWert > 0)).length;
 });
 
 onMounted(async () => {
@@ -509,8 +508,8 @@ const loadData = async () => {
       prioMap[u.id] = {};
       originalPrioMap[u.id] = {};
       u.prioritaeten?.forEach(p => {
-        prioMap[u.id][p.vortragId] = {prio: p.prio};
-        originalPrioMap[u.id][p.vortragId] = {prio: p.prio};
+        prioMap[u.id][p.vortragId] = {prioWert: p.prioWert};
+        originalPrioMap[u.id][p.vortragId] = {prioWert: p.prioWert};
       });
     });
     participantPriorities.value = prioMap;
@@ -790,17 +789,17 @@ const saveParticipantPriorities = async (userId) => {
   const changedPayload = [];
 
   for (const talkId in currentUserPrios) {
-    const currentPrio = currentUserPrios[talkId].prio;
-    const originalPrio = originalUserPrios[talkId]?.prio;
+    const currentPrio = currentUserPrios[talkId].prioWert;
+    const originalPrio = originalUserPrios[talkId]?.prioWert;
     if (currentPrio !== originalPrio) {
-      changedPayload.push({vortragId: parseInt(talkId), prio: currentPrio});
+      changedPayload.push({vortragId: parseInt(talkId), prioWert: currentPrio});
     }
   }
 
   for (const talkId in originalUserPrios) {
-    if (!(talkId in currentUserPrios) || currentUserPrios[talkId].prio === 0 && originalUserPrios[talkId].prio !== 0) {
+    if (!(talkId in currentUserPrios) || currentUserPrios[talkId].prioWert === 0 && originalUserPrios[talkId].prioWert !== 0) {
       if (!changedPayload.some(item => item.vortragId === parseInt(talkId))) {
-        changedPayload.push({vortragId: parseInt(talkId), prio: 0});
+        changedPayload.push({vortragId: parseInt(talkId), prioWert: 0});
       }
     }
   }
@@ -853,18 +852,9 @@ const pollPlanningStatus = () => {
       if (!response.data.isPlanning) {
         clearInterval(pollingInterval);
         isOptimizing.value = false;
-
-        if (response.data.lastError) {
-          alert('Planerstellung fehlgeschlagen:\n\n' + response.data.lastError);
-          return;
-        }
-
         await loadData();
 
-        renderTabs.value = false;
-        await nextTick();
         activeTab.value = 'ergebnisse';
-        renderTabs.value = true;
       }
     } catch (error) {
       console.error('Fehler beim Abrufen des Planungsstatus:', error);

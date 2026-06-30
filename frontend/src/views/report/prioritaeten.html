@@ -95,7 +95,7 @@ border: 1px solid #dee2e6;
               <div class="fw-bold">{slot.tag}, {slot.start} @ {raum.name}</div>
               {/if}
               <div class="small">
-                {#if wvs.prio > 0}<b>Prio {wvs.prio}</b> {/if}
+                {#if wvs.prioWert > 0}<b>Prio {wvs.prioWert}</b> {/if}
                 {#if wvs.instanz}({num_instanzen_pro_wv.get(wvs.instanz)}x){/if}
               </div>
               {/if}

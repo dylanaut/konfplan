@@ -762,11 +762,11 @@ def calc_stats(belegung_details, raeume_dict, slots_dict, teilnehmer_erfuellung)
         for v_id, v_status in t['wahl_vortraege'].items():
             if v_status['status'] == 'ok-wahl':
                 total_wuensche_erfuellt += 1
-                if v_status['prio'] == 1:
+                if v_status['prioWert'] == 1:
                     prio1_erfuellt += 1
-                elif v_status['prio'] == 2:
+                elif v_status['prioWert'] == 2:
                     prio2_erfuellt += 1
-                elif v_status['prio'] == 3:
+                elif v_status['prioWert'] == 3:
                     prio3_erfuellt += 1
             elif v_status['status'] == 'fail-wahl':
                 unerfuellte += 1
@@ -906,7 +906,7 @@ def gen_stundenplan_dashboard(besucht, data_csv, messe_config, output_dir, insta
     for tn_idx, tn in enumerate(tn_list):
         tn_wvs = {"name": f"{tn['Name']} ({tn['Klasse']})", "wahl_vortraege": {}}
 
-        # Wahlen des Teilnehmers in ein flaches Dict für Speed: {v_id: prio}
+        # Wahlen des Teilnehmers in ein flaches Dict für Speed: {v_id: prioWert}
         tn_prios = {i: v for i, v in enumerate(tn.get('Prioritäten', []))}
 
         for wv_id in wv_ids_sorted:
@@ -934,7 +934,7 @@ def gen_stundenplan_dashboard(besucht, data_csv, messe_config, output_dir, insta
 
             tn_wvs["wahl_vortraege"][wv_id] = {
                 'status': status,
-                'prio': prio,
+                'prioWert': prio,
                 'instanz': besuchte_instanz
             }
         teilnehmer_erfuellung.append(tn_wvs)
@@ -1134,7 +1134,7 @@ def gen_prios_dashboard(besucht, data_csv, messe_config, output_dir, instanz_rau
     for tn_idx, tn in enumerate(tn_list):
         tn_wvs = {"name": f"{tn['Name']} ({tn['Klasse']})", "wahl_vortraege": {}}
 
-        # Wahlen des Teilnehmers in ein flaches Dict für Speed: {v_id: prio}
+        # Wahlen des Teilnehmers in ein flaches Dict für Speed: {v_id: prioWert}
         tn_prios = {i: v for i, v in enumerate(tn.get('Prioritäten', []))}
 
         for wv_id in wv_ids_sorted:
@@ -1161,7 +1161,7 @@ def gen_prios_dashboard(besucht, data_csv, messe_config, output_dir, instanz_rau
                 status = "f"
 
             tn_wvs["wahl_vortraege"][wv_id] = {'status': status,
-                                               'prio': prio,
+                                               'prioWert': prio,
                                                'instanz': besuchte_instanz
                                                }
         teilnehmer_erfuellung.append(tn_wvs)

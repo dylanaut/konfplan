@@ -9,7 +9,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.OneToOne;
-import kreyj.konfplan.domain.exception.EntityNotFoundException;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -37,14 +36,7 @@ public class Planungsergebnis extends VersionedEntity {
 
 
     public static Planungsergebnis getPlanungsergebnis(Veranstaltung veranstaltung) {
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
-
-        if (null == planungsergebnis) {
-            throw new EntityNotFoundException(Planungsergebnis.class, "Kein Planungsergebnis für Veranstaltung '" +
-                    veranstaltung.getName() + "' gefunden");
-        }
-
-        return planungsergebnis;
+        return Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
     }
 
 
@@ -63,6 +55,7 @@ public class Planungsergebnis extends VersionedEntity {
 
         public int kosten;
         public int zuweisungen;
+
 
         public String toJson() {
             try {

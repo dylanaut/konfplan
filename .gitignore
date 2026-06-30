@@ -7531,3 +7531,5 @@ build/
 /backend/node_modules/varint/length.js
 /backend/node_modules/varint/package.json
 /backend/node_modules/varint/test.js
+/backend/node_modules/.package-lock.json
+/skills-lock.json

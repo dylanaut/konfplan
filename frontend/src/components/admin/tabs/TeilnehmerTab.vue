@@ -128,7 +128,7 @@
               <td v-for="vortrag in sortedWahlvortraege" :key="'prio-'+u.id+'-'+vortrag.id"
                   class="px-1 py-1 text-center border-r border-gray-50">
                 <input type="number" min="0" max="10"
-                       v-model.number="getParticipantPrio(u.id, vortrag.id).prio"
+                       v-model.number="getParticipantPrio(u.id, vortrag.id).prioWert"
                        @input="markPrioChanged(u.id)"
                        :disabled="isEventFinished"
                        class="w-12 text-center border rounded py-0.5 text-[10px] focus:ring-indigo-500 focus:border-indigo-500 border-gray-100"/>
@@ -432,7 +432,7 @@ const isAvailabilityChanged = (userId) => {
 
 const getParticipantPrio = (userId, talkId) => {
   if (!props.participantPriorities[userId]) props.participantPriorities[userId] = {};
-  if (!props.participantPriorities[userId][talkId]) props.participantPriorities[userId][talkId] = {prio: 0};
+  if (!props.participantPriorities[userId][talkId]) props.participantPriorities[userId][talkId] = {prioWert: 0};
   return props.participantPriorities[userId][talkId];
 };
 
