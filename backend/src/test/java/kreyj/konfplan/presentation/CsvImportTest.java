@@ -166,7 +166,7 @@ class CsvImportTest extends DatabaseCleaner {
     @Test
     void testImportTeilnehmer() {
         String tnEmail = "tom@stud.de";
-        String csv = "Vorname;Nachname;Email;Gruppe\n" +
+        String csv = "Vorname;Nachname;Email;Gruppen\n" +
                 "Tom;Student;" + tnEmail + ";10b";
 
         given()

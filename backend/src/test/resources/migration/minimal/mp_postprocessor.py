@@ -773,10 +773,10 @@ def calc_stats(belegung_details, raeume_dict, slots_dict, teilnehmer_erfuellung)
 
     # Das stats-Dictionary für das Template zusammenbauen
     stats = {
-        "belegte_plaetze": belegte_plaetze,
-        "kapazitaet_total": kapazitaet_total,
+        "belegtePlaetze": belegte_plaetze,
+        "kapazitaetTotal": kapazitaet_total,
         "unerfuellte": unerfuellte,
-        "total_wuensche_erfuellt": total_wuensche_erfuellt,
+        "totalWuenscheErfuellt": total_wuensche_erfuellt,
         "prio1": prio1_erfuellt,
         "prio2": prio2_erfuellt,
         "prio3": prio3_erfuellt
@@ -940,7 +940,7 @@ def gen_stundenplan_dashboard(besucht, data_csv, messe_config, output_dir, insta
         teilnehmer_erfuellung.append(tn_wvs)
 
     stats = calc_stats(belegung_details, raeume_dict, slots_dict, teilnehmer_erfuellung)
-    stats['anzahl_auffuellung'] = len(auffuellung_set)
+    stats['anzahlAuffuellungen'] = len(auffuellung_set)
 
     wahl_erfuellung_stats = calc_prefs_fulfills_stats(tn_list, besucht)
 

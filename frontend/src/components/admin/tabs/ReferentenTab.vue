@@ -23,7 +23,7 @@
         </thead>
         <tbody class="divide-y divide-gray-100">
         <tr v-for="u in paginatedSpeakers" :key="u.id" class="hover:bg-gray-50">
-          <td class="px-4 py-2 font-bold" :title="u.email">{{ u.lastName }}, {{ u.firstName }}</td>
+          <td class="px-4 py-2 font-bold" :title="u.email">{{ u.firstName }} {{ u.lastName }}</td>
           <td v-for="slot in sortedSlots" :key="slot.id" class="px-2 py-2 text-center">
             <input type="checkbox" :checked="availabilityStore.isUserAvailable(u.id, slot.id)" @change="availabilityStore.toggleUserAvailability(u.id, slot.id)" :disabled="isEventFinished" class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3" />
           </td>

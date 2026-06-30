@@ -5,7 +5,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import kreyj.konfplan.application.service.ProtokollService;
+import kreyj.konfplan.domain.service.ProtokollService;
 import kreyj.konfplan.adapter.in.web.dto.ProtokollDto;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;

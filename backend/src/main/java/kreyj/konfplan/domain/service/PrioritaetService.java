@@ -1,4 +1,4 @@
-package kreyj.konfplan.application.service;
+package kreyj.konfplan.domain.service;
 
 import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName;
 import io.quarkus.runtime.annotations.RegisterForReflection;

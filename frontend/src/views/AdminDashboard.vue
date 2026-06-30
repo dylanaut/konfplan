@@ -52,7 +52,7 @@
     </div>
 
     <!-- TABS CONTENT -->
-    <div>
+    <div v-if="renderTabs">
       <ErgebnisseTab v-if="activeTab === 'ergebnisse' && selectedVid"
                      :belegungsPlan="belegungsplan"
                      :qualitaet="qualitaet"
@@ -264,6 +264,7 @@ const tabLabels = {
 
 // State
 const activeTab = ref('veranstaltungen');
+const renderTabs = ref(true);
 const selectedVid = ref(null);
 const veranstaltungen = ref([]);
 const gebaeude = ref([]);
@@ -840,6 +841,8 @@ const startPlanning = async (solverConfig) => {
   } catch (e) {
     console.error('Fehler bei der Planerstellung:', e);
     isOptimizing.value = false;
+    const msg = e.response?.data?.error || e.response?.data?.message || e.message;
+    alert('Planerstellung nicht möglich:\n\n' + msg);
   }
 };
 
@@ -850,6 +853,12 @@ const pollPlanningStatus = () => {
       if (!response.data.isPlanning) {
         clearInterval(pollingInterval);
         isOptimizing.value = false;
+
+        if (response.data.lastError) {
+          alert('Planerstellung fehlgeschlagen:\n\n' + response.data.lastError);
+          return;
+        }
+
         await loadData();
 
         renderTabs.value = false;

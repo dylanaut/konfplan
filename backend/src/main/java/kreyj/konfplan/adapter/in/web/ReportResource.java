@@ -16,9 +16,9 @@ import kreyj.konfplan.adapter.in.web.dto.ReferentVortragDto;
 import kreyj.konfplan.adapter.in.web.dto.ReportDto;
 import kreyj.konfplan.adapter.in.web.dto.SlotDto;
 import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
-import kreyj.konfplan.application.service.PlanService;
-import kreyj.konfplan.application.service.TeilnehmerService;
-import kreyj.konfplan.application.service.TemplateService;
+import kreyj.konfplan.domain.service.PlanService;
+import kreyj.konfplan.domain.service.TeilnehmerService;
+import kreyj.konfplan.domain.service.TemplateService;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
@@ -190,11 +190,11 @@ public class ReportResource {
 
 
     @GET
-    @Path("/{vid}/admin-dashboard-data")
+    @Path("/{vid}/stundenplan-data")
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed("ADMIN")
     @Operation(summary = "Daten für Admin-Dashboard / Tab ErgebnisVue")
-    public Response getStundenplanDashboardData(@PathParam("vid") Long vid) {
+    public Response getStundenplanData(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();

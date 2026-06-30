@@ -1,4 +1,4 @@
-package kreyj.konfplan.application.service;
+package kreyj.konfplan.domain.service;
 
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import io.quarkus.qute.TemplateInstance;

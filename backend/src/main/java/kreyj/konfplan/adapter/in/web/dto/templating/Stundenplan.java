@@ -19,8 +19,8 @@ public class Stundenplan {
     private final VeranstaltungDto veranstaltung;
     private final Map<Long, SlotDto> slots;
     private final Map<Long, RaumDto> raeume;
-    private final Map<String, BelegungDetail> belegung_details;
-    private final Map<Long, List<String>> freieTnProSlot;
+    private final Map<String, BelegungDetail> belegungDetails;
+    private final Map<Long, List<String>> freieTnInSlot;
     private final Planungsstatistik stats;
     private final WahlErfuellungStats wahlErfuellungStats;
     private final Map<Long, VortragDto> wahlvortraege;

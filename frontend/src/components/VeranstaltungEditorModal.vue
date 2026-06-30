@@ -41,7 +41,7 @@
             <div v-for="admin in admins" :key="admin.id" class="flex items-center gap-2">
               <input type="checkbox" :id="'admin-'+admin.id" :value="admin.id" v-model="form.organisatorIds" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
               <label :for="'admin-'+admin.id" class="text-sm text-gray-700 truncate">
-                {{ admin.lastName }}, {{ admin.firstName }}
+                {{ admin.firstName }} {{ admin.lastName }}
               </label>
             </div>
             <div v-if="admins.length === 0" class="text-xs text-gray-500 italic p-1">

@@ -21,7 +21,7 @@ import kreyj.konfplan.application.port.in.AdminServiceInterface;
 import kreyj.konfplan.application.port.in.ReferentServiceInterface;
 import kreyj.konfplan.application.port.in.TeilnehmerServiceInterface;
 import kreyj.konfplan.application.port.in.VeranstaltungServiceInterface;
-import kreyj.konfplan.application.service.PlanService;
+import kreyj.konfplan.domain.service.PlanService;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;

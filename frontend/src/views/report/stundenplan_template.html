@@ -104,7 +104,7 @@ z-index: 10;
         {#let raum = raum_entry.value}
         <div class="col-md-3">
           {#let b_key = s_oid.slotRoomKey(r_oid)}
-          {#let detail = belegung_details.get(b_key)}
+          {#let detail = belegungDetails.get(b_key)}
           <div class="card h-100 card-vortrag {#if detail && detail.isPflicht}border-primary
                             border-2{#else}border-light{/if}">
             <div class="card-header py-1 d-flex justify-content-between small bg-light">

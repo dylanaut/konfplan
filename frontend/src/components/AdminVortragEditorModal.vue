@@ -51,7 +51,7 @@
             <select v-model="form.referent.id" class="input-field" required :disabled="form.vortrag_typ === 'PFLICHT'">
               <option :value="null">Bitte wählen...</option>
               <option v-for="r in referenten" :key="r.id" :value="r.id">
-                {{ r.lastName }}, {{ r.firstName }}
+                {{ r.firstName }} {{ r.lastName }}
               </option>
             </select>
             <p v-if="form.vortrag_typ === 'PFLICHT'" class="text-[10px] text-gray-500 mt-1 italic">

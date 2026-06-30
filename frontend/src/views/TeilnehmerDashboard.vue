@@ -61,7 +61,7 @@
               </p>
             </div>
              <div class="flex gap-2">
-               <button v-if="event.planErstellt" @click="downloadIcs(event.id)" class="btn-secondary">
+               <button v-if="event.planErstellt" @click="downloadKalender(event.id)" class="btn-secondary">
                  <CalendarPlus class="w-4 h-4 mr-2" /> ICS
                </button>
               <button v-if="event.planErstellt" @click="viewMySchedule(event.id)" class="btn-primary">
@@ -395,13 +395,13 @@ const viewMySchedule = (vid) => {
   }
 };
 
-const downloadIcs = async (vid) => {
+const downloadKalender = async (vid) => {
   try {
-    const res = await api.get(`/api/ics/teilnehmer/${vid}`, { responseType: 'blob' });
+    const res = await api.get(`/api/kalender/teilnehmer/${vid}`, { responseType: 'blob' });
     const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/calendar' }));
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `veranstaltung_${vid}.ics`);
+    link.setAttribute('download', `KonfPlan_${vid}.ics`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

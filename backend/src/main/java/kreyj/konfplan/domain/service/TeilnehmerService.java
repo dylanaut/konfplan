@@ -1,4 +1,4 @@
-package kreyj.konfplan.application.service;
+package kreyj.konfplan.domain.service;
 
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
@@ -204,16 +204,18 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
                     tn.setLastName(csvDto.nachname);
 
                     if (StringUtils.isNotBlank(csvDto.gruppen)) {
-                        Set<String> vGruppen = v.getGruppen();
-
                         for (String splitter : csvDto.gruppen.split("\\|")) {
                             String gruppe = splitter.trim();
-                            if (vGruppen.contains(gruppe)) {
-                                tn.addGruppe(gruppe);
-                            } else {
-                                LOG.warn("Unbekannte Gruppe '" + gruppe + "' für Teilnehmer '" + tn.getEmail()
-                                    + "' bei Veranstaltung '" + v.getName() + "'");
+                            if (StringUtils.isBlank(gruppe)) {
+                                continue;
                             }
+                            // Unbekannte Gruppe automatisch in der Veranstaltung anlegen.
+                            if (!v.getGruppen().contains(gruppe)) {
+                                v.addGruppe(gruppe);
+                                LOG.info("Neue Gruppe '" + gruppe + "' beim Import für Veranstaltung '"
+                                    + v.getName() + "' angelegt.");
+                            }
+                            tn.addGruppe(gruppe);
                         }
                     }
 

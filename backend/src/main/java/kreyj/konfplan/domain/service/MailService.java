@@ -1,4 +1,4 @@
-package kreyj.konfplan.application.service;
+package kreyj.konfplan.domain.service;
 
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.MailTemplate;

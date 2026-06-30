@@ -1,4 +1,4 @@
-package kreyj.konfplan.application.service;
+package kreyj.konfplan.domain.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -166,10 +166,12 @@ public class PlanService {
     public List<RaumBelegungUebersicht> getDetaillierterPlan(Veranstaltung veranstaltung) {
         Objects.requireNonNull(veranstaltung);
 
-        Map<Long, Map<Long, RaumplanEintragDto>> raumplan = getRaumbelegungsplan(veranstaltung);
-        if (raumplan.isEmpty()) {
+        // Nur wenn gar kein Plan existiert, leere Liste liefern. Existiert ein Ergebnis ohne
+        // Zuweisungen, soll trotzdem das vollständige Raster (alle Plätze "FREI") gebaut werden.
+        if (getPlanungsergebnis(veranstaltung) == null) {
             return Collections.emptyList();
         }
+        Map<Long, Map<Long, RaumplanEintragDto>> raumplan = getRaumbelegungsplan(veranstaltung);
 
         List<RaumBelegungUebersicht> detaillierterPlan = new ArrayList<>();
         List<Slot> sortedSlots = veranstaltung.getSlots().stream()

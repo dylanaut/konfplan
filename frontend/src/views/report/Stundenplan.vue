@@ -1,34 +1,39 @@
 <template>
   <div class="container-fluid py-4">
-    <div v-if="!reportData" class="alert alert-info">
-      Keine Daten für den Stundenplan verfügbar.
+    <div v-if="loading" class="d-flex justify-content-center">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
     </div>
-    <div v-else>
+    <div v-else-if="error" class="alert alert-danger">
+      {{ error }}
+    </div>
+    <div v-else-if="reportData">
       <header class="mb-4 d-flex justify-content-between align-items-center no-print">
-        <h1>📅 {{ reportData.veranstaltung.name }} - Stundenplan</h1>
+        <h1>📅 Stundenplan {{ reportData.veranstaltung.name }}</h1>
         <div>
           <button @click="downloadIcs" class="btn btn-outline-secondary me-2">
-            <i class="bi bi-calendar-plus"></i> ICS Download
+            <i class="bi bi-calendar-plus"></i> Kalender laden
           </button>
           <button @click="window.print()" class="btn btn-secondary">
             <i class="bi bi-printer"></i> Drucken
           </button>
         </div>
       </header>
-       <p class="lead mb-4 print-only">Veranstaltung: {{ reportData.veranstaltung.name }}</p>
 
       <div class="row mb-4">
-        <h2 class="border-bottom pb-2 mb-3">📊 Auswertung</h2>
+        <h2 class="border-bottom pb-2 mb-3">📊 Übersicht</h2>
         <div class="col-md-3">
           <div class="card bg-success text-white shadow-sm">
             <div class="card-body text-center p-3">
               <h6 class="mb-1">Erfüllung Wahlvorträge</h6>
-              <h5 class="mb-0">{{ wahl_erfuellung_stats.total_prefs }} Wünsche, erfüllt: {{ wahl_erfuellung_stats.erfuellungen_gesamt }}x ≅ {{ wahl_erfuellung_stats.gesamt_erfuellungen_prozentual }}</h5>
+              <h5 class="mb-0">{{ reportData.wahlErfuellungStats.totalPrefs }} Wünsche, erfüllt: {{ reportData.wahlErfuellungStats.erfuellungenGesamt }}x ≅ {{ reportData.wahlErfuellungStats.gesamtErfuellungenProzentual }}</h5>
               <div class="mt-2" style="font-size: 0.8rem; opacity: 0.9;">
-                <div v-for="(pref_cnt, wv_oid) in wahl_erfuellung_stats.wv_gewaehlte" :key="wv_oid">
-                  <div v-if="pref_cnt > 0" class="d-flex justify-content-between">
-                    <span :title="wv_dict[wv_oid].titel">{{ truncTo(wv_dict[wv_oid].titel, 12) }}: {{ pref_cnt }}x gewählt, erf. {{ wahl_erfuellung_stats.wv_erfuellungen[wv_oid] }}</span>
-                    <span>≅ {{ wahl_erfuellung_stats.wv_erfuellungen_prozentual[wv_oid] }}</span>
+                <div v-for="(prefCnt, wv_oid) in reportData.wahlErfuellungStats.wvGewaehlte" :key="wv_oid">
+                  <div v-if="prefCnt > 0" class="d-flex justify-content-between">
+                    <span :title="reportData.wahlvortraege[wv_oid].titel">{{ truncTo(reportData.wahlvortraege[wv_oid].titel, 12) }}: {{
+                        prefCnt }}x gewählt, erf. {{ reportData.wahlErfuellungStats.wvErfuellungen[wv_oid] }}</span>
+                    <span>≅ {{ reportData.wahlErfuellungStats.wvErfuellungenProzentual[wv_oid] }}</span>
                   </div>
                 </div>
               </div>
@@ -40,10 +45,10 @@
             <div class="card-body text-center p-3">
               <h6 class="mb-1">Prio-Erfüllung</h6>
               <div class="mt-2" style="font-size: 0.8rem; opacity: 0.9;">
-                <div v-for="(gewaehlt, prio) in wahl_erfuellung_stats.prio_prefs" :key="prio">
+                <div v-for="(gewaehlt, prio) in reportData.wahlErfuellungStats.prioPrefs" :key="prio">
                   <div v-if="gewaehlt > 0" class="d-flex justify-content-between">
-                    <span>Prio {{ prio }}: {{ gewaehlt }}x gewählt, erf. {{ wahl_erfuellung_stats.prio_erfuellungen[prio] }}x</span>
-                    <span>≅ {{ wahl_erfuellung_stats.prio_erfuellungen_prozentual[prio] }}</span>
+                    <span>Prio {{ prio }}: {{ gewaehlt }}x gewählt, erf. {{ reportData.wahlErfuellungStats.prioErfuellungen[prio] }}x</span>
+                    <span>≅ {{ reportData.wahlErfuellungStats.prioErfuellungenProzentual[prio] }}</span>
                   </div>
                 </div>
               </div>
@@ -53,18 +58,18 @@
         <div class="col-md-3">
           <div class="card bg-warning text-dark text-center p-3 shadow-sm border-0" style="background-color: #e2d5f3 !important;">
             <h6 class="mb-1 text-uppercase small fw-bold">Autom. Auffüllung</h6>
-            <h3 class="mb-0">{{ stats.anzahl_auffuellung }}</h3>
-            <small class="text-muted">{{ stats.anzahl_auffuellung === 1 ? 'Platz' : 'Plätze' }} aufgefüllt</small>
+            <h3 class="mb-0">{{ reportData.stats.anzahlAuffuellungen }}</h3>
+            <small class="text-muted">{{ reportData.stats.anzahlAuffuellungen === 1 ? 'Platz' : 'Plätze' }} aufgefüllt</small>
           </div>
         </div>
       </div>
 
       <section class="mb-5">
         <h2 class="border-bottom pb-2 mb-3">📅 Vortragsplan & Raumbelegung</h2>
-        <div v-for="(slot, s_oid) in slots" :key="s_oid" class="slot-container mb-5 p-3 bg-white shadow-sm rounded">
+        <div v-for="(slot, s_oid) in reportData.slots" :key="s_oid" class="slot-container mb-5 p-3 bg-white shadow-sm rounded">
           <h4 class="text-primary">{{ slot.zeitraumTag }}</h4>
           <div class="row g-3">
-            <div v-for="(raum, r_oid) in raeume" :key="r_oid" class="col-md-3">
+            <div v-for="(raum, r_oid) in reportData.raeume" :key="r_oid" class="col-md-3">
               <div class="card h-100 card-vortrag" :class="getBelegung(s_oid, r_oid) && getBelegung(s_oid, r_oid).isPflicht ? 'border-primary border-2' : 'border-light'">
                 <div class="card-header py-1 d-flex justify-content-between small bg-light">
                   <span>Raum: <strong>{{ raum.name }}</strong></span>
@@ -95,10 +100,10 @@
             <div class="col-12">
               <div class="alert alert-warning py-2 px-3 m-0 shadow-sm">
                 <div class="d-flex align-items-center">
-                  <strong class="me-2">⚠️ Aufsicht ({{ freie_tn_je_slot[s_oid] ? freie_tn_je_slot[s_oid].length : 0 }}):</strong>
+                  <strong class="me-2">⚠️ Aufsicht ({{ reportData.freieTnInSlot[s_oid] ? reportData.freieTnInSlot[s_oid].length : 0 }}):</strong>
                   <div class="small">
-                    <span v-if="!freie_tn_je_slot[s_oid] || freie_tn_je_slot[s_oid].length === 0">Keine Teilnehmer ohne Programm.</span>
-                    <span v-else>{{ freie_tn_je_slot[s_oid].join(" • ") }}</span>
+                    <span v-if="!reportData.freieTnInSlot[s_oid] || reportData.freieTnInSlot[s_oid].length === 0">Keine Teilnehmer ohne Programm.</span>
+                    <span v-else>{{ reportData.freieTnInSlot[s_oid].join(" • ") }}</span>
                   </div>
                 </div>
               </div>
@@ -108,60 +113,59 @@
       </section>
 
       <footer class="text-right py-2 text-muted small print-footer">
-        <span class="badge bg-secondary">Stand: {{ geplantAm }}</span>
+        <span class="badge bg-secondary">Stand: {{ reportData.geplantAm }}</span>
       </footer>
     </div>
   </div>
 </template>
 
 <script setup>
-import { defineProps, computed } from 'vue';
+import { ref, onMounted, defineProps } from 'vue';
 import api from '../../api/axios';
-import { useEventContextStore } from '../../stores/eventContext';
 
 const props = defineProps({
-  reportData: {
-    type: Object,
+  vid: {
+    type: [String, Number],
     required: true,
   },
 });
 
-const eventContext = useEventContextStore();
+const reportData = ref(null);
+const loading = ref(true);
+const error = ref(null);
 
-// Destructuring props for easier access in template
-const {
-  wahl_erfuellung_stats,
-  wv_dict,
-  ref_dict,
-  stats,
-  slots,
-  raeume,
-  belegung_details,
-  freie_tn_je_slot,
-  geplantAm
-} = props.reportData;
+onMounted(async () => {
+  if (!props.vid) {
+    error.value = "Keine Veranstaltungs-ID übergeben.";
+    loading.value = false;
+    return;
+  }
+  try {
+    const response = await api.get(`/api/reports/${props.vid}/stundenplan-data`);
+    reportData.value = response.data;
+  } catch (err) {
+    error.value = 'Fehler beim Laden der Dashboard-Daten: ' + (err.response?.data?.message || err.message);
+  } finally {
+    loading.value = false;
+  }
+});
 
 const getBelegung = (s_oid, r_oid) => {
-  return belegung_details[`${s_oid}_${r_oid}`];
+  return reportData.value?.belegungDetails?.[`${s_oid}_${r_oid}`];
 };
 
 const truncTo = (text, maxLen = 25) => {
-  if (!text || text.length <= maxLen) {
-    return text;
-  }
-  const truncated = text.substring(0, maxLen);
-  const lastIndex = truncated.lastIndexOf(' ');
-  return (lastIndex > 0 ? truncated.substring(0, lastIndex) : truncated).trim() + '...';
+  if (!text) return '';
+  return text.length > maxLen ? text.substring(0, maxLen - 1) + '…' : text;
 };
 
 const downloadIcs = async () => {
   try {
-    const vid = eventContext.selectedEvent.id;
-    const res = await api.get(`/api/ics/admin/${vid}`, { responseType: 'blob' });
+    const res = await api.get(`/api/kalender/admin/${props.vid}`, { responseType: 'blob' });
     const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/calendar' }));
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `veranstaltung_${vid}.ics`);
+    link.setAttribute('download', `veranstaltung_${props.vid}.ics`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

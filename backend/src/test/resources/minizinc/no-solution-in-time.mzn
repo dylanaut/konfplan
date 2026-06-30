@@ -1,22 +1,27 @@
 % Modell 3: Keine Lösung im Zeitlimit (No Solution in Time)
-% Dieses Modell versucht, ein "Golomb-Lineal" zu finden, ein rechenintensives Problem.
-% Selbst bei der Suche nach nur *irgendeiner* Lösung (`solve satisfy`) wird der Solver
-% bei einem sehr kurzen Timeout wahrscheinlich keine Lösung finden. Dies simuliert den Fall,
-% dass die Suche abgebrochen wird, bevor ein erstes Ergebnis vorliegt.
+% Gesucht wird ein optimales Golomb-Lineal der Ordnung 16 (Länge exakt 177).
+% Das Problem ist ERFÜLLBAR, aber das Finden einer Lösung ist so rechenintensiv,
+% dass cp-sat es in einem kurzen Zeitlimit (1s) garantiert weder lösen noch als
+% unlösbar widerlegen kann -> der Solver liefert reproduzierbar "UNKNOWN".
+%
+% Dies testet deterministisch den Fall, dass die Suche abgebrochen wird, bevor ein
+% Ergebnis vorliegt. Im Gegensatz zu einem (beweisbar) unlösbaren Modell entsteht
+% hier KEIN "=====UNSATISFIABLE=====", sodass das Verhalten nicht davon abhängt,
+% ob der Solver die Unlösbarkeit zufällig rechtzeitig beweist.
 
-int: m = 23; % Anzahl der Markierungen (m=9 ist bereits sehr schwer)
+int: m = 16; % Anzahl der Markierungen
 
-array[1..m] of var 0..100: marks;
+array[1..m] of var 0..177: marks;
 
-% Constraint 1: Erste Markierung ist bei 0.
+% Erste Markierung bei 0, aufsteigend (Symmetriebrechung).
 constraint marks[1] = 0;
-
-% Constraint 2: Markierungen sind in aufsteigender Reihenfolge (bricht Symmetrie).
 constraint forall(i in 1..m-1) (marks[i] < marks[i+1]);
 
-% Constraint 3: Alle Abstände zwischen den Markierungen müssen eindeutig sein.
+% Alle paarweisen Abstände eindeutig.
 include "alldifferent.mzn";
 constraint alldifferent([marks[j] - marks[i] | i in 1..m, j in i+1..m]);
 
-% Ziel: Finde irgendeine gültige Anordnung von Markierungen.
+% Auf die (bekannte) optimale Länge fixieren -> erfüllbar, aber extrem schwer zu finden.
+constraint marks[m] = 177;
+
 solve satisfy;

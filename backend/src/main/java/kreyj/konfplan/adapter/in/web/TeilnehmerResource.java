@@ -18,13 +18,14 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
+import kreyj.konfplan.adapter.in.web.dto.TeilnehmerDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerVeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
 import kreyj.konfplan.application.port.in.AdminServiceInterface;
 import kreyj.konfplan.application.port.in.TeilnehmerServiceInterface;
-import kreyj.konfplan.application.service.PlanService;
-import kreyj.konfplan.application.service.PrioritaetService;
+import kreyj.konfplan.domain.service.PlanService;
+import kreyj.konfplan.domain.service.PrioritaetService;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Teilnehmer;
@@ -74,7 +75,8 @@ public class TeilnehmerResource {
     @RolesAllowed("ADMIN")
     @Operation(summary = "Alle Teilnehmer einer Veranstaltung abrufen")
     public Response getAlleVeranstaltungsteilnehmer(@QueryParam("vid") Long vid) {
-        return Response.ok(teilnehmerService.findAll(vid)).build();
+        List<Teilnehmer> alleTeilnehmer = teilnehmerService.findAll(vid);
+        return Response.ok(alleTeilnehmer.stream().map(TeilnehmerDto::from).toList()).build();
     }
 
 
@@ -112,7 +114,7 @@ public class TeilnehmerResource {
             if (null == updated) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
-            return Response.ok(updated).build();
+            return Response.ok(NutzerDto.from(updated)).build();
         } catch (OptimisticLockException e) {
             return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
         }

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.application.service.PlanService;
+import kreyj.konfplan.domain.service.PlanService;
 import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.presentation.DatabaseCleaner;

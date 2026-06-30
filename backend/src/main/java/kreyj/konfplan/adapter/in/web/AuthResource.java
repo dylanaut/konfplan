@@ -13,7 +13,7 @@ import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.LoginRequest;
 import kreyj.konfplan.adapter.in.web.dto.ResetRequest;
 import kreyj.konfplan.adapter.in.web.dto.TokenResponse;
-import kreyj.konfplan.application.service.ProtokollService;
+import kreyj.konfplan.domain.service.ProtokollService;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import org.eclipse.microprofile.config.inject.ConfigProperty;

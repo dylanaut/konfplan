@@ -3,7 +3,7 @@ package kreyj.konfplan.service;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.application.service.AdminService;
+import kreyj.konfplan.domain.service.AdminService;
 import kreyj.konfplan.domain.exception.CreateVortragException;
 import kreyj.konfplan.domain.exception.UpdateVortragException;
 import kreyj.konfplan.persistence.Admin;
@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;

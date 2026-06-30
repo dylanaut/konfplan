@@ -29,7 +29,7 @@ public class TeilnehmerDto {
         } else if (StringUtils.isBlank(lastName)) {
             return firstName;
         } else {
-            return lastName + ", " + firstName;
+            return firstName + " " + lastName;
         }
     }
 

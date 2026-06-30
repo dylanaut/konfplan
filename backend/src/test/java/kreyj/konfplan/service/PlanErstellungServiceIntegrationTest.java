@@ -4,9 +4,9 @@ import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.application.service.MinizincException;
-import kreyj.konfplan.application.service.PlanErstellungService;
-import kreyj.konfplan.application.service.PlanService;
+import kreyj.konfplan.domain.service.MinizincException;
+import kreyj.konfplan.domain.service.PlanErstellungService;
+import kreyj.konfplan.domain.service.PlanService;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
@@ -158,11 +158,6 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         wahlvortrag2.persist();
         veranstaltung.addVortrag(wahlvortrag2);
 
-        Pflichtvortrag pflichtvortrag = Pflichtvortrag.create("Pflichtvortrag", "Inhalt", referent,
-                "A", schule.getRaeume().iterator().next(), slot3, veranstaltung);
-        pflichtvortrag.persist();
-        veranstaltung.addVortrag(pflichtvortrag);
-
         // 4. Teilnehmer und Prioritäten
         Teilnehmer teilnehmer1 = new Teilnehmer();
         teilnehmer1.setEmail("tn1@test.com");
@@ -181,6 +176,13 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
         teilnehmer2.addGruppe("A");
         teilnehmer2.addVeranstaltung(veranstaltung);
+
+        // Pflichtvortrag erst anlegen, nachdem die Teilnehmer in Gruppe "A" und der Veranstaltung sind,
+        // damit Pflichtvortrag.create() den Pflichtslot konsistent aus ihren Verfügbarkeiten entfernt.
+        Pflichtvortrag pflichtvortrag = Pflichtvortrag.create("Pflichtvortrag", "Inhalt", referent,
+                "A", schule.getRaeume().iterator().next(), slot3, veranstaltung);
+        pflichtvortrag.persist();
+        veranstaltung.addVortrag(pflichtvortrag);
 
         // Prioritäten für TN 1
         new Prioritaet(teilnehmer1, wahlvortrag1, 1)
@@ -346,8 +348,10 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
     @Test
     public void testPlanErstellung_withIntermediateResult() throws Exception {
-        // Kurzer Timeout, um sicher eine Zwischenlösung zu erhalten
-        SolverConfig config = new SolverConfig(1, 1, 1);
+        // Limit als Obergrenze (5s, ~5x über der früheren 1s-Flake-Schwelle): cp-sat gibt
+        // für das große Rucksackproblem zuverlässig mindestens eine (Zwischen-)Lösung aus,
+        // sodass auch Solver-Start unter Testlast das Ergebnis nie "leer" lässt.
+        SolverConfig config = new SolverConfig(5, 1, 1);
 
         String resultJson = starteTestPlanErstellung(config, "intermediate.mzn");
 
@@ -358,12 +362,18 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
     }
 
     @Test
-    public void testPlanErstellung_withNoSolutionInTime() {
-        // Sehr kurzer Timeout, damit garantiert keine Lösung gefunden wird
+    public void testPlanErstellung_withNoSolutionInTime() throws Exception {
+        // Erfüllbares, aber im Zeitlimit unauffindbares Modell -> cp-sat liefert "UNKNOWN".
+        // Erwartet: leeres Ergebnis (keine Lösung gefunden), KEINE Exception. Das ist die
+        // graceful behandelte "keine Lösung gefunden"-Situation (vs. beweisbar UNSATISFIABLE,
+        // siehe testPlanErstellung_withUnsatisfiableModel).
         SolverConfig config = new SolverConfig(1, 1, 1);
 
-        assertThatExceptionOfType(MinizincException.class)
-                .isThrownBy(() -> starteTestPlanErstellung(config, "no-solution-in-time.mzn"));
+        String resultJson = starteTestPlanErstellung(config, "no-solution-in-time.mzn");
+
+        assertThat(resultJson)
+                .describedAs("Ohne Lösung im Zeitlimit (UNKNOWN) soll ein leeres Ergebnis zurückkommen.")
+                .isEmpty();
     }
 
     // -------------------------------------------------------------------

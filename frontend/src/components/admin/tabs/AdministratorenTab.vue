@@ -21,7 +21,7 @@
         </thead>
         <tbody class="text-xs">
         <tr v-for="a in paginatedAdmins" :key="a.id" class="hover:bg-gray-50 transition">
-          <td class="px-4 py-2 font-bold" :title="a.email">{{ a.lastName }}, {{ a.firstName }}</td>
+          <td class="px-4 py-2 font-bold" :title="a.email">{{ a.firstName }} {{ a.lastName }}</td>
           <td class="px-4 py-2 text-right space-x-3">
             <button @click="emit('openUserModal', a)" class="text-indigo-600" title="Bearbeiten">
               <PencilIcon class="w-3.5 h-3.5 inline"/>

@@ -10,7 +10,7 @@ import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
-import kreyj.konfplan.application.service.MailService;
+import kreyj.konfplan.domain.service.MailService;
 import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Teilnehmer;

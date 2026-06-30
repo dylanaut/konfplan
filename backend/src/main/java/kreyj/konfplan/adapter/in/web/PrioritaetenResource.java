@@ -10,7 +10,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.PrioritaetRequest;
-import kreyj.konfplan.application.service.PrioritaetService;
+import kreyj.konfplan.domain.service.PrioritaetService;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.util.JwtHelper;

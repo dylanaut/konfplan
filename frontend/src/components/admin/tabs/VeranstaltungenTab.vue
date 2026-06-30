@@ -128,7 +128,7 @@
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                         <tr v-for="part in paginatedVSubParticipants" :key="part.id" class="hover:bg-indigo-50/30 transition">
-                          <td class="px-3 py-1.5 font-semibold text-gray-800" :title="part.email">{{ part.lastName }}, {{ part.firstName }}</td>
+                          <td class="px-3 py-1.5 font-semibold text-gray-800" :title="part.email">{{ part.firstName }} {{ part.lastName }}</td>
                           <td class="px-3 py-1.5 text-gray-600">{{ part.gruppen.join(', ') }}</td>
                           <td class="px-3 py-1.5 text-right">
                             <button @click="emit('openUserModal', part)" class="text-indigo-600" title="Bearbeiten">

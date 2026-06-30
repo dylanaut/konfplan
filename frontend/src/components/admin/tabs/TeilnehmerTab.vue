@@ -113,8 +113,8 @@
               <td class="px-4 py-2 font-bold sticky left-0 bg-white hover:bg-gray-50 z-10 border-r border-gray-100">
                 <div class="flex items-center justify-between gap-2">
                   <span :class="isPrioChanged(u.id) ? 'text-orange-600' : 'text-gray-900'" class="truncate"
-                        :title="u.lastName + ', ' + u.firstName">
-                      {{ u.lastName }}, {{ u.firstName }}
+                        :title="u.firstName + ' ' + u.lastName">
+                      {{ u.firstName }} {{ u.lastName }}
                   </span>
                   <button v-if="isPrioChanged(u.id)"
                           @click="emit('saveParticipantPriorities', u.id)"
@@ -200,7 +200,7 @@
                 <input type="checkbox" :value="u.id" v-model="selectedParticipantIds"
                        class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3"/>
               </td>
-              <td class="px-4 py-2 font-bold" :title="u.email">{{ u.lastName }}, {{ u.firstName }}</td>
+              <td class="px-4 py-2 font-bold" :title="u.email">{{ u.firstName }} {{ u.lastName }}</td>
               <td class="px-4 py-2 text-gray-500">{{ u.gruppe }}</td>
               <td class="px-4 py-2 text-center">
                 <div @click="emit('toggleParticipantActive', u)" class="cursor-pointer">

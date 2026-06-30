@@ -3,7 +3,7 @@ package kreyj.konfplan.presentation;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.application.service.AdminService;
+import kreyj.konfplan.domain.service.AdminService;
 import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Referent;

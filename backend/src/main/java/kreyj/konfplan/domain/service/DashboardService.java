@@ -1,4 +1,4 @@
-package kreyj.konfplan.application.service;
+package kreyj.konfplan.domain.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;

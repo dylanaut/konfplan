@@ -1,4 +1,4 @@
-package kreyj.konfplan.application.service;
+package kreyj.konfplan.domain.service;
 
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
@@ -164,17 +164,21 @@ public class AdminService implements AdminServiceInterface {
             r.setOrganisation(dto.organisation);
             r.setSlogan(dto.slogan);
         } else if (nutzer instanceof Teilnehmer t) {
-            dto.gruppen.forEach(t::addGruppe);
-            dto.prioritaeten.forEach(prioDto -> {
-                Wahlvortrag wv = Wahlvortrag.findById(prioDto.vortragId);
-                if (null == wv) {
-                    LOG.error("Unbekannter Wahlvortrag zu id: " + prioDto.vortragId);
-                } else {
-                    Prioritaet prioritaet = new Prioritaet(t, Wahlvortrag.findById(prioDto.vortragId), prioDto.prio);
-                    prioritaet.persist();
-                    t.addPrioritaet(prioritaet);
-                }
-            });
+            if (null != dto.gruppen) {
+                dto.gruppen.forEach(t::addGruppe);
+            }
+            if (null != dto.prioritaeten) {
+                dto.prioritaeten.forEach(prioDto -> {
+                    Wahlvortrag wv = Wahlvortrag.findById(prioDto.vortragId);
+                    if (null == wv) {
+                        LOG.error("Unbekannter Wahlvortrag zu id: " + prioDto.vortragId);
+                    } else {
+                        Prioritaet prioritaet = new Prioritaet(t, Wahlvortrag.findById(prioDto.vortragId), prioDto.prio);
+                        prioritaet.persist();
+                        t.addPrioritaet(prioritaet);
+                    }
+                });
+            }
         }
 
         nutzer.persistAndFlush();
@@ -268,17 +272,21 @@ public class AdminService implements AdminServiceInterface {
             r.setOrganisation(dto.organisation);
             r.setSlogan(dto.slogan);
         } else if (nutzer instanceof Teilnehmer t) {
-            dto.gruppen.forEach(t::addGruppe);
-            dto.prioritaeten.forEach(prioDto -> {
-                Wahlvortrag wv = Wahlvortrag.findById(prioDto.vortragId);
-                if (null == wv) {
-                    LOG.error("Unbekannter Wahlvortrag zu id: " + prioDto.vortragId);
-                } else {
-                    Prioritaet prioritaet = new Prioritaet(t, Wahlvortrag.findById(prioDto.vortragId), prioDto.prio);
-                    prioritaet.persist();
-                    t.addPrioritaet(prioritaet);
-                }
-            });
+            if (null != dto.gruppen) {
+                dto.gruppen.forEach(t::addGruppe);
+            }
+            if (null != dto.prioritaeten) {
+                dto.prioritaeten.forEach(prioDto -> {
+                    Wahlvortrag wv = Wahlvortrag.findById(prioDto.vortragId);
+                    if (null == wv) {
+                        LOG.error("Unbekannter Wahlvortrag zu id: " + prioDto.vortragId);
+                    } else {
+                        Prioritaet prioritaet = new Prioritaet(t, Wahlvortrag.findById(prioDto.vortragId), prioDto.prio);
+                        prioritaet.persist();
+                        t.addPrioritaet(prioritaet);
+                    }
+                });
+            }
         }
 
         nutzer.persistAndFlush();

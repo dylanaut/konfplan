@@ -541,7 +541,7 @@ const viewMySchedule = (vid) => {
 
 const downloadIcs = async (vid) => {
   try {
-    const res = await api.get(`/api/ics/referent/${vid}`, { responseType: 'blob' });
+    const res = await api.get(`/api/kalender/referent/${vid}`, { responseType: 'blob' });
     const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/calendar' }));
     const link = document.createElement('a');
     link.href = url;
