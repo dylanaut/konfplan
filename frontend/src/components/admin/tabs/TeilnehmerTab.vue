@@ -44,18 +44,18 @@
     <!-- Prioritäten-Matrix (Collapsible) -->
     <div class="space-y-2">
       <div
-          class="w-full flex items-center justify-between gap-3 text-[10px] font-black text-indigo-700 uppercase tracking-widest bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-        <button @click="expandedSections.teilnehmerPrioritaeten = !expandedSections.teilnehmerPrioritaeten"
-                class="flex items-center gap-3 hover:text-indigo-500">
-          <ChevronDownIcon v-if="!expandedSections.teilnehmerPrioritaeten" class="w-3.5 h-3.5 shrink-0"/>
+        @click="togglePrioritaetenAnzeige"
+        class="w-full flex items-center justify-between gap-3 text-[10px] font-black text-indigo-700 uppercase tracking-widest bg-white p-3 rounded-xl border border-gray-100 shadow-sm cursor-pointer hover:bg-gray-50 transition">
+        <div class="flex items-center gap-3">
+          <ChevronDownIcon v-if="!showPrioritaetenBlock" class="w-3.5 h-3.5 shrink-0"/>
           <ChevronUpIcon v-else class="w-3.5 h-3.5 shrink-0"/>
           <div class="flex items-center gap-2">
             <StarIcon class="w-4 h-4"/>
             Wahl-Prioritäten verwalten
           </div>
-        </button>
-        <div class="flex items-center gap-2">
-          <button @click.stop="emit('triggerUpload', `/api/admin/veranstaltungen/${selectedVid}/prioritaeten/import`)"
+        </div>
+        <div class="flex items-center gap-2" @click.stop>
+          <button @click="emit('triggerUpload', `/api/admin/veranstaltungen/${selectedVid}/prioritaeten/import`)"
                   class="btn-secondary text-xs py-1 px-2 flex items-center gap-1">
             <UploadIcon class="w-3.5 h-3.5"/>
             Prio Import
@@ -68,7 +68,7 @@
         </div>
       </div>
 
-      <div v-if="expandedSections.teilnehmerPrioritaeten" class="animate-fade-in space-y-4">
+      <div v-show="showPrioritaetenBlock" class="space-y-4">
         <!-- Legende für Wahlvorträge -->
         <div v-if="sortedWahlvortraege.length > 0"
              class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 text-[10px]">
@@ -81,7 +81,9 @@
               <h4 class="font-bold text-indigo-800 uppercase text-[9px] mb-1">{{ group.berufsfeld }}</h4>
               <div class="space-y-1">
                 <div v-for="vortrag in group.vortraege" :key="'legende-'+vortrag.id" class="flex gap-2 items-start">
-                  <span class="font-black text-indigo-600 shrink-0 w-4 text-right">{{ sortedWahlvortraege.indexOf(vortrag) + 1 }}:</span>
+                  <span class="font-black text-indigo-600 shrink-0 w-4 text-right">{{
+                      sortedWahlvortraege.indexOf(vortrag) + 1
+                    }}:</span>
                   <span class="text-gray-700 truncate"
                         :title="`${vortrag.referentName || 'N/A'}${vortrag.referentOrganisation ? ' [' + vortrag.referentOrganisation + ']' : ''}`">
                     {{ vortrag.titel }}
@@ -146,24 +148,25 @@
     <!-- Verfügbarkeits-Matrix (Collapsible) -->
     <div class="space-y-2">
       <div
-          class="w-full flex items-center justify-between gap-3 text-[10px] font-black text-indigo-700 uppercase tracking-widest bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-        <button @click="expandedSections.teilnehmerVerfuegbarkeit = !expandedSections.teilnehmerVerfuegbarkeit"
-                class="flex items-center gap-3 hover:text-indigo-500">
-          <ChevronDownIcon v-if="!expandedSections.teilnehmerVerfuegbarkeit" class="w-3.5 h-3.5 shrink-0"/>
+        @click="toggleVerfuegbarkeitenAnzeige"
+        class="w-full flex items-center justify-between gap-3 text-[10px] font-black text-indigo-700 uppercase tracking-widest bg-white p-3 rounded-xl border border-gray-100 shadow-sm cursor-pointer hover:bg-gray-50 transition">
+        <div class="flex items-center gap-3">
+          <ChevronDownIcon v-if="!showVerfuegbarkeitenBlock" class="w-3.5 h-3.5 shrink-0"/>
           <ChevronUpIcon v-else class="w-3.5 h-3.5 shrink-0"/>
           <div class="flex items-center gap-2">
             <CheckSquareIcon class="w-4 h-4"/>
             Verfügbarkeiten verwalten
           </div>
-        </button>
-        <button v-if="availabilityStore.hasDirtyAvailabilities()" @click="availabilityStore.saveAvailabilities(selectedVid)" :disabled="isEventFinished"
+        </div>
+        <button v-if="availabilityStore.hasDirtyAvailabilities()" @click.stop="availabilityStore.saveAvailabilities(selectedVid)"
+                :disabled="isEventFinished"
                 class="btn-save-all">
           <SaveAllIcon class="w-3.5 h-3.5"/>
           Alle Änderungen speichern
         </button>
       </div>
 
-      <div v-if="expandedSections.teilnehmerVerfuegbarkeit" class="animate-fade-in">
+      <div v-show="showVerfuegbarkeitenBlock">
         <div v-if="filteredParticipants.length > 0"
              class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
           <table class="min-w-full divide-y divide-gray-200 text-xs">
@@ -214,7 +217,8 @@
                        :disabled="isEventFinished" class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3"/>
               </td>
               <td class="px-4 py-2 text-center">
-                <button @click="openParticipantPlan(u)" class="text-indigo-600 hover:text-indigo-800" title="Belegungsplan anzeigen">
+                <button @click="openParticipantPlan(u)" class="text-indigo-600 hover:text-indigo-800"
+                        title="Belegungsplan anzeigen">
                   <FileTextIcon class="w-4 h-4 inline"/>
                 </button>
               </td>
@@ -243,18 +247,20 @@
     </div>
 
     <!-- HTML Display Modal -->
-    <HtmlDisplayModal :isVisible="showPlanOverlay" :htmlContent="planHtmlContent" :title="planOverlayTitle" @close="showPlanOverlay = false" />
+    <HtmlDisplayModal :isVisible="showPlanOverlay" :htmlContent="planHtmlContent" :title="planOverlayTitle"
+                      @close="showPlanOverlay = false"/>
   </section>
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
+import {computed, reactive, ref, watch} from 'vue';
 import {
   ArrowUpDown as ArrowUpDownIcon,
   Check as CheckIcon,
   CheckSquare as CheckSquareIcon,
   ChevronDown as ChevronDownIcon,
   ChevronUp as ChevronUpIcon,
+  FileText as FileTextIcon,
   Info as InfoIcon,
   Mail as MailIcon,
   Pencil as PencilIcon,
@@ -263,14 +269,13 @@ import {
   Star as StarIcon,
   Trash2 as Trash2Icon,
   Upload as UploadIcon,
-  Users as UsersIcon,
-  X as XIcon,
-  FileText as FileTextIcon // Import the FileTextIcon
+  UsersIcon as UsersIcon,
+  X as XIcon
 } from '@lucide/vue';
 import PaginationControls from '../../PaginationControls.vue';
 import HtmlDisplayModal from '../../HtmlDisplayModal.vue'; // Import the new modal component
 import api from '../../../api/axios'; // Import axios for API calls
-import { useAvailabilityStore } from '../../../stores/availability';
+import {useAvailabilityStore} from '../../../stores/availability';
 
 const props = defineProps({
   teilnehmer: Array,
@@ -302,13 +307,22 @@ const filters = reactive({
 });
 
 const sorts = reactive({
-  teilnehmer: { key: 'lastName', dir: 'asc' }
+  teilnehmer: {key: 'lastName', dir: 'asc'}
 });
 
-const expandedSections = reactive({
-  teilnehmerVerfuegbarkeit: false,
-  teilnehmerPrioritaeten: true
-});
+const   showVerfuegbarkeitenBlock = ref(false);
+const showPrioritaetenBlock = ref(true);
+
+const toggleVerfuegbarkeitenAnzeige = () => {
+  console.log('[Toggle] Verfügbarkeit vorher:', showVerfuegbarkeitenBlock.value);
+  showVerfuegbarkeitenBlock.value = !showVerfuegbarkeitenBlock.value;
+  console.log('[Toggle] Verfügbarkeit nachher:', showVerfuegbarkeitenBlock.value);
+};
+const togglePrioritaetenAnzeige = () => {
+  console.log('[Toggle] Prioritäten vorher:', showPrioritaetenBlock.value);
+  showPrioritaetenBlock.value = !showPrioritaetenBlock.value;
+  console.log('[Toggle] Prioritäten nachher:', showPrioritaetenBlock.value);
+};
 
 const selectedParticipantIds = ref([]);
 
@@ -321,7 +335,7 @@ watch(() => props.selectedVid, (newVid) => {
   if (newVid) {
     availabilityStore.fetchAvailabilities(newVid);
   }
-}, { immediate: true });
+}, {immediate: true});
 
 watch(() => filters.teilnehmer, () => {
   pages.teilnehmer = 1;
@@ -364,13 +378,25 @@ const groupedWahlvortraege = computed(() => {
 
 const processList = (list, filterText, sortConfig) => {
   let result = [...list];
+
   if (filterText) {
     const f = filterText.toLowerCase();
     result = result.filter(item => {
-      const searchStrings = Object.values(item).map(v => v && typeof v === 'object' ? Object.values(v) : v).flat();
-      return searchStrings.some(val => val && String(val).toLowerCase().includes(f));
+      // Safely build a search string from the item's properties
+      const searchString = Object.values(item).map(value => {
+        if (value === null || typeof value === 'undefined') {
+          return '';
+        }
+        if (typeof value === 'object') {
+          // For nested objects or arrays, just join their values, ignoring deeper levels for simplicity
+          return Object.values(value).join(' ');
+        }
+        return String(value);
+      }).join(' ').toLowerCase();
+      return searchString.includes(f);
     });
   }
+
   result.sort((a, b) => {
     const valA = a[sortConfig.key] || '';
     const valB = b[sortConfig.key] || '';
@@ -380,6 +406,7 @@ const processList = (list, filterText, sortConfig) => {
     const cmp = String(valA).localeCompare(String(valB));
     return sortConfig.dir === 'asc' ? cmp : -cmp;
   });
+
   return result;
 };
 
@@ -398,7 +425,7 @@ const toggleSort = (key, field) => {
 };
 
 const filteredParticipants = computed(() => {
-  let list = props.teilnehmer.filter(t => t.veranstaltungIds.includes(props.selectedVid));
+  let list = props.teilnehmer.filter(t => t && t.veranstaltungIds && Array.isArray(t.veranstaltungIds) && t.veranstaltungIds.includes(props.selectedVid));
   if (filters.gruppen) {
     list = list.filter(t => t.gruppe === filters.gruppen);
   }
@@ -427,7 +454,7 @@ const selectAllFilteredParticipants = () => {
 };
 
 const isAvailabilityChanged = (userId) => {
-  return availabilityStore.changedUserAvailabilities.has(userId);
+  return availabilityStore.isUserAvailabilityChanged(userId);
 };
 
 const getParticipantPrio = (userId, talkId) => {
@@ -453,7 +480,7 @@ const openParticipantPlan = async (participant) => {
   planOverlayTitle.value = `Belegungsplan für ${participant.firstName} ${participant.lastName}`;
   try {
     const response = await api.get(`/api/reports/${props.selectedVid}/teilnehmer/${participant.id}/laufzettel`, {
-      headers: { 'Accept': 'text/html' }
+      headers: {'Accept': 'text/html'}
     });
     planHtmlContent.value = response.data;
     showPlanOverlay.value = true;

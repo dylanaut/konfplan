@@ -3,21 +3,26 @@ package kreyj.konfplan.adapter.in.web.dto;
 import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import kreyj.konfplan.persistence.Prioritaet;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 @RegisterForReflection
-@AllArgsConstructor
-@NoArgsConstructor
 @Getter
 public class VortragPrioDto {
-
-    @ProjectedFieldName("vortrag.id")
     public Long vortragId;
 
-    @ProjectedFieldName("prioWert")
     public int prioWert;
+
+
+    /**
+     * notwendiger allArgs Konstruktor mit @ProjectedFieldName für Panache Query Projektion
+     *
+     * @param vortragId vortragId
+     * @param prioWert  prioWert
+     */
+    public VortragPrioDto(@ProjectedFieldName("vortrag.id") Long vortragId, int prioWert) {
+        this.vortragId = vortragId;
+        this.prioWert = prioWert;
+    }
 
 
     public static VortragPrioDto from(Prioritaet p) {

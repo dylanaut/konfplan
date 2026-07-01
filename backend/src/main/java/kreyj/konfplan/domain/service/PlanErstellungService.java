@@ -191,10 +191,10 @@ public class PlanErstellungService {
         }
         String vName = veranstaltung.getName();
         String details = kollisionen.stream().map(Kollision::getNachricht).collect(joining(LINE_SEP));
-        String message = "Daten-Kollisionen vor Planerstellung für '" + vName + "':" + LINE_SEP + details;
+        String message = "Inkonsistente Daten für Planerstellung in '" + vName + "':" + LINE_SEP + details;
         LOG.warn(message);
         protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung abgebrochen",
-            "Planerstellung für '" + vName + "' wegen Daten-Kollisionen abgebrochen:" + LINE_SEP + details,
+            "Planerstellung für '" + vName + "' abgebrochen:" + LINE_SEP + details,
             veranstaltungId, username);
         throw new CollisionsException(message);
     }

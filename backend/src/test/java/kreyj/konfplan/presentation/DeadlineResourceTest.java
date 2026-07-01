@@ -116,9 +116,7 @@ class DeadlineResourceTest extends DatabaseCleaner {
             @Claim(key = "upn", value = "teilnehmer@test.de")
     })
     void testTeilnehmerDeadlineExceeded() {
-        VortragPrioDto req = new VortragPrioDto();
-        req.vortragId = wahlvortragId;
-        req.prioWert = 1;
+        VortragPrioDto req = new VortragPrioDto(wahlvortragId, 1);
 
         given()
                 .contentType(ContentType.JSON)

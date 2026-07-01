@@ -15,7 +15,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import kreyj.konfplan.adapter.in.web.dto.AdminPrioritaetUpdateRequestDto;
+import kreyj.konfplan.adapter.in.web.dto.VortragPrioDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
@@ -223,7 +223,7 @@ public class AdminResource {
     public Response updateTeilnehmerPrioritaet(
         @PathParam("vid") Long vid,
         @PathParam("tid") Long tid,
-        @RequestBody(description = "Eine Liste von Prioritäts-Updates") List<AdminPrioritaetUpdateRequestDto> dtoList) { // Changed to List
+        @RequestBody(description = "Eine Liste von Prioritäts-Updates") List<VortragPrioDto> dtoList) { // Changed to List
 
         Teilnehmer teilnehmer = Teilnehmer.findById(tid);
         if (null == teilnehmer) {
@@ -235,7 +235,7 @@ public class AdminResource {
         }
 
         try {
-            for (AdminPrioritaetUpdateRequestDto dto : dtoList) {
+            for (VortragPrioDto dto : dtoList) {
                 Vortrag vortrag = Vortrag.findById(dto.vortragId);
                 if (null == vortrag) {
                     return Response.status(Response.Status.NOT_FOUND).entity("Vortrag mit ID " + dto.vortragId + " nicht gefunden.").build();

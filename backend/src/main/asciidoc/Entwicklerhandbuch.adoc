@@ -152,7 +152,7 @@ Das Frontend basiert auf Vue 3, Vite, Tailwind CSS, Pinia (State Management) und
 *   **Prioritaet**:: Präferenz eines Teilnehmers für einen Wahlvortrag (Ranking 1-10).
 *   **TeilnehmerVerfuegbarkeit**:: Gibt an, ob Nutzer in einem Slot verfügbar ist (Default: true bei Zuweisung).
 *   **RaumVerfuegbarkeit**:: Modelliert die Verfügbarkeit von Räumen pro Slot inklusive veranstaltungsübergreifender Prüfung.
-*   **AdminPrioritaetUpdateRequestDto**:: DTO für die Aktualisierung einer einzelnen Teilnehmerpriorität durch Administratoren.
+*   **VortragPrioDto**:: DTO für die Aktualisierung einer einzelnen Teilnehmerpriorität durch Administratoren.
 
 [[_wichtige_konventionen]]
 == 8. Wichtige Konventionen
