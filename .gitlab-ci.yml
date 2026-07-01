@@ -2,7 +2,7 @@
 # Wir verwenden ein Maven-Image mit Java 21, passend zu Ihrem Quarkus-Backend.
 default:
     image: maven:3.9-eclipse-temurin-21
-    tags: [docker]
+    tags: [web_api]
 
 # Definiert die Phasen der Pipeline. Jobs werden in dieser Reihenfolge ausgeführt.
 stages:
