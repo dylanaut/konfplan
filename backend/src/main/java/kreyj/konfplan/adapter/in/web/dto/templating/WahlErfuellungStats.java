@@ -47,7 +47,7 @@ public class WahlErfuellungStats {
                 .collect(Collectors.toMap(Map.Entry::getKey,
                         entry -> {
                             int gewaehlte = entry.getValue();
-                            int wv_erfuellung = wvErfuellungen.getOrDefault(entry.getKey(), 0);
+                            int wv_erfuellung = prioErfuellungen.getOrDefault(entry.getKey(), 0);
                             return String.format("%.1f%%",
                                     ((wv_erfuellung / (gewaehlte > 0 ? gewaehlte : 1.0f)) * 100));
                         }));

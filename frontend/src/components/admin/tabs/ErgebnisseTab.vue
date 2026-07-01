@@ -1,13 +1,5 @@
 <template>
   <section class="space-y-6 animate-fade-in">
-    <!-- Qualitätsmetriken -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
-        <div class="text-[9px] text-gray-500 uppercase font-bold">Ø Priorität</div>
-        <div class="text-xl font-black text-indigo-600">{{ qualitaet.durchschnittsPrio?.toFixed(2) || '0.00' }}</div>
-      </div>
-    </div>
-
     <!-- Belegungsplan -->
     <div v-if="belegungsPlan && belegungsPlan.length > 0">
       <Stundenplan :vid="eventContext.selectedEvent.id" />
