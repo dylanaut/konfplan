@@ -43,7 +43,7 @@
         <div class="col-md-3">
           <div class="card bg-secondary text-white shadow-sm">
             <div class="card-body text-center p-3">
-              <h6 class="mb-1">Prio-Erfüllung</h6>
+              <h6 class="mb-1">Prio-Erfüllungen</h6>
               <div class="mt-2" style="font-size: 0.8rem; opacity: 0.9;">
                 <div v-for="(gewaehlt, prioWert) in reportData.wahlErfuellungStats.prioPrefs" :key="prioWert">
                   <div v-if="gewaehlt > 0" class="d-flex justify-content-between">
@@ -84,7 +84,9 @@
                       <span class="text-muted small">{{ getBelegung(s_oid, r_oid).organisation }}</span>
                     </p>
                     <div class="d-flex justify-content-between align-items-center mt-2">
-                      <span class="badge" :class="getBelegung(s_oid, r_oid).teilnehmer.length < 4 ? 'bg-danger' : 'bg-success'">
+                      <span class="badge" role="button"
+                            :class="getBelegung(s_oid, r_oid).teilnehmer.length < 4 ? 'bg-danger' : 'bg-success'"
+                            @click="openTnPopup(getBelegung(s_oid, r_oid))">
                         {{ getBelegung(s_oid, r_oid).teilnehmer.length }} TN
                       </span>
                       <span v-if="getBelegung(s_oid, r_oid).isPflicht" class="badge bg-primary">Pflicht</span>
@@ -116,6 +118,19 @@
       <footer class="text-right py-2 text-muted small print-footer">
         <span class="badge bg-secondary">Stand: {{ reportData.geplantAm }}</span>
       </footer>
+
+      <div v-if="tnPopup" class="modal-backdrop-custom no-print" @click.self="closeTnPopup">
+        <div class="card shadow-lg tn-popup-card">
+          <div class="card-header d-flex justify-content-between align-items-center py-2">
+            <strong class="small">{{ tnPopup.titel }}</strong>
+            <button type="button" class="btn-close" aria-label="Schließen" @click="closeTnPopup"></button>
+          </div>
+          <ul class="list-group list-group-flush" style="max-height: 300px; overflow-y: auto;">
+            <li v-if="tnPopup.teilnehmer.length === 0" class="list-group-item small text-muted">Keine Teilnehmer</li>
+            <li v-for="(tn, idx) in tnPopup.teilnehmer" :key="idx" class="list-group-item small">{{ tn }}</li>
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -134,6 +149,7 @@ const props = defineProps({
 const reportData = ref(null);
 const loading = ref(true);
 const error = ref(null);
+const tnPopup = ref(null);
 
 onMounted(async () => {
   if (!props.vid) {
@@ -153,6 +169,14 @@ onMounted(async () => {
 
 const getBelegung = (s_oid, r_oid) => {
   return reportData.value?.belegungDetails?.[`${s_oid}_${r_oid}`];
+};
+
+const openTnPopup = (belegung) => {
+  tnPopup.value = belegung;
+};
+
+const closeTnPopup = () => {
+  tnPopup.value = null;
 };
 
 const truncTo = (text, maxLen = 25) => {
@@ -202,5 +226,19 @@ body {
 .card-vortrag:hover {
   transform: scale(1.02);
   z-index: 10;
+}
+.modal-backdrop-custom {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+}
+.tn-popup-card {
+  width: 100%;
+  max-width: 360px;
+  margin: 1rem;
 }
 </style>
