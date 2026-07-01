@@ -5,6 +5,7 @@ import api from '../api/axios';
 export const useAvailabilityStore = defineStore('availability', () => {
     const userAvailabilities = ref(new Map());
     const roomAvailabilities = ref(new Map());
+    const roomBlockingInfo = ref(new Map()); // Map<raumId, blockingEventName> für Kollisionen mit fremden Veranstaltungen
     const changedUserAvailabilities = ref(new Set());
     const changedRoomAvailabilities = ref(new Set());
 
@@ -20,8 +21,12 @@ export const useAvailabilityStore = defineStore('availability', () => {
         });
 
         roomAvailabilities.value.clear();
+        roomBlockingInfo.value.clear();
         roomRes.data.forEach(dto => {
             roomAvailabilities.value.set(dto.raumId, new Set(dto.verfuegbareSlotIds));
+            if (dto.isBlockedByOtherEvent) {
+                roomBlockingInfo.value.set(dto.raumId, dto.blockingEventName);
+            }
         });
 
         changedUserAvailabilities.value.clear();
@@ -90,6 +95,18 @@ export const useAvailabilityStore = defineStore('availability', () => {
         return changedUserAvailabilities.value.size > 0 || changedRoomAvailabilities.value.size > 0;
     };
 
+    const isUserAvailabilityChanged = (userId) => {
+        return changedUserAvailabilities.value.has(userId);
+    };
+
+    const isRoomAvailabilityChanged = (roomId) => {
+        return changedRoomAvailabilities.value.has(roomId);
+    };
+
+    const getRoomBlockingEvent = (roomId) => {
+        return roomBlockingInfo.value.get(roomId) ?? null;
+    };
+
     return {
         userAvailabilities,
         roomAvailabilities,
@@ -99,6 +116,9 @@ export const useAvailabilityStore = defineStore('availability', () => {
         saveAvailabilities,
         isUserAvailable,
         isRoomAvailable,
-        hasDirtyAvailabilities
+        hasDirtyAvailabilities,
+        isUserAvailabilityChanged,
+        isRoomAvailabilityChanged,
+        getRoomBlockingEvent
     };
 });

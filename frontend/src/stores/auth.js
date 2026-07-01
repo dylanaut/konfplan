@@ -31,26 +31,50 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
+    function handleLoginSuccess(response) {
+        const newToken = response.data.token;
+        setToken(newToken);
+        toast.success('Login erfolgreich!');
+
+        // Redirect based on role
+        if (isAdmin.value) {
+            router.push('/admin');
+        } else if (isSpeaker.value) {
+            router.push('/referent');
+        } else if (isParticipant.value) {
+            router.push('/teilnehmer');
+        } else {
+            router.push('/'); // Fallback
+        }
+    }
+
     async function login(credentials) {
         try {
-            const response = await api.post('/api/auth/login', credentials);
-            const newToken = response.data.token;
-            setToken(newToken);
-            toast.success('Login erfolgreich!');
-
-            // Redirect based on role
-            if (isAdmin.value) {
-                router.push('/admin');
-            } else if (isSpeaker.value) {
-                router.push('/referent');
-            } else if (isParticipant.value) {
-                router.push('/teilnehmer');
-            } else {
-                router.push('/'); // Fallback
-            }
+            handleLoginSuccess(await api.post('/api/auth/login', credentials));
         } catch (error) {
-            const errorMessage = error.response?.data?.message || 'Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.';
-            toast.error(errorMessage);
+            // Kein error.response => Netzwerk-/Verbindungsfehler (z.B. Backend im Dev-Mode
+            // noch nicht bereit). Ein automatischer Retry fängt das übliche Startup-Race ab.
+            if (!error.response) {
+                try {
+                    await new Promise((resolve) => setTimeout(resolve, 1500));
+                    handleLoginSuccess(await api.post('/api/auth/login', credentials));
+                    return;
+                } catch (retryError) {
+                    if (!retryError.response) {
+                        toast.error('Server nicht erreichbar. Startet das Backend gerade? Bitte in wenigen Sekunden erneut versuchen.');
+                        console.error(retryError);
+                        return;
+                    }
+                    error = retryError;
+                }
+            }
+
+            if (error.response?.status === 401) {
+                toast.error('Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.');
+            } else {
+                const errorMessage = error.response?.data?.message || 'Login fehlgeschlagen. Bitte versuchen Sie es erneut.';
+                toast.error(errorMessage);
+            }
             console.error(error);
         }
     }

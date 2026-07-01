@@ -84,24 +84,124 @@
       <Building2Icon class="w-10 h-10 mx-auto mb-3 text-gray-400" />
       <p class="font-bold">Bitte Gebäude erfassen.</p>
     </div>
+
+    <!-- Raum-Verfügbarkeits-Matrix (nur wenn eine Veranstaltung ausgewählt ist und Slots existieren) -->
+    <div v-if="showRoomAvailability" class="space-y-2">
+      <div
+        @click="showRoomAvailabilityBlock = !showRoomAvailabilityBlock"
+        class="w-full flex items-center justify-between gap-3 text-[10px] font-black text-indigo-700 uppercase tracking-widest bg-white p-3 rounded-xl border border-gray-100 shadow-sm cursor-pointer hover:bg-gray-50 transition">
+        <div class="flex items-center gap-3">
+          <ChevronDownIcon v-if="!showRoomAvailabilityBlock" class="w-3.5 h-3.5 shrink-0"/>
+          <ChevronUpIcon v-else class="w-3.5 h-3.5 shrink-0"/>
+          <div class="flex items-center gap-2">
+            <CheckSquareIcon class="w-4 h-4"/>
+            Raum-Verfügbarkeiten verwalten
+          </div>
+        </div>
+        <button v-if="availabilityStore.hasDirtyAvailabilities()"
+                @click.stop="availabilityStore.saveAvailabilities(selectedVid)"
+                :disabled="isEventFinished"
+                class="btn-save-all">
+          <SaveAllIcon class="w-3.5 h-3.5"/>
+          Alle Änderungen speichern
+        </button>
+      </div>
+
+      <div v-show="showRoomAvailabilityBlock">
+        <div v-if="buildingsWithEventRooms.length > 0"
+             class="bg-white shadow rounded-xl overflow-x-auto border border-gray-100">
+          <table class="min-w-full divide-y divide-gray-200 text-xs">
+            <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
+            <tr>
+              <th class="px-4 py-1.5 text-left font-bold">Raum</th>
+              <th v-for="slot in sortedSlots" :key="slot.id"
+                  class="px-2 py-2 text-center text-[8px] font-bold text-gray-500">
+                {{ formatTime(slot.startTime) }}
+              </th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+            <template v-for="g in buildingsWithEventRooms" :key="g.id">
+              <tr class="bg-gray-50">
+                <td :colspan="sortedSlots.length + 1"
+                    class="px-4 py-1.5 font-bold text-gray-600 flex items-center gap-1.5">
+                  <Building2Icon class="w-3.5 h-3.5"/>
+                  {{ g.name }}
+                </td>
+              </tr>
+              <tr v-for="r in g.eventRaeume" :key="r.id"
+                  :class="['hover:bg-gray-50', availabilityStore.isRoomAvailabilityChanged(r.id) ? 'bg-orange-50/50' : '']">
+                <td class="px-4 py-2 font-bold">
+                  <div class="flex items-center gap-1.5">
+                    <span>{{ r.name }}</span>
+                    <AlertTriangleIcon v-if="availabilityStore.getRoomBlockingEvent(r.id)"
+                                       class="w-3.5 h-3.5 text-amber-500 shrink-0"
+                                       :title="`Kollision mit Veranstaltung: ${availabilityStore.getRoomBlockingEvent(r.id)}`"/>
+                  </div>
+                </td>
+                <td v-for="slot in sortedSlots" :key="slot.id" class="px-2 py-2 text-center">
+                  <input type="checkbox" :checked="availabilityStore.isRoomAvailable(r.id, slot.id)"
+                         @change="availabilityStore.toggleRoomAvailability(r.id, slot.id)"
+                         :disabled="isEventFinished"
+                         class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3"/>
+                </td>
+              </tr>
+            </template>
+            </tbody>
+          </table>
+        </div>
+        <div v-else class="bg-white p-8 rounded-xl text-center border-2 border-dashed border-gray-200 text-gray-500">
+          <Building2Icon class="w-10 h-10 mx-auto mb-3 text-gray-400"/>
+          <p class="font-bold">Für diese Veranstaltung sind keine Räume zugeordnet.</p>
+        </div>
+      </div>
+    </div>
   </section>
 </template>
 
 <script setup>
-import { computed, reactive, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import {
+  AlertTriangle as AlertTriangleIcon,
   ArrowUpDown as ArrowUpDownIcon,
   Building2 as Building2Icon,
+  CheckSquare as CheckSquareIcon,
   ChevronDown as ChevronDownIcon,
   ChevronRight as ChevronRightIcon,
+  ChevronUp as ChevronUpIcon,
   Pencil as PencilIcon,
+  SaveAll as SaveAllIcon,
   Trash2 as Trash2Icon
 } from '@lucide/vue';
 import PaginationControls from '../../PaginationControls.vue';
+import { useAvailabilityStore } from '../../../stores/availability';
 
 const props = defineProps({
   gebaeude: Array, // Jetzt werden Gebäude statt Räume übergeben
-  pageSize: Number
+  pageSize: Number,
+  selectedVid: Number,
+  sortedSlots: { type: Array, default: () => [] },
+  isEventFinished: Boolean
+});
+
+const availabilityStore = useAvailabilityStore();
+
+const showRoomAvailabilityBlock = ref(false);
+
+// Nur anzeigen, wenn eine Veranstaltung ausgewählt ist und für sie Slots festgelegt wurden
+const showRoomAvailability = computed(() => !!props.selectedVid && props.sortedSlots.length > 0);
+
+const formatTime = (t) => t ? new Date(t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '';
+
+// Gebäude mit ihren zur Veranstaltung gehörenden Räumen (die in der Verfügbarkeits-Map enthalten sind)
+const buildingsWithEventRooms = computed(() => {
+  return [...props.gebaeude]
+    .map(g => ({
+      ...g,
+      eventRaeume: (g.raeume || []).filter(r => availabilityStore.roomAvailabilities.has(r.id))
+    }))
+    .filter(g => g.eventRaeume.length > 0)
+    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
 });
 
 const emit = defineEmits([
@@ -186,6 +286,7 @@ const paginatedGebaeude = computed(() => paginate(filteredGebaeude.value, pages.
 
 <style scoped>
 .btn-primary { @apply rounded-lg bg-indigo-600 px-3 py-1.5 text-white font-bold hover:bg-indigo-700 transition shadow-sm border-none cursor-pointer disabled:opacity-50; }
+.btn-save-all { @apply bg-orange-500 text-white text-[10px] px-3 py-1 rounded-md shadow-sm transition-all flex items-center gap-2 hover:bg-orange-600 disabled:opacity-50; }
 .btn-secondary { @apply bg-white text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 font-bold border border-gray-200 transition shadow-sm cursor-pointer disabled:opacity-50; }
 .input-field { @apply rounded-lg border border-gray-300 px-2 py-1 text-gray-900 focus:ring-2 focus:ring-indigo-500 bg-white; }
 .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }

@@ -32,7 +32,7 @@
     </div>
 
     <!-- START-ZUSTAND (Empty State) -->
-    <div v-if="!selectedVid && !['veranstaltungen', 'gebaeude', 'administratoren', 'protokoll'].includes(activeTab)"
+    <div v-if="!selectedVid && !['veranstaltungen', 'gebaeude', 'organisatoren', 'protokoll'].includes(activeTab)"
          class="bg-indigo-50 p-8 rounded-2xl text-center border-2 border-dashed border-indigo-200 animate-fade-in">
       <div class="text-indigo-400 mb-3 flex justify-center">
         <CalendarIcon class="w-10 h-10"/>
@@ -76,6 +76,9 @@
       <GebaeudeTab v-if="activeTab === 'gebaeude'"
                    :gebaeude="gebaeude"
                    :pageSize="pageSize"
+                   :selectedVid="selectedVid"
+                   :sortedSlots="sortedSlots"
+                   :isEventFinished="isEventFinished"
                    @triggerUpload="triggerUpload"
                    @openGebaeudeEditor="openGebaeudeEditor"
                    @deleteGebaeude="deleteGebaeude"
@@ -83,8 +86,8 @@
                    @deleteRaum="deleteRaum"
       />
 
-      <AdministratorenTab v-if="activeTab === 'administratoren'"
-                          :admins="admins"
+      <OrganisatorenTab v-if="activeTab === 'organisatoren'"
+                          :admins="veranstaltungsAdmins"
                           :pageSize="pageSize"
                           @triggerUpload="triggerUpload"
                           @openUserModal="openUserModal"
@@ -228,7 +231,7 @@ import {
 import ErgebnisseTab from '../components/admin/tabs/ErgebnisseTab.vue';
 import VeranstaltungenTab from '../components/admin/tabs/VeranstaltungenTab.vue';
 import GebaeudeTab from '../components/admin/tabs/GebaeudeTab.vue';
-import AdministratorenTab from '../components/admin/tabs/AdministratorenTab.vue';
+import OrganisatorenTab from '../components/admin/tabs/OrganisatorenTab.vue';
 import TeilnehmerTab from '../components/admin/tabs/TeilnehmerTab.vue';
 import ReferentenTab from '../components/admin/tabs/ReferentenTab.vue';
 import VortraegeTab from '../components/admin/tabs/VortraegeTab.vue';
@@ -250,7 +253,7 @@ const availabilityStore = useAvailabilityStore();
 const groupStore = useGroupStore();
 
 const tabLabels = {
-  administratoren: 'Organisatoren',
+  organisatoren: 'Organisatoren',
   gebaeude: 'Gebäude',
   veranstaltungen: 'Veranstaltungen',
   teilnehmer: 'Teilnehmer',
@@ -310,12 +313,12 @@ const csvFeedback = reactive({
 });
 
 const visibleTabs = computed(() => {
-  if (selectedVid.value) return ['administratoren', 'gebaeude',
+  if (selectedVid.value) return ['organisatoren', 'gebaeude',
     'teilnehmer', 'referenten', 'vortraege',
     'veranstaltungen', 'slots',
     'planung', 'ergebnisse',
     'protokoll'];
-  return ['administratoren', 'gebaeude',
+  return ['organisatoren', 'gebaeude',
     'veranstaltungen',
     'protokoll'];
 });
@@ -339,6 +342,12 @@ const isEventFinished = computed(() => {
 const admins = computed(() => users.value.filter(u => u.role === 'ADMIN'));
 const referenten = computed(() => users.value.filter(u => u.role === 'REFERENT'));
 const teilnehmer = computed(() => users.value.filter(u => u.role === 'TEILNEHMER'));
+
+// Organisatoren: bei ausgewählter Veranstaltung nur deren Organisatoren, sonst alle
+const veranstaltungsAdmins = computed(() => {
+  if (!selectedVid.value) return admins.value;
+  return admins.value.filter(a => a.veranstaltungIds?.includes(selectedVid.value));
+});
 
 const filteredReferenten = computed(() => {
   if (!selectedVid.value) return [];
