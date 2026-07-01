@@ -29,6 +29,7 @@
         <lombok.version>1.18.46</lombok.version>
         <p6spy.version>3.9.1</p6spy.version>
         <ical4j.version>4.2.5</ical4j.version>
+        <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
     </properties>
 
     <dependencies>
@@ -240,8 +241,11 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.15.0</version>
+                <version>${maven-compiler-plugin.version}</version>
                 <configuration>
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                    </compilerArgs>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
