@@ -4,11 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht;
+import kreyj.konfplan.adapter.in.web.dto.SolverConfig;
 import kreyj.konfplan.domain.service.PlanService;
 import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.presentation.DatabaseCleaner;
-import kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -26,6 +27,7 @@ public class PlanServiceTest extends DatabaseCleaner {
 
     private Veranstaltung veranstaltung;
 
+
     @BeforeEach
     @Transactional
     public void setup() {
@@ -36,29 +38,29 @@ public class PlanServiceTest extends DatabaseCleaner {
 
         Planungsergebnis ergebnis = new Planungsergebnis();
         ergebnis.setVeranstaltung(veranstaltung);
-        ergebnis.setSolver("cp-sat");
-        ergebnis.setTimeout(60);
+        ergebnis.setSolverConfig(new SolverConfig(60, 1, 1, false));
         // Simulate a minimal valid JSON structure to avoid NullPointerExceptions during parsing
         ergebnis.setJsonErgebnis("""
-                {
-                  "instanz_slot": [[]],
-                  "instanz_raum": [[]],
-                  "besucht": [[[]]],
-                  "teilnehmer_oids": [],
-                  "wahlvortrag_oids": [],
-                  "slot_oids": [],
-                  "raum_oids": []
-                }
-                """);
+            {
+              "instanz_slot": [[]],
+              "instanz_raum": [[]],
+              "besucht": [[[]]],
+              "teilnehmer_oids": [],
+              "wahlvortrag_oids": [],
+              "slot_oids": [],
+              "raum_oids": []
+            }
+            """);
         ergebnis.persist();
     }
+
 
     @Test
     public void testGetDetaillierterPlanDoesNotThrowLobException() {
         List<RaumBelegungUebersicht> detaillierterPlan = planService.getDetaillierterPlan(veranstaltung);
 
         assertThat(detaillierterPlan).describedAs("The returned plan should not be null.")
-                .isNotNull();
+            .isNotNull();
     }
 
 
@@ -75,7 +77,7 @@ public class PlanServiceTest extends DatabaseCleaner {
         // The primary assertion is implicit: the test fails if a HibernateException is thrown.
         assertDoesNotThrow(() -> {
             results[0] = objectMapper.readValue(jsonErgebnis,
-                    Planungsergebnis.MinizincResult.class);
+                Planungsergebnis.MinizincResult.class);
         }, "Accessing the detailed plan should not throw any exception.");
 
         Planungsergebnis.MinizincResult result = results[0];

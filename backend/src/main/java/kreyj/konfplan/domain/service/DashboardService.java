@@ -1,11 +1,13 @@
 package kreyj.konfplan.domain.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
+import kreyj.konfplan.adapter.in.web.dto.RaumDto;
 import kreyj.konfplan.adapter.in.web.dto.SlotDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerDto;
+import kreyj.konfplan.adapter.in.web.dto.VeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
-import kreyj.konfplan.adapter.in.web.dto.templating.Auffueller;
 import kreyj.konfplan.adapter.in.web.dto.templating.BelegungDetail;
 import kreyj.konfplan.adapter.in.web.dto.templating.DashboardData;
 import kreyj.konfplan.adapter.in.web.dto.templating.Planungsstatistik;
@@ -17,6 +19,10 @@ import kreyj.konfplan.adapter.in.web.dto.templating.TeilnehmerSlotBelegung;
 import kreyj.konfplan.adapter.in.web.dto.templating.TeilnehmerStundenplan;
 import kreyj.konfplan.adapter.in.web.dto.templating.WahlErfuellungStats;
 import kreyj.konfplan.adapter.in.web.dto.templating.WahlvortragStatus;
+import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
+import kreyj.konfplan.persistence.Planungsergebnis;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.VeranstaltungsVerfuegbarkeit;
 import kreyj.konfplan.util.StringHelper;
 
 import java.util.ArrayList;
@@ -33,16 +39,57 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.time.LocalDateTime.now;
+import static java.util.stream.Collectors.toMap;
 import static kreyj.konfplan.util.DateHelper.DATE_TIME_FORMATTER;
 
 @ApplicationScoped
 public class DashboardService {
 
     private final PrioritaetService prioService;
+    private final PlanService planService;
 
 
-    public DashboardService(PrioritaetService prioService) {
+    public DashboardService(PrioritaetService prioService, PlanService planService) {
         this.prioService = prioService;
+        this.planService = planService;
+    }
+
+
+    @Transactional
+    public DashboardData getDashboardData(Veranstaltung veranstaltung) {
+        Planungsergebnis.MinizincResult result = planService.getMinizincResult(veranstaltung);
+
+        Map<Long, Set<Long>> nvMap =
+            NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>list("veranstaltungId = ?1", veranstaltung.getId())
+                .stream().collect(toMap(NutzerVerfuegbarkeit::getNutzerId,
+                    VeranstaltungsVerfuegbarkeit::getVerfuegbareSlotIds));
+        DashboardData dashboardData = new DashboardData(
+            VeranstaltungDto.from(veranstaltung),
+            result.besucht, result.instanz_slot, result.instanz_raum,
+            nvMap,
+            result.teilnehmer_oids, result.wahlvortrag_oids, result.slot_oids, result.raum_oids);
+        dashboardData.teilnehmer = veranstaltung.teilnehmer().stream()
+            .map(TeilnehmerDto::from)
+            .collect(toMap(tn -> tn.id, Function.identity()));
+        dashboardData.wahlvortraege = veranstaltung.getWahlvortraege().stream()
+            .map(VortragDto::from)
+            .collect(toMap(wv -> wv.id, Function.identity()));
+        dashboardData.pflichtvortraege = veranstaltung.getPflichtvortraege().stream()
+            .map(VortragDto::from)
+            .collect(toMap(pv -> pv.id, Function.identity()));
+        dashboardData.slots = veranstaltung.getSlots().stream()
+            .map(SlotDto::from)
+            .collect(toMap(s -> s.id, Function.identity()));
+        dashboardData.raeume = veranstaltung.getRaeume().stream()
+            .map(RaumDto::from)
+            .collect(toMap(r -> r.id, Function.identity()));
+        dashboardData.referenten = veranstaltung.referenten().stream()
+            .map(NutzerDto::from)
+            .collect(toMap(r -> r.id, Function.identity()));
+
+        prepareDashboardData(dashboardData);
+
+        return dashboardData;
     }
 
 
@@ -93,6 +140,7 @@ public class DashboardService {
         long prio1 = 0;
         long prio2 = 0;
         long prio3 = 0;
+        long anzahlAuffuellungen = 0;
 
         for (TeilnehmerErfuellung t : dd.teilnehmerErfuellung) {
             for (WahlvortragStatus vStatus : t.wvStatuus().values()) {
@@ -107,6 +155,8 @@ public class DashboardService {
                     }
                 } else if ("-".equals(vStatus.status())) {
                     unerfuellte++;
+                } else if ("f".equals(vStatus.status())) {
+                    anzahlAuffuellungen++;
                 }
             }
         }
@@ -114,7 +164,7 @@ public class DashboardService {
         dd.planungsstatistik = new Planungsstatistik(belegtePlaetze, kapazitaetTotal,
             unerfuellte, totalWuenscheErfuellt,
             prio1, prio2, prio3,
-            dd.auffuellungSet.size());
+            anzahlAuffuellungen);
     }
 
 
@@ -130,12 +180,10 @@ public class DashboardService {
                 boolean[] besuchteInstanzen = dd.besucht[tnIdx][wvIdx];
 
                 int besuchteInstanz = 0;
-                int besuchtIdx = -1;
                 for (int instIdx = 0; instIdx < wvInstSlots.length; instIdx++) {
                     boolean slotInstanzBesucht = wvInstSlots[instIdx] > 0;
                     if (slotInstanzBesucht && besuchteInstanzen[instIdx]) {
                         besuchteInstanz = instIdx + 1;
-                        besuchtIdx = instIdx;
                         break;
                     }
                 }
@@ -144,7 +192,7 @@ public class DashboardService {
                 int prioWert = wvPrios.getOrDefault(wvOid, 0);
                 if (prioWert > 0) {
                     status = (besuchteInstanz > 0) ? "+" : "-";
-                } else if (dd.auffuellungSet.contains(Auffueller.of(tnOid, wvOid, besuchtIdx))) {
+                } else if (besuchteInstanz > 0) {
                     status = "f";
                 }
                 wahlVortragStatuus.put(wvOid, new WahlvortragStatus(status, prioWert, besuchteInstanz));
@@ -275,6 +323,7 @@ public class DashboardService {
             TeilnehmerDto tn = dd.teilnehmer.get(dd.mzTeilnehmerOids[tnIdx]);
             long tnOid = tn.id;
             Set<String> tnGruppen = tn.gruppen;
+            Map<Long, Integer> wvPrios = prioService.getVortragPrioritaeten(tnOid, dd.veranstaltung.id);
             Map<Long, TeilnehmerSlotBelegung> tnSlotsBelegungen = new LinkedHashMap<>();
 
             for (int slotIdx = 0; slotIdx < dd.mzSlotOids.length; slotIdx++) {
@@ -303,8 +352,7 @@ public class DashboardService {
                         if (dd.instanzSlot[wvIdx][instIdx] == slotIdx && tnVortragBesucht[instIdx]) {
                             long raumOid = dd.mzRaumOids[wahlRaumInstanz[instIdx] - 1];
                             String raumName = dd.raeume.get(raumOid).name;
-                            String typ = dd.auffuellungSet.contains(Auffueller.of(tnOid, wvOid, instIdx))
-                                ? "auffuellung" : "wahl";
+                            String typ = wvPrios.getOrDefault(wvOid, 0) == 0 ? "auffuellung" : "wahl";
                             belegung = new TeilnehmerSlotBelegung(wv.titel, raumName, typ);
                         }
                     }

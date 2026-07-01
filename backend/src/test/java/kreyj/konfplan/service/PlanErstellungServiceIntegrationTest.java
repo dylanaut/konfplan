@@ -197,6 +197,91 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         return veranstaltung;
     }
 
+    @Transactional
+    public Veranstaltung fillUpSetup() {
+        // Veranstaltung mit einem Wahlvortrag, einem Teilnehmer mit Priorität und einem
+        // freien (nicht priorisierten, aber verfügbaren) Teilnehmer für die Auffüllungs-Tests.
+        Veranstaltung veranstaltung = new Veranstaltung();
+        veranstaltung.setName("Auffuellungs-Testlauf");
+        veranstaltung.setBeginntAm(LocalDateTime.now());
+        veranstaltung.addGebaeude(Gebaeude.findById(schule.getId()));
+        veranstaltung.persist();
+
+        Slot slot1 = new Slot("Slot 1", LocalDateTime.now().plusHours(1),
+                LocalDateTime.now().plusHours(2), veranstaltung);
+        slot1.persist();
+        veranstaltung.addSlot(slot1);
+
+        Referent referent = new Referent();
+        referent.setEmail("referent@test.com");
+        referent.setFirstName("Max");
+        referent.setLastName("Mustermann");
+        referent.persist();
+        referent.addVeranstaltung(veranstaltung);
+
+        Wahlvortrag wahlvortrag1 = new Wahlvortrag();
+        wahlvortrag1.setTitel("Wahlvortrag 1");
+        wahlvortrag1.setReferent(referent);
+        wahlvortrag1.setVeranstaltung(veranstaltung);
+        wahlvortrag1.persist();
+
+        Teilnehmer teilnehmerMitPrio = new Teilnehmer();
+        teilnehmerMitPrio.setEmail("tn1@test.com");
+        teilnehmerMitPrio.setFirstName("Peter");
+        teilnehmerMitPrio.setLastName("Pan");
+        teilnehmerMitPrio.addGruppe("A");
+        teilnehmerMitPrio.persist();
+        teilnehmerMitPrio.addVeranstaltung(veranstaltung);
+
+        Teilnehmer teilnehmerFrei = new Teilnehmer();
+        teilnehmerFrei.setEmail("tn2@test.com");
+        teilnehmerFrei.setFirstName("Wendy");
+        teilnehmerFrei.setLastName("Darling");
+        teilnehmerFrei.addGruppe("A");
+        teilnehmerFrei.persist();
+        teilnehmerFrei.addVeranstaltung(veranstaltung);
+
+        new Prioritaet(teilnehmerMitPrio, wahlvortrag1, 1)
+                .persist();
+
+        return veranstaltung;
+    }
+
+    @Test
+    public void testAuffuellung_freierTeilnehmerWirdEingeplant() throws Exception {
+        Veranstaltung veranstaltung = fillUpSetup();
+
+        // auffuellen=true (Default des 3-Parameter-Konstruktors)
+        SolverConfig config = new SolverConfig(60, 4, 1);
+        planErstellungService.erstellePlan(veranstaltung.getId(), config, "username");
+
+        List<RaumBelegungUebersicht> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
+
+        boolean beideInWahlvortrag1 = belegungsplan.stream()
+                .filter(b -> "Wahlvortrag 1".equals(b.getVortragTitel()))
+                .anyMatch(b -> b.getTeilnehmerNamen().contains("Peter Pan")
+                        && b.getTeilnehmerNamen().contains("Wendy Darling"));
+        assertThat(beideInWahlvortrag1)
+                .describedAs("Der freie Teilnehmer Wendy Darling sollte per Auffüllung ebenfalls in Wahlvortrag 1 eingeplant werden.")
+                .isTrue();
+    }
+
+    @Test
+    public void testAuffuellung_deaktiviert_freierTeilnehmerBleibtUnbesetzt() throws Exception {
+        Veranstaltung veranstaltung = fillUpSetup();
+
+        SolverConfig config = new SolverConfig(60, 4, 1, false);
+        planErstellungService.erstellePlan(veranstaltung.getId(), config, "username");
+
+        List<RaumBelegungUebersicht> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
+
+        boolean wendyEingeplant = belegungsplan.stream()
+                .anyMatch(b -> b.getTeilnehmerNamen().contains("Wendy Darling"));
+        assertThat(wendyEingeplant)
+                .describedAs("Ohne Auffüllung darf der freie Teilnehmer Wendy Darling in keinem Vortrag auftauchen.")
+                .isFalse();
+    }
+
     @Test
     public void testPlanerstellungSmallSetup() throws Exception {
         Veranstaltung veranstaltung = simpleSetup(true);
@@ -391,7 +476,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
         try {
             return planErstellungService.rufeMiniZincAuf(Paths.get(modelUrl.toURI()),
-                    tempDzn, config.solver, config.timeout, config.numThreads);
+                    tempDzn, config);
 
         } finally {
             Files.deleteIfExists(tempDzn);

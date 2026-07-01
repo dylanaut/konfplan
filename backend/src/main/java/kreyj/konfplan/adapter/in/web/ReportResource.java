@@ -16,9 +16,9 @@ import kreyj.konfplan.adapter.in.web.dto.ReferentVortragDto;
 import kreyj.konfplan.adapter.in.web.dto.ReportDto;
 import kreyj.konfplan.adapter.in.web.dto.SlotDto;
 import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
+import kreyj.konfplan.domain.service.DashboardService;
 import kreyj.konfplan.domain.service.PlanService;
 import kreyj.konfplan.domain.service.TeilnehmerService;
-import kreyj.konfplan.domain.service.TemplateService;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
@@ -40,14 +40,14 @@ import java.util.stream.Collectors;
 public class ReportResource {
     private static final Logger LOG = Logger.getLogger(ReportResource.class);
 
-    private final TemplateService templateService;
+    private final DashboardService dashboardService;
     private final TeilnehmerService teilnehmerService;
     private final PlanService planService;
     private final JsonWebToken jwt;
 
 
-    public ReportResource(TemplateService templateService, TeilnehmerService teilnehmerService, PlanService planService, JsonWebToken jwt) {
-        this.templateService = templateService;
+    public ReportResource(DashboardService dashboardService, TeilnehmerService teilnehmerService, PlanService planService, JsonWebToken jwt) {
+        this.dashboardService = dashboardService;
         this.teilnehmerService = teilnehmerService;
         this.planService = planService;
         this.jwt = jwt;
@@ -199,7 +199,7 @@ public class ReportResource {
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(templateService.getDashboardData(veranstaltung).stundenplan).build();
+        return Response.ok(dashboardService.getDashboardData(veranstaltung).stundenplan).build();
     }
 
 
@@ -217,7 +217,7 @@ public class ReportResource {
         if (null == teilnehmer) {
             throw new WebApplicationException("Teilnehmer not found", Response.Status.NOT_FOUND);
         }
-        return Response.ok(templateService.getDashboardData(veranstaltung).teilnehmerReport).build();
+        return Response.ok(dashboardService.getDashboardData(veranstaltung).teilnehmerReport).build();
     }
 
 
@@ -232,6 +232,6 @@ public class ReportResource {
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(templateService.getDashboardData(veranstaltung).prioReport).build();
+        return Response.ok(dashboardService.getDashboardData(veranstaltung).prioReport).build();
     }
 }

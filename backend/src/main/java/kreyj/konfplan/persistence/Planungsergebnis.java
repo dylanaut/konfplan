@@ -4,14 +4,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.OneToOne;
+import kreyj.konfplan.adapter.in.web.dto.SolverConfig;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @NoArgsConstructor
@@ -25,15 +29,12 @@ public class Planungsergebnis extends VersionedEntity {
 
     @Lob
     @Column(nullable = false)
-    @Basic(fetch = FetchType.EAGER) // Ensure eager loading of the LOB
+    @Basic(fetch = FetchType.EAGER)
     private String jsonErgebnis;
 
-    @Column(nullable = false)
-    private String solver;
-
-    @Column(nullable = false)
-    private int timeout;
-
+    @Embedded
+    @JdbcTypeCode(SqlTypes.JSON)
+    private SolverConfig solverConfig;
 
     public static Planungsergebnis getPlanungsergebnis(Veranstaltung veranstaltung) {
         return Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();

@@ -15,10 +15,9 @@ Services enthalten die gesamte **Geschäftslogik**. Sie werden von Resource-Klas
 | `VeranstaltungService`| Zentrale Verwaltung von Events und deren Metadaten; Bereitstellung von Vortragsübersichten. |
 | `PlanErstellungService`  | MiniZinc-basierte Zuweisung von Teilnehmern zu Wahlvorträgen.        |
 | `PlanService`         | Stundenplan-Erstellung und Qualitätsberechnung der Zuweisung.        |
-| `DashboardService`    | Aufbereitung von komplexen, aggregierten Daten für die HTML-Dashboards. |
+| `DashboardService`    | Aufbereitung von komplexen, aggregierten Daten (inkl. `DashboardData`-Aufbau) für die `ReportResource`-Dashboards. |
 | `MailService`         | Versand von Einladungen, Benachrichtigungen und Passwort-Resets via Mailpit. |
 | `PdfService`          | Erzeugung von Türschildern und Plänen via OpenPDF.                   |
-| `TemplateService`     | Kapselt die Logik zur Vorbereitung von Qute-`TemplateInstance`-Objekten für die `ReportResource`. |
 
 ## Wichtige Logik-Features
 

@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +45,6 @@ public class DashboardData {
     public Map<Long, SlotDto> slots;
     public Map<Long, RaumDto> raeume;
     public Map<Long, NutzerDto> referenten;
-    public Set<Auffueller> auffuellungSet = new HashSet<>();
 
     public List<String> tnNamen;
     public int tnAnzahl;

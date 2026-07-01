@@ -64,6 +64,7 @@ public class PlanErstellungService {
 
     private final ProtokollService protokollService;
     private final ObjectMapper objectMapper;
+    private final AuffuellungService auffuellungService;
 
     @ConfigProperty(name = "minizinc.path", defaultValue = "/opt/homebrew/bin/minizinc")
     String miniZincPath;
@@ -84,9 +85,11 @@ public class PlanErstellungService {
     private volatile String lastError;
 
 
-    public PlanErstellungService(ProtokollService protokollService, ObjectMapper objectMapper) {
+    public PlanErstellungService(ProtokollService protokollService, ObjectMapper objectMapper,
+                                  AuffuellungService auffuellungService) {
         this.protokollService = protokollService;
         this.objectMapper = objectMapper;
+        this.auffuellungService = auffuellungService;
     }
 
 
@@ -120,7 +123,7 @@ public class PlanErstellungService {
         cancelled = false;
         lastError = null;
         protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung gestartet",
-            "Planerstellung für '" + vName + "' mit Solver '" + config.solver + "' von " + username + " gestartet.", veranstaltungId, username);
+            "Planerstellung für '" + vName + "' mit Solver '" + config.getSolver() + "' von " + username + " gestartet.", veranstaltungId, username);
 
         try {
             List<Teilnehmer> teilnehmer = veranstaltung.teilnehmer();
@@ -137,13 +140,13 @@ public class PlanErstellungService {
             }
 
             String dznContent = generiereDzn(veranstaltung, teilnehmer, wahlvortraege, slots, raeume,
-                config.maxInstanzen);
+                config.getMaxInstanzen());
             Path tempDzn = Files.createTempFile("planung_", ".dzn");
             Files.writeString(tempDzn, dznContent, StandardCharsets.UTF_8);
             LOG.info("MiniZinc Datendatei:\n" + dznContent);
 
             try {
-                String resultJson = rufeMiniZincAuf(Paths.get(modelUrl.toURI()), tempDzn, config.solver, config.timeout, config.numThreads);
+                String resultJson = rufeMiniZincAuf(Paths.get(modelUrl.toURI()), tempDzn, config);
 
                 if (resultJson.contains("instanz_slot") && isValidJson(resultJson)) {
                     speicherePlanungsergebnis(veranstaltung, resultJson, config);
@@ -251,12 +254,11 @@ public class PlanErstellungService {
     }
 
 
-    public String rufeMiniZincAuf(Path modelPath, Path dznPath, String solver,
-                                  int timeoutSeconds, int numThreads) throws IOException, InterruptedException {
+    public String rufeMiniZincAuf(Path modelPath, Path dznPath, SolverConfig solverConfig) throws IOException, InterruptedException {
         List<String> command = new ArrayList<>(Arrays.asList(
-            miniZincPath, "--solver", solver,
-            "--time-limit", String.valueOf(timeoutSeconds * 1000),
-            "--parallel", String.valueOf(numThreads)
+            miniZincPath, "--solver", solverConfig.getSolver(),
+            "--time-limit", String.valueOf(solverConfig.getTimeout() * 1000),
+            "--parallel", String.valueOf(solverConfig.getNumThreads())
         ));
         command.add("--intermediate");
         command.add(modelPath.toAbsolutePath().toString());
@@ -539,9 +541,16 @@ public class PlanErstellungService {
             int tnSize = root.get("teilnehmer_oids").size();
             int wvSize = root.get("wahlvortrag_oids").size();
 
-            fixflatArrays(root, tnSize, wvSize, config.maxInstanzen);
+            fixflatArrays(root, tnSize, wvSize, config.getMaxInstanzen());
 
-            String fixedJson = objectMapper.writeValueAsString(root);
+            Planungsergebnis.MinizincResult result =
+                objectMapper.treeToValue(root, Planungsergebnis.MinizincResult.class);
+
+            if (config.isAuffuellen()) {
+                auffuellungService.fuelleAuf(veranstaltung, result);
+            }
+
+            String fixedJson = result.toJson();
             LOG.info("###" + fixedJson);
 
             ergebnis.setJsonErgebnis(fixedJson);
@@ -549,8 +558,7 @@ public class PlanErstellungService {
             throw new RuntimeException(e);
         }
 
-        ergebnis.setSolver(config.solver);
-        ergebnis.setTimeout(config.timeout);
+        ergebnis.setSolverConfig(config);
         ergebnis.persistAndFlush();
 
         LOG.info("Planungsergebnis für Veranstaltung '" + veranstaltung.getName() + "' wurde gespeichert/aktualisiert.");

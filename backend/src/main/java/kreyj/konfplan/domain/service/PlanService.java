@@ -435,7 +435,6 @@ public class PlanService {
                 raumplan.computeIfAbsent(raum.getId(), k -> new HashMap<>()).put(slot.getId(), eintrag);
             }
 
-
             // Wahlvorträge aus MiniZinc-Ergebnis hinzufügen
             for (int wIdx = 0; wIdx < wvOids.length; wIdx++) {
                 Long vortragId = wvOids[wIdx];
