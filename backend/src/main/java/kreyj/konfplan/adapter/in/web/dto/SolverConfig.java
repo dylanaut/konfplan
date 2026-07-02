@@ -20,12 +20,13 @@ public class SolverConfig {
     private int maxInstanzen = 2; // Maximale Anzahl der Instanzen pro Wahlvortrag
     private boolean auffuellen = true; // Maximale Anzahl der Instanzen pro Wahlvortrag
     private int messeSlotStrategie = 0; // -1 = RANDOM, 0 = keine, > 0 = SlotIndex freihalten für Messe
+    private int maxWvsProTn = 0; // Maximale Anzahl Wahlvorträge pro Teilnehmer; 0 = kein Limit
 
 
     public SolverConfig(int timeout, int numThreads, int maxInstanzen) {
-        this("cp-sat", timeout, numThreads, maxInstanzen, true, 0);
+        this("cp-sat", timeout, numThreads, maxInstanzen, true, 0, 0);
     }
     public SolverConfig(int timeout, int numThreads, int maxInstanzen, boolean auffuellen) {
-        this("cp-sat", timeout, numThreads, maxInstanzen, auffuellen, 0);
+        this("cp-sat", timeout, numThreads, maxInstanzen, auffuellen, 0, 0);
     }
 }

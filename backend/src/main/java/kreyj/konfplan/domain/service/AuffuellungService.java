@@ -34,6 +34,15 @@ public class AuffuellungService {
 
 
     public void fuelleAuf(Veranstaltung veranstaltung, Planungsergebnis.MinizincResult result) {
+        fuelleAuf(veranstaltung, result, 0);
+    }
+
+
+    /**
+     * @param maxWvsProTn maximale Anzahl Wahlvorträge, die einem Teilnehmer insgesamt zugeordnet werden dürfen
+     *                    (bereits vom Solver zugewiesene eingeschlossen); 0 = kein Limit.
+     */
+    public void fuelleAuf(Veranstaltung veranstaltung, Planungsergebnis.MinizincResult result, int maxWvsProTn) {
         long[] tnOids = result.teilnehmer_oids;
         long[] wvOids = result.wahlvortrag_oids;
         long[] slotOids = result.slot_oids;
@@ -94,6 +103,16 @@ public class AuffuellungService {
             }
         }
 
+        // Bereits (vom Solver) zugewiesene Wahlvorträge je Teilnehmer zählen, um maxWvsProTn einzuhalten.
+        int[] besuchteAnzahl = new int[tnSize];
+        for (int pIdx = 0; pIdx < tnSize; pIdx++) {
+            for (int wIdx = 0; wIdx < wvSize; wIdx++) {
+                if (besuchtWahlvortragBereits(besucht, pIdx, wIdx, maxInstanzen)) {
+                    besuchteAnzahl[pIdx]++;
+                }
+            }
+        }
+
         for (int slotIdx1 = 1; slotIdx1 <= slotSize; slotIdx1++) {
             List<Instanz> kandidatenImSlot = instanzenProSlot.get(slotIdx1);
             if (null == kandidatenImSlot || kandidatenImSlot.isEmpty()) {
@@ -102,6 +121,9 @@ public class AuffuellungService {
             long slotOid = slotOids[slotIdx1 - 1];
 
             for (int pIdx = 0; pIdx < tnSize; pIdx++) {
+                if (maxWvsProTn > 0 && besuchteAnzahl[pIdx] >= maxWvsProTn) {
+                    continue;
+                }
                 if (!istFreiInSlot(pIdx, slotIdx1, slotOid, wvSize, maxInstanzen, instanzSlot, besucht,
                     verfuegbarkeitByNutzerId, tnOids)) {
                     continue;
@@ -128,6 +150,7 @@ public class AuffuellungService {
 
                 besucht[pIdx][gewaehlt.wvIdx()][gewaehlt.instIdx()] = true;
                 restkapazitaet[gewaehlt.wvIdx()][gewaehlt.instIdx()]--;
+                besuchteAnzahl[pIdx]++;
             }
         }
     }

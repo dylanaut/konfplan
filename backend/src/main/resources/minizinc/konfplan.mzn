@@ -26,6 +26,7 @@ array[1..n_teilnehmer, 1..n_wahlvortraege] of int: prioritaeten;
 array[1..n_teilnehmer, 1..n_slots] of bool: tn_verfuegbar;
 array[1..n_raeume, 1..n_slots] of bool: raum_belegbar;
 int: max_instanzen;
+int: max_wvs_pro_tn; % 0 = kein Limit
 
 % --- NEUE OID-ARRAYS FÜR DEN OUTPUT ---
 array[1..n_teilnehmer] of int: teilnehmer_oids;
@@ -122,6 +123,11 @@ constraint forall(w in 1..n_wahlvortraege, i in 1..max_instanzen) (
     (instanz_slot[w, i] > 0) -> (
         sum(p in 1..n_teilnehmer)(besucht[p, w, i]) >= 1
     )
+);
+
+constraint forall(p in 1..n_teilnehmer) (
+    max_wvs_pro_tn = 0 \/
+    sum(w in 1..n_wahlvortraege, i in 1..max_instanzen)(bool2int(besucht[p, w, i])) <= max_wvs_pro_tn
 );
 
 bool: opt_referent_raumtreue;

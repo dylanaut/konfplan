@@ -141,7 +141,7 @@ public class PlanErstellungService {
             }
 
             String dznContent = generiereDzn(veranstaltung, teilnehmer, wahlvortraege, slots, raeume,
-                config.getMaxInstanzen());
+                config.getMaxInstanzen(), config.getMaxWvsProTn());
             Path tempDzn = Files.createTempFile("planung_", ".dzn");
             Files.writeString(tempDzn, dznContent, StandardCharsets.UTF_8);
             LOG.info("MiniZinc Datendatei:\n" + dznContent);
@@ -337,10 +337,11 @@ public class PlanErstellungService {
 
     private String generiereDzn(Veranstaltung veranstaltung, List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege,
                                 Set<Slot> slots, List<Raum> raeume,
-                                int maxInstanzen) {
+                                int maxInstanzen, int maxWvsProTn) {
         StringBuilder sb = new StringBuilder();
         sb.append("%Generiert am: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))).append(",Version: 1.0;\n");
         sb.append("max_instanzen = ").append(maxInstanzen).append(";\n");
+        sb.append("max_wvs_pro_tn = ").append(maxWvsProTn).append(";\n");
         sb.append("opt_referent_raumtreue = true;\n\n");
 
         appendSlots(slots, sb);
@@ -597,7 +598,7 @@ public class PlanErstellungService {
                 objectMapper.treeToValue(root, Planungsergebnis.MinizincResult.class);
 
             if (config.isAuffuellen()) {
-                auffuellungService.fuelleAuf(veranstaltung, result);
+                auffuellungService.fuelleAuf(veranstaltung, result, config.getMaxWvsProTn());
             }
 
             String fixedJson = result.toJson();
