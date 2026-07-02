@@ -4,6 +4,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import java.util.Map;
 
 @RegisterForReflection
+@SuppressWarnings("unused")
 public class PlanQualitaetDto {
     public int kosten;
     public int anzahlZuweisungen;

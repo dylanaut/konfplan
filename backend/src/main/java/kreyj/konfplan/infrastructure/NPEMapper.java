@@ -2,7 +2,6 @@ package kreyj.konfplan.infrastructure;
 
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
-import jakarta.ws.rs.ext.Provider;
 import org.jboss.logging.Logger;
 
 import java.util.Map;
@@ -17,7 +16,7 @@ public class NPEMapper implements ExceptionMapper<NullPointerException> {
         LOG.warn("NPE: " + exception.getMessage());
 
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(Map.of("error", exception.getMessage()))
-                .build();
+            .entity(Map.of("error", exception.getMessage()))
+            .build();
     }
 }

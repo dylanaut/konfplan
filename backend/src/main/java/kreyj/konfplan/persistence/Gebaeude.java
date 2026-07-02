@@ -6,7 +6,6 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -43,9 +42,11 @@ public class Gebaeude extends VersionedEntity {
     @OneToMany(mappedBy = "gebaeude", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
     Set<Raum> raeume = new HashSet<>();
 
+
     public Set<Raum> getRaeume() {
         return Collections.unmodifiableSet(raeume);
     }
+
 
     public void addRaum(Raum other) {
         if (null == other) {
@@ -55,6 +56,7 @@ public class Gebaeude extends VersionedEntity {
         raeume.add(other);
         other.gebaeude = this;
     }
+
 
     public void removeRaum(Raum other) {
         if (null == other) {
@@ -69,6 +71,7 @@ public class Gebaeude extends VersionedEntity {
     @ManyToMany(mappedBy = "gebaeude")
     Set<Veranstaltung> veranstaltungen = new HashSet<>();
 
+
     public Set<Veranstaltung> getVeranstaltungen() {
         return Collections.unmodifiableSet(veranstaltungen);
     }
@@ -76,6 +79,7 @@ public class Gebaeude extends VersionedEntity {
     // -------------------------------------------------------------------
     // Konstruktoren
     // -------------------------------------------------------------------
+
 
     public Gebaeude(String name, String ort, String strasse, String plz, Gebaeudetyp gebaeudetyp) {
         super();

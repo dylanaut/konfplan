@@ -14,16 +14,8 @@ insert_final_newline = true
 indent_style = space
 indent_size = 4
 
-# Java files
-[*.java]
-indent_size = 4
-
-# XML files (e.g., pom.xml)
-[*.xml]
-indent_size = 4
-
 # Frontend files (Vue, JavaScript, TypeScript, HTML, CSS)
-[*.{js,ts,vue,html,css,scss}]
+[*.{js,ts,vue,xml,yml,yaml,html,css,scss}]
 indent_size = 2
 
 # Markdown files
@@ -33,7 +25,3 @@ trim_trailing_whitespace = false
 # CSV files - Specific rule to prevent line wrapping
 [*.csv]
 max_line_length = off
-
-# Properties files
-[*.properties]
-indent_size = 4

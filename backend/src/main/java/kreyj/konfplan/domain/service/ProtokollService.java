@@ -15,13 +15,16 @@ public class ProtokollService {
 
     private final JsonWebToken jwt;
 
+    @SuppressWarnings("CdiInjectionPointsInspection")
     public ProtokollService(JsonWebToken jwt) {
         this.jwt = jwt;
     }
 
+
     public List<Protokoll> listAll() {
         return Protokoll.list("order by zeitpunkt desc");
     }
+
 
     @Transactional
     public void log(ProtokollKategorie kategorie, String ereignis, String details, Long referenzId, String akteur) {
@@ -35,17 +38,21 @@ public class ProtokollService {
         p.persistAndFlush();
     }
 
+
     public void log(ProtokollKategorie kategorie, String ereignis, String details, Long referenzId) {
         log(kategorie, ereignis, details, referenzId, null);
     }
+
 
     public void log(ProtokollKategorie kategorie, String ereignis, String details) {
         log(kategorie, ereignis, details, null, null);
     }
 
+
     public void log(ProtokollKategorie kategorie, String ereignis) {
         log(kategorie, ereignis, null, null, null);
     }
+
 
     private String getAkteur() {
         if (jwt != null && jwt.getName() != null) {

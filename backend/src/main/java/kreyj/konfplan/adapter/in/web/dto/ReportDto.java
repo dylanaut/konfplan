@@ -11,9 +11,9 @@ import java.util.Map;
 public class ReportDto {
 
     public static class LaufzettelTeilnehmerDto {
-        public VeranstaltungDto veranstaltung;
-        public NutzerDto teilnehmer;
-        public List<ZuweisungDto> plan;
+        public final VeranstaltungDto veranstaltung;
+        public final NutzerDto teilnehmer;
+        public final List<ZuweisungDto> plan;
 
         public LaufzettelTeilnehmerDto(Veranstaltung veranstaltung, Teilnehmer teilnehmer, List<ZuweisungDto> plan) {
             this.veranstaltung = VeranstaltungDto.from(veranstaltung);
@@ -23,9 +23,9 @@ public class ReportDto {
     }
 
     public static class LaufzettelReferentDto {
-        public VeranstaltungDto veranstaltung;
-        public NutzerDto referent;
-        public List<ReferentVortragDto> plan;
+        public final VeranstaltungDto veranstaltung;
+        public final NutzerDto referent;
+        public final List<ReferentVortragDto> plan;
 
         public LaufzettelReferentDto(Veranstaltung veranstaltung, Referent referent, List<ReferentVortragDto> plan) {
             this.veranstaltung = VeranstaltungDto.from(veranstaltung);
@@ -35,9 +35,9 @@ public class ReportDto {
     }
 
     public static class RaumbelegungsplanDto {
-        public VeranstaltungDto veranstaltung;
-        public RaumDto raum;
-        public Map<Long, Map<Long, RaumplanEintragDto>> belegung;
+        public final VeranstaltungDto veranstaltung;
+        public final RaumDto raum;
+        public final Map<Long, Map<Long, RaumplanEintragDto>> belegung;
 
         public RaumbelegungsplanDto(Veranstaltung veranstaltung, RaumDto raum, Map<Long, Map<Long, RaumplanEintragDto>> belegung) {
             this.veranstaltung = VeranstaltungDto.from(veranstaltung);
@@ -47,8 +47,8 @@ public class ReportDto {
     }
 
     public static class UebersichtRaeumeDto {
-        public VeranstaltungDto veranstaltung;
-        public List<RaumBelegungUebersicht> plan;
+        public final VeranstaltungDto veranstaltung;
+        public final List<RaumBelegungUebersicht> plan;
 
         public UebersichtRaeumeDto(Veranstaltung veranstaltung, List<RaumBelegungUebersicht> plan) {
             this.veranstaltung = VeranstaltungDto.from(veranstaltung);
@@ -57,10 +57,10 @@ public class ReportDto {
     }
 
     public static class RaumschilderDto {
-        public VeranstaltungDto veranstaltung;
-        public Map<Long, Map<Long, RaumplanEintragDto>> raumplan;
-        public List<RaumDto> raeume;
-        public List<SlotDto> slots;
+        public final VeranstaltungDto veranstaltung;
+        public final Map<Long, Map<Long, RaumplanEintragDto>> raumplan;
+        public final List<RaumDto> raeume;
+        public final List<SlotDto> slots;
 
         public RaumschilderDto(Veranstaltung veranstaltung, Map<Long, Map<Long, RaumplanEintragDto>> raumplan, List<RaumDto> raeume, List<SlotDto> slots) {
             this.veranstaltung = VeranstaltungDto.from(veranstaltung);
@@ -71,9 +71,9 @@ public class ReportDto {
     }
 
     public static class FreieSlotsDto {
-        public VeranstaltungDto veranstaltung;
-        public Map<Long, List<Slot>> freieSlots;
-        public List<NutzerDto> nutzer; // Kann Teilnehmer oder Referenten enthalten
+        public final VeranstaltungDto veranstaltung;
+        public final Map<Long, List<Slot>> freieSlots;
+        public final List<NutzerDto> nutzer; // Kann Teilnehmer oder Referenten enthalten
 
         public FreieSlotsDto(Veranstaltung veranstaltung, Map<Long, List<Slot>> freieSlots, List<NutzerDto> nutzer) {
             this.veranstaltung = VeranstaltungDto.from(veranstaltung);

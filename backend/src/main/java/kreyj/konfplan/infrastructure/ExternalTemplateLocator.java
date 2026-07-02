@@ -25,6 +25,7 @@ public class ExternalTemplateLocator implements TemplateLocator {
     @ConfigProperty(name = "app.templates.external-path")
     Optional<String> externalPath;
 
+
     @Override
     public Optional<TemplateLocation> locate(String id) {
         if (externalPath.isEmpty()) {
@@ -44,6 +45,7 @@ public class ExternalTemplateLocator implements TemplateLocator {
                         throw new RuntimeException("Fehler beim Lesen des externen Templates: " + templatePath, e);
                     }
                 }
+
 
                 @Override
                 public Optional<Variant> getVariant() {

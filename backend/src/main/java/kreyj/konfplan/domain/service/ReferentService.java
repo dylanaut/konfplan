@@ -187,26 +187,27 @@ public class ReferentService implements ReferentServiceInterface {
     @Override
     public void meldeVortragFuerVeranstaltungAn(String email, Long vortragId, Long veranstaltungId) {
         Referent referent = Referent.find("email", email).firstResult();
-        Vortrag sourceTalk = Vortrag.findById(vortragId);
+        Vortrag vortrag = Vortrag.findById(vortragId);
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
 
-        if (null == referent || null == sourceTalk || null == veranstaltung) {
+        if (null == referent || null == vortrag || null == veranstaltung) {
             return;
         }
-        if (!sourceTalk.getReferent().getId().equals(referent.getId())) {
+        if (!vortrag.getReferent().getId().equals(referent.getId())) {
             return;
         }
 
         checkDeadline(veranstaltung);
 
         // Prüfen, ob bereits ein Vortrag mit diesem Titel in der Zielveranstaltung existiert
-        boolean exists = Vortrag.find("referent = ?1 and veranstaltung = ?2 and titel = ?3", referent, veranstaltung, sourceTalk.getTitel()).count() > 0;
+        boolean exists = Vortrag.find("referent = ?1 and veranstaltung = ?2 and titel = ?3",
+            referent, veranstaltung, vortrag.getTitel())
+            .count() > 0;
         if (exists) {
             return;
         }
 
-        Vortrag vortrag;
-        if (sourceTalk instanceof Wahlvortrag sw) {
+        if (vortrag instanceof Wahlvortrag sw) {
             Wahlvortrag nw = new Wahlvortrag();
             nw.setWiederholbar(sw.isWiederholbar());
             nw.setMaxWiederholungen(sw.getMaxWiederholungen());
@@ -214,14 +215,14 @@ public class ReferentService implements ReferentServiceInterface {
             vortrag = nw;
         } else {
             Pflichtvortrag np = new Pflichtvortrag();
-            np.updatePflichtgruppe(((Pflichtvortrag) sourceTalk).getPflichtgruppe());
+            np.updatePflichtgruppe(((Pflichtvortrag) vortrag).getPflichtgruppe());
             vortrag = np;
         }
 
-        vortrag.setTitel(sourceTalk.getTitel());
-        vortrag.setInhalt(sourceTalk.getInhalt());
-        vortrag.setAusstattung(sourceTalk.getAusstattung());
-        vortrag.setBerufsfeld(sourceTalk.getBerufsfeld());
+        vortrag.setTitel(vortrag.getTitel());
+        vortrag.setInhalt(vortrag.getInhalt());
+        vortrag.setAusstattung(vortrag.getAusstattung());
+        vortrag.setBerufsfeld(vortrag.getBerufsfeld());
         vortrag.setReferent(referent);
         vortrag.setVeranstaltung(veranstaltung);
         vortrag.persistAndFlush();

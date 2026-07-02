@@ -16,21 +16,26 @@ public class RaumService {
 
     private final ProtokollService protokollService;
 
+
     public RaumService(ProtokollService protokollService) {
         this.protokollService = protokollService;
     }
+
 
     public List<Raum> listAll() {
         return Raum.listAll();
     }
 
+
     public List<Raum> listByGebaeude(Long gebaeudeId) {
         return Raum.list("gebaeude.id = ?1", gebaeudeId);
     }
 
+
     public Raum findById(Long id) {
         return Raum.findById(id);
     }
+
 
     @Transactional
     public Raum save(Raum r, Long gebaeudeId) {

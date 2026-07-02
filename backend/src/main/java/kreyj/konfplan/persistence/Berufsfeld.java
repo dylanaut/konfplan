@@ -1,5 +1,8 @@
 package kreyj.konfplan.persistence;
 
+import lombok.Getter;
+
+@Getter
 public enum Berufsfeld {
     LAND_FORST_TIERWIRTSCHAFT_UND_GARTENBAU("Land-, Forst-, Tierwirtschaft und Gartenbau"),
     ROHSTOFFGEWINNUNG_PRODUKTION_UND_FERTIGUNG("Rohstoffgewinnung, Produktion und Fertigung"),
@@ -24,7 +27,4 @@ public enum Berufsfeld {
         this.name = name;
     }
 
-    public String getName() {
-        return name;
-    }
 }

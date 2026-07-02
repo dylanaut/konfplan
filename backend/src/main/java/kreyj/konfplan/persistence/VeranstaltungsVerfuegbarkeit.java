@@ -4,7 +4,6 @@ import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
-import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -23,11 +22,13 @@ public abstract class VeranstaltungsVerfuegbarkeit extends PanacheEntityBase {
 
     Set<Long> verfuegbareSlotIds = new HashSet<>();
 
+
     public Set<Long> getVerfuegbareSlotIds() {
         return Collections.unmodifiableSet(verfuegbareSlotIds);
     }
 
-    public void  setVerfuegbareSlotIds(Set<Long> verfuegbareSlotIds) {
+
+    public void setVerfuegbareSlotIds(Set<Long> verfuegbareSlotIds) {
         if (null == verfuegbareSlotIds) {
             this.verfuegbareSlotIds = Collections.emptySet();
         } else {
@@ -40,6 +41,7 @@ public abstract class VeranstaltungsVerfuegbarkeit extends PanacheEntityBase {
     // Konstruktoren
     // -------------------------------------------------------------------
 
+
     public VeranstaltungsVerfuegbarkeit(Long veranstaltungId, Set<Long> verfuegbareSlotIds) {
         Objects.requireNonNull(veranstaltungId, "VeranstaltungId darf nicht NULL sein");
         Objects.requireNonNull(verfuegbareSlotIds, "verfuegbareSlotIds darf nicht NULL sein");
@@ -48,11 +50,13 @@ public abstract class VeranstaltungsVerfuegbarkeit extends PanacheEntityBase {
         this.verfuegbareSlotIds.addAll(verfuegbareSlotIds);
     }
 
+
     public boolean addSlot(Slot slot) {
         Objects.requireNonNull(slot);
 
         return addSlot(slot.getId());
     }
+
 
     public boolean addSlot(Long slotId) {
         Objects.requireNonNull(slotId);
@@ -60,11 +64,13 @@ public abstract class VeranstaltungsVerfuegbarkeit extends PanacheEntityBase {
         return verfuegbareSlotIds.add(slotId);
     }
 
+
     public boolean removeSlot(Slot slot) {
         Objects.requireNonNull(slot);
 
         return removeSlot(slot.getId());
     }
+
 
     public boolean removeSlot(Long slotId) {
         Objects.requireNonNull(slotId);
@@ -72,10 +78,12 @@ public abstract class VeranstaltungsVerfuegbarkeit extends PanacheEntityBase {
         return verfuegbareSlotIds.remove(slotId);
     }
 
+
     public boolean isVerfuegbar(Slot slot) {
         Objects.requireNonNull(slot);
         return isVerfuegbar(slot.getId());
     }
+
 
     public boolean isVerfuegbar(Long slotId) {
         Objects.requireNonNull(slotId);

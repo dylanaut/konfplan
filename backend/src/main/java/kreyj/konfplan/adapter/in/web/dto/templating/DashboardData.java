@@ -51,14 +51,14 @@ public class DashboardData {
     private Map<Long, Set<Long>> tnVerfuegbar;
 
     /* String key aus MZ slotId und raumId */
-    public Map<String, BelegungDetail> belegungDetails = new HashMap<>();
-    public Map<Long, List<String>> freieTnProSlot = new HashMap<>();
+    public final Map<String, BelegungDetail> belegungDetails = new HashMap<>();
+    public final Map<Long, List<String>> freieTnProSlot = new HashMap<>();
 
-    public List<TeilnehmerErfuellung> teilnehmerErfuellung = new ArrayList<>();
+    public final List<TeilnehmerErfuellung> teilnehmerErfuellung = new ArrayList<>();
     public WahlErfuellungStats wahlErfuellungStats;
 
     public Planungsstatistik planungsstatistik;
-    public List<TeilnehmerStundenplan> teilnehmerStundenplan = new ArrayList<>();
+    public final List<TeilnehmerStundenplan> teilnehmerStundenplan = new ArrayList<>();
     public TeilnehmerReport teilnehmerReport;
     public PrioReport prioReport;
     public Stundenplan stundenplan;

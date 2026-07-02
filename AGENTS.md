@@ -15,6 +15,8 @@ konfplan/
 
 ## Build & Start
 
+### Build & Run
+
 ```bash
 # Alles bauen (Root)
 ./mvnw clean install -DskipTests
@@ -24,12 +26,30 @@ cd backend && ../mvnw quarkus:dev
 # → Backend: http://localhost:9000
 # → Frontend Dev-Server: http://localhost:5173 (wird automatisch gestartet)
 
-# Nur Backend-Tests
+# Nur Frontend (lokal, ohne Backend)
+cd frontend && npm install && npm run dev
+
+# Frontend nur bauen (für Produktion)
+cd frontend && npm run build
+```
+
+### Testing
+
+```bash
+# Alle Backend-Tests
 cd backend && ../mvnw test
 
-# Nur Frontend
-cd frontend && npm install && npm run dev
+# Einzelne Test-Klasse
+cd backend && ../mvnw test -Dtest=AdminServiceTest
+
+# Einzelne Test-Methode
+cd backend && ../mvnw test -Dtest=AdminServiceTest#methodName
+
+# Playwright E2E-Tests
+cd frontend && npx playwright test
 ```
+
+Tests verwenden **H2** In-Memory-Datenbank; Produktion/Entwicklung verwendet **PostgreSQL**. Architektur-Konformität wird durch ArchUnit-Tests in `backend/src/test/java/.../architecture/` durchgesetzt.
 
 ## Schlüsseltechnologien
 
@@ -48,6 +68,44 @@ cd frontend && npm install && npm run dev
 | Frontend     | Vue 3, Vite, Tailwind CSS, Pinia, Vue Router      |
 | Integration  | Quarkus Quinoa (Frontend-Build eingebettet)       |
 | E2E-Tests    | Playwright                                        |
+
+## Backend-Paketstruktur
+
+Hexagonale Architektur unter `backend/src/main/java/kreyj/konfplan/`:
+
+```
+adapter/
+├── in/rest/          # REST-Ressourcen (HTTP-Einstiegspunkte, DTOs definiert hier)
+│   ├── exception/    # CustomExceptionMapper
+│   └── service/      # (Legacy-Standort, bevorzugt application/service)
+application/
+├── port/in/          # Use-Case-Schnittstellen (z.B. AdminServiceInterface)
+├── port/out/         # Repository/External-System-Schnittstellen
+└── service/          # Business-Logik implementiert die in-ports
+domain/               # JPA/Panache-Entitäten (dienen als Domain-Objekte)
+infrastructure/       # Querschnittliche Belange
+persistence/          # Panache-Repository-Implementierungen (out-port adapters)
+util/                 # Hilfsfunktionen
+```
+
+**Abhängigkeitsregel:** Adapter hängen vom Anwendungskern ab; der Kern importiert nie Adapter-Klassen.
+
+## Frontend-Struktur
+
+Struktur unter `frontend/src/`:
+
+```
+api/axios.js          # Zentrale Axios-Instanz mit JWT-Interceptor
+components/
+├── admin/tabs/       # Tab-Komponenten für Admin-Dashboard
+└── *.vue             # Gemeinsame UI-Komponenten (Modals, Buttons, Pagination)
+router/index.js       # Route-Definitionen und Navigation Guards
+stores/
+├── auth.js           # Login/Logout/Token (steuert JWT-Interceptor)
+├── eventContext.js   # Global ausgewählte Veranstaltung
+└── availability.js   # Map<userId, Set<slotId>> für Nutzer-/Raum-Verfügbarkeit
+views/*.vue           # Top-Level-Seiten-Komponenten geroutet von Vue Router
+```
 
 ## Domänenmodell (Kurzübersicht)
 
@@ -69,18 +127,37 @@ cd frontend && npm install && npm run dev
 - Datenbankfelder: Public Fields (kein Lombok), kein privater Getter/Setter-Boilerplate außer wo nötig.
 - Datum/Zeit: `LocalDateTime` mit Custom `LocalDateTimeConverter`.
 - Fehlerbehandlung: `CustomExceptionMapper` mappt Exceptions auf HTTP-Responses.
-- Alle REST-Endpunkte unter `/api/...`; Security via `@RolesAllowed`.
+- **REST-API:** Alle Endpunkte unter `/api/...`; Security via `@RolesAllowed` (`ADMIN`, `REFERENT`, `TEILNEHMER`) oder `@Authenticated`.
+- **DTOs leben im Web-Adapter** (`adapter/in/rest`), werden nie in die Service-Schicht weitergegeben.
 - CSV-Import von Verfügbarkeiten erfolgt über 1-basierte Slot-Indizes.
-- `.editorconfig` im Root-Verzeichnis definiert den Code-Stil für das gesamte Projekt.
+- **Code-Stil:** `.editorconfig` im Root-Verzeichnis — 4 Leerzeichen für Java/XML, 2 für JS/TS/Vue.
+- **Standard-Passwort** bei Nutzer-Erstellung/Import: `start123` (BCrypt-gehasht).
 
-## Bekannte Besonderheiten
+## Bekannte Besonderheiten & Infrastruktur-Notizen
 
-- MiniZinc muss auf dem System installiert sein (`minizinc` im PATH) für `PlanErstellungService`.
+- **MiniZinc** muss auf dem System installiert sein und im PATH sein (konfiguriert als `/opt/homebrew/bin/minizinc` in `application.properties` für macOS).
 - Deadlines (`deadlineReferenten`, `deadlineTeilnehmer`) steuern die Bearbeitbarkeit von Daten in den jeweiligen Dashboards.
-- Räume werden veranstaltungsübergreifend auf Überschneidungen geprüft.
-- Passwort-Reset per E-Mail (Mailpit-Credentials in `application.properties` setzen).
-- Standard-Passwort bei Erstellung/Import: `start123` (BCrypt-gehasht).
+- Räume werden **veranstaltungsübergreifend** auf Überschneidungen geprüft (ein Raum in einer Veranstaltung blockiert ihn in einer anderen).
+- Passwort-Reset per E-Mail (Mailpit-Credentials in `application.properties` setzen für Entwicklung).
 - Vite (`vite.config.js`) ist so konfiguriert, dass eine `manifest.json` für die dynamische Einbindung von Assets in Qute-Templates erzeugt wird.
+- **DB-Skripte:** `db/init_db.sh` und `db/ensure_prod_db.sh` für PostgreSQL-Setup.
+
+## Git & Feature Workflow
+
+Remote ist **GitLab** (`gitlab.zt.msg.team`), Authentifizierung via SSH. Merge Requests (MRs), nicht GitHub PRs. `glab` CLI ist verfügbar.
+
+1. **Erfassung** – GitLab-Issue (Label `feature`) mit Ziel + Akzeptanzkriterien erstellen. Die Issue-Nummer (`#N`) ist der Tracking-Anker.
+2. **Branch** – Basierend auf aktuellem `main`, benannt nach `feature/VOM-<n>-<kebab-desc>` (bestehende Konvention; `<n>` = GitLab-Issue-Nummer). Nie Feature-Arbeit direkt in `main` committen.
+   ```bash
+   git switch main && git pull
+   git switch -c feature/VOM-<n>-<desc>
+   ```
+3. **Tracking** – Kleine, häufige Commits; Push mit `git push -u origin <branch>`. Frühzeitig Draft-MR öffnen, damit CI bei jedem Push läuft. `Closes #<n>` in die MR-Beschreibung aufnehmen, um Issue beim Merge automatisch zu schließen.
+4. **Merge** – Pipeline grün → Draft entfernen → **Squash-Merge** + Source-Branch löschen.
+
+- Commit-Nachrichten enden mit dem `Co-Authored-By: Claude Opus 4.8 (1M context)` Trailer.
+- Nur Dateien zur aktuellen Aufgabe staging; unverwandte Änderungen aus dem Commit ausschließen.
+- `glab mr create --fill --draft`, `glab mr merge --squash --remove-source-branch`, `glab issue create` funktionieren aus dem Terminal.
 
 ## Arbeitsanweisungen für den Agenten
 

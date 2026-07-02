@@ -22,10 +22,8 @@ import kreyj.konfplan.adapter.in.web.dto.TeilnehmerDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerVeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
-import kreyj.konfplan.application.port.in.AdminServiceInterface;
 import kreyj.konfplan.application.port.in.TeilnehmerServiceInterface;
 import kreyj.konfplan.domain.service.PlanService;
-import kreyj.konfplan.domain.service.PrioritaetService;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Teilnehmer;
@@ -50,19 +48,12 @@ public class TeilnehmerResource {
     private final JsonWebToken jwt;
     private final TeilnehmerServiceInterface teilnehmerService;
     private final PlanService planService;
-    private final PrioritaetService prioritaetService;
-    private final ReportResource reportResource;
-    private final AdminServiceInterface adminService;
 
-
-    public TeilnehmerResource(JsonWebToken jwt, TeilnehmerServiceInterface teilnehmerService, PlanService planService,
-                              PrioritaetService prioritaetService, ReportResource reportResource, AdminServiceInterface adminService) {
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    public TeilnehmerResource(JsonWebToken jwt, TeilnehmerServiceInterface teilnehmerService, PlanService planService) {
         this.jwt = jwt;
         this.teilnehmerService = teilnehmerService;
         this.planService = planService;
-        this.prioritaetService = prioritaetService;
-        this.reportResource = reportResource;
-        this.adminService = adminService;
     }
 
 

@@ -11,7 +11,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.Accessors;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -47,25 +46,30 @@ public class Raum extends VersionedEntity {
     // Konstruktoren
     // -------------------------------------------------------------------
 
+
     public Raum(String name, int kapazitaet) {
         super();
         this.name = name;
         this.kapazitaet = kapazitaet;
     }
 
+
     public Raum(String name, int kapazitaet, String etage) {
         super();
         this.name = name;
         this.kapazitaet = kapazitaet;
+        this.etage = etage;
     }
 
     // -------------------------------------------------------------------
     // Helper methods
     // -------------------------------------------------------------------
 
+
     public void updateRaumVerfuegbarkeit(Slot slot, Veranstaltung veranstaltung, boolean verfuegbar) {
         updateRaumVerfuegbarkeit(slot, veranstaltung, verfuegbar, false);
     }
+
 
     public void updateRaumVerfuegbarkeit(Slot slot, Veranstaltung veranstaltung, boolean verfuegbar, boolean createIfMissing) {
         Objects.requireNonNull(veranstaltung);
@@ -78,7 +82,7 @@ public class Raum extends VersionedEntity {
                 rv.persist();
             } else {
                 throw new IllegalStateException("Missing RaumVerfuegbarkeit für " + this.getName()
-                        + " in Veranstaltung '" + veranstaltung.getName() + "'");
+                    + " in Veranstaltung '" + veranstaltung.getName() + "'");
             }
         }
         if (verfuegbar) {

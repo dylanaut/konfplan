@@ -17,9 +17,9 @@ import java.util.List;
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "Protokoll", description = "Endpunkt zum Abrufen von Protokolleinträgen")
 public class ProtokollResource {
-
     private final ProtokollService protokollService;
 
+    @SuppressWarnings("unused")
     public ProtokollResource(ProtokollService protokollService) {
         this.protokollService = protokollService;
     }

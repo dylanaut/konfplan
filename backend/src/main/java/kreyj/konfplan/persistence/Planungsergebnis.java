@@ -40,7 +40,7 @@ public class Planungsergebnis extends VersionedEntity {
         return Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
     }
 
-
+    @SuppressWarnings("unused")
     public static class MinizincResult {
         // enthält für jeden Wahlvortrag und über alle Instanzen die MZ-SlotId
         public int[][] instanz_slot;

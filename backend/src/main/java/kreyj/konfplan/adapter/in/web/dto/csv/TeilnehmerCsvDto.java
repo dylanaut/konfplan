@@ -2,8 +2,6 @@ package kreyj.konfplan.adapter.in.web.dto.csv;
 
 import com.opencsv.bean.CsvBindByName;
 
-import java.util.List;
-
 public class TeilnehmerCsvDto {
 
     @CsvBindByName(column = "Vorname", required = true)

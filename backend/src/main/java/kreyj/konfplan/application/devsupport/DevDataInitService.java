@@ -50,6 +50,7 @@ public class DevDataInitService {
     private final ReferentService referentService;
 
 
+    @SuppressWarnings("CdiInjectionPointsInspection")
     public DevDataInitService(AgroalDataSource datasource, TeilnehmerService teilnehmerService,
                               AdminService adminService, VeranstaltungService veranstaltungService,
                               GebaeudeService gebaeudeService, ReferentService referentService) {

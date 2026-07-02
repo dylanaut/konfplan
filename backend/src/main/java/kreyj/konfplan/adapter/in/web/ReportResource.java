@@ -45,7 +45,7 @@ public class ReportResource {
     private final PlanService planService;
     private final JsonWebToken jwt;
 
-
+    @SuppressWarnings("CdiInjectionPointsInspection")
     public ReportResource(DashboardService dashboardService, TeilnehmerService teilnehmerService, PlanService planService, JsonWebToken jwt) {
         this.dashboardService = dashboardService;
         this.teilnehmerService = teilnehmerService;

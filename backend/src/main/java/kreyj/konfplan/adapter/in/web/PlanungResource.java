@@ -35,6 +35,7 @@ public class PlanungResource {
     @Inject
     PlanErstellungService planErstellungService;
 
+    @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
     ManagedExecutor managedExecutor;
 

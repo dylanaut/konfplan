@@ -66,7 +66,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.emptyList;
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
@@ -720,7 +719,7 @@ public class AdminService implements AdminServiceInterface {
         }
 
         boolean headerLineFound = false;
-        Map<Integer, Wahlvortrag> legendIndexMap = EMPTY_MAP;
+        Map<Integer, Wahlvortrag> legendIndexMap;
 
         try (BufferedReader reader = new BufferedReader(new FileReader(csvFilePath.toFile()))) {
             String line = reader.readLine();
@@ -822,7 +821,7 @@ public class AdminService implements AdminServiceInterface {
         for (String entry : legende.split(",")) {
             String[] parts = entry.split("=");
             if (parts.length != 2) {
-                LOG.warn("Uungültiger Legenden-Eintrag '" + parts + "'");
+                LOG.warn("Ungültiger Legenden-Eintrag '" + entry + "'");
             } else {
                 String titelPrefix = parts[1].trim();
                 Wahlvortrag wv = wvs.stream()
@@ -946,7 +945,7 @@ public class AdminService implements AdminServiceInterface {
     @Override
     public boolean deleteSlot(Long id, Veranstaltung veranstaltung) {
         Slot slot = Slot.findById(id);
-        if (slot != null && slot.getVeranstaltung().getId().equals(veranstaltung)) {
+        if (slot != null && slot.getVeranstaltung().getId().equals(veranstaltung.getId())) {
             String desc = slot.getDescription();
 
             // Delete all availabilities associated with this slot
@@ -1323,7 +1322,7 @@ public class AdminService implements AdminServiceInterface {
                 }
                 if (!nutzerKlasse.isInstance(nutzer)) {
                     LOG.warn("Nutzer-Verfügbarkeit übersprungen: Nutzer mit E-Mail '" + dto.email
-                        + "' ist kein " + nutzerKlasse.getSimpleName() +" (falsche CSV-Datei?).");
+                        + "' ist kein " + nutzerKlasse.getSimpleName() + " (falsche CSV-Datei?).");
                     continue;
                 }
 

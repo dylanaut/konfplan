@@ -1,7 +1,5 @@
 package kreyj.konfplan.domain.service;
 
-import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName;
-import io.quarkus.runtime.annotations.RegisterForReflection;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
@@ -123,7 +121,7 @@ public class PrioritaetService implements PrioritaetServiceInterface {
         Objects.requireNonNull(nutzerId);
         Objects.requireNonNull(veranstaltungId);
 
-        Map<Long, Integer> vortragIdToPrioWert = Prioritaet
+        return Prioritaet
             .find("FROM Prioritaet p " +
                     "JOIN p.teilnehmer tn " +
                     "JOIN p.vortrag v " +
@@ -134,7 +132,5 @@ public class PrioritaetService implements PrioritaetServiceInterface {
             .project(VortragPrioDto.class)
             .list().stream()
             .collect(Collectors.toMap(VortragPrioDto::getVortragId, VortragPrioDto::getPrioWert));
-
-        return vortragIdToPrioWert;
     }
 }

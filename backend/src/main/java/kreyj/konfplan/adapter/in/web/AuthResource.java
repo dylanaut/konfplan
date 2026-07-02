@@ -17,7 +17,6 @@ import kreyj.konfplan.domain.service.ProtokollService;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
@@ -34,15 +33,11 @@ public class AuthResource {
 
     private final MailTemplate passwordResetTemplate;
 
-    private final JsonWebToken jwt;
-
     private final ProtokollService protokollService;
 
     public AuthResource(@Location("email/passwordReset") MailTemplate passwordResetTemplate,
-                        JsonWebToken jwt,
                         ProtokollService protokollService) {
         this.passwordResetTemplate = passwordResetTemplate;
-        this.jwt = jwt;
         this.protokollService = protokollService;
     }
 

@@ -22,10 +22,12 @@ public class MinizincException extends RuntimeException {
         this(exceptionType, MELDUNGEN.get(exceptionType));
     }
 
+
     public MinizincException(MZ_Exception exceptionType, String message) {
         this.exceptionType = exceptionType;
         this.message = message;
     }
+
 
     @Override
     public String getMessage() {

@@ -105,8 +105,8 @@ public class ErmittleKollisionenTest extends DatabaseCleaner {
 
         assertThat(kollisionen).hasSize(1);
         Kollision kollision = kollisionen.get(0);
-        assertThat(kollision.getTyp()).isEqualTo(Kollision.Typ.TEILNEHMER_VERFUEGBARKEIT);
-        assertThat(kollision.getNachricht())
+        assertThat(kollision.typ()).isEqualTo(Kollision.Typ.TEILNEHMER_VERFUEGBARKEIT);
+        assertThat(kollision.nachricht())
                 .contains("Anna Adam")
                 .contains("GruppeA")
                 .contains("Verfügbarkeits-Kollision");
@@ -124,8 +124,8 @@ public class ErmittleKollisionenTest extends DatabaseCleaner {
 
         assertThat(kollisionen).hasSize(1);
         Kollision kollision = kollisionen.get(0);
-        assertThat(kollision.getTyp()).isEqualTo(Kollision.Typ.RAUM_SLOT);
-        assertThat(kollision.getNachricht())
+        assertThat(kollision.typ()).isEqualTo(Kollision.Typ.RAUM_SLOT);
+        assertThat(kollision.nachricht())
                 .contains("Raum 1")
                 .contains("Wahlvorträge");
     }
@@ -142,8 +142,8 @@ public class ErmittleKollisionenTest extends DatabaseCleaner {
 
         assertThat(kollisionen).hasSize(1);
         Kollision kollision = kollisionen.get(0);
-        assertThat(kollision.getTyp()).isEqualTo(Kollision.Typ.REFERENT_VERFUEGBARKEIT);
-        assertThat(kollision.getNachricht())
+        assertThat(kollision.typ()).isEqualTo(Kollision.Typ.REFERENT_VERFUEGBARKEIT);
+        assertThat(kollision.nachricht())
                 .contains("Verfügbarkeits-Kollision")
                 .contains("PV");
     }

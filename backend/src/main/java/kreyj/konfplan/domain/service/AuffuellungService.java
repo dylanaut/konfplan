@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 
@@ -32,6 +31,7 @@ public class AuffuellungService {
 
     private record Instanz(int wvIdx, int instIdx) {
     }
+
 
     public void fuelleAuf(Veranstaltung veranstaltung, Planungsergebnis.MinizincResult result) {
         long[] tnOids = result.teilnehmer_oids;
@@ -134,8 +134,8 @@ public class AuffuellungService {
 
 
     private boolean istFreiInSlot(int pIdx, int slotIdx1, long slotOid, int wvSize, int maxInstanzen,
-                                   int[][] instanzSlot, boolean[][][] besucht,
-                                   Map<Long, NutzerVerfuegbarkeit> verfuegbarkeitByNutzerId, long[] tnOids) {
+                                  int[][] instanzSlot, boolean[][][] besucht,
+                                  Map<Long, NutzerVerfuegbarkeit> verfuegbarkeitByNutzerId, long[] tnOids) {
         NutzerVerfuegbarkeit verfuegbarkeit = verfuegbarkeitByNutzerId.get(tnOids[pIdx]);
         if (null == verfuegbarkeit || !verfuegbarkeit.getVerfuegbareSlotIds().contains(slotOid)) {
             return false;
@@ -163,7 +163,7 @@ public class AuffuellungService {
 
 
     private Instanz waehleKandidat(List<Prioritaet> eigenePrioritaeten, List<Instanz> eligibleKandidaten,
-                                    long[] wvOids, Map<Long, Wahlvortrag> wahlvortragByOid) {
+                                   long[] wvOids, Map<Long, Wahlvortrag> wahlvortragByOid) {
         // Tier 1: eigene weitere Prioritäten (beste zuerst), sofern für diesen Slot noch Kapazität besteht.
         for (Prioritaet prioritaet : eigenePrioritaeten) {
             long wvOid = prioritaet.getVortrag().getId();

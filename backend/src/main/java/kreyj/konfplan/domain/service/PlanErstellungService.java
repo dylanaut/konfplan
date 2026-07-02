@@ -87,7 +87,7 @@ public class PlanErstellungService {
 
 
     public PlanErstellungService(ProtokollService protokollService, ObjectMapper objectMapper,
-                                  AuffuellungService auffuellungService) {
+                                 AuffuellungService auffuellungService) {
         this.protokollService = protokollService;
         this.objectMapper = objectMapper;
         this.auffuellungService = auffuellungService;
@@ -194,7 +194,7 @@ public class PlanErstellungService {
             return;
         }
         String vName = veranstaltung.getName();
-        String details = kollisionen.stream().map(Kollision::getNachricht).collect(joining(LINE_SEP));
+        String details = kollisionen.stream().map(Kollision::nachricht).collect(joining(LINE_SEP));
         String message = "Inkonsistente Daten für Planerstellung in '" + vName + "':" + LINE_SEP + details;
         LOG.warn(message);
         protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung abgebrochen",
@@ -349,8 +349,8 @@ public class PlanErstellungService {
         appendWahlvortraege(wahlvortraege, slots, sb);
         appendTnPrios(teilnehmer, wahlvortraege, sb);
         appendTnVerfuegbarkeiten(veranstaltung, teilnehmer, slots, sb);
-        appendRaumVerfuegbarkeiten(veranstaltung, raeume, slots, sb);
         appendReferentVerfuegbarkeiten(wahlvortraege, veranstaltung, slots, sb);
+        appendRaumVerfuegbarkeiten(veranstaltung, raeume, slots, sb);
         appendEntityOids(teilnehmer, wahlvortraege, slots, raeume, sb);
 
         return sb.toString();
@@ -544,7 +544,7 @@ public class PlanErstellungService {
 
 
     private static void appendReferentVerfuegbarkeiten(List<Wahlvortrag> wahlvortraege, Veranstaltung veranstaltung,
-                                                        Set<Slot> slots, StringBuilder sb) {
+                                                       Set<Slot> slots, StringBuilder sb) {
         sb.append("%In welchen Slots der Referent eines Wahlvortrags verfügbar ist (Pflichtvortrag-Kollisionen):\n");
         // Reihenfolge MUSS mit appendWahlvortraege's refMap übereinstimmen: dieselbe 'wahlvortraege'-Liste,
         // distinct() auf geordnetem Stream erhält First-Encounter-Reihenfolge -> identische 1-basierte Indizes.

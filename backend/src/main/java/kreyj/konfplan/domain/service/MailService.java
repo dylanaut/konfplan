@@ -26,7 +26,7 @@ public class MailService {
 
     private final MailTemplate emailChangeConfirmationNewAddressTemplate;
 
-
+    @SuppressWarnings("CdiInjectionPointsInspection")
     public MailService(
         @ConfigProperty(name = "app.mail.admin", defaultValue = "konfplan@yahoo.com")
         String adminEmail,
@@ -194,6 +194,7 @@ public class MailService {
             );
     }
 
+
     public void sendVerfuegbarkeitChangedNotification(Nutzer nutzer, Veranstaltung veranstaltung) {
         String subject = "Verfügbarkeit geändert für " + veranstaltung.getName();
         String body = String.format(
@@ -202,10 +203,9 @@ public class MailService {
             veranstaltung.getName()
         );
 
-        veranstaltung.organisatoren().forEach(organisator -> {
-            mailer.send(Mail.withText(organisator.getEmail(), subject, body)
-                .setFrom(senderEmail(veranstaltung)));
-        });
+        veranstaltung.organisatoren().forEach(organisator
+            -> mailer.send(Mail.withText(organisator.getEmail(), subject, body)
+            .setFrom(senderEmail(veranstaltung))));
     }
 
     // -------------------------------------------------------------------
@@ -214,6 +214,6 @@ public class MailService {
 
 
     private static String senderEmail(Veranstaltung v) {
-        return v.organisatoren().iterator().next().getEmail();
+        return v.organisatoren().getFirst().getEmail();
     }
 }

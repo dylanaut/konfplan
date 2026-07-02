@@ -16,7 +16,7 @@ import java.util.Objects;
 @Setter
 public class IdEntity extends PanacheEntityBase {
     @Id
-    @SequenceGenerator(name = "idSequence", sequenceName = "id_sequence", allocationSize = 50)
+    @SequenceGenerator(name = "idSequence", sequenceName = "id_sequence")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "idSequence")
     private Long id;
 

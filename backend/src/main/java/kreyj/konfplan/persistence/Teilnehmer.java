@@ -26,7 +26,7 @@ public class Teilnehmer extends Nutzer {
     private Set<String> gruppen = new HashSet<>();
 
     @OneToMany(mappedBy = "teilnehmer", cascade = CascadeType.ALL, orphanRemoval = true)
-    Set<Prioritaet> prioritaeten = new HashSet<>();
+    private Set<Prioritaet> prioritaeten = new HashSet<>();
 
 
     // -------------------------------------------------------------------

@@ -23,7 +23,6 @@ import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.Wahlvortrag;
-import kreyj.konfplan.util.StringHelper;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.NonNull;
@@ -647,11 +646,10 @@ public class PlanService {
             sb.append("Raum ").append(raumMap.get(raumId).getName())
                 .append(" (").append(raumId)
                 .append("):\n");
-            slotEntries.forEach((slotId, eintrag) -> {
-                sb.append("Slot ").append(slotMap.get(slotId).getDescription())
-                    .append(" (").append(slotId)
-                    .append("): ").append(eintrag).append("\n");
-            });
+            slotEntries.forEach((slotId, eintrag)
+                -> sb.append("Slot ").append(slotMap.get(slotId).getDescription())
+                .append(" (").append(slotId)
+                .append("): ").append(eintrag).append("\n"));
         });
 
         return sb.toString();

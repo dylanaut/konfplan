@@ -18,7 +18,7 @@ public class BusinessExceptionMapper implements ExceptionMapper<BusinessExceptio
         LOG.warn("Bad Request: " + exception.getMessage());
         // Dieser eine Mapper fängt ALLE deine Business-Exceptions ab!
         return Response.status(Response.Status.BAD_REQUEST)
-                .entity(Map.of("error", exception.getMessage()))
-                .build();
+            .entity(Map.of("error", exception.getMessage()))
+            .build();
     }
 }

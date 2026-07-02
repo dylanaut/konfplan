@@ -32,6 +32,7 @@ public class PrioritaetenResource {
     private final PrioritaetService prioService;
 
 
+    @SuppressWarnings("CdiInjectionPointsInspection")
     public PrioritaetenResource(JsonWebToken jwt, PrioritaetService prioService) {
         this.jwt = jwt;
         this.prioService = prioService;

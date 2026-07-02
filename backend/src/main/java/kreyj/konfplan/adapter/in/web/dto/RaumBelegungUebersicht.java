@@ -8,18 +8,18 @@ public class RaumBelegungUebersicht {
     public static final String VORTRAG_TYP_FREI = "FREI";
     public static final String VORTRAG_TITEL_FREI = "Frei";
 
-    public Long slotId;
+    public final Long slotId;
     @Getter
     public String slotZeit;
-    public Long raumId;
-    public String raumName;
+    public final Long raumId;
+    public final String raumName;
     @Getter
     public String vortragTitel;
-    public String referentName;
-    public String vortragTyp; // "WAHL", "PFLICHT", "FREI"
+    public final String referentName;
+    public final String vortragTyp; // "WAHL", "PFLICHT", "FREI"
     @Getter
     public List<String> teilnehmerNamen;
-    public Integer kapazitaet;
+    public final Integer kapazitaet;
 
     public RaumBelegungUebersicht(Long slotId, String slotZeit, Long raumId, String raumName, String vortragTitel, String referentName, String vortragTyp, List<String> teilnehmerNamen, Integer kapazitaet) {
         this.slotId = slotId;

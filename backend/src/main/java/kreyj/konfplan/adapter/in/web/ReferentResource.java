@@ -25,11 +25,9 @@ import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.ReferentVeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.ReferentVortragDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
-import kreyj.konfplan.application.port.in.AdminServiceInterface;
 import kreyj.konfplan.application.port.in.ReferentServiceInterface;
 import kreyj.konfplan.domain.service.MailService;
 import kreyj.konfplan.domain.service.PlanService;
-import kreyj.konfplan.domain.service.VeranstaltungService;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Referent;
@@ -54,7 +52,6 @@ import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "Referenten", description = "Endpunkte für Referenten zur Verwaltung ihres Profils und ihrer Vorträge")
 public class ReferentResource {
-    private final VeranstaltungService veranstaltungService;
 
     @Context
     UriInfo uriInfo;
@@ -64,16 +61,14 @@ public class ReferentResource {
     private final ReferentServiceInterface referentService;
     private final PlanService planService;
     private final MailService mailService;
-    private final AdminServiceInterface adminService;
 
 
-    public ReferentResource(JsonWebToken jwt, ReferentServiceInterface referentService, PlanService planService, MailService mailService, VeranstaltungService veranstaltungService, AdminServiceInterface adminService) {
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    public ReferentResource(JsonWebToken jwt, ReferentServiceInterface referentService, PlanService planService, MailService mailService) {
         this.jwt = jwt;
         this.referentService = referentService;
         this.planService = planService;
         this.mailService = mailService;
-        this.veranstaltungService = veranstaltungService;
-        this.adminService = adminService;
     }
 
 

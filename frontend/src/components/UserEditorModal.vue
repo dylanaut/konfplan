@@ -1,11 +1,16 @@
 <template>
   <div v-if="isVisible" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-    <div class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
+    <div
+      class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-2xl overflow-y-auto max-h-[90vh]"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="user-editor-modal-title"
+    >
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-bold text-gray-900">
+        <h2 id="user-editor-modal-title" class="text-xl font-bold text-gray-900">
           {{ nutzer?.id ? 'Nutzer bearbeiten' : 'Neuen Nutzer anlegen' }}
         </h2>
-        <button class="text-gray-500 hover:text-gray-700" @click="$emit('close')">✕</button>
+        <button class="text-gray-500 hover:text-gray-700" aria-label="Dialog schließen" @click="$emit('close')">✕</button>
       </div>
 
       <form class="grid grid-cols-1 md:grid-cols-2 gap-4" @submit.prevent="save">
@@ -104,10 +109,10 @@ const form = reactive({
 });
 
 watch(
-    () => props.isVisible,
-    (visible) => {
-      if (visible && props.selectedVid) {
-        groupStore.fetchGruppen(props.selectedVid);
+    [() => props.isVisible, () => props.selectedVid],
+    ([visible, selectedVid]) => {
+      if (visible && selectedVid) {
+        groupStore.fetchGruppen(selectedVid);
       }
     }
 );
@@ -126,7 +131,7 @@ watch(
       form.jobRole = val?.jobRole ?? '';
       form.gruppen = val?.gruppen ? [...val.gruppen] : [];
     },
-    { immediate: true, deep: true }
+    { immediate: true, deep: false }
 );
 
 const save = () => {
