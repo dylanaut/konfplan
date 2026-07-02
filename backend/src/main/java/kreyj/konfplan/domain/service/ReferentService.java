@@ -12,13 +12,29 @@ import kreyj.konfplan.adapter.in.web.dto.ReferentVeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.ReferentCsvDto;
 import kreyj.konfplan.application.port.in.ReferentServiceInterface;
-import kreyj.konfplan.persistence.*;
+import kreyj.konfplan.persistence.IdEntity;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Pflichtvortrag;
+import kreyj.konfplan.persistence.Planungsergebnis;
+import kreyj.konfplan.persistence.ProtokollKategorie;
+import kreyj.konfplan.persistence.Raum;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Slot;
+import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Vortrag;
+import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
+import kreyj.konfplan.persistence.Wahlvortrag;
 import org.jboss.logging.Logger;
 
 import java.io.FileReader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvIdL;
 
@@ -29,6 +45,7 @@ public class ReferentService implements ReferentServiceInterface {
     private final MailService mailService;
 
     private final ProtokollService protokollService;
+
 
     public ReferentService(MailService mailService, ProtokollService protokollService) {
         this.mailService = mailService;
@@ -45,6 +62,7 @@ public class ReferentService implements ReferentServiceInterface {
         }
         return null;
     }
+
 
     @Transactional
     @Override
@@ -70,6 +88,7 @@ public class ReferentService implements ReferentServiceInterface {
         }
     }
 
+
     @Override
     public List<VortragDto> getReferentVortraege(String email) {
         Referent referent = Referent.find("email", email).firstResult();
@@ -80,6 +99,7 @@ public class ReferentService implements ReferentServiceInterface {
         List<Vortrag> vortraege = Vortrag.find("referent", referent).list();
         return vortraege.stream().map(VortragDto::from).toList();
     }
+
 
     @Override
     public List<ReferentVeranstaltungDto> getReferentVeranstaltungen(Referent referent) {
@@ -102,9 +122,9 @@ public class ReferentService implements ReferentServiceInterface {
             dto.endetAm = e.getEndetAm();
             dto.deadlineReferenten = e.getDeadlineReferenten();
             dto.vortraegeIds = vortraege.stream()
-                    .filter(t -> t.getVeranstaltung().getId().equals(e.getId()))
-                    .map(IdEntity::getId)
-                    .toList();
+                .filter(t -> t.getVeranstaltung().getId().equals(e.getId()))
+                .map(IdEntity::getId)
+                .toList();
             dto.planErstellt = Planungsergebnis.count("veranstaltung", e) > 0; // Prüfen, ob ein Ergebnis existiert
             return dto;
         }).sorted(Comparator.comparing(e -> e.beginntAm)).toList();
@@ -140,6 +160,7 @@ public class ReferentService implements ReferentServiceInterface {
         return VortragDto.from(vortrag);
     }
 
+
     @Transactional
     @Override
     public VortragDto updateVortrag(String email, Long vortragId, VortragDto dto) {
@@ -160,6 +181,7 @@ public class ReferentService implements ReferentServiceInterface {
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent aktualisiert", "Referent '" + email + "' hat Vortrag '" + vortrag.getTitel() + "' aktualisiert.", vortrag.getId());
         return VortragDto.from(vortrag);
     }
+
 
     @Transactional
     @Override
@@ -209,6 +231,7 @@ public class ReferentService implements ReferentServiceInterface {
         }
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag für weiteres Event registriert", "Referent '" + email + "' hat Vortrag '" + vortrag.getTitel() + "' für Event '" + veranstaltung.getName() + "' registriert.", vortrag.getId());
     }
+
 
     @Transactional
     @Override
@@ -274,6 +297,7 @@ public class ReferentService implements ReferentServiceInterface {
         return VortragDto.from(zielVortrag);
     }
 
+
     @Transactional
     @Override
     public void meldeVortragFuerVeranstaltungAb(String email, Long vortragId, Long veranstaltungId) {
@@ -298,6 +322,7 @@ public class ReferentService implements ReferentServiceInterface {
         }
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag von Event abgemeldet", "Referent '" + email + "' hat Vortrag '" + titel + "' von Event '" + veranstaltung.getName() + "' abgemeldet.", vortragId);
     }
+
 
     private void updateVortragFromDto(Vortrag vortrag, VortragDto dto) {
         if (vortrag.getId() != null && !Objects.equals(vortrag.getId(), dto.id)) {
@@ -333,6 +358,7 @@ public class ReferentService implements ReferentServiceInterface {
         }
     }
 
+
     @Transactional
     @Override
     public boolean deleteVortrag(String email, Long vortragId) {
@@ -357,12 +383,14 @@ public class ReferentService implements ReferentServiceInterface {
         return true;
     }
 
+
     private void checkDeadline(Veranstaltung v) {
         if (v.getDeadlineReferenten() != null && v.getDeadlineReferenten().isBefore(LocalDateTime.now())) {
             throw new WebApplicationException("Die Deadline für Referenten für diese Veranstaltung ist bereits abgelaufen.",
-                    Response.Status.FORBIDDEN);
+                Response.Status.FORBIDDEN);
         }
     }
+
 
     @Transactional
     @Override
@@ -375,11 +403,12 @@ public class ReferentService implements ReferentServiceInterface {
 
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             List<ReferentCsvDto> beans = new CsvToBeanBuilder<ReferentCsvDto>(reader)
-                    .withType(ReferentCsvDto.class)
-                    .withSeparator(';')
-                    .withIgnoreLeadingWhiteSpace(true)
-                    .build()
-                    .parse();
+                .withType(ReferentCsvDto.class)
+                .withSeparator(';')
+                .withIgnoreEmptyLine(true)
+                .withIgnoreLeadingWhiteSpace(true)
+                .build()
+                .parse();
 
             for (ReferentCsvDto dto : beans) {
                 Nutzer existingNutzer = Nutzer.findByEmail(dto.email);

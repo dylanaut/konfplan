@@ -147,6 +147,7 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
             CsvToBean<VeranstaltungCsvDto> csvToBean = new CsvToBeanBuilder<VeranstaltungCsvDto>(reader)
                 .withType(VeranstaltungCsvDto.class)
                 .withSeparator(';')
+                .withIgnoreEmptyLine(true)
                 .withIgnoreLeadingWhiteSpace(true)
                 .withThrowExceptions(false)
                 .build();

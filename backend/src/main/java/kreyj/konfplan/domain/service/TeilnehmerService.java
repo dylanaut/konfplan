@@ -180,7 +180,13 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
 
         int count = 0;
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
-            CsvToBean<TeilnehmerCsvDto> csvToBean = new CsvToBeanBuilder<TeilnehmerCsvDto>(reader).withType(TeilnehmerCsvDto.class).withIgnoreLeadingWhiteSpace(true).withSeparator(';').withFilter(line -> line.length > 0 && !line[0].startsWith("#")).withThrowExceptions(false).build();
+            CsvToBean<TeilnehmerCsvDto> csvToBean = new CsvToBeanBuilder<TeilnehmerCsvDto>(reader)
+                .withType(TeilnehmerCsvDto.class)
+                .withIgnoreEmptyLine(true)
+                .withIgnoreLeadingWhiteSpace(true)
+                .withSeparator(';')
+                .withFilter(line -> line.length > 0 && !line[0].startsWith("#"))
+                .withThrowExceptions(false).build();
 
             List<TeilnehmerCsvDto> beans = csvToBean.parse();
 

@@ -22,17 +22,21 @@ public class GebaeudeService {
 
     private final ProtokollService protokollService;
 
+
     public GebaeudeService(ProtokollService protokollService) {
         this.protokollService = protokollService;
     }
+
 
     public List<Gebaeude> listAll() {
         return Gebaeude.listAll();
     }
 
+
     public Gebaeude findById(Long id) {
         return Gebaeude.findById(id);
     }
+
 
     @Transactional
     public Gebaeude save(Gebaeude g) {
@@ -56,17 +60,19 @@ public class GebaeudeService {
         }
     }
 
+
     @Transactional
     public int importGebaeudeWithRaeumeFromCsv(Path csvFilePath) throws Exception {
         int anzahlGebaeude = 0;
         int anzahlRaeume = 0;
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             CsvToBean<GebaeudeRaeumeCsvDto> csvToBean = new CsvToBeanBuilder<GebaeudeRaeumeCsvDto>(reader)
-                    .withType(GebaeudeRaeumeCsvDto.class)
-                    .withSeparator(';')
-                    .withIgnoreLeadingWhiteSpace(true)
-                    .withThrowExceptions(false)
-                    .build();
+                .withType(GebaeudeRaeumeCsvDto.class)
+                .withSeparator(';')
+                .withIgnoreEmptyLine(true)
+                .withIgnoreLeadingWhiteSpace(true)
+                .withThrowExceptions(false)
+                .build();
 
             List<GebaeudeRaeumeCsvDto> beans = csvToBean.parse();
 
@@ -142,11 +148,12 @@ public class GebaeudeService {
             throw e;
         }
         LOG.info("Gebäude-Import abgeschlossen: " + anzahlGebaeude + " Gebäude mit " + anzahlRaeume + " Räumen aus " +
-                csvFilePath + " importiert.");
+            csvFilePath + " importiert.");
         protokollService.log(ProtokollKategorie.GEBAEUDE, "Gebäude-Import abgeschlossen", anzahlGebaeude + " Gebäude importiert.");
 
         return anzahlGebaeude;
     }
+
 
     @Transactional
     public boolean delete(Long id) {

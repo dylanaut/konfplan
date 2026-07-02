@@ -576,6 +576,7 @@ public class AdminService implements AdminServiceInterface {
             CsvToBean<VortragCsvDto> csvToBean = new CsvToBeanBuilder<VortragCsvDto>(reader)
                 .withType(VortragCsvDto.class)
                 .withSeparator(';')
+                .withIgnoreEmptyLine(true)
                 .withIgnoreLeadingWhiteSpace(true)
                 .withThrowExceptions(false) // Allow parsing to continue on errors
                 .build();
@@ -1310,6 +1311,7 @@ public class AdminService implements AdminServiceInterface {
             CsvToBean<NutzerVerfuegbarkeitCsvDto> csvToBean = new CsvToBeanBuilder<NutzerVerfuegbarkeitCsvDto>(reader)
                 .withType(NutzerVerfuegbarkeitCsvDto.class)
                 .withSeparator(';')
+                .withIgnoreEmptyLine(true)
                 .withIgnoreLeadingWhiteSpace(true)
                 .build();
 
@@ -1361,6 +1363,7 @@ public class AdminService implements AdminServiceInterface {
             CsvToBean<RaumVerfuegbarkeitCsvDto> csvToBean = new CsvToBeanBuilder<RaumVerfuegbarkeitCsvDto>(reader)
                 .withType(RaumVerfuegbarkeitCsvDto.class)
                 .withSeparator(';')
+                .withIgnoreEmptyLine(true)
                 .withIgnoreLeadingWhiteSpace(true)
                 .build();
 
