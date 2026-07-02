@@ -180,8 +180,8 @@
                   class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Name
                 <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/>
               </th>
-              <th @click="toggleSort('teilnehmer', 'gruppe')"
-                  class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Gruppe
+              <th @click="toggleSort('teilnehmer', 'gruppen')"
+                  class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Gruppen
                 <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/>
               </th>
               <th @click="toggleSort('teilnehmer', 'isActive')"
@@ -192,7 +192,7 @@
                   class="px-2 py-2 text-center text-[8px] font-bold text-gray-500">
                 {{ formatTime(slot.startTime) }}
               </th>
-              <th class="px-4 py-1.5 text-center font-bold">Plan</th> <!-- New column for Plan icon -->
+              <th v-if="planErstellt" class="px-4 py-1.5 text-center font-bold">Plan</th>
               <th class="px-4 py-1.5 text-right font-bold">Aktionen</th>
             </tr>
             </thead>
@@ -204,7 +204,7 @@
                        class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3"/>
               </td>
               <td class="px-4 py-2 font-bold" :title="u.email">{{ u.firstName }} {{ u.lastName }}</td>
-              <td class="px-4 py-2 text-gray-500">{{ u.gruppe }}</td>
+              <td class="px-4 py-2 text-gray-500">{{ (u.gruppen || []).slice().sort().join(', ') }}</td>
               <td class="px-4 py-2 text-center">
                 <div @click="emit('toggleParticipantActive', u)" class="cursor-pointer">
                   <CheckIcon v-if="u.isActive" class="w-4 h-4 text-green-500 mx-auto"/>
@@ -216,7 +216,7 @@
                        @change="availabilityStore.toggleUserAvailability(u.id, slot.id)"
                        :disabled="isEventFinished" class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3"/>
               </td>
-              <td class="px-4 py-2 text-center">
+              <td v-if="planErstellt" class="px-4 py-2 text-center">
                 <button @click="openParticipantPlan(u)" class="text-indigo-600 hover:text-indigo-800"
                         title="Belegungsplan anzeigen">
                   <FileTextIcon class="w-4 h-4 inline"/>
@@ -245,15 +245,12 @@
         </div>
       </div>
     </div>
-
-    <!-- HTML Display Modal -->
-    <HtmlDisplayModal :isVisible="showPlanOverlay" :htmlContent="planHtmlContent" :title="planOverlayTitle"
-                      @close="showPlanOverlay = false"/>
   </section>
 </template>
 
 <script setup>
 import {computed, reactive, ref, watch} from 'vue';
+import {useRouter} from 'vue-router';
 import {
   ArrowUpDown as ArrowUpDownIcon,
   Check as CheckIcon,
@@ -273,8 +270,6 @@ import {
   X as XIcon
 } from '@lucide/vue';
 import PaginationControls from '../../PaginationControls.vue';
-import HtmlDisplayModal from '../../HtmlDisplayModal.vue'; // Import the new modal component
-import api from '../../../api/axios'; // Import axios for API calls
 import {useAvailabilityStore} from '../../../stores/availability';
 
 const props = defineProps({
@@ -286,6 +281,7 @@ const props = defineProps({
   wahlvortraege: Array,
   participantPriorities: Object,
   changedPriorities: Set,
+  planErstellt: Boolean,
 });
 
 const emit = defineEmits([
@@ -296,6 +292,7 @@ const emit = defineEmits([
 ]);
 
 const availabilityStore = useAvailabilityStore();
+const router = useRouter();
 
 const pages = reactive({
   teilnehmer: 1
@@ -326,11 +323,6 @@ const togglePrioritaetenAnzeige = () => {
 
 const selectedParticipantIds = ref([]);
 
-// State for the new plan overlay
-const showPlanOverlay = ref(false);
-const planHtmlContent = ref('');
-const planOverlayTitle = ref('');
-
 watch(() => props.selectedVid, (newVid) => {
   if (newVid) {
     availabilityStore.fetchAvailabilities(newVid);
@@ -346,7 +338,7 @@ watch(() => filters.gruppen, () => {
 });
 
 const teilnehmerGruppen = computed(() => {
-  const groups = new Set(props.teilnehmer.map(t => t.gruppe).filter(Boolean));
+  const groups = new Set(props.teilnehmer.flatMap(t => t.gruppen || []).filter(Boolean));
   return Array.from(groups).sort();
 });
 
@@ -427,7 +419,7 @@ const toggleSort = (key, field) => {
 const filteredParticipants = computed(() => {
   let list = props.teilnehmer.filter(t => t && t.veranstaltungIds && Array.isArray(t.veranstaltungIds) && t.veranstaltungIds.includes(props.selectedVid));
   if (filters.gruppen) {
-    list = list.filter(t => t.gruppe === filters.gruppen);
+    list = list.filter(t => (t.gruppen || []).includes(filters.gruppen));
   }
   return processList(list, filters.teilnehmer, sorts.teilnehmer);
 });
@@ -471,24 +463,12 @@ const isPrioChanged = (userId) => props.changedPriorities.has(userId);
 
 const formatTime = (t) => t ? new Date(t).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'}) : '';
 
-// New method to open participant plan
-const openParticipantPlan = async (participant) => {
+const openParticipantPlan = (participant) => {
   if (!props.selectedVid) {
     alert('Bitte zuerst eine Veranstaltung auswählen.');
     return;
   }
-  planOverlayTitle.value = `Belegungsplan für ${participant.firstName} ${participant.lastName}`;
-  try {
-    const response = await api.get(`/api/reports/${props.selectedVid}/teilnehmer/${participant.id}/laufzettel`, {
-      headers: {'Accept': 'text/html'}
-    });
-    planHtmlContent.value = response.data;
-    showPlanOverlay.value = true;
-  } catch (error) {
-    console.error('Fehler beim Laden des Belegungsplans:', error);
-    planHtmlContent.value = `<p class="text-red-500">Fehler beim Laden des Belegungsplans. Möglicherweise wurde noch kein Plan berechnet oder es ist ein Serverfehler aufgetreten.</p>`;
-    showPlanOverlay.value = true;
-  }
+  router.push({ name: 'LaufzettelTeilnehmer', params: { vid: props.selectedVid, tid: participant.id } });
 };
 </script>
 

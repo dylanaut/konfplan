@@ -103,6 +103,7 @@
                      :wahlvortraege="wahlvortraege"
                      :participantPriorities="participantPriorities"
                      :changedPriorities="changedPriorities"
+                     :planErstellt="planErstellt"
                      @triggerUpload="triggerUpload"
                      @openUserModal="openUserModal"
                      @deleteUser="deleteUser"
@@ -121,6 +122,7 @@
                      :pageSize="pageSize"
                      :sortedSlots="sortedSlots"
                      :isEventFinished="isEventFinished"
+                     :planErstellt="planErstellt"
                      @triggerUpload="triggerUpload"
                      @openUserModal="openUserModal"
                      @deleteUser="deleteUser"
@@ -338,6 +340,8 @@ const isEventFinished = computed(() => {
   const endDate = v.endetAm ? new Date(v.endetAm) : new Date(v.beginntAm);
   return endDate < new Date();
 });
+
+const planErstellt = computed(() => belegungsplan.value && belegungsplan.value.length > 0);
 
 const admins = computed(() => users.value.filter(u => u.role === 'ADMIN'));
 const referenten = computed(() => users.value.filter(u => u.role === 'REFERENT'));

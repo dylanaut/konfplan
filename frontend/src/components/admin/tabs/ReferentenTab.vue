@@ -15,17 +15,25 @@
         <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
         <tr>
           <th @click="toggleSort('referenten', 'lastName')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Name <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
+          <th @click="toggleSort('referenten', 'organisation')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Organisation <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
           <th v-for="slot in sortedSlots" :key="slot.id" class="px-2 py-2 text-center text-[8px] font-bold text-gray-500">
             {{ formatTime(slot.startTime) }}
           </th>
+          <th v-if="planErstellt" class="px-4 py-1.5 text-center font-bold">Plan</th>
           <th class="px-4 py-1.5 text-right font-bold">Aktionen</th>
         </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
         <tr v-for="u in paginatedSpeakers" :key="u.id" class="hover:bg-gray-50">
           <td class="px-4 py-2 font-bold" :title="u.email">{{ u.firstName }} {{ u.lastName }}</td>
+          <td class="px-4 py-2 text-gray-500">{{ u.organisation }}</td>
           <td v-for="slot in sortedSlots" :key="slot.id" class="px-2 py-2 text-center">
             <input type="checkbox" :checked="availabilityStore.isUserAvailable(u.id, slot.id)" @change="availabilityStore.toggleUserAvailability(u.id, slot.id)" :disabled="isEventFinished" class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3" />
+          </td>
+          <td v-if="planErstellt" class="px-4 py-2 text-center">
+            <button @click="openReferentPlan(u)" class="text-indigo-600 hover:text-indigo-800" title="Belegungsplan anzeigen">
+              <FileTextIcon class="w-4 h-4 inline"/>
+            </button>
           </td>
           <td class="px-4 py-2 text-right">
             <button @click="emit('openUserModal', u)" class="text-indigo-600 ml-3" title="Bearbeiten">
@@ -52,8 +60,10 @@
 
 <script setup>
 import { computed, reactive, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   ArrowUpDown as ArrowUpDownIcon,
+  FileText as FileTextIcon,
   Mail as MailIcon,
   Pencil as PencilIcon,
   Trash2 as Trash2Icon,
@@ -67,12 +77,14 @@ const props = defineProps({
   selectedVid: Number,
   pageSize: Number,
   sortedSlots: Array,
-  isEventFinished: Boolean
+  isEventFinished: Boolean,
+  planErstellt: Boolean
 });
 
 const emit = defineEmits(['triggerUpload', 'openUserModal', 'deleteUser', 'openInviteModal']);
 
 const availabilityStore = useAvailabilityStore();
+const router = useRouter();
 
 const pages = reactive({
   referenten: 1
@@ -123,10 +135,21 @@ const toggleSort = (key, field) => {
   }
 };
 
-const filteredSpeakers = computed(() => processList(props.referenten, filters.referenten, sorts.referenten));
+const filteredSpeakers = computed(() => {
+  const list = props.referenten.filter(r => r && r.veranstaltungIds && Array.isArray(r.veranstaltungIds) && r.veranstaltungIds.includes(props.selectedVid));
+  return processList(list, filters.referenten, sorts.referenten);
+});
 const paginatedSpeakers = computed(() => paginate(filteredSpeakers.value, pages.referenten));
 
 const formatTime = (t) => t ? new Date(t).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'}) : '';
+
+const openReferentPlan = (referent) => {
+  if (!props.selectedVid) {
+    alert('Bitte zuerst eine Veranstaltung auswählen.');
+    return;
+  }
+  router.push({ name: 'LaufzettelReferent', params: { vid: props.selectedVid, rid: referent.id } });
+};
 </script>
 
 <style scoped>
