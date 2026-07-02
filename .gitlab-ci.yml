@@ -71,7 +71,7 @@ package_docker_image:
         # Meldet sich bei der GitLab Container Registry an.
         - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     script:
-        - 'echo "Erstelle Docker-Image: $IMAGE_TAG"'
+        - echo "Erstelle Docker-Image: $IMAGE_TAG"
         # Quarkus generiert standardmäßig ein passendes Dockerfile.
         # Wir bauen das Image mit diesem Dockerfile.
         - docker build -f backend/src/main/docker/Dockerfile.jvm -t $IMAGE_TAG .
