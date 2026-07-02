@@ -18,7 +18,7 @@
         <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
         <tr>
           <th @click="toggleSort('vortraege', 'titel')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Titel <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-          <th @click="toggleSort('vortraege', 'berufsfeld')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Berufsfeld <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
+          <th @click="toggleSort('vortraege', 'berufsfeldName')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Berufsfeld <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
           <th @click="toggleSort('vortraege', 'referentName')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Referent <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
           <th @click="toggleSort('vortraege', 'referentOrganisation')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Organisation <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
           <th @click="toggleSort('vortraege', 'istPflicht')" class="px-4 py-1.5 text-center cursor-pointer hover:text-indigo-600 transition font-bold">Pflicht <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
@@ -28,7 +28,7 @@
         <tbody class="divide-y divide-gray-100">
         <tr v-for="v in paginatedVortraege" :key="v.id" class="hover:bg-gray-50">
           <td class="px-4 py-2 font-bold">{{ v.titel }}</td>
-          <td class="px-4 py-2 text-gray-600">{{ getBerufsfeldLabel(v.berufsfeld) || '-' }}</td>
+          <td class="px-4 py-2 text-gray-600">{{ v.berufsfeldName || '-' }}</td>
           <td class="px-4 py-2">{{ v.referentName }}</td>
           <td class="px-4 py-2 text-gray-600">{{ v.referentOrganisation || '-' }}</td>
           <td class="px-4 py-2 text-center">
@@ -65,30 +65,6 @@ import {
   Upload as UploadIcon
 } from '@lucide/vue';
 import PaginationControls from '../../PaginationControls.vue';
-
-const BERUFSFELDER = [
-    { value: 'LAND_FORST_TIERWIRTSCHAFT_UND_GARTENBAU', label: 'Land-, Forst-, Tierwirtschaft und Gartenbau' },
-    { value: 'ROHSTOFFGEWINNUNG_PRODUKTION_UND_FERTIGUNG', label: 'Rohstoffgewinnung, Produktion und Fertigung' },
-    { value: 'BAU_ARCHITEKTUR_VERMESSUNG_UND_GEBAEUDETECHNIK', label: 'Bau, Architektur, Vermessung und Gebäudetechnik' },
-    { value: 'NATURWISSENSCHAFT_GEOGRAFIE_UND_INFORMATIK', label: 'Naturwissenschaft, Geografie und Informatik' },
-    { value: 'VERKEHR_LOGISTIK_SCHUTZ_UND_SICHERHEIT', label: 'Verkehr, Logistik, Schutz und Sicherheit' },
-    { value: 'ELEKTROTECHNIK', label: 'Elektrotechnik' },
-    { value: 'METALL_MASCHINEN_UND_FAHRZEUGBAU', label: 'Metall-, Maschinen- und Fahrzeugbau' },
-    { value: 'IT_UND_COMPUTER', label: 'IT und Computer' },
-    { value: 'CHEMIE_KUNSTSTOFF_GLAS_TEXTIL_UND_HOLZ', label: 'Chemie, Kunststoff, Glas, Textil und Holz' },
-    { value: 'GASTRONOMIE_LEBENSMITTEL_UND_HAUSWIRTSCHAFT', label: 'Gastronomie, Lebensmittel und Hauswirtschaft' },
-    { value: 'GESUNDHEIT', label: 'Gesundheit' },
-    { value: 'SOZIALES_PAEDAGOGIK_UND_THEOLOGIE', label: 'Soziales, Pädagogik und Theologie' },
-    { value: 'KREATIVBERUFE_MEDIEN_UND_GESTALTUNG', label: 'Kreativberufe, Medien und Gestaltung' },
-    { value: 'WIRTSCHAFT_VERWALTUNG_RECHT_UND_GESELLSCHAFT', label: 'Wirtschaft, Verwaltung, Recht und Gesellschaft' },
-    { value: 'UNTERNEHMENSFUEHRUNG_ORGANISATION_EINKAUF_VERTRIEB_UND_MARKETING', label: 'Unternehmensführung, Organisation, Einkauf, Vertrieb und Marketing' },
-    { value: 'TOURISMUS_SPORT_UND_KULTUR', label: 'Tourismus, Sport und Kultur' },
-];
-
-const getBerufsfeldLabel = (value) => {
-  const feld = BERUFSFELDER.find(f => f.value === value);
-  return feld ? feld.label : value;
-};
 
 const props = defineProps({
   vortraege: Array,

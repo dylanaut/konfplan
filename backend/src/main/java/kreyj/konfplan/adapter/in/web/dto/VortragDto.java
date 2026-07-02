@@ -27,6 +27,7 @@ public class VortragDto extends AbstractVersionedDto {
     public String inhalt;
     public String ausstattung;
     public Berufsfeld berufsfeld; // Neues Feld
+    public String berufsfeldName;
     public boolean istPflicht;
     public boolean wiederholbar;
     public Set<Long> verfuegbareSlotIds = new HashSet<>();
@@ -96,10 +97,12 @@ public class VortragDto extends AbstractVersionedDto {
         dto.inhalt = v.getInhalt();
         dto.ausstattung = v.getAusstattung();
         dto.berufsfeld = v.getBerufsfeld();
+        dto.berufsfeldName = v.getBerufsfeld() != null ? v.getBerufsfeld().getName() : null;
         dto.veranstaltungId = v.getVeranstaltung().getId();
         dto.veranstaltungName = v.getVeranstaltung().getName();
+
         dto.referentId = v.getReferent().getId();
-        dto.referentName = v.getReferent().getLastName();
+        dto.referentName = v.getReferent().getFullName();
         dto.referentOrganisation = v.getReferent().getOrganisation();
 
         if (v instanceof Wahlvortrag wahlvortrag) {
