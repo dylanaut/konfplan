@@ -11,6 +11,8 @@ import kreyj.konfplan.domain.service.GebaeudeService;
 import kreyj.konfplan.domain.service.ReferentService;
 import kreyj.konfplan.domain.service.TeilnehmerService;
 import kreyj.konfplan.domain.service.VeranstaltungService;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -119,7 +121,8 @@ public class DevDataInitService {
 
                 // 8. Verfügbarkeiten
                 adminService.importRaumVerfuegbarkeitenFromCsv(basePath.resolve("raum_verfuegbarkeiten.csv"), vid);
-                adminService.importNutzerVerfuegbarkeitenFromCsv(basePath.resolve("nutzer_verfuegbarkeiten.csv"), vid);
+                adminService.importNutzerVerfuegbarkeitenFromCsv(basePath.resolve("teilnehmer_verfuegbarkeiten.csv"), Teilnehmer.class, vid);
+                adminService.importNutzerVerfuegbarkeitenFromCsv(basePath.resolve("ref_verfuegbarkeiten.csv"), Referent.class, vid);
 
                 importierteVeranstaltungen.add(vid);
             } catch (Exception e) {

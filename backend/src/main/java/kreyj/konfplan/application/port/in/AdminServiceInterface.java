@@ -1,6 +1,5 @@
 package kreyj.konfplan.application.port.in;
 
-import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
@@ -77,7 +76,7 @@ public interface AdminServiceInterface {
 
     void deleteGruppe(Long veranstaltungId, String gruppenName);
 
-    int importNutzerVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId);
+    int importNutzerVerfuegbarkeitenFromCsv(Path csvFilePath, Class<? extends Nutzer> nutzerKlasse, Long veranstaltungId);
 
     int importRaumVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId);
 }

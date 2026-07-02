@@ -86,14 +86,12 @@ public class AdminService implements AdminServiceInterface {
     private final MailService mailService;
     private final ProtokollService protokollService;
     private final LaunchMode launchMode;
-    private final AdminService adminService;
 
 
-    public AdminService(MailService mailService, ProtokollService protokollService, LaunchMode launchMode, AdminService adminService) {
+    public AdminService(MailService mailService, ProtokollService protokollService, LaunchMode launchMode) {
         this.mailService = mailService;
         this.protokollService = protokollService;
         this.launchMode = launchMode;
-        this.adminService = adminService;
     }
 
 
@@ -1295,7 +1293,8 @@ public class AdminService implements AdminServiceInterface {
 
     @Transactional
     @Override
-    public int importNutzerVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId) {
+    public int importNutzerVerfuegbarkeitenFromCsv(Path csvFilePath,
+                                                   Class<? extends Nutzer> nutzerKlasse, Long veranstaltungId) {
         int count = 0;
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
         if (null == veranstaltung) {
@@ -1318,6 +1317,11 @@ public class AdminService implements AdminServiceInterface {
                 Nutzer nutzer = Nutzer.findByEmail(dto.email);
                 if (null == nutzer) {
                     LOG.warn("Nutzer-Verfügbarkeit übersprungen: Nutzer mit E-Mail '" + dto.email + "' nicht gefunden.");
+                    continue;
+                }
+                if (!nutzerKlasse.isInstance(nutzer)) {
+                    LOG.warn("Nutzer-Verfügbarkeit übersprungen: Nutzer mit E-Mail '" + dto.email
+                        + "' ist kein " + nutzerKlasse.getSimpleName() +" (falsche CSV-Datei?).");
                     continue;
                 }
 
