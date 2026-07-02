@@ -18,6 +18,7 @@ import jakarta.persistence.InheritanceType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import kreyj.konfplan.util.StringHelper;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -40,9 +41,9 @@ import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
 @UserDefinition
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "role", visible = true)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = Admin.class, name = "ADMIN"),
-        @JsonSubTypes.Type(value = Referent.class, name = "REFERENT"),
-        @JsonSubTypes.Type(value = Teilnehmer.class, name = "TEILNEHMER")
+    @JsonSubTypes.Type(value = Admin.class, name = "ADMIN"),
+    @JsonSubTypes.Type(value = Referent.class, name = "REFERENT"),
+    @JsonSubTypes.Type(value = Teilnehmer.class, name = "TEILNEHMER")
 })
 public abstract class Nutzer extends VersionedEntity {
     @NaturalId(mutable = true)
@@ -88,16 +89,18 @@ public abstract class Nutzer extends VersionedEntity {
 
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
-            name = "Nutzer_Veranstaltung",
-            joinColumns = @JoinColumn(name = "nutzer_id"),
-            inverseJoinColumns = @JoinColumn(name = "veranstaltung_id")
+        name = "Nutzer_Veranstaltung",
+        joinColumns = @JoinColumn(name = "nutzer_id"),
+        inverseJoinColumns = @JoinColumn(name = "veranstaltung_id")
     )
     @JsonIgnoreProperties({"nutzer", "gebaeude", "slots"})
     private Set<Veranstaltung> veranstaltungen = new HashSet<>();
 
+
     public Set<Veranstaltung> getVeranstaltungen() {
         return Collections.unmodifiableSet(veranstaltungen);
     }
+
 
     public void addVeranstaltung(Veranstaltung v) {
         if (null == v) {
@@ -117,6 +120,7 @@ public abstract class Nutzer extends VersionedEntity {
             nv.persist();
         }
     }
+
 
     public void removeVeranstaltung(Veranstaltung v) {
         if (null == v) {
@@ -140,6 +144,7 @@ public abstract class Nutzer extends VersionedEntity {
         return NutzerVerfuegbarkeit.find("nutzerId = ?1 and veranstaltungId = ?2", getId(), veranstaltung.getId()).firstResult();
     }
 
+
     public void updateVerfuegbarkeit(Slot slot, Veranstaltung veranstaltung, boolean verfuegbar) {
         updateVerfuegbarkeit(slot, veranstaltung, verfuegbar, false);
     }
@@ -157,7 +162,7 @@ public abstract class Nutzer extends VersionedEntity {
                 nv.persist();
             } else {
                 throw new IllegalStateException("Missing NutzerVerfuegbarkeit für " + this.getEmail()
-                        + " in Veranstaltung '" + veranstaltung.getName() + "'");
+                    + " in Veranstaltung '" + veranstaltung.getName() + "'");
             }
         }
 
@@ -168,6 +173,11 @@ public abstract class Nutzer extends VersionedEntity {
         }
 
         nv.persist();
+    }
+
+
+    public String getFullName() {
+        return StringHelper.fullname(firstName, lastName);
     }
 
 

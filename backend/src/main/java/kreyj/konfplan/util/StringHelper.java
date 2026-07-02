@@ -1,5 +1,7 @@
 package kreyj.konfplan.util;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,6 +39,21 @@ public final class StringHelper {
 
     private StringHelper() {
         // never instantiate
+    }
+
+
+    public static String fullname(String firstName, String lastName) {
+        if (StringUtils.isBlank(firstName)) {
+            if (StringUtils.isBlank(lastName)) {
+                return "NONAME";
+            } else {
+                return lastName;
+            }
+        } else if (StringUtils.isBlank(lastName)) {
+            return firstName;
+        } else {
+            return lastName + ", " + firstName;
+        }
     }
 
 

@@ -220,18 +220,17 @@ public class DashboardService {
             List<String> namen = new ArrayList<>();
             for (TeilnehmerDto tn : dd.teilnehmer.values()) {
                 if (tn.gruppen.contains(pflichtGruppe)) {
-                    namen.add(tn.fullname());
+                    namen.add(tn.getFullname());
                     verplanteTnProSlot.get(pflSlotId).add(tn.id);
                 }
             }
 
-            dd.tnNamen = StringHelper.sortNames(namen);
-            dd.tnAnzahl = namen.size();
+            namen = StringHelper.sortNames(namen);
 
             NutzerDto ref = dd.referenten.get(pv.referentId);
             String key = pflSlotId + "_" + pflRaumId;
             dd.belegungDetails.put(key,
-                new BelegungDetail(pv.titel, ref.fullName(), ref.organisation, true,
+                new BelegungDetail(pv.titel, ref.getFullname(), ref.organisation, true,
                     namen, namen.size()));
         }
 
@@ -263,7 +262,7 @@ public class DashboardService {
                         NutzerDto ref = dd.referenten.get(wv.referentId);
                         wvNamen = StringHelper.sortNames(wvNamen);
                         dd.belegungDetails.put(key,
-                            new BelegungDetail(wv.titel, ref.fullName(), ref.organisation, false,
+                            new BelegungDetail(wv.titel, ref.getFullname(), ref.organisation, false,
                                 wvNamen, wvNamen.size()));
                     }
                 }
@@ -326,8 +325,8 @@ public class DashboardService {
             Map<Long, Integer> wvPrios = prioService.getVortragPrioritaeten(tnOid, dd.veranstaltung.id);
             Map<Long, TeilnehmerSlotBelegung> tnSlotsBelegungen = new LinkedHashMap<>();
 
-            for (int slotIdx = 0; slotIdx < dd.mzSlotOids.length; slotIdx++) {
-                long slotOid = dd.mzSlotOids[slotIdx];
+            for (int slotIdx = 1; slotIdx <= dd.mzSlotOids.length; slotIdx++) {
+                long slotOid = dd.mzSlotOids[slotIdx - 1];
                 SlotDto slot = dd.slots.get(slotOid);
                 TeilnehmerSlotBelegung belegung = new TeilnehmerSlotBelegung("frei", null, "frei");
 

@@ -23,6 +23,7 @@ import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.Wahlvortrag;
+import kreyj.konfplan.util.StringHelper;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.NonNull;
@@ -137,7 +138,7 @@ public class PlanService {
 
                 if (eintrag != null) {
                     List<String> tnNamen = eintrag.teilnehmer != null
-                        ? eintrag.teilnehmer.stream().map(TeilnehmerDto::fullname).toList()
+                        ? eintrag.teilnehmer.stream().map(TeilnehmerDto::getFullname).toList()
                         : new ArrayList<>();
 
                     detaillierterPlan.add(new RaumBelegungUebersicht(
@@ -429,7 +430,7 @@ public class PlanService {
                     slot.getId(),
                     slot.getSlotZeit(),
                     truncTo(pv.getTitel()),
-                    pv.getReferent().getFirstName() + " " + pv.getReferent().getLastName(),
+                    pv.getReferent().getFullName(),
                     "PFLICHT",
                     teilnehmerDtos);
                 raumplan.computeIfAbsent(raum.getId(), k -> new HashMap<>()).put(slot.getId(), eintrag);
@@ -469,7 +470,7 @@ public class PlanService {
                             slot.getId(),
                             slot.getSlotZeit(),
                             vortrag.getTitel(),
-                            vortrag.getReferent().getFirstName() + " " + vortrag.getReferent().getLastName(),
+                            vortrag.getReferent().getFullName(),
                             "WAHL",
                             zugewieseneTeilnehmer);
                         raumplan.computeIfAbsent(raum.getId(), k -> new HashMap<>()).put(slot.getId(), eintrag);

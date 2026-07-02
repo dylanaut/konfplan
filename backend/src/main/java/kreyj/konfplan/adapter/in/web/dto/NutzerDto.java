@@ -9,7 +9,6 @@ import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.util.StringHelper;
 import lombok.NoArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Set;
@@ -36,6 +35,7 @@ public class NutzerDto extends AbstractVersionedDto {
     public List<String> gruppen;
     public List<VortragPrioDto> prioritaeten;
 
+
     public NutzerDto(String role, String email, String firstName, String lastName, boolean active) {
         this.email = email;
         this.firstName = firstName;
@@ -44,9 +44,11 @@ public class NutzerDto extends AbstractVersionedDto {
         this.isActive = active;
     }
 
+
     public static NutzerDto teilnehmer(String email, String firstName, String lastName) {
         return new NutzerDto("TEILNEHMER", email, firstName, lastName, true);
     }
+
 
     public static NutzerDto teilnehmer(String email, String firstName, String lastName,
                                        List<String> gruppen, List<VortragPrioDto> prioritaeten) {
@@ -58,9 +60,11 @@ public class NutzerDto extends AbstractVersionedDto {
         return teilnehmer;
     }
 
+
     public static NutzerDto referent(String email, String firstName, String lastName) {
         return new NutzerDto("REFERENT", email, firstName, lastName, true);
     }
+
 
     public static NutzerDto referent(String email, String firstName, String lastName,
                                      String biography, String jobRole, String organisation, String slogan) {
@@ -75,23 +79,14 @@ public class NutzerDto extends AbstractVersionedDto {
     }
 
 
-    public String fullName() {
-        if (StringUtils.isBlank(firstName)) {
-            if (StringUtils.isBlank(lastName)) {
-                return "NONAME";
-            } else {
-                return lastName;
-            }
-        } else if (StringUtils.isBlank(lastName)) {
-            return firstName;
-        } else {
-            return firstName + " " + lastName;
-        }
+    public String getFullname() {
+        return StringHelper.fullname(firstName, lastName);
     }
 
     // -------------------------------------------------------------------
     // Mapper methods
     // -------------------------------------------------------------------
+
 
     public static NutzerDto from(Nutzer u) {
         NutzerDto dto = new NutzerDto();

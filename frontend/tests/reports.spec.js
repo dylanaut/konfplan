@@ -117,4 +117,54 @@ test.describe('Report-Generierung', () => {
     await expect(page).toHaveScreenshot('freie-slots-teilnehmer.png');
   });
 
+  test('sollte die Belegungen im Stundenplan korrekt anzeigen und die Teilnehmerliste per Klick öffnen', async ({ page }) => {
+    const veranstaltungId = 1;
+    // Absolutes Glob, da die Axios-Basis-URL (http://localhost:9000) von der
+    // Playwright-baseURL (Vite-Dev-Server) abweicht.
+    const apiUrl = `**/api/reports/${veranstaltungId}/stundenplan-data`;
+    const routeUrl = `/admin/veranstaltung/${veranstaltungId}/stundenplan`;
+
+    // Die Route ist ADMIN-geschützt: Login-Status vor dem Laden der Seite simulieren.
+    await page.addInitScript(() => {
+      localStorage.setItem('token', 'test-token');
+      localStorage.setItem('role', 'ADMIN');
+    });
+
+    await page.route(apiUrl, async route => {
+      const json = (await import('./fixtures/stundenplan.json', { with: { type: 'json' } })).default;
+      await route.fulfill({ json });
+    });
+
+    await page.goto(routeUrl);
+    await expect(page.locator('.container-fluid h1')).toContainText('Testtag 2026');
+
+    // Raum A: Wahlvortrag mit 2 Teilnehmern (< 4 -> roter Badge) und ohne Pflicht-Kennzeichnung.
+    const raumA = page.locator('.card-vortrag', { hasText: 'Robotik Workshop' });
+    await expect(raumA.locator('.badge.bg-danger')).toHaveText('2 TN');
+    await expect(raumA.locator('.badge.bg-primary')).toHaveCount(0);
+
+    // Raum B: Pflichtvortrag mit 4 Teilnehmern (>= 4 -> grüner Badge) und Pflicht-Kennzeichnung.
+    const raumB = page.locator('.card-vortrag', { hasText: 'Berufsorientierung' });
+    await expect(raumB.locator('.badge.bg-success')).toHaveText('4 TN');
+    await expect(raumB.locator('.badge.bg-primary')).toHaveText('Pflicht');
+
+    // Aufsicht: Teilnehmer ohne Programm im Slot.
+    await expect(page.getByText('Aufsicht (1):')).toBeVisible();
+    await expect(page.locator('.alert-warning')).toContainText('Erik Sample');
+
+    // Autom. Auffüllung Statistik.
+    await expect(page.getByText('Autom. Auffüllung')).toBeVisible();
+    await expect(page.locator('h3.mb-0')).toHaveText('1');
+
+    // Klick auf den TN-Badge von Raum A öffnet die Teilnehmerliste als Popup.
+    await raumA.locator('.badge', { hasText: '2 TN' }).click();
+    const popup = page.locator('.tn-popup-card');
+    await expect(popup.locator('.card-header')).toContainText('Robotik Workshop');
+    await expect(popup.locator('.list-group-item')).toHaveText(['Anna Muster', 'Ben Beispiel']);
+
+    // Popup per Schließen-Button wieder schließen.
+    await popup.locator('.btn-close').click();
+    await expect(popup).toHaveCount(0);
+  });
+
 });

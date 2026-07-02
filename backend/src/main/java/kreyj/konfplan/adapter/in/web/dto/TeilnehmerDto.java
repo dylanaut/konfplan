@@ -2,9 +2,9 @@ package kreyj.konfplan.adapter.in.web.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.util.StringHelper;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -19,23 +19,13 @@ public class TeilnehmerDto {
     public Set<String> gruppen;
 
 
-    public String fullname() {
-        if (StringUtils.isBlank(firstName)) {
-            if (StringUtils.isBlank(lastName)) {
-                return "NONAME";
-            } else {
-                return lastName;
-            }
-        } else if (StringUtils.isBlank(lastName)) {
-            return firstName;
-        } else {
-            return firstName + " " + lastName;
-        }
+    public String getFullname() {
+        return StringHelper.fullname(firstName, lastName);
     }
 
 
     public String gName() {
-        return String.format("%s %s", fullname(),
+        return String.format("%s (%s)", getFullname(),
             gruppen.stream().sorted().collect(Collectors.joining(",")));
     }
 
@@ -46,7 +36,7 @@ public class TeilnehmerDto {
 
     @Override
     public String toString() {
-        return fullname();
+        return getFullname();
     }
 
 

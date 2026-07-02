@@ -219,7 +219,7 @@ public class PlanErstellungService {
                 Slot pflichtslot = pv.getPflichtslot();
                 if (tn.gehoertZuGruppe(pv.getPflichtgruppe())
                     && nv.getVerfuegbareSlotIds().contains(pflichtslot.getId())) {
-                    String tnName = StringUtils.strip(tn.getFirstName() + " " + tn.getLastName());
+                    String tnName = StringUtils.strip(tn.getFullName());
                     if (StringUtils.isBlank(tnName)) {
                         tnName = tn.getEmail();
                     }

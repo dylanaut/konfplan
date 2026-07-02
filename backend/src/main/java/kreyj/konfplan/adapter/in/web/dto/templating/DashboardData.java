@@ -46,7 +46,6 @@ public class DashboardData {
     public Map<Long, RaumDto> raeume;
     public Map<Long, NutzerDto> referenten;
 
-    public List<String> tnNamen;
     public int tnAnzahl;
 
     private Map<Long, Set<Long>> tnVerfuegbar;
@@ -80,6 +79,9 @@ public class DashboardData {
         this.mzWahlvortragOids = mzWahlvortragOids;
         this.mzSlotOids = mzSlotOids;
         this.mzRaumOids = mzRaumOids;
+
+        this.tnAnzahl = mzTeilnehmerOids.length;
+
     }
 
     // -------------------------------------------------------------------
