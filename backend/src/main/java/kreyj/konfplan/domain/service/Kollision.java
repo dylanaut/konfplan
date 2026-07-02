@@ -14,7 +14,9 @@ public class Kollision {
         /** Teilnehmer ist trotz Pflichtvortrag noch für dessen Slot verfügbar. */
         TEILNEHMER_VERFUEGBARKEIT,
         /** Raum eines Pflichtvortrags steht im Pflichtslot noch für Wahlvorträge zur Verfügung. */
-        RAUM_SLOT
+        RAUM_SLOT,
+        /** Referent ist trotz Pflichtvortrag noch für dessen Slot verfügbar. */
+        REFERENT_VERFUEGBARKEIT
     }
 
     private final Typ typ;

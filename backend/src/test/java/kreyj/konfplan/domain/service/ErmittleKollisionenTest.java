@@ -33,6 +33,7 @@ public class ErmittleKollisionenTest extends DatabaseCleaner {
     private Long slot1_id;
     private Long tnA_id;
     private Long raum1_id;
+    private Long referent_id;
 
     @BeforeEach
     @Transactional
@@ -71,6 +72,7 @@ public class ErmittleKollisionenTest extends DatabaseCleaner {
         Referent referent = new Referent();
         referent.setEmail("referent@test.com");
         referent.persistAndFlush();
+        referent_id = referent.getId();
 
         // Erzeugt die initialen Verfügbarkeiten für Teilnehmer und Raum
         veranstaltung.addNutzer(tnA);
@@ -126,6 +128,24 @@ public class ErmittleKollisionenTest extends DatabaseCleaner {
         assertThat(kollision.getNachricht())
                 .contains("Raum 1")
                 .contains("Wahlvorträge");
+    }
+
+    @Test
+    @Transactional
+    void referentVerfuegbarkeitImPflichtslot_wirdAlsKollisionErkannt() {
+        // Inkonsistenz herstellen: Slot 1 wieder als verfügbar für den Referenten markieren
+        NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(referent_id, veranstaltung_id));
+        nv.addSlot(slot1_id);
+
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltung_id);
+        List<Kollision> kollisionen = service.pruefeKollisionen(veranstaltung);
+
+        assertThat(kollisionen).hasSize(1);
+        Kollision kollision = kollisionen.get(0);
+        assertThat(kollision.getTyp()).isEqualTo(Kollision.Typ.REFERENT_VERFUEGBARKEIT);
+        assertThat(kollision.getNachricht())
+                .contains("Verfügbarkeits-Kollision")
+                .contains("PV");
     }
 
     @Test

@@ -19,6 +19,7 @@ import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
+import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -250,6 +251,19 @@ public class PlanErstellungService {
             }
         }
 
+        // Referenten-Verfügbarkeit für ihren eigenen Pflichtvortrag prüfen.
+        for (Pflichtvortrag pv : pflichtvortraege) {
+            Referent referent = pv.getReferent();
+            Slot pflichtslot = pv.getPflichtslot();
+            NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(referent, veranstaltung));
+            if (null != nv && nv.getVerfuegbareSlotIds().contains(pflichtslot.getId())) {
+                kollisionen.add(new Kollision(Kollision.Typ.REFERENT_VERFUEGBARKEIT,
+                    "Verfügbarkeits-Kollision: Referent " + referent.getFullName() + " hat Pflichtvortrag '"
+                        + pv.getTitel() + "' in Slot " + pflichtslot.getDescription()
+                        + ", ist dafür aber weiterhin als verfügbar markiert. Bitte seine 'verfuegbare_slots' anpassen."));
+            }
+        }
+
         return kollisionen;
     }
 
@@ -336,6 +350,7 @@ public class PlanErstellungService {
         appendTnPrios(teilnehmer, wahlvortraege, sb);
         appendTnVerfuegbarkeiten(veranstaltung, teilnehmer, slots, sb);
         appendRaumVerfuegbarkeiten(veranstaltung, raeume, slots, sb);
+        appendReferentVerfuegbarkeiten(wahlvortraege, veranstaltung, slots, sb);
         appendEntityOids(teilnehmer, wahlvortraege, slots, raeume, sb);
 
         return sb.toString();
@@ -523,6 +538,41 @@ public class PlanErstellungService {
                 sb.append("];");
             }
             sb.append(String.format(" %% %d: %s", raum.getId(), raum.getName()));
+        }
+        sb.append("\n\n");
+    }
+
+
+    private static void appendReferentVerfuegbarkeiten(List<Wahlvortrag> wahlvortraege, Veranstaltung veranstaltung,
+                                                        Set<Slot> slots, StringBuilder sb) {
+        sb.append("%In welchen Slots der Referent eines Wahlvortrags verfügbar ist (Pflichtvortrag-Kollisionen):\n");
+        // Reihenfolge MUSS mit appendWahlvortraege's refMap übereinstimmen: dieselbe 'wahlvortraege'-Liste,
+        // distinct() auf geordnetem Stream erhält First-Encounter-Reihenfolge -> identische 1-basierte Indizes.
+        List<Referent> referenten = wahlvortraege.stream().map(Wahlvortrag::getReferent).distinct().toList();
+        int refSize = referenten.size();
+        int slotSize = slots.size();
+        Map<Long, NutzerVerfuegbarkeit> nvMap =
+            NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>list("veranstaltungId = ?1", veranstaltung.getId())
+                .stream().collect(toMap(NutzerVerfuegbarkeit::getNutzerId, Function.identity()));
+
+        int refIdx = 0;
+        sb.append("referent_verfuegbar = [| %% Slot 1..").append(slots.size());
+        for (Referent referent : referenten) {
+            sb.append("\n");
+            Set<Long> verfSlotIds = nvMap.get(referent.getId()).getVerfuegbareSlotIds();
+            int sIdx = 0;
+            for (Slot s : slots) {
+                sb.append(verfSlotIds.contains(s.getId()) ? "true" : "false");
+                if (++sIdx < slotSize) {
+                    sb.append(",");
+                } else {
+                    sb.append(" |");
+                }
+            }
+            if (++refIdx == refSize) {
+                sb.append("];");
+            }
+            sb.append(String.format(" %% %d: %s", refIdx, referent.getFullName()));
         }
         sb.append("\n\n");
     }

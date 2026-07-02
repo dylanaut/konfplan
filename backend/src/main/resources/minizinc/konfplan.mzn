@@ -37,6 +37,8 @@ array[1..n_raeume] of int: raum_oids;
 array[1..n_raeume] of int: r_kapazitaeten = [raeume[r].kapazitaet | r in 1..n_raeume];
 array[1..n_wahlvortraege] of int: w_referenten = [wahlvortraege[w].referent_id | w in 1..n_wahlvortraege];
 
+array[1..max(w_referenten), 1..n_slots] of bool: referent_verfuegbar;
+
 % --- ENTSCHEIDUNGSVARIABLEN ---
 array[1..n_wahlvortraege, 1..max_instanzen] of var 0..n_slots: instanz_slot;
 array[1..n_wahlvortraege, 1..max_instanzen] of var 0..n_raeume: instanz_raum;
@@ -61,6 +63,12 @@ constraint forall(w in 1..n_wahlvortraege, i in 1..max_instanzen) (
 constraint forall(w in 1..n_wahlvortraege, i in 1..max_instanzen) (
     if instanz_raum[w, i] > 0 /\ instanz_slot[w, i] > 0 then
         raum_belegbar[instanz_raum[w, i], instanz_slot[w, i]]
+    else true endif
+);
+
+constraint forall(w in 1..n_wahlvortraege, i in 1..max_instanzen) (
+    if instanz_slot[w, i] > 0 then
+        referent_verfuegbar[w_referenten[w], instanz_slot[w, i]]
     else true endif
 );
 

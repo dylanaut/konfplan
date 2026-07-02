@@ -33,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 import static java.util.stream.Collectors.joining;
@@ -245,6 +246,97 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
                 .persist();
 
         return veranstaltung;
+    }
+
+    @Transactional
+    public Veranstaltung referentDoppelbuchungSetup() {
+        // Ein Referent hält einen Pflichtvortrag in Slot 3 UND ist Referent eines Wahlvortrags,
+        // der ohne den Fix ebenfalls in Slot 3 landen könnte. Eine separate, nicht überlappende
+        // Teilnehmergruppe für den Pflichtvortrag verhindert eine Vermischung mit der
+        // Teilnehmer-Verfügbarkeits-Constraint.
+        Veranstaltung veranstaltung = new Veranstaltung();
+        veranstaltung.setName("Referenten-Doppelbuchung-Testlauf");
+        veranstaltung.setBeginntAm(LocalDateTime.now());
+        veranstaltung.addGebaeude(Gebaeude.findById(schule.getId()));
+        veranstaltung.persist();
+
+        Slot slot1 = new Slot("Slot 1", LocalDateTime.now().plusHours(1),
+                LocalDateTime.now().plusHours(2), veranstaltung);
+        slot1.persist();
+        veranstaltung.addSlot(slot1);
+
+        Slot slot2 = new Slot("Slot 2", LocalDateTime.now().plusHours(2),
+                LocalDateTime.now().plusHours(3), veranstaltung);
+        slot2.persist();
+        veranstaltung.addSlot(slot2);
+
+        Slot slot3 = new Slot("Slot 3", LocalDateTime.now().plusHours(3),
+                LocalDateTime.now().plusHours(4), veranstaltung);
+        slot3.persist();
+        veranstaltung.addSlot(slot3);
+
+        Referent referent = new Referent();
+        referent.setEmail("referent@test.com");
+        referent.setFirstName("Max");
+        referent.setLastName("Mustermann");
+        referent.persist();
+        referent.addVeranstaltung(veranstaltung);
+
+        Wahlvortrag wahlvortrag1 = new Wahlvortrag();
+        wahlvortrag1.setTitel("Wahlvortrag 1");
+        wahlvortrag1.setReferent(referent);
+        wahlvortrag1.setVeranstaltung(veranstaltung);
+        wahlvortrag1.persist();
+
+        Teilnehmer teilnehmerPflicht = new Teilnehmer();
+        teilnehmerPflicht.setEmail("tnP@test.com");
+        teilnehmerPflicht.setFirstName("Petra");
+        teilnehmerPflicht.setLastName("Pflicht");
+        teilnehmerPflicht.addGruppe("P");
+        teilnehmerPflicht.persist();
+        teilnehmerPflicht.addVeranstaltung(veranstaltung);
+
+        Teilnehmer teilnehmerWahl = new Teilnehmer();
+        teilnehmerWahl.setEmail("tnW@test.com");
+        teilnehmerWahl.setFirstName("Wanda");
+        teilnehmerWahl.setLastName("Wahl");
+        teilnehmerWahl.persist();
+        teilnehmerWahl.addVeranstaltung(veranstaltung);
+
+        new Prioritaet(teilnehmerWahl, wahlvortrag1, 1)
+                .persist();
+
+        // Pflichtvortrag NACH addVeranstaltung anlegen, damit initReferentVerfuegbarkeit() greift.
+        Pflichtvortrag.create("Pflichtvortrag", "Inhalt", referent, "P",
+                schule.getRaeume().iterator().next(), slot3, veranstaltung);
+
+        return veranstaltung;
+    }
+
+    @Test
+    public void testPlanerstellung_referentNichtDoppeltGebucht() throws Exception {
+        Veranstaltung veranstaltung = referentDoppelbuchungSetup();
+        Slot pflichtslot = veranstaltung.getSlots().stream()
+                .sorted(Comparator.comparing(Slot::getStartTime))
+                .toList()
+                .get(2); // Slot 3 (per Setup mit dem Pflichtvortrag belegt)
+
+        SolverConfig config = new SolverConfig(120, 4, 1);
+        planErstellungService.erstellePlan(veranstaltung.getId(), config, "username");
+
+        List<RaumBelegungUebersicht> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
+        LOG.info("$$$$$$$ belegungsplan (Referenten-Doppelbuchung): " + belegungsplan);
+
+        List<RaumBelegungUebersicht> wahlvortrag1Eintraege = belegungsplan.stream()
+                .filter(b -> "Wahlvortrag 1".equals(b.vortragTitel))
+                .toList();
+
+        assertThat(wahlvortrag1Eintraege)
+                .describedAs("Wahlvortrag 1 sollte trotz Referenten-Bindung an Slot 3 irgendwo eingeplant werden")
+                .isNotEmpty();
+        assertThat(wahlvortrag1Eintraege)
+                .describedAs("Wahlvortrag 1 darf niemals im Pflicht-Slot des Referenten (Slot 3) liegen")
+                .noneMatch(b -> pflichtslot.getId().equals(b.slotId));
     }
 
     @Test

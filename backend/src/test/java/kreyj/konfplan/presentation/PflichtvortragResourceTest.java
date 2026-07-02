@@ -45,7 +45,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
     Gebaeude gebaeude;
     Raum raum1, raum2;
     Slot slot1, slot2;
-    Referent referent;
+    Referent referent, referent2;
     Teilnehmer teilnehmer1, teilnehmer2, teilnehmer3;
 
 
@@ -107,6 +107,14 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         referent.persist();
         referent.addVeranstaltung(veranstaltung);
 
+        referent2 = new Referent();
+        referent2.setEmail("ref2@example.com");
+        referent2.setFirstName("Ref2");
+        referent2.setLastName("Erent2");
+        referent2.setPasswordHash("hash");
+        referent2.persist();
+        referent2.addVeranstaltung(veranstaltung);
+
         teilnehmer1 = new Teilnehmer();
         teilnehmer1.setEmail("tn1@example.com");
         teilnehmer1.setFirstName("TN1");
@@ -155,6 +163,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         assertThat(isTeilnehmerVerfuegbar(teilnehmer3, slot1, veranstaltung)).isTrue(); // TN3 not in Gruppe A
         assertThat(isRaumVerfuegbar(raum2, slot1, veranstaltung)).isFalse();
         assertThat(isRaumVerfuegbar(raum1, slot1, veranstaltung)).isTrue(); // Raum 1 not used
+        assertThat(isReferentVerfuegbar(referent, slot1, veranstaltung)).isFalse();
     }
 
 
@@ -272,6 +281,35 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
 
 
     @Test
+    void testCreatePflichtvortragFailsIfReferentAlreadyBookedByAnotherPflichtvortrag() {
+        VortragDto pv1 = pvDto("PV1", referent, "Gruppe A", raum1, slot1, veranstaltung);
+
+        given().contentType(MediaType.APPLICATION_JSON)
+                .body(pv1)
+                .when()
+                .post("{vid}/vortraege", veranstaltung.getId())
+                .then()
+                .statusCode(CREATED.getStatusCode());
+
+        // Attempt to create a second PV for the SAME referent and slot, but different room/group.
+        VortragDto pv2 = pvDto("PV2", referent, "Gruppe B", raum2, slot1, veranstaltung);
+
+        given().contentType(MediaType.APPLICATION_JSON)
+                .body(pv2)
+                .when()
+                .post("{vid}/vortraege", veranstaltung.getId())
+                .then()
+                .log().all()
+                .statusCode(BAD_REQUEST.getStatusCode())
+                .body("error", startsWith("Referent '" + referent.getFullName() + "' ist im Slot 'Slot 1' nicht verfügbar."));
+
+        assertThat(Pflichtvortrag.count())
+                .describedAs("nur PV1 erzeugt")
+                .isEqualTo(1L);
+    }
+
+
+    @Test
     void testUpdatePflichtvortragChangeSlotSuccess() {
         // Create initial PV
         VortragDto pvDto = pvDto("PV Initial", referent, "Gruppe A", raum2, slot1, veranstaltung);
@@ -288,8 +326,10 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         // Verify initial state
         assertThat(isTeilnehmerVerfuegbar(teilnehmer1, slot1, veranstaltung)).isFalse();
         assertThat(isRaumVerfuegbar(raum2, slot1, veranstaltung)).isFalse();
+        assertThat(isReferentVerfuegbar(referent, slot1, veranstaltung)).isFalse();
         assertThat(isTeilnehmerVerfuegbar(teilnehmer1, slot2, veranstaltung)).isTrue();
         assertThat(isRaumVerfuegbar(raum2, slot2, veranstaltung)).isTrue();
+        assertThat(isReferentVerfuegbar(referent, slot2, veranstaltung)).isTrue();
 
         // Update PV to change slot1 to slot2, same room
         VortragDto updatedPvDto = pvDto("PV Updated Slot", referent, "Gruppe A", raum2, slot2, veranstaltung);
@@ -307,8 +347,10 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         // Verify new state
         assertThat(isTeilnehmerVerfuegbar(teilnehmer1, slot1, veranstaltung)).isTrue(); // Old slot freed
         assertThat(isRaumVerfuegbar(raum2, slot1, veranstaltung)).isTrue(); // Old room-slot freed
+        assertThat(isReferentVerfuegbar(referent, slot1, veranstaltung)).isTrue(); // Old referent-slot freed
         assertThat(isTeilnehmerVerfuegbar(teilnehmer1, slot2, veranstaltung)).isFalse(); // New slot occupied
         assertThat(isRaumVerfuegbar(raum2, slot2, veranstaltung)).isFalse(); // New room-slot occupied
+        assertThat(isReferentVerfuegbar(referent, slot2, veranstaltung)).isFalse(); // New referent-slot occupied
     }
 
 
@@ -448,8 +490,8 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
                         .extract()
                         .as(VortragDto.class);
 
-        // Create PV2 that occupies raum2, slot1
-        VortragDto pv2 = pvDto("PV2", referent, "Gruppe B", raum2, slot1, veranstaltung);
+        // Create PV2 that occupies raum2, slot1 (anderer Referent, um keine Referenten-Kollision auszulösen)
+        VortragDto pv2 = pvDto("PV2", referent2, "Gruppe B", raum2, slot1, veranstaltung);
         given().contentType(MediaType.APPLICATION_JSON)
                 .body(pv2)
                 .when()
@@ -582,8 +624,8 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
                         .extract()
                         .as(VortragDto.class);
 
-        // Create PV2 for Gruppe B, Slot 1
-        VortragDto pv2 = pvDto("PV2", referent, "Gruppe B", raum1, slot1, veranstaltung);
+        // Create PV2 for Gruppe B, Slot 1 (anderer Referent, um keine Referenten-Kollision auszulösen)
+        VortragDto pv2 = pvDto("PV2", referent2, "Gruppe B", raum1, slot1, veranstaltung);
         given().contentType(MediaType.APPLICATION_JSON)
                 .body(pv2)
                 .when()
@@ -632,6 +674,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         // Verify initial state
         assertThat(isTeilnehmerVerfuegbar(teilnehmer1, slot1, veranstaltung)).isFalse();
         assertThat(isRaumVerfuegbar(raum2, slot1, veranstaltung)).isFalse();
+        assertThat(isReferentVerfuegbar(referent, slot1, veranstaltung)).isFalse();
 
         given().contentType(MediaType.APPLICATION_JSON)
                 .when()
@@ -643,6 +686,8 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
                 .describedAs("Raum2 ist für Slot1 wieder verfügbar").isTrue(); // Freed
         assertThat(isTeilnehmerVerfuegbar(teilnehmer1, slot1, veranstaltung))
                 .describedAs("Teilnehmer1 ist für Slot1 wieder verfügbar").isTrue(); // Freed
+        assertThat(isReferentVerfuegbar(referent, slot1, veranstaltung))
+                .describedAs("Referent ist für Slot1 wieder verfügbar").isTrue(); // Freed
 
         assertThat(Pflichtvortrag.<Pflichtvortrag>findById(createdId)).isNull(); // PV deleted
     }

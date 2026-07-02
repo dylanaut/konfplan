@@ -58,6 +58,7 @@ public class Pflichtvortrag extends Vortrag {
 
         pv.initNutzerVerfuegbarkeitFuerGruppe();
         pv.initRaumVerfuegbarkeiten();
+        pv.initReferentVerfuegbarkeit();
         pv.persist();
 
         return pv;
@@ -177,6 +178,18 @@ public class Pflichtvortrag extends Vortrag {
             }
         }
 
+        // Restore/move availability for the referent
+        NutzerVerfuegbarkeit nvReferent = referent.getVerfuegbarkeit(veranstaltung);
+        if (null != nvReferent) {
+            if (nvReferent.getVerfuegbareSlotIds().contains(neuerSlot.getId())) {
+                nvReferent.removeSlot(neuerSlot);
+                nvReferent.addSlot(pflichtslot);
+            } else {
+                throw new UpdateVortragException("Neuer Slot '%s' ist für Referent '%s' nicht verfügbar. (%s)"
+                        .formatted(neuerSlot.getDescription(), referent.getFullName(), veranstaltung.getName()));
+            }
+        }
+
         List<Teilnehmer> teilnehmerDerGruppe = Teilnehmer.getGruppenTeilnehmer(pflichtgruppe, veranstaltung);
 
         for (Teilnehmer teilnehmer : teilnehmerDerGruppe) {
@@ -222,6 +235,12 @@ public class Pflichtvortrag extends Vortrag {
                 rv.addSlot(pflichtslot);
             }
         }
+        if (referent != null) {
+            NutzerVerfuegbarkeit nvReferent = referent.getVerfuegbarkeit(veranstaltung);
+            if (null != nvReferent) {
+                nvReferent.addSlot(pflichtslot);
+            }
+        }
         if (pflichtgruppe != null && !pflichtgruppe.isEmpty()) {
             List<Teilnehmer> teilnehmerDerGruppe = Teilnehmer.getGruppenTeilnehmer(pflichtgruppe, veranstaltung);
             for (Teilnehmer teilnehmer : teilnehmerDerGruppe) {
@@ -260,6 +279,24 @@ public class Pflichtvortrag extends Vortrag {
                     .collect(Collectors.toSet());
             new RaumVerfuegbarkeit(pflichtraum, veranstaltung, verfuegbareIdsOhnePflicht).persistAndFlush();
         }
+    }
+
+
+    /**
+     * Set unavailability for the referent's own NutzerVerfuegbarkeit in the pflichtslot.
+     */
+    private void initReferentVerfuegbarkeit() {
+        NutzerVerfuegbarkeit nv = referent.getVerfuegbarkeit(veranstaltung);
+        if (null != nv) {
+            if (nv.getVerfuegbareSlotIds().contains(pflichtslot.getId())) {
+                nv.removeSlot(pflichtslot);
+            } else {
+                throw new UpdateVortragException("Referent '%s' ist im Slot '%s' nicht verfügbar. (%s)"
+                        .formatted(referent.getFullName(), pflichtslot.getDescription(), veranstaltung.getName()));
+            }
+        }
+        // Keine Synthese einer fehlenden NutzerVerfuegbarkeit (anders als initRaumVerfuegbarkeiten) -
+        // verlässt sich auf Nutzer.addVeranstaltung(), das sie für Referenten bereits anlegt.
     }
 
 

@@ -93,4 +93,22 @@ public abstract class DatabaseCleaner {
 
         return resultArr[0];
     }
+
+
+    public static boolean isReferentVerfuegbar(Referent referent, Slot slot, Veranstaltung veranstaltung) {
+        return isReferentVerfuegbar(referent.getId(), slot.getId(), veranstaltung.getId());
+    }
+
+
+    public static boolean isReferentVerfuegbar(Long referentId, Long slotId, Long veranstaltungId) {
+        final boolean[] resultArr = {false};
+
+        QuarkusTransaction.requiringNew().run(() -> {
+            NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(referentId, veranstaltungId));
+
+            resultArr[0] = nv.isVerfuegbar(slotId);
+        });
+
+        return resultArr[0];
+    }
 }
