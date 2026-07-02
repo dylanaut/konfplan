@@ -115,7 +115,7 @@ views/*.vue           # Top-Level-Seiten-Komponenten geroutet von Vue Router
 - **Berufsfeld** - Enum zur Kategorisierung von Vorträgen.
 - **EventSlot** – Zeitfenster innerhalb einer Veranstaltung; mit Überschneidungsprüfung.
 - **Zuweisung** – Ordnet Teilnehmer einem Vortrag + Slot + Raum zu.
-- **Prioritaet** – Präferenz eines Teilnehmers für einen Wahlvortrag (Ranking 1-10).
+- **Prioritaet** – Präferenz eines Teilnehmers für einen Wahlvortrag (Ranking 1-10, 10 = höchste, 0 = keine Präferenz/Hard-Exclude).
 - **Verfuegbarkeit** – Gibt an, ob Nutzer in einem Slot verfügbar ist (Default: true bei Zuweisung).
 - **RaumVerfuegbarkeit** – Modelliert die Verfügbarkeit von Räumen pro Slot inklusive veranstaltungsübergreifender Prüfung.
 - **TeilnehmerDashboardDto** - DTO, das alle Daten für das persönliche Dashboard eines Teilnehmers bündelt.

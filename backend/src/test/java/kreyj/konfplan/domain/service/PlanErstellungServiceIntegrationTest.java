@@ -182,13 +182,13 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         pflichtvortrag.persist();
         veranstaltung.addVortrag(pflichtvortrag);
 
-        // Prioritäten für TN 1
-        new Prioritaet(teilnehmer1, wahlvortrag1, 1)
+        // Prioritäten für TN 1: Wahlvortrag 1 ist die höhere (bessere) Priorität.
+        new Prioritaet(teilnehmer1, wahlvortrag1, 2)
                 .persist();
-        new Prioritaet(teilnehmer1, wahlvortrag2, 2)
+        new Prioritaet(teilnehmer1, wahlvortrag2, 1)
                 .persist();
 
-        // Priorität für TN 2
+        // Priorität für TN 2 (einzige Priorität)
         new Prioritaet(teilnehmer2, wahlvortrag2, 1)
                 .persist();
 
@@ -390,7 +390,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht leer sein.").isNotEmpty();
 
         // Konkrete Zuweisungen prüfen
-        // Teilnehmer 1 sollte Wahlvortrag 1 bekommen (Prio 1)
+        // Teilnehmer 1 sollte Wahlvortrag 1 bekommen (einzige Priorität)
         boolean tn1InWahlvortrag1 = belegungsplan.stream()
                 .anyMatch(b -> "Wahlvortrag 1".equals(b.getVortragTitel()) && b.getTeilnehmerNamen().contains("Pan, Peter"));
         assertThat(tn1InWahlvortrag1).describedAs("Titel ist WV1 und teilnehmer enthalten").isTrue();
@@ -485,12 +485,12 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         assertThat(belegungsplan.isEmpty()).describedAs("Der Belegungsplan darf nicht leer sein.").isFalse();
 
         // Konkrete Zuweisungen prüfen
-        // Teilnehmer 1 sollte Wahlvortrag 1 bekommen (Prio 1)
+        // Teilnehmer 1 sollte Wahlvortrag 1 bekommen (höhere Priorität: 2 vs. 1)
         boolean tn1InWahlvortrag1 = belegungsplan.stream()
                 .anyMatch(b -> "Wahlvortrag 1".equals(b.getVortragTitel()) && b.getTeilnehmerNamen().contains("Pan, Peter"));
         assertThat(tn1InWahlvortrag1).describedAs("Teilnehmer 1 sollte dem Wahlvortrag 1 zugewiesen sein.").isTrue();
 
-        // Teilnehmer 2 sollte Wahlvortrag 2 bekommen (Prio 1)
+        // Teilnehmer 2 sollte Wahlvortrag 2 bekommen (einzige Priorität)
         boolean tn2InWahlvortrag2 = belegungsplan.stream()
                 .anyMatch(b -> "Wahlvortrag 2".equals(b.getVortragTitel()) && b.getTeilnehmerNamen().contains("Darling, Wendy"));
         assertThat(tn2InWahlvortrag2).describedAs("Teilnehmer 2 sollte dem Wahlvortrag 2 zugewiesen sein.").isTrue();

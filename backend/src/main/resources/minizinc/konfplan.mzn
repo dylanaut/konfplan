@@ -115,6 +115,7 @@ constraint forall(p in 1..n_teilnehmer, w in 1..n_wahlvortraege, i in 1..max_ins
     )
 );
 
+% prioritaeten[p, w]: 0 = keine Präferenz (Hard-Exclude), 1 = niedrigste, 10 = höchste Priorität.
 constraint forall(p in 1..n_teilnehmer, w in 1..n_wahlvortraege, i in 1..max_instanzen) (
     (prioritaeten[p, w] = 0) -> (besucht[p, w, i] = false)
 );
@@ -155,18 +156,22 @@ var int: kosten_raumwechsel =
 % PLANERSTELLUNG
 % =============================================================================
 
-var int: kosten_prioritaeten = sum(p in 1..n_teilnehmer, w in 1..n_wahlvortraege, i in 1..max_instanzen) (
-    if besucht[p, w, i] then prioritaeten[p, w] else 100 endif
+% Nutzen aus erfüllten Präferenzen: je höher prioritaeten[p, w] (bis 10), desto besser die Zuteilung.
+var int: nutzen_prioritaeten = sum(p in 1..n_teilnehmer, w in 1..n_wahlvortraege, i in 1..max_instanzen) (
+    if besucht[p, w, i] then prioritaeten[p, w] else 0 endif
 );
 
 var int: anzahl_zuweisungen = sum(p in 1..n_teilnehmer, w in 1..n_wahlvortraege, i in 1..max_instanzen) (
     bool2int(besucht[p, w, i])
 );
 
-solve minimize kosten_prioritaeten - (anzahl_zuweisungen * 10) + kosten_raumwechsel;
+% Gewicht 110 pro Zuweisung entspricht dem früheren Minimierungsmodell (dort: impliziter
+% "Nicht-besucht"-Malus 100 je (p,w,i)-Tripel + expliziter Bonus 10 je Zuweisung), damit eine
+% zusätzliche Zuweisung weiterhin stets schwerer wiegt als jede Präferenz-Differenz (max. 9).
+solve maximize nutzen_prioritaeten + (anzahl_zuweisungen * 110) - kosten_raumwechsel;
 
 % =============================================================================
 % OUTPUT
 % =============================================================================
 
-output ["{ \"instanz_slot\": \(instanz_slot), \"instanz_raum\": \(instanz_raum), \"besucht\": \(besucht), \"kosten\": \(kosten_prioritaeten), \"zuweisungen\": \(anzahl_zuweisungen), \"teilnehmer_oids\": \(teilnehmer_oids), \"wahlvortrag_oids\": \(wahlvortrag_oids), \"slot_oids\": \(slot_oids), \"raum_oids\": \(raum_oids) }"];
+output ["{ \"instanz_slot\": \(instanz_slot), \"instanz_raum\": \(instanz_raum), \"besucht\": \(besucht), \"kosten\": \(nutzen_prioritaeten), \"zuweisungen\": \(anzahl_zuweisungen), \"teilnehmer_oids\": \(teilnehmer_oids), \"wahlvortrag_oids\": \(wahlvortrag_oids), \"slot_oids\": \(slot_oids), \"raum_oids\": \(raum_oids) }"];

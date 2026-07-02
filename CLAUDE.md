@@ -87,7 +87,7 @@ util/                 # Utilities
 - **Berufsfeld** – Enum for categorizing talks.
 - **EventSlot** – Time window within an event; overlap checking enforced.
 - **Zuweisung** – Links a Teilnehmer to a Vortrag + Slot + Raum.
-- **Prioritaet** – Teilnehmer's preference ranking (1–10) for a Wahlvortrag.
+- **Prioritaet** – Teilnehmer's preference ranking (1–10, 10 = highest, 0 = no preference/hard-excluded) for a Wahlvortrag.
 - **Verfuegbarkeit** – Whether a user is available in a slot (default: true when assigned).
 - **RaumVerfuegbarkeit** – Room availability per slot, checked cross-event.
 

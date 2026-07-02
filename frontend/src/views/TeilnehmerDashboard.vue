@@ -138,7 +138,7 @@
                       <th class="py-2 px-4 text-left">Referent</th>
                       <th class="py-2 px-4 text-center">Gewählt</th>
                       <th class="py-2 px-4 text-center">Zugeteilt</th>
-                      <th class="py-2 px-4 text-center w-24">Meine Priorität (1-10)</th>
+                      <th class="py-2 px-4 text-center w-24">Meine Priorität (10=höchste, 1=niedrigste)</th>
                     </tr>
                   </thead>
                   <tbody class="bg-white">

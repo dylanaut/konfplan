@@ -76,6 +76,7 @@
             <InfoIcon class="w-3.5 h-3.5"/>
             Legende der Wahlvorträge
           </h3>
+          <p class="text-gray-500 normal-case font-normal mb-2">Priorität je Vortrag: 10 = höchste, 1 = niedrigste, 0 = keine Präferenz.</p>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
             <div v-for="group in groupedWahlvortraege" :key="group.berufsfeld">
               <h4 class="font-bold text-indigo-800 uppercase text-[9px] mb-1">{{ group.berufsfeld }}</h4>

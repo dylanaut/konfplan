@@ -21,6 +21,7 @@ import kreyj.konfplan.adapter.in.web.dto.templating.WahlErfuellungStats;
 import kreyj.konfplan.adapter.in.web.dto.templating.WahlvortragStatus;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Planungsergebnis;
+import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.VeranstaltungsVerfuegbarkeit;
 import kreyj.konfplan.util.StringHelper;
@@ -146,11 +147,12 @@ public class DashboardService {
             for (WahlvortragStatus vStatus : t.wvStatuus().values()) {
                 if ("+".equals(vStatus.status())) {
                     totalWuenscheErfuellt++;
-                    if (vStatus.prioWert() == 1) {
+                    // Höchste Priorität = Prioritaet.PRIO_MAX (10), absteigend für Platz 2/3.
+                    if (vStatus.prioWert() == Prioritaet.PRIO_MAX) {
                         prio1++;
-                    } else if (vStatus.prioWert() == 2) {
+                    } else if (vStatus.prioWert() == Prioritaet.PRIO_MAX - 1) {
                         prio2++;
-                    } else if (vStatus.prioWert() == 3) {
+                    } else if (vStatus.prioWert() == Prioritaet.PRIO_MAX - 2) {
                         prio3++;
                     }
                 } else if ("-".equals(vStatus.status())) {

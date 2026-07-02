@@ -69,7 +69,7 @@ public class AuffuellungService {
         Map<Long, List<Prioritaet>> eigenePrioritaetenByTnOid = new HashMap<>();
         for (Teilnehmer tn : teilnehmerByOid.values()) {
             eigenePrioritaetenByTnOid.put(tn.getId(),
-                Prioritaet.list("teilnehmer = ?1 and prioWert > 0 order by prioWert asc", tn));
+                Prioritaet.list("teilnehmer = ?1 and prioWert > 0 order by prioWert desc", tn));
         }
 
         // Restkapazität je Instanz und aktive Instanzen je Slot (1-basierter MZ-Slot-Index) ermitteln.

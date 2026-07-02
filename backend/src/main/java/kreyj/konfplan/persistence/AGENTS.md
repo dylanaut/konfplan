@@ -21,7 +21,7 @@ Dieses Paket enthält alle JPA-Entitäten nach dem **Panache Active Record Patte
 | `Gebaeude`          | Gebäude mit Typ, Adresse und Räumen.                             |
 | `Raum`              | Raum mit Kapazität und Etage.                                    |
 | `Zuweisung`         | Verbindet Teilnehmer + Vortrag + Slot + Raum.                    |
-| `Prioritaet`        | Präferenz eines Teilnehmers (Ranking 1-10).                      |
+| `Prioritaet`        | Präferenz eines Teilnehmers (Ranking 1-10, 10 = höchste, 0 = keine Präferenz). |
 | `Verfuegbarkeit`    | Verfügbarkeit eines Nutzers in einem Slot.                       |
 | `RaumVerfuegbarkeit`| Verfügbarkeit eines Raumes in einem Slot.                        |
 
