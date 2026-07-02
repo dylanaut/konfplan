@@ -1,6 +1,8 @@
-package kreyj.konfplan.presentation;
+package kreyj.konfplan.adapter.in.web;
 
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.http.TestHTTPEndpoint;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
@@ -19,6 +21,7 @@ import kreyj.konfplan.persistence.Wahlvortrag;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -31,6 +34,13 @@ import static org.hamcrest.CoreMatchers.containsString;
 @TestSecurity(user = "admin@test.de", roles = "ADMIN")
 @QuarkusTestResource(H2DatabaseTestResource.class)
 class CsvImportTest extends DatabaseCleaner {
+    @TestHTTPResource
+    @TestHTTPEndpoint(GebaeudeResource.class)
+    URL gebaeudeEndpoint;
+
+    @TestHTTPResource
+    @TestHTTPEndpoint(AdminResource.class)
+    URL adminEndpoint;
 
     Long testVid;
 
@@ -59,7 +69,7 @@ class CsvImportTest extends DatabaseCleaner {
 
         r.addVeranstaltung(veranstaltung);
         Slot slot1 = new Slot("Slot 1", veranstaltung.getBeginntAm(),
-                veranstaltung.getBeginntAm().plusHours(1), veranstaltung);
+            veranstaltung.getBeginntAm().plusHours(1), veranstaltung);
         slot1.persist();
         veranstaltung.addSlot(slot1);
     }
@@ -96,16 +106,17 @@ class CsvImportTest extends DatabaseCleaner {
 
 
     @Test
+    @TestHTTPEndpoint(VeranstaltungResource.class)
     void testImportVeranstaltungen() {
         String csv = "Name;Beginn;Ende;Organisatoren_Emails;Gebaeude_Namen;Logo;Logo_link\n" +
-                "CSV Event;2026-10-01 07:00;2026-10-01 17:00;admin@test.de;RKS_LINZ;assets/RKS_Logo.png;https://realschuleplus-linz.de/home/home.html";
+            "CSV Event;2026-10-01 07:00;2026-10-01 17:00;admin@test.de;RKS_LINZ;assets/RKS_Logo.png;https://realschuleplus-linz.de/home/home.html";
 
         given()
-                .multiPart("file", "veranstaltungen.csv", csv.getBytes())
-                .when().post("/api/veranstaltungen/import")
-                .then()
-                .statusCode(OK.getStatusCode())
-                .body(containsString("1 Veranstaltung(en) angelegt"));
+            .multiPart("file", "veranstaltungen.csv", csv.getBytes())
+            .when().post("/import")
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body(containsString("1 Veranstaltung(en) angelegt"));
     }
 
 
@@ -113,14 +124,16 @@ class CsvImportTest extends DatabaseCleaner {
     void testImportGebaeudeMitRaeumen() {
         final String gebaeudeName = "Altbau";
         String csv = "Name;Typ;Strasse;Hausnummer;PLZ;Ort;Räume\n" +
-                gebaeudeName + ";SCHULE;Alte Str.;10;12345;Stadt;A101:30:1.OG|Lab:20:EG";
+            gebaeudeName + ";SCHULE;Alte Str.;10;12345;Stadt;A101:30:1.OG|Lab:20:EG";
 
         given()
-                .multiPart("file", "gebaeude.csv", csv.getBytes())
-                .when().post("/api/gebaeude/import")
-                .then()
-                .statusCode(OK.getStatusCode())
-                .body(containsString("Import erfolgreich"));
+            .baseUri(gebaeudeEndpoint.toString())
+            .basePath("/import")
+            .multiPart("file", "gebaeude.csv", csv.getBytes())
+            .when().post()
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body(containsString("Import erfolgreich"));
 
         Gebaeude g = Gebaeude.find("name", gebaeudeName).firstResult();
         assertThat(g).isNotNull();
@@ -134,10 +147,12 @@ class CsvImportTest extends DatabaseCleaner {
         String csv = "Email;Nachname;Vorname\n" + adminEmail + ";Jessen;Kathrin";
 
         given()
-                .multiPart("file", "veranstalter.csv", csv.getBytes())
-                .when().post("/api/admin/admins/import")
-                .then()
-                .statusCode(OK.getStatusCode());
+            .baseUri(adminEndpoint.toString())
+            .basePath("/admins/import")
+            .multiPart("file", "veranstalter.csv", csv.getBytes())
+            .when().post()
+            .then()
+            .statusCode(OK.getStatusCode());
 
         Admin organisator = (Admin) Nutzer.findByEmail(adminEmail);
         assertThat(organisator).isNotNull();
@@ -146,16 +161,17 @@ class CsvImportTest extends DatabaseCleaner {
 
 
     @Test
+    @TestHTTPEndpoint(VeranstaltungResource.class)
     void testImportReferenten() {
         String refEmail = "max@ref.de";
         String csv = "Vorname;Nachname;Email;Position;Organisation;Slogan;Biografie\n" +
-                "Max;Referent;" + refEmail + ";Experte;TechCorp;Think Big;Bio Text";
+            "Max;Referent;" + refEmail + ";Experte;TechCorp;Think Big;Bio Text";
 
         given()
-                .multiPart("file", "referenten.csv", csv.getBytes())
-                .when().post("/api/veranstaltungen/{vid}/referenten/import", testVid)
-                .then()
-                .statusCode(OK.getStatusCode());
+            .multiPart("file", "referenten.csv", csv.getBytes())
+            .when().post("/{vid}/referenten/import", testVid)
+            .then()
+            .statusCode(OK.getStatusCode());
 
         Referent r = (Referent) Nutzer.findByEmail(refEmail);
         assertThat(r).isNotNull();
@@ -164,16 +180,17 @@ class CsvImportTest extends DatabaseCleaner {
 
 
     @Test
+    @TestHTTPEndpoint(VeranstaltungResource.class)
     void testImportTeilnehmer() {
         String tnEmail = "tom@stud.de";
         String csv = "Vorname;Nachname;Email;Gruppen\n" +
-                "Tom;Student;" + tnEmail + ";10b";
+            "Tom;Student;" + tnEmail + ";10b";
 
         given()
-                .multiPart("file", "teilnehmer.csv", csv.getBytes())
-                .when().post("/api/veranstaltungen/{vid}/teilnehmer/import", testVid)
-                .then()
-                .statusCode(OK.getStatusCode());
+            .multiPart("file", "teilnehmer.csv", csv.getBytes())
+            .when().post("/{vid}/teilnehmer/import", testVid)
+            .then()
+            .statusCode(OK.getStatusCode());
 
         Teilnehmer t = (Teilnehmer) Nutzer.findByEmail(tnEmail);
         assertThat(t).isNotNull();
@@ -182,42 +199,44 @@ class CsvImportTest extends DatabaseCleaner {
 
 
     @Test
+    @TestHTTPEndpoint(VeranstaltungResource.class)
     void testImportSlots() {
         String csv = "Bezeichnung;Tag;Beginn;Ende\n" +
-                "Slot 2;2025-10-10;11:00;11:45";
+            "Slot 2;2025-10-10;11:00;11:45";
 
         given()
-                .multiPart("file", "slots.csv", csv.getBytes())
-                .when().post("/api/veranstaltungen/{vid}/slots/import", testVid)
-                .then()
-                .statusCode(OK.getStatusCode());
+            .multiPart("file", "slots.csv", csv.getBytes())
+            .when().post("/{vid}/slots/import", testVid)
+            .then()
+            .statusCode(OK.getStatusCode());
 
         assertThat(Slot.count()).isEqualTo(2);
     }
 
 
     @Test
+    @TestHTTPEndpoint(VeranstaltungResource.class)
     void testImportVortraege() {
         String wvTitel = "Java Kurs";
         String pvTitel = "Berufsorientierung";
         String csv = "istPflicht;Titel;Referent_Email;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;" +
-                "Pflichtslot;Ausstattung;Berufsfeld\n" +
-                "false;" + wvTitel + ";vortrag@ref.de;Wahlinhalt;;true;2;;;Beamer;IT\n" +
-                "true;" + pvTitel + ";vortrag@ref.de;Pflichtinhalt;Pflichtgruppe;false;1;A101;Slot 1;;";
+            "Pflichtslot;Ausstattung;Berufsfeld\n" +
+            "false;" + wvTitel + ";vortrag@ref.de;Wahlinhalt;;true;2;;;Beamer;IT\n" +
+            "true;" + pvTitel + ";vortrag@ref.de;Pflichtinhalt;Pflichtgruppe;false;1;A101;Slot 1;;";
 
         given()
-                .multiPart("file", "vortraege.csv", csv.getBytes())
-                .when().post("/api/veranstaltungen/{vid}/vortraege/import", testVid)
-                .then()
-                .statusCode(OK.getStatusCode());
+            .multiPart("file", "vortraege.csv", csv.getBytes())
+            .when().post("/{vid}/vortraege/import", testVid)
+            .then()
+            .statusCode(OK.getStatusCode());
 
         Wahlvortrag wv = Wahlvortrag.find("titel", wvTitel).firstResult();
         assertThat(wv).describedAs("Wahlvortrag '" +
-                wvTitel + "' sollte importiert worden sein").isNotNull();
+            wvTitel + "' sollte importiert worden sein").isNotNull();
         assertThat(wv.getBerufsfeld()).describedAs("Wahlvortrag '" +
-                wvTitel + "' sollte IT Berufsfeld haben").isEqualTo(Berufsfeld.IT_UND_COMPUTER);
+            wvTitel + "' sollte IT Berufsfeld haben").isEqualTo(Berufsfeld.IT_UND_COMPUTER);
         assertThat(wv.getAusstattung()).describedAs("Wahlvortrag '" +
-                wvTitel + "' sollte Beamer als Ausstattung haben").isEqualTo("Beamer");
+            wvTitel + "' sollte Beamer als Ausstattung haben").isEqualTo("Beamer");
         assertThat(wv.isWiederholbar()).isTrue();
         assertThat(wv.getMaxWiederholungen()).isEqualTo(2);
     }

@@ -1,5 +1,8 @@
-package kreyj.konfplan.presentation;
+package kreyj.konfplan.adapter.in.web;
 
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.http.TestHTTPEndpoint;
+import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.transaction.Transactional;
@@ -22,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @QuarkusTest
 @TestSecurity(user = "admin@test.de", roles = "ADMIN")
+@QuarkusTestResource(H2DatabaseTestResource.class)
+@TestHTTPEndpoint(AdminResource.class)
 class PrioritaetImportTest extends DatabaseCleaner {
 
     Long testVid;
@@ -80,7 +85,7 @@ class PrioritaetImportTest extends DatabaseCleaner {
         given()
                 .multiPart("file", "prioritaeten.csv", csv.getBytes())
                 .when()
-                .post("/api/admin/veranstaltungen/{vid}/prioritaeten/import", testVid)
+                .post("/veranstaltungen/{vid}/prioritaeten/import", testVid)
                 .then()
                 .statusCode(200)
                 .body(is("Import erfolgreich: 2 Prioritäten importiert/aktualisiert."));

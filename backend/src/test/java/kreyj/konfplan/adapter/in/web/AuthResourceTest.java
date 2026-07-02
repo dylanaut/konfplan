@@ -1,4 +1,4 @@
-package kreyj.konfplan.presentation;
+package kreyj.konfplan.adapter.in.web;
 
 import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
@@ -6,6 +6,7 @@ import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.MockMailbox;
 import io.quarkus.panache.mock.PanacheMock;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -34,6 +35,7 @@ import static org.hamcrest.Matchers.notNullValue;
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
+@TestHTTPEndpoint(AuthResource.class)
 class AuthResourceTest {
 
     @Inject
@@ -91,7 +93,7 @@ class AuthResourceTest {
 
         given()
                 .queryParam("email", "test@example.com")
-                .when().post("/api/auth/forgot-password")
+                .when().post("/forgot-password")
                 .then()
                 .statusCode(ACCEPTED.getStatusCode());
 
@@ -109,7 +111,7 @@ class AuthResourceTest {
 
         given()
                 .queryParam("email", "unknown@example.com")
-                .when().post("/api/auth/forgot-password")
+                .when().post("/forgot-password")
                 .then()
                 .statusCode(ACCEPTED.getStatusCode());
     }
@@ -131,7 +133,7 @@ class AuthResourceTest {
         given()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(req)
-                .when().post("/api/auth/reset-password")
+                .when().post("/reset-password")
                 .then()
                 .statusCode(OK.getStatusCode());
     }
@@ -152,7 +154,7 @@ class AuthResourceTest {
         given()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(loginReq)
-                .when().post("/api/auth/login")
+                .when().post("/login")
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("token", notNullValue())

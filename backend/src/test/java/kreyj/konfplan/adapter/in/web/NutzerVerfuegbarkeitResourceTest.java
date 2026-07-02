@@ -1,6 +1,7 @@
-package kreyj.konfplan.presentation;
+package kreyj.konfplan.adapter.in.web;
 
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
@@ -24,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
+@TestHTTPEndpoint(VeranstaltungResource.class)
 class NutzerVerfuegbarkeitResourceTest extends DatabaseCleaner {
 
     Long testVid;
@@ -65,7 +67,7 @@ class NutzerVerfuegbarkeitResourceTest extends DatabaseCleaner {
         given()
                 .contentType(ContentType.JSON)
                 .body(jsonReferent)
-                .when().post("/api/veranstaltungen/{vid}/nutzer", testVid)
+                .when().post("/{vid}/nutzer", testVid)
                 .then()
                 .statusCode(CREATED.getStatusCode());
 
@@ -88,7 +90,7 @@ class NutzerVerfuegbarkeitResourceTest extends DatabaseCleaner {
         given()
                 .contentType(ContentType.JSON)
                 .body(jsonTeilnehmer)
-                .when().post("/api/veranstaltungen/{vid}/nutzer", testVid)
+                .when().post("/{vid}/nutzer", testVid)
                 .then()
                 .statusCode(CREATED.getStatusCode());
 

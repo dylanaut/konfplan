@@ -12,7 +12,7 @@ import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.presentation.DatabaseCleaner;
+import kreyj.konfplan.adapter.in.web.DatabaseCleaner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -107,7 +107,7 @@ public class ErmittleKollisionenTest extends DatabaseCleaner {
         Kollision kollision = kollisionen.get(0);
         assertThat(kollision.typ()).isEqualTo(Kollision.Typ.TEILNEHMER_VERFUEGBARKEIT);
         assertThat(kollision.nachricht())
-                .contains("Anna Adam")
+                .contains("Adam, Anna")
                 .contains("GruppeA")
                 .contains("Verfügbarkeits-Kollision");
     }
@@ -123,7 +123,7 @@ public class ErmittleKollisionenTest extends DatabaseCleaner {
         List<Kollision> kollisionen = service.pruefeKollisionen(veranstaltung);
 
         assertThat(kollisionen).hasSize(1);
-        Kollision kollision = kollisionen.get(0);
+        Kollision kollision = kollisionen.getFirst();
         assertThat(kollision.typ()).isEqualTo(Kollision.Typ.RAUM_SLOT);
         assertThat(kollision.nachricht())
                 .contains("Raum 1")

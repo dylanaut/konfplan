@@ -1,22 +1,25 @@
-package kreyj.konfplan.presentation;
+package kreyj.konfplan.adapter.in.web;
 
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.http.TestHTTPEndpoint;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -30,7 +33,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
 @TestSecurity(user = "admin@test.de", roles = "ADMIN")
+@TestHTTPEndpoint(VeranstaltungResource.class)
 class SlotUndRaumTest extends DatabaseCleaner {
+    @TestHTTPResource
+    @TestHTTPEndpoint(AdminResource.class)
+    URL adminEndpoint;
 
     Long v1_Id;
     Long v2_Id;
@@ -79,64 +86,64 @@ class SlotUndRaumTest extends DatabaseCleaner {
     void testSlotValidation() {
         // 1. Ende vor Beginn
         String jsonInvalid = """
-                {
-                    "description": "Ungültig",
-                    "startTime": "2025-10-01T10:00:00",
-                    "endTime": "2025-10-01T09:00:00"
-                }
-                """;
+            {
+                "description": "Ungültig",
+                "startTime": "2025-10-01T10:00:00",
+                "endTime": "2025-10-01T09:00:00"
+            }
+            """;
         given()
-                .contentType(ContentType.JSON)
-                .body(jsonInvalid)
-                .when().post("/api/veranstaltungen/{vid}/slots", v1_Id)
-                .then()
-                .statusCode(BAD_REQUEST.getStatusCode());
+            .contentType(ContentType.JSON)
+            .body(jsonInvalid)
+            .when().post("/{vid}/slots", v1_Id)
+            .then()
+            .statusCode(BAD_REQUEST.getStatusCode());
 
         // 2. Vor Veranstaltungsbeginn
         String jsonEarly = """
-                {
-                    "description": "Zu früh",
-                    "startTime": "2025-09-30T10:00:00",
-                    "endTime": "2025-09-30T11:00:00"
-                }
-                """;
+            {
+                "description": "Zu früh",
+                "startTime": "2025-09-30T10:00:00",
+                "endTime": "2025-09-30T11:00:00"
+            }
+            """;
         given()
-                .contentType(ContentType.JSON)
-                .body(jsonEarly)
-                .when().post("/api/veranstaltungen/{vid}/slots", v1_Id)
-                .then()
-                .statusCode(BAD_REQUEST.getStatusCode());
+            .contentType(ContentType.JSON)
+            .body(jsonEarly)
+            .when().post("/{vid}/slots", v1_Id)
+            .then()
+            .statusCode(BAD_REQUEST.getStatusCode());
 
         // 3. Korrekter Slot
         String jsonOk = """
-                {
-                    "description": "Slot 1",
-                    "startTime": "2025-10-01T09:00:00",
-                    "endTime": "2025-10-01T10:00:00"
-                }
-                """;
+            {
+                "description": "Slot 1",
+                "startTime": "2025-10-01T09:00:00",
+                "endTime": "2025-10-01T10:00:00"
+            }
+            """;
         Integer slotId = given()
-                .contentType(ContentType.JSON)
-                .body(jsonOk)
-                .when().post("/api/veranstaltungen/{vid}/slots", v1_Id)
-                .then()
-                .statusCode(CREATED.getStatusCode())
-                .extract().path("id");
+            .contentType(ContentType.JSON)
+            .body(jsonOk)
+            .when().post("/{vid}/slots", v1_Id)
+            .then()
+            .statusCode(CREATED.getStatusCode())
+            .extract().path("id");
 
         // 4. Überschneidung
         String jsonOverlap = """
-                {
-                    "description": "Überlappend",
-                    "startTime": "2025-10-01T09:30:00",
-                    "endTime": "2025-10-01T10:30:00"
-                }
-                """;
+            {
+                "description": "Überlappend",
+                "startTime": "2025-10-01T09:30:00",
+                "endTime": "2025-10-01T10:30:00"
+            }
+            """;
         given()
-                .contentType(ContentType.JSON)
-                .body(jsonOverlap)
-                .when().post("/api/veranstaltungen/{vid}/slots", v1_Id)
-                .then()
-                .statusCode(BAD_REQUEST.getStatusCode());
+            .contentType(ContentType.JSON)
+            .body(jsonOverlap)
+            .when().post("/{vid}/slots", v1_Id)
+            .then()
+            .statusCode(BAD_REQUEST.getStatusCode());
     }
 
 
@@ -166,8 +173,8 @@ class SlotUndRaumTest extends DatabaseCleaner {
             final Veranstaltung veranstaltung = Veranstaltung.findById(v1_Id);
             // Slot in Veranstaltung 1
             Slot s1 = new Slot("Slot E1",
-                    LocalDateTime.of(2025, 10, 1, 9, 0),
-                    LocalDateTime.of(2025, 10, 1, 10, 0), veranstaltung);
+                LocalDateTime.of(2025, 10, 1, 9, 0),
+                LocalDateTime.of(2025, 10, 1, 10, 0), veranstaltung);
             s1.persist();
             slotIdArray[0] = s1.getId();
             veranstaltung.addSlot(s1);
@@ -175,8 +182,8 @@ class SlotUndRaumTest extends DatabaseCleaner {
             Veranstaltung otherV = Veranstaltung.findById(v2_Id);
             // Slot in Veranstaltung 2 (zeitlich überschneidend)
             Slot s2 = new Slot("Slot E2",
-                    LocalDateTime.of(2025, 10, 1, 9, 30),
-                    LocalDateTime.of(2025, 10, 1, 10, 30), otherV);
+                LocalDateTime.of(2025, 10, 1, 9, 30),
+                LocalDateTime.of(2025, 10, 1, 10, 30), otherV);
             s2.persist();
             slotIdArray[1] = s2.getId();
             otherV.addSlot(s2);
@@ -197,17 +204,19 @@ class SlotUndRaumTest extends DatabaseCleaner {
 
         // Abfrage für Veranstaltung 1: Raum sollte für s1 als "blocked" markiert sein
         List<RaumVerfuegbarkeitDto> dtos = given()
-                .when().get("/api/admin/veranstaltungen/{vid}/raeume/verfuegbarkeiten", v1_Id)
-                .then()
-                .statusCode(OK.getStatusCode())
-                .extract()
-                .body()
-                .jsonPath()
-                .getList(".", RaumVerfuegbarkeitDto.class);
+            .baseUri(adminEndpoint.toString())
+            .basePath("/veranstaltungen")
+            .when().get("/{vid}/raeume/verfuegbarkeiten", v1_Id)
+            .then()
+            .statusCode(OK.getStatusCode())
+            .extract()
+            .body()
+            .jsonPath()
+            .getList(".", RaumVerfuegbarkeitDto.class);
 
         RaumVerfuegbarkeitDto target = dtos.stream()
-                .filter(d -> d.verfuegbareSlotIds.contains(s1Id))
-                .findFirst().orElseThrow();
+            .filter(d -> d.verfuegbareSlotIds.contains(s1Id))
+            .findFirst().orElseThrow();
 
         assertThat(target.isBlockedByOtherEvent).describedAs("Raum sollte durch andere Veranstaltung blockiert sein").isTrue();
         assertThat(target.blockingEventName).isEqualTo("Andere Veranstaltung");

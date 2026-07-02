@@ -1,4 +1,4 @@
-package kreyj.konfplan.presentation;
+package kreyj.konfplan.adapter.in.web;
 
 import io.quarkus.panache.mock.PanacheMock;
 import io.quarkus.test.InjectMock;

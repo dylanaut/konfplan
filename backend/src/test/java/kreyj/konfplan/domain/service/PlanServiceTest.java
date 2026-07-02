@@ -1,4 +1,4 @@
-package kreyj.konfplan.service;
+package kreyj.konfplan.domain.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
@@ -6,10 +6,9 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht;
 import kreyj.konfplan.adapter.in.web.dto.SolverConfig;
-import kreyj.konfplan.domain.service.PlanService;
 import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.presentation.DatabaseCleaner;
+import kreyj.konfplan.adapter.in.web.DatabaseCleaner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

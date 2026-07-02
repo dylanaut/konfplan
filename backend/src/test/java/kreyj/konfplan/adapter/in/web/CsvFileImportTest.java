@@ -1,6 +1,8 @@
-package kreyj.konfplan.presentation;
+package kreyj.konfplan.adapter.in.web;
 
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.http.TestHTTPEndpoint;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
@@ -30,9 +32,18 @@ import static org.hamcrest.CoreMatchers.containsString;
 @QuarkusTest
 @TestSecurity(user = "admin@test.de", roles = "ADMIN")
 @QuarkusTestResource(H2DatabaseTestResource.class)
+@TestHTTPEndpoint(VeranstaltungResource.class)
 class CsvFileImportTest extends DatabaseCleaner {
-
     public static final String CSV_DIR = "csv_import/bo_26_09/";
+
+    @TestHTTPResource
+    @TestHTTPEndpoint(GebaeudeResource.class)
+    URL gebaeudeEndpoint;
+
+    @TestHTTPResource
+    @TestHTTPEndpoint(AdminResource.class)
+    URL adminEndpoint;
+
     Long testVid;
     String orgEmail;
 
@@ -58,10 +69,12 @@ class CsvFileImportTest extends DatabaseCleaner {
     private void setupVeranstalter() {
         // import Veranstalter
         given()
-                .multiPart("file", getCsvFile("test-organisatoren.csv"))
-                .when().post("/api/admin/admins/import")
-                .then()
-                .statusCode(OK.getStatusCode());
+            .baseUri(adminEndpoint.toString())
+            .basePath("/admins/import")
+            .multiPart("file", getCsvFile("test-organisatoren.csv"))
+            .when().post()
+            .then()
+            .statusCode(OK.getStatusCode());
 
         Admin organisator = (Admin) Nutzer.findByEmail("test.admin@rks-linz.de");
         assertThat(organisator).isNotNull();
@@ -70,13 +83,15 @@ class CsvFileImportTest extends DatabaseCleaner {
     }
 
 
-    private static void setupGebaeude() {
+    private void setupGebaeude() {
         given()
-                .multiPart("file", getCsvFile("test-gebaeude.csv"))
-                .when().post("/api/gebaeude/import")
-                .then()
-                .statusCode(OK.getStatusCode())
-                .body(containsString("Import erfolgreich"));
+            .baseUri(gebaeudeEndpoint.toString())
+            .basePath("/import")
+            .multiPart("file", getCsvFile("test-gebaeude.csv"))
+            .when().post()
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body(containsString("Import erfolgreich"));
 
         Gebaeude g = Gebaeude.find("name", "TestGebäude").firstResult();
         assertThat(g).isNotNull();
@@ -86,11 +101,12 @@ class CsvFileImportTest extends DatabaseCleaner {
 
     private void setupVeranstaltungen() {
         given()
-                .multiPart("file", getCsvFile("test-veranstaltungen.csv"))
-                .when().post("/api/veranstaltungen/import")
-                .then()
-                .statusCode(OK.getStatusCode())
-                .body(containsString("2 Veranstaltung(en) angelegt"));
+            .multiPart("file", getCsvFile("test-veranstaltungen.csv"))
+            .when()
+            .post("/import")
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body(containsString("2 Veranstaltung(en) angelegt"));
 
         Veranstaltung v = Veranstaltung.find("name", "TV_1").firstResult();
         assertThat(v).isNotNull();
@@ -101,10 +117,10 @@ class CsvFileImportTest extends DatabaseCleaner {
     @Test
     void testImportReferenten() {
         given()
-                .multiPart("file", getCsvFile("referenten.csv"))
-                .when().post("/api/veranstaltungen/{vid}/referenten/import", testVid)
-                .then()
-                .statusCode(OK.getStatusCode());
+            .multiPart("file", getCsvFile("referenten.csv"))
+            .when().post("/{vid}/referenten/import", testVid)
+            .then()
+            .statusCode(OK.getStatusCode());
 
         Referent r = (Referent) Nutzer.findByEmail("juergenkreyalias-ref@yahoo.com");
         assertThat(r).isNotNull();
@@ -115,10 +131,10 @@ class CsvFileImportTest extends DatabaseCleaner {
     @Test
     void testImportTeilnehmer() {
         given()
-                .multiPart("file", getCsvFile("teilnehmer.csv"))
-                .when().post("/api/veranstaltungen/{vid}/teilnehmer/import", testVid)
-                .then()
-                .statusCode(OK.getStatusCode());
+            .multiPart("file", getCsvFile("teilnehmer.csv"))
+            .when().post("/{vid}/teilnehmer/import", testVid)
+            .then()
+            .statusCode(OK.getStatusCode());
 
         Teilnehmer t = (Teilnehmer) Nutzer.findByEmail("hayal.yaldir@rks-linz.de");
         assertThat(t).isNotNull();
@@ -129,10 +145,10 @@ class CsvFileImportTest extends DatabaseCleaner {
     @Test
     void testImportSlots() {
         given()
-                .multiPart("file", getCsvFile("slots.csv"))
-                .when().post("/api/veranstaltungen/{vid}/slots/import", testVid)
-                .then()
-                .statusCode(OK.getStatusCode());
+            .multiPart("file", getCsvFile("slots.csv"))
+            .when().post("/{vid}/slots/import", testVid)
+            .then()
+            .statusCode(OK.getStatusCode());
 
         assertThat(Slot.count()).isEqualTo(12);
     }
@@ -144,10 +160,10 @@ class CsvFileImportTest extends DatabaseCleaner {
         testImportSlots();
 
         given()
-                .multiPart("file", getCsvFile("wahl_vortraege.csv"))
-                .when().post("/api/veranstaltungen/{vid}/vortraege/import", testVid)
-                .then()
-                .statusCode(OK.getStatusCode());
+            .multiPart("file", getCsvFile("wahl_vortraege.csv"))
+            .when().post("/{vid}/vortraege/import", testVid)
+            .then()
+            .statusCode(OK.getStatusCode());
 
         assertThat(Wahlvortrag.count()).isEqualTo(16);
         Wahlvortrag wv = Wahlvortrag.find("titel", "Traumberuf Polizei?").firstResult();
@@ -157,14 +173,14 @@ class CsvFileImportTest extends DatabaseCleaner {
         assertThat(0).isEqualTo(Pflichtvortrag.count());
 
         given()
-                .multiPart("file", getCsvFile("pflicht_vortraege.csv"))
-                .when().post("/api/veranstaltungen/{vid}/vortraege/import", testVid)
-                .then()
-                .statusCode(OK.getStatusCode());
+            .multiPart("file", getCsvFile("pflicht_vortraege.csv"))
+            .when().post("/{vid}/vortraege/import", testVid)
+            .then()
+            .statusCode(OK.getStatusCode());
 
         assertThat(18)
-                .describedAs("Pflichtvortraege sollten importiert worden sein")
-                .isEqualTo(Pflichtvortrag.count());
+            .describedAs("Pflichtvortraege sollten importiert worden sein")
+            .isEqualTo(Pflichtvortrag.count());
         Pflichtvortrag pv = Pflichtvortrag.find("titel", "Vortrag Arbeitsagentur für 10.5").firstResult();
         assertThat(pv).describedAs("Pflichtvortrag sollte importiert worden sein").isNotNull();
         assertThat("A-2.04").isEqualTo(pv.getPflichtraum().getName());

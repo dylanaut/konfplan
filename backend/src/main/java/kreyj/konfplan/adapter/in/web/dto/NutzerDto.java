@@ -1,5 +1,6 @@
 package kreyj.konfplan.adapter.in.web.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Nutzer;
@@ -79,6 +80,7 @@ public class NutzerDto extends AbstractVersionedDto {
     }
 
 
+    @JsonIgnore
     public String getFullname() {
         return StringHelper.fullname(firstName, lastName);
     }

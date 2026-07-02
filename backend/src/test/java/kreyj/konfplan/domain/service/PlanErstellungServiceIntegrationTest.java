@@ -1,12 +1,9 @@
-package kreyj.konfplan.service;
+package kreyj.konfplan.domain.service;
 
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.domain.service.MinizincException;
-import kreyj.konfplan.domain.service.PlanErstellungService;
-import kreyj.konfplan.domain.service.PlanService;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
@@ -19,7 +16,7 @@ import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
-import kreyj.konfplan.presentation.DatabaseCleaner;
+import kreyj.konfplan.adapter.in.web.DatabaseCleaner;
 import kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht;
 import kreyj.konfplan.adapter.in.web.dto.SolverConfig;
 import org.jboss.logging.Logger;
@@ -325,8 +322,6 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         planErstellungService.erstellePlan(veranstaltung.getId(), config, "username");
 
         List<RaumBelegungUebersicht> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
-        LOG.info("$$$$$$$ belegungsplan (Referenten-Doppelbuchung): " + belegungsplan);
-
         List<RaumBelegungUebersicht> wahlvortrag1Eintraege = belegungsplan.stream()
                 .filter(b -> "Wahlvortrag 1".equals(b.vortragTitel))
                 .toList();
@@ -351,8 +346,8 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
         boolean beideInWahlvortrag1 = belegungsplan.stream()
                 .filter(b -> "Wahlvortrag 1".equals(b.getVortragTitel()))
-                .anyMatch(b -> b.getTeilnehmerNamen().contains("Peter Pan")
-                        && b.getTeilnehmerNamen().contains("Wendy Darling"));
+                .anyMatch(b -> b.getTeilnehmerNamen().contains("Pan, Peter")
+                        && b.getTeilnehmerNamen().contains("Darling, Wendy"));
         assertThat(beideInWahlvortrag1)
                 .describedAs("Der freie Teilnehmer Wendy Darling sollte per Auffüllung ebenfalls in Wahlvortrag 1 eingeplant werden.")
                 .isTrue();
@@ -368,7 +363,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         List<RaumBelegungUebersicht> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
 
         boolean wendyEingeplant = belegungsplan.stream()
-                .anyMatch(b -> b.getTeilnehmerNamen().contains("Wendy Darling"));
+                .anyMatch(b -> b.getTeilnehmerNamen().contains("Darling, Wendy"));
         assertThat(wendyEingeplant)
                 .describedAs("Ohne Auffüllung darf der freie Teilnehmer Wendy Darling in keinem Vortrag auftauchen.")
                 .isFalse();
@@ -390,7 +385,6 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
         // 3. Belegungsplan abrufen und prüfen
         List<RaumBelegungUebersicht> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
-        LOG.info("# Belegungsplan:\n  " + belegungsplan.stream().map(Object::toString).collect(joining("\n  ")));
 
         assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht null sein.").isNotNull();
         assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht leer sein.").isNotEmpty();
@@ -398,8 +392,8 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         // Konkrete Zuweisungen prüfen
         // Teilnehmer 1 sollte Wahlvortrag 1 bekommen (Prio 1)
         boolean tn1InWahlvortrag1 = belegungsplan.stream()
-                .anyMatch(b -> "Wahlvortrag 1".equals(b.getVortragTitel()) && b.getTeilnehmerNamen().contains("Peter Pan"));
-        assertThat(tn1InWahlvortrag1).describedAs("Teilnehmer 1 sollte dem Wahlvortrag 1 zugewiesen sein.").isTrue();
+                .anyMatch(b -> "Wahlvortrag 1".equals(b.getVortragTitel()) && b.getTeilnehmerNamen().contains("Pan, Peter"));
+        assertThat(tn1InWahlvortrag1).describedAs("Titel ist WV1 und teilnehmer enthalten").isTrue();
     }
 
     @Test
@@ -483,11 +477,9 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         assertThat(ergebnis).describedAs("Planungsergebnis sollte nach der PlanErstellung vorhanden sein.").isNotNull();
         assertThat(ergebnis.getJsonErgebnis()).describedAs("Das JSON-Ergebnis im Planungsergebnis darf nicht null sein.").isNotNull();
         assertThat(ergebnis.getJsonErgebnis().contains("instanz_slot")).describedAs("Das JSON-Ergebnis sollte den Schlüssel 'instanz_slot' enthalten.").isTrue();
-        LOG.info("####### jsonErgebnis: " + ergebnis.getJsonErgebnis());
 
         // 3. Belegungsplan abrufen und prüfen
         List<RaumBelegungUebersicht> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
-        LOG.info("$$$$$$$ belegungsplan: " + belegungsplan);
 
         assertThat(belegungsplan).describedAs("Der Belegungsplan darf nicht null sein.").isNotNull();
         assertThat(belegungsplan.isEmpty()).describedAs("Der Belegungsplan darf nicht leer sein.").isFalse();
@@ -495,12 +487,12 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         // Konkrete Zuweisungen prüfen
         // Teilnehmer 1 sollte Wahlvortrag 1 bekommen (Prio 1)
         boolean tn1InWahlvortrag1 = belegungsplan.stream()
-                .anyMatch(b -> "Wahlvortrag 1".equals(b.getVortragTitel()) && b.getTeilnehmerNamen().contains("Peter Pan"));
+                .anyMatch(b -> "Wahlvortrag 1".equals(b.getVortragTitel()) && b.getTeilnehmerNamen().contains("Pan, Peter"));
         assertThat(tn1InWahlvortrag1).describedAs("Teilnehmer 1 sollte dem Wahlvortrag 1 zugewiesen sein.").isTrue();
 
         // Teilnehmer 2 sollte Wahlvortrag 2 bekommen (Prio 1)
         boolean tn2InWahlvortrag2 = belegungsplan.stream()
-                .anyMatch(b -> "Wahlvortrag 2".equals(b.getVortragTitel()) && b.getTeilnehmerNamen().contains("Wendy Darling"));
+                .anyMatch(b -> "Wahlvortrag 2".equals(b.getVortragTitel()) && b.getTeilnehmerNamen().contains("Darling, Wendy"));
         assertThat(tn2InWahlvortrag2).describedAs("Teilnehmer 2 sollte dem Wahlvortrag 2 zugewiesen sein.").isTrue();
 
         // Beide Teilnehmer sollten im Pflichtvortrag sein

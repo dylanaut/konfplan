@@ -1,6 +1,7 @@
-package kreyj.konfplan.presentation;
+package kreyj.konfplan.adapter.in.web;
 
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
@@ -27,6 +28,7 @@ import static org.hamcrest.Matchers.matchesPattern;
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
+@TestHTTPEndpoint(VeranstaltungResource.class)
 class NutzerPersistenceTest extends DatabaseCleaner {
 
     public static final String TEST_VERANSTALTUNG = "Test Veranstaltung";
@@ -65,7 +67,7 @@ class NutzerPersistenceTest extends DatabaseCleaner {
     @TestSecurity(user = "admin@test.de", roles = "ADMIN")
     void testVeranstaltungPresent() {
         given()
-                .when().get("/api/veranstaltungen/{vid}", testVid)
+                .when().get("/{vid}", testVid)
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("name", matchesPattern(TEST_VERANSTALTUNG + "_\\d+"))
@@ -90,7 +92,7 @@ class NutzerPersistenceTest extends DatabaseCleaner {
         given()
                 .contentType(ContentType.JSON)
                 .body(json)
-                .when().post("/api/veranstaltungen/{vid}/nutzer", testVid)
+                .when().post("/{vid}/nutzer", testVid)
                 .then()
                 .statusCode(CREATED.getStatusCode())
                 .body("role", is("REFERENT"));
@@ -118,7 +120,7 @@ class NutzerPersistenceTest extends DatabaseCleaner {
         given()
                 .contentType(ContentType.JSON)
                 .body(json)
-                .when().post("/api/veranstaltungen/{vid}/nutzer", testVid)
+                .when().post("/{vid}/nutzer", testVid)
                 .then()
                 .statusCode(CREATED.getStatusCode())
                 .body("role", is("TEILNEHMER"));

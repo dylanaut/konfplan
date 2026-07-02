@@ -1,7 +1,8 @@
-package kreyj.konfplan.presentation;
+package kreyj.konfplan.adapter.in.web;
 
 import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
@@ -79,6 +80,7 @@ class DeadlineResourceTest extends DatabaseCleaner {
     @JwtSecurity(claims = {
             @Claim(key = "upn", value = "referent@test.de")
     })
+    @TestHTTPEndpoint(ReferentResource.class)
     void testReferentDeadlineExceeded() {
         VortragDto dto = new VortragDto();
         dto.titel = "Neuer Vortrag";
@@ -88,7 +90,7 @@ class DeadlineResourceTest extends DatabaseCleaner {
         given()
                 .contentType(ContentType.JSON)
                 .body(dto)
-                .when().post("/api/referenten/vortraege")
+                .when().post("/vortraege")
                 .then()
                 .statusCode(FORBIDDEN.getStatusCode());
 
@@ -98,13 +100,13 @@ class DeadlineResourceTest extends DatabaseCleaner {
         given()
                 .contentType(ContentType.JSON)
                 .body(dto)
-                .when().put("/api/referenten/vortraege/{id}", wahlvortragId)
+                .when().put("/vortraege/{id}", wahlvortragId)
                 .then()
                 .statusCode(FORBIDDEN.getStatusCode());
 
         // Löschen verboten
         given()
-                .when().delete("/api/referenten/vortraege/{id}", wahlvortragId)
+                .when().delete("/vortraege/{id}", wahlvortragId)
                 .then()
                 .statusCode(FORBIDDEN.getStatusCode());
     }
@@ -115,13 +117,15 @@ class DeadlineResourceTest extends DatabaseCleaner {
     @JwtSecurity(claims = {
             @Claim(key = "upn", value = "teilnehmer@test.de")
     })
+
+    @TestHTTPEndpoint(PrioritaetenResource.class)
     void testTeilnehmerDeadlineExceeded() {
         VortragPrioDto req = new VortragPrioDto(wahlvortragId, 1);
 
         given()
                 .contentType(ContentType.JSON)
                 .body(List.of(req))
-                .when().post("/api/prios")
+                .when().post()
                 .then()
                 .statusCode(FORBIDDEN.getStatusCode());
     }
@@ -129,6 +133,7 @@ class DeadlineResourceTest extends DatabaseCleaner {
 
     @Test
     @TestSecurity(user = "admin@test.de", roles = "ADMIN")
+    @TestHTTPEndpoint(VeranstaltungResource.class)
     void testAdminCanStillEditEvenIfDeadlineExceeded() {
         VeranstaltungDto dto = new VeranstaltungDto();
         dto.id = pastEventId;
@@ -140,7 +145,7 @@ class DeadlineResourceTest extends DatabaseCleaner {
         given()
                 .contentType(ContentType.JSON)
                 .body(dto)
-                .when().put("/api/veranstaltungen/{id}", pastEventId)
+                .when().put("/{id}", pastEventId)
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("name", is("Abgelaufenes Event (Admin Update)"));

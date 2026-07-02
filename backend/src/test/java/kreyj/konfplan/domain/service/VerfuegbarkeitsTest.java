@@ -1,4 +1,4 @@
-package kreyj.konfplan.service;
+package kreyj.konfplan.domain.service;
 
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.transaction.Transactional;
@@ -15,7 +15,7 @@ import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
-import kreyj.konfplan.presentation.DatabaseCleaner;
+import kreyj.konfplan.adapter.in.web.DatabaseCleaner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
