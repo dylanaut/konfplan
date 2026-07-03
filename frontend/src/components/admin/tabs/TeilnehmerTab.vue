@@ -159,12 +159,19 @@
             Verfügbarkeiten verwalten
           </div>
         </div>
-        <button v-if="availabilityStore.hasDirtyAvailabilities()" @click.stop="availabilityStore.saveAvailabilities(selectedVid)"
-                :disabled="isEventFinished"
-                class="btn-save-all">
-          <SaveAllIcon class="w-3.5 h-3.5"/>
-          Alle Änderungen speichern
-        </button>
+        <div class="flex items-center gap-2" @click.stop>
+          <button @click="emit('triggerUpload', `/api/admin/veranstaltungen/${selectedVid}/teilnehmer/verfuegbarkeiten/import`)"
+                  class="btn-secondary text-xs py-1 px-2 flex items-center gap-1">
+            <UploadIcon class="w-3.5 h-3.5"/>
+            Verfügbarkeiten Import
+          </button>
+          <button v-if="availabilityStore.hasDirtyAvailabilities()" @click="availabilityStore.saveAvailabilities(selectedVid)"
+                  :disabled="isEventFinished"
+                  class="btn-save-all">
+            <SaveAllIcon class="w-3.5 h-3.5"/>
+            Alle Änderungen speichern
+          </button>
+        </div>
       </div>
 
       <div v-show="showVerfuegbarkeitenBlock">

@@ -7,6 +7,7 @@ import io.quarkus.runtime.LaunchMode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.adapter.in.web.dto.ImportResultDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.SlotDto;
@@ -753,7 +754,7 @@ public class AdminService implements AdminServiceInterface {
                 }
 
                 String[] lineItems = line.split(";");
-                String teilnehmerEmail = lineItems[0].trim();
+                String teilnehmerEmail = lineItems[0].trim().toLowerCase();
 
                 Nutzer nutzer = Nutzer.findByEmail(teilnehmerEmail);
                 if (!(nutzer instanceof Teilnehmer teilnehmer)) {
@@ -1293,9 +1294,10 @@ public class AdminService implements AdminServiceInterface {
 
     @Transactional
     @Override
-    public int importNutzerVerfuegbarkeitenFromCsv(Path csvFilePath,
-                                                   Class<? extends Nutzer> nutzerKlasse, Long veranstaltungId) {
+    public ImportResultDto importNutzerVerfuegbarkeitenFromCsv(Path csvFilePath,
+                                                               Class<? extends Nutzer> nutzerKlasse, Long veranstaltungId) {
         int count = 0;
+        List<String> fehler = new ArrayList<>();
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
         if (null == veranstaltung) {
             throw new CsvImportException(csvFilePath, "Veranstaltung nicht gefunden.");
@@ -1312,17 +1314,29 @@ public class AdminService implements AdminServiceInterface {
                 .withSeparator(';')
                 .withIgnoreEmptyLine(true)
                 .withIgnoreLeadingWhiteSpace(true)
+                .withThrowExceptions(false)
                 .build();
 
-            for (NutzerVerfuegbarkeitCsvDto dto : csvToBean) {
+            List<NutzerVerfuegbarkeitCsvDto> beans = csvToBean.parse();
+
+            csvToBean.getCapturedExceptions().forEach(e -> {
+                String msg = "Zeile " + e.getLineNumber() + ": " + e.getMessage();
+                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (" + msg + ")");
+                fehler.add(msg);
+            });
+
+            for (NutzerVerfuegbarkeitCsvDto dto : beans) {
                 Nutzer nutzer = Nutzer.findByEmail(dto.email);
                 if (null == nutzer) {
-                    LOG.warn("Nutzer-Verfügbarkeit übersprungen: Nutzer mit E-Mail '" + dto.email + "' nicht gefunden.");
+                    String msg = "Nutzer mit E-Mail '" + dto.email + "' nicht gefunden.";
+                    LOG.warn("Nutzer-Verfügbarkeit übersprungen: " + msg);
+                    fehler.add(msg);
                     continue;
                 }
                 if (!nutzerKlasse.isInstance(nutzer)) {
-                    LOG.warn("Nutzer-Verfügbarkeit übersprungen: Nutzer mit E-Mail '" + dto.email
-                        + "' ist kein " + nutzerKlasse.getSimpleName() + " (falsche CSV-Datei?).");
+                    String msg = "Nutzer mit E-Mail '" + dto.email + "' ist kein " + nutzerKlasse.getSimpleName() + " (falsche CSV-Datei?).";
+                    LOG.warn("Nutzer-Verfügbarkeit übersprungen: " + msg);
+                    fehler.add(msg);
                     continue;
                 }
 
@@ -1339,15 +1353,17 @@ public class AdminService implements AdminServiceInterface {
         } catch (Exception e) {
             throw new CsvImportException(csvFilePath, e.getMessage());
         }
-        LOG.info("Nutzer-Verfügbarkeiten-Import abgeschlossen: " + count + " Einträge verarbeitet.");
-        return count;
+        LOG.info("Nutzer-Verfügbarkeiten-Import abgeschlossen: " + count + " Einträge aus " +
+            csvFilePath + " verarbeitet.");
+        return new ImportResultDto(count, fehler);
     }
 
 
     @Transactional
     @Override
-    public int importRaumVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId) {
+    public ImportResultDto importRaumVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId) {
         int count = 0;
+        List<String> fehler = new ArrayList<>();
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
         if (null == veranstaltung) {
             throw new CsvImportException(csvFilePath, "Veranstaltung nicht gefunden.");
@@ -1364,12 +1380,23 @@ public class AdminService implements AdminServiceInterface {
                 .withSeparator(';')
                 .withIgnoreEmptyLine(true)
                 .withIgnoreLeadingWhiteSpace(true)
+                .withThrowExceptions(false)
                 .build();
 
-            for (RaumVerfuegbarkeitCsvDto dto : csvToBean) {
+            List<RaumVerfuegbarkeitCsvDto> beans = csvToBean.parse();
+
+            csvToBean.getCapturedExceptions().forEach(e -> {
+                String msg = "Zeile " + e.getLineNumber() + ": " + e.getMessage();
+                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (" + msg + ")");
+                fehler.add(msg);
+            });
+
+            for (RaumVerfuegbarkeitCsvDto dto : beans) {
                 Raum raum = Raum.find("name = ?1 and gebaeude.name = ?2", dto.raum, dto.gebaeude).firstResult();
                 if (null == raum) {
-                    LOG.warn("Raum-Verfügbarkeit übersprungen: Raum '" + dto.raum + "' in Gebäude '" + dto.gebaeude + "' nicht gefunden.");
+                    String msg = "Raum '" + dto.raum + "' in Gebäude '" + dto.gebaeude + "' nicht gefunden.";
+                    LOG.warn("Raum-Verfügbarkeit übersprungen: " + msg);
+                    fehler.add(msg);
                     continue;
                 }
 
@@ -1386,8 +1413,9 @@ public class AdminService implements AdminServiceInterface {
         } catch (Exception e) {
             throw new CsvImportException(csvFilePath, e.getMessage());
         }
-        LOG.info("Raum-Verfügbarkeiten-Import abgeschlossen: " + count + " Einträge verarbeitet.");
-        return count;
+        LOG.info("Raum-Verfügbarkeiten-Import abgeschlossen: " + count + " Einträge aus " +
+            csvFilePath + " verarbeitet.");
+        return new ImportResultDto(count, fehler);
     }
 
 

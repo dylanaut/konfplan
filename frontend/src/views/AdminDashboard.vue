@@ -192,7 +192,7 @@
 
     <!-- CSV Import Feedback Modal -->
     <div v-if="showCsvFeedbackModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div class="w-full max-w-sm rounded-xl bg-white p-5 shadow-2xl">
+      <div class="w-full max-w-md rounded-xl bg-white p-5 shadow-2xl">
         <h3 class="text-base font-bold text-gray-900 mb-3">CSV Import Ergebnis</h3>
         <p class="text-sm mb-1">Erfolgreich: <span class="font-bold text-green-600">{{
             csvFeedback.successCount
@@ -200,6 +200,10 @@
         <p v-if="csvFeedback.errorCount > 0" class="text-sm mb-3">Fehler: <span
             class="font-bold text-red-600">{{ csvFeedback.errorCount }}</span></p>
         <p v-if="csvFeedback.errorMessage" class="text-red-500 text-xs mb-3">{{ csvFeedback.errorMessage }}</p>
+        <ul v-if="csvFeedback.errorMessages.length > 0"
+            class="text-red-500 text-xs mb-3 max-h-48 overflow-y-auto list-disc pl-4 space-y-1 border border-red-100 bg-red-50 rounded-lg p-3">
+          <li v-for="(msg, idx) in csvFeedback.errorMessages" :key="idx">{{ msg }}</li>
+        </ul>
         <button @click="showCsvFeedbackModal = false" class="btn-primary w-full py-1.5 text-xs">Schließen</button>
       </div>
     </div>
@@ -312,7 +316,8 @@ const showCsvFeedbackModal = ref(false);
 const csvFeedback = reactive({
   successCount: 0,
   errorCount: 0,
-  errorMessage: ''
+  errorMessage: '',
+  errorMessages: []
 });
 
 const visibleTabs = computed(() => {
@@ -932,19 +937,28 @@ const handleGlobalUpload = async (event) => {
   }
 };
 
-const showCsvFeedback = (message, isError) => {
+const showCsvFeedback = (data, isError) => {
   csvFeedback.errorMessage = '';
+  csvFeedback.errorMessages = [];
   csvFeedback.successCount = 0;
   csvFeedback.errorCount = 0;
-  if (isError) {
-    csvFeedback.errorMessage = message;
+
+  // Strukturiertes Ergebnis (ImportResultDto) der Verfügbarkeits-Importe: Anzahl + gesammelte Fehlermeldungen
+  const isImportResult = data && typeof data === 'object' && ('fehler' in data || 'anzahlErfolgreich' in data);
+
+  if (isImportResult) {
+    csvFeedback.successCount = data.anzahlErfolgreich || 0;
+    csvFeedback.errorMessages = data.fehler || [];
+    csvFeedback.errorCount = csvFeedback.errorMessages.length;
+  } else if (isError) {
+    csvFeedback.errorMessage = data;
     csvFeedback.errorCount = 1;
   } else {
-    const match = message.match(/(\d+)\s.*angelegt/);
+    const match = String(data).match(/(\d+)\s.*angelegt/);
     csvFeedback.successCount = (match && match[1]) ? parseInt(match[1]) : 1;
   }
   showCsvFeedbackModal.value = true;
-  if (!isError) setTimeout(() => {
+  if (!isError && csvFeedback.errorCount === 0) setTimeout(() => {
     showCsvFeedbackModal.value = false;
   }, 3000);
 };

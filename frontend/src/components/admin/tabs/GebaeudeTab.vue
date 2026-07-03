@@ -98,13 +98,20 @@
             Raum-Verfügbarkeiten verwalten
           </div>
         </div>
-        <button v-if="availabilityStore.hasDirtyAvailabilities()"
-                @click.stop="availabilityStore.saveAvailabilities(selectedVid)"
-                :disabled="isEventFinished"
-                class="btn-save-all">
-          <SaveAllIcon class="w-3.5 h-3.5"/>
-          Alle Änderungen speichern
-        </button>
+        <div class="flex items-center gap-2" @click.stop>
+          <button @click="emit('triggerUpload', `/api/admin/veranstaltungen/${selectedVid}/raeume/verfuegbarkeiten/import`)"
+                  class="btn-secondary text-xs py-1 px-2 flex items-center gap-1">
+            <UploadIcon class="w-3.5 h-3.5"/>
+            Verfügbarkeiten Import
+          </button>
+          <button v-if="availabilityStore.hasDirtyAvailabilities()"
+                  @click="availabilityStore.saveAvailabilities(selectedVid)"
+                  :disabled="isEventFinished"
+                  class="btn-save-all">
+            <SaveAllIcon class="w-3.5 h-3.5"/>
+            Alle Änderungen speichern
+          </button>
+        </div>
       </div>
 
       <div v-show="showRoomAvailabilityBlock">
@@ -171,7 +178,8 @@ import {
   ChevronUp as ChevronUpIcon,
   Pencil as PencilIcon,
   SaveAll as SaveAllIcon,
-  Trash2 as Trash2Icon
+  Trash2 as Trash2Icon,
+  Upload as UploadIcon
 } from '@lucide/vue';
 import PaginationControls from '../../PaginationControls.vue';
 import { useAvailabilityStore } from '../../../stores/availability';
@@ -205,6 +213,7 @@ const buildingsWithEventRooms = computed(() => {
 });
 
 const emit = defineEmits([
+  'triggerUpload',
   'openGebaeudeEditor',
   'deleteGebaeude',
   'openRaumEditor',

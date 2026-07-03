@@ -5,6 +5,7 @@ import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
+import kreyj.konfplan.adapter.in.web.dto.ImportResultDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.SlotDto;
@@ -76,7 +77,7 @@ public interface AdminServiceInterface {
 
     void deleteGruppe(Long veranstaltungId, String gruppenName);
 
-    int importNutzerVerfuegbarkeitenFromCsv(Path csvFilePath, Class<? extends Nutzer> nutzerKlasse, Long veranstaltungId);
+    ImportResultDto importNutzerVerfuegbarkeitenFromCsv(Path csvFilePath, Class<? extends Nutzer> nutzerKlasse, Long veranstaltungId);
 
-    int importRaumVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId);
+    ImportResultDto importRaumVerfuegbarkeitenFromCsv(Path csvFilePath, Long veranstaltungId);
 }

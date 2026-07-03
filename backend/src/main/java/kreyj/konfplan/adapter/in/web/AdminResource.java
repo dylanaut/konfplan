@@ -16,6 +16,7 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.VortragPrioDto;
+import kreyj.konfplan.adapter.in.web.dto.ImportResultDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
@@ -25,6 +26,7 @@ import kreyj.konfplan.domain.service.PrioritaetService;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
+import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Vortrag;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -161,6 +163,51 @@ public class AdminResource {
         } catch (Exception e) {
             Log.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
+        }
+    }
+
+
+    @POST
+    @Path("/veranstaltungen/{vid}/teilnehmer/verfuegbarkeiten/import")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Operation(summary = "Teilnehmer-Verfügbarkeiten importieren", description = "Importiert Teilnehmer-Verfügbarkeiten für eine Veranstaltung aus einer CSV-Datei.")
+    public Response importTeilnehmerVerfuegbarkeiten(@PathParam("vid") Long vid, @RestForm("file") FileUpload file) {
+        try {
+            ImportResultDto result = adminService.importNutzerVerfuegbarkeitenFromCsv(file.uploadedFile().toFile().toPath(), Teilnehmer.class, vid);
+            return Response.ok(result).build();
+        } catch (Exception e) {
+            Log.error(e.getMessage(), e);
+            return Response.status(Response.Status.BAD_REQUEST).entity(new ImportResultDto(0, List.of(e.getMessage()))).build();
+        }
+    }
+
+
+    @POST
+    @Path("/veranstaltungen/{vid}/referenten/verfuegbarkeiten/import")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Operation(summary = "Referenten-Verfügbarkeiten importieren", description = "Importiert Referenten-Verfügbarkeiten für eine Veranstaltung aus einer CSV-Datei.")
+    public Response importReferentenVerfuegbarkeiten(@PathParam("vid") Long vid, @RestForm("file") FileUpload file) {
+        try {
+            ImportResultDto result = adminService.importNutzerVerfuegbarkeitenFromCsv(file.uploadedFile().toFile().toPath(), Referent.class, vid);
+            return Response.ok(result).build();
+        } catch (Exception e) {
+            Log.error(e.getMessage(), e);
+            return Response.status(Response.Status.BAD_REQUEST).entity(new ImportResultDto(0, List.of(e.getMessage()))).build();
+        }
+    }
+
+
+    @POST
+    @Path("/veranstaltungen/{vid}/raeume/verfuegbarkeiten/import")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Operation(summary = "Raum-Verfügbarkeiten importieren", description = "Importiert Raum-Verfügbarkeiten für eine Veranstaltung aus einer CSV-Datei.")
+    public Response importRaumVerfuegbarkeiten(@PathParam("vid") Long vid, @RestForm("file") FileUpload file) {
+        try {
+            ImportResultDto result = adminService.importRaumVerfuegbarkeitenFromCsv(file.uploadedFile().toFile().toPath(), vid);
+            return Response.ok(result).build();
+        } catch (Exception e) {
+            Log.error(e.getMessage(), e);
+            return Response.status(Response.Status.BAD_REQUEST).entity(new ImportResultDto(0, List.of(e.getMessage()))).build();
         }
     }
 

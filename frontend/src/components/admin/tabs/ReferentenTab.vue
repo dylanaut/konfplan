@@ -7,6 +7,11 @@
         <button @click="emit('triggerUpload', `/api/veranstaltungen/${selectedVid}/referenten/import`)"
                 class="btn-secondary text-xs py-1 px-3">Import
         </button>
+        <button @click="emit('triggerUpload', `/api/admin/veranstaltungen/${selectedVid}/referenten/verfuegbarkeiten/import`)"
+                class="btn-secondary text-xs py-1 px-3 flex items-center gap-1">
+          <UploadIcon class="w-3.5 h-3.5"/>
+          Verfügbarkeiten Import
+        </button>
         <button @click="emit('openUserModal', {role: 'REFERENT'})" class="btn-primary text-xs py-1 px-3">+ Neu</button>
       </div>
     </div>
@@ -67,6 +72,7 @@ import {
   Mail as MailIcon,
   Pencil as PencilIcon,
   Trash2 as Trash2Icon,
+  Upload as UploadIcon,
   User as UserIcon
 } from '@lucide/vue';
 import PaginationControls from '../../PaginationControls.vue';
