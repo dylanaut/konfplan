@@ -27,7 +27,7 @@ public class ProtokollService {
 
 
     @Transactional
-    public void log(ProtokollKategorie kategorie, String ereignis, String details, Long referenzId, String akteur) {
+    public void log(ProtokollKategorie kategorie, String ereignis, String details, Long referenzId, Long veranstaltungId, String akteur) {
         Protokoll p = new Protokoll();
         p.setZeitpunkt(LocalDateTime.now());
         p.setAkteur(Optional.ofNullable(akteur).orElseGet(this::getAkteur));
@@ -35,22 +35,33 @@ public class ProtokollService {
         p.setEreignis(ereignis);
         p.setDetails(details);
         p.setReferenzId(referenzId);
+        p.setVeranstaltungId(veranstaltungId);
         p.persistAndFlush();
     }
 
 
+    public void log(ProtokollKategorie kategorie, String ereignis, String details, Long referenzId, String akteur) {
+        log(kategorie, ereignis, details, referenzId, null, akteur);
+    }
+
+
+    public void log(ProtokollKategorie kategorie, String ereignis, String details, Long referenzId, Long veranstaltungId) {
+        log(kategorie, ereignis, details, referenzId, veranstaltungId, null);
+    }
+
+
     public void log(ProtokollKategorie kategorie, String ereignis, String details, Long referenzId) {
-        log(kategorie, ereignis, details, referenzId, null);
+        log(kategorie, ereignis, details, referenzId, null, null);
     }
 
 
     public void log(ProtokollKategorie kategorie, String ereignis, String details) {
-        log(kategorie, ereignis, details, null, null);
+        log(kategorie, ereignis, details, null, null, null);
     }
 
 
     public void log(ProtokollKategorie kategorie, String ereignis) {
-        log(kategorie, ereignis, null, null, null);
+        log(kategorie, ereignis, null, null, null, null);
     }
 
 

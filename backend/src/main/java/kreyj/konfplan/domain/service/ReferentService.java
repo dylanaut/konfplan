@@ -156,7 +156,7 @@ public class ReferentService implements ReferentServiceInterface {
             mailService.sendVortragsRegistrierung(vortrag.getVeranstaltung(), referent, vortrag, true);
         }
 
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent erstellt", "Referent '" + email + "' hat Vortrag '" + vortrag.getTitel() + "' für Event '" + veranstaltung.getName() + "' erstellt.", vortrag.getId());
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent erstellt", "Referent '" + email + "' hat Vortrag '" + vortrag.getTitel() + "' für Event '" + veranstaltung.getName() + "' erstellt.", vortrag.getId(), veranstaltung.getId());
         return VortragDto.from(vortrag);
     }
 
@@ -178,7 +178,7 @@ public class ReferentService implements ReferentServiceInterface {
         checkDeadline(vortrag.getVeranstaltung());
 
         updateVortragFromDto(vortrag, dto);
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent aktualisiert", "Referent '" + email + "' hat Vortrag '" + vortrag.getTitel() + "' aktualisiert.", vortrag.getId());
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent aktualisiert", "Referent '" + email + "' hat Vortrag '" + vortrag.getTitel() + "' aktualisiert.", vortrag.getId(), vortrag.getVeranstaltung().getId());
         return VortragDto.from(vortrag);
     }
 
@@ -230,7 +230,7 @@ public class ReferentService implements ReferentServiceInterface {
         if (veranstaltung.getBeginntAm().isAfter(LocalDateTime.now())) {
             mailService.sendVortragsRegistrierung(veranstaltung, referent, vortrag, true);
         }
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag für weiteres Event registriert", "Referent '" + email + "' hat Vortrag '" + vortrag.getTitel() + "' für Event '" + veranstaltung.getName() + "' registriert.", vortrag.getId());
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag für weiteres Event registriert", "Referent '" + email + "' hat Vortrag '" + vortrag.getTitel() + "' für Event '" + veranstaltung.getName() + "' registriert.", vortrag.getId(), veranstaltung.getId());
     }
 
 
@@ -293,7 +293,7 @@ public class ReferentService implements ReferentServiceInterface {
             mailService.sendVortragsRegistrierung(veranstaltung, referent, zielVortrag, true);
         }
 
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag geklont", "Referent '" + email + "' hat Vortrag '" + zielVortrag.getTitel() + "' von Event '" + quellVortrag.getVeranstaltung().getName() + "' nach Event '" + veranstaltung.getName() + "' geklont.", zielVortrag.getId());
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag geklont", "Referent '" + email + "' hat Vortrag '" + zielVortrag.getTitel() + "' von Event '" + quellVortrag.getVeranstaltung().getName() + "' nach Event '" + veranstaltung.getName() + "' geklont.", zielVortrag.getId(), veranstaltung.getId());
 
         return VortragDto.from(zielVortrag);
     }
@@ -321,7 +321,7 @@ public class ReferentService implements ReferentServiceInterface {
         if (veranstaltung.getBeginntAm().isAfter(LocalDateTime.now())) {
             mailService.sendVortragsRegistrierung(veranstaltung, referent, vortrag, false);
         }
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag von Event abgemeldet", "Referent '" + email + "' hat Vortrag '" + titel + "' von Event '" + veranstaltung.getName() + "' abgemeldet.", vortragId);
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag von Event abgemeldet", "Referent '" + email + "' hat Vortrag '" + titel + "' von Event '" + veranstaltung.getName() + "' abgemeldet.", vortragId, veranstaltung.getId());
     }
 
 
@@ -379,7 +379,7 @@ public class ReferentService implements ReferentServiceInterface {
         if (veranstaltung.getBeginntAm().isAfter(LocalDateTime.now())) {
             mailService.sendVortragsRegistrierung(veranstaltung, referent, vortrag, false);
         }
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent gelöscht", "Referent '" + email + "' hat Vortrag '" + titel + "' gelöscht.", vortragId);
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent gelöscht", "Referent '" + email + "' hat Vortrag '" + titel + "' gelöscht.", vortragId, veranstaltung.getId());
 
         return true;
     }
@@ -438,7 +438,7 @@ public class ReferentService implements ReferentServiceInterface {
                 ref.addVeranstaltung(veranstaltung);
 
                 count++;
-                protokollService.log(ProtokollKategorie.NUTZER, "Referent importiert", "Referent '" + ref.getEmail() + "' via CSV importiert und Event '" + veranstaltung.getName() + "' zugewiesen.", ref.getId());
+                protokollService.log(ProtokollKategorie.NUTZER, "Referent importiert", "Referent '" + ref.getEmail() + "' via CSV importiert und Event '" + veranstaltung.getName() + "' zugewiesen.", ref.getId(), veranstaltung.getId());
             }
         }
         return count;

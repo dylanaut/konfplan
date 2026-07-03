@@ -114,13 +114,13 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
         if (null == dto.id) {
             v.persistAndFlush();
             protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung erstellt",
-                "Neue Veranstaltung '" + v.getName() + "' erstellt.", v.getId());
+                "Neue Veranstaltung '" + v.getName() + "' erstellt.", v.getId(), v.getId());
         } else {
             // ZWINGEND ERFORDERLICH FÜR OPTIMISTIC LOCKING RESPONSE:
             // Hibernate zwingen, das Update jetzt durchzuführen, damit persistence.version() hochgezählt wird.
             v.persistAndFlush();
             protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung aktualisiert",
-                "Veranstaltung '" + v.getName() + "' aktualisiert.", v.getId());
+                "Veranstaltung '" + v.getName() + "' aktualisiert.", v.getId(), v.getId());
         }
         return VeranstaltungDto.from(v);
     }
@@ -213,7 +213,7 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
 
                 count++;
                 protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung importiert",
-                    "Veranstaltung '" + veranstaltung.getName() + "' via CSV importiert.", veranstaltung.getId());
+                    "Veranstaltung '" + veranstaltung.getName() + "' via CSV importiert.", veranstaltung.getId(), veranstaltung.getId());
             }
         } catch (Exception e) {
             LOG.error("Kritischer Fehler beim Importieren der Veranstaltungen aus CSV: " + csvFilePath, e);
@@ -232,7 +232,7 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
             boolean deleted = Veranstaltung.deleteById(id);
             if (deleted) {
                 protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung gelöscht",
-                    "Veranstaltung '" + veranstaltung.getName() + "' gelöscht.", veranstaltung.getId());
+                    "Veranstaltung '" + veranstaltung.getName() + "' gelöscht.", veranstaltung.getId(), veranstaltung.getId());
             }
             return deleted;
         }

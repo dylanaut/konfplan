@@ -165,6 +165,7 @@
 
       <ProtokollTab v-if="activeTab === 'protokoll'"
                     :protokolle="protokolle"
+                    :veranstaltungen="veranstaltungen"
       />
     </div>
 

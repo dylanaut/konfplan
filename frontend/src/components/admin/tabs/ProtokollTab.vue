@@ -21,10 +21,17 @@
     </div>
 
     <!-- Filter Bereich -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
       <div class="space-y-1">
         <label class="text-[10px] font-bold text-indigo-900 uppercase tracking-wider">Akteur filtern</label>
         <input v-model="filterAkteur" placeholder="Name oder E-Mail..." class="input-field w-full text-xs" />
+      </div>
+      <div class="space-y-1">
+        <label class="text-[10px] font-bold text-indigo-900 uppercase tracking-wider">Veranstaltung filtern</label>
+        <select v-model="filterVeranstaltungId" class="input-field w-full text-xs">
+          <option value="">Alle Veranstaltungen</option>
+          <option v-for="v in veranstaltungOptions" :key="v.id" :value="v.id">{{ v.name }}</option>
+        </select>
       </div>
       <div class="space-y-1">
         <label class="text-[10px] font-bold text-indigo-900 uppercase tracking-wider">Kategorie filtern</label>
@@ -55,6 +62,10 @@
               Akteur
               <component :is="getSortIcon('akteur')" class="w-3 h-3 ml-1" />
             </th>
+            <th @click="toggleSort('veranstaltungName')" class="sortable-header">
+              Veranstaltung
+              <component :is="getSortIcon('veranstaltungName')" class="w-3 h-3 ml-1" />
+            </th>
             <th @click="toggleSort('kategorie')" class="sortable-header">
               Kategorie
               <component :is="getSortIcon('kategorie')" class="w-3 h-3 ml-1" />
@@ -74,6 +85,7 @@
           <tr v-for="entry in displayProtokolle" :key="entry.id" class="hover:bg-gray-50 transition-colors">
             <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-600 font-mono">{{ formatDateTime(entry.zeitpunkt) }}</td>
             <td class="px-4 py-2 whitespace-nowrap text-xs font-medium text-gray-900">{{ entry.akteur }}</td>
+            <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-600">{{ entry.veranstaltungName }}</td>
             <td class="px-4 py-2 whitespace-nowrap">
               <span :class="getKategorieClass(entry.kategorie)" class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">
                 {{ entry.kategorie }}
@@ -97,11 +109,42 @@ const props = defineProps({
   protokolle: {
     type: Array,
     required: true
+  },
+  veranstaltungen: {
+    type: Array,
+    default: () => []
   }
+});
+
+const OHNE_VERANSTALTUNG = 'Ohne Veranstaltung';
+
+const veranstaltungName = (veranstaltungId) => {
+  if (!veranstaltungId) return OHNE_VERANSTALTUNG;
+  const v = props.veranstaltungen.find(v => v.id === veranstaltungId);
+  return v ? v.name : `#${veranstaltungId}`;
+};
+
+// Protokolleinträge um den aufgelösten Veranstaltungsnamen ergänzt (für Anzeige, Filter, Sortierung, Export)
+const enrichedProtokolle = computed(() => {
+  return props.protokolle.map(p => ({ ...p, veranstaltungName: veranstaltungName(p.veranstaltungId) }));
+});
+
+// Für den Filter: alle Veranstaltungen, die tatsächlich in den Protokolleinträgen vorkommen
+const veranstaltungOptions = computed(() => {
+  const idsInData = new Set(props.protokolle.map(p => p.veranstaltungId).filter(Boolean));
+  const options = props.veranstaltungen
+    .filter(v => idsInData.has(v.id))
+    .map(v => ({ id: v.id, name: v.name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  if (props.protokolle.some(p => !p.veranstaltungId)) {
+    options.push({ id: 'none', name: OHNE_VERANSTALTUNG });
+  }
+  return options;
 });
 
 // Filter State
 const filterAkteur = ref('');
+const filterVeranstaltungId = ref('');
 const filterKategorie = ref('');
 const filterEreignis = ref('');
 
@@ -132,12 +175,17 @@ const getSortIcon = (key) => {
 };
 
 const displayProtokolle = computed(() => {
-  let result = [...props.protokolle];
+  let result = [...enrichedProtokolle.value];
 
   // Filtering
   if (filterAkteur.value) {
     const search = filterAkteur.value.toLowerCase();
     result = result.filter(p => p.akteur.toLowerCase().includes(search));
+  }
+  if (filterVeranstaltungId.value) {
+    result = filterVeranstaltungId.value === 'none'
+      ? result.filter(p => !p.veranstaltungId)
+      : result.filter(p => p.veranstaltungId === filterVeranstaltungId.value);
   }
   if (filterKategorie.value) {
     result = result.filter(p => p.kategorie === filterKategorie.value);
@@ -171,7 +219,7 @@ const exportCSV = () => {
   const end = new Date(exportEnd.value);
   end.setHours(23,59,59,999);
 
-  const toExport = props.protokolle.filter(p => {
+  const toExport = enrichedProtokolle.value.filter(p => {
     const d = new Date(p.zeitpunkt);
     return d >= start && d <= end;
   }).sort((a,b) => new Date(a.zeitpunkt) - new Date(b.zeitpunkt));
@@ -181,10 +229,11 @@ const exportCSV = () => {
     return;
   }
 
-  const headers = ['Zeitpunkt', 'Akteur', 'Kategorie', 'Ereignis', 'Details', 'ReferenzId'];
+  const headers = ['Zeitpunkt', 'Akteur', 'Veranstaltung', 'Kategorie', 'Ereignis', 'Details', 'ReferenzId'];
   const rows = toExport.map(p => [
     formatDateTime(p.zeitpunkt),
     p.akteur,
+    p.veranstaltungName,
     p.kategorie,
     p.ereignis,
     p.details || '',

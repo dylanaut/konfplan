@@ -154,7 +154,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
 
         Veranstaltung v = Veranstaltung.findById(veranstaltungId);
         if (null == v) {
-            protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Erstellung fehlgeschlagen", "Veranstaltung nicht gefunden: " + veranstaltungId);
+            protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Erstellung fehlgeschlagen", "Veranstaltung nicht gefunden: " + veranstaltungId, null, veranstaltungId);
             throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
         }
 
@@ -163,7 +163,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         user.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
 
         user.persistAndFlush();
-        protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer erstellt", "Teilnehmer " + user.getEmail() + " für Veranstaltung " + v.getName() + " erstellt.", user.getId());
+        protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer erstellt", "Teilnehmer " + user.getEmail() + " für Veranstaltung " + v.getName() + " erstellt.", user.getId(), veranstaltungId);
         return user;
     }
 
@@ -174,7 +174,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         Veranstaltung v = Veranstaltung.findById(veranstaltungId);
         if (null == v) {
             LOG.error("CSV-Import abgebrochen: Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
-            protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Import fehlgeschlagen", "Veranstaltung nicht gefunden: " + veranstaltungId);
+            protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Import fehlgeschlagen", "Veranstaltung nicht gefunden: " + veranstaltungId, null, veranstaltungId);
             throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
         }
 
@@ -192,13 +192,13 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
 
             csvToBean.getCapturedExceptions().forEach(e -> {
                 LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage());
-                protokollService.log(ProtokollKategorie.SYSTEM, "CSV-Parsing-Fehler", "Teilnehmer-Import: " + e.getMessage() + " in Zeile " + e.getLineNumber());
+                protokollService.log(ProtokollKategorie.SYSTEM, "CSV-Parsing-Fehler", "Teilnehmer-Import: " + e.getMessage() + " in Zeile " + e.getLineNumber(), null, veranstaltungId);
             });
 
             for (TeilnehmerCsvDto csvDto : beans) {
                 if (StringUtils.isBlank(csvDto.email)) {
                     LOG.warn("Teilnehmer-Zeile übersprungen: Email fehlt.");
-                    protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Import übersprungen", "E-Mail fehlte in CSV-Zeile.");
+                    protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Import übersprungen", "E-Mail fehlte in CSV-Zeile.", null, veranstaltungId);
                     continue;
                 }
 
@@ -232,19 +232,19 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
                     tn.addVeranstaltung(v);
 
                     count++;
-                    protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer importiert", "Teilnehmer " + tn.getEmail() + " für Veranstaltung " + v.getName() + " importiert.", tn.getId());
+                    protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer importiert", "Teilnehmer " + tn.getEmail() + " für Veranstaltung " + v.getName() + " importiert.", tn.getId(), veranstaltungId);
                 } else {
                     LOG.warn("Teilnehmer übersprungen: Email " + email + " existiert bereits.");
-                    protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Import übersprungen", "E-Mail existiert bereits: " + email);
+                    protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Import übersprungen", "E-Mail existiert bereits: " + email, null, veranstaltungId);
                 }
             }
         } catch (Exception e) {
             LOG.error("Kritischer Fehler beim Importieren der Teilnehmer aus CSV: " + csvFilePath, e);
-            protokollService.log(ProtokollKategorie.SYSTEM, "Kritischer Fehler beim Teilnehmer-Import", e.getMessage());
+            protokollService.log(ProtokollKategorie.SYSTEM, "Kritischer Fehler beim Teilnehmer-Import", e.getMessage(), null, veranstaltungId);
             throw e;
         }
         LOG.info("CSV-Import abgeschlossen: " + count + " Teilnehmer aus " + csvFilePath + " importiert.");
-        protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Import abgeschlossen", count + " Teilnehmer importiert für Veranstaltung " + v.getName() + ".");
+        protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Import abgeschlossen", count + " Teilnehmer importiert für Veranstaltung " + v.getName() + ".", null, veranstaltungId);
         return count;
     }
 
@@ -298,7 +298,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
     public Teilnehmer updateTeilnehmer(Long id, NutzerDto tnDto, Long veranstaltungId) {
         Nutzer existing = Nutzer.findById(id);
         if (!(existing instanceof Teilnehmer tn)) {
-            protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Update fehlgeschlagen", "Teilnehmer mit ID " + id + " nicht gefunden oder falscher Typ.");
+            protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Update fehlgeschlagen", "Teilnehmer mit ID " + id + " nicht gefunden oder falscher Typ.", null, veranstaltungId);
             return null;
         }
 
@@ -320,7 +320,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
 
         tn.persistAndFlush();
 
-        protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer aktualisiert", "Teilnehmer " + oldEmail + " (ID: " + tn.getId() + ") aktualisiert. Neue E-Mail: " + tn.getEmail() + ".", tn.getId());
+        protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer aktualisiert", "Teilnehmer " + oldEmail + " (ID: " + tn.getId() + ") aktualisiert. Neue E-Mail: " + tn.getEmail() + ".", tn.getId(), veranstaltungId);
         return tn;
     }
 
@@ -330,18 +330,18 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
     public void savePriorities(Long userId, Long veranstaltungId, List<VortragPrioDto> priorityDtos) {
         Teilnehmer teilnehmer = Teilnehmer.findById(userId);
         if (null == teilnehmer) {
-            protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung fehlgeschlagen", "Teilnehmer mit ID " + userId + " nicht gefunden.");
+            protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung fehlgeschlagen", "Teilnehmer mit ID " + userId + " nicht gefunden.", null, veranstaltungId);
             throw new NotFoundException("Teilnehmer mit ID " + userId + " nicht gefunden.");
         }
 
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
         if (null == veranstaltung) {
-            protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung fehlgeschlagen", "Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
+            protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung fehlgeschlagen", "Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.", null, veranstaltungId);
             throw new NotFoundException("Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
         }
 
         if (LocalDateTime.now().isAfter(veranstaltung.getEndetAm())) {
-            protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung fehlgeschlagen", "Veranstaltung " + veranstaltung.getName() + " ist beendet. Nutzer: " + teilnehmer.getEmail() + ".", teilnehmer.getId());
+            protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung fehlgeschlagen", "Veranstaltung " + veranstaltung.getName() + " ist beendet. Nutzer: " + teilnehmer.getEmail() + ".", teilnehmer.getId(), veranstaltungId);
             throw new ForbiddenException("Die Veranstaltung ist bereits beendet. Prioritäten können nicht mehr geändert werden.");
         }
 
@@ -352,11 +352,11 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
                 Wahlvortrag vortrag = Wahlvortrag.findById(dto.vortragId);
                 if (null == vortrag) {
                     LOG.warn("Vortrag mit ID " + dto.vortragId + " für Priorität von Teilnehmer " + userId + " nicht gefunden. Überspringe.");
-                    protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung Warnung", "Vortrag " + dto.vortragId + " für Priorität von " + teilnehmer.getEmail() + " nicht gefunden.", teilnehmer.getId());
+                    protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung Warnung", "Vortrag " + dto.vortragId + " für Priorität von " + teilnehmer.getEmail() + " nicht gefunden.", teilnehmer.getId(), veranstaltungId);
                     continue;
                 }
                 if (!vortrag.getVeranstaltung().getId().equals(veranstaltungId)) {
-                    protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung fehlgeschlagen", "Vortrag " + dto.vortragId + " gehört nicht zur Veranstaltung " + veranstaltungId + ". Nutzer: " + teilnehmer.getEmail() + ".", teilnehmer.getId());
+                    protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung fehlgeschlagen", "Vortrag " + dto.vortragId + " gehört nicht zur Veranstaltung " + veranstaltungId + ". Nutzer: " + teilnehmer.getEmail() + ".", teilnehmer.getId(), veranstaltungId);
                     throw new BadRequestException("Vortrag " + dto.vortragId + " gehört nicht zur Veranstaltung " + veranstaltungId);
                 }
 
@@ -367,7 +367,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
                 prioritaet.persistAndFlush();
             }
         }
-        protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten gespeichert", "Prioritäten für Teilnehmer " + teilnehmer.getEmail() + " in Veranstaltung " + veranstaltung.getName() + " gespeichert.", teilnehmer.getId());
+        protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten gespeichert", "Prioritäten für Teilnehmer " + teilnehmer.getEmail() + " in Veranstaltung " + veranstaltung.getName() + " gespeichert.", teilnehmer.getId(), veranstaltungId);
     }
 
 

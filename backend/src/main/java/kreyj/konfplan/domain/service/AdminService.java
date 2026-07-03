@@ -351,7 +351,7 @@ public class AdminService implements AdminServiceInterface {
             nutzer.addVeranstaltung(veranstaltung);
             mailService.sendEinladungZuVeranstaltung(nutzer, veranstaltung);
             LOG.info("Nutzer " + nutzer.getEmail() + " zu Veranstaltung " + veranstaltung.getName() + " eingeladen.");
-            protokollService.log(ProtokollKategorie.SECURITY, "Nutzer zu Veranstaltung eingeladen", "Nutzer '" + nutzer.getEmail() + "' zu '" + veranstaltung.getName() + "' eingeladen.", veranstaltung.getId());
+            protokollService.log(ProtokollKategorie.SECURITY, "Nutzer zu Veranstaltung eingeladen", "Nutzer '" + nutzer.getEmail() + "' zu '" + veranstaltung.getName() + "' eingeladen.", veranstaltung.getId(), veranstaltung.getId());
         } else {
             LOG.info("Nutzer " + nutzer.getEmail() + " ist bereits für Veranstaltung " + veranstaltung.getName() + " registriert.");
         }
@@ -496,7 +496,7 @@ public class AdminService implements AdminServiceInterface {
 
         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag erstellt",
             "Vortrag '" + created.getTitel() + "' (" + (created.istPflicht() ? "Pflicht" : "Wahl") + ") erstellt.",
-            created.getId());
+            created.getId(), veranstaltung.getId());
 
         return created;
     }
@@ -672,7 +672,7 @@ public class AdminService implements AdminServiceInterface {
 
                         count++;
                         protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag importiert",
-                            "Vortrag '" + dto.titel + "' via CSV importiert.", vortrag.getId());
+                            "Vortrag '" + dto.titel + "' via CSV importiert.", vortrag.getId(), vortrag.getVeranstaltung().getId());
                     } catch (IllegalArgumentException e) {
                         LOG.warn("Vortrag '" + csvDto.titel + "' übersprungen aufgrund von Validierungsfehler: " + e.getMessage());
                     }
@@ -799,7 +799,7 @@ public class AdminService implements AdminServiceInterface {
                             prioritaet.setPrioWert(prioWert);
                             prioritaet.persistAndFlush();
                             count++;
-                            protokollService.log(ProtokollKategorie.VORTRAEGE, "Priorität importiert", "Priorität für '" + teilnehmer.getEmail() + "' für Vortrag '" + vortrag.getTitel() + "' auf " + prioWert + " gesetzt.", vortrag.getId());
+                            protokollService.log(ProtokollKategorie.VORTRAEGE, "Priorität importiert", "Priorität für '" + teilnehmer.getEmail() + "' für Vortrag '" + vortrag.getTitel() + "' auf " + prioWert + " gesetzt.", vortrag.getId(), veranstaltungId);
                         } catch (NumberFormatException e) {
                             LOG.warn("Ungültiger Prioritätswert für Teilnehmer " + teilnehmerEmail + " und Vortrag " + vortrag.getTitel() + ": " + e.getMessage());
                         }
@@ -876,7 +876,7 @@ public class AdminService implements AdminServiceInterface {
         }
 
         protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot erstellt",
-            "Slot '" + slotDto.description + "' für '" + v.getName() + "' erstellt.", slot.getId());
+            "Slot '" + slotDto.description + "' für '" + v.getName() + "' erstellt.", slot.getId(), veranstaltungId);
 
         return slot;
     }
@@ -903,7 +903,7 @@ public class AdminService implements AdminServiceInterface {
             entity.setDescription(updated.description);
             entity.setStartTime(updated.startTime);
             entity.setEndTime(updated.endTime);
-            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot aktualisiert", "Slot '" + entity.getDescription() + "' aktualisiert.", entity.getId());
+            protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot aktualisiert", "Slot '" + entity.getDescription() + "' aktualisiert.", entity.getId(), veranstaltungId);
         }
         return entity;
     }
@@ -957,7 +957,7 @@ public class AdminService implements AdminServiceInterface {
 
             long count = Slot.delete("id = ?1", id);
             if (count > 0) {
-                protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot gelöscht", "Slot '" + desc + "' gelöscht.", id);
+                protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot gelöscht", "Slot '" + desc + "' gelöscht.", id, veranstaltung.getId());
                 return true;
             }
         }
@@ -1007,7 +1007,7 @@ public class AdminService implements AdminServiceInterface {
                     Slot created = createSlot(slotDto, veranstaltungId);
                     count++;
                     protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Zeit-Slot importiert",
-                        "Slot '" + slotDto.description + "' via CSV importiert.", created.getId());
+                        "Slot '" + slotDto.description + "' via CSV importiert.", created.getId(), veranstaltungId);
                 } catch (IllegalArgumentException e) {
                     LOG.warn("Slot '" + dto.bezeichnung + "' übersprungen aufgrund von Validierungsfehler: " + e.getMessage());
                 }
@@ -1062,7 +1062,7 @@ public class AdminService implements AdminServiceInterface {
         }
         entity.persistAndFlush();
 
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag aktualisiert", "Vortrag '" + entity.getTitel() + "' aktualisiert.", entity.getId());
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag aktualisiert", "Vortrag '" + entity.getTitel() + "' aktualisiert.", entity.getId(), veranstaltungId);
         return VortragDto.from(entity);
     }
 
@@ -1107,7 +1107,7 @@ public class AdminService implements AdminServiceInterface {
         boolean deleted = Vortrag.deleteById(id);
 
         if (deleted) {
-            protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag gelöscht", "Vortrag '" + titel + "' gelöscht.", id);
+            protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag gelöscht", "Vortrag '" + titel + "' gelöscht.", id, veranstaltung.getId());
         }
 
         return deleted;
@@ -1223,7 +1223,7 @@ public class AdminService implements AdminServiceInterface {
         if (!veranstaltung.addGruppe(gruppenName)) {
             throw new CreateVortragException("Gruppe '" + gruppenName + "' existiert bereits.");
         }
-        protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Gruppe erstellt", "Gruppe '" + gruppenName + "' zu Veranstaltung '" + veranstaltung.getName() + "' hinzugefügt.", veranstaltungId);
+        protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Gruppe erstellt", "Gruppe '" + gruppenName + "' zu Veranstaltung '" + veranstaltung.getName() + "' hinzugefügt.", veranstaltungId, veranstaltungId);
     }
 
 
@@ -1259,7 +1259,7 @@ public class AdminService implements AdminServiceInterface {
             teilnehmer.addGruppe(neuerName);
         }
 
-        protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Gruppe umbenannt", "Gruppe von '" + alterName + "' zu '" + neuerName + "' in Veranstaltung '" + veranstaltung.getName() + "' umbenannt.", veranstaltungId);
+        protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Gruppe umbenannt", "Gruppe von '" + alterName + "' zu '" + neuerName + "' in Veranstaltung '" + veranstaltung.getName() + "' umbenannt.", veranstaltungId, veranstaltungId);
     }
 
 
@@ -1285,7 +1285,7 @@ public class AdminService implements AdminServiceInterface {
             teilnehmer.removeGruppe(gruppenName);
         }
 
-        protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Gruppe gelöscht", "Gruppe '" + gruppenName + "' aus Veranstaltung '" + veranstaltung.getName() + "' entfernt.", veranstaltungId);
+        protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Gruppe gelöscht", "Gruppe '" + gruppenName + "' aus Veranstaltung '" + veranstaltung.getName() + "' entfernt.", veranstaltungId, veranstaltungId);
     }
 
     // ... am Ende der AdminService.java Klasse ...

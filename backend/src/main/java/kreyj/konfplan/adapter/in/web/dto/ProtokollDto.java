@@ -18,12 +18,13 @@ public class ProtokollDto extends AbstractIdDto {
     public String ereignis;
     public String details;
     public Long referenzId;
+    public Long veranstaltungId;
 
     // -------------------------------------------------------------------
     // Konstruktoren
     // -------------------------------------------------------------------
 
     public ProtokollDto(Protokoll p) {
-        this(p.getZeitpunkt(), p.getAkteur(), p.getKategorie(), p.getEreignis(), p.getDetails(), p.getReferenzId());
+        this(p.getZeitpunkt(), p.getAkteur(), p.getKategorie(), p.getEreignis(), p.getDetails(), p.getReferenzId(), p.getVeranstaltungId());
     }
 }

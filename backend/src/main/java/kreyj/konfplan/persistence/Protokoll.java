@@ -37,6 +37,5 @@ public class Protokoll extends IdEntity {
 
     private Long referenzId; // Optional: ID der betroffenen Entität (z.B. veranstaltungId)
 
-    // Panache Active Record Pattern: Statische Methoden für Finder etc.
-    // Keine Getter/Setter für Public Fields, außer wo nötig.
+    private Long veranstaltungId; // Optional: ID der zugehörigen Veranstaltung; null bei veranstaltungsübergreifenden Ereignissen (z.B. GEBAEUDE, LOGIN, SYSTEM)
 }

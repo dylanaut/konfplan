@@ -124,7 +124,7 @@ public class PlanErstellungService {
         cancelled = false;
         lastError = null;
         protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung gestartet",
-            "Planerstellung für '" + vName + "' mit Solver '" + config.getSolver() + "' von " + username + " gestartet.", veranstaltungId, username);
+            "Planerstellung für '" + vName + "' mit Solver '" + config.getSolver() + "' von " + username + " gestartet.", veranstaltungId, veranstaltungId, username);
 
         try {
             List<Teilnehmer> teilnehmer = veranstaltung.teilnehmer();
@@ -135,7 +135,7 @@ public class PlanErstellungService {
             if (slots.isEmpty() || teilnehmer.isEmpty() || wahlvortraege.isEmpty()) {
                 LOG.warn("Keine Wahlvorträge, Slots oder Teilnehmer vorhanden. Planerstellung wird nicht gestartet.");
                 String message = "Voraussetzungen (Teilnehmer, Slots, Wahlvorträge) nicht erfüllt.";
-                protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung abgebrochen", message, veranstaltungId, username);
+                protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung abgebrochen", message, veranstaltungId, veranstaltungId, username);
                 lastError = message;
                 return;
             }
@@ -152,10 +152,10 @@ public class PlanErstellungService {
                 if (resultJson.contains("instanz_slot") && isValidJson(resultJson)) {
                     speicherePlanungsergebnis(veranstaltung, resultJson, config);
                     protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung erfolgreich",
-                        "Planerstellung für '" + vName + "' abgeschlossen. Ergebnis wurde gespeichert.", veranstaltungId, username);
+                        "Planerstellung für '" + vName + "' abgeschlossen. Ergebnis wurde gespeichert.", veranstaltungId, veranstaltungId, username);
                 } else {
                     String message = "MiniZinc konnte keine Lösung finden.";
-                    protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung fehlgeschlagen", message, veranstaltungId, username);
+                    protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung fehlgeschlagen", message, veranstaltungId, veranstaltungId, username);
                     if (!cancelled) {
                         lastError = message;
                     }
@@ -164,7 +164,7 @@ public class PlanErstellungService {
                 Files.deleteIfExists(tempDzn);
             }
         } catch (Exception e) {
-            protokollService.log(ProtokollKategorie.PLANUNG, "Fehler bei Planerstellung", e.getMessage(), veranstaltungId, username);
+            protokollService.log(ProtokollKategorie.PLANUNG, "Fehler bei Planerstellung", e.getMessage(), veranstaltungId, veranstaltungId, username);
             if (!cancelled) {
                 lastError = (e.getMessage() != null) ? e.getMessage() : e.toString();
             }
@@ -199,7 +199,7 @@ public class PlanErstellungService {
         LOG.warn(message);
         protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung abgebrochen",
             "Planerstellung für '" + vName + "' abgebrochen:" + LINE_SEP + details,
-            veranstaltungId, username);
+            veranstaltungId, veranstaltungId, username);
         throw new CollisionsException(message);
     }
 
