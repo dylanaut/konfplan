@@ -16,6 +16,7 @@ public class TeilnehmerDto {
     public Long id;
     public String firstName;
     public String lastName;
+    public String email;
     public Set<String> gruppen;
 
 
@@ -46,6 +47,6 @@ public class TeilnehmerDto {
 
 
     public static TeilnehmerDto from(Teilnehmer tn) {
-        return new TeilnehmerDto(tn.getId(), tn.getFirstName(), tn.getLastName(), tn.getGruppen());
+        return new TeilnehmerDto(tn.getId(), tn.getFirstName(), tn.getLastName(), tn.getEmail(), tn.getGruppen());
     }
 }

@@ -1,0 +1,363 @@
+= Anleitung zur Erstellung von CSV-Dateien für KonfPlan
+Jürgen Krey <juergen.krey@msg.group>
+v0.1, 03.07.26
+:toc:
+:sectnums:
+
+== Einleitung
+
+KonfPlan kann Stammdaten für eine Veranstaltung (Gebäude, Personen, Vorträge, Zeit-Slots, Prioritäten)
+per CSV-Datei importieren, statt sie einzeln über die Weboberfläche anzulegen. Diese Anleitung richtet
+sich an externe Dritte (z.B. Schulen oder Organisatoren), die für eine neue Veranstaltung die
+notwendigen Ausgangsdaten zusammenstellen sollen, sowie an alle, die einen kompletten Beispiel-Datensatz
+(wie diesen Ordner `karrierekompass-linz-2026`) vorbereiten möchten.
+
+=== Allgemeine Regeln für alle Dateien
+
+* **Format**: reines CSV, Trennzeichen ist das Semikolon (`;`), Kodierung UTF-8.
+* **Kopfzeile**: jede Datei benötigt in Zeile 1 exakt die unten dokumentierten Spaltennamen. Die
+  Reihenfolge der Spalten spielt keine Rolle – der Import ordnet über den Spaltennamen zu, nicht über
+  die Position.
+* **Pflichtfelder**: als "Pflicht" markierte Spalten dürfen nicht leer sein, sonst wird die komplette
+  Zeile übersprungen (mit Warnung im Protokoll, siehe <<fehlerverhalten,Fehlerverhalten>>).
+* **Mehrfachwerte**: mehrere Werte in einer Zelle werden, wenn nicht anders angegeben, durch
+  senkrechten Strich `|` getrennt (z.B. mehrere Gruppen oder Gebäude).
+* **Verweise auf andere Datensätze** erfolgen praktisch immer über die **E-Mail-Adresse** (Personen)
+  oder den **Namen** (Gebäude, Räume, Gruppen) – nie über technische IDs. Diese Datensätze müssen daher
+  in der richtigen Reihenfolge importiert werden (siehe <<reihenfolge_dateien,Reihenfolge der Dateien>>).
+* Leerzeilen werden ignoriert.
+
+[[reihenfolge_dateien]]
+=== Reihenfolge der Dateien
+
+Die Dateien bauen aufeinander auf und müssen in dieser Reihenfolge eingespielt werden (so verarbeitet
+sie auch der automatische Test-/Demo-Import `DevDataInitService`, wenn man diesen Ordnernamen in
+`konfplan.dev-data.datasets` einträgt):
+
+[cols="1,3,4", options="header"]
+|===
+| # | Datei | Wovon abhängig
+
+| 1 | `gebaeude.csv` | –
+| 2 | `organisatoren.csv` | –
+| 3 | `veranstaltungen.csv` | Gebäude, Organisatoren
+| 4 | `slots.csv` | Veranstaltung
+| 5 | `referenten.csv` | Veranstaltung
+| 6 | `teilnehmer.csv` | Veranstaltung (Gruppen)
+| 7 | `wahl_vortraege.csv` / `pflicht_vortraege.csv` | Referenten, Slots, Räume, Gruppen
+| 8 | `tn_prios.csv` | Teilnehmer, Wahlvorträge
+|===
+
+Zusätzlich gibt es drei Dateien für Verfügbarkeiten (`raum_verfuegbarkeiten.csv`,
+`teilnehmer_verfuegbarkeiten.csv`, `ref_verfuegbarkeiten.csv`) – siehe dazu den Hinweis in
+<<verfuegbarkeits_dateien,Verfügbarkeits-Dateien>>.
+
+[[fehlerverhalten]]
+=== Fehlerverhalten
+
+Der Import ist bewusst fehlertolerant: eine fehlerhafte Zeile (z.B. unbekannte E-Mail, unbekannter
+Gebäude-/Raumname, ungültiges Format) wird übersprungen und im System-Protokoll (Tab "Protokoll" im
+Admin-Bereich) als Warnung vermerkt – der Rest der Datei wird trotzdem importiert. Es lohnt sich daher,
+nach jedem Import kurz das Protokoll zu prüfen, da fehlerhafte Zeilen sonst leicht unbemerkt bleiben.
+
+== Die einzelnen Dateien
+
+=== gebaeude.csv – Gebäude und Räume
+
+Legt Gebäude inklusive aller ihrer Räume an.
+
+[cols="2,1,3,4", options="header"]
+|===
+| Spalte | Pflicht | Format | Hinweis
+
+| `Name` | ja | Text | Eindeutiger Gebäudename; existiert der Name schon, wird die Zeile übersprungen.
+| `Typ` | ja | einer von `SCHULE`, `KINO`, `SPORTHALLE`, `SAAL`, `EXTERN` | Groß-/Kleinschreibung egal.
+| `Strasse` | ja | Text |
+| `Hausnummer` | nein | Text |
+| `PLZ` | ja | Text |
+| `Ort` | ja | Text |
+| `Räume` | nein | `Name:Kapazität:Etage\|Name:Kapazität:Etage\|...` | Etage ist optional (`Name:Kapazität` reicht). **Reihenfolge ist fix: Name, dann Kapazität (Zahl!), dann Etage.** Vertauschte Reihenfolge führt dazu, dass der Raum stillschweigend übersprungen wird (siehe <<bekannte_probleme,Bekannte Probleme im Beispieldatensatz>>).
+|===
+
+.Beispiel
+[source,csv]
+----
+Name;Typ;Strasse;Hausnummer;PLZ;Ort;Räume
+RKS Linz;SCHULE;Im Rosengarten;2;53545;Linz am Rhein;B-002:35:EG|A-0.12:27:EG|A-1.01:25:1.OG
+----
+
+=== organisatoren.csv – Admin-Nutzer
+
+Legt Admin-Zugänge an (Personen, die Veranstaltungen im Admin-Bereich verwalten dürfen).
+
+[cols="2,1,3", options="header"]
+|===
+| Spalte | Pflicht | Hinweis
+
+| `Vorname` | ja |
+| `Nachname` | ja |
+| `Email` | ja | Existiert die E-Mail schon als Nutzer, wird die Zeile übersprungen.
+|===
+
+.Beispiel
+[source,csv]
+----
+EMAIL;NACHNAME;VORNAME
+kathrin.jessen@rks-linz.de;Jessen;Kathrin
+----
+
+NOTE: Die Spaltenreihenfolge im Beispiel weicht bewusst von der Tabelle oben ab – das ist erlaubt, da
+per Spaltenname zugeordnet wird.
+
+TIP: Neu angelegte Admins erhalten ein zufälliges Passwort und müssen sich einmalig über "Passwort
+vergessen" ein eigenes setzen – dafür muss der Mailversand konfiguriert sein.
+
+=== veranstaltungen.csv – Die Veranstaltung selbst
+
+Pro Datei/Ordner wird **genau eine** Veranstaltung erwartet.
+
+[cols="2,1,4", options="header"]
+|===
+| Spalte | Pflicht | Hinweis
+
+| `Name` | ja |
+| `Beginn` | ja | Format `yyyy-MM-dd HH:mm`, z.B. `2026-09-16 15:00`.
+| `Ende` | nein | Gleiches Format wie `Beginn`.
+| `Organisatoren_Emails` | ja | Komma-getrennte Liste von E-Mails aus `organisatoren.csv`. Muss bereits als Admin existieren.
+| `Gruppen` | nein | Pipe-getrennte Liste, z.B. `8a\|8b\|9a`. Das sind die Klassen/Gruppen, denen später Teilnehmer und Pflichtvorträge zugeordnet werden.
+| `Gebaeude_Namen` | nein | Pipe-getrennte Liste von Namen aus `gebaeude.csv`.
+| `Logo` | nein | Bild-URL fürs Dashboard.
+| `Logo_link` | nein | Ziel-URL, wenn auf das Logo geklickt wird.
+|===
+
+.Beispiel
+[source,csv]
+----
+Name;Beginn;Ende;Organisatoren_Emails;Gruppen;Gebaeude_Namen;Logo;Logo_link
+Karrierekompass Linz 2026;2026-09-16 15:00;2026-09-16 19:00;kathrin.jessen@rks-linz.de;8a|8b|9a;RKS Linz;;
+----
+
+CAUTION: `Gruppen` und `Gebaeude_Namen` sind beides Pipe-getrennte Textlisten und daher rein optisch
+leicht verwechselbar. Ein Vertauschen fällt beim Import nicht als Fehler auf, sondern führt still dazu,
+dass keines der beiden Felder etwas Sinnvolles enthält (siehe <<bekannte_probleme,Bekannte Probleme im Beispieldatensatz>>) – nach dem Import unbedingt prüfen, ob der Veranstaltung die erwarteten Gebäude
+zugeordnet sind.
+
+=== slots.csv – Zeit-Slots
+
+Definiert die Zeitfenster, in denen Vorträge stattfinden können.
+
+[cols="2,1,3", options="header"]
+|===
+| Spalte | Pflicht | Hinweis
+
+| `Bezeichnung` | ja | Frei wählbarer Anzeigename/Kurztitel des Slots (z.B. `1` oder `Vormittag`). Muss innerhalb der Veranstaltung eindeutig sein.
+| `Tag` | ja | Format `yyyy-MM-dd`.
+| `Beginn` | ja | Format `HH:mm`.
+| `Ende` | ja | Format `HH:mm`, muss nach `Beginn` liegen; Slot darf nicht außerhalb des Veranstaltungszeitraums liegen und sich nicht mit einem anderen Slot überschneiden.
+|===
+
+.Beispiel
+[source,csv]
+----
+Bezeichnung;Tag;Beginn;Ende
+1;2026-09-16;15:30;16:00
+2;2026-09-16;16:15;16:45
+----
+
+IMPORTANT: In allen späteren Verfügbarkeits-Angaben (Räume, Referenten, Teilnehmer) werden Slots **nicht**
+über `Bezeichnung` referenziert, sondern über ihre **1-basierte Position in der Zeitreihenfolge** der
+Veranstaltung (der zeitlich früheste Slot ist "1", der zweitfrüheste "2", usw. – unabhängig vom Text in
+`Bezeichnung`). Bei fortlaufend nummerierten Bezeichnungen wie im Beispiel fällt das nicht auf, ist aber
+bei anderer Benennung (z.B. `Vormittag`/`Nachmittag`) wichtig zu wissen.
+
+=== referenten.csv – Vortragende
+
+[cols="2,1,3", options="header"]
+|===
+| Spalte | Pflicht | Hinweis
+
+| `Vorname` | ja |
+| `Nachname` | ja |
+| `Email` | ja | Existiert die E-Mail schon als Nutzer (z.B. aus einer anderen Veranstaltung), wird der bestehende Referent aktualisiert und der neuen Veranstaltung zusätzlich zugeordnet.
+| `Position` | nein | Jobbezeichnung, wird im Referentenprofil angezeigt.
+| `Organisation` | nein | Firma/Institution.
+| `Slogan` | nein |
+| `Biografie` | nein |
+|===
+
+.Beispiel
+[source,csv]
+----
+Vorname;Nachname;Email;Position;Organisation;Slogan;Biografie
+Stephan;Arens;stephan.arens@th-koeln.de;Rechtsanwalt;TH Köln;;
+----
+
+TIP: Neu angelegte Referenten erhalten das Start-Passwort `start123` und sollten es nach dem ersten
+Login ändern.
+
+=== teilnehmer.csv – Teilnehmende
+
+[cols="2,1,3", options="header"]
+|===
+| Spalte | Pflicht | Hinweis
+
+| `Nachname` | ja |
+| `Vorname` | ja |
+| `Email` | ja |
+| `Gruppen` | nein | Pipe-getrennte Liste, z.B. `8a`. Sollte einer der in `veranstaltungen.csv` definierten Gruppen entsprechen, damit Pflichtvortrags-Zuordnung und Auswertungen funktionieren; unbekannte Gruppen werden beim Import automatisch neu angelegt.
+|===
+
+.Beispiel
+[source,csv]
+----
+Nachname;Vorname;Email;Gruppen
+Albaiad;Leen;leen.albaiad@martinus-gymnasium.de;8a
+----
+
+NOTE: Neu angelegte Teilnehmer erhalten (außer im Dev-/Testbetrieb) ein zufälliges Passwort und müssen
+sich selbst über "Passwort vergessen" ein neues setzen – dafür muss der Mailversand konfiguriert sein.
+
+=== wahl_vortraege.csv / pflicht_vortraege.csv – Vorträge
+
+Beide Dateien nutzen dieselben Spalten und werden über `istPflicht` unterschieden. In der Praxis
+empfiehlt es sich trotzdem, zwei getrennte Dateien zu pflegen (wie in diesem Beispielordner), auch wenn
+technisch eine gemeinsame Datei möglich wäre.
+
+[cols="2,1,3", options="header"]
+|===
+| Spalte | Pflicht | Hinweis
+
+| `istPflicht` | nein | `true` oder `false` (Kleinschreibung, kein anderer Wert – siehe <<bekannte_probleme,Bekannte Probleme im Beispieldatensatz>>). Steuert, welche der folgenden Spalten ausgewertet werden.
+| `Titel` | ja |
+| `Referent_Email` | ja | Muss ein bereits importierter Referent sein.
+| `Inhalt` | nein | Beschreibungstext des Vortrags.
+| `Ausstattung` | nein | Freitext, z.B. `Beamer`.
+| `Berufsfeld` | nein | Eindeutiger **Anfang** (Präfix, Groß-/Kleinschreibung egal) eines der 16 Berufsfelder, siehe <<gueltige_berufsfelder,Gültige Berufsfelder>>. Mehrdeutige oder unbekannte Präfixe führen dazu, dass die Zeile übersprungen wird.
+| `wiederholbar` | nur bei Wahlvortrag | `true`/`false` – darf der Vortrag mehrfach in verschiedenen Slots stattfinden?
+| `maxWiederholungen` | nur bei Wahlvortrag | Zahl, Obergrenze für Wiederholungen.
+| `Pflichtgruppe` | nur bei Pflichtvortrag | Muss eine der Gruppen aus `veranstaltungen.csv`/`teilnehmer.csv` sein.
+| `Pflichtraum` | nur bei Pflichtvortrag | Name eines Raums aus einem der Veranstaltungsgebäude; muss eindeutig sein (nicht in mehreren Veranstaltungsgebäuden gleich benannt).
+| `Pflichtslot` | nur bei Pflichtvortrag | Muss der `Bezeichnung`-Wert aus `slots.csv` sein (hier **wird** der Text verglichen, nicht die Position!).
+|===
+
+.Beispiel Wahlvortrag
+[source,csv]
+----
+istPflicht;Titel;Referent_Email;Inhalt;wiederholbar;maxWiederholungen;Ausstattung;Berufsfeld
+false;Rechtsanwalt / Jura;stephan.arens@th-koeln.de;Rechtsanwalt / Jura;true;2;Beamer;Wirtschaft
+----
+
+.Beispiel Pflichtvortrag
+[source,csv]
+----
+istPflicht;Titel;Referent_Email;Pflichtgruppe;Pflichtraum;Pflichtslot;Inhalt
+true;Begrüßung;kathrin.jessen@rks-linz.de;8a;Aula;1;Begrüßung der Klasse 8a
+----
+
+[[gueltige_berufsfelder]]
+==== Gültige Berufsfelder
+
+Land-, Forst-, Tierwirtschaft und Gartenbau · Rohstoffgewinnung, Produktion und Fertigung · Bau,
+Architektur, Vermessung und Gebäudetechnik · Naturwissenschaft, Geografie und Informatik · Verkehr,
+Logistik, Schutz und Sicherheit · Elektrotechnik · Metall-, Maschinen- und Fahrzeugbau · IT und Computer
+· Chemie, Kunststoff, Glas, Textil und Holz · Gastronomie, Lebensmittel und Hauswirtschaft · Gesundheit
+· Soziales, Pädagogik und Theologie · Kreativberufe, Medien und Gestaltung · Wirtschaft, Verwaltung,
+Recht und Gesellschaft · Unternehmensführung, Organisation, Einkauf, Vertrieb und Marketing · Tourismus,
+Sport und Kultur
+
+Es genügt ein eindeutiger Wortanfang, z.B. `Gesundheit` oder `IT`.
+
+=== tn_prios.csv – Prioritäten der Teilnehmer
+
+Legt fest, welche Wahlvorträge sich ein Teilnehmer wünscht. Dieses Format weicht von den übrigen CSVs
+ab: die Wahlvorträge werden nicht einzeln in Spalten aufgeführt, sondern über eine **Legende** in der
+ersten Zeile referenziert.
+
+**Zeile 1 – Legende (Pflicht, exaktes Format):**
+
+[source]
+----
+# Legende: <Index>=<Titel-Anfang>, <Index>=<Titel-Anfang>, ...
+----
+
+Jeder `<Index>` ist eine frei gewählte Zahl, `<Titel-Anfang>` muss der eindeutige Anfang eines bereits
+importierten Wahlvortrags-Titels sein (der erste Treffer wird verwendet).
+
+**Zeile 2 – Kopfzeile (Pflicht, exakt so, keine Abweichung erlaubt):**
+
+[source]
+----
+Teilnehmer E-Mail;Prioritäten
+----
+
+**Ab Zeile 3 – Datenzeilen:**
+
+[cols="2,1,3", options="header"]
+|===
+| Spalte | Pflicht | Format
+
+| Teilnehmer E-Mail | ja | Muss bereits als Teilnehmer dieser Veranstaltung importiert sein.
+| Prioritäten | nein | `<Index>:<Prio>,<Index>:<Prio>,...` – `<Index>` verweist auf die Legende, `<Prio>` ist eine Zahl von 1 bis 10.
+|===
+
+Zusätzliche Kommentarzeilen (beginnend mit `#`) sind zwischen Legende und Kopfzeile bzw. zwischen
+Datenzeilen erlaubt und werden ignoriert.
+
+.Beispiel
+[source,csv]
+----
+# Legende: 1=Traumberuf Informatiker, 2=Traumberuf Berater, 3=Mechatroniker
+Teilnehmer E-Mail;Prioritäten
+alex.alfa@web.de;1:10,2:5
+bert.bravo@web.de;1:10,2:10
+dirk.delta@web.de;
+----
+
+IMPORTANT: Bei den Prioritätswerten gilt: **10 = höchste Priorität (Wunsch Nr. 1), 1 = niedrigste
+Priorität.** Ein Wahlvortrag, der für einen Teilnehmer gar nicht in der Liste auftaucht, gilt als "keine
+Präferenz" und wird bei der Planerstellung für diesen Teilnehmer nicht berücksichtigt. Der Wert `0`
+sollte nicht verwendet werden – ihn wegzulassen hat denselben Effekt.
+
+[[verfuegbarkeits_dateien]]
+== Verfügbarkeits-Dateien (nur interner Massenimport)
+
+Die drei Dateien `raum_verfuegbarkeiten.csv`, `teilnehmer_verfuegbarkeiten.csv` und
+`ref_verfuegbarkeiten.csv` legen fest, in welchen Slots ein Raum, Teilnehmer bzw. Referent verfügbar
+ist.
+
+CAUTION: Diese drei Dateien werden **nur** vom internen Entwickler-Werkzeug zur Testdaten-Erzeugung
+(`DevDataInitService`) gelesen. Es gibt aktuell **keinen Upload-Button in der Weboberfläche** dafür.
+Für den laufenden Betrieb werden Verfügbarkeiten stattdessen direkt im Admin-/Referenten-/
+Teilnehmer-Bereich per Checkbox-Matrix gepflegt. Diese Dateien sind daher nur relevant, wenn ein
+kompletter Testdatensatz vorbereitet wird, der lokal per `konfplan.dev-data.datasets` eingespielt
+werden soll – nicht für den normalen Produktivimport durch Dritte.
+
+[cols="2,3", options="header"]
+|===
+| Datei | Spalten
+
+| `raum_verfuegbarkeiten.csv` | `gebaeude` (Pflicht, Gebäudename); `raum` (Pflicht, Raumname); `verfuegbare_slots` (Komma-getrennte 1-basierte Slot-Positionen, siehe Hinweis bei `slots.csv`)
+| `teilnehmer_verfuegbarkeiten.csv` / `ref_verfuegbarkeiten.csv` | `email` (Pflicht); `verfuegbare_slots` (wie oben)
+|===
+
+.Beispiel raum_verfuegbarkeiten.csv
+[source,csv]
+----
+gebaeude;raum;verfuegbare_slots
+RKS Linz;B-002;1,2,3,4
+----
+
+Fehlt ein Slot in der Liste, gilt der Raum/die Person für diesen Slot als **nicht verfügbar**.
+
+
+== Checkliste vor dem Import
+
+* [ ] Alle referenzierten E-Mails (Organisatoren, Referenten, Teilnehmer) sind in der jeweils
+  vorgelagerten Datei enthalten und exakt gleich geschrieben.
+* [ ] Alle referenzierten Gebäude-/Raumnamen existieren exakt so in `gebaeude.csv`.
+* [ ] Bei Gebäude-Räumen: Reihenfolge ist `Name:Kapazität:Etage`, Kapazität ist eine Zahl.
+* [ ] `Gruppen` und `Gebaeude_Namen` in `veranstaltungen.csv` nicht verwechselt.
+* [ ] Datums-/Zeitformate exakt `yyyy-MM-dd HH:mm` bzw. `HH:mm` / `yyyy-MM-dd`.
+* [ ] `istPflicht`, `wiederholbar` etc. sind exakt `true` oder `false` (keine Tippfehler).
+* [ ] In `tn_prios.csv` verweist jeder Legenden-Index eindeutig auf genau einen Wahlvortrags-Titel.
+* [ ] Nach dem Import: Protokoll-Tab im Admin-Bereich auf Warnungen/Fehler prüfen.

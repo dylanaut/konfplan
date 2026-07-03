@@ -121,7 +121,7 @@ public class GebaeudeService {
                                 Raum r = new Raum();
                                 r.setName(parts[0].trim());
                                 r.setKapazitaet(Integer.parseInt(parts[1].trim()));
-                                if (parts.length >= 3) {
+                                if (parts.length > 2) {
                                     r.setEtage(parts[2].trim());
                                 }
                                 r.persistAndFlush();

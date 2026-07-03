@@ -824,16 +824,16 @@ public class AdminService implements AdminServiceInterface {
             if (parts.length != 2) {
                 LOG.warn("Ungültiger Legenden-Eintrag '" + entry + "'");
             } else {
-                String titelPrefix = parts[1].trim();
+                String titelSchluessel = parts[1].trim();
                 Wahlvortrag wv = wvs.stream()
-                    .filter(v -> v.getTitel().startsWith(titelPrefix))
+                    .filter(v -> v.getTitel().contains(titelSchluessel))
                     .findFirst()
                     .orElse(null);
 
                 if (wv != null) {
                     indexToVortragsIdMap.put(Integer.parseInt(parts[0].trim()), wv);
                 } else {
-                    LOG.warn("Kein Wahlvortrag gefunden mit Legenden-Präfix '" + titelPrefix);
+                    LOG.warn("Kein Wahlvortrag gefunden mit Legenden-Schlüssel '" + titelSchluessel);
                 }
             }
         }

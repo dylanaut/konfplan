@@ -34,7 +34,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 @QuarkusTestResource(H2DatabaseTestResource.class)
 @TestHTTPEndpoint(VeranstaltungResource.class)
 class CsvFileImportTest extends DatabaseCleaner {
-    public static final String CSV_DIR = "csv_import/bo_26_09/";
+    public static final String CSV_DIR = "csv_import/import-test/";
 
     @TestHTTPResource
     @TestHTTPEndpoint(GebaeudeResource.class)
@@ -71,7 +71,7 @@ class CsvFileImportTest extends DatabaseCleaner {
         given()
             .baseUri(adminEndpoint.toString())
             .basePath("/admins/import")
-            .multiPart("file", getCsvFile("test-organisatoren.csv"))
+            .multiPart("file", getCsvFile("organisatoren.csv"))
             .when().post()
             .then()
             .statusCode(OK.getStatusCode());
@@ -87,7 +87,7 @@ class CsvFileImportTest extends DatabaseCleaner {
         given()
             .baseUri(gebaeudeEndpoint.toString())
             .basePath("/import")
-            .multiPart("file", getCsvFile("test-gebaeude.csv"))
+            .multiPart("file", getCsvFile("gebaeude.csv"))
             .when().post()
             .then()
             .statusCode(OK.getStatusCode())
@@ -101,7 +101,7 @@ class CsvFileImportTest extends DatabaseCleaner {
 
     private void setupVeranstaltungen() {
         given()
-            .multiPart("file", getCsvFile("test-veranstaltungen.csv"))
+            .multiPart("file", getCsvFile("veranstaltungen.csv"))
             .when()
             .post("/import")
             .then()

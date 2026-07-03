@@ -274,8 +274,8 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         if (null == teilnehmer) {
             throw new WebApplicationException("Teilnehmer nicht gefunden", Response.Status.NOT_FOUND);
         }
-        if (!teilnehmer.getEmail().equals(dto.email)) {
-            throw new WebApplicationException("E-Mail kann nicht geändert werden", Response.Status.BAD_REQUEST);
+        if (!teilnehmer.getEmail().equals(dto.email.trim().toLowerCase())) {
+            throw new WebApplicationException("E-Mail kann (noch) nicht geändert werden", Response.Status.BAD_REQUEST);
         }
 
         if (dto.version != null && !teilnehmer.getVersion().equals(dto.version)) {
