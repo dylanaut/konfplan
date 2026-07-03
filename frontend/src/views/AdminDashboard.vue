@@ -74,7 +74,7 @@
       />
 
       <GebaeudeTab v-if="activeTab === 'gebaeude'"
-                   :gebaeude="gebaeude"
+                   :gebaeude="gebaeudeFuerGebaeudeTab"
                    :pageSize="pageSize"
                    :selectedVid="selectedVid"
                    :sortedSlots="sortedSlots"
@@ -457,6 +457,14 @@ const refreshProtokolle = async () => {
     console.error('Fehler beim Laden des Protokolls:', e);
   }
 };
+
+// Gebäude-Anzeige im Gebäude-Tab: bei ausgewählter Veranstaltung nur deren Gebäude, sonst alle.
+const gebaeudeFuerGebaeudeTab = computed(() => {
+  if (!selectedVid.value || !eventContext.selectedEvent) return gebaeude.value;
+
+  const eventGebaeudeIds = new Set(eventContext.selectedEvent.gebaeude.map(g => g.id));
+  return gebaeude.value.filter(g => eventGebaeudeIds.has(g.id));
+});
 
 // NEU: Gefilterte Räume für die aktuelle Veranstaltung
 const filteredRaeume = computed(() => {
