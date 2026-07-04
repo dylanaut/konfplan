@@ -187,7 +187,7 @@
                              :error="vortragModalError" @close="closeVortragModal" @save="handleSaveVortrag"/>
     <EventSlotEditorModal :isVisible="showSlotModal" :slot="selectedSlot" @close="showSlotModal = false"
                           @save="handleSaveSlot"/>
-    <InviteUserModal :isVisible="showInviteModal" :user="selectedUserForInvite" :futureEvents="futureEvents"
+    <InviteUserModal :isVisible="showInviteModal" :nutzer="selectedUserForInvite" :futureEvents="futureEvents"
                      @close="showInviteModal = false" @invite="handleInviteUser"/>
 
     <!-- CSV Import Feedback Modal -->

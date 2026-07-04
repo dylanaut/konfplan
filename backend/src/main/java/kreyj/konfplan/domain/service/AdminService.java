@@ -82,6 +82,7 @@ public class AdminService implements AdminServiceInterface {
     public static final String CSV_PRIO_HEADER = "Teilnehmer E-Mail;Prioritäten";
     public static final String PV_FAIL_MESSAGE = ". Pflichtvortrag kann nicht erstellt werden.";
     public static final String LEGENDE = "# Legende:";
+    public static final int MAX_VORTRAG_TITEL_LAENGE = 120;
 
     private final MailService mailService;
     private final ProtokollService protokollService;
@@ -593,11 +594,20 @@ public class AdminService implements AdminServiceInterface {
                     continue;
                 }
 
+                String titel = csvDto.titel;
+                String inhalt = csvDto.inhalt;
+                if (titel.length() > MAX_VORTRAG_TITEL_LAENGE) {
+                    inhalt = titel;
+                    titel = kuerzenAnWortgrenze(titel, MAX_VORTRAG_TITEL_LAENGE);
+                    LOG.info("Vortrag-Titel gekürzt (> " + MAX_VORTRAG_TITEL_LAENGE + " Zeichen): '" + titel
+                        + "'. Voller Titel wurde als Inhalt gespeichert.");
+                }
+
                 VortragDto dto = new VortragDto();
                 dto.veranstaltungId = veranstaltungId;
                 dto.istPflicht = csvDto.istPflicht;
-                dto.titel = csvDto.titel;
-                dto.inhalt = csvDto.inhalt;
+                dto.titel = titel;
+                dto.inhalt = inhalt;
                 dto.ausstattung = csvDto.ausstattung;
                 Nutzer referent = Nutzer.findByEmail(csvDto.referentEmail);
 
@@ -688,6 +698,18 @@ public class AdminService implements AdminServiceInterface {
         }
         LOG.info("Vortrag-Import abgeschlossen: " + count + " Vorträge aus " + csvFilePath + " importiert.");
         return count;
+    }
+
+
+    /**
+     * Kürzt einen zu langen Vortragstitel an einer Wortgrenze auf unter maxLaenge Zeichen.
+     * Enthält das Kürzungsfenster keine Wortgrenze, wird hart bei maxLaenge - 1 abgeschnitten.
+     */
+    private static String kuerzenAnWortgrenze(String titel, int maxLaenge) {
+        String fenster = titel.substring(0, maxLaenge - 1);
+        int lastSpace = fenster.lastIndexOf(' ');
+        String gekuerzt = (lastSpace > 0) ? fenster.substring(0, lastSpace) : fenster;
+        return gekuerzt.trim();
     }
 
 

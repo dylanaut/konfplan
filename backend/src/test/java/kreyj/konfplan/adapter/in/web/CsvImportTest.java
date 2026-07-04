@@ -240,4 +240,31 @@ class CsvImportTest extends DatabaseCleaner {
         assertThat(wv.isWiederholbar()).isTrue();
         assertThat(wv.getMaxWiederholungen()).isEqualTo(2);
     }
+
+
+    @Test
+    @TestHTTPEndpoint(VeranstaltungResource.class)
+    void testImportVortraege_kuerztLangenTitelUndSpeichertVollenTitelAlsInhalt() {
+        String wort = "Ausbildungsberuf"; // 16 Zeichen, um eine eindeutige Wortgrenze zu erzeugen
+        String langerTitel = (wort + " ").repeat(10).trim(); // 169 Zeichen, > 120
+        assertThat(langerTitel.length()).isGreaterThan(120);
+
+        String csv = "istPflicht;Titel;Referent_Email;Inhalt;wiederholbar;maxWiederholungen\n" +
+            "false;" + langerTitel + ";vortrag@ref.de;Kurzer CSV-Inhalt;true;2";
+
+        given()
+            .multiPart("file", "vortraege.csv", csv.getBytes())
+            .when().post("/{vid}/vortraege/import", testVid)
+            .then()
+            .statusCode(OK.getStatusCode());
+
+        List<Wahlvortrag> alle = Wahlvortrag.listAll();
+        assertThat(alle).hasSize(1);
+        Wahlvortrag wv = alle.get(0);
+
+        String erwarteterGekuerzterTitel = (wort + " ").repeat(7).trim(); // 118 Zeichen, exakt an Wortgrenze
+        assertThat(wv.getTitel()).describedAs("Titel sollte an der Wortgrenze auf 118 Zeichen gekürzt sein").isEqualTo(erwarteterGekuerzterTitel);
+        assertThat(wv.getTitel().length()).describedAs("Titel sollte auf unter 120 Zeichen gekürzt sein").isLessThan(120);
+        assertThat(wv.getInhalt()).describedAs("Voller Titel sollte als Inhalt gespeichert werden").isEqualTo(langerTitel);
+    }
 }
