@@ -37,9 +37,9 @@ public class TemplateExtensions {
         }
 
         if (lastIndex > 0) {
-            return truncated.substring(0, lastIndex).trim() + "...";
+            return truncated.substring(0, lastIndex).trim();
         } else {
-            return truncated.trim() + "...";
+            return truncated.trim();
         }
     }
 

@@ -16,6 +16,7 @@ import jakarta.persistence.InheritanceType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -37,8 +38,11 @@ import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvId;
         @JsonSubTypes.Type(value = Wahlvortrag.class, name = "WAHL")
 })
 public abstract class Vortrag extends VersionedEntity {
+    public static final int MAX_VORTRAG_TITEL_LAENGE = 120;
+
     @Column(nullable = false)
     @Setter
+    @Size(min = 1, max = MAX_VORTRAG_TITEL_LAENGE)
     private String titel;
 
     @Column(columnDefinition = "TEXT")

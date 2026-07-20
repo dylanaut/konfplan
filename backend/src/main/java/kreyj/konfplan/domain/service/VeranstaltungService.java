@@ -219,7 +219,7 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
             LOG.error("Kritischer Fehler beim Importieren der Veranstaltungen aus CSV: " + csvFilePath, e);
             throw e;
         }
-        LOG.info("Veranstaltungs-Import abgeschlossen: " + count + " Veranstaltungen aus " + csvFilePath + " importiert.");
+        LOG.info("Veranstaltungs-Import abgeschlossen: " + count + " Veranstaltung(en) aus " + csvFilePath + " importiert.");
         return count;
     }
 

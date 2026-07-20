@@ -46,6 +46,7 @@ import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.util.StringHelper;
+import kreyj.konfplan.util.TemplateExtensions;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
@@ -81,8 +82,8 @@ public class AdminService implements AdminServiceInterface {
     private static final Logger LOG = Logger.getLogger(AdminService.class);
     public static final String CSV_PRIO_HEADER = "Teilnehmer E-Mail;Prioritäten";
     public static final String PV_FAIL_MESSAGE = ". Pflichtvortrag kann nicht erstellt werden.";
-    public static final String LEGENDE = "# Legende:";
-    public static final int MAX_VORTRAG_TITEL_LAENGE = 120;
+    public static final String LEGENDE_TOKEN = "# Legende:";
+    public static final String LEGENDEN_EINTRAG_SEP = "#";
 
     private final MailService mailService;
     private final ProtokollService protokollService;
@@ -596,10 +597,10 @@ public class AdminService implements AdminServiceInterface {
 
                 String titel = csvDto.titel;
                 String inhalt = csvDto.inhalt;
-                if (titel.length() > MAX_VORTRAG_TITEL_LAENGE) {
+                if (titel.length() > Vortrag.MAX_VORTRAG_TITEL_LAENGE) {
                     inhalt = titel;
-                    titel = kuerzenAnWortgrenze(titel, MAX_VORTRAG_TITEL_LAENGE);
-                    LOG.info("Vortrag-Titel gekürzt (> " + MAX_VORTRAG_TITEL_LAENGE + " Zeichen): '" + titel
+                    titel = kuerzenAnWortgrenze(titel, Vortrag.MAX_VORTRAG_TITEL_LAENGE);
+                    LOG.info("Vortrag-Titel gekürzt (> " + Vortrag.MAX_VORTRAG_TITEL_LAENGE + " Zeichen): '" + titel
                         + "'. Voller Titel wurde als Inhalt gespeichert.");
                 }
 
@@ -733,11 +734,11 @@ public class AdminService implements AdminServiceInterface {
 
     @Transactional
     @Override
-    public int importPrioritaetenFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception {
+    public int importTeilnehmerWvPriosFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception {
         int count = 0;
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
         if (null == veranstaltung) {
-            LOG.error("CSV-Import (Prioritäten) abgebrochen: Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
+            LOG.error("CSV-Import (WV-Prioritäten) abgebrochen: Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
             throw new CsvImportException(csvFilePath, "Veranstaltung '" + veranstaltungId + "' nicht gefunden.");
         }
 
@@ -747,14 +748,18 @@ public class AdminService implements AdminServiceInterface {
         try (BufferedReader reader = new BufferedReader(new FileReader(csvFilePath.toFile()))) {
             String line = reader.readLine();
 
-            if (line.startsWith(LEGENDE)) {
+            if (line.startsWith(LEGENDE_TOKEN)) {
                 List<Wahlvortrag> wahlvortraege = veranstaltung.getVortraege().stream()
                     .filter(v -> v instanceof Wahlvortrag)
                     .map(v -> (Wahlvortrag) v)
                     .toList();
-                legendIndexMap = parseLegende(line.substring(LEGENDE.length()), wahlvortraege);
+                LOG.debug("Titel:\n" + wahlvortraege.stream().map(Wahlvortrag::getTitel).collect(Collectors.joining("\n")));
+                legendIndexMap = parseLegende(line.substring(LEGENDE_TOKEN.length()), wahlvortraege);
+                LOG.debug("legendIndexMap:\n" + legendIndexMap.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                    .map(entry -> entry.getKey() + " -> " + entry.getValue().getTitel())
+                    .collect(Collectors.joining("\n")));
             } else {
-                LOG.error("CSV-Import (Prioritäten) abgebrochen: Legende fehlt.");
+                LOG.error("CSV-Import (WV-Prioritäten) abgebrochen: Legende fehlt.");
                 throw new CsvImportException(csvFilePath, "Legende fehlt.");
             }
 
@@ -769,7 +774,7 @@ public class AdminService implements AdminServiceInterface {
                         headerLineFound = true;
                         continue;
                     } else {
-                        LOG.error("CSV-Import (Prioritäten) abgebrochen: Ungültiger Header");
+                        LOG.error("CSV-Import (WV-Prioritäten) abgebrochen: Ungültiger Header");
                         throw new CsvImportException(csvFilePath,
                             "Ungültiger Header für Prio-Import in " + csvFilePath.getFileName());
                     }
@@ -796,7 +801,8 @@ public class AdminService implements AdminServiceInterface {
                     for (String wvPrio : wvPrios) {
                         wvPrio = wvPrio.trim();
                         if (!wvPrio.matches("\\d+\\s*:\\s*\\d+")) {
-                            LOG.warn("Priorität für '" + teilnehmerEmail + "' übersprungen: Prio format " + wvPrio + " ist ungültig.");
+                            LOG.warn("Priorität für '" + teilnehmerEmail + "' übersprungen: Prio-Format " + wvPrio + " ist " +
+                                "ungültig.");
                             continue;
                         }
                         String[] data = wvPrio.split(":");
@@ -838,16 +844,17 @@ public class AdminService implements AdminServiceInterface {
     }
 
 
-    private Map<Integer, Wahlvortrag> parseLegende(String legende, List<Wahlvortrag> wvs) {
+    private Map<Integer, Wahlvortrag> parseLegende(String legende, List<Wahlvortrag> wahlvortraege) {
         Map<Integer, Wahlvortrag> indexToVortragsIdMap = new HashMap<>();
+        boolean macheLegendenVorschlag = false;
 
-        for (String entry : legende.split(",")) {
+        for (String entry : legende.split(LEGENDEN_EINTRAG_SEP)) {
             String[] parts = entry.split("=");
             if (parts.length != 2) {
                 LOG.warn("Ungültiger Legenden-Eintrag '" + entry + "'");
             } else {
-                String titelSchluessel = parts[1].trim();
-                Wahlvortrag wv = wvs.stream()
+                String titelSchluessel = TemplateExtensions.truncTo(parts[1].trim(), Vortrag.MAX_VORTRAG_TITEL_LAENGE);
+                Wahlvortrag wv = wahlvortraege.stream()
                     .filter(v -> v.getTitel().contains(titelSchluessel))
                     .findFirst()
                     .orElse(null);
@@ -855,12 +862,78 @@ public class AdminService implements AdminServiceInterface {
                 if (wv != null) {
                     indexToVortragsIdMap.put(Integer.parseInt(parts[0].trim()), wv);
                 } else {
-                    LOG.warn("Kein Wahlvortrag gefunden mit Legenden-Schlüssel '" + titelSchluessel);
+                    LOG.warn("Legenden-Parser: Kein Wahlvortrag gefunden mit Legenden-Schlüssel '" + titelSchluessel);
+                    macheLegendenVorschlag = true;
                 }
             }
         }
 
+        if (macheLegendenVorschlag) {
+            Map<String, String> besteLegende = besteLegende(wahlvortraege);
+            StringBuilder vorschlag = new StringBuilder("Vorschlag für Legende:\n");
+            int index = 0;
+            for (Wahlvortrag wv : wahlvortraege) {
+                vorschlag.append(" # ")
+                    .append(++index).append("=")
+                    .append(besteLegende.get(wv.getTitel())).append('\n');
+            }
+
+            LOG.info(vorschlag.toString());
+        }
+
         return indexToVortragsIdMap;
+    }
+
+
+    private static Map<String, String> besteLegende(List<Wahlvortrag> wahlvortraege) {
+        Map<String, String> ergebnis = new HashMap<>();
+        List<String> alleWvtitel = wahlvortraege.stream().map(Wahlvortrag::getTitel).toList();
+
+        for (String zielTitel : alleWvtitel) {
+            String eindeutigerBezeichner = null;
+            String[] woerter = zielTitel.toLowerCase().split("\\s+");
+
+            // Prüfe Wort-Sequenzen beginnend mit Länge 1 bis zur maximalen Wortanzahl
+            for (int laenge = 1; laenge <= woerter.length; laenge++) {
+                boolean bezeichnerGefunden = false;
+
+                for (int i = 0; i <= woerter.length - laenge; i++) {
+                    String[] sequenz = Arrays.copyOfRange(woerter, i, i + laenge);
+                    String kandidat = String.join(" ", sequenz);
+
+                    // Überprüfe, ob der Kandidat eindeutig ist
+                    if (kommtNurInEinemTitelVor(kandidat, alleWvtitel, zielTitel)) {
+                        eindeutigerBezeichner = kandidat;
+                        bezeichnerGefunden = true;
+                        break;
+                    }
+                }
+                if (bezeichnerGefunden) {
+                    break;
+                }
+            }
+
+            ergebnis.put(zielTitel, eindeutigerBezeichner != null ? eindeutigerBezeichner : "Kein eindeutiger Bezeichner möglich");
+        }
+
+        return ergebnis;
+    }
+
+
+    private static boolean kommtNurInEinemTitelVor(String kandidat, List<String> alleTitel, String aktuellerTitel) {
+        int anzahlTreffer = 0;
+        for (String satz : alleTitel) {
+            if (satz.toLowerCase().contains(kandidat)) {
+                anzahlTreffer++;
+                // Wenn wir im falschen Satz suchen oder mehr als 1 Treffer existieren, abbrechen
+                if (anzahlTreffer > 1 || satz.equals(aktuellerTitel)) {
+                    continue;
+                }
+                return false;
+            }
+        }
+
+        return anzahlTreffer == 1;
     }
 
 
@@ -1329,6 +1402,7 @@ public class AdminService implements AdminServiceInterface {
             .sorted(Comparator.comparing(Slot::getStartTime))
             .toList();
         List<Long> sortedSlotIds = sortedSlots.stream().map(Slot::getId).toList();
+        String nutzerTyp = nutzerKlasse.getSimpleName();
 
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             CsvToBean<NutzerVerfuegbarkeitCsvDto> csvToBean = new CsvToBeanBuilder<NutzerVerfuegbarkeitCsvDto>(reader)
@@ -1350,13 +1424,14 @@ public class AdminService implements AdminServiceInterface {
             for (NutzerVerfuegbarkeitCsvDto dto : beans) {
                 Nutzer nutzer = Nutzer.findByEmail(dto.email);
                 if (null == nutzer) {
-                    String msg = "Nutzer mit E-Mail '" + dto.email + "' nicht gefunden.";
+                    String msg = nutzerTyp + " mit E-Mail '" + dto.email + "' nicht gefunden.";
                     LOG.warn("Nutzer-Verfügbarkeit übersprungen: " + msg);
                     fehler.add(msg);
                     continue;
                 }
                 if (!nutzerKlasse.isInstance(nutzer)) {
-                    String msg = "Nutzer mit E-Mail '" + dto.email + "' ist kein " + nutzerKlasse.getSimpleName() + " (falsche CSV-Datei?).";
+                    String msg = nutzerTyp + " mit E-Mail '" + dto.email + "' ist kein " + nutzerKlasse.getSimpleName() + " " +
+                        "(falsche CSV-Datei?).";
                     LOG.warn("Nutzer-Verfügbarkeit übersprungen: " + msg);
                     fehler.add(msg);
                     continue;
@@ -1375,7 +1450,8 @@ public class AdminService implements AdminServiceInterface {
         } catch (Exception e) {
             throw new CsvImportException(csvFilePath, e.getMessage());
         }
-        LOG.info("Nutzer-Verfügbarkeiten-Import abgeschlossen: " + count + " Einträge aus " +
+        LOG.info("Import von Verfügbarkeiten für " + nutzerTyp +
+            " abgeschlossen: " + count + " Einträge aus " +
             csvFilePath + " verarbeitet.");
         return new ImportResultDto(count, fehler);
     }
@@ -1452,7 +1528,7 @@ public class AdminService implements AdminServiceInterface {
                 .mapToObj(i -> sortedSlotIds.get(i - 1)) // 1-based index to 0-based
                 .collect(Collectors.toSet());
         } catch (Exception e) {
-            LOG.warn("Fehler beim Parsen der Slot-Indizes: '" + indicesString + "'. " + e.getMessage());
+            LOG.warn("Fehler beim Split der Slot-Indizes: " + e.getMessage());
             return new HashSet<>();
         }
     }

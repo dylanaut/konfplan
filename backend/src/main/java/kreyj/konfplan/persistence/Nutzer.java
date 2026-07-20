@@ -182,6 +182,6 @@ public abstract class Nutzer extends VersionedEntity {
 
 
     public static Nutzer findByEmail(String e) {
-        return find("email", e).firstResult();
+        return find("email", e.toLowerCase()).firstResult();
     }
 }

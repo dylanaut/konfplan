@@ -118,7 +118,7 @@ public class DevDataInitService {
                 // 7. Vorträge (Pflicht & Wahl)
                 adminService.importVortraegeFromCsv(basePath.resolve("wahl_vortraege.csv"), vid);
                 adminService.importVortraegeFromCsv(basePath.resolve("pflicht_vortraege.csv"), vid);
-                adminService.importPrioritaetenFromCsv(basePath.resolve("tn_prios.csv"), vid);
+                adminService.importTeilnehmerWvPriosFromCsv(basePath.resolve("tn_prios.csv"), vid);
 
                 // 8. Verfügbarkeiten
                 adminService.importRaumVerfuegbarkeitenFromCsv(basePath.resolve("raum_verfuegbarkeiten.csv"), vid);

@@ -78,7 +78,7 @@ class PrioritaetImportTest extends DatabaseCleaner {
 
     @Test
     void testImportPrioritaeten() {
-        String csv = String.format("# Legende: %d=%s, %d=%s\n", wv1Id, "Wahlvortrag 1", wv2Id, "Wahlvortrag 2") +
+        String csv = String.format("# Legende: %d=%s # %d=%s\n", wv1Id, "Wahlvortrag 1", wv2Id, "Wahlvortrag 2") +
                 AdminService.CSV_PRIO_HEADER + "\n" +
                 String.format("teilnehmer1@test.de;%d :5,%d: 3 \n", wv1Id, wv2Id);
 

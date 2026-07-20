@@ -183,7 +183,7 @@
     <UserEditorModal :isVisible="showUserModal" :nutzer="selectedUser" :eventSlots="eventSlots"
                      @close="showUserModal = false" @save="handleSaveUser"/>
     <AdminVortragEditorModal :isVisible="showVortragModal" :vortrag="selectedVortrag" :referenten="referenten"
-                             :raeume="raeume" :slots="eventSlots" :participantGroups="teilnehmerGruppen"
+                             :raeume="filteredRaeume" :slots="eventSlots" :participantGroups="teilnehmerGruppen"
                              :error="vortragModalError" @close="closeVortragModal" @save="handleSaveVortrag"/>
     <EventSlotEditorModal :isVisible="showSlotModal" :slot="selectedSlot" @close="showSlotModal = false"
                           @save="handleSaveSlot"/>
@@ -277,7 +277,6 @@ const activeTab = ref('veranstaltungen');
 const selectedVid = ref(null);
 const veranstaltungen = ref([]);
 const gebaeude = ref([]);
-const raeume = ref([]); // This will hold ALL rooms
 const users = ref([]);
 const vortraege = ref([]);
 const eventSlots = ref([]);
@@ -441,7 +440,6 @@ const refreshGebaeude = async () => {
   try {
     const res = await api.get('/api/gebaeude');
     gebaeude.value = res.data;
-    // raeume.value = gebaeude.value.flatMap(g => g.raeume.map(r => ({...r, gebaeude: {id: g.id, name: g.name}}))); // This line is now handled by filteredRaeume
   } catch (e) {
     console.error('Fehler beim Laden der Gebäude:', e);
   }

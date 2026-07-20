@@ -158,7 +158,7 @@ public class AdminResource {
     @Operation(summary = "Prioritäten importieren", description = "Importiert Teilnehmer-Prioritäten für eine Veranstaltung aus einer CSV-Datei.")
     public Response importPrioritaeten(@PathParam("vid") Long vid, @RestForm("file") FileUpload file) {
         try {
-            int count = adminService.importPrioritaetenFromCsv(file.uploadedFile().toFile().toPath(), vid);
+            int count = adminService.importTeilnehmerWvPriosFromCsv(file.uploadedFile().toFile().toPath(), vid);
             return Response.ok("Import erfolgreich: " + count + " Prioritäten importiert/aktualisiert.").build();
         } catch (Exception e) {
             Log.error(e.getMessage(), e);

@@ -47,7 +47,7 @@ public interface AdminServiceInterface {
 
     int importVortraegeFromCsv(Path csvFilePath, Long veranstaltungId);
 
-    int importPrioritaetenFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception;
+    int importTeilnehmerWvPriosFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception;
 
     List<Slot> getAllEventSlots(Long veranstaltungId);
 

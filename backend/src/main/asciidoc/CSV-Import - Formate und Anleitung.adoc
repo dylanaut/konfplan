@@ -277,10 +277,10 @@ ersten Zeile referenziert.
 
 [source]
 ----
-# Legende: <Index>=<Titel-Anfang>, <Index>=<Titel-Anfang>, ...
+# Legende: <Index>=<Titel-Anfang># <Index>=<Titel-Anfang># ...
 ----
 
-Jeder `<Index>` ist eine frei gewählte Zahl, `<Titel-Anfang>` muss der eindeutige Anfang eines bereits
+Jeder `<Index>` ist eine frei gewählte Zahl, `<Titel-Anfang>` muss der eindeutige Teil eines bereits
 importierten Wahlvortrags-Titels sein (der erste Treffer wird verwendet).
 
 **Zeile 2 – Kopfzeile (Pflicht, exakt so, keine Abweichung erlaubt):**
@@ -306,7 +306,7 @@ Datenzeilen erlaubt und werden ignoriert.
 .Beispiel
 [source,csv]
 ----
-# Legende: 1=Traumberuf Informatiker, 2=Traumberuf Berater, 3=Mechatroniker
+# Legende: 1=Traumberuf Informatiker # 2=Traumberuf Berater # 3=Mechatroniker
 Teilnehmer E-Mail;Prioritäten
 alex.alfa@web.de;1:10,2:5
 bert.bravo@web.de;1:10,2:10
