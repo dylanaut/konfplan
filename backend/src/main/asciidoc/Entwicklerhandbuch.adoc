@@ -324,3 +324,43 @@ Quarkus Mobile ermöglicht die Erstellung von nativen mobilen Apps mit Quarkus. 
 *   [Quarkus Mobile GitHub Repository](https://github.com/quarkusio/quarkus-mobile)
 
 ==
+
+
+== Datenbank-Schema anlegen / löschen
+
+So lässt sich aus den JPA-Entitäten ein vollständiges DDL-Skript für Postgres erzeugen, das du dann als Basis für
+eine Flyway-Migration nutzt:
+
+=== Hibernate Schema-Export aktivieren
+
+(nur für den Export-Lauf, temporär als CLI-Property)
+
+Quarkus/Hibernate ORM kann das DDL unabhängig von der eigentlichen Schema-Anwendung auf die DB in eine Datei
+  schreiben (scripts.generation.*), getrennt von schema-management.strategy (das die reale DB betrifft):
+
+====
+cd backend
+./mvnw quarkus:dev \ +
+ -Dquarkus.hibernate-orm.schema-management.strategy=none \ +
+ -Dquarkus.hibernate-orm.scripts.generation.generation=create \ +
+ -Dquarkus.hibernate-orm.scripts.generation.create-target=target/schema-export.sql
+====
+
+- `%dev.quarkus.datasource.devservices.enabled=true` sorgt dafür, dass ein echter, wegwerfbarer PostgreSQL-Container
+hochfährt (Testcontainers) – das Skript wird also mit dem PostgreSQL-Dialekt erzeugt (korrekte sequence/serial,
+Constraint-Syntax etc.), nicht mit H2.
+- `schema-management.strategy=none` verhindert, dass Hibernate die echte Dev-DB zusätzlich anfasst – du bekommst nur
+die Datei.
+- Sobald im Log `Listening on: http://localhost:9000` erscheint, ist das Skript geschrieben → Strg+C.
+- Ergebnis liegt in `backend/target/schema-export.sql` und enthält CREATE TABLE, CREATE SEQUENCE, ALTER TABLE ... ADD
+CONSTRAINT (FKs, PKs, Unique), CREATE INDEX – abgeleitet aus allen Entitäten inkl. der SINGLE_TABLE-Hierarchien
+(Nutzer, Vortrag mit Discriminator-Spalte).
+
+Falls du auch ein Drop-Skript brauchst:
+====
+cd backend
+./mvnw quarkus:dev \ +
+ -Dquarkus.hibernate-orm.schema-management.strategy=none \ +
+ -Dquarkus.hibernate-orm.scripts.generation.generation=drop-and-create \ +
+ -Dquarkus.hibernate-orm.scripts.generation.drop-target=target/schema-drop.sql
+====

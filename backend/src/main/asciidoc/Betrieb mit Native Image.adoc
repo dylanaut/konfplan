@@ -8,6 +8,7 @@ Dieses Dokument beschreibt den Build-Prozess und den Betrieb der KonfPlan Anwend
 == 1. Warum Native Image?
 
 Im Vergleich zum Standard-JRE-Modus bietet das Native Image:
+
 * **Startzeit:** < 0.1 Sekunden.
 * **Speicherverbrauch:** Deutlich reduzierter RAM-Footprint.
 * **Portabilität:** Keine Java-Laufzeitumgebung (JRE) auf dem Zielsystem erforderlich.
@@ -16,23 +17,37 @@ Im Vergleich zum Standard-JRE-Modus bietet das Native Image:
 
 Der Build-Prozess integriert über Quinoa automatisch das Frontend und kompiliert anschließend das gesamte Backend nativ.
 
+[IMPORTANT]
+====
+In `application.properties` ist `%prod.quarkus.native.container-build=true` gesetzt. Das `%prod`-Profil ist bei jedem regulären `package`-Build aktiv, d.h. **der Container-Build wird standardmäßig immer erzwungen** – unabhängig davon, was `JAVA_HOME` sagt oder ob `-Dquarkus.native.container-build` explizit angegeben wird.
+====
+
 === Variante A: Build mit lokalem GraalVM
-Wenn GraalVM auf deinem System installiert und als `JAVA_HOME` gesetzt ist:
+Voraussetzung ist ein für dein Host-Betriebssystem/-Architektur passendes GraalVM bzw. Mandrel (z.B. via SDKMAN installiert, `JAVA_HOME` entsprechend gesetzt). Da die Konfiguration den Container-Build erzwingt (siehe oben), muss dieser hier explizit deaktiviert werden:
+
+[source,bash]
+----
+export JAVA_HOME=<Pfad-zu-GraalVM/Mandrel-für-dein-Host-OS>
+# z.B. /Users/kreyj/.sdkman/candidates/java/25.0.2.r25-mandrel
+./mvnw clean package -Dnative -DskipTests -Dquarkus.native.container-build=false
+----
+
+Das Ergebnis ist ein natives Executable für **dein Host-Betriebssystem** (z.B. macOS/aarch64 auf Apple Silicon), lauffähig direkt auf dem Host ohne Docker.
+
+=== Variante B: Build via Docker/Podman (Standard/Empfohlen)
+Ohne weitere Angaben (siehe IMPORTANT oben) baut Quarkus ohnehin in einem Container:
 
 [source,bash]
 ----
 ./mvnw clean package -Dnative -DskipTests
 ----
 
-=== Variante B: Build via Docker/Podman (Empfohlen)
-Falls du kein GraalVM lokal installiert hast, kann Quarkus den Build in einem Container durchführen:
-
-[source,bash]
-----
-./mvnw clean package -Dnative -Dquarkus.native.container-build=true -DskipTests
-----
-
 NOTE: Da das Frontend via Quinoa gebaut wird, müssen **Node.js** und **npm** trotzdem auf dem Host-System vorhanden sein.
+
+[IMPORTANT]
+====
+Der Container-Build läuft im konfigurierten `builder-image` (ein Linux/UBI-Image). Das erzeugte Executable ist daher immer ein **Linux-Binary** für die Architektur des Docker-Hosts (z.B. `linux/aarch64` auf Apple Silicon mit Docker Desktop) – **kein natives macOS-Binary**. Es ist direkt auf dem Mac nicht ausführbar, sondern nur in einem passenden Linux-Container bzw. auf einem Linux-Host der gleichen Architektur (siehe Abschnitt 6/7).
+====
 
 == 3. Starten der Anwendung
 
@@ -77,3 +92,28 @@ Oft wird das native Executable direkt in ein minimales Docker-Image (z.B. `ubi-m
 ----
 docker build -f backend/src/main/docker/Dockerfile.native -t konfplan/backend-native .
 ----
+
+== 7. Build für eine andere Plattform/Architektur (Cross-Build)
+
+Ein natives Executable ist immer für ein bestimmtes Betriebssystem und eine bestimmte CPU-Architektur kompiliert (z.B. `linux/aarch64` vs. `linux/amd64`) und läuft nur dort. Ein auf Apple Silicon gebautes Binary läuft z.B. nicht auf einem x86_64-Linux-Server.
+
+Für einen Cross-Build bleibt man beim Container-Build (Variante B), gibt Docker aber explizit die Ziel-Plattform mit. Docker Desktop bringt dafür QEMU-Emulation für Fremdarchitekturen bereits mit:
+
+[source,bash]
+----
+./mvnw clean package -Dnative -DskipTests \
+  -Dquarkus.native.container-runtime-options=--platform=linux/amd64
+----
+
+Damit läuft der Builder-Container per Emulation für `linux/amd64` und erzeugt ein passendes Runner-Executable.
+
+Beim anschließenden Docker-Image-Build muss die Ziel-Plattform ebenfalls angegeben werden (sonst wird die Host-Architektur verwendet):
+
+[source,bash]
+----
+docker buildx build --platform linux/amd64 \
+  -f backend/src/main/docker/Dockerfile.native \
+  -t konfplan/backend-native:amd64 .
+----
+
+NOTE: Das Basis-Image (`ubi8/ubi-minimal`) ist Multi-Arch, `buildx` zieht automatisch das passende Manifest für die angegebene Plattform.
