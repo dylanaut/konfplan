@@ -57,6 +57,19 @@ Der Build sollte vom **Wurzelverzeichnis** des Projekts ausgeführt werden, dami
 * **Was passiert hier?** Maven ruft `npm run build` im Frontend-Ordner auf. Die fertigen statischen Dateien (aus `dist/`) werden automatisch in das Java-Artefakt (`JAR`) des Backends kopiert.
 
 === Starten der Anwendung
+
+[IMPORTANT]
+====
+Im PROD-Profil gibt es keine DevServices mehr – PostgreSQL und ein SMTP-Server müssen daher **vor** dem Start selbst bereitgestellt werden. Dafür gibt es das Hilfsscript:
+
+[source,bash]
+----
+./db/ensure_prod_infra.sh
+----
+
+Es startet idempotent (per Docker-Label wiedererkennbar) einen `postgres:18`- und einen `axllent/mailpit`-Container (lokaler Ersatz für den echten Brevo-SMTP-Server) und gibt am Ende den passenden `export`-Block für den Start aus.
+====
+
 Nach dem Build startest du nur noch das Backend:
 
 [source,bash]
