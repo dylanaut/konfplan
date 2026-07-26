@@ -1,0 +1,60 @@
+{
+  "veranstaltung": {
+    "id": 1,
+    "name": "Testtag 2026"
+  },
+  "geplantAm": "01.07.2026 12:00",
+  "slots": {
+    "890": {
+      "zeitraumTag": "Mi., 10:00 - 11:00 Uhr"
+    }
+  },
+  "raeume": {
+    "100": {
+      "name": "Raum A",
+      "kapazitaet": 2
+    },
+    "101": {
+      "name": "Raum B",
+      "kapazitaet": 5
+    }
+  },
+  "belegungDetails": {
+    "890_100": {
+      "titel": "Robotik Workshop",
+      "referent": "Dr. Eva Weiss",
+      "organisation": "TechCorp GmbH",
+      "isPflicht": false,
+      "teilnehmer": ["Anna Muster", "Ben Beispiel"]
+    },
+    "890_101": {
+      "titel": "Berufsorientierung",
+      "referent": "Max Mustermann",
+      "organisation": "",
+      "isPflicht": true,
+      "teilnehmer": ["Anna Muster", "Ben Beispiel", "Clara Test", "Dennis Demo"]
+    }
+  },
+  "freieTnInSlot": {
+    "890": ["Erik Sample"]
+  },
+  "stats": {
+    "anzahlAuffuellungen": 1
+  },
+  "wahlErfuellungStats": {
+    "totalPrefs": 2,
+    "erfuellungenGesamt": 2,
+    "gesamtErfuellungenProzentual": "100%",
+    "wvGewaehlte": { "500": 2 },
+    "wvErfuellungen": { "500": 2 },
+    "wvErfuellungenProzentual": { "500": "100%" },
+    "prioPrefs": { "1": 2 },
+    "prioErfuellungen": { "1": 2 },
+    "prioErfuellungenProzentual": { "1": "100%" }
+  },
+  "wahlvortraege": {
+    "500": {
+      "titel": "Robotik Workshop"
+    }
+  }
+}

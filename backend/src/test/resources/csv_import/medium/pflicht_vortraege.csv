@@ -1,0 +1,2 @@
+istPflicht;Titel;Referent_Email;Pflichtgruppe;Pflichtraum;Pflichtslot;Inhalt;wiederholbar;maxWiederholungen;wahlSlots;Ausstattung;Berufsfeld
+true;Vortrag GruppeA;ref1@gmail.com;GruppeA;Raum1;Slot_1;PV Gr.A;false;1;;FlipChart;IT

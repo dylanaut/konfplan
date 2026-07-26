@@ -1,0 +1,36 @@
+{
+  "name": "konfplan-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
+    "@capacitor/ios": "^8.3.4",
+    "@lucide/vue": "^1.17.0",
+    "axios": "^1.4.0",
+    "bootstrap": "^5.3.8",
+    "jwt-decode": "^3.1.2",
+    "pinia": "^2.1.0",
+    "vite-plugin-html": "^3.2.2",
+    "vue": "^3.3.0",
+    "vue-router": "^4.2.0",
+    "vue-toastification": "^2.0.0-rc.5"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.3.4",
+    "@playwright/test": "^1.59.1",
+    "@tailwindcss/forms": "^0.5.11",
+    "@types/node": "^24.12.2",
+    "@vitejs/plugin-vue": "^6.0.3",
+    "autoprefixer": "^10.4.23",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.19",
+    "vite": "^7.3.1",
+    "vite-plugin-html": "^3.2.2",
+    "vite-plugin-vue-devtools": "^8.1.1"
+  }
+}

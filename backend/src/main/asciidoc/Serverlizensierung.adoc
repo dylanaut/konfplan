@@ -1,0 +1,195 @@
+= Serverlizensierung
+Jürgen Krey <juergen.krey@msg.group>
+v0.1, 05.05.26
+:toc:
+:sectnums:
+
+== Einleitung
+
+Betrugssichere Lizenzierung mit Quarkus:
+
+Lizenzserver + signierte Tokens + regelmäßige Revalidierung + Grace-Period + optional mTLS für B2B-Kunden. Da die Anwendung auch offline laufen muss,  zusätzlich signierte Offline-Lizenzdateien mit klarer Laufzeit und optionaler Maschinenbindung
+
+Hier ist eine Aufschlüsselung, wie man diese Konzepte in einer Quarkus-Anwendung umsetzen könnte, ergänzt um technische Details und Best Practices:
+
+== 1. Lizenzserver (Quarkus-Anwendung)
+
+Der Lizenzserver ist das Herzstück Ihres Systems. Er sollte selbst eine Quarkus-Anwendung sein.
+
+=== Funktionalität:
+
+*   *Lizenz-Management:* Erstellung, Aktualisierung, Deaktivierung und Widerruf von Lizenzen.
+*   *Kunden-Management:* Zuordnung von Lizenzen zu Kunden/Organisationen.
+*   *REST-API:* Bereitstellung von Endpunkten für die Lizenzanforderung, -validierung und -erneuerung durch die Client-Anwendung.
+*   *Digitale Signatur:* Der Server generiert und signiert alle Lizenz-Tokens (online und offline) mit seinem privaten Schlüssel.
+
+=== Technologien im Quarkus-Kontext:
+
+*   `quarkus-resteasy-reactive`:: Für die Implementierung der REST-API.
+*   `quarkus-hibernate-orm-panache` + PostgreSQL/MariaDB:: Für die persistente Speicherung von Lizenzdaten, Kundeninformationen, Ablaufdaten, Feature-Sets, letzten Validierungszeitpunkten und Widerrufslisten.
+*   `quarkus-smallrye-jwt`:: Kann zur *Erstellung* der signierten Tokens (JWS) auf dem Server verwendet werden. Sie würden hier die `io.smallrye.jwt.build.Jwt` API nutzen, um den Payload zu definieren und mit dem privaten Schlüssel zu signieren.
+*   *Sichere Schlüsselverwaltung:* Der private Schlüssel des Lizenzservers muss extrem sicher gespeichert werden (z.B. in einem Hardware Security Module (HSM) oder einem sicheren Key Vault, oder zumindest verschlüsselt auf dem Server und nur zur Laufzeit geladen).
+
+== 2. Signierte Tokens (JWT/JWS)
+
+Dies ist der Standard für die Übertragung von Lizenzinformationen.
+
+=== Aufbau des Tokens (Payload):
+
+*   `iss` (Issuer): Der Lizenzserver.
+*   `sub` (Subject): Eindeutige Lizenz-ID.
+*   `aud` (Audience): Die Client-Anwendung.
+*   `exp` (Expiration Time): Ablaufdatum des Tokens.
+*   `iat` (Issued At): Ausstellungsdatum.
+*   `nbf` (Not Before): Gültig ab.
+*   *Benutzerdefinierte Claims:*
+*   `customerId`: Eindeutige Kunden-ID.
+*   `features`: Eine Liste der lizenzierten Funktionen (z.B. `["featureA", "featureB"]`).
+*   `type`: `online` oder `offline`.
+*   `nextRevalidation`: Datum der nächsten erforderlichen Online-Revalidierung (für Online-Tokens).
+*   `machineIdHash`: Hash der Maschinenbindung (für Offline-Tokens).
+
+=== Signatur:
+
+Der Lizenzserver signiert den JWT/JWS mit seinem *privaten Schlüssel*.
+
+=== Verifikation im Client (Quarkus-Anwendung):
+
+*   Der Client muss den *öffentlichen Schlüssel* des Lizenzservers mit der Anwendung ausliefern (z.B. als `.pem`-Datei im `resources`-Verzeichnis).
+*   `quarkus-smallrye-jwt`:: Der Client kann diese Erweiterung nutzen, um die Signatur des empfangenen Tokens zu verifizieren. Die Konfiguration erfolgt über `application.properties`:
+
+[source,properties]
+----
+mp.jwt.verify.publickey.location=/META-INF/resources/license-server-public.pem
+mp.jwt.verify.issuer=your-license-server-url
+----
+
+*   Nach erfolgreicher Signaturprüfung kann der Client den Payload des Tokens auslesen und die Lizenzinformationen verwenden.
+
+== 3. Regelmäßige Revalidierung (Online)
+
+=== Client-Seite (Quarkus-Anwendung):
+
+*   `quarkus-scheduler`:: Verwenden Sie den Scheduler, um periodische Jobs zu definieren, die die Lizenz revalidieren.
+
+[source,java]
+----
+import io.quarkus.scheduler.Scheduled;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class LicenseRevalidator {
+    // ... Injektionen für Lizenzservice, HTTP-Client etc.
+
+    @Scheduled(every = "24h") // Alle 24 Stunden revalidieren
+    void revalidateLicense() {
+        // Sende aktuelles Token an Lizenzserver
+        // Empfange neues Token oder Bestätigung
+        // Aktualisiere lokalen Lizenzstatus und letzten Validierungszeitpunkt
+    }
+}
+----
+
+*   *HTTP-Client:* Nutzen Sie `quarkus-rest-client-reactive` oder `quarkus-resteasy-reactive-client` für die Kommunikation mit dem Lizenzserver.
+
+=== Server-Seite:
+
+*   Der Lizenzserver empfängt das Token, verifiziert es, prüft den Status der Lizenz in seiner Datenbank (nicht widerrufen, nicht abgelaufen), prüft ggf. Nutzungsstatistiken und sendet ein neues, aktualisiertes Token zurück.
+
+== 4. Grace Period
+
+=== Client-Seite:
+
+*   Speichern Sie den Zeitpunkt der letzten *erfolgreichen* Online-Validierung (z.B. in einer lokalen, persistenten Konfigurationsdatei oder Datenbank).
+*   Wenn eine Revalidierung fehlschlägt (z.B. wegen Netzwerkproblemen), startet die Grace Period.
+*   Die Anwendung sollte weiterhin funktionieren, aber einen internen Zähler oder Timer starten.
+*   Wenn die Grace Period abläuft, ohne dass eine erfolgreiche Revalidierung stattgefunden hat, wechselt die Anwendung in einen eingeschränkten Modus oder stoppt die Ausführung.
+*   Die Dauer der Grace Period sollte konfigurierbar sein (z.B. 7 Tage).
+
+== 5. Optional mTLS für B2B-Kunden
+
+=== Server-Seite (Quarkus-Anwendung):
+
+*   Konfigurieren Sie den Quarkus HTTP-Server für mTLS. Dies erfordert ein Truststore auf dem Server, der die Client-Zertifikate (oder die CAs, die sie ausgestellt haben) der B2B-Kunden enthält.
+
+[source,properties]
+----
+quarkus.http.ssl.client-auth=REQUIRED
+quarkus.http.ssl.trust-store-file=certs/client-truststore.jks
+quarkus.http.ssl.trust-store-password=password
+----
+
+=== Client-Seite (Quarkus-Anwendung):
+
+*   Der B2B-Client muss ein eigenes Client-Zertifikat und den entsprechenden privaten Schlüssel besitzen (im Keystore).
+*   Konfigurieren Sie den `quarkus-rest-client-reactive` für die Verwendung dieses Keystores:
+
+[source,properties]
+----
+# Für den spezifischen REST-Client
+your-rest-client.mp-rest.scope=jakarta.inject.Singleton
+your-rest-client.mp-rest.uri=https://your-license-server.com
+your-rest-client.quarkus.rest-client.key-store=certs/client-keystore.jks
+your-rest-client.quarkus.rest-client.key-store-password=password
+your-rest-client.quarkus.rest-client.trust-store=certs/server-truststore.jks # Truststore für Server-Zertifikat
+your-rest-client.quarkus.rest-client.trust-store-password=password
+----
+
+*   Dies stellt sicher, dass nur autorisierte B2B-Clients mit dem Lizenzserver kommunizieren können.
+
+== 6. Signierte Offline-Lizenzdateien
+
+*   *Lizenzserver:*
+*   Generiert einen speziellen JWT/JWS mit einem längeren `exp`-Claim und einem `type: offline`-Claim.
+*   Dieser JWT wird als Textdatei (z.B. `license.lic`) an den Kunden ausgeliefert.
+*   *Client-Seite:*
+*   Die Anwendung liest diese Datei.
+*   *Verifikation:* Der Inhalt der Datei wird als JWT behandelt und mit dem *lokal vorhandenen öffentlichen Schlüssel* des Lizenzservers verifiziert. Nur wenn die Signatur gültig ist, wird der Inhalt des Tokens vertraut.
+*   *Speicherung:* Die Offline-Lizenzdatei sollte an einem sicheren Ort auf dem System des Kunden gespeichert werden, idealerweise verschlüsselt, um ein einfaches Kopieren zu erschweren (obwohl die Signatur der primäre Schutz ist).
+
+== 7. Klare Laufzeit für Offline-Lizenzdateien
+
+*   Der `exp`-Claim im Offline-Lizenz-JWT definiert die Gültigkeit.
+*   Der Client prüft dieses Datum bei jedem Start und regelmäßig während der Laufzeit.
+*   Offline-Lizenzen sollten eine begrenzte Laufzeit haben (z.B. 3 Monate, 1 Jahr), um den Kunden zu motivieren, sich gelegentlich online zu verbinden oder eine neue Offline-Lizenz anzufordern.
+
+== 8. Optionale Maschinenbindung für Offline-Lizenzen
+
+Dies ist der schwierigste Punkt, da eine 100% fälschungssichere Maschinenbindung schwer umzusetzen ist.
+
+=== Maschinen-ID-Generierung (Client-Seite):
+
+*   Der Client muss eine eindeutige, aber nicht-personenbezogene ID generieren. Dies kann ein Hash aus mehreren Systeminformationen sein:
+*   MAC-Adressen (aller Netzwerkkarten)
+*   CPU-Seriennummer (falls verfügbar und stabil)
+*   Festplatten-Seriennummern
+*   Betriebssystem-Informationen (Name, Version)
+*   BIOS-Informationen
+*   *Herausforderungen:*
+*   Nicht alle Informationen sind auf allen Betriebssystemen leicht zugänglich oder stabil.
+*   Virtuelle Maschinen können generische IDs haben.
+*   Hardware-Änderungen können die ID ungültig machen.
+*   *Ansatz:* Kombinieren Sie mehrere IDs und bilden Sie einen Hash. Implementieren Sie eine Toleranz (z.B. 80% der Komponenten müssen übereinstimmen), um kleinere Hardware-Änderungen zu überstehen.
+
+=== Einbettung in Lizenz (Server-Seite):
+
+*   Der Client sendet diese generierte Maschinen-ID (oder einen Hash davon) an den Lizenzserver, wenn eine Offline-Lizenz angefordert wird.
+*   Der Lizenzserver bettet diese ID als Claim (z.B. `machineIdHash`) in den Offline-Lizenz-JWT ein und signiert ihn.
+
+=== Verifikation (Client-Seite):
+
+*   Beim Laden der Offline-Lizenz generiert der Client erneut seine aktuelle Maschinen-ID.
+*   Er vergleicht diese mit dem `machineIdHash`-Claim im verifizierten JWT.
+*   Bei Nichtübereinstimmung wird die Lizenz als ungültig betrachtet.
+
+== Allgemeine Best Practices und Überlegungen
+
+*   *Schlüsselrotation:* Planen Sie eine Strategie für die Rotation der Signaturschlüssel des Lizenzservers. Der Client muss in der Lage sein, Tokens zu verifizieren, die mit älteren, aber noch gültigen öffentlichen Schlüsseln signiert wurden.
+*   *Code-Obfuskation:* Obfuskieren Sie den Lizenzprüfcode in der Client-Anwendung, um Reverse Engineering zu erschweren.
+*   *Fehlerbehandlung:* Implementieren Sie robuste Fehlerbehandlung und Logging für Lizenzfehler. Unterscheiden Sie zwischen temporären Netzwerkproblemen und echten Lizenzverletzungen.
+*   *Benutzerfreundlichkeit:* Machen Sie den Lizenzierungsprozess für legitime Benutzer so einfach wie möglich. Komplizierte Systeme frustrieren ehrliche Kunden.
+*   *Layered Security:* Verlassen Sie sich nicht auf eine einzige Schutzschicht. Die Kombination aus signierten Tokens, Revalidierung, Grace Period und Maschinenbindung bietet eine gute Abdeckung.
+*   *Keine Geheimnisse im Client:* Der private Schlüssel des Lizenzservers darf niemals im Client landen. Der öffentliche Schlüssel ist per Definition öffentlich.
+*   *Zeit-Manipulation:* Client-seitige Zeitmanipulation ist ein Problem. Online-Validierungen können dies erkennen. Offline-Lizenzen sind anfälliger, aber der `exp`-Claim im JWT ist ein guter Schutz, solange der Client die Systemzeit nicht zu stark manipulieren kann, ohne andere Systemfunktionen zu stören.
+
+Ihr vorgeschlagener Ansatz ist sehr gut. Die Umsetzung erfordert Sorgfalt, insbesondere bei der Schlüsselverwaltung und der Maschinenbindung, aber Quarkus bietet eine hervorragende Basis für die Implementierung der notwendigen Komponenten.

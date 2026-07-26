@@ -1,0 +1,131 @@
+= Steckbrief KonfPlan
+Jürgen Krey <juergen.krey@msg.group>
+
+:toc!:
+:toc-title: Inhaltsverzeichnis
+:table-caption: Tabelle
+:figure-caption: Abbildung
+:example-caption: Beispiel
+
+== Einleitung
+
+Die KonfPlan-App dient der Organisation von Veranstaltungen, die im Wesentlichen aus Vorträgen für die Teilnehmern besteht.
+
+Der Veranstalter gibt der organisatorischen Rahmen der Veranstaltung vor: Zeiten, Räume, Referenten, Vorträge, etc.
+
+Die Teilnehmer äußern ihre Vortragswünsche, und die Anwendung generiert daraus
+ automatisiert einen quasi-optimalen Belegungsplan für Teilnehmer sowie die Referenten mit ihren Vorträgen.
+
+Um den Organisatoren die Erfassung zu erleichtern, erhalten Teilnehmer und Referenten individuelle Zugänge über Self-Service Portale.
+
+Auch für die anschließende Durchführung der Veranstaltung bietet die App vielfältige Unterstützung:
+
+* Stundenplan der Vorträge zum Überblick für alle Beteiligten
+* Individuelle Laufzettel für die Teilnehmer
+* Individuelle Vortragspläne für die Referenten
+* Anwesenheitskontrolllisten
+* Wunscherfüllungs- und Auslastungsstatistiken
+* Zufriedenheitsabfragen für Teilnehmer und Referenten
+
+
+== Installation
+
+Die Anwendung besteht aus einem Web-Server mit entsprechenden Web-Seiten für alle Beteiligte, die Veranstaltungsdaten werden auf einem separaten Datenbank-Server gespeichert.
+
+Die Anwendung liegt wahlweise als
+
+* als Java Applikation - Mindestanforderung: Java Runtime Environment (JRE) ab Version 21 - oder
+* als Binär-Image für diverse Betriebssysteme vor.
+
+
+Als Datenbank ist derzeit Postgresql v.18 vorgesehen, andere relationale Datenbanksysteme, z.B. Oracle, MS SqlServer, oä. sind möglich.
+
+Es entstehen *keine* Lizenzkosten für OpenSource Produkte.
+
+
+== Betriebliche Voraussetzungen
+
+=== Betriebssystem
+
+Díe Anwendung wurde unter MacOS / Linux entwickelt und ist portierbar auf alle gängigen Betriebssysteme.
+
+Die gewählte Datenbank PostgreSQL kann auf den meisten gängigen Betriebssysteme installiert werden.
+
+=== Ausstattung
+
+.Empfohlene Server-Ausstattung
+[cols="1,2,2,3",options="header"]
+|===
+| Komponente | Empfehlung (Komfortabel) | Minimum (Sparsam) | Begründung
+
+| *CPU / Cores*
+| `4 Cores`
+| `2 Cores`
+| **Wichtigster Punkt.** 4 Cores erlauben es MiniZinc, mit mehreren Threads zu arbeiten, ohne die Quarkus-Anwendung oder die Datenbank zu blockieren.
+
+| *RAM*
+| `8 GB`
+| `4 GB`
+| Java-Anwendungen und PostgreSQL profitieren stark von mehr Arbeitsspeicher. 8 GB bieten genug Puffer für das Betriebssystem (~2 GB), PostgreSQL (~2 GB), die Quarkus App (~2 GB) und rechenintensive Prozesse.
+
+| *Festplattenspeicher*
+| `80 GB SSD`
+| `40 GB SSD`
+| **SSD ist ein Muss** für die Datenbank-Performance. 80 GB bieten ausreichend Platz für Betriebssystem, Logs, Datenbank-Wachstum und temporäre Dateien.
+
+| *Betriebssystem*
+| `Linux` (z.B. Ubuntu 22.04 LTS)
+| `Linux` (z.B. Ubuntu 22.04 LTS)
+| Ressourcenschonender, sicherer und der Industriestandard für das Hosting von Java-Anwendungen und PostgreSQL.
+|===
+
+
+=== Netzwerk
+
+Folgende Zugriffsmöglichkeiten auf Anwendung:
+
+.Variante A: lokale Installation auf Schulserver
+
+* Direkte Zugriffe nur für Messe-Organisatoren und Schüler
+
+* Self-Service für Schüler und Referenten über externe Forms-Abfrage und manuellem CSV-Import/-Update
+
+* Eigene Administration
+
+
+.Variante B: zentrale Installation (Kreis-IT / Bechtle)
+
+* Direkte Zugriffe für Messe-Organisatoren, Schüler und Referenten
+
+* Betrieb und Administration durch Dienstleister
+
+
+=== Gesicherte Zugriffe
+
+Nutzer identifizieren sich über Login-Id = EMailadresse
+und authentifizieren sich über verschlüsseltes Kennwort.
+
+Nutzer können die Änderung ihres Kennworts per Email anfordern, insbesondere bei Erst-Anmeldung.
+
+
+== Betriebliche Fragen
+
+* Zugriff auf Log-Dateien und Datenbank von aussen sicherstellen
+* Backup-Verfahren für Datenbank implementieren
+
+* 1./2.-Level Support: wie können Nutzer Fehler und Verbesserungen melden?
+
+
+== Ansprechpartner
+
+.Technische Anwendung
+Jürgen Krey, juergenkrey@yahoo.de
+
+.Fachliche Betreuung
+Kathrin Jessen, kathrin.jessen@rks-linz.de
+
+.RKS-Linz IT
+Martin Schunkert, martin.schunkert@rks-linz.de
+
+.Schul-IT Neuwied
+Jan Otto, jan.otto@kreis-neuwied.de

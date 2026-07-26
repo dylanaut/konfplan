@@ -1,0 +1,130 @@
+= Anwendungsfalldokumentation KonfPlan
+:toc: left
+:sectnums:
+:icons: font
+
+== Übersicht
+Dieses Dokument beschreibt die funktionalen Anforderungen der KonfPlan Anwendung, unterteilt nach den drei Hauptrollen: **Administrator**, **Referent** und **Teilnehmer**.
+
+== UseCase Diagramm (PlantUML)
+
+[plantuml, usecase-diagram, svg]
+----
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Administrator" as Admin
+actor "Referent" as Ref
+actor "Teilnehmer" as User
+
+package "KonfPlan System" {
+  (Veranstaltungen verwalten) as UC1
+  (Gebäude & Räume verwalten) as UC2
+  (Nutzerkonten verwalten) as UC3
+  (Zeit-Slots definieren) as UC4
+  (Vorträge & Zuweisungen verwalten) as UC5
+  (PlanErstellung starten) as UC6
+  (Pläne & Türschilder exportieren) as UC7
+
+  (Eigene Vorträge verwalten) as UC8
+  (Verfügbarkeit pflegen) as UC9
+  (Vorträge zu Events anmelden) as UC10
+  (Referenten-Einsatzplan einsehen) as UC11
+
+  (Wahlvorträge priorisieren) as UC12
+  (Persönlichen Stundenplan einsehen) as UC13
+}
+
+Admin --> UC1
+Admin --> UC2
+Admin --> UC3
+Admin --> UC4
+Admin --> UC5
+Admin --> UC6
+Admin --> UC7
+
+Ref --> UC8
+Ref --> UC9
+Ref --> UC10
+Ref --> UC11
+
+User --> UC12
+User --> UC13
+@enduml
+----
+
+== Detaillierte UseCase Beschreibungen
+
+=== Rolle: Administrator
+
+[cols="1,3"]
+|===
+| UseCase | Beschreibung / API Endpunkte
+
+| **Veranstaltungen verwalten**
+| CRUD-Operationen für Events; Import von Veranstaltungsdaten. +
+`GET/POST/PUT/DELETE /api/veranstaltungen`
+
+| **Gebäude & Räume verwalten**
+| Verwaltung der Infrastruktur (Schulen, Kinos, Säle) und deren Raumkapazitäten. +
+`GET/POST/PUT/DELETE /api/gebaeude` +
+`GET/POST/PUT/DELETE /api/gebaeude/{id}/raeume`
+
+| **Nutzerkonten verwalten**
+| Anlage und Pflege von Administratoren, Referenten und Teilnehmern. +
+`GET/POST/PUT/DELETE /api/admin/nutzer` +
+`GET/POST/PUT/DELETE /api/veranstaltungen/{vid}/nutzer`
+
+| **PlanErstellung starten**
+| Ausführen des MiniZinc-Solvers zur optimalen Zuweisung von Teilnehmern zu Vorträgen basierend auf Prioritäten. +
+`POST /api/veranstaltungen/{vid}/planungen`
+
+| **Export & Ergebnisse**
+| Generierung von Türschildern (PDF) und Gesamtplanungs-Exports (CSV). +
+`GET /api/veranstaltungen/{vid}/export/tuerschilder` +
+`GET /api/veranstaltungen/{vid}/plan/details`
+|===
+
+=== Rolle: Referent
+
+[cols="1,3"]
+|===
+| UseCase | Beschreibung / API Endpunkte
+
+| **Eigene Vorträge verwalten**
+| Referenten können ihre eigenen Vorträge (Titel, Inhalt, Zielgruppe) anlegen und bearbeiten. +
+`GET/POST/PUT/DELETE /api/referenten/vortraege`
+
+| **Verfügbarkeit pflegen**
+| Angabe, in welchen Zeit-Slots der Referent für Vorträge zur Verfügung steht. +
+`POST /api/referenten/verfuegbarkeiten/tag`
+
+| **Vorträge zu Events anmelden**
+| Anmeldung spezifischer Vorträge für eine konkrete Veranstaltung. +
+`POST /api/veranstaltungen/{vid}/vortraege/{talkId}/register`
+
+| **Einsatzplan einsehen**
+| Ansicht, wann und in welchem Raum die eigenen Vorträge stattfinden. +
+`GET /api/referenten/plaene`
+|===
+
+=== Rolle: Teilnehmer
+
+[cols="1,3"]
+|===
+| UseCase | Beschreibung / API Endpunkte
+
+| **Wahlvorträge priorisieren**
+| Auswahl und Gewichtung (Rang 1-10) der gewünschten Wahlvorträge. +
+`GET /api/teilnehmer/priorities` +
+`POST /api/teilnehmer/priorities`
+
+| **Persönlichen Plan einsehen**
+| Nach der PlanErstellung: Ansicht des verbindlichen individuellen Stundenplans. +
+`GET /api/participant/plaene`
+
+| **Referenten-Info einholen**
+| Einsehen von Biografien und Profilen der Referenten zur Entscheidungsfindung. +
+(Integriert in die Vortragsübersicht)
+|===

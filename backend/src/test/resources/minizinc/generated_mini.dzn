@@ -1,0 +1,42 @@
+%Generiert am: 15.05.2026 13:15,Version: 1.0;
+max_instanzen = 1;
+opt_referent_raumtreue = true;
+
+n_slots = 1;
+slots = [
+(oid: 1) % 1: Fr.,14:15 - 15:15
+];
+
+n_raeume = 1;
+raeume = [
+(oid: 1, kapazitaet: 1), % 1: Raum 1, 1
+];
+
+n_teilnehmer = 2;
+teilnehmer = [
+(oid: 2), % 1: schueler1@test.com (A)
+(oid: 3) % 1: schueler1@test.com (A)
+];
+
+n_wahlvortraege = 1;
+wahlvortraege = [
+(oid: 1, referent_id: 1, belegbare_slots: [1]) % 1: Wahlvortrag 1
+];
+
+prioritaeten = [|
+1 | % 2: schueler1@test.com
+1 |]; % 3: schueler2@test.com
+
+%In welchen Slots jeder Teilnehmer für Wahlvorträge planbar ist:
+tn_verfuegbar = [| %% Slot 1..1
+true | % 2: schueler1@test.com
+true |]; % 3: schueler2@test.com
+
+%In welchen Slots Räume für Wahlvorträge planbar ist:
+raum_belegbar = [| %% Slot 1..1
+true |] ; % 1: Raum 1
+
+teilnehmer_oids = [2,3];
+wahlvortrag_oids = [1];
+slot_oids = [1];
+raum_oids = [1];

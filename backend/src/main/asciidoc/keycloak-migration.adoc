@@ -1,0 +1,732 @@
+= KonfPlan: Migration zu Keycloak (OIDC)
+:toc: left
+:toc-title: Inhalt
+:toclevels: 3
+:icons: font
+:source-highlighter: rouge
+:sectnums:
+
+== Überblick
+
+=== Ausgangslage
+
+KonfPlan authentifiziert Nutzer aktuell über `quarkus-security-jpa`:
+
+* Passwörter als BCrypt-Hash in `nutzer.password_hash` gespeichert
+* JWT-Token werden intern mit RSA-Schlüsselpaar (`privateKey.pem`) erzeugt
+* `AuthResource` verwaltet Login, Passwort-Reset und E-Mail-Änderung selbst
+* Nutzer werden direkt per Panache in PostgreSQL angelegt (CSV-Import, Admin-UI)
+
+=== Zielarchitektur
+
+[plantuml, target=auth-flow, format=svg]
+....
+Frontend --> Keycloak : Authorization Code + PKCE
+Keycloak --> Frontend : Access Token (JWT)
+Frontend --> Backend  : Bearer <token>
+Backend  --> Keycloak : JWKS-Verifikation (einmalig gecacht)
+....
+
+* Keycloak übernimmt Identitätsmanagement (Login-UI, Token-Ausstellung, Passwort-Reset)
+* Backend validiert Token via `quarkus-oidc` gegen Keycloak JWKS
+* `@RolesAllowed("ADMIN")` etc. bleiben unverändert
+* `AdminService` legt Nutzer künftig via Keycloak Admin REST API an
+* Die `Nutzer`-Entität in PostgreSQL bleibt als Domänenobjekt erhalten (Prioritäten, Gruppen, Verfügbarkeiten)
+
+=== Risiken & Grenzen
+
+[NOTE]
+====
+* BCrypt-Hashes lassen sich nach Keycloak migrieren (Format kompatibel ab Keycloak 21)
+* Passwort-Reset-Workflow entfällt im Backend — Keycloak bietet eigene Reset-E-Mails
+* E-Mail-Änderungs-Workflow entfällt — Keycloak verwaltet die E-Mail
+* `resetToken`, `resetTokenExpiry`, `newEmail`, `emailChangeToken`-Felder aus `Nutzer` können nach Migration via Flyway entfernt werden
+====
+
+---
+
+== Phase 1: Keycloak aufsetzen
+
+=== Docker (Entwicklung)
+
+[source,bash]
+----
+docker run -d \
+  --name keycloak-dev \
+  -p 8080:8080 \
+  -e KEYCLOAK_ADMIN=admin \
+  -e KEYCLOAK_ADMIN_PASSWORD=admin \
+  quay.io/keycloak/keycloak:26.0 \
+  start-dev
+----
+
+Admin-Konsole: http://localhost:8080 → Benutzer `admin` / `admin`
+
+=== Realm, Clients & Rollen per CLI (`kcadm.sh`)
+
+[source,bash]
+----
+# kcadm.sh ist im Keycloak-Container enthalten
+alias kcadm="docker exec keycloak-dev /opt/keycloak/bin/kcadm.sh"
+
+# 1. Admin-Session starten
+kcadm config credentials \
+  --server http://localhost:8080 \
+  --realm master \
+  --user admin \
+  --password admin
+
+# 2. Realm anlegen
+kcadm create realms \
+  -s realm=konfplan \
+  -s enabled=true \
+  -s displayName="KonfPlan" \
+  -s 'smtpServer={"host":"mailpit","port":"1025","from":"konfplan@local"}' \
+  -s resetPasswordAllowed=true
+
+# 3. Backend-Client (bearer-only, kein eigenes Login)
+kcadm create clients -r konfplan \
+  -s clientId=konfplan-backend \
+  -s enabled=true \
+  -s bearerOnly=true
+
+# 4. Frontend-Client (public, PKCE)
+kcadm create clients -r konfplan \
+  -s clientId=konfplan-frontend \
+  -s enabled=true \
+  -s publicClient=true \
+  -s 'redirectUris=["http://localhost:5173/*","http://localhost:9000/*"]' \
+  -s 'webOrigins=["http://localhost:5173","http://localhost:9000"]'
+
+# 5. Realm-Rollen anlegen
+kcadm create roles -r konfplan -s name=ADMIN       -s description="Administrator"
+kcadm create roles -r konfplan -s name=REFERENT    -s description="Referent"
+kcadm create roles -r konfplan -s name=TEILNEHMER  -s description="Teilnehmer"
+----
+
+=== Admin-CLI-Client für Backend-Zugriff
+
+[source,bash]
+----
+# Separater Admin-Client (service-account) für AdminService
+kcadm create clients -r konfplan \
+  -s clientId=konfplan-admin-cli \
+  -s enabled=true \
+  -s 'serviceAccountsEnabled=true' \
+  -s publicClient=false
+
+# Client-Secret auslesen
+KC_ADMIN_CLI_ID=$(kcadm get clients -r konfplan -q clientId=konfplan-admin-cli --fields id --format csv --noquotes)
+kcadm get clients/$KC_ADMIN_CLI_ID/client-secret -r konfplan
+
+# Service-Account des Clients die Admin-Rolle geben
+SA_ID=$(kcadm get clients/$KC_ADMIN_CLI_ID/service-account-user -r konfplan --fields id --format csv --noquotes)
+ADMIN_ROLE_ID=$(kcadm get roles -r master -q name=admin --fields id --format csv --noquotes)
+kcadm add-roles \
+  --uusername service-account-konfplan-admin-cli \
+  --rolename admin \
+  -r master
+----
+
+---
+
+== Phase 2: Nutzer migrieren
+
+=== Strategie
+
+Keycloak akzeptiert BCrypt-Hashes im `CredentialRepresentation`-Format. Da alle CSV-importierten Nutzer das Standardpasswort `start123` haben, gibt es zwei Optionen:
+
+|===
+| Option | Vorteil | Nachteil
+| BCrypt-Hash übertragen | Nutzer bemerken nichts | Komplexeres Migrationsskript
+| `temporary=true` setzen | Einfach | Alle Nutzer müssen Passwort neu setzen
+|===
+
+[RECOMMENDATION]
+====
+Empfehlung: BCrypt-Hashes migrieren (`start123`-Hash ist bekannt), plus `requiredActions: ["UPDATE_PASSWORD"]` setzen — so können Nutzer ihr Passwort beim nächsten Login ändern, müssen es aber nicht sofort.
+====
+
+=== Migrationsskript (Python)
+
+[source,python]
+----
+#!/usr/bin/env python3
+"""
+migrate_users_to_keycloak.py
+Liest Nutzer aus PostgreSQL und legt sie in Keycloak an.
+Voraussetzungen: pip install psycopg2-binary requests
+"""
+
+import psycopg2
+import requests
+import json
+import sys
+
+# --- Konfiguration ---
+PG_DSN   = "host=localhost port=65432 dbname=konfplan user=postgres password=postgres"
+KC_URL   = "http://localhost:8080"
+KC_REALM = "konfplan"
+KC_ADMIN_USER = "admin"
+KC_ADMIN_PASS = "admin"
+
+ROLE_MAP = {"ADMIN": "ADMIN", "REFERENT": "REFERENT", "TEILNEHMER": "TEILNEHMER"}
+
+# --- Keycloak Admin-Token holen ---
+def get_admin_token():
+    r = requests.post(f"{KC_URL}/realms/master/protocol/openid-connect/token", data={
+        "grant_type": "password",
+        "client_id": "admin-cli",
+        "username": KC_ADMIN_USER,
+        "password": KC_ADMIN_PASS,
+    })
+    r.raise_for_status()
+    return r.json()["access_token"]
+
+def headers(token):
+    return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
+# --- Rolle-ID nachschlagen ---
+def get_role(token, role_name):
+    r = requests.get(f"{KC_URL}/admin/realms/{KC_REALM}/roles/{role_name}", headers=headers(token))
+    r.raise_for_status()
+    return r.json()
+
+# --- Nutzer anlegen ---
+def create_user(token, row):
+    user_id, email, first, last, password_hash, role, is_active = row
+    kc_user = {
+        "username": email,
+        "email": email,
+        "firstName": first or "",
+        "lastName":  last or "",
+        "enabled": bool(is_active),
+        "emailVerified": True,
+        # BCrypt-Hash direkt übertragen
+        "credentials": [{
+            "type": "password",
+            "userLabel": "migrated",
+            "temporary": False,
+            "secretData": json.dumps({"value": password_hash, "salt": ""}),
+            "credentialData": json.dumps({"hashIterations": 10, "algorithm": "bcrypt"}),
+        }],
+        "requiredActions": ["UPDATE_PASSWORD"],
+        "attributes": {
+            "db_id": [str(user_id)],
+            "konfplan_role": [role],
+        }
+    }
+    r = requests.post(
+        f"{KC_URL}/admin/realms/{KC_REALM}/users",
+        headers=headers(token),
+        json=kc_user,
+    )
+    if r.status_code == 409:
+        print(f"  SKIP (already exists): {email}")
+        return None
+    r.raise_for_status()
+    # Location-Header enthält neue User-ID
+    kc_id = r.headers["Location"].rstrip("/").split("/")[-1]
+    return kc_id
+
+# --- Realm-Rolle zuweisen ---
+def assign_role(token, kc_user_id, role_name):
+    role = get_role(token, role_name)
+    r = requests.post(
+        f"{KC_URL}/admin/realms/{KC_REALM}/users/{kc_user_id}/role-mappings/realm",
+        headers=headers(token),
+        json=[role],
+    )
+    r.raise_for_status()
+
+# --- Main ---
+def main():
+    token = get_admin_token()
+    conn  = psycopg2.connect(PG_DSN)
+    cur   = conn.cursor()
+    cur.execute("""
+        SELECT id, email, first_name, last_name, password_hash, dtype, is_active
+        FROM nutzer
+        ORDER BY id
+    """)
+    rows = cur.fetchall()
+    print(f"Migriere {len(rows)} Nutzer...")
+
+    for row in rows:
+        email = row[1]
+        role  = row[5]  # DTYPE = Admin, Referent, Teilnehmer
+        # dtype → Keycloak-Rollenname
+        kc_role = role.upper() if role.upper() in ROLE_MAP else "TEILNEHMER"
+        print(f"  {email} [{kc_role}]", end=" ")
+        kc_id = create_user(token, row)
+        if kc_id:
+            assign_role(token, kc_id, kc_role)
+            print("OK")
+
+    conn.close()
+    print("Fertig.")
+
+if __name__ == "__main__":
+    main()
+----
+
+[source,bash]
+----
+pip install psycopg2-binary requests
+python3 migrate_users_to_keycloak.py
+----
+
+---
+
+== Phase 3: Backend-Umbau
+
+=== pom.xml
+
+[source,xml]
+----
+<!-- ENTFERNEN: -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-security-jpa</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-jwt</artifactId>
+</dependency>
+
+<!-- HINZUFÜGEN: -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-keycloak-admin-rest-client</artifactId>
+</dependency>
+----
+
+=== application.properties (Patches)
+
+==== Gemeinsame Eigenschaften (oben ersetzen)
+
+[source,diff]
+----
+-quarkus.smallrye-jwt.enabled=true
+-smallrye.jwt.sign.key.location=privateKey.pem
+-mp.jwt.verify.publickey.location=publicKey.pem
+-mp.jwt.verify.issuer=https://konfplan.kreyj
++quarkus.oidc.application-type=service
++quarkus.oidc.roles.role-claim-path=realm_access/roles
+----
+
+==== Dev-Profil
+
+[source,diff]
+----
++%dev.quarkus.oidc.auth-server-url=http://localhost:8080/realms/konfplan
++%dev.quarkus.oidc.client-id=konfplan-backend
++%dev.quarkus.keycloak.admin-client.server-url=http://localhost:8080
++%dev.quarkus.keycloak.admin-client.realm=konfplan
++%dev.quarkus.keycloak.admin-client.client-id=konfplan-admin-cli
++%dev.quarkus.keycloak.admin-client.client-secret=${KC_ADMIN_CLI_SECRET:changeme}
++%dev.quarkus.keycloak.admin-client.grant-type=CLIENT_CREDENTIALS
+----
+
+==== Prod-Profil
+
+[source,diff]
+----
++%prod.quarkus.oidc.auth-server-url=${KC_SERVER_URL}/realms/${KC_REALM}
++%prod.quarkus.oidc.client-id=konfplan-backend
++%prod.quarkus.keycloak.admin-client.server-url=${KC_SERVER_URL}
++%prod.quarkus.keycloak.admin-client.realm=${KC_REALM}
++%prod.quarkus.keycloak.admin-client.client-id=konfplan-admin-cli
++%prod.quarkus.keycloak.admin-client.client-secret=${KC_ADMIN_CLI_SECRET}
++%prod.quarkus.keycloak.admin-client.grant-type=CLIENT_CREDENTIALS
+----
+
+==== Test-Profil
+
+[source,diff]
+----
++# OIDC in Tests mocken
++%test.quarkus.oidc.enabled=false
++%test.quarkus.security.users.embedded.enabled=true
++%test.quarkus.security.users.embedded.plain-text=true
++%test.quarkus.security.users.embedded.users.admin=password
++%test.quarkus.security.users.embedded.roles.admin=ADMIN
++%test.quarkus.security.users.embedded.users.referent=password
++%test.quarkus.security.users.embedded.roles.referent=REFERENT
++%test.quarkus.security.users.embedded.users.teilnehmer=password
++%test.quarkus.security.users.embedded.roles.teilnehmer=TEILNEHMER
+----
+
+=== AuthResource.java (ersetzen)
+
+Der gesamte `AuthResource` wird auf einen minimalen Endpunkt reduziert — Login, Passwort-Reset und E-Mail-Änderung entfallen komplett (Keycloak übernimmt).
+
+Was bleibt: das `/api/auth/me`-Endpunkt, damit das Frontend Nutzer-ID + Rolle aus dem Token lesen kann.
+
+[source,java]
+----
+@Path("/api/auth")
+@ApplicationScoped
+public class AuthResource {
+
+    @Inject
+    JsonWebToken jwt;                          // <1>
+
+    @GET
+    @Path("/me")
+    @Authenticated
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response me() {
+        String email = jwt.getClaim("email");
+        String sub   = jwt.getSubject();       // Keycloak user-id
+        return Response.ok(Map.of(
+            "sub",   sub,
+            "email", email
+        )).build();
+    }
+}
+----
+<1> `JsonWebToken` wird von Quarkus OIDC injiziert und enthält alle Claims aus dem Keycloak-Token.
+
+[NOTE]
+====
+`AuthResource.login()`, `forgotPassword()` und `resetPassword()` entfallen ersatzlos.
+Die Endpunkte `/api/auth/login` und `/api/auth/reset-password` werden aus dem Frontend entfernt.
+====
+
+=== Nutzer.java (Entity-Patch)
+
+[source,diff]
+----
+ public class Nutzer extends VersionedEntity {
+
+     @NaturalId
+     @Column(nullable = false, unique = true)
+     public String email;
+
+-    @Column(name = "password_hash")
+-    public String passwordHash;
+
+-    public String resetToken;
+-    public LocalDateTime resetTokenExpiry;
+-    public String newEmail;
+-    public String emailChangeToken;
+-    public LocalDateTime emailChangeTokenExpiry;
+
+     public String firstName;
+     public String lastName;
+     // ... Rest unverändert
+ }
+----
+
+=== Flyway-Migration: V{n}__remove_auth_columns.sql
+
+[source,sql]
+----
+-- V12__remove_auth_columns.sql
+ALTER TABLE nutzer DROP COLUMN IF EXISTS password_hash;
+ALTER TABLE nutzer DROP COLUMN IF EXISTS reset_token;
+ALTER TABLE nutzer DROP COLUMN IF EXISTS reset_token_expiry;
+ALTER TABLE nutzer DROP COLUMN IF EXISTS new_email;
+ALTER TABLE nutzer DROP COLUMN IF EXISTS email_change_token;
+ALTER TABLE nutzer DROP COLUMN IF EXISTS email_change_token_expiry;
+----
+
+=== AdminService.java (Nutzer-CRUD via Keycloak Admin Client)
+
+Der `AdminService` injiziert den Keycloak Admin Client und ruft alle Identity-Operationen über ihn ab. Die Domänen-Entität in PostgreSQL wird weiterhin per Panache verwaltet.
+
+[source,java]
+----
+@ApplicationScoped
+public class AdminService implements AdminServiceInterface {
+
+    @Inject
+    Keycloak keycloak;                                     // <1>
+
+    @Value("${quarkus.keycloak.admin-client.realm}")
+    String realm;
+
+    // --- Nutzer anlegen ---
+    @Transactional
+    @Override
+    public NutzerDto createUser(NutzerDto dto, List<Long> veranstaltungsIds) {
+
+        // 1. Keycloak-User anlegen
+        UserRepresentation kcUser = new UserRepresentation();
+        kcUser.setUsername(dto.email);
+        kcUser.setEmail(dto.email);
+        kcUser.setFirstName(dto.firstName);
+        kcUser.setLastName(dto.lastName);
+        kcUser.setEnabled(true);
+        kcUser.setEmailVerified(true);
+
+        CredentialRepresentation cred = new CredentialRepresentation();
+        cred.setType(CredentialRepresentation.PASSWORD);
+        cred.setValue("start123");                          // <2>
+        cred.setTemporary(true);
+        kcUser.setCredentials(List.of(cred));
+        kcUser.setRequiredActions(List.of("UPDATE_PASSWORD"));
+
+        Response resp = keycloak.realm(realm).users().create(kcUser);
+        if (resp.getStatus() != 201) {
+            throw new WebApplicationException("Keycloak: Nutzer konnte nicht angelegt werden", 500);
+        }
+        String kcId = resp.getLocation().getPath().replaceAll(".*/([^/]+)$", "$1");
+
+        // 2. Realm-Rolle zuweisen
+        RoleRepresentation role = keycloak.realm(realm).roles()
+            .get(dto.role).toRepresentation();
+        keycloak.realm(realm).users().get(kcId)
+            .roles().realmLevel().add(List.of(role));
+
+        // 3. Domänen-Entität in PostgreSQL anlegen
+        Nutzer nutzer = buildNutzerEntity(dto);             // <3>
+        nutzer.persistAndFlush();
+
+        // 4. Veranstaltungen zuweisen
+        assignVeranstaltungen(nutzer, veranstaltungsIds);
+
+        return NutzerDto.from(nutzer);
+    }
+
+    // --- Nutzer löschen ---
+    @Transactional
+    @Override
+    public void deleteUser(Long id) {
+        Nutzer nutzer = Nutzer.findById(id);
+        if (nutzer == null) throw new WebApplicationException(404);
+
+        // Keycloak-User per E-Mail suchen und löschen
+        List<UserRepresentation> results = keycloak.realm(realm).users()
+            .searchByEmail(nutzer.email, true);
+        if (!results.isEmpty()) {
+            keycloak.realm(realm).users().delete(results.getFirst().getId());
+        }
+
+        nutzer.delete();
+    }
+
+    // ... updateUser analog
+}
+----
+<1> `io.quarkus.keycloak.admin.client.runtime.Keycloak` wird von `quarkus-keycloak-admin-rest-client` bereitgestellt.
+<2> Temporäres Passwort — Nutzer muss es beim ersten Login ändern.
+<3> Kein `passwordHash` mehr — der Nutzer enthält nur noch Domänendaten.
+
+=== CSV-Import (Patch)
+
+[source,diff]
+----
+ private Nutzer importSingleUser(CsvRow row) {
+-    nutzer.passwordHash = BcryptUtil.bcryptHash("start123");
+     // Keycloak-Anlage wie in createUser() oben
++    createKeycloakUser(row.email, row.role);
+     nutzer.persistAndFlush();
+     return nutzer;
+ }
+----
+
+---
+
+== Phase 4: Frontend-Umbau
+
+=== Abhängigkeit installieren
+
+[source,bash]
+----
+cd frontend && npm install keycloak-js
+----
+
+=== keycloak.js (neu anlegen: `src/keycloak.js`)
+
+[source,javascript]
+----
+import Keycloak from 'keycloak-js'
+
+const keycloak = new Keycloak({
+  url:      'http://localhost:8080',
+  realm:    'konfplan',
+  clientId: 'konfplan-frontend',
+})
+
+export default keycloak
+----
+
+=== main.js (Initialisierung vor App-Mount)
+
+[source,diff]
+----
++import keycloak from './keycloak.js'
++import { useAuthStore } from './stores/auth.js'
++
+ const app = createApp(App)
+ app.use(router)
+ app.use(pinia)
+-app.mount('#app')
++
++keycloak.init({ onLoad: 'check-sso', pkceMethod: 'S256' }).then(authenticated => {
++  if (authenticated) {
++    useAuthStore().setToken(keycloak.token, keycloak.tokenParsed)
++  }
++  app.mount('#app')
++})
+----
+
+=== auth.js (Store-Patch)
+
+[source,diff]
+----
++import keycloak from '../keycloak.js'
++
+ export const useAuthStore = defineStore('auth', () => {
+   const token = ref(localStorage.getItem('token'))
+   const role  = ref(localStorage.getItem('role'))
+
+-  async function login(credentials) {
+-    const res = await axios.post('/api/auth/login', credentials)
+-    setToken(res.data.token)
+-  }
++  function setToken(newToken, parsed) {                      // <1>
++    token.value = newToken
++    localStorage.setItem('token', newToken)
++    // Keycloak legt Rollen in realm_access.roles ab
++    const roles = parsed?.realm_access?.roles ?? []
++    role.value  = roles.find(r => ['ADMIN','REFERENT','TEILNEHMER'].includes(r)) ?? ''
++    localStorage.setItem('role', role.value)
++  }
+
+-  function logout() {
+-    token.value = null
+-    role.value  = null
+-    localStorage.clear()
+-    router.push('/login')
+-  }
++  function login() {
++    keycloak.login()                                          // <2>
++  }
++
++  function logout() {
++    localStorage.clear()
++    keycloak.logout({ redirectUri: window.location.origin + '/login' })
++  }
+
+   // Token-Refresh (alle 60s prüfen)
++  setInterval(() => {
++    keycloak.updateToken(60).then(refreshed => {
++      if (refreshed) setToken(keycloak.token, keycloak.tokenParsed)
++    })
++  }, 60_000)
+
+   return { token, role, login, logout, setToken, isAuthenticated, isAdmin, ... }
+ })
+----
+<1> `parsed` enthält das dekodierte JWT-Payload direkt vom Keycloak-SDK.
+<2> Keycloak leitet automatisch zum Login-Formular um (kein eigenes Login-View mehr nötig).
+
+=== Login.vue (vereinfachen)
+
+[source,diff]
+----
+-<template>
+-  <form @submit.prevent="submitLogin">
+-    <input v-model="email" type="email" />
+-    <input v-model="password" type="password" />
+-    <button type="submit">Anmelden</button>
+-  </form>
+-</template>
+-<script setup>
+-const { login } = useAuthStore()
+-async function submitLogin() { await login({ email, password }) }
+-</script>
++<template>
++  <div class="flex justify-center mt-20">
++    <button @click="authStore.login()" class="btn-primary">
++      Mit Keycloak anmelden
++    </button>
++  </div>
++</template>
++<script setup>
++const authStore = useAuthStore()
++</script>
+----
+
+=== axios.js (Token-Refresh-Interceptor anpassen)
+
+[source,diff]
+----
+ api.interceptors.request.use(config => {
+-  const token = localStorage.getItem('token')
++  const token = keycloak.token ?? localStorage.getItem('token')
+   if (token) config.headers.Authorization = `Bearer ${token}`
+   return config
+ })
+----
+
+---
+
+== Phase 5: Verifikation
+
+=== Keycloak-Smoke-Test
+
+[source,bash]
+----
+# Token für Testnutzer holen
+curl -s -X POST http://localhost:8080/realms/konfplan/protocol/openid-connect/token \
+  -d "grant_type=password&client_id=konfplan-frontend&username=admin@example.com&password=start123" \
+  | jq .access_token
+
+# Backend-Endpunkt mit Token aufrufen
+TOKEN=<access_token>
+curl -H "Authorization: Bearer $TOKEN" http://localhost:9000/api/admin/nutzer | jq length
+----
+
+=== Backend-Tests
+
+[source,bash]
+----
+# Test-Profil verwendet embedded users (kein Keycloak nötig)
+./mvnw test -pl backend
+----
+
+=== Playwright E2E
+
+[source,bash]
+----
+# Keycloak + Backend + Frontend müssen laufen
+cd frontend && npx playwright test
+----
+
+---
+
+== Rollout-Reihenfolge
+
+[cols="1,4,2", options="header"]
+|===
+| Schritt | Aktion | Verantwortlich
+
+| 1 | Keycloak produktiv deployen (Docker Compose / K8s) | Ops
+| 2 | Realm, Clients, Rollen konfigurieren (Phase 1) | Dev
+| 3 | Nutzer-Migrationsskript auf Prod-DB ausführen | Dev
+| 4 | Backend deployen (Phase 3) | Dev
+| 5 | Frontend deployen (Phase 4) | Dev
+| 6 | Smoke-Test in Prod (Phase 5) | Dev + QA
+| 7 | Flyway-Migration V{n} deployen (Spalten entfernen) | Dev (nach Stabilisierung)
+|===
+
+[WARNING]
+====
+Schritt 7 (Spalten entfernen) erst nach mehreren Tagen stabilen Betriebs ausführen — als Rollback-Option.
+====
+
+== Offene Punkte
+
+* [ ] Keycloak-SMTP für Passwort-Reset-E-Mails konfigurieren (Brevo oder Mailpit)
+* [ ] `ProtokollService`-Einträge für Auth-Events anpassen (Keycloak-Events via Event-Listener-SPI oder Webhook)
+* [ ] Session-Timeout in Keycloak (`SSO Session Max`) auf 4h setzen (bisheriger JWT-TTL)
+* [ ] `quarkus.oidc.tls.verification=none` für lokale Dev-Setups prüfen (wenn Keycloak kein TLS hat)
+* [ ] Produktiv-Keycloak: TLS, externe DB, HA-Setup

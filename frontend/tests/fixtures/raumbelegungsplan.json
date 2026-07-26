@@ -1,0 +1,17 @@
+{
+  "veranstaltung": {
+    "id": 1,
+    "name": "Berufsorientierungstag 2025"
+  },
+  "raum": {
+    "id": 303,
+    "name": "Forum"
+  },
+  "belegung": {
+    "1": {
+      "slot": { "id": 1, "startTime": "2025-10-10T09:00:00", "endTime": "2025-10-10T10:00:00" },
+      "vortrag": { "titel": "Grundlagen des Projektmanagements", "referent": { "firstName": "Tom", "lastName": "Weber" } },
+      "teilnehmerNamen": ["Lisa G.", "Max M."]
+    }
+  }
+}

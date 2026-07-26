@@ -1,0 +1,366 @@
+= Entwicklerhandbuch: KonfPlan
+
+:toc: left
+:toclevels: 2
+:sectnums:
+:sectnumlevels: 2
+:source-highlighter: highlight.js
+:icons: font
+
+Dieses Handbuch bietet einen Überblick über die Architektur, Technologien und Entwicklungspraktiken der KonfPlan Anwendung. Es richtet sich an Entwickler, die an diesem Projekt mitarbeiten.
+
+[[_projektuebersicht]]
+== 1. Projektübersicht
+
+Der *KonfPlan* ist eine Webanwendung zur Planung und Verwaltung von Veranstaltungen mit Vorträgen (z. B. Schulungstage). Er unterstützt drei Nutzerrollen: Admin, Referent und Teilnehmer. Ein zentrales Feature ist die automatische PlanErstellung der Teilnehmerzuweisung zu Wahlvorträgen via *MiniZinc*.
+
+[[_struktur]]
+== 2. Struktur
+
+Das Projekt ist ein Maven Multi-Module Projekt mit einem Backend (Quarkus) und einem Frontend (Vue.js).
+
+[source,bash]
+----
+konfplan/
+├── backend/          # Quarkus 3.33.1, Java 21, PostgreSQL (Dev/Prod), H2 (Test)
+├── frontend/         # Vue 3 + Vite + Tailwind CSS
+└── pom.xml           # Maven Multi-Module Parent
+----
+
+[[_kerntechnologien]]
+== 3. Kerntechnologien
+
+Die Anwendung setzt auf folgende Kerntechnologien:
+
+|===
+| Schicht | Technologie
+
+| Backend | Quarkus 3.33.1, Java 21, RESTEasy Reactive
+| ORM | Hibernate ORM Panache (Active Record Pattern)
+| Datenbank | PostgreSQL (Prod/Dev), H2 (Test)
+| Migration | Flyway
+| Security | JWT (SmallRye), BCrypt, `quarkus-security-jpa`
+| PlanErstellung | MiniZinc (externer Prozess via `PlanErstellungService`)
+| CSV-Import | OpenCSV 5.11.2
+| PDF-Export | OpenPDF 2.0.3
+| E-Mail | Quarkus Mailer (Mailpit für Dev)
+| Frontend | Vue 3, Vite, Tailwind CSS, Pinia, Vue Router
+| Integration | Quarkus Quinoa (Frontend-Build eingebettet)
+| E2E-Tests | Playwright
+|===
+
+[[_build_und_start]]
+== 4. Build & Start
+
+=== Alles bauen (Root-Verzeichnis)
+
+[source,bash]
+----
+./mvnw clean install -DskipTests
+----
+
+=== Backend starten (Dev-Modus mit Hot-Reload + Frontend via Quinoa)
+
+[source,bash]
+----
+cd backend && ../mvnw quarkus:dev
+----
+*   Backend: http://localhost:9000
+*   Frontend Dev-Server: http://localhost:5173 (wird automatisch gestartet)
+
+=== Nur Backend-Tests
+
+[source,bash]
+----
+cd backend && ../mvnw test
+----
+
+=== Nur Frontend
+
+[source,bash]
+----
+cd frontend && npm install && npm run dev
+----
+
+[[_backend_spezifika]]
+== 5. Backend-Spezifika
+
+Das Backend ist eine *Quarkus 3.33.1*-Anwendung (Java 21) mit RESTful API, JWT-Security und einer PostgreSQL-Datenbank für Dev/Prod sowie H2 für Tests. Es folgt einer klassischen Dreischicht-Architektur: `presentation` → `service` → `persistence`.
+
+=== Paketstruktur (`src/main/java/kreyj/konfplan/`)
+
+*   `entity/`: JPA-Entitäten (Panache Active Record)
+*   `dto/`: Datentransferobjekte (Request/Response)
+*   `service/`: Geschäftslogik (`@ApplicationScoped`)
+*   `resource/`: JAX-RS REST-Endpunkte (`@Path`)
+*   `util/`: Querschnittsklassen (z. B. LoggingFilter)
+
+=== Konfiguration (`src/main/resources/application.properties`)
+
+Wichtige Konfigurationen:
+
+*   **Port:** 9000
+*   **CORS:** Für Frontend-Dev auf Port 5173 aktiviert.
+*   **Datenbank:** PostgreSQL (Docker Dev Services im Dev-Modus, konfiguriert für Prod), H2 In-Memory für Tests.
+*   **JWT:** RSA-Schlüsselpaar in `src/main/resources/` (PEM-Dateien).
+*   **Hibernate:** `drop-and-create` (Dev/Test) bzw. `update` (Prod).
+*   **Flyway:** Zur Schema-Migration genutzt.
+
+=== Architekturregeln
+
+1.  **Resource-Klassen** haben keine Geschäftslogik – nur HTTP-Mapping, Delegation an Services und Mapping zu DTOs.
+2.  **Service-Klassen** sind `@ApplicationScoped`; Transaktionen mit `@Transactional`.
+3.  **Entities** nutzen Panache Active Record (statische Finder-Methoden direkt auf der Klasse).
+4.  Neue Entitäten *müssen* von `VersionedEntity` erben.
+5.  Neue Entitäten *müssen* `@Version Long version` für Optimistic Locking enthalten.
+6.  Datums-/Zeitfelder: `LocalDateTime` + `@Convert(converter = LocalDateTimeConverter.class)`.
+
+=== Security
+
+*   **Rollen:** `ADMIN`, `REFERENT`, `TEILNEHMER`.
+*   Alle Endpunkte mit `@RolesAllowed` oder `@Authenticated` absichern.
+*   JWT-Token wird von `AuthResource` ausgestellt.
+*   Passwörter: BCrypt via `BcryptUtil.bcryptHash()`.
+
+=== Geschäftslogik-Highlights
+
+*   **Slot-Validierung**: Prüfung auf Überschneidungsfreiheit und zeitliche Korrektheit bei Erstellung/Update von EventSlots.
+*   **Verfügbarkeiten**: Automatische Erstellung von Standard-Verfügbarkeiten (true) beim Hinzufügen von Nutzern zu Veranstaltungen.
+*   **Raum-Management**: Veranstaltungsübergreifende Prüfung der Raumverfügbarkeit zur Vermeidung von Doppelbelegungen.
+*   **Deadlines**: Referenten und Teilnehmer können ihre Daten nur bis zu einem administrativ festgelegten Zeitpunkt ändern.
+*   **Prioritäten-Management (Admin)**: Admins können individuelle Prioritäten für Teilnehmer an Wahlvorträgen über den Endpunkt `/api/admin/veranstaltungen/{vid}/teilnehmer/{tid}/priorities` aktualisieren.
+
+=== MiniZinc-PlanErstellung
+
+Der `PlanErstellungService` ruft MiniZinc als externen Prozess auf:
+
+*   **Modell:** `src/main/resources/minizinc/vortragsplanung.mzn`
+*   Timeouts und Solver-Konfiguration (z.B. OR-Tools) über `SolverConfig`.
+
+[[_frontend_spezifika]]
+== 6. Frontend-Spezifika
+
+Das Frontend basiert auf Vue 3, Vite, Tailwind CSS, Pinia (State Management) und Vue Router.
+
+[[_domaenenmodell_kurzuebersicht]]
+== 7. Domänenmodell (Kurzübersicht)
+
+*   **Veranstaltung**:: Zentrale Entität; hat EventSlots, Gebäude, Nutzer; besitzt Deadlines für Referenten/Teilnehmer.
+*   **Nutzer**:: (SINGLE_TABLE) → Admin | Referent | Teilnehmer
+*   **Vortrag**:: (SINGLE_TABLE) → Pflichtvortrag | Wahlvortrag
+*   **Slot**:: Zeitfenster innerhalb einer Veranstaltung; mit Überschneidungsprüfung.
+*   **Prioritaet**:: Präferenz eines Teilnehmers für einen Wahlvortrag (Ranking 1-10, 10 = höchste, 0 = keine Präferenz/Hard-Exclude im Solver).
+*   **TeilnehmerVerfuegbarkeit**:: Gibt an, ob Nutzer in einem Slot verfügbar ist (Default: true bei Zuweisung).
+*   **RaumVerfuegbarkeit**:: Modelliert die Verfügbarkeit von Räumen pro Slot inklusive veranstaltungsübergreifender Prüfung.
+*   **VortragPrioDto**:: DTO für die Aktualisierung einer einzelnen Teilnehmerpriorität durch Administratoren.
+
+[[_wichtige_konventionen]]
+== 8. Wichtige Konventionen
+
+*   Alle Entitäten erben von `VersionedEntity` (Panache Active Record, `Long id`, `@Version Long version`).
+*   Polymorphe Typen nutzen `@Inheritance(SINGLE_TABLE)` + Jackson `@JsonSubTypes`.
+*   Datenbankfelder: Public Fields (kein Lombok), kein privater Getter/Setter-Boilerplate außer wo nötig.
+*   Datum/Zeit: `LocalDateTime` mit Custom `LocalDateTimeConverter`.
+*   Fehlerbehandlung: `CustomExceptionMapper` mappt Exceptions auf HTTP-Responses.
+*   Alle REST-Endpunkte unter `/api/...`; Security via `@RolesAllowed`.
+*   Neuer Admin-Endpunkt: `PUT /api/admin/veranstaltungen/{vid}/teilnehmer/{tid}/priorities` zur individuellen Aktualisierung von Teilnehmerprioritäten.
+
+[[_bekannte_besonderheiten]]
+== 9. Bekannte Besonderheiten
+
+*   **MiniZinc-Installation:** MiniZinc muss auf dem System installiert sein (`minizinc` im PATH) für `PlanErstellungService`.
+*   **Deadlines:** Deadlines verhindern Eingaben/Änderungen für Referenten und Teilnehmer nach Ablauf.
+*   **Raumprüfung:** Räume werden veranstaltungsübergreifend auf Überschneidungen geprüft.
+*   **Passwort-Reset:** Passwort-Reset per E-Mail (Mailpit-Credentials in `application.properties` setzen).
+*   **Standard-Passwort:** Standard-Passwort bei Erstellung/Import: `start123` (BCrypt-gehasht).
+
+== H2-Datenbanken im Quarkus-Test debuggen
+
+Die H2-Datenbank läuft im Test-Modus normalerweise nur im Speicher (`in-memory`) und ist von außen nicht erreichbar.
+
+Die beste Methode dafür ist, die H2-Datenbank in einem Modus zu starten, der externe Verbindungen erlaubt, und die H2-Web-Konsole zu nutzen.
+
+== Die beste Methode: H2 im Server-Modus + Externe Konsole
+
+Das Ziel ist, die in-memory Datenbank in eine Datei auf der Festplatte zu schreiben, damit ein externes Tool (die H2 Konsole) darauf zugreifen kann, während dein Test am Breakpoint pausiert.
+
+. *Schritt 1: Konfiguriere die Test-Datenbank in `application.properties`*
++
+Erstelle oder bearbeite die Datei `src/test/resources/application.properties` und zwinge H2, eine Datei zu verwenden.
++
+[source,properties]
+----
+# src/test/resources/application.properties
+
+# Wir überschreiben die Standard-In-Memory-Datenbank
+# H2 wird nun in eine Datei im target-Verzeichnis schreiben.
+quarkus.datasource.jdbc.url=jdbc:h2:file:./target/h2-testdb;DB_CLOSE_DELAY=-1
+
+# Der Parameter DB_CLOSE_DELAY=-1 ist SEHR WICHTIG.
+# Er verhindert, dass H2 die Datenbankdatei löscht, wenn die letzte Verbindung geschlossen wird.
+
+# Setze den Benutzernamen und das Passwort explizit (Standard ist 'sa' und leer)
+quarkus.datasource.username=sa
+quarkus.datasource.password=
+
+# Optional: Stelle sicher, dass die DB bei jedem Test-Start neu erstellt wird
+quarkus.hibernate-orm.database.generation=drop-and-create
+----
+
+. *Schritt 2: Starte die externe H2-Web-Konsole*
++
+Bevor du deinen Test startest, öffne ein Terminal und starte die H2-Konsole. Dafür brauchst du die H2-JAR-Datei, die Maven für dein Projekt bereits heruntergeladen hat.
++
+.. *Finde die H2-JAR-Datei:*
++
+Sie liegt in deinem lokalen Maven-Repository. Der Pfad sieht etwa so aus: `~/.m2/repository/com/h2database/h2/2.2.224/h2-2.2.224.jar` (Die Versionsnummer kann variieren).
++
+.. *Starte die Konsole:*
++
+Führe im Terminal folgenden Befehl aus (passe den Pfad zur JAR-Datei an):
++
+[source,sh]
+----
+java -jar ~/.m2/repository/com/h2database/h2/2.2.224/h2-2.2.224.jar
+----
++
+Ein Browserfenster mit der H2-Login-Maske öffnet sich automatisch.
+
+. *Schritt 3: Verbinde dich mit der Datenbank-Datei*
++
+In der H2-Login-Maske im Browser musst du jetzt die korrekten Verbindungsdaten eingeben.
++
+* *Driver Class:* `org.h2.Driver` (sollte vorausgefüllt sein)
+* *JDBC URL:* Gib hier *exakt den gleichen Wert* wie in der `application.properties` ein, aber mit dem vollen Pfad. Der Wert lautet: `jdbc:h2:file:./target/h2-testdb`
+* *User Name:* `sa`
+* *Password:* (leer lassen)
++
+Klicke auf *Connect*. Du solltest jetzt eine leere Datenbank sehen (oder Tabellen von einem vorherigen Testlauf).
+
+. *Schritt 4: Der Debugging-Workflow*
+.. Lass das H2-Konsolen-Fenster im Browser geöffnet.
+.. Starte deinen Quarkus-Test im *Debug-Modus* in deiner IDE.
+.. Warte, bis der Test deinen Breakpoint erreicht. Die Ausführung pausiert.
+.. Wechsle zum H2-Konsolen-Fenster im Browser.
+.. Auf der linken Seite siehst du jetzt die Tabellen, die Quarkus erstellt hat (z.B. `VERANSTALTUNG`, `SLOT`, etc.).
+.. Schreibe deine SQL-Abfrage in das große Textfeld, z.B. `SELECT * FROM NUTZER_VERFUEGBARKEIT;`
+.. Klicke auf *Run*.
++
+Du siehst jetzt den *exakten Zustand der Datenbank* in dem Moment, in dem dein Test pausiert ist.
+
+== 10. MacOS Entwicklung
+
+docker desktop für MacOS mit M2 (silicon chip / aarch) verwenden
+
+
+== Image-Download mit
+
+=== 1. Corporate Proxy / SSL-Inspektion (häufigste Ursache)
+
+Wenn Sie hinter einem Unternehmensproxy arbeiten, müssen Sie das Root-CA-Zertifikat Ihres Unternehmens in die Colima-VM importieren und Docker anweisen, diesem zu vertrauen.
+=== Schritt 1: Beschaffen Sie das Root-CA-Zertifikat Ihres Unternehmens
+•
+Fragen Sie Ihre IT-Abteilung nach dem Root-CA-Zertifikat Ihres Unternehmens. Es sollte eine .crt- oder .pem-Datei sein.
+•
+Speichern Sie diese Datei an einem leicht zugänglichen Ort auf Ihrem Host-System (z.B. ~/my-corp-ca.crt).
+=== Schritt 2: Fügen Sie das CA-Zertifikat zu Docker hinzu
+
+== Mobile App bauen
+
+=== Variante 1: mit Capacitor
+
+==== Installation von Capacitor
+
+[source,bash]
+----
+cd frontend
+npm i @capacitor/core
+npm i -D @capacitor/cli
+# und initialisieren
+npx cap init
+----
+
+==== Installation der Plattformen
+
+[source,bash]
+----
+npm i @capacitor/android @capacitor/ios
+----
+
+
+=== Variante 2: mit Quarkus Mobile (KI-generiert)
+
+Quarkus Mobile ermöglicht die Erstellung von nativen mobilen Apps mit Quarkus. Hier sind die Schritte, um eine mobile App mit Quarkus Mobile zu bauen:
+1.  **Quarkus Mobile Plugin hinzufügen**: Fügen Sie das Quarkus Mobile Plugin zu Ihrem Maven-Projekt hinzu.
+```xml
+<build>
+    <plugins>
+        <plugin>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-mobile-plugin</artifactId>
+            <version>${quarkus.version}</version>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>build</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+```
+2.  **Mobile App Code schreiben**: Erstellen Sie Ihre mobile App Logik in Ihren Quarkus Services und Ressourcen. Sie können REST-Endpunkte erstellen, die von der mobilen App konsumiert werden können.
+3.  **Mobile App bauen**: Führen Sie den folgenden Befehl aus, um Ihre mobile App zu bauen:
+```bash./mvnw quarkus:build -Dquarkus.package.type=mobile
+```
+4.  **Mobile App testen**: Sie können die gebaute mobile App auf einem Emulator oder einem physischen Gerät testen. Verwenden Sie den folgenden Befehl, um die App auf einem Emulator zu starten:
+```bash./mvnw quarkus:mobile -Dquarkus.mobile.target=emulator
+```
+5.  **Mobile App bereitstellen**: Sobald Ihre mobile App fertig ist, können Sie sie auf den entsprechenden App-Stores (Google Play Store, Apple App Store) bereitstellen. Befolgen Sie die jeweiligen Richtlinien und Anforderungen der App-Stores für die Veröffentlichung Ihrer App.
+
+==== Weiterführende Ressourcen
+*   [Quarkus Mobile Documentation](https://quarkus.io/guides/mobile)
+*   [Quarkus Mobile GitHub Repository](https://github.com/quarkusio/quarkus-mobile)
+
+==
+
+
+== Datenbank-Schema anlegen / löschen
+
+So lässt sich aus den JPA-Entitäten ein vollständiges DDL-Skript für Postgres erzeugen, das du dann als Basis für
+eine Flyway-Migration nutzt:
+
+=== Hibernate Schema-Export aktivieren
+
+(nur für den Export-Lauf, temporär als CLI-Property)
+
+Quarkus/Hibernate ORM kann das DDL unabhängig von der eigentlichen Schema-Anwendung auf die DB in eine Datei
+  schreiben (scripts.generation.*), getrennt von schema-management.strategy (das die reale DB betrifft):
+
+====
+cd backend
+./mvnw quarkus:dev \ +
+ -Dquarkus.hibernate-orm.schema-management.strategy=none \ +
+ -Dquarkus.hibernate-orm.scripts.generation.generation=create \ +
+ -Dquarkus.hibernate-orm.scripts.generation.create-target=target/schema-export.sql
+====
+
+- `%dev.quarkus.datasource.devservices.enabled=true` sorgt dafür, dass ein echter, wegwerfbarer PostgreSQL-Container
+hochfährt (Testcontainers) – das Skript wird also mit dem PostgreSQL-Dialekt erzeugt (korrekte sequence/serial,
+Constraint-Syntax etc.), nicht mit H2.
+- `schema-management.strategy=none` verhindert, dass Hibernate die echte Dev-DB zusätzlich anfasst – du bekommst nur
+die Datei.
+- Sobald im Log `Listening on: http://localhost:9000` erscheint, ist das Skript geschrieben → Strg+C.
+- Ergebnis liegt in `backend/target/schema-export.sql` und enthält CREATE TABLE, CREATE SEQUENCE, ALTER TABLE ... ADD
+CONSTRAINT (FKs, PKs, Unique), CREATE INDEX – abgeleitet aus allen Entitäten inkl. der SINGLE_TABLE-Hierarchien
+(Nutzer, Vortrag mit Discriminator-Spalte).
+
+Falls du auch ein Drop-Skript brauchst:
+====
+cd backend
+./mvnw quarkus:dev \ +
+ -Dquarkus.hibernate-orm.schema-management.strategy=none \ +
+ -Dquarkus.hibernate-orm.scripts.generation.generation=drop-and-create \ +
+ -Dquarkus.hibernate-orm.scripts.generation.drop-target=target/schema-drop.sql
+====

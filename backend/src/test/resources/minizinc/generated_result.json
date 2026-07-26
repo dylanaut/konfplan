@@ -1,0 +1,65 @@
+{
+  "instanz_slot": [
+    [
+      0,
+      1
+    ],
+    [
+      3,
+      2
+    ]
+  ],
+  "instanz_raum": [
+    [
+      0,
+      1
+    ],
+    [
+      1,
+      1
+    ]
+  ],
+  "besucht": [
+    [
+      [
+        false,
+        true
+      ],
+      [
+        true,
+        false
+      ]
+    ],
+    [
+      [
+        false,
+        false
+      ],
+      [
+        false,
+        true
+      ]
+    ]
+  ],
+  "kosten": 504,
+  "zuweisungen": 3,
+  "entity_oids": {
+    "teilnehmer_oids": [
+      212,
+      213
+    ],
+    "wahlvortrag_oids": [
+      59,
+      60
+    ],
+    "slot_oids": [
+      64,
+      65,
+      66
+    ],
+    "raum_oids": [
+      87,
+      88
+    ]
+  }
+}

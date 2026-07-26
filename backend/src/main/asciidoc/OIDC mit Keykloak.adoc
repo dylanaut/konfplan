@@ -1,0 +1,299 @@
+= Keycloak im Dev-Modus mit Quarkus OIDC konfigurieren
+
+== Einleitung
+
+Die Kombination von Quarkus mit OIDC und Keycloak ist extrem leistungsstark und sicher. Der beste Teil ist, dass Quarkus mit "Dev Services for Keycloak" das Ganze im Entwicklungsmodus fast automatisch für dich erledigen kann.
+
+Hier ist eine vollständige Schritt-für-Schritt-Anleitung, um Keycloak als Docker-Container im Dev-Modus zu starten und einen Realm für deine App zu konfigurieren.
+
+=== Schritt 1: Abhängigkeiten in der `pom.xml` hinzufügen
+
+Stelle sicher, dass du die `quarkus-oidc`-Abhängigkeit in deiner `backend/pom.xml` hast. Quarkus Dev Services wird diese erkennen und Keycloak automatisch für dich starten.
+
+[source,xml]
+.backend/pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc</artifactId>
+</dependency>
+----
+
+Quarkus fügt die `quarkus-keycloak-devservices`-Abhängigkeit automatisch hinzu, wenn `quarkus-oidc` vorhanden ist. Du musst also nichts weiter tun.
+
+=== Schritt 2: Keycloak Realm-Konfigurationsdatei erstellen
+
+Das ist der entscheidende Teil. Du definierst deinen Realm, Clients und Benutzer in einer JSON-Datei. Quarkus Dev Services wird diese Datei beim Start automatisch in den Keycloak-Container importieren.
+
+Erstelle eine neue Datei unter `backend/src/main/resources/konfplan-realm.json`.
+
+[source,json]
+.src/main/resources/konfplan-realm.json
+----
+{
+  "realm": "konfplan",
+  "enabled": true,
+  "clients": [
+    {
+      "clientId": "konfplan-backend",
+      "secret": "start123",
+      "publicClient": false,
+      "authorizationServicesEnabled": true,
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "rootUrl": "http://localhost:9000",
+      "redirectUris": [
+        "http://localhost:9000/*",
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:9000",
+        "http://localhost:5173"
+      ]
+    }
+  ],
+  "roles": {
+    "realm": [
+      { "name": "ADMIN", "description": "Administrator" },
+      { "name": "REFERENT", "description": "Referent" },
+      { "name": "TEILNEHMER", "description": "Teilnehmer" }
+    ]
+  },
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "credentials": [
+        { "type": "password", "value": "admin", "temporary": false }
+      ],
+      "realmRoles": ["ADMIN"]
+    },
+    {
+      "username": "referent",
+      "enabled": true,
+      "credentials": [
+        { "type": "password", "value": "referent", "temporary": false }
+      ],
+      "realmRoles": ["REFERENT"]
+    },
+    {
+      "username": "teilnehmer",
+      "enabled": true,
+      "credentials": [
+        { "type": "password", "value": "teilnehmer", "temporary": false }
+      ],
+      "realmRoles": ["TEILNEHMER"]
+    }
+  ]
+}
+----
+
+*Was passiert in dieser Datei?*
+*   `"realm": "konfplan"`: Definiert den Namen deines Sicherheitsbereichs.
+*   `"clients"`: Definiert deine Anwendung (`konfplan-backend`) als OIDC-Client.
+*   `clientId`: Die ID, mit der sich deine Quarkus-App bei Keycloak identifiziert.
+*   `secret`: Das Passwort für deine Backend-Anwendung.
+*   `redirectUris`: Wichtige URLs, zu denen Keycloak nach einem erfolgreichen Login weiterleiten darf.
+*   `"roles"`: Definiert die Rollen, die du in deiner Anwendung verwendest (`ADMIN`, `REFERENT`, `TEILNEHMER`).
+*   `"users"`: Erstellt drei Beispiel-Benutzer mit Passwörtern und weist ihnen direkt die entsprechenden Rollen zu.
+
+=== Schritt 3: `application.properties` für den Dev-Modus anpassen
+
+Jetzt musst du Quarkus nur noch sagen, wie es mit dem Keycloak-Container sprechen soll. Füge dies zu deiner `backend/src/main/resources/application.properties` hinzu.
+
+[source,properties]
+.backend/src/main/resources/application.properties
+----
+# ==============================================================================
+#                      OIDC & KEYCLOAK (für Dev-Modus)
+# ==============================================================================
+%dev.quarkus.oidc.auth-server-url=http://localhost:8081/realms/konfplan
+%dev.quarkus.oidc.client-id=konfplan-backend
+%dev.quarkus.oidc.credentials.secret=start123
+%dev.quarkus.oidc.application-type=web-app
+
+# Rollen aus dem 'realm_access.roles'-Claim im JWT lesen
+%dev.quarkus.oidc.roles.source=realm
+
+# Quarkus Dev Services anweisen, den Keycloak-Container zu starten und den Realm zu importieren
+%dev.quarkus.keycloak.devservices.enabled=true
+%dev.quarkus.keycloak.devservices.realm-path=konfplan-realm.json
+%dev.quarkus.keycloak.devservices.port=8081
+----
+
+*Was bedeuten diese Eigenschaften?*
+*   `%dev.*`: Diese Konfigurationen gelten *nur*, wenn du die Anwendung mit `./mvnw quarkus:dev` startest.
+*   `quarkus.oidc.auth-server-url`: Die URL zum Keycloak-Server. Dev Services startet ihn standardmäßig auf Port `8080`, aber wir legen ihn hier explizit auf `8081`, um Konflikte zu vermeiden. Der Pfad `/realms/konfplan` ist entscheidend.
+*   `quarkus.oidc.client-id` & `secret`: Müssen mit den Werten aus deiner `konfplan-realm.json` übereinstimmen.
+*   `quarkus.oidc.roles.source=realm`: **Sehr wichtig!** Diese Zeile weist Quarkus an, die Benutzerrollen aus dem `realm_access.roles`-Abschnitt des JWT-Tokens zu beziehen, was Keycloaks Standard ist.
+*   `quarkus.keycloak.devservices.realm-path`: Dies ist die "magische" Eigenschaft, die Dev Services anweist, deine JSON-Datei beim Start zu importieren.
+
+=== Schritt 4: Alles starten und testen
+
+1.  *Starte deine Anwendung im Dev-Modus:*
+[source,bash]
+----
+cd backend
+../mvnw quarkus:dev
+----
+
+2.  *Beobachte die Logs:* Du wirst sehen, wie Quarkus den Keycloak-Docker-Container startet und deinen Realm importiert. Die Logs sehen etwa so aus:
+[source,text]
+----
+INFO  [io.qua.key.dev.KeycloakDevServicesProcessor] (Quarkus Main Thread) Dev Services for Keycloak starting.
+INFO  [io.qua.tes.com.TesCon] (Quarkus Main Thread) Creating container for image: quay.io/keycloak/keycloak:22.0.1
+...
+INFO  [io.qua.key.dev.KeycloakDevServicesProcessor] (Quarkus Main Thread) Importing realm 'konfplan' from 'konfplan-realm.json'.
+----
+
+3.  *Keycloak Admin-Konsole öffnen:*
+*   Gehe zu `http://localhost:8081`.
+*   Klicke auf "Administration Console".
+*   Logge dich mit dem Super-Admin-Benutzer ein, den Dev Services anlegt (Benutzer: `admin`, Passwort: `admin`).
+
+4.  *Deinen Realm überprüfen:*
+*   In der Konsole siehst du oben links den "master"-Realm. Klicke darauf und wähle deinen `konfplan`-Realm aus.
+*   Unter "Clients" findest du `konfplan-backend`.
+*   Unter "Users" findest du deine drei angelegten Benutzer (`admin`, `referent`, `teilnehmer`).
+
+=== Schritt 5: Endpunkte sichern
+
+Jetzt kannst du deine JAX-RS-Endpunkte wie gewohnt mit den Standard-Jakarta-Security-Annotationen sichern. Quarkus OIDC kümmert sich um den Rest.
+
+[source,java]
+.Beispiel für einen gesicherten Endpunkt
+----
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@Path("/api/admin/some-data")
+public class AdminDataResource {
+
+    @GET
+    @RolesAllowed("ADMIN") // Nur Benutzer mit der Rolle ADMIN dürfen hier zugreifen
+    public String getAdminData() {
+        return "This is a secret message for admins only.";
+    }
+}
+----
+
+Das ist alles! Du hast jetzt eine voll funktionsfähige, sichere Entwicklungsumgebung mit OIDC, ohne Keycloak manuell installieren oder verwalten zu müssen.
+
+== Account-Provider wie Google, Facebook/Meta oder GitLab/GitHub in die `konfplan-realm.json` integrieren
+
+Keycloak ist als *Identity Broker* konzipiert, was bedeutet, dass es die Authentifizierung an externe Anbieter (sogenannte Identity Provider) delegieren kann. Die Konfiguration dafür kann direkt in deiner `konfplan-realm.json` erfolgen.
+
+=== Das Grundprinzip: Keycloak als Vermittler
+
+Der Ablauf ist wie folgt:
+
+1.  Deine Frontend-Anwendung leitet den Benutzer nicht direkt zu Google, sondern zu einem speziellen Endpunkt von *Keycloak*.
+2.  Keycloak leitet den Benutzer dann zu Google weiter.
+3.  Nach erfolgreichem Login bei Google wird der Benutzer zurück zu Keycloak geleitet.
+4.  Keycloak erhält die Benutzerinformationen von Google, legt bei der ersten Anmeldung einen Benutzer im `konfplan`-Realm an und weist ihm ggf. Standardrollen zu.
+5.  Keycloak stellt dann ein *eigenes* JWT für deine Anwendung aus, genau als hätte sich der Benutzer direkt bei Keycloak angemeldet.
+6.  Deine Quarkus-Anwendung muss nichts von Google wissen; sie vertraut weiterhin nur den JWTs, die von deinem Keycloak-Server ausgestellt werden.
+
+=== Schritt 1: `konfplan-realm.json` erweitern
+
+Du fügst einen neuen Top-Level-Abschnitt `identityProviders` zu deiner `konfplan-realm.json` hinzu.
+
+[source,json]
+.src/main/resources/konfplan-realm.json (erweitert)
+----
+{
+  "realm": "konfplan",
+  "enabled": true,
+  "identityProviders": [
+    {
+      "alias": "google",
+      "providerId": "google",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": true,
+      "config": {
+        "clientId": "DEINE_GOOGLE_CLIENT_ID", // <1>
+        "clientSecret": "DEIN_GOOGLE_CLIENT_SECRET", // <2>
+        "useJwksUrl": "true"
+      }
+    },
+    {
+      "alias": "github",
+      "providerId": "github",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": true,
+      "config": {
+        "clientId": "DEINE_GITHUB_CLIENT_ID",
+        "clientSecret": "DEIN_GITHUB_CLIENT_SECRET"
+      }
+    }
+  ],
+  "clients": [
+    // ... dein bestehender Client-Block ...
+  ],
+  "roles": {
+    // ... dein bestehender roles-Block ...
+  },
+  "users": [
+    // ... dein bestehender users-Block ...
+  ]
+}
+----
+<1> Die Client-ID, die du von der Google Cloud Console erhältst.
+<2> Das Client-Secret, das du von der Google Cloud Console erhältst.
+
+*Wichtige Felder erklärt:*
+*   `"alias"`: Ein interner Name für diesen Provider in Keycloak. Wird Teil der Redirect-URL.
+*   `"providerId"`: Der eingebaute Typ des Providers in Keycloak. Muss `google`, `github`, `facebook`, `gitlab` etc. sein.
+*   `"trustEmail": true`: Sorgt dafür, dass Keycloak der E-Mail-Adresse von Google vertraut und den Benutzer-Account damit verknüpft.
+*   `"config"`: Hier kommen die anbieterspezifischen Schlüssel hinein.
+
+=== Schritt 2: Anmeldeinformationen vom externen Anbieter erhalten
+
+Du musst deine Anwendung (vertreten durch Keycloak) bei jedem externen Anbieter registrieren.
+
+==== Beispiel: Google
+
+1.  Gehe zur https://console.cloud.google.com/apis/credentials[Google Cloud Console].
+2.  Erstelle ein neues Projekt oder wähle ein bestehendes aus.
+3.  Gehe zu "Anmeldedaten", klicke auf "+ Anmeldedaten erstellen" und wähle "OAuth-Client-ID".
+4.  Wähle als Anwendungstyp "Webanwendung".
+5.  Gib einen Namen ein (z.B. "KonfPlan Keycloak Broker").
+6.  Füge unter *Autorisierte Weiterleitungs-URIs* die entscheidende Keycloak-URL hinzu:
+[IMPORTANT]
+====
+Die Weiterleitungs-URI (Redirect URI) folgt immer diesem Muster:
+`{keycloak-server-url}/realms/{realm-name}/broker/{provider-alias}/endpoint`
+
+    Für deine lokale Entwicklungsumgebung lautet die URL also:
+    `http://localhost:8081/realms/konfplan/broker/google/endpoint`
+    ====
+7.  Nach dem Speichern erhältst du eine **Client-ID** und ein **Client-Secret**. Kopiere diese Werte und füge sie in deine `konfplan-realm.json` an den Stellen `<1>` und `<2>` ein.
+
+==== Beispiel: GitHub
+
+1.  Gehe zu deinen GitHub-Einstellungen -> "Developer settings" -> "OAuth Apps" -> "New OAuth App".
+2.  Gib einen Anwendungsnamen ein.
+3.  Homepage URL: `http://localhost:9000`
+4.  *Authorization callback URL*: Hier kommt wieder die Keycloak-Broker-URL hinein:
+`http://localhost:8081/realms/konfplan/broker/github/endpoint`
+5.  Nach dem Registrieren erhältst du eine **Client ID** und kannst ein **Client Secret** generieren. Füge diese in deine `konfplan-realm.json` ein.
+
+=== Schritt 3: Die Frontend-Anmeldung anpassen
+
+Deine Frontend-Anwendung muss dem Benutzer nun die neuen Anmeldeoptionen anbieten. Der Trick dabei ist, dass der "Login mit Google"-Button nicht auf Google verweist, sondern auf Keycloak.
+
+Der Link für den Login mit einem externen Anbieter wird so aufgebaut:
+
+`{keycloak-auth-url}?client_id={dein-client-id}&redirect_uri={deine-app-url}&response_type=code&scope=openid&identity_provider={provider-alias}`
+
+Für dein Projekt würde der Link für den Google-Login so aussehen:
+
+`http://localhost:8081/realms/konfplan/protocol/openid-connect/auth?client_id=konfplan-backend&redirect_uri=http://localhost:5173/&response_type=code&scope=openid&kc_idp_hint=google`
+
+*   `kc_idp_hint=google`: Dieser Parameter ist der Hinweis für Keycloak, sofort zum `google`-Provider weiterzuleiten.
+
+Wenn du nun `./mvnw quarkus:dev` startest, wird Keycloak mit den konfigurierten Identity Providern gestartet. Die Keycloak-Login-Seite wird automatisch Buttons für "Login with Google" und "Login with GitHub" anzeigen.

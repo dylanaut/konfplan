@@ -1,0 +1,66 @@
+= E2E Test: Planungs-Workflow mit Playwright
+
+End-to-End (E2E) Test mit Playwright: +
+simuliert einen typischen Planungsablauf in der Anwendung.
+NOTE: Dieser Test dient dazu, den kompletten Workflow von der Anlage einer Veranstaltung bis zur Vorbereitung der PlanErstellung zu verifizieren.
+
+== Installation von Playwright
+
+*   **Playwright-Installation**: Stellen Sie sicher, dass Playwright in Ihrem Frontend-Projekt installiert ist. Falls nicht, führen Sie im Frontend-Projektverzeichnis aus:
+
+----
+npm init playwright@latest
+# bzw.
+npx playwright install
+----
+
+Die Installation liefert
+* den Interpreter für die Test-Spezifikation
+* die Browser-Treiber zum Bedienen der HTML-Oberflächen
+* Test-Assertions für UI-Regressionen
+
+== Ausführung eines Testfalls
+
+Zur Ausführung verwendet Playwright eine `*.spec.js` Datei, die das Test-Szenario spezifiziert.
+Ausserdem kann Playwright mit Testdaten über sog. `fixtures` präpariert werden.
+
+
+== Testfall: `PlanungsWorkflow.spec.js`
+
+Der Test simuliert die folgenden Schritte im Frontend:
+
+. **Login** als Administrator (`juergenkrey@yahoo.de` mit Passwort `start123`).
+. **Anlegen einer neuen Veranstaltung**:
+** Name: "Test Event 2025"
+** Beginn: "2025-05-20T09:00"
+** Ort: "Linz am Rhein"
+. **Auswahl dieser Veranstaltung** im Dropdown-Menü des Admin-Dashboards.
+. **Anlegen eines Gebäudes**:
+** Name: "Hauptgebäude A"
+** Adresse: "Schulstraße 1, 53545 Linz"
+. **Anlegen von 3 EventSlots**:
+** Slot 1: 09:00 - 09:45
+** Slot 2: 10:00 - 10:45
+** Slot 3: 11:00 - 11:45
+. **Anlegen eines Referenten**:
+** Name: "Max Referent"
+** E-Mail: "max@referent.de"
+. **Anlegen eines Vortrags** und Zuweisung zum eben erstellten Referenten.
+. **Anlegen eines Teilnehmers**:
+** Name: "Tom Teilnehmer"
+** E-Mail: "tom@student.de"
+. **Navigation zum Tab "Vortragsplanung"**.
+. **Verifikation der angezeigten Zählwerte** für Teilnehmer, Vorträge und Referenten in der Übersichtsbox.
+. **Prüfung, ob der "MiniZinc PlanErstellung starten"-Button aktiv ist**.
+
+=== Testcode: `frontend/tests/PlanungsWorkflow.spec.js`
+
+[source,javascript]
+----
+include::../tests/PlanungsWorkflow.spec.js[]
+----
+
+
+== Testfall: Reporterzeugung (Pläne, Laufzettel etc.) `report.spec.js`
+
+

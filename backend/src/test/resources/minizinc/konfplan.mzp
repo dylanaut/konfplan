@@ -1,0 +1,14 @@
+{
+    "openFiles": [
+        "konfplan.mzn",
+        "generated.dzn"
+    ],
+    "openTab": 1,
+    "projectFiles": [
+        "generated.dzn",
+        "konfplan.mpc",
+        "vortragsplanung.mzn"
+    ],
+    "selectedSolverConfigFile": "konfplan.mpc",
+    "version": 106
+}

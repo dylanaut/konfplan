@@ -1,0 +1,183 @@
+= ArchUnit-Regeln testen
+:author: Architecture Guide
+:revdate: 2026-05-07
+:toc: left
+:toc-title: Inhaltsverzeichnis
+:toclevels: 2
+:sectnums:
+:source-highlighter: highlight.js
+:icons: font
+:lang: de
+
+Es gibt drei Ebenen, auf denen du die Regeln testen kannst.
+
+== Direkt als JUnit-Test ausführen
+
+Die einfachste Methode – ArchUnit integriert sich nahtlos in JUnit 5.
+Du brauchst nur die Abhängigkeit und kannst sofort loslegen:
+
+[source,xml]
+.pom.xml
+----
+<dependency>
+    <groupId>com.tngtech.archunit</groupId>
+    <artifactId>archunit-junit5</artifactId>
+    <version>1.3.0</version>
+    <scope>test</scope>
+</dependency>
+----
+
+[source,bash]
+.Testausführung
+----
+# Alle Architekturregeln prüfen
+./mvnw test -Dtest=ArchitectureRulesTest
+
+# Nur eine einzelne Regel prüfen (nützlich beim Debuggen)
+./mvnw test -Dtest=ArchitectureRulesTest#LAYERED_ARCHITECTURE
+----
+
+Bei einem Verstoß bekommst du eine klare Fehlermeldung mit dem genauen Ort im Code:
+
+[source,text]
+.Beispiel-Fehlermeldung
+----
+Architecture Violation [Priority: MEDIUM] - Rule 'no classes that reside in a package
+'..domain..' should depend on classes that reside in any package [...persistence..]'
+was violated (1 times):
+  Method <com.example.app.domain.service.OrderService.findAll()> calls method
+  <com.example.app.persistence.OrderRepository.listAll()> in (OrderService.java:24)
+----
+
+== Regeln gegen Testfixtures verifizieren
+
+Das ist der wichtigste Schritt: Du willst sicherstellen, dass deine Regeln auch wirklich
+_anschlagen_, wenn jemand dagegen verstößt. Dafür baust du absichtlich schlechten Code
+in einem eigenen Testpaket und prüfst, dass die Regel ihn erkennt.
+
+=== Empfohlene Paketstruktur
+
+[source,text]
+----
+src/test/java/com/example/architecture/
+  ├── ArchitectureRulesTest.java               <1>
+  ├── ArchitectureRulesVerificationTest.java   <2>
+  └── testfixtures/
+      ├── violation/
+      │   ├── BadResource.java                 <3>
+      │   ├── DomainServiceWithJPA.java        <4>
+      │   └── FieldInjectionBean.java          <5>
+      └── compliant/
+          ├── GoodResource.java                <6>
+          └── GoodService.java                 <7>
+----
+<1> Die eigentlichen Architekturregeln
+<2> Testet die Tester
+<3> `@Path` in falschem Paket
+<4> Domain mit `@Entity`-Import
+<5> `@Inject` auf einem Field
+<6> Korrektes `@Path` in `presentation`
+<7> Korrekter `@ApplicationScoped` Service
+
+=== Fixture für einen Verstoß
+
+[source,java]
+.testfixtures/violation/DomainServiceWithJPA.java
+----
+package com.example.architecture.testfixtures.violation.domain;
+
+import jakarta.persistence.EntityManager; // <1>
+
+public class DomainServiceWithJPA {
+    private EntityManager em; // <2>
+}
+----
+<1> Verbotener Import in der Domain-Schicht
+<2> Löst `DOMAIN_FREE_OF_CDI_AND_FRAMEWORKS` aus
+
+=== Verifikationstest
+
+[source,java]
+.ArchitectureRulesVerificationTest.java
+----
+class ArchitectureRulesVerificationTest {
+
+    private static JavaClasses violatingClasses;
+    private static JavaClasses compliantClasses;
+
+    @BeforeAll
+    static void loadClasses() {
+        violatingClasses = new ClassFileImporter()
+            .importPackages("com.example.architecture.testfixtures.violation");
+        compliantClasses = new ClassFileImporter()
+            .importPackages("com.example.architecture.testfixtures.compliant");
+    }
+
+    @Test
+    void domainIsolationRule_shouldDetectJpaInDomain() {
+        // Die Regel MUSS bei Verstößen eine Exception werfen
+        assertThatThrownBy(() ->
+            ArchitectureRulesTest.DOMAIN_FREE_OF_CDI_AND_FRAMEWORKS.check(violatingClasses)
+        ).isInstanceOf(AssertionError.class)
+         .hasMessageContaining("DomainServiceWithJPA");
+    }
+
+    @Test
+    void domainIsolationRule_shouldPassForCleanDomain() {
+        // Und bei sauberem Code schweigen
+        assertThatNoException().isThrownBy(() ->
+            ArchitectureRulesTest.DOMAIN_FREE_OF_CDI_AND_FRAMEWORKS.check(compliantClasses)
+        );
+    }
+}
+----
+
+== In der CI-Pipeline erzwingen
+
+Die Regeln laufen automatisch bei jedem `./mvnw test`.
+Um sie in GitHub Actions explizit sichtbar zu machen:
+
+[source,yaml]
+..github/workflows/architecture.yml
+----
+name: Architecture Rules
+
+on: [push, pull_request]
+
+jobs:
+  arch-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Run architecture rules
+        run: ./mvnw test -Dtest=ArchitectureRulesTest --no-transfer-progress
+----
+
+== Bestehende Verstöße einfrieren
+
+TIP: Wenn eine neue Regel eingeführt wird und es bereits Verstöße im bestehenden Code gibt,
+kannst du sie über den `FreezingArchRule`-Mechanismus einfrieren – ArchUnit speichert dann
+die bekannten Verstöße in einer Datei und schlägt nur bei _neuen_ Verstößen an.
+
+[source,java]
+.Beispiel mit FreezingArchRule
+----
+@ArchTest
+static final ArchRule NO_FIELD_INJECTION =
+    FreezingArchRule.freeze(
+        noFields()
+            .that()
+            .areDeclaredInClassesThat()
+                .resideInAPackage("com.example.app..")
+            .should()
+            .beAnnotatedWith("jakarta.inject.Inject")
+    );
+// Speichert Bestandsverstöße in: src/test/resources/frozen-arch-rules/
+// Neue Verstöße werden sofort gemeldet, alte werden toleriert.
+----
+
+So kannst du neue Regeln schrittweise einführen, ohne den Build sofort rot zu machen.

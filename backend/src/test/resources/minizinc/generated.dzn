@@ -1,0 +1,131 @@
+%Generiert am: 17.05.2026 11:15,Version: 1.0;
+max_instanzen = 2;
+opt_referent_raumtreue = true;
+
+n_slots = 12;
+slots = [
+(oid: 1), % 1: Mi.,07:55 - 08:40
+(oid: 2), % 2: Mi.,08:45 - 09:30
+(oid: 3), % 3: Mi.,09:45 - 10:30
+(oid: 4), % 4: Mi.,10:35 - 11:20
+(oid: 5), % 5: Mi.,11:35 - 12:20
+(oid: 6), % 6: Mi.,12:25 - 13:10
+(oid: 7), % 7: Do.,07:55 - 08:40
+(oid: 8), % 8: Do.,08:45 - 09:30
+(oid: 9), % 9: Do.,09:45 - 10:30
+(oid: 10), % 10: Do.,10:35 - 11:20
+(oid: 11), % 11: Do.,11:35 - 12:20
+(oid: 12) % 12: Do.,12:25 - 13:10
+];
+
+n_raeume = 13;
+raeume = [
+(oid: 1, kapazitaet: 35), % 1: B-002, 35
+(oid: 2, kapazitaet: 27), % 2: A-0.12, 27
+(oid: 3, kapazitaet: 27), % 3: A-0.13, 27
+(oid: 4, kapazitaet: 25), % 4: A-1.01, 25
+(oid: 5, kapazitaet: 27), % 5: A-1.04, 27
+(oid: 6, kapazitaet: 27), % 6: A-1.07, 27
+(oid: 7, kapazitaet: 25), % 7: A-2.01, 25
+(oid: 8, kapazitaet: 27), % 8: A-2.03, 27
+(oid: 9, kapazitaet: 27), % 9: A-2.04, 27
+(oid: 10, kapazitaet: 27), % 10: A-2.06, 27
+(oid: 11, kapazitaet: 27), % 11: V-0.05, 27
+(oid: 12, kapazitaet: 25), % 12: A-2.07, 25
+(oid: 13, kapazitaet: 80) % 13: Saal, 80
+];
+
+n_teilnehmer = 15;
+teilnehmer = [
+(oid: 26), % 1: janet.ahmad@rks-linz.de (9.1)
+(oid: 27), % 2: osama.amer@rks-linz.de (9.1)
+(oid: 28), % 3: michele.chmiel@rks-linz.de (9.1)
+(oid: 29), % 4: sarina.golmohamadi@rks-linz.de (9.1)
+(oid: 30), % 5: inas.hajoula@rks-linz.de (9.1)
+(oid: 31), % 6: luca.henseler@rks-linz.de (9.1)
+(oid: 32), % 7: fabrice.koechy@rks-linz.de (9.1)
+(oid: 33), % 8: amelie.kroener@rks-linz.de (9.1)
+(oid: 34), % 9: lual.lual@rks-linz.de (9.1)
+(oid: 35), % 10: lena.mertensacker@rks-linz.de (9.1)
+(oid: 36), % 11: amy.sander@rks-linz.de (9.1)
+(oid: 37), % 12: emely.schmitz@rks-linz.de (9.1)
+(oid: 38), % 13: sofiia.trufanova@rks-linz.de (9.1)
+(oid: 39), % 14: hayal.yaldir@rks-linz.de (9.1)
+(oid: 40) % 15: scalanaut@gmail.com (9.1)
+];
+
+n_wahlvortraege = 16;
+wahlvortraege = [
+(oid: 1, referent_id: 1, belegbare_slots: [1,2,3,4,5,6,7,8,9,10,11,12]), % 1: Analysieren, Programmiere
+(oid: 2, referent_id: 2, belegbare_slots: [1,2,3,4,5,6,7,8,9,10,11,12]), % 2: Organisieren, Strukturier
+(oid: 3, referent_id: 3, belegbare_slots: [1,2,3,4,5,6,7,8,9,10,11,12]), % 3: Weltweit für Durchblick s
+(oid: 4, referent_id: 4, belegbare_slots: [1,2,3,4,5,6,7,8,9,10,11,12]), % 4: Kabelverlegesysteme und B
+(oid: 5, referent_id: 5, belegbare_slots: [1,2,3,4,5,6,7,8,9,10,11,12]), % 5: Maschinen für den Straßen
+(oid: 6, referent_id: 6, belegbare_slots: [1,2,3,4,5,6,7,8,9,10,11,12]), % 6: Bring die Energiewende mi
+(oid: 7, referent_id: 7, belegbare_slots: [1,2,3,4,5,6,7,8,9,10,11,12]), % 7: Verwaltung mit Zukunft –
+(oid: 8, referent_id: 8, belegbare_slots: [1,2,3,4,5,6,7,8,9,10,11,12]), % 8: Werde zum Schreibtischdet
+(oid: 9, referent_id: 9, belegbare_slots: [1,2,3,4,5,6,7,8,9,10,11,12]), % 9: Grundstein für deine Zuku
+(oid: 10, referent_id: 10, belegbare_slots: [1,2,3,4,5,6,7,8,9,10,11,12]), % 10: Schwamm drüber!
+(oid: 11, referent_id: 11, belegbare_slots: [1,2,3,4,5,6,7,8,9,10,11,12]), % 11: Pflegehände, die die Zuku
+(oid: 12, referent_id: 12, belegbare_slots: [1,2,3,4,5,6,7,8,9,10,11,12]), % 12: Geh' deine ersten Karrier
+(oid: 13, referent_id: 13, belegbare_slots: [1,2,3,4,5,6,7,8,9,10,11,12]), % 13: Handel 2.0: Zwischen Kund
+(oid: 14, referent_id: 14, belegbare_slots: [1,2,3,4,5,6,7,8,9,10,11,12]), % 14: Traumberuf Polizei?
+(oid: 15, referent_id: 15, belegbare_slots: [1,2,3,4,5,6,7,8,9,10,11,12]), % 15: Deine Karriere bei der Bu
+(oid: 16, referent_id: 16, belegbare_slots: [1,2,3,4,5,6,7,8,9,10,11,12]) % 16: Berufe mit Zukunft in der
+];
+
+prioritaeten = [|
+2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0 | % 26: janet.ahmad@rks-linz.de
+4,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0 | % 27: osama.amer@rks-linz.de
+6,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0 | % 28: michele.chmiel@rks-linz.de
+3,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0 | % 29: sarina.golmohamadi@rks-linz.de
+7,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0 | % 30: inas.hajoula@rks-linz.de
+2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0 | % 31: luca.henseler@rks-linz.de
+4,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0 | % 32: fabrice.koechy@rks-linz.de
+8,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0 | % 33: amelie.kroener@rks-linz.de
+8,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0 | % 34: lual.lual@rks-linz.de
+3,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0 | % 35: lena.mertensacker@rks-linz.de
+4,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0 | % 36: amy.sander@rks-linz.de
+5,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0 | % 37: emely.schmitz@rks-linz.de
+2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0 | % 38: sofiia.trufanova@rks-linz.de
+3,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0 | % 39: hayal.yaldir@rks-linz.de
+2,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0 |]; % 40: scalanaut@gmail.com
+
+%In welchen Slots jeder Teilnehmer für Wahlvorträge planbar ist:
+tn_verfuegbar = [| %% Slot 1..12
+false,false,false,false,false,false,false,false,false,false,false,false | % 26: janet.ahmad@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 27: osama.amer@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 28: michele.chmiel@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 29: sarina.golmohamadi@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 30: inas.hajoula@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 31: luca.henseler@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 32: fabrice.koechy@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 33: amelie.kroener@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 34: lual.lual@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 35: lena.mertensacker@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 36: amy.sander@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 37: emely.schmitz@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 38: sofiia.trufanova@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false | % 39: hayal.yaldir@rks-linz.de
+false,false,false,false,false,false,false,false,false,false,false,false |]; % 40: scalanaut@gmail.com
+
+%In welchen Slots Räume für Wahlvorträge planbar ist:
+raum_belegbar = [| %% Slot 1..12
+true,true,true,true,true,true,true,true,true,true,true,true | % 1: B-002
+true,true,true,true,true,true,true,true,true,true,true,true | % 2: A-0.12
+true,true,true,true,true,true,true,true,true,true,true,true | % 3: A-0.13
+true,true,true,true,true,true,true,true,true,true,true,true | % 4: A-1.01
+true,true,true,true,true,true,true,true,true,true,true,true | % 5: A-1.04
+true,true,true,true,true,true,true,true,true,true,true,true | % 6: A-1.07
+true,true,true,true,true,true,true,true,true,true,true,true | % 7: A-2.01
+true,true,true,true,true,true,true,true,true,true,true,true | % 8: A-2.03
+true,true,true,true,true,true,true,true,true,true,true,true | % 9: A-2.04
+true,true,true,true,true,true,true,true,true,true,true,true | % 10: A-2.06
+true,true,true,true,true,true,true,true,true,true,true,true | % 11: V-0.05
+true,true,true,true,true,true,true,true,true,true,true,true | % 12: A-2.07
+true,true,true,true,true,true,true,true,true,true,true,true |]; % 13: Saal
+
+teilnehmer_oids = [26,27,28,29,30,31,32,33,34,35,36,37,38,39,40];
+wahlvortrag_oids = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16];
+slot_oids = [1,2,3,4,5,6,7,8,9,10,11,12];
+raum_oids = [1,2,3,4,5,6,7,8,9,10,11,12,13];
