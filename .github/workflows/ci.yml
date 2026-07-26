@@ -86,7 +86,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           # Kontext ist 'backend', da Dockerfile.jvm relativ zu 'target/quarkus-app/...' kopiert.
           context: backend
