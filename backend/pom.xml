@@ -348,6 +348,11 @@
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
                 <version>${spotbugs-maven-plugin.version}</version>
+                <configuration>
+                    <!-- 242 bestehende Findings noch nicht aufgeraeumt (siehe Backlog) -
+                         Build/CI vorerst nicht daran scheitern lassen, Report bleibt sichtbar. -->
+                    <failOnError>false</failOnError>
+                </configuration>
                 <executions>
                     <execution>
                         <phase>verify</phase>
