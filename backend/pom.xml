@@ -28,7 +28,7 @@
         <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
         <lombok.version>1.18.46</lombok.version>
         <p6spy.version>3.9.1</p6spy.version>
-        <ical4j.version>4.2.5</ical4j.version>
+        <ical4j.version>4.3.0</ical4j.version>
         <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
     </properties>
 
