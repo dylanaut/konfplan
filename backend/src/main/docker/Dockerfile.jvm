@@ -81,6 +81,19 @@ FROM registry.access.redhat.com/ubi8/openjdk-21:1.21
 
 ENV LANGUAGE='en_US:en'
 
+# MiniZinc wird von PlanErstellungService als externer Prozess ueber einen
+# absoluten Pfad aufgerufen (kein PATH-Lookup) - daher hier fest ins Image
+# installieren, damit der Container eigenstaendig lauffaehig ist.
+USER root
+RUN curl -fsSL https://api.github.com/repos/MiniZinc/MiniZincIDE/releases/latest \
+        | grep -o '"browser_download_url": *"[^"]*bundle-linux-x86_64\.tgz"' \
+        | head -1 | cut -d '"' -f4 > /tmp/minizinc-url \
+    && curl -fsSL -o /tmp/minizinc.tgz "$(cat /tmp/minizinc-url)" \
+    && mkdir -p /opt/minizinc \
+    && tar -xzf /tmp/minizinc.tgz -C /opt/minizinc --strip-components=1 \
+    && rm -f /tmp/minizinc.tgz /tmp/minizinc-url \
+    && chown -R 185:0 /opt/minizinc
+ENV MINIZINC_PATH="/opt/minizinc/bin/minizinc"
 
 # We make four distinct layers so if there are application changes the library layers can be re-used
 COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
