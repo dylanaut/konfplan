@@ -121,8 +121,10 @@ Oft wird das native Executable direkt in ein minimales Docker-Image (z.B. `ubi-m
 
 [source,bash]
 ----
-docker build -f backend/src/main/docker/Dockerfile.native -t konfplan/backend-native .
+docker build -f backend/src/main/docker/Dockerfile.native -t konfplan/backend-native backend
 ----
+
+NOTE: Der Build-Context ist `backend` (nicht das Repo-Root), da `Dockerfile.native` die Runner-Datei relativ als `target/*-runner` kopiert.
 
 == 7. Build für eine andere Plattform/Architektur (Cross-Build)
 
@@ -144,7 +146,7 @@ Beim anschließenden Docker-Image-Build muss die Ziel-Plattform ebenfalls angege
 ----
 docker buildx build --platform linux/amd64 \
   -f backend/src/main/docker/Dockerfile.native \
-  -t konfplan/backend-native:amd64 .
+  -t konfplan/backend-native:amd64 backend
 ----
 
 NOTE: Das Basis-Image (`ubi8/ubi-minimal`) ist Multi-Arch, `buildx` zieht automatisch das passende Manifest für die angegebene Plattform.
