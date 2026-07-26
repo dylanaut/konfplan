@@ -1,0 +1,26 @@
+name: Deploy
+
+# Bewusst getrennt von ci.yml und nur manuell auslösbar (workflow_dispatch) statt
+# automatisch nach 'package' zu laufen: Ein automatisches Required-Reviewers-Gate
+# auf der 'production'-Umgebung erfordert einen bezahlten GitHub-Plan für private
+# Repos - das manuelle Auslösen hier ist der plan-unabhängige Ersatz dafür.
+# Deploy-Ziel/-Mechanismus ist noch nicht festgelegt, siehe Platzhalter-Step unten.
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Zu deployender Image-Tag (ghcr.io/<repo>:<tag>)"
+        required: true
+        default: "latest"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Deploy (Platzhalter)
+        run: |
+          echo "TODO: Deploy-Ziel/-Mechanismus noch nicht festgelegt."
+          echo "Zu deployendes Image: ghcr.io/${{ github.repository }}:${{ inputs.image_tag }}"

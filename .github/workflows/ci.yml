@@ -95,15 +95,3 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:${{ github.sha }}
             ghcr.io/${{ github.repository }}:latest
-
-  deploy:
-    needs: package
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    environment:
-      name: production
-    steps:
-      - name: Deploy (Platzhalter)
-        run: |
-          echo "TODO: Deploy-Ziel/-Mechanismus noch nicht festgelegt."
-          echo "Image ist bereit: ghcr.io/${{ github.repository }}:${{ github.sha }}"
