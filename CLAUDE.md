@@ -134,20 +134,21 @@ When adding a field to the domain model:
 
 ## Git & Feature Workflow
 
-Remote is **GitLab** (`gitlab.zt.msg.team`), authenticated via SSH. Merge Requests (MRs), not GitHub PRs. `glab` CLI is available.
+Remote is **GitHub** (`github.com/dylanaut/konfplan`, private), authenticated via the `gh` CLI (HTTPS). Pull Requests, not GitLab MRs. CI runs via **GitHub Actions** (`.github/workflows/ci.yml`: build-and-test on every push/PR, package to GHCR on push to `main`; `.github/workflows/deploy.yml` is a separate, manually-triggered `workflow_dispatch` placeholder).
 
-1. **Capture** – Create a GitLab Issue (label `feature`) with goal + acceptance criteria. The issue number (`#N`) is the tracking anchor.
-2. **Branch** – Off up-to-date `main`, named `feature/VOM-<n>-<kebab-desc>` (existing convention; `<n>` = GitLab issue number). Never commit feature work directly to `main`.
+1. **Capture** – Create a GitHub Issue (label `feature`) with goal + acceptance criteria. The issue number (`#N`) is the tracking anchor.
+2. **Branch** – Off up-to-date `main`, named `feature/<n>-<kebab-desc>` (`<n>` = GitHub issue number). Never commit feature work directly to `main`.
    ```bash
    git switch main && git pull
-   git switch -c feature/VOM-<n>-<desc>
+   git switch -c feature/<n>-<desc>
    ```
-3. **Track** – Small, frequent commits; push with `git push -u origin <branch>`. Open a **Draft MR** early so CI runs per push. Put `Closes #<n>` in the MR description to auto-close the issue on merge.
-4. **Merge** – Pipeline green → remove Draft → **squash merge** + delete source branch.
+3. **Track** – Small, frequent commits; push with `git push -u origin <branch>`. Open a **Draft PR** early so CI runs per push. Put `Closes #<n>` in the PR description to auto-close the issue on merge.
+4. **Merge** – CI green → remove Draft → **squash merge** + delete source branch.
 
 - Commit messages end with the `Co-Authored-By: Claude Opus 4.8 (1M context)` trailer (see harness rules).
 - Only stage files related to the current task; leave unrelated working-tree changes out of the commit.
-- `glab mr create --fill --draft`, `glab mr merge --squash --remove-source-branch`, `glab issue create` work from the terminal.
+- `gh pr create --fill --draft`, `gh pr merge --squash --delete-branch`, `gh issue create` work from the terminal.
+- Dependabot (`.github/dependabot.yml`) opens PRs weekly for outdated Maven/npm/GitHub Actions dependencies — review and merge (or close) regularly.
 
 ## Infrastructure Notes
 
