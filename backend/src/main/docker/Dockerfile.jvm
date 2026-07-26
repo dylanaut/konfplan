@@ -85,6 +85,7 @@ ENV LANGUAGE='en_US:en'
 # absoluten Pfad aufgerufen (kein PATH-Lookup) - daher hier fest ins Image
 # installieren, damit der Container eigenstaendig lauffaehig ist.
 USER root
+RUN microdnf install -y gzip tar && microdnf clean all
 RUN curl -fsSL https://api.github.com/repos/MiniZinc/MiniZincIDE/releases/latest \
         | grep -o '"browser_download_url": *"[^"]*bundle-linux-x86_64\.tgz"' \
         | head -1 | cut -d '"' -f4 > /tmp/minizinc-url \
