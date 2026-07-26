@@ -87,6 +87,25 @@ export TEMPLATES_DIR=/opt/konfplan/templates
 ./backend/target/konfplan-backend-1.0.0-SNAPSHOT-runner
 ----
 
+Für den echten Produktivbetrieb kommen zusätzlich die Zugangsdaten des Mailservers dazu (`BREVO_SMTP_USER`/`BREVO_SMTP_PASSWORD`, siehe `%prod.quarkus.mailer.username`/`.password` in `application.properties`).
+
+[IMPORTANT]
+====
+Diese Zugangsdaten dürfen **nicht** im Git-Repository landen (auch nicht in `application.properties` selbst – dort steht nur der Verweis `${BREVO_SMTP_USER}`). Zwei gängige Wege, sie trotzdem bereitzustellen:
+
+* **CI/CD-Pipeline (GitLab):** Als *maskierte* + *geschützte* CI/CD-Variablen unter *Project → Settings → CI/CD → Variables* anlegen. Der `deploy_to_production`-Job in `.gitlab-ci.yml` reicht sie dann per `-e BREVO_SMTP_USER=${BREVO_SMTP_USER}` an den entfernten `docker run`-Aufruf durch.
+* **Direkt auf dem Server** (z.B. bei diesem manuellen Runner-Start): eine Datei außerhalb des Repos anlegen, z.B. `/etc/konfplan/prod.env` mit `chmod 600`:
++
+[source,bash]
+----
+BREVO_SMTP_USER=...
+BREVO_SMTP_PASSWORD=...
+QUARKUS_DATASOURCE_PASSWORD=...
+----
++
+und vor dem Start laden (`set -a; source /etc/konfplan/prod.env; set +a`), bzw. bei Betrieb als systemd-Service über `EnvironmentFile=/etc/konfplan/prod.env` in der Unit-Datei.
+====
+
 == 5. Besonderheiten & Einschränkungen
 
 [IMPORTANT]

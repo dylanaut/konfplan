@@ -110,6 +110,9 @@ deploy_to_production:
         # 1. SSH zum Server
         # 2. Docker-Image aus der GitLab Registry pullen
         # 3. Alten Container stoppen und neuen starten
+        # QUARKUS_DATASOURCE_PASSWORD, BREVO_SMTP_USER und BREVO_SMTP_PASSWORD werden NICHT hier
+        # hartkodiert, sondern als maskierte/geschützte CI/CD-Variablen im GitLab-Projekt hinterlegt
+        # (Settings → CI/CD → Variables) und hier nur durchgereicht.
         - |
             ssh user@server-ip "
               docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY} && \
@@ -120,7 +123,9 @@ deploy_to_production:
                 --restart always \
                 -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://db-host/konfplan \
                 -e QUARKUS_DATASOURCE_USERNAME=db_user \
-                -e QUARKUS_DATASOURCE_PASSWORD=db_pass \
+                -e QUARKUS_DATASOURCE_PASSWORD=${QUARKUS_DATASOURCE_PASSWORD} \
+                -e BREVO_SMTP_USER=${BREVO_SMTP_USER} \
+                -e BREVO_SMTP_PASSWORD=${BREVO_SMTP_PASSWORD} \
                 ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}
             "
         - echo "Deployment erfolgreich."

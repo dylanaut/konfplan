@@ -82,6 +82,27 @@ java -jar backend/target/quarkus-app/quarkus-run.jar
 ** Das Frontend wird unter `http://localhost:9000/` ausgeliefert.
 ** Die API ist unter `http://localhost:9000/api/...` erreichbar.
 
+=== Zugangsdaten für Produktion (Mailserver, DB)
+
+Im echten Produktivbetrieb werden Datenbank-Zugangsdaten und die Zugangsdaten des Mailservers (`BREVO_SMTP_USER`/`BREVO_SMTP_PASSWORD`, siehe `%prod.quarkus.mailer.username`/`.password` in `application.properties`) über Umgebungsvariablen übergeben – analog zu `QUARKUS_DATASOURCE_*` in Abschnitt 3.
+
+[IMPORTANT]
+====
+Diese Zugangsdaten dürfen **nicht** im Git-Repository landen. Zwei gängige Wege, sie trotzdem bereitzustellen:
+
+* **CI/CD-Pipeline (GitLab):** Als *maskierte* + *geschützte* CI/CD-Variablen unter *Project → Settings → CI/CD → Variables* anlegen. Der `deploy_to_production`-Job in `.gitlab-ci.yml` reicht sie dann per `-e BREVO_SMTP_USER=${BREVO_SMTP_USER}` an den entfernten `docker run`-Aufruf durch.
+* **Direkt auf dem Server** (z.B. bei einem manuellen Start): eine Datei außerhalb des Repos anlegen, z.B. `/etc/konfplan/prod.env` mit `chmod 600`:
++
+[source,bash]
+----
+BREVO_SMTP_USER=...
+BREVO_SMTP_PASSWORD=...
+QUARKUS_DATASOURCE_PASSWORD=...
+----
++
+und vor dem Start laden (`set -a; source /etc/konfplan/prod.env; set +a`), bzw. bei Betrieb als systemd-Service über `EnvironmentFile=/etc/konfplan/prod.env` in der Unit-Datei.
+====
+
 == 3. Relevante Konfiguration
 
 Die Steuerung erfolgt in der Datei `/Users/kreyj/Java/berufsorientierung/konfplan/backend/src/main/resources/application.properties`:

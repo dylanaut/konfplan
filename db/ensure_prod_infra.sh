@@ -2,9 +2,35 @@
 set -euo pipefail
 
 # Startet die für einen lokalen PROD-Testlauf (z.B. Native-Image-Runner) benötigte
-# Infrastruktur: PostgreSQL (via ensure_prod_db.sh) + Mailpit (statt Brevo-SMTP).
+# Infrastruktur: MiniZinc (lokale Installation, kein Docker-Image verfügbar),
+# PostgreSQL (via ensure_prod_db.sh) + Mailpit (statt Brevo-SMTP).
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# --- MiniZinc ---
+# Wird von PlanErstellungService als externer Prozess über den absoluten Pfad
+# aus 'minizinc.path' (application.properties) aufgerufen, nicht über PATH-Suche.
+MINIZINC_PATH="${MINIZINC_PATH:-/opt/homebrew/bin/minizinc}"
+
+echo "🔍 Prüfe MiniZinc-Installation ('$MINIZINC_PATH')..."
+if [[ -x "$MINIZINC_PATH" ]]; then
+    echo "✅ MiniZinc gefunden: $("$MINIZINC_PATH" --version | head -1)"
+elif command -v minizinc > /dev/null 2>&1; then
+    FOUND_PATH=$(command -v minizinc)
+    echo "⚠️  MiniZinc nicht unter '$MINIZINC_PATH', aber im PATH unter '$FOUND_PATH' gefunden."
+    echo "   Vor dem Start: export MINIZINC_PATH=$FOUND_PATH (oder 'minizinc.path' in application.properties anpassen)."
+    exit 1
+else
+    echo "❌ MiniZinc wurde nicht gefunden (weder unter '$MINIZINC_PATH' noch im PATH)."
+    echo "   MiniZinc wird für die automatische Planerstellung zur Laufzeit benötigt und muss lokal installiert werden:"
+    case "$(uname -s)" in
+        Darwin) echo "   macOS:  brew install minizinc" ;;
+        Linux)  echo "   Linux:  sudo snap install minizinc --classic  (oder offizielles Bundle installieren)" ;;
+        *)      echo "   siehe offizielle MiniZinc-Installationsanleitung für dein Betriebssystem." ;;
+    esac
+    echo "   Weicht der Installationspfad von '$MINIZINC_PATH' ab: vorher MINIZINC_PATH entsprechend exportieren."
+    exit 1
+fi
 
 # --- PostgreSQL ---
 "$SCRIPT_DIR/ensure_prod_db.sh"
