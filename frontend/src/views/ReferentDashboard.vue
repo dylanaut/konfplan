@@ -38,7 +38,7 @@
         </div>
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700">Biografie</label>
-          <textarea v-model="referent.bio" rows="4" class="input-field" :disabled="isAnyDeadlinePassed"></textarea>
+          <textarea v-model="referent.biography" rows="4" class="input-field" :disabled="isAnyDeadlinePassed"></textarea>
         </div>
       </div>
     </section>
@@ -279,7 +279,7 @@ const referent = ref({
   jobRole: '',
   email: '',
   slogan: '',
-  bio: '',
+  biography: '',
 });
 const allSlots = ref([]);
 const vortraege = ref([]);

@@ -74,6 +74,7 @@ public class ReferentResource {
 
     @GET
     @Path("/profile")
+    @Transactional
     @Operation(summary = "Referentenprofil abrufen", description = "Ruft das Profil des aktuell angemeldeten Referenten ab.")
     public Response getReferent() { // Changed return type
         Referent referent = referentService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
@@ -247,6 +248,7 @@ public class ReferentResource {
 
     @GET
     @Path("/veranstaltungen")
+    @Transactional
     @Operation(summary = "Veranstaltungen des Referenten abrufen", description = "Ruft alle Veranstaltungen ab, bei denen der Referent registriert ist.")
     public Response getReferentVeranstaltungen() {
         Referent referent =
