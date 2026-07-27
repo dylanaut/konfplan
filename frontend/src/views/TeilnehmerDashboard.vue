@@ -88,14 +88,16 @@
                 <div v-for="(daySlots, day) in groupedSlots" :key="day" class="bg-gray-50 p-3 rounded-lg">
                   <h4 class="font-bold text-sm mb-3 text-center">{{ day }}</h4>
                   <table class="text-xs">
-                    <tr>
-                      <td v-for="slot in daySlots" :key="slot.id" class="px-2 py-1 font-bold text-center">{{ formatTime(slot.startTime) }}</td>
-                    </tr>
-                    <tr>
-                      <td v-for="slot in daySlots" :key="slot.id" class="px-2 py-1 text-center">
-                        <input type="checkbox" v-model="availabilities[slot.id]" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-                      </td>
-                    </tr>
+                    <tbody>
+                      <tr>
+                        <td v-for="slot in daySlots" :key="slot.id" class="px-2 py-1 font-bold text-center">{{ formatTime(slot.startTime) }}</td>
+                      </tr>
+                      <tr>
+                        <td v-for="slot in daySlots" :key="slot.id" class="px-2 py-1 text-center">
+                          <input type="checkbox" v-model="availabilities[slot.id]" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        </td>
+                      </tr>
+                    </tbody>
                   </table>
                 </div>
               </div>
