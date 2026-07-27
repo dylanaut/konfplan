@@ -93,8 +93,12 @@
                         <td v-for="slot in daySlots" :key="slot.id" class="px-2 py-1 font-bold text-center">{{ formatTime(slot.startTime) }}</td>
                       </tr>
                       <tr>
-                        <td v-for="slot in daySlots" :key="slot.id" class="px-2 py-1 text-center">
-                          <input type="checkbox" v-model="availabilities[slot.id]" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <td v-for="slot in daySlots" :key="slot.id"
+                            :class="['px-2 py-1 text-center', pflichtSlotIds.has(slot.id) ? 'bg-gray-200 rounded' : '']"
+                            :title="pflichtSlotIds.has(slot.id) ? 'Pflichtvortrag der eigenen Gruppe - Teilnahme verpflichtend' : ''">
+                          <input type="checkbox" v-model="availabilities[slot.id]"
+                                 :disabled="pflichtSlotIds.has(slot.id)"
+                                 class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded disabled:opacity-60 disabled:cursor-not-allowed">
                         </td>
                       </tr>
                     </tbody>
@@ -243,6 +247,14 @@ const groupedVortraege = computed(() => {
   }));
 });
 
+const pflichtSlotIds = computed(() => {
+  return new Set(
+    vortraege.value
+      .filter(v => v.istPflicht && v.pflichtSlotId)
+      .map(v => v.pflichtSlotId)
+  );
+});
+
 const groupedSlots = computed(() => {
   return eventSlots.value.reduce((acc, slot) => {
     const day = new Date(slot.startTime).toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -287,7 +299,7 @@ const togglePriorities = async (eventId) => {
     const [talksRes, priosRes, scheduleRes] = await Promise.all([
       api.get(`/api/teilnehmer/veranstaltungen/${eventId}/vortraege`),
       api.get(`/api/prios/${eventId}`),
-      api.get(`/api/teilnehmer/zuweisungen?vid=${eventId}`)
+      api.get(`/api/teilnehmer/veranstaltungen/${eventId}/zuweisungen`)
     ]);
     vortraege.value = talksRes.data;
     priorities.value = Object.entries(priosRes.data || {}).reduce((acc, [vortragId, prioWert]) => {
@@ -310,14 +322,16 @@ const toggleAvailability = async (eventId) => {
     return;
   }
   try {
-    const [slotsRes, availabilityRes] = await Promise.all([
+    const [slotsRes, availabilityRes, vortraegeRes] = await Promise.all([
         api.get(`/api/veranstaltungen/${eventId}/slots`),
-        api.get(`/api/teilnehmer/veranstaltungen/${eventId}/verfuegbarkeiten`)
+        api.get(`/api/teilnehmer/veranstaltungen/${eventId}/verfuegbarkeiten`),
+        api.get(`/api/teilnehmer/veranstaltungen/${eventId}/vortraege`)
     ]);
     eventSlots.value = slotsRes.data.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+    vortraege.value = vortraegeRes.data;
     const availabilityData = availabilityRes.data;
     const currentAvailabilities = eventSlots.value.reduce((acc, slot) => {
-        acc[slot.id] = availabilityData.verfuegbareSlotIds.includes(slot.id);
+        acc[slot.id] = pflichtSlotIds.value.has(slot.id) || availabilityData.verfuegbareSlotIds.includes(slot.id);
         return acc;
     }, {});
     availabilities.value = {...currentAvailabilities};
