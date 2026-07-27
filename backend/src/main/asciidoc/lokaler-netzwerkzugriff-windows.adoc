@@ -1,0 +1,154 @@
+= KonfPlan im WLAN erreichbar machen – Windows-Clients
+:toc:
+:toclevels: 2
+:icons: font
+:source-highlighter: rouge
+
+Dieses Dokument beschreibt, wie KonfPlan auf einem Mac im lokalen Netzwerk (WLAN)
+gestartet und für Windows-Rechner unter einer logischen Adresse (z. B.
+`konfplan.local`) statt einer IP-Adresse erreichbar gemacht wird.
+
+== Voraussetzung: Server im Netzwerk freigeben
+
+Der Quarkus-Server muss auf allen Netzwerk-Interfaces lauschen, nicht nur auf
+`localhost`.
+
+.`backend/src/main/resources/application.properties`
+[source,properties]
+----
+quarkus.http.host=0.0.0.0
+----
+
+Produktiv-Build starten (ein einzelner Port statt getrennter Dev-Server für
+Frontend/Backend):
+
+[source,bash]
+----
+./mvnw clean install -DskipTests
+java -jar backend/target/quarkus-app/quarkus-run.jar
+----
+
+macOS-Firewall muss eingehende Verbindungen für Java zulassen
+(Systemeinstellungen → Netzwerk → Firewall → Optionen).
+
+== Optionen für Windows-Clients im Vergleich
+
+[cols="2,3,2,2", options="header"]
+|===
+| Option | Aufwand pro Client | Namensauflösung stabil bei IP-Wechsel? | Admin-Rechte nötig?
+
+| Bonjour (mDNS)
+| Einmalige Installation
+| Ja
+| Ja (Installation)
+
+| hosts-Datei
+| Pro Client manuell editieren
+| Nein (IP fest eintragen)
+| Ja (Datei bearbeiten)
+
+| Router-lokaler DNS
+| Keiner (zentral am Router)
+| Ja
+| Nur am Router
+
+| Lokaler DNS-Server (dnsmasq o. Ä.)
+| Keiner, wenn Router-DHCP umgestellt ist
+| Ja
+| Ja (Einrichtung des DNS-Servers)
+|===
+
+== Option 1: Bonjour (mDNS) auf Windows – empfohlen
+
+Der Mac kündigt sich im Netzwerk per Bonjour bereits als `<hostname>.local` an
+(Systemeinstellungen → Allgemein → Freigabe → "Lokaler Hostname"). Windows
+unterstützt mDNS nicht nativ und benötigt dafür eine Bonjour-Komponente.
+
+=== Installation
+
+. Bonjour Print Services für Windows herunterladen und installieren
+(Quelle: Apple Support-Download-Bereich; alternativ ist Bonjour Teil von
+iTunes für Windows).
+. Nach der Installation läuft der Dienst *Bonjour Service* im Hintergrund
+(`services.msc` → "Bonjour-Dienst" sollte auf "Wird ausgeführt" stehen).
+. Kein Neustart des PCs zwingend nötig, ein Neustart nach Installation wird
+aber empfohlen, falls der Dienst nicht automatisch startet.
+
+=== Nutzung
+
+Im Browser auf dem Windows-Rechner:
+
+[source]
+----
+http://<mac-hostname>.local:9000
+----
+
+Der `<mac-hostname>` entspricht dem unter macOS konfigurierten lokalen
+Hostnamen (ohne Leerzeichen/Umlaute, macOS ersetzt diese automatisch, z. B.
+`krey-macbook.local`).
+
+=== Troubleshooting
+
+* Windows-Firewall kann eingehende mDNS-Pakete (UDP 5353) blockieren – bei
+Bedarf eine Ausnahme für "Bonjour Service" bzw. "mDNSResponder.exe" anlegen.
+* Manche Firmen-Notebooks mit restriktiver Firewall/Antivirus blockieren
+Bonjour vollständig – dann Option 2 oder 3 verwenden.
+* Test der Auflösung in der PowerShell:
++
+[source,powershell]
+----
+ping <mac-hostname>.local
+----
+
+== Option 2: hosts-Datei auf jedem Windows-Client
+
+Für Umgebungen ohne Bonjour und ohne Zugriff auf die Router-Konfiguration.
+
+. Feste IP für den Mac im Router reservieren (DHCP-Reservierung anhand der
+MAC-Adresse), damit sich die IP nicht ändert.
+. PowerShell **als Administrator** öffnen und Eintrag ergänzen:
++
+[source,powershell]
+----
+Add-Content -Path "$env:WinDir\System32\drivers\etc\hosts" `
+    -Value "192.168.1.50 konfplan.local"
+----
++
+(IP-Adresse durch die tatsächliche, reservierte Adresse des Mac ersetzen.)
+. DNS-Cache leeren, damit der neue Eintrag sofort greift:
++
+[source,powershell]
+----
+ipconfig /flushdns
+----
+. Aufruf im Browser: `http://konfplan.local:9000`
+
+Nachteil: Muss auf jedem Windows-Rechner einzeln gepflegt werden und bei
+IP-Änderung erneut angepasst werden.
+
+== Option 3: Lokaler DNS-Eintrag am Router
+
+Falls der Router (z. B. FritzBox, viele Business-Router) eigene
+Hostnamen/lokale DNS-Einträge unterstützt, ist das der wartungsärmste Weg für
+mehrere Windows-Clients, da keine Client-Konfiguration nötig ist.
+
+Beispiel FritzBox:
+
+. Heimnetz → Netzwerk → Gerät "Mac" bearbeiten.
+. Gerätenamen setzen (wird intern per NetBIOS/DNS-Rebind aufgelöst, meist
+ohne `.local`-Suffix, z. B. `http://mac-name/`).
+. Für einen frei wählbaren Namen wie `konfplan.fritz.box` ggf. die
+Router-eigene DNS-Rebind-Funktion nutzen, falls vorhanden.
+
+Bei Business-/pfSense-/OPNsense-Routern: DNS-Resolver (Unbound) mit
+Host-Override konfigurieren, z. B. `konfplan.lan → 192.168.1.50`.
+
+== Empfehlung
+
+* Wenige, private Windows-Geräte im Heimnetz → *Option 1 (Bonjour)*, da
+einmalige Installation pro Gerät genügt und Namen bei IP-Wechsel stabil
+bleiben.
+* Firmen-/Schul-Notebooks mit gesperrter Softwareinstallation → *Option 2
+(hosts-Datei)*, ggf. zentral per Gruppenrichtlinie verteilt.
+* Mehrere Windows-Clients und Zugriff auf die Router-Konfiguration vorhanden
+→ *Option 3 (Router-DNS)*, da zentral gepflegt und ohne Client-Aufwand.
