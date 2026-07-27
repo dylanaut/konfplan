@@ -2,6 +2,8 @@ package kreyj.konfplan.persistence;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
@@ -20,7 +22,9 @@ public abstract class VeranstaltungsVerfuegbarkeit extends PanacheEntityBase {
     @Column(name = "veranstaltung_id")
     protected Long veranstaltungId;
 
-    Set<Long> verfuegbareSlotIds = new HashSet<>();
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Column(name = "slot_id")
+    protected Set<Long> verfuegbareSlotIds = new HashSet<>();
 
 
     public Set<Long> getVerfuegbareSlotIds() {
