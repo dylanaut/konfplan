@@ -128,4 +128,6 @@ Kathrin Jessen, kathrin.jessen@rks-linz.de
 Martin Schunkert, martin.schunkert@rks-linz.de
 
 .Schul-IT Neuwied
-Jan Otto, jan.otto@kreis-neuwied.de
+
+* Jan Otto, jan.otto@kreis-neuwied.de
+* Marcel Schlatzke, marcel.schlatzke@kreis-neuwied.de
