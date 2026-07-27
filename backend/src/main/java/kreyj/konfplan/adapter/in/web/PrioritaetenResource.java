@@ -1,6 +1,7 @@
 package kreyj.konfplan.adapter.in.web;
 
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -42,6 +43,7 @@ public class PrioritaetenResource {
     @GET
     @Path("/{vid}")
     @Produces(MediaType.APPLICATION_JSON)
+    @Transactional
     @Operation(summary = "Meine Prioritäten abrufen", description = "Ruft die vom Teilnehmer gesetzten Prioritäten für Wahlvorträge ab.")
     public Response getPrioritaeten(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);

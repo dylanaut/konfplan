@@ -389,8 +389,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         if (null == v) {
             throw new NotFoundException("Verfügbarkeitseintrag nicht gefunden.");
         }
-        v.getVerfuegbareSlotIds().clear();
-        v.getVerfuegbareSlotIds().addAll(dto.verfuegbareSlotIds);
+        v.setVerfuegbareSlotIds(dto.verfuegbareSlotIds);
         v.persist();
 
         mailService.sendVerfuegbarkeitChangedNotification(nutzer, veranstaltung);
