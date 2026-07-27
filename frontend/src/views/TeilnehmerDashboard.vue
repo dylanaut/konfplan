@@ -290,8 +290,8 @@ const togglePriorities = async (eventId) => {
       api.get(`/api/teilnehmer/zuweisungen?vid=${eventId}`)
     ]);
     vortraege.value = talksRes.data;
-    priorities.value = priosRes.data.reduce((acc, prio) => {
-      acc[prio.vortrag.id] = prio;
+    priorities.value = Object.entries(priosRes.data || {}).reduce((acc, [vortragId, prioWert]) => {
+      acc[vortragId] = { vortrag: { id: Number(vortragId) }, prioWert };
       return acc;
     }, {});
     schedule.value = scheduleRes.data;
@@ -300,6 +300,7 @@ const togglePriorities = async (eventId) => {
     activeAvailabilityEventId.value = null; // close other section
   } catch (error) {
     console.error("Fehler beim Laden der Prioritäten-Daten:", error);
+    alert('Fehler beim Laden der Vorträge & Prioritäten: ' + (error.response?.data?.message || error.message));
   }
 };
 
