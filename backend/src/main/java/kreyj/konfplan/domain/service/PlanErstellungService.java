@@ -227,7 +227,7 @@ public class PlanErstellungService {
                     kollisionen.add(new Kollision(Kollision.Typ.TEILNEHMER_VERFUEGBARKEIT,
                         "Verfügbarkeits-Kollision: " + tnName + " (" + pv.getPflichtgruppe()
                             + ") hat Pflichtvortrag in Slot " + pflichtslot.getDescription()
-                            + ". Bitte seine 'verfuegbare_slots' anpassen."));
+                            + ". Bitte seine 'Verfügbaren Slots' anpassen."));
                 }
             }
         }
@@ -242,7 +242,7 @@ public class PlanErstellungService {
                 kollisionen.add(new Kollision(Kollision.Typ.RAUM_SLOT,
                     "Pflichtvortrag '" + pv.getTitel() + "' ist reserviert für Raum '" + pflichtraum.getName()
                         + "' und Slot " + pflichtslot.getDescription()
-                        + ". Dieser Raum steht gleichzeitig für Wahlvorträge zur Verfügung, vgl. verfuegbare_slots: "
+                        + ". Dieser Raum steht gleichzeitig für Wahlvorträge zur Verfügung, vgl. Verfügbare Slots: "
                         + rv.getVerfuegbareSlotIds().stream()
                         .map(id -> (Slot) Slot.findById(id))
                         .map(Slot::getDescription)
@@ -260,7 +260,7 @@ public class PlanErstellungService {
                 kollisionen.add(new Kollision(Kollision.Typ.REFERENT_VERFUEGBARKEIT,
                     "Verfügbarkeits-Kollision: Referent " + referent.getFullName() + " hat Pflichtvortrag '"
                         + pv.getTitel() + "' in Slot " + pflichtslot.getDescription()
-                        + ", ist dafür aber weiterhin als verfügbar markiert. Bitte seine 'verfuegbare_slots' anpassen."));
+                    + ", ist dafür aber weiterhin als verfügbar markiert. Bitte seine 'Verfügbaren Slots' anpassen."));
             }
         }
 

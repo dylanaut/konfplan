@@ -58,7 +58,8 @@
             <input v-model.number="solverConfig.timeout" type="number" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
           </div>
           <div>
-            <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">max. Vortragswiederholungen</label>
+            <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5"
+                   title="Maximale Anzahl von Wiederholungen pro Vortrag">max. Wiederholungen</label>
             <input v-model.number="solverConfig.maxInstanzen" type="number" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
           </div>
           <div>
