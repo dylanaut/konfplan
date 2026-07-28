@@ -315,6 +315,11 @@ public class PlanErstellungService {
             throw new MinizincException(MinizincException.MZ_Exception.INVOCATION_ERROR, output);
         }
 
+        if (lastJsonSolution.isEmpty() && output.contains("=====UNKNOWN=====")) {
+            throw new MinizincException(MinizincException.MZ_Exception.TIMEOUT,
+                "In der vorgegebenen Zeit (" + solverConfig.getTimeout() + " Sek.) konnte kein Ergebnis berechnet werden.");
+        }
+
         if (!lastJsonSolution.isEmpty()) {
             return lastJsonSolution;
         }

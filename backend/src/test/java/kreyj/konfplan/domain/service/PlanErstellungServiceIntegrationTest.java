@@ -542,18 +542,19 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
     }
 
     @Test
-    public void testPlanErstellung_withNoSolutionInTime() throws Exception {
+    public void testPlanErstellung_withNoSolutionInTime() {
         // Erfüllbares, aber im Zeitlimit unauffindbares Modell -> cp-sat liefert "UNKNOWN".
-        // Erwartet: leeres Ergebnis (keine Lösung gefunden), KEINE Exception. Das ist die
-        // graceful behandelte "keine Lösung gefunden"-Situation (vs. beweisbar UNSATISFIABLE,
-        // siehe testPlanErstellung_withUnsatisfiableModel).
+        // Erwartet: TIMEOUT-Exception mit Hinweis auf das konfigurierte Zeitlimit (vs. beweisbar
+        // UNSATISFIABLE, siehe testPlanErstellung_withUnsatisfiableModel), damit die UI dem
+        // Nutzer mitteilen kann, dass in der vorgegebenen Zeit kein Ergebnis berechnet werden konnte.
         SolverConfig config = new SolverConfig(1, 1, 1);
 
-        String resultJson = starteTestPlanErstellung(config, "no-solution-in-time.mzn");
-
-        assertThat(resultJson)
-                .describedAs("Ohne Lösung im Zeitlimit (UNKNOWN) soll ein leeres Ergebnis zurückkommen.")
-                .isEmpty();
+        assertThatExceptionOfType(MinizincException.class)
+                .isThrownBy(() -> starteTestPlanErstellung(config, "no-solution-in-time.mzn"))
+                .satisfies(e -> {
+                    assertThat(e.getExceptionType()).isEqualTo(MinizincException.MZ_Exception.TIMEOUT);
+                    assertThat(e.getMessage()).contains("1 Sek.");
+                });
     }
 
     // -------------------------------------------------------------------

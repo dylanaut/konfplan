@@ -877,9 +877,13 @@ const pollPlanningStatus = () => {
       if (!response.data.isPlanning) {
         clearInterval(pollingInterval);
         isOptimizing.value = false;
-        await loadData();
 
-        activeTab.value = 'ergebnisse';
+        if (response.data.lastError) {
+          alert('Planerstellung ohne Ergebnis:\n\n' + response.data.lastError);
+        } else {
+          await loadData();
+          activeTab.value = 'ergebnisse';
+        }
       }
     } catch (error) {
       console.error('Fehler beim Abrufen des Planungsstatus:', error);
