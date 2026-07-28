@@ -5,7 +5,7 @@ set -euo pipefail
 LABEL="vm_prod"
 IMAGE="mcr.microsoft.com/azure-sql-edge:latest"
 DB_NAME="konfplan"
-CONTAINER_NAME="vortragsmanager_prod"
+CONTAINER_NAME="konfplan_prod"
 DB_PORT=1433
 
 # HINWEIS: mcr.microsoft.com/azure-sql-edge wurde von Microsoft zum 30.09.2025 offiziell

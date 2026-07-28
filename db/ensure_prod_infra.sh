@@ -38,7 +38,7 @@ fi
 # --- Mailpit ---
 MAILPIT_LABEL="vm_prod_mailpit"
 MAILPIT_IMAGE="axllent/mailpit:latest"
-MAILPIT_CONTAINER_NAME="vortragsmanager_prod_mailpit"
+MAILPIT_CONTAINER_NAME="konfplan_prod_mailpit"
 MAILPIT_SMTP_PORT=1025
 MAILPIT_UI_PORT=8025
 
