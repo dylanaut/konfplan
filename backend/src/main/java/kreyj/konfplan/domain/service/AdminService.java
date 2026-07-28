@@ -544,7 +544,8 @@ public class AdminService implements AdminServiceInterface {
                     }
                     a.setFirstName(dto.vorname);
                     a.setLastName(dto.nachname);
-                    a.setPasswordHash(BcryptUtil.bcryptHash(UUID.randomUUID().toString()));
+                    String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
+                    a.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
                     a.persistAndFlush();
                     count++;
                     protokollService.log(ProtokollKategorie.NUTZER, "Organisator importiert", "Organisator '" + loginName + "' via CSV importiert.", a.getId());
