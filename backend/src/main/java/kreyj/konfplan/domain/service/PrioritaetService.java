@@ -28,8 +28,8 @@ public class PrioritaetService implements PrioritaetServiceInterface {
 
     @Transactional
     @Override
-    public void savePrioritaeten(String email, List<VortragPrioDto> requests) {
-        Nutzer nutzer = Nutzer.findByEmail(email);
+    public void savePrioritaeten(String loginName, List<VortragPrioDto> requests) {
+        Nutzer nutzer = Nutzer.findByLoginName(loginName);
         if (!(nutzer instanceof Teilnehmer teilnehmer)) {
             throw new WebApplicationException("Nutzer ist kein Teilnehmer", BAD_REQUEST.getStatusCode());
         }

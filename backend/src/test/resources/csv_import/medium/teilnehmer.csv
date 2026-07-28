@@ -1,5 +1,5 @@
-Nachname;Vorname;Email;Gruppen
-Alfa;Alex;alex.alfa@web.de;GruppeA
-Bravo;Bert;bert.bravo@web.de;
-Charlie;Chris;chris.charlie@web.de;
-Delta;Dirk;dirk.delta@web.de;
+Nachname;Vorname;Email;Gruppen;LoginName
+Alfa;Alex;alex.alfa@web.de;GruppeA;alex.alfa
+Bravo;Bert;bert.bravo@web.de;;bert.bravo
+Charlie;Chris;chris.charlie@web.de;;chris.charlie
+Delta;Dirk;dirk.delta@web.de;;dirk.delta

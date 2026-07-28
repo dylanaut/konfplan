@@ -4,8 +4,8 @@ import com.opencsv.bean.CsvBindByName;
 
 public class NutzerVerfuegbarkeitCsvDto {
 
-    @CsvBindByName(column = "email", required = true)
-    public String email;
+    @CsvBindByName(column = "loginName", required = true)
+    public String loginName;
 
     @CsvBindByName(column = "verfuegbare_slots")
     public String verfuegbareSlots;

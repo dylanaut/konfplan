@@ -151,7 +151,7 @@ public class TeilnehmerResource {
     @Operation(summary = "Eigenes Teilnehmerprofil abrufen")
     @Transactional
     public Response getTeilnehmerProfile() {
-        Teilnehmer teilnehmer = teilnehmerService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
+        Teilnehmer teilnehmer = teilnehmerService.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
         if (null == teilnehmer) {
             throw new WebApplicationException("Teilnehmer not found", Response.Status.NOT_FOUND);
         }
@@ -168,8 +168,8 @@ public class TeilnehmerResource {
         if (null == teilnehmerDto) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
-        String email = JwtHelper.getUserPrincipalName(jwt);
-        Teilnehmer teilnehmer = teilnehmerService.findByEmail(email);
+        String loginName = JwtHelper.getUserPrincipalName(jwt);
+        Teilnehmer teilnehmer = teilnehmerService.findByLoginName(loginName);
         try {
             Teilnehmer updated = teilnehmerService.updateTeilnehmerProfile(teilnehmer, teilnehmerDto);
             if (null == updated) {
@@ -210,7 +210,7 @@ public class TeilnehmerResource {
         if (null == veranstaltung) {
             throw new WebApplicationException("Veranstaltung not found", Response.Status.NOT_FOUND);
         }
-        Teilnehmer teilnehmer = teilnehmerService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
+        Teilnehmer teilnehmer = teilnehmerService.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
         if (null == teilnehmer) {
             throw new WebApplicationException("Teilnehmer not found", Response.Status.NOT_FOUND);
         }
@@ -224,7 +224,7 @@ public class TeilnehmerResource {
     @RolesAllowed("TEILNEHMER")
     @Operation(summary = "Meine Verfügbarkeiten abrufen")
     public NutzerVerfuegbarkeitDto getVerfuegbarkeiten(@PathParam("vid") Long vid) {
-        Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
+        Nutzer nutzer = Nutzer.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
         if (!(nutzer instanceof Teilnehmer)) {
             throw new WebApplicationException("Nutzer ist kein Teilnehmer", FORBIDDEN.getStatusCode());
         }

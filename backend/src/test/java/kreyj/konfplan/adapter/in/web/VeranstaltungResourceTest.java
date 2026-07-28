@@ -49,6 +49,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
     @Transactional
     void setup() {
         Admin admin = new Admin();
+        admin.assignLoginName("admintest");
         admin.setEmail("admin@test.de");
         admin.setPasswordHash("hash");
         admin.persist();
@@ -80,7 +81,9 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
     @Transactional
     public void createWahlvortrag(String titel) {
         Referent r = new Referent();
-        r.setEmail("ref-" + System.currentTimeMillis() + "@vresource.de");
+        String uniqueSuffix = System.nanoTime() + "";
+        r.assignLoginName("ref-" + uniqueSuffix);
+        r.setEmail("ref-" + uniqueSuffix + "@vresource.de");
         r.setLastName("Mustermann");
         r.persist();
 
@@ -129,6 +132,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
     void testCreateNutzerHierarchical() {
         String nutzerEmail = "new@test.de";
         NutzerDto tn = NutzerDto.teilnehmer(nutzerEmail, "Neu", "Nutzer");
+        tn.loginName = "newtest";
 
         given().contentType(ContentType.JSON)
                 .body(tn)
@@ -147,6 +151,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
 
         // 1. Create a Referent and a Wahlvortrag
         NutzerDto refDto = NutzerDto.referent(referentEmail, "Referent", "Test");
+        refDto.loginName = referentEmail; // muss mit dem im Token unten verwendeten upn übereinstimmen
         NutzerDto referent =
                 given()
                     .baseUri(adminEndpoint.toString())
@@ -282,6 +287,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
             vIdArray[0] = v.getId();
 
             Admin admin2 = new Admin();
+            admin2.assignLoginName(admin2Email);
             admin2.setEmail(admin2Email);
             admin2.setPasswordHash("hash");
             admin2.persist();

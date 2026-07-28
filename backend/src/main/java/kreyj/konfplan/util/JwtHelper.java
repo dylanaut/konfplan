@@ -18,10 +18,10 @@ public final class JwtHelper {
         return jwt.getClaim(CLAIM_UPN);
     }
 
-    public static String tokenFor(String userEmail, String role) {
+    public static String tokenFor(String loginName, String role) {
         return Jwt.issuer(ISSUER)
-                .upn(userEmail)
-                .subject(userEmail)
+                .upn(loginName)
+                .subject(loginName)
                 .groups(role)
                 .expiresIn(Duration.ofMinutes(3))
                 .sign();

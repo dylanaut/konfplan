@@ -17,6 +17,10 @@
         </button>
       </div>
       <div v-if="profile.id" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700">Anmeldename (nicht änderbar)</label>
+          <input :value="profile.loginName" type="text" class="input-field" disabled />
+        </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Vorname</label>
           <input v-model="profile.firstName" type="text" class="input-field" disabled />
@@ -26,7 +30,7 @@
           <input v-model="profile.lastName" type="text" class="input-field" disabled />
         </div>
         <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">E-Mail Adresse</label>
+          <label class="block text-sm font-medium text-gray-700">E-Mail Adresse (optional)</label>
           <input v-model="profile.email" type="email" class="input-field" />
         </div>
         <div class="md:col-span-2">
@@ -214,6 +218,7 @@ const eventSlots = ref([]);
 const schedule = ref([]);
 const profile = ref({
   id: null,
+  loginName: '',
   firstName: '',
   lastName: '',
   email: '',

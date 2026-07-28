@@ -39,6 +39,7 @@ class PrioritaetImportTest extends DatabaseCleaner {
     @Transactional
     void setup() {
         Admin admin = new Admin();
+        admin.assignLoginName("admin@test.de");
         admin.setEmail("admin@test.de");
         admin.setPasswordHash("hash");
         admin.persist();
@@ -54,6 +55,7 @@ class PrioritaetImportTest extends DatabaseCleaner {
         admin.persist();
 
         Teilnehmer t1 = new Teilnehmer();
+        t1.assignLoginName("teilnehmer1@test.de");
         t1.setEmail("teilnehmer1@test.de");
         t1.setPasswordHash("hash");
         t1.persist();
@@ -61,6 +63,7 @@ class PrioritaetImportTest extends DatabaseCleaner {
         teilnehmer1Id = t1.getId();
 
         Referent r1 = new Referent();
+        r1.assignLoginName("referent1@test.de");
         r1.setEmail("referent1@test.de");
         r1.setPasswordHash("hash");
         r1.persist();

@@ -67,18 +67,21 @@ public class VerfuegbarkeitsTest extends DatabaseCleaner {
         veranstaltung.addGebaeude(gebaeude);
 
         Teilnehmer tn_in_A = new Teilnehmer();
+        tn_in_A.assignLoginName("tn_in_a");
         tn_in_A.setEmail("tn_in_a@test.com");
         tn_in_A.addGruppe("GruppeA");
         tn_in_A.persistAndFlush();
         tn_in_A_id = tn_in_A.getId();
 
         Teilnehmer tn_in_B = new Teilnehmer();
+        tn_in_B.assignLoginName("tn_in_b");
         tn_in_B.setEmail("tn_in_b@test.com");
         tn_in_B.addGruppe("GruppeB");
         tn_in_B.persistAndFlush();
         tn_in_B_id = tn_in_B.getId();
 
         Referent referent = new Referent();
+        referent.assignLoginName("referent");
         referent.setEmail("referent@test.com");
         referent.persistAndFlush();
         referent_id = referent.getId();

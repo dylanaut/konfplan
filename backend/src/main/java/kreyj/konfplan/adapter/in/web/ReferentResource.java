@@ -77,7 +77,7 @@ public class ReferentResource {
     @Transactional
     @Operation(summary = "Referentenprofil abrufen", description = "Ruft das Profil des aktuell angemeldeten Referenten ab.")
     public Response getReferent() { // Changed return type
-        Referent referent = referentService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
+        Referent referent = referentService.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
         if (null == referent) {
             throw new WebApplicationException("Referent not found", Response.Status.NOT_FOUND);
         }
@@ -103,7 +103,7 @@ public class ReferentResource {
     @Transactional
     @Operation(summary = "E-Mail-Änderung anfordern", description = "Fordert eine Änderung der E-Mail-Adresse an und sendet Bestätigungs-E-Mails.")
     public Response requestEmailChange(@RequestBody(description = "Anfrage zur E-Mail-Änderung") EmailChangeRequestDto requestDto) {
-        Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
+        Nutzer nutzer = Nutzer.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
         if (null == nutzer) {
             return Response.status(Response.Status.NOT_FOUND).entity("Nutzer nicht gefunden.").build();
         }
@@ -237,7 +237,7 @@ public class ReferentResource {
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).entity("Veranstaltung nicht gefunden.").build();
         }
-        Referent referent = referentService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
+        Referent referent = referentService.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
         if (null == referent) {
             return Response.status(Response.Status.NOT_FOUND).entity("Referent nicht gefunden.").build();
         }
@@ -252,7 +252,7 @@ public class ReferentResource {
     @Operation(summary = "Veranstaltungen des Referenten abrufen", description = "Ruft alle Veranstaltungen ab, bei denen der Referent registriert ist.")
     public Response getReferentVeranstaltungen() {
         Referent referent =
-            referentService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
+            referentService.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
         if (null == referent) {
             return Response.status(Response.Status.NOT_FOUND).entity("Referent nicht gefunden.").build();
         }
@@ -283,7 +283,7 @@ public class ReferentResource {
     @Path("/veranstaltungen/{vid}/verfuegbarkeiten")
     @Operation(summary = "Verfügbarkeiten für eine Veranstaltung abrufen", description = "Ruft die persönlichen Verfügbarkeiten des Referenten für eine Veranstaltung ab.")
     public NutzerVerfuegbarkeitDto getVerfuegbarkeiten(@PathParam("vid") Long vid) {
-        Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
+        Nutzer nutzer = Nutzer.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
         if (!(nutzer instanceof Referent)) {
             throw new WebApplicationException("Nutzer ist kein Referent", FORBIDDEN.getStatusCode());
         }
@@ -304,7 +304,7 @@ public class ReferentResource {
     @Transactional
     @Operation(summary = "Verfügbarkeit für einen Slot aktualisieren", description = "Aktualisiert die persönliche Verfügbarkeit des Referenten für einen bestimmten Slot.")
     public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten") NutzerVerfuegbarkeitDto dto) {
-        Nutzer nutzer = Nutzer.findByEmail(JwtHelper.getUserPrincipalName(jwt));
+        Nutzer nutzer = Nutzer.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
         if (!(nutzer instanceof Referent) || !nutzer.getId().equals(dto.nutzerId)) {
             return Response.status(FORBIDDEN).build();
         }

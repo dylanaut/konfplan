@@ -1,2 +1,2 @@
-istPflicht;Titel;Referent_Email;Pflichtgruppe;Pflichtraum;Pflichtslot;Inhalt;wiederholbar;maxWiederholungen;wahlSlots;ausstattung
-true;Vortrag GruppeA;juergenkrey@yahoo.de;GruppeA;A-0.03;1;Berufsberatung für Gruppe A;false;1;;FlipChart
+istPflicht;Titel;Referent_LoginName;Pflichtgruppe;Pflichtraum;Pflichtslot;Inhalt;wiederholbar;maxWiederholungen;wahlSlots;ausstattung
+true;Vortrag GruppeA;juergenkrey;GruppeA;A-0.03;1;Berufsberatung für Gruppe A;false;1;;FlipChart

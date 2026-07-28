@@ -27,6 +27,7 @@ create table Nutzer
     first_name                varchar(255),
     job_role                  varchar(255),
     last_name                 varchar(255),
+    login_name                varchar(255) not null,
     new_email                 varchar(255),
     organisation              varchar(255),
     password_hash             varchar(255),
@@ -40,6 +41,9 @@ create table Nutzer
 
 create unique nonclustered index UKj6lclcp7ibc7ommrkv3rcxnht
     on Nutzer (email) where email is not null;
+
+alter table Nutzer
+    add constraint UK_nutzer_login_name unique (login_name);
 
 create table Nutzer_Veranstaltung
 (

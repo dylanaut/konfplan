@@ -62,6 +62,7 @@ public class ErmittleKollisionenTest extends DatabaseCleaner {
         veranstaltung.addGebaeude(gebaeude);
 
         Teilnehmer tnA = new Teilnehmer();
+        tnA.assignLoginName("tn_a@test.com");
         tnA.setEmail("tn_a@test.com");
         tnA.setFirstName("Anna");
         tnA.setLastName("Adam");
@@ -70,6 +71,7 @@ public class ErmittleKollisionenTest extends DatabaseCleaner {
         tnA_id = tnA.getId();
 
         Referent referent = new Referent();
+        referent.assignLoginName("referent@test.com");
         referent.setEmail("referent@test.com");
         referent.persistAndFlush();
         referent_id = referent.getId();
@@ -154,6 +156,7 @@ public class ErmittleKollisionenTest extends DatabaseCleaner {
         // TN aus einer anderen Gruppe ist im Pflichtslot verfügbar -> keine Kollision
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltung_id);
         Teilnehmer tnB = new Teilnehmer();
+        tnB.assignLoginName("tn_b@test.com");
         tnB.setEmail("tn_b@test.com");
         tnB.addGruppe("GruppeB");
         tnB.persistAndFlush();

@@ -7,15 +7,15 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
  */
 @RegisterForReflection
 public class LoginRequest {
-    public String email;
+    public String loginName;
     public String password;
 
     // Standard-Konstruktor für Jackson (JSON-Deserialisierung)
     public LoginRequest() {
     }
 
-    public LoginRequest(String email, String password) {
-        this.email = email;
+    public LoginRequest(String loginName, String password) {
+        this.loginName = loginName;
         this.password = password;
     }
 }

@@ -26,8 +26,14 @@
         </div>
 
         <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700 mb-1">E-Mail</label>
-          <input v-model="form.email" type="email" class="input-field" required />
+          <label class="block text-sm font-medium text-gray-700 mb-1">Anmeldename</label>
+          <input v-model="form.loginName" type="text" class="input-field" required :disabled="!!nutzer?.id" />
+          <p v-if="nutzer?.id" class="text-xs text-gray-500 mt-1">Der Anmeldename kann nach dem Anlegen nicht mehr geändert werden.</p>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-1">E-Mail (optional)</label>
+          <input v-model="form.email" type="email" class="input-field" />
         </div>
 
         <div class="md:col-span-2">
@@ -97,6 +103,7 @@ const groupStore = useGroupStore();
 
 const form = reactive({
   id: null,
+  loginName: '',
   firstName: '',
   lastName: '',
   email: '',
@@ -122,6 +129,7 @@ watch(
     (val) => {
       form.id = val?.id ?? null;
       form.version = val?.version ?? null;
+      form.loginName = val?.loginName ?? '';
       form.firstName = val?.firstName ?? '';
       form.lastName = val?.lastName ?? '';
       form.email = val?.email ?? '';

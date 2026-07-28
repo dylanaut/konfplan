@@ -57,6 +57,7 @@ class NutzerVerfuegbarkeitResourceTest extends DatabaseCleaner {
         String jsonReferent = """
                 {
                     "role": "REFERENT",
+                    "loginName": "referentverf",
                     "email": "referent@verf.de",
                     "firstName": "Ref",
                     "lastName": "Erent"
@@ -80,6 +81,7 @@ class NutzerVerfuegbarkeitResourceTest extends DatabaseCleaner {
         String jsonTeilnehmer = """
                 {
                     "role": "TEILNEHMER",
+                    "loginName": "schuelerverf",
                     "email": "schueler@verf.de",
                     "firstName": "Schü",
                     "lastName": "Ler"
@@ -107,6 +109,7 @@ class NutzerVerfuegbarkeitResourceTest extends DatabaseCleaner {
         Veranstaltung v = Veranstaltung.findById(testVid);
 
         Referent r = new Referent();
+        r.assignLoginName("delverf");
         r.setEmail("del@verf.de");
         r.persist();
 

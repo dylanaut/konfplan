@@ -1,4 +1,4 @@
-Nachname;Vorname;Email;Gruppen
-Alfter;Naja;naja.alfter@rks-linz.de;GruppeA
-Arndt;Franziska;franziska.arndt@rks-linz.de;GruppeA
-Baran;Erdem;erdem.baran@rks-linz.de;GruppeB
+Nachname;Vorname;Email;Gruppen;LoginName
+Alfter;Naja;naja.alfter@rks-linz.de;GruppeA;naja.alfter
+Arndt;Franziska;franziska.arndt@rks-linz.de;GruppeA;franziska.arndt
+Baran;Erdem;erdem.baran@rks-linz.de;GruppeB;erdem.baran

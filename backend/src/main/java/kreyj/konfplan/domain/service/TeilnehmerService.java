@@ -38,6 +38,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -77,18 +78,18 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
 
     @Transactional
     @Override
-    public Teilnehmer findByEmail(String email) {
-        if (null == email) {
+    public Teilnehmer findByLoginName(String loginName) {
+        if (null == loginName) {
             return null;
         }
-        return Teilnehmer.find("email", email.trim().toLowerCase()).firstResult();
+        return Teilnehmer.find("loginName", loginName.trim().toLowerCase()).firstResult();
     }
 
 
     @Transactional
     @Override
-    public List<TeilnehmerVeranstaltungDto> getTeilnehmerVeranstaltungen(String email) {
-        Teilnehmer teilnehmer = findByEmail(email);
+    public List<TeilnehmerVeranstaltungDto> getTeilnehmerVeranstaltungen(String loginName) {
+        Teilnehmer teilnehmer = findByLoginName(loginName);
         if (null == teilnehmer) {
             return Collections.emptyList();
         }
@@ -111,8 +112,8 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
 
     @Transactional
     @Override
-    public List<VortragDto> getVortraegeFuerTeilnehmerInVeranstaltung(Long veranstaltungId, String email) {
-        Teilnehmer teilnehmer = findByEmail(email);
+    public List<VortragDto> getVortraegeFuerTeilnehmerInVeranstaltung(Long veranstaltungId, String loginName) {
+        Teilnehmer teilnehmer = findByLoginName(loginName);
         if (null == teilnehmer) {
             throw new NotFoundException("Teilnehmer nicht gefunden.");
         }
@@ -145,10 +146,14 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
             return null;
         }
 
-        Teilnehmer existing = findByEmail(user.getEmail().trim().toLowerCase());
+        // loginName ist per API nicht direkt setzbar (unveränderlich) - hier aus der E-Mail abgeleitet,
+        // analog zur CSV-Import-Konvention.
+        String loginName = user.getEmail().trim().toLowerCase().split("@")[0];
+
+        Teilnehmer existing = findByLoginName(loginName);
         if (existing != null) {
-            LOG.warn("Teilnehmer konnte nicht erstellt werden: Email " + user.getEmail() + " bereits vergeben.");
-            protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Erstellung fehlgeschlagen", "E-Mail bereits vergeben: " + user.getEmail());
+            LOG.warn("Teilnehmer konnte nicht erstellt werden: loginName " + loginName + " bereits vergeben.");
+            protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Erstellung fehlgeschlagen", "loginName bereits vergeben: " + loginName);
             return null;
         }
 
@@ -158,6 +163,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
             throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
         }
 
+        user.assignLoginName(loginName);
         user.addVeranstaltung(v);
         String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
         user.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
@@ -196,16 +202,19 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
             });
 
             for (TeilnehmerCsvDto csvDto : beans) {
-                if (StringUtils.isBlank(csvDto.email)) {
-                    LOG.warn("Teilnehmer-Zeile übersprungen: Email fehlt.");
-                    protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Import übersprungen", "E-Mail fehlte in CSV-Zeile.", null, veranstaltungId);
+                if (StringUtils.isBlank(csvDto.loginName)) {
+                    LOG.warn("Teilnehmer-Zeile übersprungen: loginName fehlt.");
+                    protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Import übersprungen", "loginName fehlte in CSV-Zeile.", null, veranstaltungId);
                     continue;
                 }
 
-                String email = csvDto.email.trim().toLowerCase();
-                if (Nutzer.findByEmail(email) == null) {
+                String loginName = csvDto.loginName.trim().toLowerCase();
+                if (Nutzer.findByLoginName(loginName) == null) {
                     Teilnehmer tn = new Teilnehmer();
-                    tn.setEmail(email);
+                    tn.assignLoginName(loginName);
+                    if (StringUtils.isNotBlank(csvDto.email)) {
+                        tn.setEmail(csvDto.email.trim().toLowerCase());
+                    }
                     tn.setFirstName(csvDto.vorname);
                     tn.setLastName(csvDto.nachname);
 
@@ -232,10 +241,10 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
                     tn.addVeranstaltung(v);
 
                     count++;
-                    protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer importiert", "Teilnehmer " + tn.getEmail() + " für Veranstaltung " + v.getName() + " importiert.", tn.getId(), veranstaltungId);
+                    protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer importiert", "Teilnehmer " + tn.getLoginName() + " für Veranstaltung " + v.getName() + " importiert.", tn.getId(), veranstaltungId);
                 } else {
-                    LOG.warn("Teilnehmer übersprungen: Email " + email + " existiert bereits.");
-                    protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Import übersprungen", "E-Mail existiert bereits: " + email, null, veranstaltungId);
+                    LOG.warn("Teilnehmer übersprungen: loginName " + loginName + " existiert bereits.");
+                    protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Import übersprungen", "loginName existiert bereits: " + loginName, null, veranstaltungId);
                 }
             }
         } catch (Exception e) {
@@ -274,7 +283,8 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         if (null == teilnehmer) {
             throw new WebApplicationException("Teilnehmer nicht gefunden", Response.Status.NOT_FOUND);
         }
-        if (!teilnehmer.getEmail().equals(dto.email.trim().toLowerCase())) {
+        String normalizedDtoEmail = StringUtils.isBlank(dto.email) ? null : dto.email.trim().toLowerCase();
+        if (!Objects.equals(teilnehmer.getEmail(), normalizedDtoEmail)) {
             throw new WebApplicationException("E-Mail kann (noch) nicht geändert werden", Response.Status.BAD_REQUEST);
         }
 
@@ -373,8 +383,8 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
 
     @Transactional
     @Override
-    public void updateVerfuegbarkeit(Long veranstaltungId, NutzerVerfuegbarkeitDto dto, String userEmail) {
-        Nutzer nutzer = Nutzer.findByEmail(userEmail);
+    public void updateVerfuegbarkeit(Long veranstaltungId, NutzerVerfuegbarkeitDto dto, String loginName) {
+        Nutzer nutzer = Nutzer.findByLoginName(loginName);
         if (!(nutzer instanceof Teilnehmer) || !nutzer.getId().equals(dto.nutzerId)) {
             throw new ForbiddenException("Keine Berechtigung.");
         }

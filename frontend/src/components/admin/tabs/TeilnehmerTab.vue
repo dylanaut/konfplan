@@ -211,7 +211,10 @@
                 <input type="checkbox" :value="u.id" v-model="selectedParticipantIds"
                        class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3"/>
               </td>
-              <td class="px-4 py-2 font-bold" :title="u.email">{{ u.firstName }} {{ u.lastName }}</td>
+              <td class="px-4 py-2 font-bold" :title="u.email || ''">
+                {{ u.firstName }} {{ u.lastName }}
+                <span class="block font-normal text-gray-400">{{ u.loginName }}</span>
+              </td>
               <td class="px-4 py-2 text-gray-500">{{ (u.gruppen || []).slice().sort().join(', ') }}</td>
               <td class="px-4 py-2 text-center">
                 <div @click="emit('toggleParticipantActive', u)" class="cursor-pointer">

@@ -80,7 +80,7 @@ import static org.apache.commons.collections4.SetUtils.difference;
 @ApplicationScoped
 public class AdminService implements AdminServiceInterface {
     private static final Logger LOG = Logger.getLogger(AdminService.class);
-    public static final String CSV_PRIO_HEADER = "Teilnehmer E-Mail;Prioritäten";
+    public static final String CSV_PRIO_HEADER = "Teilnehmer LoginName;Prioritäten";
     public static final String PV_FAIL_MESSAGE = ". Pflichtvortrag kann nicht erstellt werden.";
     public static final String LEGENDE_TOKEN = "# Legende:";
     public static final String LEGENDEN_EINTRAG_SEP = "#";
@@ -148,15 +148,14 @@ public class AdminService implements AdminServiceInterface {
             nutzer = new Admin();
         }
 
+        nutzer.assignLoginName(dto.loginName);
         nutzer.setEmail(dto.email);
         nutzer.setFirstName(dto.firstName);
         nutzer.setLastName(dto.lastName);
         nutzer.setActive(dto.isActive);
 
-        if (dto.email != null) {
-            String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
-            nutzer.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
-        }
+        String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
+        nutzer.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
 
         if (nutzer instanceof Referent r) {
             r.setBiography(dto.biography);
@@ -198,7 +197,7 @@ public class AdminService implements AdminServiceInterface {
         // Send registration confirmation email
         mailService.sendRegistrationConfirmation(nutzer);
 
-        protokollService.log(ProtokollKategorie.NUTZER, "Nutzer erstellt", "Neuer Nutzer '" + nutzer.getEmail() + "' mit Rolle '" + nutzer.getRole() + "' erstellt.", nutzer.getId());
+        protokollService.log(ProtokollKategorie.NUTZER, "Nutzer erstellt", "Neuer Nutzer '" + nutzer.getLoginName() + "' mit Rolle '" + nutzer.getRole() + "' erstellt.", nutzer.getId());
         return NutzerDto.from(nutzer);
     }
 
@@ -217,25 +216,32 @@ public class AdminService implements AdminServiceInterface {
 
         // Check for email change
         String oldEmail = nutzer.getEmail();
-        if (!oldEmail.equals(dto.email)) {
-            // Check if the new email is already in use
-            if (Nutzer.findByEmail(dto.email) != null) {
-                throw new UpdateNutzerException("Die neue E-Mail-Adresse wird bereits verwendet.");
+        if (!Objects.equals(oldEmail, dto.email)) {
+            if (null == dto.email) {
+                // E-Mail-Adresse wird entfernt - keine Bestätigung nötig, da nichts nachzuweisen ist.
+                nutzer.setEmail(null);
+                protokollService.log(ProtokollKategorie.NUTZER, "E-Mail-Adresse entfernt",
+                    "E-Mail-Adresse für Nutzer '" + nutzer.getLoginName() + "' entfernt (vormals '" + oldEmail + "').", nutzer.getId());
+            } else {
+                // Check if the new email is already in use
+                if (Nutzer.findByEmail(dto.email) != null) {
+                    throw new UpdateNutzerException("Die neue E-Mail-Adresse wird bereits verwendet.");
+                }
+
+                // Generate a confirmation token
+                String token = UUID.randomUUID().toString();
+                nutzer.setNewEmail(dto.email);
+                nutzer.setEmailChangeToken(token);
+                nutzer.setEmailChangeTokenExpiry(LocalDateTime.now().plusHours(24)); // Token is valid for 24 hours
+
+                // Send confirmation email to the new address
+                mailService.sendEmailChangeConfirmationNewAddress(nutzer, dto.email, token);
+                // Notify the user at their old address (nur falls eine alte Adresse existierte)
+                mailService.sendEmailChangeNotificationOldAddress(nutzer, oldEmail, dto.email);
+
+                protokollService.log(ProtokollKategorie.NUTZER, "E-Mail-Änderung eingeleitet",
+                    "E-Mail-Änderung für Nutzer '" + nutzer.getLoginName() + "' zu '" + dto.email + "' eingeleitet.", nutzer.getId());
             }
-
-            // Generate a confirmation token
-            String token = UUID.randomUUID().toString();
-            nutzer.setNewEmail(dto.email);
-            nutzer.setEmailChangeToken(token);
-            nutzer.setEmailChangeTokenExpiry(LocalDateTime.now().plusHours(24)); // Token is valid for 24 hours
-
-            // Send confirmation email to the new address
-            mailService.sendEmailChangeConfirmationNewAddress(nutzer, dto.email, token);
-            // Notify the user at their old address
-            mailService.sendEmailChangeNotificationOldAddress(nutzer, oldEmail, dto.email);
-
-            protokollService.log(ProtokollKategorie.NUTZER, "E-Mail-Änderung eingeleitet",
-                "E-Mail-Änderung für Nutzer '" + oldEmail + "' zu '" + dto.email + "' eingeleitet.", nutzer.getId());
         }
 
         nutzer.setFirstName(dto.firstName);
@@ -524,23 +530,26 @@ public class AdminService implements AdminServiceInterface {
             );
 
             for (AdminCsvDto dto : beans) {
-                if (StringUtils.isBlank(dto.email)) {
-                    LOG.warn("Admin-Zeile übersprungen: Email fehlt.");
+                if (StringUtils.isBlank(dto.loginName)) {
+                    LOG.warn("Admin-Zeile übersprungen: loginName fehlt.");
                     continue;
                 }
-                String email = dto.email.trim().toLowerCase();
-                Nutzer byEmail = Nutzer.findByEmail(email);
-                if (null == byEmail) {
+                String loginName = dto.loginName.trim().toLowerCase();
+                Nutzer byLoginName = Nutzer.findByLoginName(loginName);
+                if (null == byLoginName) {
                     Admin a = new Admin();
-                    a.setEmail(email);
+                    a.assignLoginName(loginName);
+                    if (StringUtils.isNotBlank(dto.email)) {
+                        a.setEmail(dto.email.trim().toLowerCase());
+                    }
                     a.setFirstName(dto.vorname);
                     a.setLastName(dto.nachname);
                     a.setPasswordHash(BcryptUtil.bcryptHash(UUID.randomUUID().toString()));
                     a.persistAndFlush();
                     count++;
-                    protokollService.log(ProtokollKategorie.NUTZER, "Organisator importiert", "Organisator '" + email + "' via CSV importiert.", a.getId());
+                    protokollService.log(ProtokollKategorie.NUTZER, "Organisator importiert", "Organisator '" + loginName + "' via CSV importiert.", a.getId());
                 } else {
-                    LOG.warn("Organisator '" + email + "' übersprungen: Existiert bereits.");
+                    LOG.warn("Organisator '" + loginName + "' übersprungen: Existiert bereits.");
                 }
             }
         } catch (Exception e) {
@@ -610,7 +619,7 @@ public class AdminService implements AdminServiceInterface {
                 dto.titel = titel;
                 dto.inhalt = inhalt;
                 dto.ausstattung = csvDto.ausstattung;
-                Nutzer referent = Nutzer.findByEmail(csvDto.referentEmail);
+                Nutzer referent = Nutzer.findByLoginName(csvDto.referentLoginName);
 
                 if (referent instanceof Referent) {
                     if (csvDto.istPflicht) {
@@ -690,7 +699,7 @@ public class AdminService implements AdminServiceInterface {
                     }
 
                 } else {
-                    LOG.warn("Vortrag '" + csvDto.titel + "' übersprungen: Referent mit Email " + csvDto.referentEmail + " nicht gefunden oder kein Referent.");
+                    LOG.warn("Vortrag '" + csvDto.titel + "' übersprungen: Referent mit loginName " + csvDto.referentLoginName + " nicht gefunden oder kein Referent.");
                 }
             }
         } catch (Exception e) {
@@ -781,16 +790,16 @@ public class AdminService implements AdminServiceInterface {
                 }
 
                 String[] lineItems = line.split(";");
-                String teilnehmerEmail = lineItems[0].trim().toLowerCase();
+                String teilnehmerLoginName = lineItems[0].trim().toLowerCase();
 
-                Nutzer nutzer = Nutzer.findByEmail(teilnehmerEmail);
+                Nutzer nutzer = Nutzer.findByLoginName(teilnehmerLoginName);
                 if (!(nutzer instanceof Teilnehmer teilnehmer)) {
-                    LOG.warn("Priorität für '" + teilnehmerEmail + "' übersprungen: Nutzer ist kein Teilnehmer.");
+                    LOG.warn("Priorität für '" + teilnehmerLoginName + "' übersprungen: Nutzer ist kein Teilnehmer.");
                     continue;
                 }
 
                 if (teilnehmer.getVeranstaltungen().stream().noneMatch(v -> v.getId().equals(veranstaltungId))) {
-                    LOG.warn("Priorität für '" + teilnehmerEmail + "' übersprungen: Teilnehmer gehört nicht zur Veranstaltung.");
+                    LOG.warn("Priorität für '" + teilnehmerLoginName + "' übersprungen: Teilnehmer gehört nicht zur Veranstaltung.");
                     continue;
                 }
 
@@ -801,7 +810,7 @@ public class AdminService implements AdminServiceInterface {
                     for (String wvPrio : wvPrios) {
                         wvPrio = wvPrio.trim();
                         if (!wvPrio.matches("\\d+\\s*:\\s*\\d+")) {
-                            LOG.warn("Priorität für '" + teilnehmerEmail + "' übersprungen: Prio-Format " + wvPrio + " ist " +
+                            LOG.warn("Priorität für '" + teilnehmerLoginName + "' übersprungen: Prio-Format " + wvPrio + " ist " +
                                 "ungültig.");
                             continue;
                         }
@@ -810,7 +819,7 @@ public class AdminService implements AdminServiceInterface {
                         Wahlvortrag vortrag = legendIndexMap.get(index);
 
                         if (null == vortrag || !vortrag.getVeranstaltung().getId().equals(veranstaltungId)) {
-                            LOG.warn("Priorität für '" + teilnehmerEmail + "' übersprungen: legendenIndex " + index + " ist" +
+                            LOG.warn("Priorität für '" + teilnehmerLoginName + "' übersprungen: legendenIndex " + index + " ist" +
                                 " ungültig oder kein Wahlvortrag dieser Veranstaltung.");
                             continue;
                         }
@@ -830,7 +839,7 @@ public class AdminService implements AdminServiceInterface {
                             count++;
                             protokollService.log(ProtokollKategorie.VORTRAEGE, "Priorität importiert", "Priorität für '" + teilnehmer.getEmail() + "' für Vortrag '" + vortrag.getTitel() + "' auf " + prioWert + " gesetzt.", vortrag.getId(), veranstaltungId);
                         } catch (NumberFormatException e) {
-                            LOG.warn("Ungültiger Prioritätswert für Teilnehmer " + teilnehmerEmail + " und Vortrag " + vortrag.getTitel() + ": " + e.getMessage());
+                            LOG.warn("Ungültiger Prioritätswert für Teilnehmer " + teilnehmerLoginName + " und Vortrag " + vortrag.getTitel() + ": " + e.getMessage());
                         }
                     }
                 }
@@ -1422,15 +1431,15 @@ public class AdminService implements AdminServiceInterface {
             });
 
             for (NutzerVerfuegbarkeitCsvDto dto : beans) {
-                Nutzer nutzer = Nutzer.findByEmail(dto.email);
+                Nutzer nutzer = Nutzer.findByLoginName(dto.loginName);
                 if (null == nutzer) {
-                    String msg = nutzerTyp + " mit E-Mail '" + dto.email + "' nicht gefunden.";
+                    String msg = nutzerTyp + " mit loginName '" + dto.loginName + "' nicht gefunden.";
                     LOG.warn("Nutzer-Verfügbarkeit übersprungen: " + msg);
                     fehler.add(msg);
                     continue;
                 }
                 if (!nutzerKlasse.isInstance(nutzer)) {
-                    String msg = nutzerTyp + " mit E-Mail '" + dto.email + "' ist kein " + nutzerKlasse.getSimpleName() + " " +
+                    String msg = nutzerTyp + " mit loginName '" + dto.loginName + "' ist kein " + nutzerKlasse.getSimpleName() + " " +
                         "(falsche CSV-Datei?).";
                     LOG.warn("Nutzer-Verfügbarkeit übersprungen: " + msg);
                     fehler.add(msg);

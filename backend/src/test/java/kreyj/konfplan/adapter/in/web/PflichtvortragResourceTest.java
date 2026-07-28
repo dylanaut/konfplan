@@ -52,6 +52,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
     void setup() {
         // Setup Admin for @TestSecurity
         Admin admin = new Admin();
+        admin.assignLoginName("adminexample");
         admin.setEmail("admin@example.com");
         admin.setPasswordHash("hash");
         admin.persist();
@@ -98,6 +99,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         veranstaltung.addSlot(slot2);
 
         referent = new Referent();
+        referent.assignLoginName("refexample");
         referent.setEmail("ref@example.com");
         referent.setFirstName("Ref");
         referent.setLastName("Erent");
@@ -106,6 +108,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         referent.addVeranstaltung(veranstaltung);
 
         referent2 = new Referent();
+        referent2.assignLoginName("ref2example");
         referent2.setEmail("ref2@example.com");
         referent2.setFirstName("Ref2");
         referent2.setLastName("Erent2");
@@ -114,6 +117,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         referent2.addVeranstaltung(veranstaltung);
 
         teilnehmer1 = new Teilnehmer();
+        teilnehmer1.assignLoginName("tn1example");
         teilnehmer1.setEmail("tn1@example.com");
         teilnehmer1.setFirstName("TN1");
         teilnehmer1.setLastName("GruppeA");
@@ -122,6 +126,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         teilnehmer1.addVeranstaltung(veranstaltung);
 
         teilnehmer2 = new Teilnehmer();
+        teilnehmer2.assignLoginName("tn2example");
         teilnehmer2.setEmail("tn2@example.com");
         teilnehmer2.setFirstName("TN2");
         teilnehmer2.setLastName("GruppeA");
@@ -130,6 +135,7 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         teilnehmer2.addVeranstaltung(veranstaltung);
 
         teilnehmer3 = new Teilnehmer();
+        teilnehmer3.assignLoginName("tn3example");
         teilnehmer3.setEmail("tn3@example.com");
         teilnehmer3.setFirstName("TN3");
         teilnehmer3.setLastName("GruppeB");

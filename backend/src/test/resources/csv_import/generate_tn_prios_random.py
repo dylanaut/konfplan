@@ -24,20 +24,20 @@ import sys
 from pathlib import Path
 
 LEGENDE_PREFIX = "# Legende:"
-CSV_PRIO_HEADER = "Teilnehmer E-Mail;Prioritäten"
+CSV_PRIO_HEADER = "Teilnehmer LoginName;Prioritäten"
 PRIO_MIN = 1
 PRIO_MAX = 10
 
 
-def read_teilnehmer_emails(pfad):
+def read_teilnehmer_loginnames(pfad):
     with pfad.open(encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f, delimiter=";")
-        if "Email" not in (reader.fieldnames or []):
-            sys.exit(f"Fehler: Spalte 'Email' fehlt in {pfad} (gefunden: {reader.fieldnames})")
-        emails = [row["Email"].strip() for row in reader if row.get("Email", "").strip()]
-    if not emails:
-        sys.exit(f"Fehler: Keine Teilnehmer mit E-Mail in {pfad} gefunden.")
-    return emails
+        if "LoginName" not in (reader.fieldnames or []):
+            sys.exit(f"Fehler: Spalte 'LoginName' fehlt in {pfad} (gefunden: {reader.fieldnames})")
+        loginnames = [row["LoginName"].strip() for row in reader if row.get("LoginName", "").strip()]
+    if not loginnames:
+        sys.exit(f"Fehler: Keine Teilnehmer mit LoginName in {pfad} gefunden.")
+    return loginnames
 
 
 def read_wahlvortrag_titel(pfad):
@@ -101,7 +101,7 @@ def main():
     if args.seed is not None:
         random.seed(args.seed)
 
-    emails = read_teilnehmer_emails(teilnehmer_csv)
+    loginnames = read_teilnehmer_loginnames(teilnehmer_csv)
     titel_liste = read_wahlvortrag_titel(wahlvortraege_csv)
     praefixe = eindeutige_legenden_praefixe(titel_liste)
 
@@ -116,14 +116,14 @@ def main():
         f.write(f"{LEGENDE_PREFIX} {legende}\n")
         f.write(f"{CSV_PRIO_HEADER}\n")
 
-        for email in emails:
+        for loginname in loginnames:
             anzahl = random.randint(min_anzahl, max_anzahl)
             gewaehlte_indizes = random.sample(range(1, len(titel_liste) + 1), k=anzahl)
             prio_werte = random.sample(range(PRIO_MIN, PRIO_MAX + 1), k=anzahl)
             prioritaeten = ",".join(f"{idx}:{prio}" for idx, prio in zip(gewaehlte_indizes, prio_werte))
-            f.write(f"{email};{prioritaeten}\n")
+            f.write(f"{loginname};{prioritaeten}\n")
 
-    print(f"OK: {ausgabe_pfad} mit {len(emails)} Teilnehmern und {len(titel_liste)} Wahlvorträgen erzeugt "
+    print(f"OK: {ausgabe_pfad} mit {len(loginnames)} Teilnehmern und {len(titel_liste)} Wahlvorträgen erzeugt "
           f"(je {min_anzahl}-{max_anzahl} Prioritäten pro Teilnehmer).")
 
 
