@@ -105,54 +105,42 @@ public class PlanErstellungService {
     }
 
 
-    @Transactional
+    /**
+     * Bewusst NICHT {@code @Transactional}: der MiniZinc-Aufruf weiter unten blockiert bis zu
+     * {@code config.getTimeout()} Sekunden (vom Admin frei konfigurierbar, siehe PlanungTab.vue).
+     * Würde diese Methode als Ganzes in einer Transaktion laufen, reißt der JTA-Transaktions-
+     * Timeout (60s Default, 3m in dev) bei längeren Solver-Läufen mitten im externen Prozess-Aufruf,
+     * noch bevor das Ergebnis gespeichert werden kann ("ARJUNA016102: The transaction is not
+     * active!"). DB-Zugriffe sind daher in {@link #bereiteDznVor} und
+     * {@link #speicherePlanungsergebnis} isoliert, jeweils in ihrer eigenen kurzen Transaktion.
+     */
     public void erstellePlan(Long veranstaltungId, SolverConfig config, String modelName, String username) throws Exception {
-        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        assert veranstaltung != null;
-        String vName = veranstaltung.getName();
-
-        LOG.info("Starte Planerstellung für Veranstaltung: " + vName);
-
         URL modelUrl = getClass().getClassLoader().getResource("minizinc/" + modelName);
         if (null == modelUrl) {
             throw new FileNotFoundException("MiniZinc model not found: " + modelName);
         }
 
-        werfeBeiKollisionen(veranstaltung, veranstaltungId, username);
-
         planning = true;
         cancelled = false;
         lastError = null;
-        protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung gestartet",
-            "Planerstellung für '" + vName + "' mit Solver '" + config.getSolver() + "' von " + username + " gestartet.", veranstaltungId, veranstaltungId, username);
 
         try {
-            List<Teilnehmer> teilnehmer = veranstaltung.teilnehmer();
-            List<Wahlvortrag> wahlvortraege = veranstaltung.getWahlvortraege();
-            Set<Slot> slots = veranstaltung.getSlots();
-            List<Raum> raeume = veranstaltung.getRaeume();
-
-            if (slots.isEmpty() || teilnehmer.isEmpty() || wahlvortraege.isEmpty()) {
-                LOG.warn("Keine Wahlvorträge, Slots oder Teilnehmer vorhanden. Planerstellung wird nicht gestartet.");
-                String message = "Voraussetzungen (Teilnehmer, Slots, Wahlvorträge) nicht erfüllt.";
-                protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung abgebrochen", message, veranstaltungId, veranstaltungId, username);
-                lastError = message;
+            DznVorbereitung vorbereitung = bereiteDznVor(veranstaltungId, config, username);
+            if (null == vorbereitung) {
                 return;
             }
 
-            String dznContent = generiereDzn(veranstaltung, teilnehmer, wahlvortraege, slots, raeume,
-                config.getMaxInstanzen(), config.getMaxWvsProTn());
             Path tempDzn = Files.createTempFile("planung_", ".dzn");
-            Files.writeString(tempDzn, dznContent, StandardCharsets.UTF_8);
-            LOG.info("MiniZinc Datendatei:\n" + dznContent);
+            Files.writeString(tempDzn, vorbereitung.dznContent(), StandardCharsets.UTF_8);
+            LOG.info("MiniZinc Datendatei:\n" + vorbereitung.dznContent());
 
             try {
                 String resultJson = rufeMiniZincAuf(Paths.get(modelUrl.toURI()), tempDzn, config);
 
                 if (resultJson.contains("instanz_slot") && isValidJson(resultJson)) {
-                    speicherePlanungsergebnis(veranstaltung, resultJson, config);
+                    speicherePlanungsergebnis(veranstaltungId, resultJson, config);
                     protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung erfolgreich",
-                        "Planerstellung für '" + vName + "' abgeschlossen. Ergebnis wurde gespeichert.", veranstaltungId, veranstaltungId, username);
+                        "Planerstellung für '" + vorbereitung.vName() + "' abgeschlossen. Ergebnis wurde gespeichert.", veranstaltungId, veranstaltungId, username);
                 } else {
                     String message = "MiniZinc konnte keine Lösung finden.";
                     protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung fehlgeschlagen", message, veranstaltungId, veranstaltungId, username);
@@ -173,6 +161,48 @@ public class PlanErstellungService {
             planning = false;
         }
     }
+
+
+    /**
+     * Lädt die Planungsdaten, prüft Vorbedingungen/Kollisionen und erzeugt den DZN-Content -
+     * alles in einer eigenen, kurzen Transaktion, getrennt vom nachfolgenden MiniZinc-Aufruf.
+     * Liefert {@code null}, wenn die Planerstellung mangels erfüllter Vorbedingungen gar nicht
+     * erst gestartet wird (bereits geloggt, {@link #lastError} gesetzt).
+     */
+    @Transactional
+    DznVorbereitung bereiteDznVor(Long veranstaltungId, SolverConfig config, String username) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
+        assert veranstaltung != null;
+        String vName = veranstaltung.getName();
+
+        LOG.info("Starte Planerstellung für Veranstaltung: " + vName);
+
+        werfeBeiKollisionen(veranstaltung, veranstaltungId, username);
+
+        protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung gestartet",
+            "Planerstellung für '" + vName + "' mit Solver '" + config.getSolver() + "' von " + username + " gestartet.", veranstaltungId, veranstaltungId, username);
+
+        List<Teilnehmer> teilnehmer = veranstaltung.teilnehmer();
+        List<Wahlvortrag> wahlvortraege = veranstaltung.getWahlvortraege();
+        Set<Slot> slots = veranstaltung.getSlots();
+        List<Raum> raeume = veranstaltung.getRaeume();
+
+        if (slots.isEmpty() || teilnehmer.isEmpty() || wahlvortraege.isEmpty()) {
+            LOG.warn("Keine Wahlvorträge, Slots oder Teilnehmer vorhanden. Planerstellung wird nicht gestartet.");
+            String message = "Voraussetzungen (Teilnehmer, Slots, Wahlvorträge) nicht erfüllt.";
+            protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung abgebrochen", message, veranstaltungId, veranstaltungId, username);
+            lastError = message;
+            return null;
+        }
+
+        String dznContent = generiereDzn(veranstaltung, teilnehmer, wahlvortraege, slots, raeume,
+            config.getMaxInstanzen(), config.getMaxWvsProTn());
+
+        return new DznVorbereitung(vName, dznContent);
+    }
+
+
+    private record DznVorbereitung(String vName, String dznContent) {}
 
 
     /**
@@ -305,7 +335,7 @@ public class PlanErstellungService {
         }
 
         String output = fullLog.toString();
-        LOG.info("Vollständige MiniZinc-Ausgabe:\n" + output);
+//        LOG.info("Vollständige MiniZinc-Ausgabe:\n" + output);
 
         if (output.contains("=====UNSATISFIABLE=====")) {
             throw new MinizincException(MinizincException.MZ_Exception.UNSATISFIABLE);
@@ -585,7 +615,8 @@ public class PlanErstellungService {
 
 
     @Transactional
-    public void speicherePlanungsergebnis(Veranstaltung veranstaltung, String jsonErgebnis, SolverConfig config) {
+    public void speicherePlanungsergebnis(Long veranstaltungId, String jsonErgebnis, SolverConfig config) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
         if (null == ergebnis) {
             ergebnis = new Planungsergebnis();
