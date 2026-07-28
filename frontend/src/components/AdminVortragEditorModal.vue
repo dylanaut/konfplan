@@ -35,8 +35,8 @@
           <label class="block text-sm font-medium text-gray-700 mb-1">Berufsfeld</label>
           <select v-model="form.berufsfeld" class="input-field">
             <option :value="null">-- Kein Berufsfeld --</option>
-            <option v-for="feld in BERUFSFELDER" :key="feld.value" :value="feld.value">
-              {{ feld.label }}
+            <option v-for="feld in BERUFSFELDER" :key="feld" :value="feld">
+              {{ feld }}
             </option>
           </select>
         </div>
@@ -128,22 +128,22 @@
 import { reactive, watch, ref } from 'vue';
 
 const BERUFSFELDER = [
-    { value: 'LAND_FORST_TIERWIRTSCHAFT_UND_GARTENBAU', label: 'Land-, Forst-, Tierwirtschaft und Gartenbau' },
-    { value: 'ROHSTOFFGEWINNUNG_PRODUKTION_UND_FERTIGUNG', label: 'Rohstoffgewinnung, Produktion und Fertigung' },
-    { value: 'BAU_ARCHITEKTUR_VERMESSUNG_UND_GEBAEUDETECHNIK', label: 'Bau, Architektur, Vermessung und Gebäudetechnik' },
-    { value: 'NATURWISSENSCHAFT_GEOGRAFIE_UND_INFORMATIK', label: 'Naturwissenschaft, Geografie und Informatik' },
-    { value: 'VERKEHR_LOGISTIK_SCHUTZ_UND_SICHERHEIT', label: 'Verkehr, Logistik, Schutz und Sicherheit' },
-    { value: 'ELEKTROTECHNIK', label: 'Elektrotechnik' },
-    { value: 'METALL_MASCHINEN_UND_FAHRZEUGBAU', label: 'Metall-, Maschinen- und Fahrzeugbau' },
-    { value: 'IT_UND_COMPUTER', label: 'IT und Computer' },
-    { value: 'CHEMIE_KUNSTSTOFF_GLAS_TEXTIL_UND_HOLZ', label: 'Chemie, Kunststoff, Glas, Textil und Holz' },
-    { value: 'GASTRONOMIE_LEBENSMITTEL_UND_HAUSWIRTSCHAFT', label: 'Gastronomie, Lebensmittel und Hauswirtschaft' },
-    { value: 'GESUNDHEIT', label: 'Gesundheit' },
-    { value: 'SOZIALES_PAEDAGOGIK_UND_THEOLOGIE', label: 'Soziales, Pädagogik und Theologie' },
-    { value: 'KREATIVBERUFE_MEDIEN_UND_GESTALTUNG', label: 'Kreativberufe, Medien und Gestaltung' },
-    { value: 'WIRTSCHAFT_VERWALTUNG_RECHT_UND_GESELLSCHAFT', label: 'Wirtschaft, Verwaltung, Recht und Gesellschaft' },
-    { value: 'UNTERNEHMENSFUEHRUNG_ORGANISATION_EINKAUF_VERTRIEB_UND_MARKETING', label: 'Unternehmensführung, Organisation, Einkauf, Vertrieb und Marketing' },
-    { value: 'TOURISMUS_SPORT_UND_KULTUR', label: 'Tourismus, Sport und Kultur' },
+    'Land-, Forst-, Tierwirtschaft und Gartenbau',
+    'Rohstoffgewinnung, Produktion und Fertigung',
+    'Bau, Architektur, Vermessung und Gebäudetechnik',
+    'Naturwissenschaft, Geografie und Informatik',
+    'Verkehr, Logistik, Schutz und Sicherheit',
+    'Elektrotechnik',
+    'Metall-, Maschinen- und Fahrzeugbau',
+    'IT und Computer',
+    'Chemie, Kunststoff, Glas, Textil und Holz',
+    'Gastronomie, Lebensmittel und Hauswirtschaft',
+    'Gesundheit',
+    'Soziales, Pädagogik und Theologie',
+    'Kreativberufe, Medien und Gestaltung',
+    'Wirtschaft, Verwaltung, Recht und Gesellschaft',
+    'Unternehmensführung, Organisation, Einkauf, Vertrieb und Marketing',
+    'Tourismus, Sport und Kultur',
 ];
 
 const props = defineProps({
