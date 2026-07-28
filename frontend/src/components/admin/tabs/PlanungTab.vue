@@ -88,7 +88,7 @@
         </button>
         <button v-else @click="emit('cancelOptimization')" class="bg-red-500 hover:bg-red-400 text-white px-8 py-4 rounded-xl font-black text-lg shadow-2xl transition-all transform hover:scale-105 flex items-center gap-3">
           <LoaderIcon class="animate-spin w-5 h-5"/>
-          Erstellung abbrechen
+          Erstellung abbrechen ({{ remainingSeconds }}s)
         </button>
       </div>
     </div>
@@ -96,7 +96,7 @@
 </template>
 
 <script setup>
-import { reactive, computed } from 'vue';
+import { reactive, computed, ref, watch, onUnmounted } from 'vue';
 import { Loader as LoaderIcon, Zap as ZapIcon, XCircle as CancelIcon } from '@lucide/vue';
 
 const props = defineProps({
@@ -122,6 +122,32 @@ const solverConfig = reactive({
   auffuellen: true,
   maxWvsProTn: 0,
 });
+
+const remainingSeconds = ref(0);
+let countdownInterval = null;
+
+const stopCountdown = () => {
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+};
+
+watch(() => props.isPlanning, (isPlanning, wasPlanning) => {
+  if (isPlanning && !wasPlanning) {
+    stopCountdown();
+    remainingSeconds.value = solverConfig.timeout;
+    countdownInterval = setInterval(() => {
+      if (remainingSeconds.value > 0) {
+        remainingSeconds.value--;
+      }
+    }, 1000);
+  } else if (!isPlanning) {
+    stopCountdown();
+  }
+});
+
+onUnmounted(stopCountdown);
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('de-DE') : '';
 
