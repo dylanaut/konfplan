@@ -69,7 +69,7 @@
       </div>
 
       <div v-show="showPrioritaetenBlock" class="space-y-4">
-        <!-- Legende für Wahlvorträge -->
+        <!-- Legende der Wahlvorträge -->
         <div v-if="sortedWahlvortraege.length > 0"
              class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 text-[10px]">
           <h3 class="font-black text-indigo-900 uppercase mb-2 flex items-center gap-2">
@@ -103,6 +103,11 @@
               <th class="px-4 py-1.5 text-left font-bold sticky left-0 bg-gray-50 z-10 w-48 border-r border-gray-100">
                 Name
               </th>
+              <th @click="toggleSort('teilnehmer', 'gruppen')"
+                  class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold w-32 border-r border-gray-100">
+                Gruppen
+                <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/>
+              </th>
               <th v-for="(vortrag, index) in sortedWahlvortraege" :key="vortrag.id"
                   class="px-1 py-2 text-center text-[9px] font-black text-indigo-600 w-14 min-w-[56px] border-r border-gray-100"
                   :title="vortrag.titel">
@@ -128,6 +133,7 @@
                   </button>
                 </div>
               </td>
+              <td class="px-4 py-2 text-gray-500 border-r border-gray-100">{{ (u.gruppen || []).slice().sort().join(', ') }}</td>
               <td v-for="vortrag in sortedWahlvortraege" :key="'prio-'+u.id+'-'+vortrag.id"
                   class="px-1 py-1 text-center border-r border-gray-50">
                 <input type="number" min="0" max="10"
