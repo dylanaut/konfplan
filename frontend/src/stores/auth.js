@@ -48,35 +48,38 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
+    // Direkt nach dem Start von 'mvnw quarkus:dev' gibt es ein knappes Zeitfenster, in dem der
+    // allererste Login-Request scheitert (Verbindungsfehler, weil Backend/Vite-Proxy noch nicht
+    // bereit sind, oder ein transientes 401), obwohl die Zugangsdaten korrekt sind. Statt sofort
+    // eine Fehlermeldung zu zeigen, wird deshalb mehrfach mit kurzer Pause automatisch erneut
+    // versucht, bevor der letzte Fehler tatsächlich angezeigt wird.
+    const LOGIN_RETRY_ATTEMPTS = 3;
+    const LOGIN_RETRY_DELAY_MS = 1200;
+
     async function login(credentials) {
-        try {
-            handleLoginSuccess(await api.post('/api/auth/login', credentials));
-        } catch (error) {
-            // Kein error.response => Netzwerk-/Verbindungsfehler (z.B. Backend im Dev-Mode
-            // noch nicht bereit). Ein automatischer Retry fängt das übliche Startup-Race ab.
-            if (!error.response) {
-                try {
-                    await new Promise((resolve) => setTimeout(resolve, 1500));
-                    handleLoginSuccess(await api.post('/api/auth/login', credentials));
-                    return;
-                } catch (retryError) {
-                    if (!retryError.response) {
-                        toast.error('Server nicht erreichbar. Startet das Backend gerade? Bitte in wenigen Sekunden erneut versuchen.');
-                        console.error(retryError);
-                        return;
-                    }
-                    error = retryError;
+        let lastError;
+
+        for (let attempt = 1; attempt <= LOGIN_RETRY_ATTEMPTS; attempt++) {
+            try {
+                handleLoginSuccess(await api.post('/api/auth/login', credentials));
+                return;
+            } catch (error) {
+                lastError = error;
+                if (attempt < LOGIN_RETRY_ATTEMPTS) {
+                    await new Promise((resolve) => setTimeout(resolve, LOGIN_RETRY_DELAY_MS));
                 }
             }
-
-            if (error.response?.status === 401) {
-                toast.error('Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.');
-            } else {
-                const errorMessage = error.response?.data?.message || 'Login fehlgeschlagen. Bitte versuchen Sie es erneut.';
-                toast.error(errorMessage);
-            }
-            console.error(error);
         }
+
+        if (!lastError.response) {
+            toast.error('Server nicht erreichbar. Startet das Backend gerade? Bitte in wenigen Sekunden erneut versuchen.');
+        } else if (lastError.response.status === 401) {
+            toast.error('Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.');
+        } else {
+            const errorMessage = lastError.response?.data?.message || 'Login fehlgeschlagen. Bitte versuchen Sie es erneut.';
+            toast.error(errorMessage);
+        }
+        console.error(lastError);
     }
 
     function logout() {
