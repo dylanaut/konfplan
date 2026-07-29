@@ -86,9 +86,13 @@
           <ZapIcon class="w-5 h-5"/>
           Pläne erstellen
         </button>
-        <button v-else @click="emit('cancelOptimization')" class="bg-red-500 hover:bg-red-400 text-white px-8 py-4 rounded-xl font-black text-lg shadow-2xl transition-all transform hover:scale-105 flex items-center gap-3">
+        <button v-else-if="planningPhase === 'BERECHNUNG'" @click="emit('cancelOptimization')" class="bg-red-500 hover:bg-red-400 text-white px-8 py-4 rounded-xl font-black text-lg shadow-2xl transition-all transform hover:scale-105 flex items-center gap-3">
           <LoaderIcon class="animate-spin w-5 h-5"/>
           Erstellung abbrechen ({{ remainingSeconds }}s)
+        </button>
+        <button v-else disabled title="Der Timeout gilt nur für die reine MiniZinc-Berechnung; diese Phase lässt sich nicht abbrechen." class="bg-gray-500 text-white px-8 py-4 rounded-xl font-black text-lg shadow-2xl flex items-center gap-3 cursor-not-allowed opacity-80">
+          <LoaderIcon class="animate-spin w-5 h-5"/>
+          {{ planningPhase === 'PERSISTIERUNG' ? 'Ergebnis wird gespeichert...' : 'Vorbereitung läuft...' }}
         </button>
       </div>
     </div>
@@ -101,6 +105,7 @@ import { Loader as LoaderIcon, Zap as ZapIcon, XCircle as CancelIcon } from '@lu
 
 const props = defineProps({
   isPlanning: Boolean,
+  planningPhase: String,
   veranstaltung: Object,
   organisatoren: Array,
   eventSlotsCount: Number,
@@ -133,8 +138,10 @@ const stopCountdown = () => {
   }
 };
 
-watch(() => props.isPlanning, (isPlanning, wasPlanning) => {
-  if (isPlanning && !wasPlanning) {
+// Der Timeout gilt nur für die reine MiniZinc-Berechnung (Phase BERECHNUNG), nicht für die
+// DB-lastige Vorbereitung/Persistierung davor/danach - daher startet die Anzeige erst hier.
+watch(() => props.planningPhase, (phase, wasPhase) => {
+  if (phase === 'BERECHNUNG' && wasPhase !== 'BERECHNUNG') {
     stopCountdown();
     remainingSeconds.value = solverConfig.timeout;
     countdownInterval = setInterval(() => {
@@ -142,7 +149,7 @@ watch(() => props.isPlanning, (isPlanning, wasPlanning) => {
         remainingSeconds.value--;
       }
     }, 1000);
-  } else if (!isPlanning) {
+  } else if (phase !== 'BERECHNUNG') {
     stopCountdown();
   }
 });

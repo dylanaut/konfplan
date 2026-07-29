@@ -150,6 +150,7 @@
 
       <PlanungTab v-if="activeTab === 'planung' && selectedVid"
                   :isPlanning="isOptimizing"
+                  :planningPhase="planningPhase"
                   :veranstaltung="eventContext.selectedEvent"
                   :organisatoren="organisatoren"
                   :eventSlotsCount="eventSlots.length"
@@ -307,6 +308,7 @@ const showInviteModal = ref(false);
 const selectedUserForInvite = ref(null);
 
 const isOptimizing = ref(false);
+const planningPhase = ref(null);
 let pollingInterval = null;
 const fileInput = ref(null);
 const currentUploadEndpoint = ref('');
@@ -865,12 +867,14 @@ const saveAllParticipantPriorities = async () => {
 
 const startPlanning = async (solverConfig) => {
   isOptimizing.value = true;
+  planningPhase.value = 'VORBEREITUNG';
   try {
     await api.post(`/api/planungen/${selectedVid.value}`, solverConfig);
     pollPlanningStatus();
   } catch (e) {
     console.error('Fehler bei der Planerstellung:', e);
     isOptimizing.value = false;
+    planningPhase.value = null;
     const msg = e.response?.data?.error || e.response?.data?.message || e.message;
     alert('Planerstellung nicht möglich:\n\n' + msg);
   }
@@ -880,9 +884,11 @@ const pollPlanningStatus = () => {
   pollingInterval = setInterval(async () => {
     try {
       const response = await api.get('/api/planungen/status');
+      planningPhase.value = response.data.phase;
       if (!response.data.isPlanning) {
         clearInterval(pollingInterval);
         isOptimizing.value = false;
+        planningPhase.value = null;
 
         if (response.data.lastError) {
           alert('Planerstellung ohne Ergebnis:\n\n' + response.data.lastError);
@@ -895,6 +901,7 @@ const pollPlanningStatus = () => {
       console.error('Fehler beim Abrufen des Planungsstatus:', error);
       clearInterval(pollingInterval);
       isOptimizing.value = false;
+      planningPhase.value = null;
     }
   }, 2000);
 };
@@ -907,6 +914,7 @@ const cancelPlanning = async () => {
         clearInterval(pollingInterval);
       }
       isOptimizing.value = false;
+      planningPhase.value = null;
       alert('Planerstellung wurde abgebrochen.');
     } catch (e) {
       console.error('Fehler beim Abbrechen der Planerstellung:', e);

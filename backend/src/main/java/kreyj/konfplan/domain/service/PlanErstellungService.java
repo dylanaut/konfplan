@@ -78,6 +78,16 @@ public class PlanErstellungService {
     // Status der asynchronen Planerstellung für das /status-Polling der UI.
     @Getter
     private volatile boolean planning;
+    /**
+     * Welcher Teilschritt der Planerstellung gerade läuft. Der vom Admin konfigurierte
+     * Timeout (siehe PlanungTab.vue) gilt ausschließlich für {@link Phase#BERECHNUNG} - die
+     * DB-lastigen Phasen davor/danach sind über {@link #cancel()} nicht unterbrechbar, daher
+     * blendet die UI den Abbrechen-Button außerhalb von BERECHNUNG als deaktiviert ein.
+     */
+    public enum Phase {VORBEREITUNG, BERECHNUNG, PERSISTIERUNG}
+
+    @Getter
+    private volatile Phase phase;
     private volatile boolean cancelled;
     /**
      * -- GETTER --
@@ -126,6 +136,7 @@ public class PlanErstellungService {
         planning = true;
         cancelled = false;
         lastError = null;
+        phase = Phase.VORBEREITUNG;
 
         try {
             DznVorbereitung vorbereitung = bereiteDznVor(veranstaltungId, config, username);
@@ -141,9 +152,11 @@ public class PlanErstellungService {
             }
 
             try {
+                phase = Phase.BERECHNUNG;
                 String resultJson = rufeMiniZincAuf(Paths.get(modelUrl.toURI()), tempDzn, config);
 
                 if (resultJson.contains("instanz_slot") && isValidJson(resultJson)) {
+                    phase = Phase.PERSISTIERUNG;
                     speicherePlanungsergebnis(veranstaltungId, resultJson, config, vorbereitung);
                     protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung erfolgreich",
                         "Planerstellung für '" + vorbereitung.vName() + "' abgeschlossen. Ergebnis wurde gespeichert.", veranstaltungId, veranstaltungId, username);
@@ -165,6 +178,7 @@ public class PlanErstellungService {
             throw e;
         } finally {
             planning = false;
+            phase = null;
         }
     }
 
