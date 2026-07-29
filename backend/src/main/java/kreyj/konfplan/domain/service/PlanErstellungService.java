@@ -12,6 +12,7 @@ import jakarta.json.JsonException;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.SolverConfig;
 import kreyj.konfplan.domain.exception.CollisionsException;
+import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Planungsergebnis;
@@ -28,6 +29,7 @@ import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
+import org.jspecify.annotations.NonNull;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -43,6 +45,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -138,7 +141,7 @@ public class PlanErstellungService {
                 String resultJson = rufeMiniZincAuf(Paths.get(modelUrl.toURI()), tempDzn, config);
 
                 if (resultJson.contains("instanz_slot") && isValidJson(resultJson)) {
-                    speicherePlanungsergebnis(veranstaltungId, resultJson, config);
+                    speicherePlanungsergebnis(veranstaltungId, resultJson, config, vorbereitung);
                     protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung erfolgreich",
                         "Planerstellung für '" + vorbereitung.vName() + "' abgeschlossen. Ergebnis wurde gespeichert.", veranstaltungId, veranstaltungId, username);
                 } else {
@@ -182,10 +185,10 @@ public class PlanErstellungService {
         protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung gestartet",
             "Planerstellung für '" + vName + "' mit Solver '" + config.getSolver() + "' von " + username + " gestartet.", veranstaltungId, veranstaltungId, username);
 
-        List<Teilnehmer> teilnehmer = veranstaltung.teilnehmer();
-        List<Wahlvortrag> wahlvortraege = veranstaltung.getWahlvortraege();
-        Set<Slot> slots = veranstaltung.getSlots();
-        List<Raum> raeume = veranstaltung.getRaeume();
+        List<Teilnehmer> teilnehmer = veranstaltung.teilnehmer().stream().sorted(Comparator.comparing(IdEntity::getId)).toList();
+        List<Wahlvortrag> wahlvortraege = veranstaltung.getWahlvortraege().stream().sorted(Comparator.comparing(IdEntity::getId)).toList();
+        List<Slot> slots = veranstaltung.getSlots().stream().sorted().toList();
+        List<Raum> raeume = veranstaltung.getRaeume().stream().sorted(Comparator.comparing(IdEntity::getId)).toList();
 
         if (slots.isEmpty() || teilnehmer.isEmpty() || wahlvortraege.isEmpty()) {
             LOG.warn("Keine Wahlvorträge, Slots oder Teilnehmer vorhanden. Planerstellung wird nicht gestartet.");
@@ -198,11 +201,21 @@ public class PlanErstellungService {
         String dznContent = generiereDzn(veranstaltung, teilnehmer, wahlvortraege, slots, raeume,
             config.getMaxInstanzen(), config.getMaxWvsProTn());
 
-        return new DznVorbereitung(vName, dznContent);
+        return new DznVorbereitung(vName, dznContent,
+            teilnehmer.stream().map(IdEntity::getId).toList(),
+            wahlvortraege.stream().map(IdEntity::getId).toList(),
+            slots.stream().map(IdEntity::getId).toList(),
+            raeume.stream().map(IdEntity::getId).toList());
     }
 
 
-    private record DznVorbereitung(String vName, String dznContent) {}
+    public record DznVorbereitung(String vName,
+                                  String dznContent,
+                                  List<Long> teilnehmer_oids,
+                                  List<Long> wahlvortrag_oids,
+                                  List<Long> slot_oids,
+                                  List<Long> raum_oids) {
+    }
 
 
     /**
@@ -290,7 +303,7 @@ public class PlanErstellungService {
                 kollisionen.add(new Kollision(Kollision.Typ.REFERENT_VERFUEGBARKEIT,
                     "Verfügbarkeits-Kollision: Referent " + referent.getFullName() + " hat Pflichtvortrag '"
                         + pv.getTitel() + "' in Slot " + pflichtslot.getDescription()
-                    + ", ist dafür aber weiterhin als verfügbar markiert. Bitte seine 'Verfügbaren Slots' anpassen."));
+                        + ", ist dafür aber weiterhin als verfügbar markiert. Bitte seine 'Verfügbaren Slots' anpassen."));
             }
         }
 
@@ -299,17 +312,7 @@ public class PlanErstellungService {
 
 
     public String rufeMiniZincAuf(Path modelPath, Path dznPath, SolverConfig solverConfig) throws IOException, InterruptedException {
-        List<String> command = new ArrayList<>(Arrays.asList(
-            miniZincPath, "--solver", solverConfig.getSolver(),
-            "--time-limit", String.valueOf(solverConfig.getTimeout() * 1000),
-            "--parallel", String.valueOf(solverConfig.getNumThreads())
-        ));
-        command.add("--intermediate");
-        command.add(modelPath.toAbsolutePath().toString());
-        command.add(dznPath.toAbsolutePath().toString());
-
-        ProcessBuilder pb = new ProcessBuilder(command);
-        pb.redirectErrorStream(true);
+        ProcessBuilder pb = getProcessBuilder(modelPath, dznPath, solverConfig);
 
         String lastJsonSolution = "";
         StringBuilder fullLog = new StringBuilder();
@@ -322,7 +325,10 @@ public class PlanErstellungService {
                     fullLog.append(line).append(LINE_SEP);
                     if (line.trim().startsWith("{") && isValidJson(line)) {
                         lastJsonSolution = line;
-                        LOG.debugf("Zwischenlösung gefunden: %s", line);
+
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debugf("Zwischenlösung gefunden: %s", line);
+                        }
                     }
                 }
             }
@@ -335,7 +341,9 @@ public class PlanErstellungService {
         }
 
         String output = fullLog.toString();
-//        LOG.info("Vollständige MiniZinc-Ausgabe:\n" + output);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Vollständige MiniZinc-Ausgabe:\n" + output);
+        }
 
         if (output.contains("=====UNSATISFIABLE=====")) {
             throw new MinizincException(MinizincException.MZ_Exception.UNSATISFIABLE);
@@ -358,6 +366,23 @@ public class PlanErstellungService {
     }
 
 
+    private @NonNull ProcessBuilder getProcessBuilder(Path modelPath, Path dznPath, SolverConfig solverConfig) {
+        List<String> command = new ArrayList<>(Arrays.asList(
+            miniZincPath, "--solver", solverConfig.getSolver(),
+            "--solver-time-limit", String.valueOf(solverConfig.getTimeout() * 1000),
+            "--parallel", String.valueOf(solverConfig.getNumThreads())
+        ));
+        command.add("--intermediate");
+        command.add(modelPath.toAbsolutePath().toString());
+        command.add(dznPath.toAbsolutePath().toString());
+
+        ProcessBuilder pb = new ProcessBuilder(command);
+        pb.redirectErrorStream(true);
+
+        return pb;
+    }
+
+
     public void cancel() {
         // Markiert den Lauf als abgebrochen, damit die nachlaufende erstellePlan-Logik
         // keinen irreführenden lastError (z.B. "keine Lösung") mehr setzt.
@@ -371,7 +396,7 @@ public class PlanErstellungService {
 
 
     private String generiereDzn(Veranstaltung veranstaltung, List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege,
-                                Set<Slot> slots, List<Raum> raeume,
+                                List<Slot> slots, List<Raum> raeume,
                                 int maxInstanzen, int maxWvsProTn) {
         StringBuilder sb = new StringBuilder();
         sb.append("%Generiert am: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))).append(",Version: 1.0;\n");
@@ -387,21 +412,12 @@ public class PlanErstellungService {
         appendTnVerfuegbarkeiten(veranstaltung, teilnehmer, slots, sb);
         appendReferentVerfuegbarkeiten(wahlvortraege, veranstaltung, slots, sb);
         appendRaumVerfuegbarkeiten(veranstaltung, raeume, slots, sb);
-        appendEntityOids(teilnehmer, wahlvortraege, slots, raeume, sb);
 
         return sb.toString();
     }
 
 
-    private static void appendEntityOids(List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege, Set<Slot> slots, List<Raum> raeume, StringBuilder sb) {
-        sb.append("teilnehmer_oids = [").append(teilnehmer.stream().map(t -> String.valueOf(t.getId())).collect(joining(","))).append("];\n");
-        sb.append("wahlvortrag_oids = [").append(wahlvortraege.stream().map(v -> String.valueOf(v.getId())).collect(joining(","))).append("];\n");
-        sb.append("slot_oids = [").append(slots.stream().map(s -> String.valueOf(s.getId())).collect(joining(","))).append("];\n");
-        sb.append("raum_oids = [").append(raeume.stream().map(r -> String.valueOf(r.getId())).collect(joining(","))).append("];\n");
-    }
-
-
-    private static void appendSlots(Set<Slot> slots, StringBuilder sb) {
+    private static void appendSlots(List<Slot> slots, StringBuilder sb) {
         final int nSlots = slots.size();
         sb.append("n_slots = ").append(nSlots).append(";\n");
         sb.append("slots = [");
@@ -458,7 +474,7 @@ public class PlanErstellungService {
     }
 
 
-    private static void appendWahlvortraege(List<Wahlvortrag> wahlvortraege, Set<Slot> slots, StringBuilder sb) {
+    private static void appendWahlvortraege(List<Wahlvortrag> wahlvortraege, List<Slot> slots, StringBuilder sb) {
         final int nWVs = wahlvortraege.size();
         sb.append("n_wahlvortraege = ").append(nWVs).append(";\n");
         Map<Long, Integer> refMap = new HashMap<>();
@@ -513,7 +529,7 @@ public class PlanErstellungService {
     }
 
 
-    private static void appendTnVerfuegbarkeiten(Veranstaltung veranstaltung, List<Teilnehmer> teilnehmer, Set<Slot> slots,
+    private static void appendTnVerfuegbarkeiten(Veranstaltung veranstaltung, List<Teilnehmer> teilnehmer, List<Slot> slots,
                                                  StringBuilder sb) {
         sb.append("%In welchen Slots jeder Teilnehmer für Wahlvorträge einer Veranstaltung verfügbar ist:\n");
         int tnSize = teilnehmer.size();
@@ -529,7 +545,7 @@ public class PlanErstellungService {
             NutzerVerfuegbarkeit nv = nvMap.get(tn.getId());
             Set<Long> verfSlotIds = nv.getVerfuegbareSlotIds();
             for (Slot s : slots) {
-                sb.append(verfSlotIds.contains(s.getId()) ? "true" : "false");
+                sb.append(verfSlotIds.contains(s.getId()));
                 if (++sIdx < slotSize) {
                     sb.append(",");
                 } else {
@@ -545,15 +561,13 @@ public class PlanErstellungService {
     }
 
 
-    private static void appendRaumVerfuegbarkeiten(Veranstaltung veranstaltung, List<Raum> raeume, Set<Slot> slots, StringBuilder sb) {
+    private static void appendRaumVerfuegbarkeiten(Veranstaltung veranstaltung, List<Raum> raeume, List<Slot> slots, StringBuilder sb) {
         sb.append("%In welchen Slots Räume für Wahlvorträge einplanbar ist:\n");
         int raeumeSize = raeume.size();
         int slotSize = slots.size();
         Map<Long, RaumVerfuegbarkeit> rvMap =
             RaumVerfuegbarkeit.<RaumVerfuegbarkeit>list("veranstaltungId = ?1", veranstaltung.getId())
                 .stream().collect(toMap(RaumVerfuegbarkeit::getRaumId, Function.identity()));
-
-        List<RaumVerfuegbarkeit> alleRVs = RaumVerfuegbarkeit.listAll();
 
         int raumIdx = 0;
         sb.append("raum_belegbar = [| %% Slot 1..").append(slots.size());
@@ -563,7 +577,7 @@ public class PlanErstellungService {
             Set<Long> verfSlotIds = rv.getVerfuegbareSlotIds();
             int sIdx = 0;
             for (Slot s : slots) {
-                sb.append(verfSlotIds.contains(s.getId()) ? "true" : "false");
+                sb.append(verfSlotIds.contains(s.getId()));
                 if (++sIdx < slotSize) {
                     sb.append(",");
                 } else {
@@ -580,7 +594,7 @@ public class PlanErstellungService {
 
 
     private static void appendReferentVerfuegbarkeiten(List<Wahlvortrag> wahlvortraege, Veranstaltung veranstaltung,
-                                                       Set<Slot> slots, StringBuilder sb) {
+                                                       List<Slot> slots, StringBuilder sb) {
         sb.append("%In welchen Slots der Referent eines Wahlvortrags verfügbar ist (Pflichtvortrag-Kollisionen):\n");
         // Reihenfolge MUSS mit appendWahlvortraege's refMap übereinstimmen: dieselbe 'wahlvortraege'-Liste,
         // distinct() auf geordnetem Stream erhält First-Encounter-Reihenfolge -> identische 1-basierte Indizes.
@@ -598,7 +612,7 @@ public class PlanErstellungService {
             Set<Long> verfSlotIds = nvMap.get(referent.getId()).getVerfuegbareSlotIds();
             int sIdx = 0;
             for (Slot s : slots) {
-                sb.append(verfSlotIds.contains(s.getId()) ? "true" : "false");
+                sb.append(verfSlotIds.contains(s.getId()));
                 if (++sIdx < slotSize) {
                     sb.append(",");
                 } else {
@@ -615,7 +629,8 @@ public class PlanErstellungService {
 
 
     @Transactional
-    public void speicherePlanungsergebnis(Long veranstaltungId, String jsonErgebnis, SolverConfig config) {
+    public void speicherePlanungsergebnis(Long veranstaltungId, String jsonErgebnis, SolverConfig config,
+                                          DznVorbereitung vorbereitung) {
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
         if (null == ergebnis) {
@@ -625,10 +640,12 @@ public class PlanErstellungService {
 
         try {
             ObjectNode root = (ObjectNode) objectMapper.readTree(jsonErgebnis);
-            int tnSize = root.get("teilnehmer_oids").size();
-            int wvSize = root.get("wahlvortrag_oids").size();
+            addOidsFromVorbereitung(vorbereitung, root);
 
-            fixflatArrays(root, tnSize, wvSize, config.getMaxInstanzen());
+            fixflatArrays(root,
+                vorbereitung.teilnehmer_oids.size(),
+                vorbereitung.wahlvortrag_oids.size(),
+                config.getMaxInstanzen());
 
             Planungsergebnis.MinizincResult result =
                 objectMapper.treeToValue(root, Planungsergebnis.MinizincResult.class);
@@ -649,6 +666,14 @@ public class PlanErstellungService {
         ergebnis.persistAndFlush();
 
         LOG.info("Planungsergebnis für Veranstaltung '" + veranstaltung.getName() + "' wurde gespeichert/aktualisiert.");
+    }
+
+
+    private void addOidsFromVorbereitung(DznVorbereitung vorbereitung, ObjectNode root) {
+        root.set("teilnehmer_oids", objectMapper.valueToTree(vorbereitung.teilnehmer_oids));
+        root.set("wahlvortrag_oids", objectMapper.valueToTree(vorbereitung.wahlvortrag_oids));
+        root.set("slot_oids", objectMapper.valueToTree(vorbereitung.slot_oids));
+        root.set("raum_oids", objectMapper.valueToTree(vorbereitung.raum_oids));
     }
 
 

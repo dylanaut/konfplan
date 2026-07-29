@@ -180,19 +180,20 @@ public class PlanService {
     public PlanQualitaetDto getPlanQualitaet(Veranstaltung veranstaltung) {
         Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
         if (null == planungsergebnis) {
-            return new PlanQualitaetDto(0, 0, "Kein Ergebnis vorhanden");
+            return new PlanQualitaetDto(0, 0, 0, "Kein Ergebnis vorhanden");
         }
 
         try {
             JsonNode root = objectMapper.readTree(planungsergebnis.getJsonErgebnis());
-            int kosten = root.has("kosten") ? root.get("kosten").asInt() : 0;
-            int anzahlZuweisungen = root.has("zuweisungen") ? root.get("zuweisungen").asInt() : 0;
+            int guete = root.has("guete") ? root.get("guete").asInt() : 0;
+            int zuweisungen = root.has("zuweisungen") ? root.get("zuweisungen").asInt() : 0;
+            int raumwechsel = root.has("raumwechsel") ? root.get("raumwechsel").asInt() : 0;
             String status = "Planerstellung abgeschlossen";
 
-            return new PlanQualitaetDto(kosten, anzahlZuweisungen, status);
+            return new PlanQualitaetDto(guete, zuweisungen, raumwechsel, status);
         } catch (Exception e) {
             LOG.error("Fehler beim Parsen der Planqualität für Veranstaltung " + veranstaltung.getName(), e);
-            return new PlanQualitaetDto(0, 0, "Fehler beim Parsen");
+            return new PlanQualitaetDto(0, 0, 0, "Fehler beim Parsen");
         }
     }
 

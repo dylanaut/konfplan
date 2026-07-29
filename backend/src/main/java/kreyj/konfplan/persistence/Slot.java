@@ -24,7 +24,7 @@ import static kreyj.konfplan.util.DateHelper.HOUR_FORMATTER;
 @NoArgsConstructor
 @Getter
 @Setter
-public class Slot extends VersionedEntity {
+public class Slot extends VersionedEntity implements Comparable<Slot> {
     @Convert(converter = LocalDateTimeConverter.class)
     private LocalDateTime startTime;
 
@@ -73,5 +73,11 @@ public class Slot extends VersionedEntity {
 
     public String getSlotZeit() {
         return start() + " - " + ende();
+    }
+
+
+    @Override
+    public int compareTo(Slot o) {
+        return this.startTime.compareTo(o.startTime);
     }
 }

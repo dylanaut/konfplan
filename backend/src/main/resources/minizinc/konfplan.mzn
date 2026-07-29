@@ -26,13 +26,7 @@ array[1..n_teilnehmer, 1..n_wahlvortraege] of int: prioritaeten;
 array[1..n_teilnehmer, 1..n_slots] of bool: tn_verfuegbar;
 array[1..n_raeume, 1..n_slots] of bool: raum_belegbar;
 int: max_instanzen;
-int: max_wvs_pro_tn; % 0 = kein Limit
-
-% --- NEUE OID-ARRAYS FÜR DEN OUTPUT ---
-array[1..n_teilnehmer] of int: teilnehmer_oids;
-array[1..n_wahlvortraege] of int: wahlvortrag_oids;
-array[1..n_slots] of int: slot_oids;
-array[1..n_raeume] of int: raum_oids;
+int: max_wvs_pro_tn; % 0 = kein Limitdie
 
 % --- HILFS-ARRAYS ---
 array[1..n_raeume] of int: r_kapazitaeten = [raeume[r].kapazitaet | r in 1..n_raeume];
@@ -74,7 +68,7 @@ constraint forall(w in 1..n_wahlvortraege, i in 1..max_instanzen) (
 );
 
 constraint forall(w in 1..n_wahlvortraege) (
-    all_different_except_0([instanz_slot[w, i] | i in 1..max_instanzen])
+    all_different([instanz_slot[w, i] | i in 1..max_instanzen], {0})
 );
 
 constraint forall(s in 1..n_slots, r in 1..n_raeume) (
@@ -132,9 +126,9 @@ constraint forall(p in 1..n_teilnehmer) (
 );
 
 bool: opt_referent_raumtreue;
-int: penalty_raumwechsel = 500;
+int: penalty_raumwechsel = 5000;
 
-var int: kosten_raumwechsel =
+var int: anzahl_raumwechsel =
     if opt_referent_raumtreue then
         sum(w1, w2 in 1..n_wahlvortraege, i1, i2 in 1..max_instanzen
             where (w1 < w2 \/ (w1 = w2 /\ i1 < i2))
@@ -147,7 +141,7 @@ var int: kosten_raumwechsel =
                 var int: r2 = instanz_raum[w2, i2]
             } in
             if (s1 > 0 /\ s2 > 0 /\ abs(s1 - s2) = 1) then
-                bool2int(r1 != r2) * penalty_raumwechsel
+                bool2int(r1 != r2)
             else 0 endif
         )
     else 0 endif;
@@ -168,10 +162,12 @@ var int: anzahl_zuweisungen = sum(p in 1..n_teilnehmer, w in 1..n_wahlvortraege,
 % Gewicht 110 pro Zuweisung entspricht dem früheren Minimierungsmodell (dort: impliziter
 % "Nicht-besucht"-Malus 100 je (p,w,i)-Tripel + expliziter Bonus 10 je Zuweisung), damit eine
 % zusätzliche Zuweisung weiterhin stets schwerer wiegt als jede Präferenz-Differenz (max. 9).
-solve maximize nutzen_prioritaeten + (anzahl_zuweisungen * 110) - kosten_raumwechsel;
+var int: guete = nutzen_prioritaeten + (anzahl_zuweisungen * 110) - (anzahl_raumwechsel * penalty_raumwechsel);
+
+solve maximize guete;
 
 % =============================================================================
 % OUTPUT
 % =============================================================================
 
-output ["{ \"instanz_slot\": \(instanz_slot), \"instanz_raum\": \(instanz_raum), \"besucht\": \(besucht), \"kosten\": \(nutzen_prioritaeten), \"zuweisungen\": \(anzahl_zuweisungen), \"teilnehmer_oids\": \(teilnehmer_oids), \"wahlvortrag_oids\": \(wahlvortrag_oids), \"slot_oids\": \(slot_oids), \"raum_oids\": \(raum_oids) }"];
+output ["{ \"instanz_slot\": \(instanz_slot), \"instanz_raum\": \(instanz_raum), \"besucht\": \(besucht), \"guete\": \(guete), \"zuweisungen\": \(anzahl_zuweisungen), \"raumwechsel\": \(anzahl_raumwechsel) }"];
