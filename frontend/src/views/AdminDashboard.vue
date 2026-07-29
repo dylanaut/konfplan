@@ -222,7 +222,7 @@
 </template>
 
 <script setup>
-import {computed, onMounted, reactive, ref, nextTick} from 'vue';
+import {computed, onMounted, onUnmounted, reactive, ref, nextTick} from 'vue';
 import api from '../api/axios';
 import {useEventContextStore} from '../stores/eventContext';
 import {useAvailabilityStore} from '../stores/availability';
@@ -426,6 +426,12 @@ onMounted(async () => {
   await refreshGebaeude();
   await refreshAdmins();
   if (selectedVid.value) handleVeranstaltungChange();
+});
+
+onUnmounted(() => {
+  if (pollingInterval) {
+    clearInterval(pollingInterval);
+  }
 });
 
 const refreshVeranstaltungen = async () => {

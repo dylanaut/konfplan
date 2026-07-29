@@ -10,6 +10,7 @@ import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
+import org.jboss.logging.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +29,8 @@ import static java.util.stream.Collectors.toMap;
  */
 @ApplicationScoped
 public class AuffuellungService {
+    private static final Logger LOG = Logger.getLogger(AuffuellungService.class);
+
 
     private record Instanz(int wvIdx, int instIdx) {
     }
@@ -43,6 +46,7 @@ public class AuffuellungService {
      *                    (bereits vom Solver zugewiesene eingeschlossen); 0 = kein Limit.
      */
     public void fuelleAuf(Veranstaltung veranstaltung, Planungsergebnis.MinizincResult result, int maxWvsProTn) {
+        LOG.info("Auffuellen gestartet");
         long[] tnOids = result.teilnehmer_oids;
         long[] wvOids = result.wahlvortrag_oids;
         long[] slotOids = result.slot_oids;

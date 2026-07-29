@@ -135,7 +135,10 @@ public class PlanErstellungService {
 
             Path tempDzn = Files.createTempFile("planung_", ".dzn");
             Files.writeString(tempDzn, vorbereitung.dznContent(), StandardCharsets.UTF_8);
-            LOG.info("MiniZinc Datendatei:\n" + vorbereitung.dznContent());
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("MiniZinc Datendatei:\n" + vorbereitung.dznContent());
+            }
 
             try {
                 String resultJson = rufeMiniZincAuf(Paths.get(modelUrl.toURI()), tempDzn, config);
@@ -177,13 +180,7 @@ public class PlanErstellungService {
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
         assert veranstaltung != null;
         String vName = veranstaltung.getName();
-
-        LOG.info("Starte Planerstellung für Veranstaltung: " + vName);
-
         werfeBeiKollisionen(veranstaltung, veranstaltungId, username);
-
-        protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung gestartet",
-            "Planerstellung für '" + vName + "' mit Solver '" + config.getSolver() + "' von " + username + " gestartet.", veranstaltungId, veranstaltungId, username);
 
         List<Teilnehmer> teilnehmer = veranstaltung.teilnehmer().stream().sorted(Comparator.comparing(IdEntity::getId)).toList();
         List<Wahlvortrag> wahlvortraege = veranstaltung.getWahlvortraege().stream().sorted(Comparator.comparing(IdEntity::getId)).toList();
@@ -191,9 +188,9 @@ public class PlanErstellungService {
         List<Raum> raeume = veranstaltung.getRaeume().stream().sorted(Comparator.comparing(IdEntity::getId)).toList();
 
         if (slots.isEmpty() || teilnehmer.isEmpty() || wahlvortraege.isEmpty()) {
-            LOG.warn("Keine Wahlvorträge, Slots oder Teilnehmer vorhanden. Planerstellung wird nicht gestartet.");
+            LOG.warn("Keine Wahlvorträge, Slots oder Teilnehmer vorhanden. Minizinc Datenerstellung wird nicht gestartet.");
             String message = "Voraussetzungen (Teilnehmer, Slots, Wahlvorträge) nicht erfüllt.";
-            protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung abgebrochen", message, veranstaltungId, veranstaltungId, username);
+            protokollService.log(ProtokollKategorie.PLANUNG, "Minizinc Datenerstellung abgebrochen", message, veranstaltungId, veranstaltungId, username);
             lastError = message;
             return null;
         }
@@ -319,6 +316,7 @@ public class PlanErstellungService {
 
         try {
             runningProcess = pb.start();
+            LOG.info("MiniZinc gestartet..");
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(runningProcess.getInputStream(), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -341,6 +339,7 @@ public class PlanErstellungService {
         }
 
         String output = fullLog.toString();
+
         if (LOG.isDebugEnabled()) {
             LOG.debug("Vollständige MiniZinc-Ausgabe:\n" + output);
         }
@@ -412,6 +411,8 @@ public class PlanErstellungService {
         appendTnVerfuegbarkeiten(veranstaltung, teilnehmer, slots, sb);
         appendReferentVerfuegbarkeiten(wahlvortraege, veranstaltung, slots, sb);
         appendRaumVerfuegbarkeiten(veranstaltung, raeume, slots, sb);
+
+        LOG.info("MiniZinc Daten erstellt");
 
         return sb.toString();
     }
@@ -637,7 +638,7 @@ public class PlanErstellungService {
             ergebnis = new Planungsergebnis();
             ergebnis.setVeranstaltung(veranstaltung);
         }
-
+        LOG.info("Speichere Planungsergebnis für Veranstaltung: " + veranstaltung.getName());
         try {
             ObjectNode root = (ObjectNode) objectMapper.readTree(jsonErgebnis);
             addOidsFromVorbereitung(vorbereitung, root);

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import router from '../router';
-import api from '../api/axios';
+import api, { cancelAllRequests } from '../api/axios';
 import { useToast } from 'vue-toastification';
 import { useEventContextStore } from './eventContext';
 import jwtDecode from 'jwt-decode';
@@ -80,6 +80,16 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     function logout() {
+        // Eine ggf. laufende Planerstellung serverseitig abbrechen, bevor der Token
+        // gelöscht wird (der Endpoint ist ADMIN-only, danach fehlt die Berechtigung).
+        // Header wird explizit gesetzt statt über den Request-Interceptor, da localStorage
+        // gleich im Anschluss geleert wird und der Interceptor sonst ins Leere liefe.
+        if (isAdmin.value && token.value) {
+            api.delete('/api/planungen', { headers: { Authorization: `Bearer ${token.value}` } })
+                .catch(() => {});
+        }
+        cancelAllRequests();
+
         token.value = null;
         userRole.value = null;
         localStorage.removeItem('token');
