@@ -199,7 +199,7 @@ public class ReportResource {
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(dashboardService.getDashboardData(veranstaltung).stundenplan).build();
+        return Response.ok(dashboardService.getStundenplan(veranstaltung)).build();
     }
 
 
@@ -217,7 +217,7 @@ public class ReportResource {
         if (null == teilnehmer) {
             throw new WebApplicationException("Teilnehmer not found", Response.Status.NOT_FOUND);
         }
-        return Response.ok(dashboardService.getDashboardData(veranstaltung).teilnehmerReport).build();
+        return Response.ok(dashboardService.getTeilnehmerReport(veranstaltung)).build();
     }
 
 
@@ -232,6 +232,6 @@ public class ReportResource {
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(dashboardService.getDashboardData(veranstaltung).prioReport).build();
+        return Response.ok(dashboardService.getPrioReport(veranstaltung)).build();
     }
 }
