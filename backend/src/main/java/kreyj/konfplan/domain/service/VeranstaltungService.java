@@ -87,7 +87,7 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
         // Gebäude zuweisen
         if (dto.getGebaeude() != null) {
             for (var gDto : dto.getGebaeude()) {
-                Gebaeude g = Gebaeude.findById(dto.id);
+                Gebaeude g = Gebaeude.findById(gDto.id);
                 if (g != null) {
                     v.addGebaeude(g);
                 }

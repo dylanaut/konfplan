@@ -18,6 +18,7 @@ import org.jboss.logging.Logger;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
@@ -67,8 +68,8 @@ public class DevDataInitService {
             return;
         }
 
-        try {
-            String connectionUrl = datasource.getConnection().getMetaData().getURL();
+        try (Connection connection = datasource.getConnection()) {
+            String connectionUrl = connection.getMetaData().getURL();
 
             LOG.info("Starte Dev-Daten-Initialisierung für " + connectionUrl + " ...");
         } catch (SQLException e) {
