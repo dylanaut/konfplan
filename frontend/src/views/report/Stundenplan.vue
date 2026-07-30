@@ -21,9 +21,9 @@
         </div>
       </header>
 
-      <div class="row mb-4">
+      <div class="row mb-3">
         <h2 class="border-bottom pb-2 mb-3">📊 Übersicht</h2>
-        <div class="col-md-3">
+        <div class="col-md-4">
           <div class="card bg-success text-white shadow-sm">
             <div class="card-body text-center p-3">
               <h6 class="mb-1">Erfüllung Wahlvorträge</h6>
@@ -40,7 +40,7 @@
             </div>
           </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
           <div class="card bg-secondary text-white shadow-sm">
             <div class="card-body text-center p-3">
               <h6 class="mb-1">Prio-Erfüllungen</h6>
@@ -56,7 +56,7 @@
             </div>
           </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
           <div class="card bg-warning text-dark text-center p-3 shadow-sm border-0" style="background-color: #e2d5f3 !important;">
             <h6 class="mb-1 text-uppercase small fw-bold">Autom. Auffüllung</h6>
             <h3 class="mb-0">{{ reportData.stats.anzahlAuffuellungen }}</h3>

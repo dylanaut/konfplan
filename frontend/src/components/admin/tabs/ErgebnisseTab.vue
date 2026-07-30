@@ -112,7 +112,8 @@ const eventContext = useEventContextStore();
 const navigateToReport = (routeName) => {
   const vid = eventContext.selectedEvent.id;
   if (vid) {
-    router.push({ name: routeName, params: { vid } });
+    const route = router.resolve({ name: routeName, params: { vid } });
+    window.open(route.href, '_blank');
   }
 };
 </script>

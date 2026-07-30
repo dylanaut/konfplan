@@ -315,7 +315,8 @@ public class DashboardService {
         dd.prioReport = new PrioReport(dd.veranstaltung, dd.slots, dd.raeume,
             dd.instanzRaum, dd.instanzSlot, numInstanzenProWv,
             dd.teilnehmerErfuellung, dd.wahlvortraege, dd.referenten,
-            gruppen, dd.geplantAm);
+            gruppen, dd.geplantAm,
+            dd.mzWahlvortragOids, dd.mzSlotOids, dd.mzRaumOids);
     }
 
 
