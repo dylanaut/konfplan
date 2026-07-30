@@ -22,7 +22,6 @@ import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvId;
 @RegisterForReflection
 @NoArgsConstructor
 public class VortragDto extends AbstractVersionedDto {
-    public Long id;
     public String titel;
     public String inhalt;
     public String ausstattung;
