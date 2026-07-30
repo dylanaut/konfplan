@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ErmittleKollisionenTest extends DatabaseCleaner {
 
     // ermittleKollisionen nutzt keine injizierten Felder -> direkte Instanziierung genügt.
-    private final PlanErstellungService service = new PlanErstellungService(null, null, null);
+    private final PlanErstellungService service = new PlanErstellungService(null, null, null, null);
 
     private Long veranstaltung_id;
     private Long slot1_id;

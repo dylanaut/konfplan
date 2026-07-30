@@ -16,7 +16,6 @@ import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Planungsergebnis;
-import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
@@ -55,8 +54,6 @@ import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
-import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
-import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvId;
 
 @ApplicationScoped
 public class PlanErstellungService {
@@ -69,6 +66,7 @@ public class PlanErstellungService {
     private final ProtokollService protokollService;
     private final ObjectMapper objectMapper;
     private final AuffuellungService auffuellungService;
+    private final PrioritaetService prioService;
 
     @ConfigProperty(name = "minizinc.path", defaultValue = "/opt/homebrew/bin/minizinc")
     String miniZincPath;
@@ -100,10 +98,11 @@ public class PlanErstellungService {
 
 
     public PlanErstellungService(ProtokollService protokollService, ObjectMapper objectMapper,
-                                 AuffuellungService auffuellungService) {
+                                 AuffuellungService auffuellungService, PrioritaetService prioService) {
         this.protokollService = protokollService;
         this.objectMapper = objectMapper;
         this.auffuellungService = auffuellungService;
+        this.prioService = prioService;
     }
 
 
@@ -209,8 +208,10 @@ public class PlanErstellungService {
             return null;
         }
 
+        Map<Long, Map<Long, Integer>> teilnehmerPrioritaeten =
+            prioService.getVortragPrioritaetenByVeranstaltung(veranstaltungId);
         String dznContent = generiereDzn(veranstaltung, teilnehmer, wahlvortraege, slots, raeume,
-            config.getMaxInstanzen(), config.getMaxWvsProTn());
+            teilnehmerPrioritaeten, config.getMaxInstanzen(), config.getMaxWvsProTn());
 
         return new DznVorbereitung(vName, dznContent,
             teilnehmer.stream().map(IdEntity::getId).toList(),
@@ -264,9 +265,20 @@ public class PlanErstellungService {
         List<Teilnehmer> teilnehmer = veranstaltung.teilnehmer();
         List<Pflichtvortrag> pflichtvortraege = veranstaltung.getPflichtvortraege();
 
+        // Einmalig bulk-geladen statt (wie zuvor) einer NutzerVerfuegbarkeit-Query pro Teilnehmer
+        // bzw. pro Pflichtvortrag und einer RaumVerfuegbarkeit-Query pro Pflichtvortrag.
+        Map<Long, NutzerVerfuegbarkeit> nvMap =
+            NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>list("veranstaltungId = ?1", veranstaltung.getId())
+                .stream().collect(toMap(NutzerVerfuegbarkeit::getNutzerId, Function.identity()));
+        Map<Long, RaumVerfuegbarkeit> rvMap =
+            RaumVerfuegbarkeit.<RaumVerfuegbarkeit>list("veranstaltungId = ?1", veranstaltung.getId())
+                .stream().collect(toMap(RaumVerfuegbarkeit::getRaumId, Function.identity()));
+        Map<Long, Slot> slotMap = veranstaltung.getSlots().stream()
+            .collect(toMap(Slot::getId, Function.identity()));
+
         // Teilnehmer dürfen für ihren Pflichtslot nicht mehr als verfügbar markiert sein.
         for (Teilnehmer tn : teilnehmer) {
-            NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(tn, veranstaltung));
+            NutzerVerfuegbarkeit nv = nvMap.get(tn.getId());
             if (null == nv) {
                 continue;
             }
@@ -291,14 +303,14 @@ public class PlanErstellungService {
             Raum pflichtraum = pv.getPflichtraum();
             Slot pflichtslot = pv.getPflichtslot();
 
-            RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(rvId(pflichtraum, veranstaltung));
+            RaumVerfuegbarkeit rv = rvMap.get(pflichtraum.getId());
             if (null != rv && rv.getVerfuegbareSlotIds().contains(pflichtslot.getId())) {
                 kollisionen.add(new Kollision(Kollision.Typ.RAUM_SLOT,
                     "Pflichtvortrag '" + pv.getTitel() + "' ist reserviert für Raum '" + pflichtraum.getName()
                         + "' und Slot " + pflichtslot.getDescription()
                         + ". Dieser Raum steht gleichzeitig für Wahlvorträge zur Verfügung, vgl. Verfügbare Slots: "
                         + rv.getVerfuegbareSlotIds().stream()
-                        .map(id -> (Slot) Slot.findById(id))
+                        .map(slotMap::get)
                         .map(Slot::getDescription)
                         .collect(joining(", "))
                         + "."));
@@ -309,7 +321,7 @@ public class PlanErstellungService {
         for (Pflichtvortrag pv : pflichtvortraege) {
             Referent referent = pv.getReferent();
             Slot pflichtslot = pv.getPflichtslot();
-            NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(referent, veranstaltung));
+            NutzerVerfuegbarkeit nv = nvMap.get(referent.getId());
             if (null != nv && nv.getVerfuegbareSlotIds().contains(pflichtslot.getId())) {
                 kollisionen.add(new Kollision(Kollision.Typ.REFERENT_VERFUEGBARKEIT,
                     "Verfügbarkeits-Kollision: Referent " + referent.getFullName() + " hat Pflichtvortrag '"
@@ -410,6 +422,7 @@ public class PlanErstellungService {
 
     private String generiereDzn(Veranstaltung veranstaltung, List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege,
                                 List<Slot> slots, List<Raum> raeume,
+                                Map<Long, Map<Long, Integer>> teilnehmerPrioritaeten,
                                 int maxInstanzen, int maxWvsProTn) {
         StringBuilder sb = new StringBuilder();
         sb.append("%Generiert am: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))).append(",Version: 1.0;\n");
@@ -421,7 +434,7 @@ public class PlanErstellungService {
         appendRaeume(raeume, sb);
         appendTeilnehmer(teilnehmer, sb);
         appendWahlvortraege(wahlvortraege, slots, sb);
-        appendTnPrios(teilnehmer, wahlvortraege, sb);
+        appendTnPrios(teilnehmer, wahlvortraege, teilnehmerPrioritaeten, sb);
         appendTnVerfuegbarkeiten(veranstaltung, teilnehmer, slots, sb);
         appendReferentVerfuegbarkeiten(wahlvortraege, veranstaltung, slots, sb);
         appendRaumVerfuegbarkeiten(veranstaltung, raeume, slots, sb);
@@ -518,17 +531,18 @@ public class PlanErstellungService {
     }
 
 
-    private static void appendTnPrios(List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege, StringBuilder sb) {
+    private static void appendTnPrios(List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege,
+                                      Map<Long, Map<Long, Integer>> teilnehmerPrioritaeten, StringBuilder sb) {
         sb.append("prioritaeten = [|");
         int wvSize = wahlvortraege.size();
         int tnSize = teilnehmer.size();
         int tnIdx = 0;
         for (Teilnehmer tn : teilnehmer) {
             sb.append("\n");
+            Map<Long, Integer> prios = teilnehmerPrioritaeten.getOrDefault(tn.getId(), Map.of());
             int wvIdx = 0;
             for (Wahlvortrag v : wahlvortraege) {
-                Prioritaet p = Prioritaet.find("teilnehmer = ?1 and vortrag = ?2", tn, v).firstResult();
-                sb.append(p != null ? p.getPrioWert() : 0);
+                sb.append(prios.getOrDefault(v.getId(), 0));
                 if (++wvIdx < wvSize) {
                     sb.append(",");
                 } else {
