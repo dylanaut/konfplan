@@ -6,7 +6,6 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
@@ -18,13 +17,11 @@ import kreyj.konfplan.adapter.in.web.dto.SlotDto;
 import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
 import kreyj.konfplan.domain.service.DashboardService;
 import kreyj.konfplan.domain.service.PlanService;
-import kreyj.konfplan.domain.service.TeilnehmerService;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.util.JwtHelper;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
@@ -41,14 +38,12 @@ public class ReportResource {
     private static final Logger LOG = Logger.getLogger(ReportResource.class);
 
     private final DashboardService dashboardService;
-    private final TeilnehmerService teilnehmerService;
     private final PlanService planService;
     private final JsonWebToken jwt;
 
     @SuppressWarnings("CdiInjectionPointsInspection")
-    public ReportResource(DashboardService dashboardService, TeilnehmerService teilnehmerService, PlanService planService, JsonWebToken jwt) {
+    public ReportResource(DashboardService dashboardService, PlanService planService, JsonWebToken jwt) {
         this.dashboardService = dashboardService;
-        this.teilnehmerService = teilnehmerService;
         this.planService = planService;
         this.jwt = jwt;
     }
@@ -212,10 +207,6 @@ public class ReportResource {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        Teilnehmer teilnehmer = teilnehmerService.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
-        if (null == teilnehmer) {
-            throw new WebApplicationException("Teilnehmer not found", Response.Status.NOT_FOUND);
         }
         return Response.ok(dashboardService.getTeilnehmerReport(veranstaltung)).build();
     }
