@@ -70,30 +70,38 @@
         <div v-for="(slot, s_oid) in reportData.slots" :key="s_oid" class="slot-container mb-5 p-3 bg-white shadow-sm rounded">
           <h4 class="text-primary">{{ slot.zeitraumTag }}</h4>
           <div class="row g-3">
-            <div v-for="(raum, r_oid) in reportData.raeume" :key="r_oid" class="col-md-3">
-              <div class="card h-100 card-vortrag" :class="getBelegung(s_oid, r_oid) && getBelegung(s_oid, r_oid).isPflicht ? 'border-primary border-2' : 'border-light'">
+            <div v-for="[r_oid, raum] in belegteRaeume(s_oid)" :key="r_oid" class="col-md-3">
+              <div class="card h-100 card-vortrag" :class="getBelegung(s_oid, r_oid).isPflicht ? 'border-primary border-2' : 'border-light'">
                 <div class="card-header py-1 d-flex justify-content-between small bg-light">
                   <span>Raum: <strong>{{ raum.name }}</strong></span>
                   <span class="text-muted">Kap: {{ raum.kapazitaet }}</span>
                 </div>
                 <div class="card-body p-2">
-                  <template v-if="getBelegung(s_oid, r_oid)">
-                    <h6 class="card-title mb-1 text-truncate">{{ getBelegung(s_oid, r_oid).titel }}</h6>
-                    <p class="card-text small mb-1">
-                      <i class="text-primary fw-bold">{{ getBelegung(s_oid, r_oid).referent }}</i><br>
-                      <span class="text-muted small">{{ getBelegung(s_oid, r_oid).organisation }}</span>
-                    </p>
-                    <div class="d-flex justify-content-between align-items-center mt-2">
-                      <span class="badge" role="button"
-                            :class="getBelegung(s_oid, r_oid).teilnehmer.length < 4 ? 'bg-danger' : 'bg-success'"
-                            @click="openTnPopup(getBelegung(s_oid, r_oid))">
-                        {{ getBelegung(s_oid, r_oid).teilnehmer.length }} TN
-                      </span>
-                      <span v-if="getBelegung(s_oid, r_oid).isPflicht" class="badge bg-primary">Pflicht</span>
-                    </div>
-                  </template>
-                  <div v-else class="text-center py-3">
-                    <em class="text-muted small">Nicht belegt</em>
+                  <h6 class="card-title mb-1 text-truncate">{{ getBelegung(s_oid, r_oid).titel }}</h6>
+                  <p class="card-text small mb-1">
+                    <i class="text-primary fw-bold">{{ getBelegung(s_oid, r_oid).referent }}</i><br>
+                    <span class="text-muted small">{{ getBelegung(s_oid, r_oid).organisation }}</span>
+                  </p>
+                  <div class="d-flex justify-content-between align-items-center mt-2">
+                    <span class="badge" role="button"
+                          :class="getBelegung(s_oid, r_oid).teilnehmer.length < 4 ? 'bg-danger' : 'bg-success'"
+                          @click="openTnPopup(getBelegung(s_oid, r_oid))">
+                      {{ getBelegung(s_oid, r_oid).teilnehmer.length }} TN
+                    </span>
+                    <span v-if="getBelegung(s_oid, r_oid).isPflicht" class="badge bg-primary">Pflicht</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row mt-3">
+            <div class="col-12">
+              <div class="alert alert-secondary py-2 px-3 m-0 shadow-sm">
+                <div class="d-flex align-items-center">
+                  <strong class="me-2">🚪 Freie Räume ({{ freieRaeume(s_oid).length }}):</strong>
+                  <div class="small">
+                    <span v-if="freieRaeume(s_oid).length === 0">Alle Räume belegt.</span>
+                    <span v-else>{{ freieRaeume(s_oid).join(" • ") }}</span>
                   </div>
                 </div>
               </div>
@@ -169,6 +177,18 @@ onMounted(async () => {
 
 const getBelegung = (s_oid, r_oid) => {
   return reportData.value?.belegungDetails?.[`${s_oid}_${r_oid}`];
+};
+
+const belegteRaeume = (s_oid) => {
+  if (!reportData.value) return [];
+  return Object.entries(reportData.value.raeume).filter(([r_oid]) => getBelegung(s_oid, r_oid));
+};
+
+const freieRaeume = (s_oid) => {
+  if (!reportData.value) return [];
+  return Object.entries(reportData.value.raeume)
+    .filter(([r_oid]) => !getBelegung(s_oid, r_oid))
+    .map(([, raum]) => raum.name);
 };
 
 const openTnPopup = (belegung) => {
