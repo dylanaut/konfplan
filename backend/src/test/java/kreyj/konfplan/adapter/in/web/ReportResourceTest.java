@@ -9,6 +9,8 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.ws.rs.core.MediaType;
 import kreyj.konfplan.adapter.in.web.ReportResource;
+import kreyj.konfplan.adapter.in.web.dto.templating.TeilnehmerReport;
+import kreyj.konfplan.domain.service.DashboardService;
 import kreyj.konfplan.domain.service.PlanService;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
@@ -34,6 +36,9 @@ class ReportResourceTest {
 
     @InjectMock
     PlanService planService;
+
+    @InjectMock
+    DashboardService dashboardService;
 
     private Veranstaltung mockVeranstaltung;
     private Teilnehmer mockTeilnehmer;
@@ -227,5 +232,53 @@ class ReportResourceTest {
                 .then()
                 .statusCode(200)
                 .contentType(MediaType.APPLICATION_JSON);
+    }
+
+
+    // --- Teilnehmer-Dashboard (Teilnehmer-Zuordnungen) ---
+
+
+    @Test
+    @TestSecurity(user = "testAdmin", roles = "ADMIN")
+    void getTeilnehmerDashboardData_asAdmin_shouldSucceed() {
+        // Regression: dieser Endpoint loeste den Aufrufer frueher fälschlich per
+        // TeilnehmerService.findByLoginName() auf und lieferte fuer Admins (die keine
+        // Teilnehmer sind) 404, obwohl der Report alle Teilnehmer der Veranstaltung zeigt.
+        PanacheMock.mock(Veranstaltung.class);
+        Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
+        Mockito.when(dashboardService.getTeilnehmerReport(any())).thenReturn(
+            new TeilnehmerReport(null, null, Collections.emptyMap(), Collections.emptyList(), Collections.emptyList()));
+
+        given()
+                .when().get("1/teilnehmer-dashboard-data")
+                .then()
+                .statusCode(200)
+                .contentType(MediaType.APPLICATION_JSON);
+    }
+
+
+    @Test
+    @TestSecurity(user = "teilnehmer@test.com", roles = "TEILNEHMER")
+    void getTeilnehmerDashboardData_asTeilnehmer_shouldSucceed() {
+        PanacheMock.mock(Veranstaltung.class);
+        Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
+        Mockito.when(dashboardService.getTeilnehmerReport(any())).thenReturn(
+            new TeilnehmerReport(null, null, Collections.emptyMap(), Collections.emptyList(), Collections.emptyList()));
+
+        given()
+                .when().get("1/teilnehmer-dashboard-data")
+                .then()
+                .statusCode(200)
+                .contentType(MediaType.APPLICATION_JSON);
+    }
+
+
+    @Test
+    @TestSecurity(user = "testReferent", roles = "REFERENT")
+    void getTeilnehmerDashboardData_asWrongRole_shouldBeForbidden() {
+        given()
+                .when().get("1/teilnehmer-dashboard-data")
+                .then()
+                .statusCode(403);
     }
 }
