@@ -39,6 +39,11 @@ public class DashboardData {
     public long[] mzSlotOids;
     public long[] mzRaumOids;
 
+    /**
+     * Prioritäten aller Teilnehmer der Veranstaltung, einmalig geladen (teilnehmerOid -> (vortragOid -> prioWert)).
+     */
+    public Map<Long, Map<Long, Integer>> teilnehmerPrioritaeten = new HashMap<>();
+
     public Map<Long, TeilnehmerDto> teilnehmer;
     public Map<Long, VortragDto> wahlvortraege;
     public Map<Long, VortragDto> pflichtvortraege;
@@ -96,5 +101,10 @@ public class DashboardData {
 
     public boolean isVerfuegbarInSlot(long tnOid, long slotOid) {
         return tnVerfuegbar.get(tnOid).contains(slotOid);
+    }
+
+
+    public Map<Long, Integer> getPrioritaeten(long teilnehmerOid) {
+        return teilnehmerPrioritaeten.getOrDefault(teilnehmerOid, Map.of());
     }
 }

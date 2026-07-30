@@ -93,4 +93,29 @@ public class PlanServiceTest extends DatabaseCleaner {
     }
 
 
+    @Test
+    @Transactional
+    public void testGetMinizincResultCacheInvalidatesAfterPlanRegeneration() {
+        Planungsergebnis.MinizincResult first = planService.getMinizincResult(veranstaltung);
+        assertThat(first.teilnehmer_oids).isEmpty();
+
+        Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
+        ergebnis.setJsonErgebnis("""
+            {
+              "instanz_slot": [[]],
+              "instanz_raum": [[]],
+              "besucht": [[[]]],
+              "teilnehmer_oids": [42],
+              "wahlvortrag_oids": [],
+              "slot_oids": [],
+              "raum_oids": []
+            }
+            """);
+        ergebnis.persistAndFlush();
+
+        Planungsergebnis.MinizincResult second = planService.getMinizincResult(veranstaltung);
+        assertThat(second.teilnehmer_oids).containsExactly(42L);
+    }
+
+
 }

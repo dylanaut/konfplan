@@ -87,6 +87,8 @@ public class DashboardService {
         dashboardData.referenten = veranstaltung.referenten().stream()
             .map(NutzerDto::from)
             .collect(toMap(r -> r.id, Function.identity()));
+        dashboardData.teilnehmerPrioritaeten =
+            prioService.getVortragPrioritaetenByVeranstaltung(veranstaltung.getId());
 
         prepareDashboardData(dashboardData);
 
@@ -105,7 +107,7 @@ public class DashboardService {
         for (int tnIdx = 0; tnIdx < dd.besucht.length; tnIdx++) {
             boolean[][] tn_besucht = dd.besucht[tnIdx];
             TeilnehmerDto tn = dd.teilnehmer.get(dd.mzTeilnehmerOids[tnIdx]);
-            Map<Long, Integer> prios = prioService.getVortragPrioritaeten(tn.id, dd.veranstaltung.id);
+            Map<Long, Integer> prios = dd.getPrioritaeten(tn.id);
 
             for (int wvIdx = 0; wvIdx < dd.mzWahlvortragOids.length; wvIdx++) {
                 boolean[] tn_v_besucht = tn_besucht[wvIdx];
@@ -174,7 +176,7 @@ public class DashboardService {
         for (int tnIdx = 0; tnIdx < dd.mzTeilnehmerOids.length; tnIdx++) {
             long tnOid = dd.mzTeilnehmerOids[tnIdx];
             Map<Long, WahlvortragStatus> wahlVortragStatuus = new LinkedHashMap<>();
-            Map<Long, Integer> wvPrios = prioService.getVortragPrioritaeten(tnOid, dd.veranstaltung.id);
+            Map<Long, Integer> wvPrios = dd.getPrioritaeten(tnOid);
 
             for (int wvIdx = 0; wvIdx < dd.mzWahlvortragOids.length; wvIdx++) {
                 long wvOid = dd.mzWahlvortragOids[wvIdx];
@@ -325,7 +327,7 @@ public class DashboardService {
             TeilnehmerDto tn = dd.teilnehmer.get(dd.mzTeilnehmerOids[tnIdx]);
             long tnOid = tn.id;
             Set<String> tnGruppen = tn.gruppen;
-            Map<Long, Integer> wvPrios = prioService.getVortragPrioritaeten(tnOid, dd.veranstaltung.id);
+            Map<Long, Integer> wvPrios = dd.getPrioritaeten(tnOid);
             Map<Long, TeilnehmerSlotBelegung> tnSlotsBelegungen = new LinkedHashMap<>();
 
             for (int slotIdx = 1; slotIdx <= dd.mzSlotOids.length; slotIdx++) {

@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -53,6 +54,16 @@ public class PlanService {
     public static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm"); // Made public for testing
 
     private final ObjectMapper objectMapper;
+
+    /**
+     * Cache des aus dem (potenziell großen) JSON-Blob geparsten MinizincResult, keyed by
+     * Planungsergebnis-Id. Vermeidet das wiederholte Neu-Parsen bei jedem Report-Aufruf;
+     * die Version dient als Invalidierungs-Kriterium bei neu erstelltem Plan.
+     */
+    private final Map<Long, CachedMinizincResult> minizincResultCache = new ConcurrentHashMap<>();
+
+    private record CachedMinizincResult(Long version, Planungsergebnis.MinizincResult result) {
+    }
 
 
     public PlanService(ObjectMapper objectMapper) {
@@ -627,9 +638,17 @@ public class PlanService {
     public Planungsergebnis.MinizincResult getMinizincResult(Planungsergebnis planungsergebnis) {
         Objects.requireNonNull(planungsergebnis, "planungsergebnis must not be null");
 
+        CachedMinizincResult cached = minizincResultCache.get(planungsergebnis.getId());
+        if (cached != null && cached.version().equals(planungsergebnis.getVersion())) {
+            return cached.result();
+        }
+
         try {
-            return objectMapper.readValue(planungsergebnis.getJsonErgebnis(),
+            Planungsergebnis.MinizincResult result = objectMapper.readValue(planungsergebnis.getJsonErgebnis(),
                 Planungsergebnis.MinizincResult.class);
+            minizincResultCache.put(planungsergebnis.getId(),
+                new CachedMinizincResult(planungsergebnis.getVersion(), result));
+            return result;
         } catch (JsonProcessingException e) {
             LOG.warn("Failed to parse Minizinc result for Veranstaltung" + planungsergebnis.getJsonErgebnis());
             throw new RuntimeException(e);
