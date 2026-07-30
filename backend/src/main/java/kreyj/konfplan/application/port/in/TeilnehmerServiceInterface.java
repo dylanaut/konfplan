@@ -17,11 +17,11 @@ public interface TeilnehmerServiceInterface {
 
     Teilnehmer findById(Long id);
 
-    Teilnehmer findByEmail(String email);
+    Teilnehmer findByLoginName(String loginName);
 
-    List<TeilnehmerVeranstaltungDto> getTeilnehmerVeranstaltungen(String email);
+    List<TeilnehmerVeranstaltungDto> getTeilnehmerVeranstaltungen(String loginName);
 
-    List<VortragDto> getVortraegeFuerTeilnehmerInVeranstaltung(Long veranstaltungId, String email);
+    List<VortragDto> getVortraegeFuerTeilnehmerInVeranstaltung(Long veranstaltungId, String loginName);
 
     Teilnehmer createTeilnehmer(Teilnehmer user, Long veranstaltungId);
 
@@ -38,5 +38,5 @@ public interface TeilnehmerServiceInterface {
 
     void savePriorities(Long userId, Long veranstaltungId, List<VortragPrioDto> priorityDtos);
 
-    void updateVerfuegbarkeit(Long veranstaltungId, NutzerVerfuegbarkeitDto dto, String userEmail);
+    void updateVerfuegbarkeit(Long veranstaltungId, NutzerVerfuegbarkeitDto dto, String loginName);
 }

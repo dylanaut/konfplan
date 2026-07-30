@@ -86,6 +86,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
         // 3. Referent und Vorträge
         Referent referent = new Referent();
+        referent.assignLoginName("referent@test.com");
         referent.setEmail("referent@test.com");
         referent.setFirstName("Max");
         referent.setLastName("Mustermann");
@@ -100,6 +101,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
         // 4. Teilnehmer und Prioritäten
         Teilnehmer teilnehmer1 = new Teilnehmer();
+        teilnehmer1.assignLoginName("tn1@test.com");
         teilnehmer1.setEmail("tn1@test.com");
         teilnehmer1.setFirstName("Peter");
         teilnehmer1.setLastName("Pan");
@@ -140,6 +142,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
         // 3. Referent und Vorträge
         Referent referent = new Referent();
+        referent.assignLoginName("referent@test.com");
         referent.setEmail("referent@test.com");
         referent.setFirstName("Max");
         referent.setLastName("Mustermann");
@@ -158,6 +161,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
         // 4. Teilnehmer und Prioritäten
         Teilnehmer teilnehmer1 = new Teilnehmer();
+        teilnehmer1.assignLoginName("tn1@test.com");
         teilnehmer1.setEmail("tn1@test.com");
         teilnehmer1.setFirstName("Peter");
         teilnehmer1.setLastName("Pan");
@@ -167,6 +171,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         teilnehmer1.addVeranstaltung(veranstaltung);
 
         Teilnehmer teilnehmer2 = new Teilnehmer();
+        teilnehmer2.assignLoginName("tn2@test.com");
         teilnehmer2.setEmail("tn2@test.com");
         teilnehmer2.setFirstName("Wendy");
         teilnehmer2.setLastName("Darling");
@@ -211,6 +216,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         veranstaltung.addSlot(slot1);
 
         Referent referent = new Referent();
+        referent.assignLoginName("referent@test.com");
         referent.setEmail("referent@test.com");
         referent.setFirstName("Max");
         referent.setLastName("Mustermann");
@@ -224,6 +230,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         wahlvortrag1.persist();
 
         Teilnehmer teilnehmerMitPrio = new Teilnehmer();
+        teilnehmerMitPrio.assignLoginName("tn1@test.com");
         teilnehmerMitPrio.setEmail("tn1@test.com");
         teilnehmerMitPrio.setFirstName("Peter");
         teilnehmerMitPrio.setLastName("Pan");
@@ -232,6 +239,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         teilnehmerMitPrio.addVeranstaltung(veranstaltung);
 
         Teilnehmer teilnehmerFrei = new Teilnehmer();
+        teilnehmerFrei.assignLoginName("tn2@test.com");
         teilnehmerFrei.setEmail("tn2@test.com");
         teilnehmerFrei.setFirstName("Wendy");
         teilnehmerFrei.setLastName("Darling");
@@ -273,6 +281,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         veranstaltung.addSlot(slot3);
 
         Referent referent = new Referent();
+        referent.assignLoginName("referent@test.com");
         referent.setEmail("referent@test.com");
         referent.setFirstName("Max");
         referent.setLastName("Mustermann");
@@ -286,6 +295,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         wahlvortrag1.persist();
 
         Teilnehmer teilnehmerPflicht = new Teilnehmer();
+        teilnehmerPflicht.assignLoginName("tnP@test.com");
         teilnehmerPflicht.setEmail("tnP@test.com");
         teilnehmerPflicht.setFirstName("Petra");
         teilnehmerPflicht.setLastName("Pflicht");
@@ -294,6 +304,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         teilnehmerPflicht.addVeranstaltung(veranstaltung);
 
         Teilnehmer teilnehmerWahl = new Teilnehmer();
+        teilnehmerWahl.assignLoginName("tnW@test.com");
         teilnehmerWahl.setEmail("tnW@test.com");
         teilnehmerWahl.setFirstName("Wanda");
         teilnehmerWahl.setLastName("Wahl");
@@ -531,18 +542,19 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
     }
 
     @Test
-    public void testPlanErstellung_withNoSolutionInTime() throws Exception {
+    public void testPlanErstellung_withNoSolutionInTime() {
         // Erfüllbares, aber im Zeitlimit unauffindbares Modell -> cp-sat liefert "UNKNOWN".
-        // Erwartet: leeres Ergebnis (keine Lösung gefunden), KEINE Exception. Das ist die
-        // graceful behandelte "keine Lösung gefunden"-Situation (vs. beweisbar UNSATISFIABLE,
-        // siehe testPlanErstellung_withUnsatisfiableModel).
+        // Erwartet: TIMEOUT-Exception mit Hinweis auf das konfigurierte Zeitlimit (vs. beweisbar
+        // UNSATISFIABLE, siehe testPlanErstellung_withUnsatisfiableModel), damit die UI dem
+        // Nutzer mitteilen kann, dass in der vorgegebenen Zeit kein Ergebnis berechnet werden konnte.
         SolverConfig config = new SolverConfig(1, 1, 1);
 
-        String resultJson = starteTestPlanErstellung(config, "no-solution-in-time.mzn");
-
-        assertThat(resultJson)
-                .describedAs("Ohne Lösung im Zeitlimit (UNKNOWN) soll ein leeres Ergebnis zurückkommen.")
-                .isEmpty();
+        assertThatExceptionOfType(MinizincException.class)
+                .isThrownBy(() -> starteTestPlanErstellung(config, "no-solution-in-time.mzn"))
+                .satisfies(e -> {
+                    assertThat(e.getExceptionType()).isEqualTo(MinizincException.MZ_Exception.TIMEOUT);
+                    assertThat(e.getMessage()).contains("1 Sek.");
+                });
     }
 
     // -------------------------------------------------------------------

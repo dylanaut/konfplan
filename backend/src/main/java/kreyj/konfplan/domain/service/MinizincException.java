@@ -39,6 +39,7 @@ public class MinizincException extends RuntimeException {
         NO_SOLUTION,
         INVOCATION_ERROR,
         UNSATISFIABLE,
-        INTERMEDIATE
+        INTERMEDIATE,
+        TIMEOUT
     }
 }

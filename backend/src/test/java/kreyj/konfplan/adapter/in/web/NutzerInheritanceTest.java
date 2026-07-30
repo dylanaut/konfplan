@@ -34,6 +34,7 @@ class NutzerInheritanceTest extends DatabaseCleaner {
     @Transactional
     void setup() {
         Admin admin = new Admin();
+        admin.assignLoginName("org");
         admin.setEmail("org@test.de");
         admin.setPasswordHash("hash");
         admin.persist();
@@ -55,6 +56,7 @@ class NutzerInheritanceTest extends DatabaseCleaner {
         String json = """
                 {
                     "role": "REFERENT",
+                    "loginName": "expert",
                     "email": "expert@konfplan.de",
                     "firstName": "Max",
                     "lastName": "Mustermann",
@@ -84,6 +86,7 @@ class NutzerInheritanceTest extends DatabaseCleaner {
         String json = """
                 {
                     "role": "TEILNEHMER",
+                    "loginName": "student",
                     "email": "student@konfplan.de",
                     "firstName": "Lukas",
                     "lastName": "Lernbereit",

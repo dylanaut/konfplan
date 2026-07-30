@@ -82,7 +82,7 @@ public class ReportResource {
         if (null == teilnehmer || null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        if (!jwt.getGroups().contains("ADMIN") && !teilnehmer.getEmail().equals(jwt.getName())) {
+        if (!jwt.getGroups().contains("ADMIN") && !teilnehmer.getLoginName().equals(jwt.getName())) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
         List<ZuweisungDto> plan = planService.getPlanFuerTeilnehmer(teilnehmer, veranstaltung);
@@ -101,7 +101,7 @@ public class ReportResource {
         if (null == referent || null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        if (!jwt.getGroups().contains("ADMIN") && !referent.getEmail().equals(jwt.getName())) {
+        if (!jwt.getGroups().contains("ADMIN") && !referent.getLoginName().equals(jwt.getName())) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
         List<ReferentVortragDto> plan = planService.getPlanFuerReferent(referent, veranstaltung);
@@ -199,7 +199,7 @@ public class ReportResource {
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(dashboardService.getDashboardData(veranstaltung).stundenplan).build();
+        return Response.ok(dashboardService.getStundenplan(veranstaltung)).build();
     }
 
 
@@ -213,11 +213,11 @@ public class ReportResource {
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        Teilnehmer teilnehmer = teilnehmerService.findByEmail(JwtHelper.getUserPrincipalName(jwt));
+        Teilnehmer teilnehmer = teilnehmerService.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
         if (null == teilnehmer) {
             throw new WebApplicationException("Teilnehmer not found", Response.Status.NOT_FOUND);
         }
-        return Response.ok(dashboardService.getDashboardData(veranstaltung).teilnehmerReport).build();
+        return Response.ok(dashboardService.getTeilnehmerReport(veranstaltung)).build();
     }
 
 
@@ -232,6 +232,6 @@ public class ReportResource {
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(dashboardService.getDashboardData(veranstaltung).prioReport).build();
+        return Response.ok(dashboardService.getPrioReport(veranstaltung)).build();
     }
 }

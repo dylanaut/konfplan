@@ -56,8 +56,13 @@ public class DashboardService {
     }
 
 
-    @Transactional
-    public DashboardData getDashboardData(Veranstaltung veranstaltung) {
+    /**
+     * Lädt die für alle Reports gemeinsam benötigten Basisdaten. Die teureren, verschachtelten
+     * Berechnungen (Belegungsdetails, Teilnehmer-Erfüllung, Teilnehmer-Stundenplan, Statistiken)
+     * werden bewusst NICHT hier ausgeführt, sondern nur von dem jeweiligen Report angefordert,
+     * der sie tatsächlich braucht (siehe getStundenplan/getTeilnehmerReport/getPrioReport).
+     */
+    private DashboardData buildBaseData(Veranstaltung veranstaltung) {
         Planungsergebnis.MinizincResult result = planService.getMinizincResult(veranstaltung);
 
         Map<Long, Set<Long>> nvMap =
@@ -87,10 +92,64 @@ public class DashboardService {
         dashboardData.referenten = veranstaltung.referenten().stream()
             .map(NutzerDto::from)
             .collect(toMap(r -> r.id, Function.identity()));
-
-        prepareDashboardData(dashboardData);
+        dashboardData.teilnehmerPrioritaeten =
+            prioService.getVortragPrioritaetenByVeranstaltung(veranstaltung.getId());
 
         return dashboardData;
+    }
+
+
+    @Transactional
+    public Stundenplan getStundenplan(Veranstaltung veranstaltung) {
+        DashboardData dd = buildBaseData(veranstaltung);
+
+        berechneBelegungUndFreieSlots(dd);
+        createTeilnehmerErfuellung(dd);
+        calculatePrefsFillUpStats(dd);
+        berechnePlanungsstatistik(dd);
+
+        String geplantAm = now().format(DATE_TIME_FORMATTER);
+        return new Stundenplan(dd.veranstaltung, dd.slots, dd.raeume, dd.belegungDetails,
+            dd.freieTnProSlot, dd.planungsstatistik,
+            dd.wahlErfuellungStats, dd.wahlvortraege, geplantAm);
+    }
+
+
+    @Transactional
+    public TeilnehmerReport getTeilnehmerReport(Veranstaltung veranstaltung) {
+        DashboardData dd = buildBaseData(veranstaltung);
+
+        createTeilnehmerStundenplan(dd);
+
+        return new TeilnehmerReport(dd.veranstaltung,
+            dd.teilnehmer.get(dd.mzTeilnehmerOids[0]), dd.slots, dd.teilnehmerStundenplan, computeGruppen(dd));
+    }
+
+
+    @Transactional
+    public PrioReport getPrioReport(Veranstaltung veranstaltung) {
+        DashboardData dd = buildBaseData(veranstaltung);
+
+        createTeilnehmerErfuellung(dd);
+
+        List<Integer> numInstanzenProWv =
+            Arrays.stream(dd.instanzSlot).map(sub -> (int) Arrays.stream(sub).filter(x -> x > 0).count()).toList();
+        String geplantAm = now().format(DATE_TIME_FORMATTER);
+
+        return new PrioReport(dd.veranstaltung, dd.slots, dd.raeume,
+            dd.instanzRaum, dd.instanzSlot, numInstanzenProWv,
+            dd.teilnehmerErfuellung, dd.wahlvortraege, dd.referenten,
+            computeGruppen(dd), geplantAm,
+            dd.mzWahlvortragOids, dd.mzSlotOids, dd.mzRaumOids);
+    }
+
+
+    private List<String> computeGruppen(DashboardData dd) {
+        return dd.teilnehmer.values().stream()
+            .flatMap(tn -> tn.gruppen.stream())
+            .distinct()
+            .sorted()
+            .toList();
     }
 
 
@@ -105,7 +164,7 @@ public class DashboardService {
         for (int tnIdx = 0; tnIdx < dd.besucht.length; tnIdx++) {
             boolean[][] tn_besucht = dd.besucht[tnIdx];
             TeilnehmerDto tn = dd.teilnehmer.get(dd.mzTeilnehmerOids[tnIdx]);
-            Map<Long, Integer> prios = prioService.getVortragPrioritaeten(tn.id, dd.veranstaltung.id);
+            Map<Long, Integer> prios = dd.getPrioritaeten(tn.id);
 
             for (int wvIdx = 0; wvIdx < dd.mzWahlvortragOids.length; wvIdx++) {
                 boolean[] tn_v_besucht = tn_besucht[wvIdx];
@@ -174,7 +233,7 @@ public class DashboardService {
         for (int tnIdx = 0; tnIdx < dd.mzTeilnehmerOids.length; tnIdx++) {
             long tnOid = dd.mzTeilnehmerOids[tnIdx];
             Map<Long, WahlvortragStatus> wahlVortragStatuus = new LinkedHashMap<>();
-            Map<Long, Integer> wvPrios = prioService.getVortragPrioritaeten(tnOid, dd.veranstaltung.id);
+            Map<Long, Integer> wvPrios = dd.getPrioritaeten(tnOid);
 
             for (int wvIdx = 0; wvIdx < dd.mzWahlvortragOids.length; wvIdx++) {
                 long wvOid = dd.mzWahlvortragOids[wvIdx];
@@ -206,9 +265,10 @@ public class DashboardService {
 
 
     /**
-     * This is the main method to generate all data required for the dashboards.
+     * Berechnet Belegungsdetails (welcher Vortrag läuft in welchem Slot/Raum) und die Liste
+     * der freien Teilnehmer pro Slot. Wird nur vom Stundenplan-Report benötigt.
      */
-    public void prepareDashboardData(DashboardData dd) {
+    private void berechneBelegungUndFreieSlots(DashboardData dd) {
         Map<Long, Set<Long>> verplanteTnProSlot
             = dd.slots.keySet().stream().collect(Collectors.toMap(Function.identity(),
             k -> new HashSet<>()));
@@ -284,38 +344,6 @@ public class DashboardService {
 
             dd.freieTnProSlot.put(slotOid, freieTn);
         }
-
-        // --- 2. Prepare data for Prios and Teilnehmer Dashboards ---
-        createTeilnehmerErfuellung(dd);
-        createTeilnehmerStundenplan(dd);
-
-        // --- 3. Calculate Stats ---
-        calculatePrefsFillUpStats(dd);
-        berechnePlanungsstatistik(dd);
-
-        // --- 4. Assemble final DTOs ---
-        dd.geplantAm = now().format(DATE_TIME_FORMATTER);
-
-        dd.stundenplan = new Stundenplan(dd.veranstaltung, dd.slots, dd.raeume, dd.belegungDetails,
-            dd.freieTnProSlot, dd.planungsstatistik,
-            dd.wahlErfuellungStats, dd.wahlvortraege, dd.geplantAm);
-
-        List<String> gruppen = dd.teilnehmer.values().stream()
-            .flatMap(tn -> tn.gruppen.stream())
-            .distinct()
-            .sorted()
-            .toList();
-
-        dd.teilnehmerReport = new TeilnehmerReport(dd.veranstaltung,
-            dd.teilnehmer.get(dd.mzTeilnehmerOids[0]), dd.slots, dd.teilnehmerStundenplan, gruppen);
-
-        List<Integer> numInstanzenProWv =
-            Arrays.stream(dd.instanzSlot).map(sub -> (int) Arrays.stream(sub).filter(x -> x > 0).count()).toList();
-
-        dd.prioReport = new PrioReport(dd.veranstaltung, dd.slots, dd.raeume,
-            dd.instanzRaum, dd.instanzSlot, numInstanzenProWv,
-            dd.teilnehmerErfuellung, dd.wahlvortraege, dd.referenten,
-            gruppen, dd.geplantAm);
     }
 
 
@@ -324,7 +352,7 @@ public class DashboardService {
             TeilnehmerDto tn = dd.teilnehmer.get(dd.mzTeilnehmerOids[tnIdx]);
             long tnOid = tn.id;
             Set<String> tnGruppen = tn.gruppen;
-            Map<Long, Integer> wvPrios = prioService.getVortragPrioritaeten(tnOid, dd.veranstaltung.id);
+            Map<Long, Integer> wvPrios = dd.getPrioritaeten(tnOid);
             Map<Long, TeilnehmerSlotBelegung> tnSlotsBelegungen = new LinkedHashMap<>();
 
             for (int slotIdx = 1; slotIdx <= dd.mzSlotOids.length; slotIdx++) {

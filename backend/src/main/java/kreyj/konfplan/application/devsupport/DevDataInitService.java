@@ -5,7 +5,6 @@ import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
-import jakarta.transaction.Transactional;
 import kreyj.konfplan.domain.service.AdminService;
 import kreyj.konfplan.domain.service.GebaeudeService;
 import kreyj.konfplan.domain.service.ReferentService;
@@ -63,7 +62,6 @@ public class DevDataInitService {
     }
 
 
-    @Transactional
     public void onStart(@Observes StartupEvent ev) {
         if (!devInitEnabled) {
             return;

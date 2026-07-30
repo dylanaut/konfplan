@@ -47,6 +47,7 @@ class NutzerPersistenceTest extends DatabaseCleaner {
         g.persist();
 
         Admin admin = new Admin();
+        admin.assignLoginName("organisator");
         admin.setEmail("organisator@test.de");
         admin.setPasswordHash("hash");
         admin.persist();
@@ -81,6 +82,7 @@ class NutzerPersistenceTest extends DatabaseCleaner {
         String json = """
                 {
                     "role": "REFERENT",
+                    "loginName": "referent",
                     "email": "referent@test.de",
                     "firstName": "Jens",
                     "lastName": "Riewa",
@@ -110,6 +112,7 @@ class NutzerPersistenceTest extends DatabaseCleaner {
         String json = """
                 {
                     "role": "TEILNEHMER",
+                    "loginName": "schueler",
                     "email": "schueler@test.de",
                     "firstName": "Peter",
                     "lastName": "Müller",

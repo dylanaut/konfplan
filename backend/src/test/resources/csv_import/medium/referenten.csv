@@ -1,3 +1,3 @@
-Vorname;Nachname;Email;Position;Organisation;Slogan;Biografie
-Erster;Referent;ref1@gmail.com;PR Manager;Berater AG;Beste Beratung;Von der Pike auf gelernt
-Zweiter;Referent;ref2@gmail.com;Geschäftsführer;Macher GmbH;Es geht besser;Alles studiert
+Vorname;Nachname;Email;Position;Organisation;Slogan;Biografie;LoginName
+Erster;Referent;ref1@gmail.com;PR Manager;Berater AG;Beste Beratung;Von der Pike auf gelernt;ref1
+Zweiter;Referent;ref2@gmail.com;Geschäftsführer;Macher GmbH;Es geht besser;Alles studiert;ref2

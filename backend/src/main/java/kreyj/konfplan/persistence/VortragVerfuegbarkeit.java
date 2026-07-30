@@ -1,9 +1,12 @@
 package kreyj.konfplan.persistence;
 
+import jakarta.persistence.AssociationOverride;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,6 +21,16 @@ import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvId;
 @Getter
 @Table(name = "VortragVerfuegbarkeit")
 @IdClass(VortragVerfuegbarkeitId.class)
+@AssociationOverride(
+        name = "verfuegbareSlotIds",
+        joinTable = @JoinTable(
+                name = "vortrag_verfuegbarkeit_slots",
+                joinColumns = {
+                        @JoinColumn(name = "vortrag_id", referencedColumnName = "vortrag_id"),
+                        @JoinColumn(name = "veranstaltung_id", referencedColumnName = "veranstaltung_id")
+                }
+        )
+)
 public class VortragVerfuegbarkeit extends VeranstaltungsVerfuegbarkeit {
 
     @Id

@@ -1,2 +1,2 @@
-EMAIL;NACHNAME;VORNAME
-test.admin@rks-linz.de;Test;Admin
+EMAIL;NACHNAME;VORNAME;LoginName
+test.admin@rks-linz.de;Test;Admin;test.admin

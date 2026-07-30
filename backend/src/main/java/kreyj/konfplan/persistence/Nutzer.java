@@ -19,9 +19,11 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import kreyj.konfplan.util.StringHelper;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.NaturalId;
 
 import java.time.LocalDateTime;
@@ -46,9 +48,13 @@ import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
     @JsonSubTypes.Type(value = Teilnehmer.class, name = "TEILNEHMER")
 })
 public abstract class Nutzer extends VersionedEntity {
-    @NaturalId(mutable = true)
-    @Column(unique = true)
+    @NaturalId
+    @Column(name = "login_name", unique = true, nullable = false, updatable = false)
+    @Setter(AccessLevel.NONE)
     @Username
+    private String loginName;
+
+    @Column(unique = true)
     @CsvBindByName(column = "Email")
     private String email;
 
@@ -183,5 +189,26 @@ public abstract class Nutzer extends VersionedEntity {
 
     public static Nutzer findByEmail(String e) {
         return find("email", e.toLowerCase()).firstResult();
+    }
+
+
+    public void assignLoginName(String raw) {
+        if (null != this.loginName) {
+            throw new IllegalStateException("loginName ist bereits gesetzt und unveränderlich.");
+        }
+        this.loginName = normalizeLoginName(raw);
+    }
+
+
+    private static String normalizeLoginName(String raw) {
+        if (StringUtils.isBlank(raw)) {
+            throw new IllegalArgumentException("loginName darf nicht leer sein.");
+        }
+        return raw.trim().toLowerCase();
+    }
+
+
+    public static Nutzer findByLoginName(String loginName) {
+        return find("loginName", normalizeLoginName(loginName)).firstResult();
     }
 }

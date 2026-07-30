@@ -82,17 +82,18 @@ class AuthResourceTest {
     @Test
     void testForgotPassword_UserExists() {
         Nutzer nutzer = new Admin();
+        nutzer.assignLoginName("testadmin");
         nutzer.setEmail("test@example.com");
         nutzer.setFirstName("Test");
         nutzer.setRole("ADMIN");
         nutzer.setPasswordHash("some-dummy-hash"); // Passwort setzen, um NOT NULL constraint zu erfüllen
 
-        Mockito.when(Nutzer.findByEmail("test@example.com")).thenReturn(nutzer);
+        Mockito.when(Nutzer.findByLoginName("testadmin")).thenReturn(nutzer);
         // Wir müssen sicherstellen, dass persist() auf dem Mock-Nutzer nichts tut
         Mockito.doNothing().when(Mockito.mock(Nutzer.class)).persist();
 
         given()
-                .queryParam("email", "test@example.com")
+                .queryParam("loginName", "testadmin")
                 .when().post("/forgot-password")
                 .then()
                 .statusCode(ACCEPTED.getStatusCode());
@@ -107,10 +108,10 @@ class AuthResourceTest {
 
     @Test
     void testForgotPassword_UserNotFound() {
-        Mockito.when(Nutzer.findByEmail("unknown@example.com")).thenReturn(null);
+        Mockito.when(Nutzer.findByLoginName("unknown")).thenReturn(null);
 
         given()
-                .queryParam("email", "unknown@example.com")
+                .queryParam("loginName", "unknown")
                 .when().post("/forgot-password")
                 .then()
                 .statusCode(ACCEPTED.getStatusCode());
@@ -142,14 +143,15 @@ class AuthResourceTest {
     @Test
     void testLogin_Success() {
         Nutzer nutzer = new Teilnehmer();
+        nutzer.assignLoginName("nutzeruser");
         nutzer.setEmail("nutzer@example.com");
         nutzer.setPasswordHash(BcryptUtil.bcryptHash("correctPassword"));
         nutzer.setRole("TEILNEHMER");
         nutzer.setActive(true);
 
-        Mockito.when(Nutzer.findByEmail("nutzer@example.com")).thenReturn(nutzer);
+        Mockito.when(Nutzer.findByLoginName("nutzeruser")).thenReturn(nutzer);
 
-        LoginRequest loginReq = new LoginRequest("nutzer@example.com", "correctPassword");
+        LoginRequest loginReq = new LoginRequest("nutzeruser", "correctPassword");
 
         given()
                 .contentType(MediaType.APPLICATION_JSON)

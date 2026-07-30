@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Startet die für einen lokalen PROD-Testlauf (z.B. Native-Image-Runner) benötigte
 # Infrastruktur: MiniZinc (lokale Installation, kein Docker-Image verfügbar),
-# PostgreSQL (via ensure_prod_db.sh) + Mailpit (statt Brevo-SMTP).
+# SQL Server/Azure SQL Edge (via ensure_prod_db.sh) + Mailpit (statt Brevo-SMTP).
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -32,13 +32,13 @@ else
     exit 1
 fi
 
-# --- PostgreSQL ---
+# --- SQL Server (Azure SQL Edge) ---
 "$SCRIPT_DIR/ensure_prod_db.sh"
 
 # --- Mailpit ---
 MAILPIT_LABEL="vm_prod_mailpit"
 MAILPIT_IMAGE="axllent/mailpit:latest"
-MAILPIT_CONTAINER_NAME="vortragsmanager_prod_mailpit"
+MAILPIT_CONTAINER_NAME="konfplan_prod_mailpit"
 MAILPIT_SMTP_PORT=1025
 MAILPIT_UI_PORT=8025
 
@@ -82,10 +82,10 @@ echo "✅ Infrastruktur bereit. Native-Runner z.B. so starten:"
 cat <<'EOF'
 
 export DB_HOST=localhost
-export DB_PORT=5432
+export DB_PORT=1433
 export DB_NAME=konfplan
-export DB_USER=postgres
-export DB_PASSWORD='vm4HjK$'
+export DB_USER=sa
+export DB_PASSWORD='vm4HjK$26'
 export QUARKUS_MAILER_HOST=localhost
 export QUARKUS_MAILER_PORT=1025
 export QUARKUS_MAILER_START_TLS=DISABLED

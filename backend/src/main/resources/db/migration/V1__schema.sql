@@ -15,18 +15,19 @@ create table Gebaeude
 
 create table Nutzer
 (
-    is_active                 boolean,
-    email_change_token_expiry timestamp(6),
+    is_active                 bit,
+    email_change_token_expiry datetime2(7),
     id                        bigint      not null,
-    reset_token_expiry        timestamp(6),
+    reset_token_expiry        datetime2(7),
     version                   bigint      not null,
     role                      varchar(31) not null check ((role in ('REFERENT', 'ADMIN', 'TEILNEHMER'))),
     biography                 TEXT,
-    email                     varchar(255) unique,
+    email                     varchar(255),
     email_change_token        varchar(255),
     first_name                varchar(255),
     job_role                  varchar(255),
     last_name                 varchar(255),
+    login_name                varchar(255) not null,
     new_email                 varchar(255),
     organisation              varchar(255),
     password_hash             varchar(255),
@@ -38,6 +39,12 @@ create table Nutzer
     check (role <> 'TEILNEHMER' or (is_active is not null))
 );
 
+create unique nonclustered index UKj6lclcp7ibc7ommrkv3rcxnht
+    on Nutzer (email) where email is not null;
+
+alter table Nutzer
+    add constraint UK_nutzer_login_name unique (login_name);
+
 create table Nutzer_Veranstaltung
 (
     nutzer_id        bigint not null,
@@ -47,19 +54,25 @@ create table Nutzer_Veranstaltung
 
 create table NutzerVerfuegbarkeit
 (
-    nutzer_id          bigint not null,
-    veranstaltung_id   bigint not null,
-    verfuegbareSlotIds bigint array,
+    nutzer_id        bigint not null,
+    veranstaltung_id bigint not null,
     primary key (nutzer_id, veranstaltung_id)
+);
+
+create table nutzer_verfuegbarkeit_slots
+(
+    nutzer_id        bigint not null,
+    veranstaltung_id bigint not null,
+    slot_id          bigint
 );
 
 create table Planungsergebnis
 (
-    id               bigint not null,
-    veranstaltung_id bigint not null unique,
-    version          bigint not null,
-    jsonErgebnis     oid    not null,
-    solverConfig     jsonb,
+    id               bigint       not null,
+    veranstaltung_id bigint       not null unique,
+    version          bigint       not null,
+    jsonErgebnis     varchar(max) not null,
+    solverConfig     varchar(max),
     primary key (id)
 );
 
@@ -100,10 +113,16 @@ create table Raum
 
 create table RaumVerfuegbarkeit
 (
-    raum_id            bigint not null,
-    veranstaltung_id   bigint not null,
-    verfuegbareSlotIds bigint array,
+    raum_id          bigint not null,
+    veranstaltung_id bigint not null,
     primary key (raum_id, veranstaltung_id)
+);
+
+create table raum_verfuegbarkeit_slots
+(
+    raum_id          bigint not null,
+    veranstaltung_id bigint not null,
+    slot_id          bigint
 );
 
 create table Slot
@@ -154,7 +173,7 @@ create table veranstaltung_gruppen
 create table Vortrag
 (
     maxWiederholungen integer,
-    wiederholbar      boolean,
+    wiederholbar      bit,
     id                bigint      not null,
     pflichtraum_id    bigint,
     pflichtslot_id    bigint,
@@ -187,83 +206,116 @@ create table Vortrag
 
 create table VortragVerfuegbarkeit
 (
-    veranstaltung_id   bigint not null,
-    vortrag_id         bigint not null,
-    verfuegbareSlotIds bigint array,
+    veranstaltung_id bigint not null,
+    vortrag_id       bigint not null,
     primary key (veranstaltung_id, vortrag_id)
 );
 
-alter table if exists Nutzer_Veranstaltung
+create table vortrag_verfuegbarkeit_slots
+(
+    veranstaltung_id bigint not null,
+    vortrag_id       bigint not null,
+    slot_id          bigint
+);
+
+alter table Nutzer_Veranstaltung
     add constraint FKkhrm6bthspukyelg6m0hcxrn9
         foreign key (veranstaltung_id)
             references Veranstaltung;
 
-alter table if exists Nutzer_Veranstaltung
+alter table Nutzer_Veranstaltung
     add constraint FK3ncjyr1g518d6cbp5moom636t
         foreign key (nutzer_id)
             references Nutzer;
 
-alter table if exists Planungsergebnis
+alter table nutzer_verfuegbarkeit_slots
+    add constraint FKlvdrouk6u71wagipthiv7j0h9
+        foreign key (nutzer_id, veranstaltung_id)
+            references NutzerVerfuegbarkeit;
+
+alter table nutzer_verfuegbarkeit_slots
+    add constraint FK_nutzer_verfuegbarkeit_slots_slot
+        foreign key (slot_id) references Slot (id);
+
+alter table Planungsergebnis
     add constraint FKm4eiuxbl64ox74y069kljc48u
         foreign key (veranstaltung_id)
             references Veranstaltung;
 
-alter table if exists Prioritaet
+alter table Prioritaet
     add constraint FKrgn2iupj4ndbav3fl0qt6uqyu
         foreign key (teilnehmer_id)
             references Nutzer;
 
-alter table if exists Prioritaet
+alter table Prioritaet
     add constraint FKje3bphsr0jtft452j2165u15x
         foreign key (vortrag_id)
             references Vortrag;
 
-alter table if exists Raum
+alter table Raum
     add constraint FKp4omtwq0ahcw4ru0ji27xh3fi
         foreign key (gebaeude_id)
             references Gebaeude;
 
-alter table if exists Slot
+alter table raum_verfuegbarkeit_slots
+    add constraint FK8srt7rsgqv49rkbq0iq7kc4vv
+        foreign key (raum_id, veranstaltung_id)
+            references RaumVerfuegbarkeit;
+
+alter table raum_verfuegbarkeit_slots
+    add constraint FK_raum_verfuegbarkeit_slots_slot
+        foreign key (slot_id) references Slot (id);
+
+alter table Slot
     add constraint FKgxuv9ue09xmug30sjtfteogiu
         foreign key (veranstaltung_id)
             references Veranstaltung;
 
-alter table if exists teilnehmer_gruppen
+alter table teilnehmer_gruppen
     add constraint FKar4fnbwb9xxgbr97ym1qf4v8g
         foreign key (teilnehmer_id)
             references Nutzer;
 
-alter table if exists Veranstaltung_Gebaeude
+alter table Veranstaltung_Gebaeude
     add constraint FKb20732ctgp9axyb6mgej78yc8
         foreign key (gebaeude_id)
             references Gebaeude;
 
-alter table if exists Veranstaltung_Gebaeude
+alter table Veranstaltung_Gebaeude
     add constraint FKfgsbdf30p9h55k450oi713tnj
         foreign key (veranstaltung_id)
             references Veranstaltung;
 
-alter table if exists veranstaltung_gruppen
+alter table veranstaltung_gruppen
     add constraint FK88tswehpfqg40yp9jqh2p30ui
         foreign key (veranstaltung_id)
             references Veranstaltung;
 
-alter table if exists Vortrag
+alter table Vortrag
     add constraint FKpe40i38wpnx4vssrjevk2umsw
         foreign key (referent_id)
             references Nutzer;
 
-alter table if exists Vortrag
+alter table Vortrag
     add constraint FKce0t66m2ms7l9rsuwllfsk6v5
         foreign key (veranstaltung_id)
             references Veranstaltung;
 
-alter table if exists Vortrag
+alter table Vortrag
     add constraint FKqf00utmxmbkfctdn5l3k2hltx
         foreign key (pflichtraum_id)
             references Raum;
 
-alter table if exists Vortrag
+alter table Vortrag
     add constraint FKbjrlyq9pa1hh7wdjwsk27filf
         foreign key (pflichtslot_id)
             references Slot;
+
+alter table vortrag_verfuegbarkeit_slots
+    add constraint FKbwt5xytvbi8i2stt9tyd8krvn
+        foreign key (veranstaltung_id, vortrag_id)
+            references VortragVerfuegbarkeit;
+
+alter table vortrag_verfuegbarkeit_slots
+    add constraint FK_vortrag_verfuegbarkeit_slots_slot
+        foreign key (slot_id) references Slot (id);

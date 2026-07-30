@@ -12,6 +12,8 @@ import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import java.util.Objects;
+
 @ApplicationScoped
 public class MailService {
     private final String adminEmail;
@@ -54,6 +56,10 @@ public class MailService {
 
 
     public void sendVortragsRegistrierung(Admin organisator, Veranstaltung v, Referent referent, Vortrag vortrag, boolean isAdded) {
+        if (organisator.getEmail() == null) {
+            return;
+        }
+
         String action = isAdded ? "angemeldet" : "abgemeldet / zurückgezogen";
         String subject = String.format("Vortrags-Update: %s für %s", action, v.getName());
         String body = String.format(
@@ -203,9 +209,11 @@ public class MailService {
             veranstaltung.getName()
         );
 
-        veranstaltung.organisatoren().forEach(organisator
-            -> mailer.send(Mail.withText(organisator.getEmail(), subject, body)
-            .setFrom(senderEmail(veranstaltung))));
+        veranstaltung.organisatoren().stream()
+            .filter(organisator -> organisator.getEmail() != null)
+            .forEach(organisator
+                -> mailer.send(Mail.withText(organisator.getEmail(), subject, body)
+                .setFrom(senderEmail(veranstaltung))));
     }
 
     // -------------------------------------------------------------------
@@ -213,7 +221,11 @@ public class MailService {
     // -------------------------------------------------------------------
 
 
-    private static String senderEmail(Veranstaltung v) {
-        return v.organisatoren().getFirst().getEmail();
+    private String senderEmail(Veranstaltung v) {
+        return v.organisatoren().stream()
+            .map(Admin::getEmail)
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElse(adminEmail);
     }
 }

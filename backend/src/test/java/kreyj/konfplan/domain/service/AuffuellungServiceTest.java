@@ -54,6 +54,7 @@ public class AuffuellungServiceTest extends DatabaseCleaner {
         veranstaltung.persist();
 
         Referent referent = new Referent();
+        referent.assignLoginName("referent@test.com");
         referent.setEmail("referent@test.com");
         referent.setFirstName("Max");
         referent.setLastName("Mustermann");
@@ -87,6 +88,7 @@ public class AuffuellungServiceTest extends DatabaseCleaner {
 
     private Teilnehmer neuerTeilnehmer(Veranstaltung veranstaltung, String email) {
         Teilnehmer tn = new Teilnehmer();
+        tn.assignLoginName(email);
         tn.setEmail(email);
         tn.setFirstName(email);
         tn.setLastName("Test");

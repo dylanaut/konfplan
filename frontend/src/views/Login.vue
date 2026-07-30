@@ -18,7 +18,7 @@
 
         <form class="mt-8 space-y-6" @submit.prevent="handleLogin">
           <div class="rounded-md shadow-sm space-y-4">
-            <input v-model="email" type="email" required placeholder="E-Mail Adresse" class="input-field"/>
+            <input v-model="loginName" type="text" required placeholder="Anmeldename" class="input-field"/>
             <input v-model="password" type="password" required placeholder="Passwort" class="input-field"/>
           </div>
 
@@ -44,15 +44,15 @@
           <img class="mx-auto h-24 w-auto" src="/logo/konfplan-light.svg" alt="Konfplan Logo"/>
           <h2 class="text-2xl font-bold text-gray-900">Passwort zurücksetzen</h2>
           <p class="mt-2 text-sm text-gray-600">
-            Geben Sie Ihre E-Mail Adresse ein. Wir senden Ihnen einen Link zum Zurücksetzen.
+            Geben Sie Ihren Anmeldenamen ein. Falls eine E-Mail-Adresse hinterlegt ist, senden wir Ihnen einen Link zum Zurücksetzen.
           </p>
         </div>
 
         <form class="mt-8 space-y-6" @submit.prevent="handleForgot">
-          <input v-model="forgotEmail" type="email" required placeholder="E-Mail Adresse" class="input-field"/>
+          <input v-model="forgotLoginName" type="text" required placeholder="Anmeldename" class="input-field"/>
 
           <div v-if="forgotSuccess" class="text-green-600 text-sm bg-green-50 p-3 rounded">
-            Falls die Adresse registriert ist, erhalten Sie in Kürze eine E-Mail.
+            Falls der Anmeldename registriert ist und eine E-Mail-Adresse hinterlegt ist, erhalten Sie in Kürze eine E-Mail. Andernfalls wenden Sie sich bitte an Ihren Administrator.
           </div>
 
           <div class="flex flex-col gap-3">
@@ -85,22 +85,22 @@ const loading = ref(false);
 const forgotSuccess = ref(false);
 
 // Form Fields
-const email = ref('');
+const loginName = ref('');
 const password = ref('');
-const forgotEmail = ref('');
+const forgotLoginName = ref('');
 
 const handleLogin = async () => {
   loading.value = true;
-  await authStore.login({ email: email.value, password: password.value });
+  await authStore.login({ loginName: loginName.value, password: password.value });
   loading.value = false;
 };
 
 const handleForgot = async () => {
   loading.value = true;
   try {
-    await api.post(`/api/auth/forgot-password?email=${forgotEmail.value}`);
+    await api.post(`/api/auth/forgot-password?loginName=${forgotLoginName.value}`);
     forgotSuccess.value = true;
-    toast.success("Email versendet. Bitte prüfen Sie Ihr Postfach.");
+    toast.success("Anfrage gesendet. Bitte prüfen Sie ggf. Ihr Postfach.");
   } catch (e) {
     console.error(e);
     toast.error("Emailversand fehlgeschlagen. Bitte versuchen Sie es später erneut.");

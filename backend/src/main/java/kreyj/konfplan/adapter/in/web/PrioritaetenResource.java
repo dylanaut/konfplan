@@ -50,8 +50,8 @@ public class PrioritaetenResource {
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).entity("Veranstaltung nicht gefunden").build();
         }
-        String email = JwtHelper.getUserPrincipalName(jwt);
-        Nutzer nutzer = Nutzer.findByEmail(email);
+        String loginName = JwtHelper.getUserPrincipalName(jwt);
+        Nutzer nutzer = Nutzer.findByLoginName(loginName);
         if (null == nutzer) {
             return Response.status(Response.Status.NOT_FOUND).entity("Nutzer nicht gefunden").build();
         }
@@ -65,9 +65,9 @@ public class PrioritaetenResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Operation(summary = "Prioritäten aktualisieren", description = "Aktualisiert die Prioritäten des Teilnehmers für die Wahlvorträge.")
     public Response updatePrioritaeten(@RequestBody(description = "Liste der Prioritäts-Anfragen") List<VortragPrioDto> requests) {
-        String email = JwtHelper.getUserPrincipalName(jwt);
+        String loginName = JwtHelper.getUserPrincipalName(jwt);
 
-        prioService.savePrioritaeten(email, requests);
+        prioService.savePrioritaeten(loginName, requests);
 
         return Response.ok().build();
     }

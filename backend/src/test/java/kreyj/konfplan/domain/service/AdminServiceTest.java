@@ -38,6 +38,7 @@ public class AdminServiceTest {
 
         // Create a test user
         Nutzer user = new Admin();
+        user.assignLoginName("testexample");
         user.setEmail("test@example.com");
         user.setFirstName("Test");
         user.setLastName("User");
@@ -53,6 +54,7 @@ public class AdminServiceTest {
 
         // Create a test participant
         Teilnehmer teilnehmer = new Teilnehmer();
+        teilnehmer.assignLoginName("teilnehmerexample");
         teilnehmer.setEmail("teilnehmer@example.com");
         teilnehmer.setFirstName("Max");
         teilnehmer.setLastName("Mustermann");

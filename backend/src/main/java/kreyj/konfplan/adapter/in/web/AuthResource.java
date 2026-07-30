@@ -46,10 +46,16 @@ public class AuthResource {
     @PermitAll
     @Transactional
     @Operation(summary = "Passwort vergessen", description = "Fordert eine E-Mail zum Zurücksetzen des Passworts an.")
-    public Response forgotPassword(@QueryParam("email") String email) {
-        Nutzer nutzer = Nutzer.findByEmail(email);
+    public Response forgotPassword(@QueryParam("loginName") String loginName) {
+        Nutzer nutzer = Nutzer.findByLoginName(loginName);
 
         if (nutzer != null) {
+            if (null == nutzer.getEmail()) {
+                // Kein Self-Service-Reset möglich - nur ein Admin kann das Passwort zurücksetzen.
+                protokollService.log(ProtokollKategorie.SECURITY, "Passwort-Reset ohne hinterlegte E-Mail angefordert", "Nutzer: " + loginName, nutzer.getId());
+                return Response.accepted().build();
+            }
+
             String token = UUID.randomUUID().toString();
             nutzer.setResetToken(token);
             nutzer.setResetTokenExpiry(LocalDateTime.now().plusHours(2));
@@ -67,9 +73,9 @@ public class AuthResource {
                             success -> System.out.println("Mail gesendet an " + nutzer.getEmail()),
                             failure -> System.err.println("Mail-Fehler: " + failure.getMessage())
                     );
-            protokollService.log(ProtokollKategorie.SECURITY, "Passwort-Reset angefordert", "Nutzer: " + email, nutzer.getId());
+            protokollService.log(ProtokollKategorie.SECURITY, "Passwort-Reset angefordert", "Nutzer: " + loginName, nutzer.getId());
         } else {
-            protokollService.log(ProtokollKategorie.SECURITY, "Passwort-Reset für unbekannte E-Mail", "Email: " + email);
+            protokollService.log(ProtokollKategorie.SECURITY, "Passwort-Reset für unbekannten Anmeldenamen", "LoginName: " + loginName);
         }
 
         return Response.accepted().build();
@@ -98,20 +104,20 @@ public class AuthResource {
     @Transactional
     @Operation(summary = "Login", description = "Authentifiziert einen Nutzer und gibt einen JWT-Token zurück.")
     public Response login(@RequestBody(description = "Die Login-Anmeldeinformationen") LoginRequest loginRequest) {
-        Nutzer nutzer = Nutzer.findByEmail(loginRequest.email);
+        Nutzer nutzer = Nutzer.findByLoginName(loginRequest.loginName);
 
         if (nutzer != null && BcryptUtil.matches(loginRequest.password, nutzer.getPasswordHash())
                 && nutzer.isActive()) {
             String token = Jwt.issuer("https://konfplan.kreyj")
-                    .upn(nutzer.getEmail())
-                    .subject(nutzer.getEmail())
+                    .upn(nutzer.getLoginName())
+                    .subject(nutzer.getLoginName())
                     .groups(nutzer.getRole())
                     .expiresIn(Duration.ofHours(4))
                     .sign();
             protokollService.log(ProtokollKategorie.LOGIN, "Erfolgreicher Login", "Rolle: " + nutzer.getRole(), nutzer.getId());
             return Response.ok(new TokenResponse(token, nutzer.getRole())).build();
         }
-        protokollService.log(ProtokollKategorie.SECURITY, "Fehlgeschlagener Login-Versuch", "E-Mail: " + loginRequest.email);
+        protokollService.log(ProtokollKategorie.SECURITY, "Fehlgeschlagener Login-Versuch", "LoginName: " + loginRequest.loginName);
         return Response.status(Response.Status.UNAUTHORIZED).build();
     }
 }

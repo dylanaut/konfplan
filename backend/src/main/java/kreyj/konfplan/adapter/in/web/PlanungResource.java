@@ -74,6 +74,7 @@ public class PlanungResource {
         Map<String, Object> status = new HashMap<>();
         status.put("isPlanning", planErstellungService.isPlanning());
         status.put("lastError", planErstellungService.getLastError());
+        status.put("phase", planErstellungService.getPhase());
         return Response.ok(status).build();
     }
 }

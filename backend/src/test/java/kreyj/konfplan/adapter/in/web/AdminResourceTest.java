@@ -50,6 +50,7 @@ class AdminResourceTest extends DatabaseCleaner {
     @Transactional
     void setup() {
         Admin admin = new Admin();
+        admin.assignLoginName("admin@example.com");
         admin.setEmail("admin@example.com");
         admin.setPasswordHash("hash");
         admin.persist();
@@ -62,6 +63,7 @@ class AdminResourceTest extends DatabaseCleaner {
     void testGetAllUsersGlobal() {
         QuarkusTransaction.requiringNew().run(() -> {
             Admin a = new Admin();
+            a.assignLoginName("admin1@example.com");
             a.setEmail("admin1@example.com");
             a.persist();
         });
@@ -79,6 +81,7 @@ class AdminResourceTest extends DatabaseCleaner {
     void testCreateUser() {
         NutzerDto dto = NutzerDto.referent("new@test.de", "Max", "Mustermann",
             null, null, null, null);
+        dto.loginName = "newtest";
 
         given().contentType(ContentType.JSON)
             .body(dto)
@@ -95,6 +98,7 @@ class AdminResourceTest extends DatabaseCleaner {
     void testUpdateUser() {
         String oldEmail = "old@test.de";
         NutzerDto dto = NutzerDto.teilnehmer(oldEmail, null, null);
+        dto.loginName = "oldtest";
         NutzerDto created =
             given().contentType(ContentType.JSON)
                 .body(dto)
@@ -133,6 +137,7 @@ class AdminResourceTest extends DatabaseCleaner {
     @Test
     void testDeleteUser() {
         NutzerDto dto = NutzerDto.teilnehmer("todelete@test.de", null, null);
+        dto.loginName = "todelete";
 
         NutzerDto created =
             given().contentType(ContentType.JSON)
@@ -159,6 +164,7 @@ class AdminResourceTest extends DatabaseCleaner {
 
         QuarkusTransaction.requiringNew().run(() -> {
             Teilnehmer t1 = new Teilnehmer();
+            t1.assignLoginName("invite");
             t1.setEmail("invite@test.de");
             t1.persist();
             userIdArray[0] = t1.getId();
@@ -209,6 +215,7 @@ class AdminResourceTest extends DatabaseCleaner {
             v.persist();
 
             Referent referent = new Referent();
+            referent.assignLoginName("ref");
             referent.setEmail("ref@test.de");
             referent.setPasswordHash("hash");
 
@@ -248,6 +255,7 @@ class AdminResourceTest extends DatabaseCleaner {
 
         QuarkusTransaction.requiringNew().run(() -> {
             Teilnehmer t = new Teilnehmer();
+            t.assignLoginName("teilnehmerexample");
             t.setEmail("teilnehmer@example.com");
             t.setPasswordHash("password");
             t.setFirstName("Original");

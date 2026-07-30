@@ -9,8 +9,8 @@ public class VortragCsvDto {
     @CsvBindByName(column = "Titel", required = true)
     public String titel;
 
-    @CsvBindByName(column = "Referent_Email", required = true)
-    public String referentEmail;
+    @CsvBindByName(column = "Referent_LoginName", required = true)
+    public String referentLoginName;
 
     @CsvBindByName(column = "Inhalt")
     public String inhalt;

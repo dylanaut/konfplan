@@ -10,7 +10,10 @@ public class TeilnehmerCsvDto {
     @CsvBindByName(column = "Nachname", required = true)
     public String nachname;
 
-    @CsvBindByName(column = "Email", required = true)
+    @CsvBindByName(column = "LoginName", required = true)
+    public String loginName;
+
+    @CsvBindByName(column = "Email")
     public String email;
 
     @CsvBindByName(column = "Gruppen") // getrennt durch '|'

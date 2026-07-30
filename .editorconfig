@@ -25,3 +25,7 @@ trim_trailing_whitespace = false
 # CSV files - Specific rule to prevent line wrapping
 [*.csv]
 max_line_length = off
+
+[*.{mzn,dzn}]
+max_line_length = off
+ij_any_wrap_on_typing = false

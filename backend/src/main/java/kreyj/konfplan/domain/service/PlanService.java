@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -53,6 +54,16 @@ public class PlanService {
     public static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm"); // Made public for testing
 
     private final ObjectMapper objectMapper;
+
+    /**
+     * Cache des aus dem (potenziell großen) JSON-Blob geparsten MinizincResult, keyed by
+     * Planungsergebnis-Id. Vermeidet das wiederholte Neu-Parsen bei jedem Report-Aufruf;
+     * die Version dient als Invalidierungs-Kriterium bei neu erstelltem Plan.
+     */
+    private final Map<Long, CachedMinizincResult> minizincResultCache = new ConcurrentHashMap<>();
+
+    private record CachedMinizincResult(Long version, Planungsergebnis.MinizincResult result) {
+    }
 
 
     public PlanService(ObjectMapper objectMapper) {
@@ -180,19 +191,20 @@ public class PlanService {
     public PlanQualitaetDto getPlanQualitaet(Veranstaltung veranstaltung) {
         Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
         if (null == planungsergebnis) {
-            return new PlanQualitaetDto(0, 0, "Kein Ergebnis vorhanden");
+            return new PlanQualitaetDto(0, 0, 0, "Kein Ergebnis vorhanden");
         }
 
         try {
             JsonNode root = objectMapper.readTree(planungsergebnis.getJsonErgebnis());
-            int kosten = root.has("kosten") ? root.get("kosten").asInt() : 0;
-            int anzahlZuweisungen = root.has("zuweisungen") ? root.get("zuweisungen").asInt() : 0;
+            int guete = root.has("guete") ? root.get("guete").asInt() : 0;
+            int zuweisungen = root.has("zuweisungen") ? root.get("zuweisungen").asInt() : 0;
+            int raumwechsel = root.has("raumwechsel") ? root.get("raumwechsel").asInt() : 0;
             String status = "Planerstellung abgeschlossen";
 
-            return new PlanQualitaetDto(kosten, anzahlZuweisungen, status);
+            return new PlanQualitaetDto(guete, zuweisungen, raumwechsel, status);
         } catch (Exception e) {
             LOG.error("Fehler beim Parsen der Planqualität für Veranstaltung " + veranstaltung.getName(), e);
-            return new PlanQualitaetDto(0, 0, "Fehler beim Parsen");
+            return new PlanQualitaetDto(0, 0, 0, "Fehler beim Parsen");
         }
     }
 
@@ -626,9 +638,17 @@ public class PlanService {
     public Planungsergebnis.MinizincResult getMinizincResult(Planungsergebnis planungsergebnis) {
         Objects.requireNonNull(planungsergebnis, "planungsergebnis must not be null");
 
+        CachedMinizincResult cached = minizincResultCache.get(planungsergebnis.getId());
+        if (cached != null && cached.version().equals(planungsergebnis.getVersion())) {
+            return cached.result();
+        }
+
         try {
-            return objectMapper.readValue(planungsergebnis.getJsonErgebnis(),
+            Planungsergebnis.MinizincResult result = objectMapper.readValue(planungsergebnis.getJsonErgebnis(),
                 Planungsergebnis.MinizincResult.class);
+            minizincResultCache.put(planungsergebnis.getId(),
+                new CachedMinizincResult(planungsergebnis.getVersion(), result));
+            return result;
         } catch (JsonProcessingException e) {
             LOG.warn("Failed to parse Minizinc result for Veranstaltung" + planungsergebnis.getJsonErgebnis());
             throw new RuntimeException(e);

@@ -199,15 +199,15 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
 
                 veranstaltung.persistAndFlush();
 
-                String[] organisatorenEmails = StringUtils.split(csvDto.organisatorenEmails, ",");
-                for (String organisatorenEmail : organisatorenEmails) {
-                    Nutzer admin = Nutzer.findByEmail(organisatorenEmail.trim());
+                String[] organisatorenLoginNames = StringUtils.split(csvDto.organisatorenLoginNames, ",");
+                for (String organisatorenLoginName : organisatorenLoginNames) {
+                    Nutzer admin = Nutzer.findByLoginName(organisatorenLoginName.trim());
 
                     if (admin instanceof Admin) {
                         // Admin verknüpfen
                         admin.addVeranstaltung(veranstaltung);
                     } else {
-                        LOG.warn("Veranstaltung '" + csvDto.name + "' übersprungen: Organisator (Admin) mit Email " + organisatorenEmail + " nicht gefunden.");
+                        LOG.warn("Veranstaltung '" + csvDto.name + "' übersprungen: Organisator (Admin) mit loginName " + organisatorenLoginName + " nicht gefunden.");
                     }
                 }
 

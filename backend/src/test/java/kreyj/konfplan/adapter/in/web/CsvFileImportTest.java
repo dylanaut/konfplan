@@ -52,6 +52,7 @@ class CsvFileImportTest extends DatabaseCleaner {
     @Transactional
     void setupTransactional() {
         Admin admin = new Admin();
+        admin.assignLoginName("admintest");
         admin.setEmail("admin@test.de");
         admin.setPasswordHash("hash");
         admin.persist();

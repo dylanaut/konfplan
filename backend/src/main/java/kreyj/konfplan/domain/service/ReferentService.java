@@ -2,6 +2,7 @@ package kreyj.konfplan.domain.service;
 
 import com.opencsv.bean.CsvToBeanBuilder;
 import io.quarkus.elytron.security.common.BcryptUtil;
+import io.quarkus.runtime.LaunchMode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
@@ -24,6 +25,7 @@ import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
 import kreyj.konfplan.persistence.Wahlvortrag;
+import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 
 import java.io.FileReader;
@@ -35,6 +37,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 
 import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvIdL;
 
@@ -45,18 +48,20 @@ public class ReferentService implements ReferentServiceInterface {
     private final MailService mailService;
 
     private final ProtokollService protokollService;
+    private LaunchMode launchMode;
 
 
-    public ReferentService(MailService mailService, ProtokollService protokollService) {
+    public ReferentService(MailService mailService, ProtokollService protokollService, LaunchMode launchMode) {
         this.mailService = mailService;
         this.protokollService = protokollService;
+        this.launchMode = launchMode;
     }
 
 
     @Transactional
     @Override
-    public Referent findByEmail(String email) {
-        Nutzer nutzer = Nutzer.findByEmail(email);
+    public Referent findByLoginName(String loginName) {
+        Nutzer nutzer = Nutzer.findByLoginName(loginName);
         if (nutzer instanceof Referent) {
             return (Referent) nutzer;
         }
@@ -66,12 +71,12 @@ public class ReferentService implements ReferentServiceInterface {
 
     @Transactional
     @Override
-    public void updateProfile(String email, NutzerDto dto) {
+    public void updateProfile(String loginName, NutzerDto dto) {
         if (null == dto) {
             return;
         }
 
-        Nutzer nutzer = Nutzer.findByEmail(email);
+        Nutzer nutzer = Nutzer.findByLoginName(loginName);
 
         if (!Objects.equals(nutzer.getVersion(), dto.version)) {
             throw new OptimisticLockException("Der Nutzer wurde zwischenzeitlich von Dritten geändert. Bitte aktualisieren Sie die Daten und versuchen Sie es erneut.");
@@ -84,14 +89,14 @@ public class ReferentService implements ReferentServiceInterface {
             referent.setFirstName(dto.firstName);
             referent.setLastName(dto.lastName);
             referent.setEmail(dto.email);
-            protokollService.log(ProtokollKategorie.NUTZER, "Profil aktualisiert", "Referenten-Profil '" + email + "' aktualisiert.", referent.getId());
+            protokollService.log(ProtokollKategorie.NUTZER, "Profil aktualisiert", "Referenten-Profil '" + loginName + "' aktualisiert.", referent.getId());
         }
     }
 
 
     @Override
-    public List<VortragDto> getReferentVortraege(String email) {
-        Referent referent = Referent.find("email", email).firstResult();
+    public List<VortragDto> getReferentVortraege(String loginName) {
+        Referent referent = Referent.find("loginName", loginName).firstResult();
         if (null == referent) {
             return new ArrayList<>();
         }
@@ -133,8 +138,8 @@ public class ReferentService implements ReferentServiceInterface {
 
     @Transactional
     @Override
-    public VortragDto createVortrag(String email, VortragDto dto) {
-        Referent referent = Referent.find("email", email).firstResult();
+    public VortragDto createVortrag(String loginName, VortragDto dto) {
+        Referent referent = Referent.find("loginName", loginName).firstResult();
         if (null == referent) {
             return null;
         }
@@ -156,15 +161,15 @@ public class ReferentService implements ReferentServiceInterface {
             mailService.sendVortragsRegistrierung(vortrag.getVeranstaltung(), referent, vortrag, true);
         }
 
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent erstellt", "Referent '" + email + "' hat Vortrag '" + vortrag.getTitel() + "' für Event '" + veranstaltung.getName() + "' erstellt.", vortrag.getId(), veranstaltung.getId());
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent erstellt", "Referent '" + loginName + "' hat Vortrag '" + vortrag.getTitel() + "' für Event '" + veranstaltung.getName() + "' erstellt.", vortrag.getId(), veranstaltung.getId());
         return VortragDto.from(vortrag);
     }
 
 
     @Transactional
     @Override
-    public VortragDto updateVortrag(String email, Long vortragId, VortragDto dto) {
-        Referent referent = Referent.find("email", email).firstResult();
+    public VortragDto updateVortrag(String loginName, Long vortragId, VortragDto dto) {
+        Referent referent = Referent.find("loginName", loginName).firstResult();
         Vortrag vortrag = Vortrag.findById(vortragId);
 
         if (null == vortrag || !vortrag.getReferent().getId().equals(referent.getId())) {
@@ -178,15 +183,15 @@ public class ReferentService implements ReferentServiceInterface {
         checkDeadline(vortrag.getVeranstaltung());
 
         updateVortragFromDto(vortrag, dto);
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent aktualisiert", "Referent '" + email + "' hat Vortrag '" + vortrag.getTitel() + "' aktualisiert.", vortrag.getId(), vortrag.getVeranstaltung().getId());
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent aktualisiert", "Referent '" + loginName + "' hat Vortrag '" + vortrag.getTitel() + "' aktualisiert.", vortrag.getId(), vortrag.getVeranstaltung().getId());
         return VortragDto.from(vortrag);
     }
 
 
     @Transactional
     @Override
-    public void meldeVortragFuerVeranstaltungAn(String email, Long vortragId, Long veranstaltungId) {
-        Referent referent = Referent.find("email", email).firstResult();
+    public void meldeVortragFuerVeranstaltungAn(String loginName, Long vortragId, Long veranstaltungId) {
+        Referent referent = Referent.find("loginName", loginName).firstResult();
         Vortrag vortrag = Vortrag.findById(vortragId);
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
 
@@ -230,14 +235,14 @@ public class ReferentService implements ReferentServiceInterface {
         if (veranstaltung.getBeginntAm().isAfter(LocalDateTime.now())) {
             mailService.sendVortragsRegistrierung(veranstaltung, referent, vortrag, true);
         }
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag für weiteres Event registriert", "Referent '" + email + "' hat Vortrag '" + vortrag.getTitel() + "' für Event '" + veranstaltung.getName() + "' registriert.", vortrag.getId(), veranstaltung.getId());
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag für weiteres Event registriert", "Referent '" + loginName + "' hat Vortrag '" + vortrag.getTitel() + "' für Event '" + veranstaltung.getName() + "' registriert.", vortrag.getId(), veranstaltung.getId());
     }
 
 
     @Transactional
     @Override
-    public VortragDto uebernimmVortragInVeranstaltung(String email, Long sourceVortragId, Long veranstaltungId) {
-        Referent referent = Referent.find("email", email).firstResult();
+    public VortragDto uebernimmVortragInVeranstaltung(String loginName, Long sourceVortragId, Long veranstaltungId) {
+        Referent referent = Referent.find("loginName", loginName).firstResult();
         if (null == referent) {
             throw new WebApplicationException("Referent nicht gefunden.", Response.Status.NOT_FOUND);
         }
@@ -293,7 +298,7 @@ public class ReferentService implements ReferentServiceInterface {
             mailService.sendVortragsRegistrierung(veranstaltung, referent, zielVortrag, true);
         }
 
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag geklont", "Referent '" + email + "' hat Vortrag '" + zielVortrag.getTitel() + "' von Event '" + quellVortrag.getVeranstaltung().getName() + "' nach Event '" + veranstaltung.getName() + "' geklont.", zielVortrag.getId(), veranstaltung.getId());
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag geklont", "Referent '" + loginName + "' hat Vortrag '" + zielVortrag.getTitel() + "' von Event '" + quellVortrag.getVeranstaltung().getName() + "' nach Event '" + veranstaltung.getName() + "' geklont.", zielVortrag.getId(), veranstaltung.getId());
 
         return VortragDto.from(zielVortrag);
     }
@@ -301,8 +306,8 @@ public class ReferentService implements ReferentServiceInterface {
 
     @Transactional
     @Override
-    public void meldeVortragFuerVeranstaltungAb(String email, Long vortragId, Long veranstaltungId) {
-        Referent referent = Referent.find("email", email).firstResult();
+    public void meldeVortragFuerVeranstaltungAb(String loginName, Long vortragId, Long veranstaltungId) {
+        Referent referent = Referent.find("loginName", loginName).firstResult();
         Vortrag vortrag = Vortrag.findById(vortragId);
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
 
@@ -321,7 +326,7 @@ public class ReferentService implements ReferentServiceInterface {
         if (veranstaltung.getBeginntAm().isAfter(LocalDateTime.now())) {
             mailService.sendVortragsRegistrierung(veranstaltung, referent, vortrag, false);
         }
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag von Event abgemeldet", "Referent '" + email + "' hat Vortrag '" + titel + "' von Event '" + veranstaltung.getName() + "' abgemeldet.", vortragId, veranstaltung.getId());
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag von Event abgemeldet", "Referent '" + loginName + "' hat Vortrag '" + titel + "' von Event '" + veranstaltung.getName() + "' abgemeldet.", vortragId, veranstaltung.getId());
     }
 
 
@@ -362,8 +367,8 @@ public class ReferentService implements ReferentServiceInterface {
 
     @Transactional
     @Override
-    public boolean deleteVortrag(String email, Long vortragId) {
-        Referent referent = Referent.find("email", email).firstResult();
+    public boolean deleteVortrag(String loginName, Long vortragId) {
+        Referent referent = Referent.find("loginName", loginName).firstResult();
         Vortrag vortrag = Vortrag.findById(vortragId);
 
         if (null == vortrag || !vortrag.getReferent().getId().equals(referent.getId())) {
@@ -379,7 +384,7 @@ public class ReferentService implements ReferentServiceInterface {
         if (veranstaltung.getBeginntAm().isAfter(LocalDateTime.now())) {
             mailService.sendVortragsRegistrierung(veranstaltung, referent, vortrag, false);
         }
-        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent gelöscht", "Referent '" + email + "' hat Vortrag '" + titel + "' gelöscht.", vortragId, veranstaltung.getId());
+        protokollService.log(ProtokollKategorie.VORTRAEGE, "Vortrag durch Referent gelöscht", "Referent '" + loginName + "' hat Vortrag '" + titel + "' gelöscht.", vortragId, veranstaltung.getId());
 
         return true;
     }
@@ -412,18 +417,27 @@ public class ReferentService implements ReferentServiceInterface {
                 .parse();
 
             for (ReferentCsvDto dto : beans) {
-                Nutzer existingNutzer = Nutzer.findByEmail(dto.email);
+                if (StringUtils.isBlank(dto.loginName)) {
+                    LOG.warn("Referent-Zeile übersprungen: loginName fehlt.");
+                    continue;
+                }
+                String loginName = dto.loginName.trim().toLowerCase();
+
+                Nutzer existingNutzer = Nutzer.findByLoginName(loginName);
                 Referent ref;
                 if (null == existingNutzer) {
                     ref = new Referent();
-                    ref.setEmail(dto.email.trim().toLowerCase());
-                    String tempPassword = "start123";
+                    ref.assignLoginName(loginName);
+                    if (StringUtils.isNotBlank(dto.email)) {
+                        ref.setEmail(dto.email.trim().toLowerCase());
+                    }
+                    String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
                     ref.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
                     ref.persistAndFlush();
                 } else if (existingNutzer instanceof Referent) {
                     ref = (Referent) existingNutzer;
                 } else {
-                    LOG.warn("Nutzer mit Email " + dto.email + " existiert bereits, ist aber kein Referent. Überspringe.");
+                    LOG.warn("Nutzer mit loginName " + loginName + " existiert bereits, ist aber kein Referent. Überspringe.");
                     continue;
                 }
 
@@ -438,7 +452,7 @@ public class ReferentService implements ReferentServiceInterface {
                 ref.addVeranstaltung(veranstaltung);
 
                 count++;
-                protokollService.log(ProtokollKategorie.NUTZER, "Referent importiert", "Referent '" + ref.getEmail() + "' via CSV importiert und Event '" + veranstaltung.getName() + "' zugewiesen.", ref.getId(), veranstaltung.getId());
+                protokollService.log(ProtokollKategorie.NUTZER, "Referent importiert", "Referent '" + ref.getLoginName() + "' via CSV importiert und Event '" + veranstaltung.getName() + "' zugewiesen.", ref.getId(), veranstaltung.getId());
             }
         }
         return count;

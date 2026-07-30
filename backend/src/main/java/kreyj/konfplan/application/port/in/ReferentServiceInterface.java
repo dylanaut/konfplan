@@ -10,25 +10,25 @@ import java.util.List;
 
 public interface ReferentServiceInterface {
 
-    Referent findByEmail(String email);
+    Referent findByLoginName(String loginName);
 
-    void updateProfile(String email, NutzerDto dto);
+    void updateProfile(String loginName, NutzerDto dto);
 
-    List<VortragDto> getReferentVortraege(String email);
+    List<VortragDto> getReferentVortraege(String loginName);
 
     List<ReferentVeranstaltungDto> getReferentVeranstaltungen(Referent referent);
 
-    VortragDto createVortrag(String email, VortragDto dto);
+    VortragDto createVortrag(String loginName, VortragDto dto);
 
-    VortragDto updateVortrag(String email, Long vortragId, VortragDto dto);
+    VortragDto updateVortrag(String loginName, Long vortragId, VortragDto dto);
 
-    void meldeVortragFuerVeranstaltungAn(String email, Long vortragId, Long veranstaltungId);
+    void meldeVortragFuerVeranstaltungAn(String loginName, Long vortragId, Long veranstaltungId);
 
-    VortragDto uebernimmVortragInVeranstaltung(String email, Long sourceVortragId, Long veranstaltungId);
+    VortragDto uebernimmVortragInVeranstaltung(String loginName, Long sourceVortragId, Long veranstaltungId);
 
-    void meldeVortragFuerVeranstaltungAb(String email, Long vortragId, Long veranstaltungId);
+    void meldeVortragFuerVeranstaltungAb(String loginName, Long vortragId, Long veranstaltungId);
 
-    boolean deleteVortrag(String email, Long vortragId);
+    boolean deleteVortrag(String loginName, Long vortragId);
 
     int importFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception;
 }

@@ -12,6 +12,10 @@
         <h2 class="text-xl font-bold">Persönliches Profil</h2>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700">Anmeldename (nicht änderbar)</label>
+          <input :value="referent.loginName" type="text" class="input-field" disabled />
+        </div>
         <div>
           <label class="block text-sm font-medium text-gray-700">Vorname</label>
           <input v-model="referent.firstName" type="text" class="input-field" :disabled="isAnyDeadlinePassed" />
@@ -29,7 +33,7 @@
           <input v-model="referent.jobRole" type="text" class="input-field" :disabled="isAnyDeadlinePassed" />
         </div>
         <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">E-Mail Adresse</label>
+          <label class="block text-sm font-medium text-gray-700">E-Mail Adresse (optional)</label>
           <input v-model="referent.email" type="email" class="input-field" :disabled="isAnyDeadlinePassed" />
         </div>
         <div class="md:col-span-2">
@@ -38,7 +42,7 @@
         </div>
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700">Biografie</label>
-          <textarea v-model="referent.bio" rows="4" class="input-field" :disabled="isAnyDeadlinePassed"></textarea>
+          <textarea v-model="referent.biography" rows="4" class="input-field" :disabled="isAnyDeadlinePassed"></textarea>
         </div>
       </div>
     </section>
@@ -273,13 +277,14 @@ const router = useRouter();
 const authStore = useAuthStore();
 const referent = ref({
   id: null,
+  loginName: '',
   firstName: '',
   lastName: '',
   organisation: '',
   jobRole: '',
   email: '',
   slogan: '',
-  bio: '',
+  biography: '',
 });
 const allSlots = ref([]);
 const vortraege = ref([]);

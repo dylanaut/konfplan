@@ -48,10 +48,12 @@ class ReportResourceTest {
 
         mockTeilnehmer = new Teilnehmer();
         mockTeilnehmer.setId(1L);
+        mockTeilnehmer.assignLoginName("teilnehmer@test.com");
         mockTeilnehmer.setEmail("teilnehmer@test.com");
 
         mockReferent = new Referent();
         mockReferent.setId(1L);
+        mockReferent.assignLoginName("referent@test.com");
         mockReferent.setEmail("referent@test.com");
     }
 

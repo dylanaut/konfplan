@@ -54,8 +54,9 @@ public class Planungsergebnis extends VersionedEntity {
         public long[] slot_oids;
         public long[] raum_oids;
 
-        public int kosten;
+        public int guete;
         public int zuweisungen;
+        public int raumwechsel;
 
 
         public String toJson() {

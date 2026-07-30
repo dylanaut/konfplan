@@ -52,6 +52,7 @@ class DeadlineResourceTest extends DatabaseCleaner {
 
         // Referent
         Referent r = new Referent();
+        r.assignLoginName("referent@test.de");
         r.setEmail("referent@test.de");
         r.setPasswordHash(BcryptUtil.bcryptHash("test"));
         r.persist();
@@ -59,6 +60,7 @@ class DeadlineResourceTest extends DatabaseCleaner {
 
         // Teilnehmer
         Teilnehmer t = new Teilnehmer();
+        t.assignLoginName("teilnehmer@test.de");
         t.setEmail("teilnehmer@test.de");
         t.setPasswordHash(BcryptUtil.bcryptHash("test"));
         t.persist();

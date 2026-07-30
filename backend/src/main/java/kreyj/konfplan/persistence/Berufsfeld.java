@@ -1,8 +1,8 @@
 package kreyj.konfplan.persistence;
 
-import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
-@Getter
 public enum Berufsfeld {
     LAND_FORST_TIERWIRTSCHAFT_UND_GARTENBAU("Land-, Forst-, Tierwirtschaft und Gartenbau"),
     ROHSTOFFGEWINNUNG_PRODUKTION_UND_FERTIGUNG("Rohstoffgewinnung, Produktion und Fertigung"),
@@ -25,6 +25,21 @@ public enum Berufsfeld {
 
     Berufsfeld(String name) {
         this.name = name;
+    }
+
+    @JsonValue
+    public String getName() {
+        return name;
+    }
+
+    @JsonCreator
+    public static Berufsfeld fromName(String name) {
+        for (Berufsfeld feld : values()) {
+            if (feld.name.equals(name)) {
+                return feld;
+            }
+        }
+        throw new IllegalArgumentException("Unbekanntes Berufsfeld: " + name);
     }
 
 }

@@ -63,12 +63,11 @@ public class KalenderResource {
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).entity("Veranstaltung nicht gefunden").build();
         }
-        String tnEmail = jwt.getName();
-        // Assuming the username is the email, which is unique
-        Teilnehmer teilnehmer = teilnehmerService.findByEmail(tnEmail);
+        String tnLoginName = jwt.getName();
+        Teilnehmer teilnehmer = teilnehmerService.findByLoginName(tnLoginName);
         if (null == teilnehmer) {
             return Response.status(Response.Status.NOT_FOUND)
-                .entity("Teilnehmer '" + tnEmail + "' nicht gefunden.")
+                .entity("Teilnehmer '" + tnLoginName + "' nicht gefunden.")
                 .build();
         }
         Calendar calendar = kalenderService.generateTeilnehmerCalendar(veranstaltung, teilnehmer);
@@ -90,11 +89,11 @@ public class KalenderResource {
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).entity("Veranstaltung nicht gefunden").build();
         }
-        String refEmail = jwt.getName();
-        Referent referent = referentService.findByEmail(refEmail);
+        String refLoginName = jwt.getName();
+        Referent referent = referentService.findByLoginName(refLoginName);
         if (null == referent) {
             return Response.status(Response.Status.NOT_FOUND)
-                .entity("Referent '" + refEmail + "' nicht gefunden").build();
+                .entity("Referent '" + refLoginName + "' nicht gefunden").build();
         }
         Calendar calendar = kalenderService.generateReferentCalendar(veranstaltung, referent);
         return Response.ok(calendar.toString())

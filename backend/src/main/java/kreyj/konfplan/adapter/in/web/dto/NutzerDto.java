@@ -19,6 +19,7 @@ import static java.util.Collections.emptyList;
 @RegisterForReflection
 @NoArgsConstructor
 public class NutzerDto extends AbstractVersionedDto {
+    public String loginName;
     public String email;
     public String firstName;
     public String lastName;
@@ -94,6 +95,7 @@ public class NutzerDto extends AbstractVersionedDto {
         NutzerDto dto = new NutzerDto();
         dto.id = u.getId();
         dto.version = u.getVersion();
+        dto.loginName = u.getLoginName();
         dto.email = u.getEmail();
         dto.firstName = u.getFirstName();
         dto.lastName = u.getLastName();

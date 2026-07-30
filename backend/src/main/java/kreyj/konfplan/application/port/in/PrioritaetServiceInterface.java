@@ -7,7 +7,7 @@ import java.util.Map;
 
 public interface PrioritaetServiceInterface {
 
-    void savePrioritaeten(String email, List<VortragPrioDto> requests);
+    void savePrioritaeten(String loginName, List<VortragPrioDto> requests);
 
     void updateSinglePrioritaet(Long userId, Long vortragId, int prioWert);
 

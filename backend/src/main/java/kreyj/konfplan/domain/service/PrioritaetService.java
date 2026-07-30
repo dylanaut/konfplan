@@ -3,6 +3,7 @@ package kreyj.konfplan.domain.service;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
+import kreyj.konfplan.adapter.in.web.dto.TeilnehmerVortragPrioDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragPrioDto;
 import kreyj.konfplan.application.port.in.PrioritaetServiceInterface;
 import kreyj.konfplan.persistence.Nutzer;
@@ -12,6 +13,7 @@ import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -28,8 +30,8 @@ public class PrioritaetService implements PrioritaetServiceInterface {
 
     @Transactional
     @Override
-    public void savePrioritaeten(String email, List<VortragPrioDto> requests) {
-        Nutzer nutzer = Nutzer.findByEmail(email);
+    public void savePrioritaeten(String loginName, List<VortragPrioDto> requests) {
+        Nutzer nutzer = Nutzer.findByLoginName(loginName);
         if (!(nutzer instanceof Teilnehmer teilnehmer)) {
             throw new WebApplicationException("Nutzer ist kein Teilnehmer", BAD_REQUEST.getStatusCode());
         }
@@ -132,5 +134,24 @@ public class PrioritaetService implements PrioritaetServiceInterface {
             .project(VortragPrioDto.class)
             .list().stream()
             .collect(Collectors.toMap(VortragPrioDto::getVortragId, VortragPrioDto::getPrioWert));
+    }
+
+
+    /**
+     * Lädt die Prioritäten aller Teilnehmer einer Veranstaltung in einer einzigen Query,
+     * statt sie (wie {@link #getVortragPrioritaeten}) pro Teilnehmer einzeln nachzuladen.
+     */
+    @Transactional
+    public Map<Long, Map<Long, Integer>> getVortragPrioritaetenByVeranstaltung(Long veranstaltungId) {
+        Objects.requireNonNull(veranstaltungId);
+
+        Map<Long, Map<Long, Integer>> result = new HashMap<>();
+        Prioritaet
+            .find("FROM Prioritaet p JOIN p.vortrag v JOIN v.veranstaltung e WHERE e.id = ?1", veranstaltungId)
+            .project(TeilnehmerVortragPrioDto.class)
+            .<TeilnehmerVortragPrioDto>list()
+            .forEach(row -> result.computeIfAbsent(row.teilnehmerId, k -> new HashMap<>())
+                .put(row.vortragId, row.prioWert));
+        return result;
     }
 }

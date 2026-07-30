@@ -49,11 +49,13 @@ class CsvImportTest extends DatabaseCleaner {
     @Transactional
     void setup() {
         Admin admin = new Admin();
+        admin.assignLoginName("admin");
         admin.setEmail("admin@test.de");
         admin.setPasswordHash("hash");
         admin.persist();
 
         Referent r = new Referent();
+        r.assignLoginName("vortrag");
         r.setEmail("vortrag@ref.de");
         r.setFirstName("Max");
         r.setLastName("Ref");
@@ -108,8 +110,8 @@ class CsvImportTest extends DatabaseCleaner {
     @Test
     @TestHTTPEndpoint(VeranstaltungResource.class)
     void testImportVeranstaltungen() {
-        String csv = "Name;Beginn;Ende;Organisatoren_Emails;Gebaeude_Namen;Logo;Logo_link\n" +
-            "CSV Event;2026-10-01 07:00;2026-10-01 17:00;admin@test.de;RKS_LINZ;assets/RKS_Logo.png;https://realschuleplus-linz.de/home/home.html";
+        String csv = "Name;Beginn;Ende;Organisatoren_LoginNames;Gebaeude_Namen;Logo;Logo_link\n" +
+            "CSV Event;2026-10-01 07:00;2026-10-01 17:00;admin;RKS_LINZ;assets/RKS_Logo.png;https://realschuleplus-linz.de/home/home.html";
 
         given()
             .multiPart("file", "veranstaltungen.csv", csv.getBytes())
@@ -144,7 +146,7 @@ class CsvImportTest extends DatabaseCleaner {
     @Test
     void testImportVeranstalter() {
         String adminEmail = "kathrin.jessen@rks-linz.de";
-        String csv = "Email;Nachname;Vorname\n" + adminEmail + ";Jessen;Kathrin";
+        String csv = "Email;Nachname;Vorname;LoginName\n" + adminEmail + ";Jessen;Kathrin;kathrin.jessen";
 
         given()
             .baseUri(adminEndpoint.toString())
@@ -164,8 +166,8 @@ class CsvImportTest extends DatabaseCleaner {
     @TestHTTPEndpoint(VeranstaltungResource.class)
     void testImportReferenten() {
         String refEmail = "max@ref.de";
-        String csv = "Vorname;Nachname;Email;Position;Organisation;Slogan;Biografie\n" +
-            "Max;Referent;" + refEmail + ";Experte;TechCorp;Think Big;Bio Text";
+        String csv = "Vorname;Nachname;Email;Position;Organisation;Slogan;Biografie;LoginName\n" +
+            "Max;Referent;" + refEmail + ";Experte;TechCorp;Think Big;Bio Text;max";
 
         given()
             .multiPart("file", "referenten.csv", csv.getBytes())
@@ -183,8 +185,8 @@ class CsvImportTest extends DatabaseCleaner {
     @TestHTTPEndpoint(VeranstaltungResource.class)
     void testImportTeilnehmer() {
         String tnEmail = "tom@stud.de";
-        String csv = "Vorname;Nachname;Email;Gruppen\n" +
-            "Tom;Student;" + tnEmail + ";10b";
+        String csv = "Vorname;Nachname;Email;Gruppen;LoginName\n" +
+            "Tom;Student;" + tnEmail + ";10b;tom";
 
         given()
             .multiPart("file", "teilnehmer.csv", csv.getBytes())
@@ -219,10 +221,10 @@ class CsvImportTest extends DatabaseCleaner {
     void testImportVortraege() {
         String wvTitel = "Java Kurs";
         String pvTitel = "Berufsorientierung";
-        String csv = "istPflicht;Titel;Referent_Email;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;" +
+        String csv = "istPflicht;Titel;Referent_LoginName;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;" +
             "Pflichtslot;Ausstattung;Berufsfeld\n" +
-            "false;" + wvTitel + ";vortrag@ref.de;Wahlinhalt;;true;2;;;Beamer;IT\n" +
-            "true;" + pvTitel + ";vortrag@ref.de;Pflichtinhalt;Pflichtgruppe;false;1;A101;Slot 1;;";
+            "false;" + wvTitel + ";vortrag;Wahlinhalt;;true;2;;;Beamer;IT\n" +
+            "true;" + pvTitel + ";vortrag;Pflichtinhalt;Pflichtgruppe;false;1;A101;Slot 1;;";
 
         given()
             .multiPart("file", "vortraege.csv", csv.getBytes())
@@ -249,8 +251,8 @@ class CsvImportTest extends DatabaseCleaner {
         String langerTitel = (wort + " ").repeat(10).trim(); // 169 Zeichen, > 120
         assertThat(langerTitel.length()).isGreaterThan(120);
 
-        String csv = "istPflicht;Titel;Referent_Email;Inhalt;wiederholbar;maxWiederholungen\n" +
-            "false;" + langerTitel + ";vortrag@ref.de;Kurzer CSV-Inhalt;true;2";
+        String csv = "istPflicht;Titel;Referent_LoginName;Inhalt;wiederholbar;maxWiederholungen\n" +
+            "false;" + langerTitel + ";vortrag;Kurzer CSV-Inhalt;true;2";
 
         given()
             .multiPart("file", "vortraege.csv", csv.getBytes())
