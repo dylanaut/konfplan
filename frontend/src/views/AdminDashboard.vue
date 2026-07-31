@@ -32,7 +32,7 @@
     </div>
 
     <!-- START-ZUSTAND (Empty State) -->
-    <div v-if="!selectedVid && !['veranstaltungen', 'gebaeude', 'organisatoren', 'protokoll'].includes(activeTab)"
+    <div v-if="!selectedVid && !['veranstaltungen', 'veranstaltungImport', 'gebaeude', 'organisatoren', 'protokoll'].includes(activeTab)"
          class="bg-indigo-50 p-8 rounded-2xl text-center border-2 border-dashed border-indigo-200 animate-fade-in">
       <div class="text-indigo-400 mb-3 flex justify-center">
         <CalendarIcon class="w-10 h-10"/>
@@ -71,6 +71,10 @@
                           @openVeranstaltungEditor="openVeranstaltungEditor"
                           @deleteVeranstaltung="deleteVeranstaltung"
                           @selectVeranstaltung="handleVeranstaltungSelection"
+      />
+
+      <VeranstaltungImportTab v-if="activeTab === 'veranstaltungImport'"
+                              @imported="handleDatasetImported"
       />
 
       <GebaeudeTab v-if="activeTab === 'gebaeude'"
@@ -238,6 +242,7 @@ import {
 // Import Tab Components
 import ErgebnisseTab from '../components/admin/tabs/ErgebnisseTab.vue';
 import VeranstaltungenTab from '../components/admin/tabs/VeranstaltungenTab.vue';
+import VeranstaltungImportTab from '../components/admin/tabs/VeranstaltungImportTab.vue';
 import GebaeudeTab from '../components/admin/tabs/GebaeudeTab.vue';
 import OrganisatorenTab from '../components/admin/tabs/OrganisatorenTab.vue';
 import TeilnehmerTab from '../components/admin/tabs/TeilnehmerTab.vue';
@@ -264,6 +269,7 @@ const tabLabels = {
   organisatoren: 'Organisatoren',
   gebaeude: 'Gebäude',
   veranstaltungen: 'Veranstaltungen',
+  veranstaltungImport: 'Verzeichnis-Import',
   teilnehmer: 'Teilnehmer',
   referenten: 'Referenten',
   vortraege: 'Vorträge',
@@ -324,11 +330,11 @@ const csvFeedback = reactive({
 const visibleTabs = computed(() => {
   if (selectedVid.value) return ['organisatoren', 'gebaeude',
     'teilnehmer', 'referenten', 'vortraege',
-    'veranstaltungen', 'slots',
+    'veranstaltungen', 'veranstaltungImport', 'slots',
     'planung', 'ergebnisse',
     'protokoll'];
   return ['organisatoren', 'gebaeude',
-    'veranstaltungen',
+    'veranstaltungen', 'veranstaltungImport',
     'protokoll'];
 });
 
@@ -576,6 +582,12 @@ const handleSaveVeranstaltung = async (v) => {
   } catch (e) {
     console.error('Fehler beim Speichern der Veranstaltung:', e);
   }
+};
+const handleDatasetImported = async (dto) => {
+  await refreshVeranstaltungen();
+  selectedVid.value = dto.id;
+  handleVeranstaltungChange();
+  activeTab.value = 'veranstaltungen';
 };
 const deleteVeranstaltung = async (id) => {
   if (confirm("Löschen?")) {

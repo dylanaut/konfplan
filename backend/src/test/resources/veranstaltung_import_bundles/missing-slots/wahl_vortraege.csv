@@ -1,0 +1,3 @@
+istPflicht;Titel;Referent_LoginName;wahlSlots;Inhalt;wiederholbar;maxWiederholungen;Pflichtgruppe;Pflichtraum;Pflichtslot;Ausstattung;Berufsfeld
+false;Traumberuf Berater?;scalanaut;[1,2,3];msg;true;1;;;;Beamer;IT
+false;Traumberuf Informatiker?;dylanaut;[1,2,3];msg;true;1;;;;Beamer;IT

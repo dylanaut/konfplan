@@ -16,5 +16,7 @@ public interface VeranstaltungServiceInterface {
 
     int importFromCsv(Path csvFilePath) throws Exception;
 
+    List<Veranstaltung> importFromCsvDetailed(Path csvFilePath) throws Exception;
+
     boolean delete(Long id);
 }
