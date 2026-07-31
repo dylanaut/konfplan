@@ -142,7 +142,14 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
     @Transactional
     @Override
     public int importFromCsv(Path csvFilePath) throws Exception {
-        int count = 0;
+        return importFromCsvDetailed(csvFilePath).size();
+    }
+
+
+    @Transactional
+    @Override
+    public List<Veranstaltung> importFromCsvDetailed(Path csvFilePath) throws Exception {
+        List<Veranstaltung> imported = new ArrayList<>();
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             CsvToBean<VeranstaltungCsvDto> csvToBean = new CsvToBeanBuilder<VeranstaltungCsvDto>(reader)
                 .withType(VeranstaltungCsvDto.class)
@@ -211,7 +218,7 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
                     }
                 }
 
-                count++;
+                imported.add(veranstaltung);
                 protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Veranstaltung importiert",
                     "Veranstaltung '" + veranstaltung.getName() + "' via CSV importiert.", veranstaltung.getId(), veranstaltung.getId());
             }
@@ -219,8 +226,8 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
             LOG.error("Kritischer Fehler beim Importieren der Veranstaltungen aus CSV: " + csvFilePath, e);
             throw e;
         }
-        LOG.info("Veranstaltungs-Import abgeschlossen: " + count + " Veranstaltung(en) aus " + csvFilePath + " importiert.");
-        return count;
+        LOG.info("Veranstaltungs-Import abgeschlossen: " + imported.size() + " Veranstaltung(en) aus " + csvFilePath + " importiert.");
+        return imported;
     }
 
 
