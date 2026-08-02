@@ -2,6 +2,7 @@ package kreyj.konfplan.adapter.in.web;
 
 import io.quarkus.logging.Log;
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -9,6 +10,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import kreyj.konfplan.adapter.in.web.dto.FileUploadDto;
 import kreyj.konfplan.adapter.in.web.dto.VeranstaltungImportDatasetDto;
 import kreyj.konfplan.application.port.in.VeranstaltungImportServiceInterface;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -48,6 +50,23 @@ public class VeranstaltungImportResource {
             return Response.ok(veranstaltungImportService.importDataset(name)).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
+        } catch (Exception e) {
+            Log.error(e.getMessage(), e);
+            return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
+        }
+    }
+
+
+    @POST
+    @Path("/upload")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Operation(summary = "CSV-Satz aus ZIP importieren",
+        description = "Extrahiert ein hochgeladenes ZIP und importiert den enthaltenen CSV-Satz genauso wie beim Verzeichnis-Import.")
+    public Response importZip(FileUploadDto data) {
+        try {
+            return Response.ok(veranstaltungImportService.importFromZip(data.file.uploadedFile())).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         } catch (Exception e) {
             Log.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();

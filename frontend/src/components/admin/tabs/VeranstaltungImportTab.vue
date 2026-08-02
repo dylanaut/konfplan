@@ -13,6 +13,21 @@
 
     <div v-if="error" class="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl p-3">{{ error }}</div>
 
+    <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm space-y-2">
+      <div>
+        <h2 class="text-lg font-bold text-gray-800">ZIP-Upload</h2>
+        <p class="text-xs text-gray-500 mt-0.5">Lädt ein ZIP mit dem kompletten CSV-Satz hoch und legt daraus eine neue Veranstaltung an.</p>
+      </div>
+      <div v-if="uploadError" class="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl p-3">{{ uploadError }}</div>
+      <div class="flex items-center gap-2">
+        <input type="file" accept=".zip" @change="onZipSelected" :disabled="uploading"
+               class="text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer"/>
+        <button @click="uploadZip" :disabled="!zipFile || uploading" class="btn-primary text-xs py-1 px-3 whitespace-nowrap">
+          {{ uploading ? 'Importiere...' : 'Hochladen und importieren' }}
+        </button>
+      </div>
+    </div>
+
     <div v-if="!loading && datasets.length === 0" class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm text-center text-xs text-gray-500">
       Keine Veranstaltungsverzeichnisse gefunden.
     </div>
@@ -62,6 +77,10 @@ const loading = ref(false);
 const importingName = ref(null);
 const error = ref('');
 
+const zipFile = ref(null);
+const uploading = ref(false);
+const uploadError = ref('');
+
 const loadDatasets = async () => {
   loading.value = true;
   error.value = '';
@@ -86,6 +105,30 @@ const doImport = async (name) => {
     error.value = `Import von '${name}' fehlgeschlagen: ` + (e.response?.data || e.message);
   } finally {
     importingName.value = null;
+  }
+};
+
+const onZipSelected = (e) => {
+  zipFile.value = e.target.files[0] ?? null;
+};
+
+const uploadZip = async () => {
+  if (!zipFile.value) return;
+  uploading.value = true;
+  uploadError.value = '';
+  try {
+    const formData = new FormData();
+    formData.append('file', zipFile.value);
+    const res = await api.post('/api/admin/veranstaltung-import/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    emit('imported', res.data);
+    zipFile.value = null;
+    await loadDatasets();
+  } catch (e) {
+    uploadError.value = 'ZIP-Import fehlgeschlagen: ' + (e.response?.data || e.message);
+  } finally {
+    uploading.value = false;
   }
 };
 
