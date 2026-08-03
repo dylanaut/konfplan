@@ -1,0 +1,24 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        mkdir -p /var/lib/konfplan/mssql-data
+        chmod 640 /etc/konfplan/mssql.env
+
+        systemctl daemon-reload || true
+        systemctl enable konfplan-mssql.service || true
+
+        echo ""
+        echo "konfplan-mssql wurde installiert, aber noch NICHT gestartet."
+        echo "Bitte zuerst /etc/konfplan/mssql.env anpassen (MSSQL_SA_PASSWORD, MSSQL_PID)"
+        echo "und dann starten mit:"
+        echo "  sudo systemctl start konfplan-mssql.service"
+        echo "Beim ersten Start wird das Image mcr.microsoft.com/mssql/server aus dem"
+        echo "Internet geladen (ca. 1.5 GB) - das kann einige Minuten dauern."
+        echo "Logs: journalctl -u konfplan-mssql.service -f"
+        echo ""
+        ;;
+esac
+
+exit 0

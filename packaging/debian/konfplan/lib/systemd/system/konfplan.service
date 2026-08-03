@@ -1,0 +1,20 @@
+[Unit]
+Description=KonfPlan Veranstaltungsplanung
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=konfplan
+Group=konfplan
+EnvironmentFile=/etc/konfplan/konfplan.env
+WorkingDirectory=/opt/konfplan
+ExecStart=/usr/bin/java -jar /opt/konfplan/quarkus-app/quarkus-run.jar
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

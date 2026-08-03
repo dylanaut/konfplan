@@ -1,0 +1,17 @@
+Package: konfplan
+Version: 1.0.0-1
+Section: web
+Priority: optional
+Architecture: all
+Depends: openjdk-21-jre-headless, minizinc
+Recommends: konfplan-mssql, konfplan-mailpit
+Maintainer: KonfPlan <juergen.krey@msg.group>
+Description: KonfPlan - Veranstaltungsplanung mit automatischer Vortragszuweisung
+ Quarkus-basierte Webanwendung zur Planung von Schulungsveranstaltungen mit
+ Referenten, Wahl- und Pflichtvortraegen. Teilnehmer werden auf Basis ihrer
+ Prioritaeten automatisch per MiniZinc-Constraint-Solver optionalen Vortraegen
+ zugewiesen.
+ .
+ Dieses Paket enthaelt nur die Anwendung selbst. Sie benoetigt einen
+ erreichbaren MS-SQL-Server (siehe konfplan-mssql) und optional einen
+ SMTP-Server (siehe konfplan-mailpit fuer lokale Test-/Kleininstallationen).

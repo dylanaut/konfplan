@@ -1,0 +1,24 @@
+[Unit]
+Description=MS SQL Server fuer KonfPlan (Docker-Container)
+After=docker.service network-online.target
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/konfplan/mssql.env
+ExecStartPre=-/usr/bin/docker rm -f konfplan-mssql
+ExecStart=/usr/bin/docker run --rm --name konfplan-mssql \
+    -p 1433:1433 \
+    -e ACCEPT_EULA=Y \
+    -e MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD} \
+    -e MSSQL_PID=${MSSQL_PID} \
+    -v /var/lib/konfplan/mssql-data:/var/opt/mssql \
+    mcr.microsoft.com/mssql/server:2022-latest
+ExecStop=/usr/bin/docker stop -t 30 konfplan-mssql
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

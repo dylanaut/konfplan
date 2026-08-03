@@ -1,0 +1,21 @@
+[Unit]
+Description=Mailpit SMTP-Testserver fuer KonfPlan (Docker-Container)
+After=docker.service network-online.target
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/konfplan/mailpit.env
+ExecStartPre=-/usr/bin/docker rm -f konfplan-mailpit
+ExecStart=/usr/bin/docker run --rm --name konfplan-mailpit \
+    -p ${MAILPIT_SMTP_PORT}:1025 \
+    -p ${MAILPIT_UI_PORT}:8025 \
+    axllent/mailpit:latest
+ExecStop=/usr/bin/docker stop -t 30 konfplan-mailpit
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target
