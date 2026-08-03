@@ -116,12 +116,13 @@ systemctl status konfplan.service konfplan-mssql.service konfplan-mailpit.servic
   löscht aber weiterhin NICHT die SQL-Server-Datenbankdateien (Sicherheitsnetz
   gegen versehentlichen Datenverlust – siehe Ausgabe von `postrm`).
 
-## Bekannte Altlasten im Repo
+## Verwandte Skripte im Repo
 
-- `install.sh` im Repo-Root ist ein älteres, inzwischen überholtes Skript
-  (Ubuntu 22.04 + PostgreSQL, aus der Zeit vor der Umstellung auf MS SQL
-  Server). Es wird durch die Pakete in diesem Verzeichnis abgelöst und sollte
-  bei Gelegenheit entfernt oder aktualisiert werden.
+- `install.sh` im Repo-Root ist ein Ein-Kommando-Installationsskript für
+  Debian 13, das intern genau diese drei Pakete baut und installiert (Schritte
+  1-6). Es eignet sich für eine schnelle Einzelserver-Installation aus einem
+  Repository-Checkout heraus; für mehr Kontrolle (z.B. Pakete vorbauen und
+  getrennt verteilen) die Schritte in diesem README einzeln ausführen.
 - `db/ensure_prod_db.sh` und `db/ensure_prod_infra.sh` bleiben unverändert als
   Werkzeuge für lokale Entwicklung/Tests (z.B. Native-Image-Runs auf
   Apple-Silicon-Macs mit Azure SQL Edge) bestehen – sie adressieren einen
