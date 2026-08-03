@@ -1,0 +1,30 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        if ! getent passwd konfplan > /dev/null 2>&1; then
+            adduser --system --group --home /opt/konfplan --no-create-home \
+                --shell /usr/sbin/nologin konfplan
+        fi
+
+        mkdir -p /opt/konfplan/logs /var/lib/konfplan/import/veranstaltungen /var/lib/konfplan/templates
+        chown -R konfplan:konfplan /opt/konfplan /var/lib/konfplan
+
+        chown root:konfplan /etc/konfplan/konfplan.env
+        chmod 640 /etc/konfplan/konfplan.env
+
+        systemctl daemon-reload || true
+        systemctl enable konfplan.service || true
+
+        echo ""
+        echo "KonfPlan wurde installiert, aber noch NICHT gestartet."
+        echo "Bitte zuerst /etc/konfplan/konfplan.env anpassen (DB_PASSWORD, ggf. BREVO_SMTP_*"
+        echo "oder Mailpit-Werte, JWT-Issuer) und dann starten mit:"
+        echo "  sudo systemctl start konfplan.service"
+        echo "Logs: journalctl -u konfplan.service -f"
+        echo ""
+        ;;
+esac
+
+exit 0

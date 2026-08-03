@@ -110,8 +110,11 @@ deploy_to_production:
         # 1. SSH zum Server
         # 2. Docker-Image aus der GitLab Registry pullen
         # 3. Alten Container stoppen und neuen starten
-        # QUARKUS_DATASOURCE_PASSWORD, BREVO_SMTP_USER und BREVO_SMTP_PASSWORD werden NICHT hier
-        # hartkodiert, sondern als maskierte/geschützte CI/CD-Variablen im GitLab-Projekt hinterlegt
+        # Die App erwartet einen erreichbaren MS-SQL-Server (siehe application.properties,
+        # %prod.quarkus.datasource.jdbc.url) - z.B. via des konfplan-mssql-Debian-Pakets
+        # (packaging/debian/) auf demselben Host unter DB_HOST=localhost.
+        # DB_PASSWORD, BREVO_SMTP_USER und BREVO_SMTP_PASSWORD werden NICHT hier hartkodiert,
+        # sondern als maskierte/geschützte CI/CD-Variablen im GitLab-Projekt hinterlegt
         # (Settings → CI/CD → Variables) und hier nur durchgereicht.
         - |
             ssh user@server-ip "
@@ -121,9 +124,11 @@ deploy_to_production:
               docker rm konfplan-app || true && \
               docker run -d --name konfplan-app -p 9000:8080 \
                 --restart always \
-                -e QUARKUS_DATASOURCE_URL=jdbc:postgresql://db-host/konfplan \
-                -e QUARKUS_DATASOURCE_USERNAME=db_user \
-                -e QUARKUS_DATASOURCE_PASSWORD=${QUARKUS_DATASOURCE_PASSWORD} \
+                -e DB_HOST=${DB_HOST} \
+                -e DB_PORT=${DB_PORT} \
+                -e DB_NAME=${DB_NAME} \
+                -e DB_USER=${DB_USER} \
+                -e DB_PASSWORD=${DB_PASSWORD} \
                 -e BREVO_SMTP_USER=${BREVO_SMTP_USER} \
                 -e BREVO_SMTP_PASSWORD=${BREVO_SMTP_PASSWORD} \
                 ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHA}

@@ -1,0 +1,23 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        chmod 640 /etc/konfplan/mailpit.env
+
+        systemctl daemon-reload || true
+        systemctl enable konfplan-mailpit.service || true
+
+        echo ""
+        echo "konfplan-mailpit wurde installiert, aber noch NICHT gestartet."
+        echo "Starten mit:"
+        echo "  sudo systemctl start konfplan-mailpit.service"
+        echo "Web-UI danach unter http://<server>:8025 erreichbar."
+        echo "Um KonfPlan Mailpit statt Brevo nutzen zu lassen, in"
+        echo "/etc/konfplan/konfplan.env die QUARKUS_MAILER_* Variablen setzen"
+        echo "(siehe Kommentare dort) und konfplan.service neu starten."
+        echo ""
+        ;;
+esac
+
+exit 0
