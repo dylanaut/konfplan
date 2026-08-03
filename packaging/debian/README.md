@@ -78,6 +78,11 @@ sudo nano /etc/konfplan/konfplan.env   # DB_PASSWORD (= MSSQL_SA_PASSWORD), BREV
 sudo systemctl start konfplan.service
 ```
 
+`DB_NAME` in `konfplan.env` und `mssql.env` muss übereinstimmen (Standard in
+beiden: `konfplan`) – `konfplan-mssql.service` legt diese Datenbank beim Start
+automatisch an (SQL Server tut das anders als Postgres mit `POSTGRES_DB` nicht
+selbst), `konfplan.service` verbindet sich anschließend darauf.
+
 Die App ist danach unter `http://<server>:9000` erreichbar (Port siehe
 `quarkus.http.port` in `application.properties`).
 
