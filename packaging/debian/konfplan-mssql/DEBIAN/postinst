@@ -4,6 +4,10 @@ set -e
 case "$1" in
     configure)
         mkdir -p /var/lib/konfplan/mssql-data
+        # Der SQL-Server-Container laeuft als non-root Nutzer "mssql" mit fest
+        # kodierter UID 10001 (Gruppe 0/root) - ohne dieses chown schlaegt der
+        # Start mit "Permission denied" beim Anlegen von /var/opt/mssql/.system fehl.
+        chown 10001:0 /var/lib/konfplan/mssql-data
         chmod 640 /etc/konfplan/mssql.env
 
         systemctl daemon-reload || true

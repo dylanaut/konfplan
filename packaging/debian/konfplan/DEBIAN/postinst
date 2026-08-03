@@ -8,8 +8,14 @@ case "$1" in
                 --shell /usr/sbin/nologin konfplan
         fi
 
-        mkdir -p /opt/konfplan/logs /var/lib/konfplan/import/veranstaltungen /var/lib/konfplan/templates
-        chown -R konfplan:konfplan /opt/konfplan /var/lib/konfplan
+        # Nur die eigenen Unterverzeichnisse chownen, nicht /var/lib/konfplan als
+        # Ganzes - dort legen auch konfplan-mssql (mssql-data) und
+        # konfplan-mailpit eigene Verzeichnisse mit anderem Owner an.
+        mkdir -p /opt/konfplan/logs
+        chown -R konfplan:konfplan /opt/konfplan
+
+        mkdir -p /var/lib/konfplan/import/veranstaltungen /var/lib/konfplan/templates
+        chown -R konfplan:konfplan /var/lib/konfplan/import /var/lib/konfplan/templates
 
         chown root:konfplan /etc/konfplan/konfplan.env
         chmod 640 /etc/konfplan/konfplan.env

@@ -15,6 +15,7 @@ ExecStart=/usr/bin/docker run --rm --name konfplan-mssql \
     -e MSSQL_PID=${MSSQL_PID} \
     -v /var/lib/konfplan/mssql-data:/var/opt/mssql \
     mcr.microsoft.com/mssql/server:2022-latest
+ExecStartPost=/usr/lib/konfplan-mssql/ensure-db.sh
 ExecStop=/usr/bin/docker stop -t 30 konfplan-mssql
 Restart=on-failure
 RestartSec=10
