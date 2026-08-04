@@ -677,8 +677,12 @@ const handleSaveUser = async (u) => {
     if (u.id) await api.put(`${endpoint}/${u.id}`, u);
     else await api.post(endpoint, u);
     showUserModal.value = false;
-    await loadData();
-    await refreshAdmins();
+    // loadData() liefert bei ausgewählter Veranstaltung bereits die korrekt aus Admin- und
+    // Veranstaltungs-Nutzern zusammengeführte Liste; refreshAdmins() würde diese mit der reinen
+    // Admin-Liste überschreiben. Nur ohne ausgewählte Veranstaltung (z.B. globaler Admin ohne
+    // Veranstaltungsbezug) tut loadData() nichts, daher dort auf refreshAdmins() ausweichen.
+    if (selectedVid.value) await loadData();
+    else await refreshAdmins();
   } catch (e) {
     console.error('Fehler beim Speichern des Nutzers:', e);
   }
@@ -693,8 +697,11 @@ const deleteUser = async (id) => {
       else return;
 
       await api.delete(endpoint);
-      await loadData();
-      await refreshAdmins();
+      // Siehe Kommentar in handleSaveUser: loadData() liefert bei ausgewählter Veranstaltung
+      // bereits die korrekt zusammengeführte Nutzerliste; refreshAdmins() nur als Fallback ohne
+      // ausgewählte Veranstaltung.
+      if (selectedVid.value) await loadData();
+      else await refreshAdmins();
     } catch (e) {
       console.error('Fehler beim Löschen des Nutzers:', e);
     }
@@ -972,10 +979,13 @@ const handleGlobalUpload = async (event) => {
   try {
     const res = await api.post(finalEndpoint, formData, {headers: {'Content-Type': 'multipart/form-data'}});
     showCsvFeedback(res.data, false);
-    await loadData();
+    // Siehe Kommentar in handleSaveUser: loadData() liefert bei ausgewählter Veranstaltung
+    // bereits die korrekt zusammengeführte Nutzerliste; refreshAdmins() nur als Fallback ohne
+    // ausgewählte Veranstaltung.
+    if (selectedVid.value) await loadData();
+    else await refreshAdmins();
     await refreshVeranstaltungen();
     await refreshGebaeude();
-    await refreshAdmins();
   } catch (e) {
     showCsvFeedback(e.response?.data || e.message, true);
   } finally {
