@@ -4,15 +4,18 @@ import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.mailer.MailTemplate;
 import io.quarkus.qute.Location;
 import io.smallrye.jwt.build.Jwt;
+import io.vertx.core.http.HttpServerRequest;
 import jakarta.annotation.security.PermitAll;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.LoginRequest;
 import kreyj.konfplan.adapter.in.web.dto.ResetRequest;
 import kreyj.konfplan.adapter.in.web.dto.TokenResponse;
+import kreyj.konfplan.domain.service.LoginRateLimiterService;
 import kreyj.konfplan.domain.service.ProtokollService;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.ProtokollKategorie;
@@ -35,8 +38,11 @@ public class AuthResource {
 
     private final ProtokollService protokollService;
 
+    private final LoginRateLimiterService loginRateLimiterService;
+
     public AuthResource(@Location("email/passwordReset") MailTemplate passwordResetTemplate,
-                        ProtokollService protokollService) {
+                        ProtokollService protokollService, LoginRateLimiterService loginRateLimiterService) {
+        this.loginRateLimiterService = loginRateLimiterService;
         this.passwordResetTemplate = passwordResetTemplate;
         this.protokollService = protokollService;
     }
@@ -103,11 +109,23 @@ public class AuthResource {
     @PermitAll
     @Transactional
     @Operation(summary = "Login", description = "Authentifiziert einen Nutzer und gibt einen JWT-Token zurück.")
-    public Response login(@RequestBody(description = "Die Login-Anmeldeinformationen") LoginRequest loginRequest) {
+    public Response login(@Context HttpServerRequest request,
+                          @RequestBody(description = "Die Login-Anmeldeinformationen") LoginRequest loginRequest) {
+        String ip = clientIp(request);
+
+        if (loginRateLimiterService.isBlocked(ip)) {
+            long retryAfterSeconds = loginRateLimiterService.remainingBlockDuration(ip).toSeconds();
+            protokollService.log(ProtokollKategorie.SECURITY, "Login blockiert (zu viele Fehlversuche)", "IP: " + ip);
+            return Response.status(429)
+                    .header("Retry-After", retryAfterSeconds)
+                    .build();
+        }
+
         Nutzer nutzer = Nutzer.findByLoginName(loginRequest.loginName);
 
         if (nutzer != null && BcryptUtil.matches(loginRequest.password, nutzer.getPasswordHash())
                 && nutzer.isActive()) {
+            loginRateLimiterService.recordSuccess(ip);
             String token = Jwt.issuer("https://konfplan.kreyj")
                     .upn(nutzer.getLoginName())
                     .subject(nutzer.getLoginName())
@@ -117,7 +135,17 @@ public class AuthResource {
             protokollService.log(ProtokollKategorie.LOGIN, "Erfolgreicher Login", "Rolle: " + nutzer.getRole(), nutzer.getId());
             return Response.ok(new TokenResponse(token, nutzer.getRole())).build();
         }
+        loginRateLimiterService.recordFailure(ip);
         protokollService.log(ProtokollKategorie.SECURITY, "Fehlgeschlagener Login-Versuch", "LoginName: " + loginRequest.loginName);
         return Response.status(Response.Status.UNAUTHORIZED).build();
+    }
+
+    /** Bevorzugt den ersten Eintrag in X-Forwarded-For (Reverse-Proxy-Betrieb), sonst die direkte Verbindungs-IP. */
+    private static String clientIp(HttpServerRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        return request.remoteAddress() != null ? request.remoteAddress().host() : "unknown";
     }
 }
