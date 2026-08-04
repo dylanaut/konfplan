@@ -8,7 +8,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 "$SCRIPT_DIR/konfplan/build.sh"
-"$SCRIPT_DIR/konfplan-mssql/build.sh"
+"$SCRIPT_DIR/konfplan-postgresql/build.sh"
 "$SCRIPT_DIR/konfplan-mailpit/build.sh"
 
 echo ""

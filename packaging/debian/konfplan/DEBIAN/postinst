@@ -9,8 +9,8 @@ case "$1" in
         fi
 
         # Nur die eigenen Unterverzeichnisse chownen, nicht /var/lib/konfplan als
-        # Ganzes - dort legen auch konfplan-mssql (mssql-data) und
-        # konfplan-mailpit eigene Verzeichnisse mit anderem Owner an.
+        # Ganzes - andere Pakete koennten dort eigene Verzeichnisse mit anderem
+        # Owner anlegen.
         mkdir -p /opt/konfplan/logs
         chown -R konfplan:konfplan /opt/konfplan
 

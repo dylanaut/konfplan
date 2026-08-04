@@ -15,10 +15,10 @@ create table Gebaeude
 
 create table Nutzer
 (
-    is_active                 bit,
-    email_change_token_expiry datetime2(7),
+    is_active                 boolean,
+    email_change_token_expiry timestamp(6),
     id                        bigint      not null,
-    reset_token_expiry        datetime2(7),
+    reset_token_expiry        timestamp(6),
     version                   bigint      not null,
     role                      varchar(31) not null check ((role in ('REFERENT', 'ADMIN', 'TEILNEHMER'))),
     biography                 TEXT,
@@ -39,7 +39,7 @@ create table Nutzer
     check (role <> 'TEILNEHMER' or (is_active is not null))
 );
 
-create unique nonclustered index UKj6lclcp7ibc7ommrkv3rcxnht
+create unique index UKj6lclcp7ibc7ommrkv3rcxnht
     on Nutzer (email) where email is not null;
 
 alter table Nutzer
@@ -71,8 +71,8 @@ create table Planungsergebnis
     id               bigint       not null,
     veranstaltung_id bigint       not null unique,
     version          bigint       not null,
-    jsonErgebnis     varchar(max) not null,
-    solverConfig     varchar(max),
+    jsonErgebnis     oid    not null,
+    solverConfig     jsonb,
     primary key (id)
 );
 
@@ -173,7 +173,7 @@ create table veranstaltung_gruppen
 create table Vortrag
 (
     maxWiederholungen integer,
-    wiederholbar      bit,
+    wiederholbar      boolean,
     id                bigint      not null,
     pflichtraum_id    bigint,
     pflichtslot_id    bigint,

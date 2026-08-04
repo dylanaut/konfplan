@@ -140,7 +140,7 @@ views/*.vue           # Top-Level-Seiten-Komponenten geroutet von Vue Router
 - Räume werden **veranstaltungsübergreifend** auf Überschneidungen geprüft (ein Raum in einer Veranstaltung blockiert ihn in einer anderen).
 - Passwort-Reset per E-Mail (Mailpit-Credentials in `application.properties` setzen für Entwicklung).
 - Vite (`vite.config.js`) ist so konfiguriert, dass eine `manifest.json` für die dynamische Einbindung von Assets in Qute-Templates erzeugt wird.
-- **DB-Skripte:** `db/init_db.sh` und `db/ensure_prod_db.sh` für PostgreSQL-Setup.
+- **DB-Skripte:** `db/ensure_prod_db.sh` und `db/ensure_prod_infra.sh` für lokales PostgreSQL/Mailpit-Setup (Docker-basiert, Dev/Test). Produktions-`.deb`-Pakete liegen unter `packaging/debian/` (siehe dessen `README.md`).
 
 ## Git & Feature Workflow
 

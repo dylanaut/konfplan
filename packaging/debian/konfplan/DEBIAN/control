@@ -4,7 +4,7 @@ Section: web
 Priority: optional
 Architecture: all
 Depends: openjdk-21-jre-headless, minizinc
-Recommends: konfplan-mssql, konfplan-mailpit
+Recommends: konfplan-postgresql, konfplan-mailpit
 Maintainer: KonfPlan <juergen.krey@msg.group>
 Description: KonfPlan - Veranstaltungsplanung mit automatischer Vortragszuweisung
  Quarkus-basierte Webanwendung zur Planung von Schulungsveranstaltungen mit
@@ -12,6 +12,6 @@ Description: KonfPlan - Veranstaltungsplanung mit automatischer Vortragszuweisun
  Prioritaeten automatisch per MiniZinc-Constraint-Solver optionalen Vortraegen
  zugewiesen.
  .
- Dieses Paket enthaelt nur die Anwendung selbst. Sie benoetigt einen
- erreichbaren MS-SQL-Server (siehe konfplan-mssql) und optional einen
- SMTP-Server (siehe konfplan-mailpit fuer lokale Test-/Kleininstallationen).
+ Dieses Paket enthaelt nur die Anwendung selbst. Sie benoetigt eine
+ erreichbare PostgreSQL-Datenbank (siehe konfplan-postgresql) und optional
+ einen SMTP-Server (siehe konfplan-mailpit fuer lokale Test-/Kleininstallationen).
