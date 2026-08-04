@@ -408,6 +408,34 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
     }
 
     @Test
+    public void testGeneriereDznVorschau_liefertDznContentOhneSolverAufruf() {
+        Veranstaltung veranstaltung = simpleSetup(true);
+
+        SolverConfig config = new SolverConfig(10, 4, 1);
+        String dznContent = planErstellungService.generiereDznVorschau(veranstaltung.getId(), config, "username");
+
+        assertThat(dznContent).describedAs("DZN-Content darf nicht null sein.").isNotNull();
+        assertThat(dznContent).contains("n_slots = " + veranstaltung.getSlots().size());
+        assertThat(dznContent).contains("max_instanzen = 1;");
+        // Kein Planungsergebnis darf durch die reine Vorschau entstehen.
+        Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
+        assertThat(ergebnis).isNull();
+    }
+
+    @Test
+    public void testGeneriereDznVorschau_wirftBeiFehlendenVoraussetzungen() {
+        Veranstaltung veranstaltung = new Veranstaltung();
+        veranstaltung.setName("Leere Veranstaltung");
+        veranstaltung.setBeginntAm(LocalDateTime.now());
+        QuarkusTransaction.requiringNew().run(veranstaltung::persist);
+
+        SolverConfig config = new SolverConfig(10, 4, 1);
+
+        assertThatExceptionOfType(kreyj.konfplan.domain.exception.BusinessException.class)
+                .isThrownBy(() -> planErstellungService.generiereDznVorschau(veranstaltung.getId(), config, "username"));
+    }
+
+    @Test
     public void testPlanerstellung_noAvailabilities() throws Exception {
         Veranstaltung veranstaltung = simpleSetup(false);
         Teilnehmer tn = Teilnehmer.<Teilnehmer>listAll().getFirst();
