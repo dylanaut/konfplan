@@ -96,7 +96,7 @@ export const useAuthStore = defineStore('auth', () => {
         console.error(lastError);
     }
 
-    function logout() {
+    function logout({ reason } = {}) {
         // Eine ggf. laufende Planerstellung serverseitig abbrechen, bevor der Token
         // gelöscht wird (der Endpoint ist ADMIN-only, danach fehlt die Berechtigung).
         // Header wird explizit gesetzt statt über den Request-Interceptor, da localStorage
@@ -115,8 +115,15 @@ export const useAuthStore = defineStore('auth', () => {
         const eventContext = useEventContextStore();
         eventContext.clearEvent();
 
-        toast.info('Sie haben sich erfolgreich abgemeldet.',
-          { timeout: 3000, closeOnClick: true});
+        // reason: 'inactive' kommt von useInactivityLogout() (siehe App.vue) - eigene Meldung,
+        // damit der Nutzer nicht denkt, er hätte sich selbst abgemeldet.
+        if (reason === 'inactive') {
+            toast.info('Sitzung wegen Inaktivität automatisch beendet. Bitte erneut anmelden.',
+              { timeout: 5000, closeOnClick: true });
+        } else {
+            toast.info('Sie haben sich erfolgreich abgemeldet.',
+              { timeout: 3000, closeOnClick: true});
+        }
         router.push('/login');
     }
 
