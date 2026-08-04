@@ -82,10 +82,17 @@
         <p v-if="teilnehmerMitPrioritaetenCount === 0" class="text-red-300 text-center text-[10px] mt-1.5 font-bold animate-pulse">
           Keine Prioritäten vorhanden.
         </p>
-        <button v-if="!isPlanning" @click="emit('startOptimization', solverConfig)" :disabled="teilnehmerMitPrioritaetenCount === 0" class="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-white px-8 py-4 rounded-xl font-black text-lg shadow-2xl transition-all transform hover:scale-105 flex items-center gap-3">
-          <ZapIcon class="w-5 h-5"/>
-          Pläne erstellen
-        </button>
+        <div v-if="!isPlanning" class="flex items-center gap-3">
+          <button @click="emit('exportDzn', solverConfig)" title="MiniZinc-Datendatei (.dzn) herunterladen"
+                  class="bg-white/10 hover:bg-white/20 text-white px-4 py-4 rounded-xl font-bold text-sm shadow-lg transition-all flex items-center gap-2">
+            <DownloadIcon class="w-4 h-4"/>
+            .dzn exportieren
+          </button>
+          <button @click="emit('startOptimization', solverConfig)" :disabled="teilnehmerMitPrioritaetenCount === 0" class="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-white px-8 py-4 rounded-xl font-black text-lg shadow-2xl transition-all transform hover:scale-105 flex items-center gap-3">
+            <ZapIcon class="w-5 h-5"/>
+            Pläne erstellen
+          </button>
+        </div>
         <button v-else-if="planningPhase === 'BERECHNUNG'" @click="emit('cancelOptimization')" class="bg-red-500 hover:bg-red-400 text-white px-8 py-4 rounded-xl font-black text-lg shadow-2xl transition-all transform hover:scale-105 flex items-center gap-3">
           <LoaderIcon class="animate-spin w-5 h-5"/>
           Erstellung abbrechen ({{ remainingSeconds }}s)
@@ -101,7 +108,7 @@
 
 <script setup>
 import { reactive, computed, ref, watch, onUnmounted } from 'vue';
-import { Loader as LoaderIcon, Zap as ZapIcon, XCircle as CancelIcon } from '@lucide/vue';
+import { Loader as LoaderIcon, Zap as ZapIcon, XCircle as CancelIcon, Download as DownloadIcon } from '@lucide/vue';
 
 const props = defineProps({
   isPlanning: Boolean,
@@ -117,7 +124,7 @@ const props = defineProps({
   teilnehmerMitPrioritaetenCount: Number,
 });
 
-const emit = defineEmits(['startOptimization', 'cancelOptimization']);
+const emit = defineEmits(['startOptimization', 'cancelOptimization', 'exportDzn']);
 
 const solverConfig = reactive({
   solver: 'cp-sat',

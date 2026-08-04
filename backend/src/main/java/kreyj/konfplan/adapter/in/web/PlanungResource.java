@@ -77,4 +77,16 @@ public class PlanungResource {
         status.put("phase", planErstellungService.getPhase());
         return Response.ok(status).build();
     }
+
+    @POST
+    @Path("/{vid}/dzn")
+    @Produces(MediaType.TEXT_PLAIN)
+    @Operation(summary = "MiniZinc-Datendatei exportieren", description = "Erzeugt die .dzn-Datendatei für eine Veranstaltung zum Download, ohne den Solver zu starten.")
+    public Response exportDzn(@PathParam("vid") Long vid, @RequestBody(description = "Die Konfiguration für den Solver") SolverConfig config, @Context SecurityContext securityContext) {
+        String username = securityContext.getUserPrincipal().getName();
+        String dznContent = planErstellungService.generiereDznVorschau(vid, config, username);
+        return Response.ok(dznContent)
+            .header("Content-Disposition", "attachment; filename=\"veranstaltung_" + vid + ".dzn\"")
+            .build();
+    }
 }

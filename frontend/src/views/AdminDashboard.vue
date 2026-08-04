@@ -166,6 +166,7 @@
                   :teilnehmerMitPrioritaetenCount="teilnehmerMitPrioritaetenCount"
                   @startOptimization="startPlanning"
                   @cancelOptimization="cancelPlanning"
+                  @exportDzn="exportDzn"
       />
 
       <ProtokollTab v-if="activeTab === 'protokoll'"
@@ -916,6 +917,24 @@ const pollPlanningStatus = () => {
       planningPhase.value = null;
     }
   }, 2000);
+};
+
+const exportDzn = async (solverConfig) => {
+  try {
+    const response = await api.post(`/api/planungen/${selectedVid.value}/dzn`, solverConfig, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(response.data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `veranstaltung_${selectedVid.value}.dzn`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  } catch (e) {
+    console.error('Fehler beim Export der MiniZinc-Datendatei:', e);
+    // responseType 'blob' liefert Fehlerantworten ebenfalls als Blob statt geparstem JSON.
+    const body = e.response?.data instanceof Blob ? JSON.parse(await e.response.data.text()) : e.response?.data;
+    const msg = body?.error || body?.message || e.message;
+    alert('DZN-Export nicht möglich:\n\n' + msg);
+  }
 };
 
 const cancelPlanning = async () => {
