@@ -25,6 +25,21 @@ This module contains the Gatling performance tests for the KonfPlan application.
     ```
 4.  The test report will be generated in the `target/gatling` directory within this module.
 
+## Simulations
+
+-   `TeilnehmerSimulation` (default, per `pom.xml`'s `simulationClass`): open-workload model
+    with a realistic ramp-up/peak/ramp-down arrival-rate profile.
+-   `ConcurrencyCapacitySimulation`: closed-workload model that holds a fixed number of
+    *concurrent* users (default 700, matching the app's connection-/thread-pool sizing in
+    `backend/.../application.properties`) rather than an arrival rate - directly answers
+    "can the backend handle N concurrent users" instead of inferring it from throughput.
+    Both share the same user scenario (`TeilnehmerScenario`). Run it with:
+    ```bash
+    mvn gatling:test -Dgatling.simulationClass=kreyj.konfplan.performancetest.ConcurrencyCapacitySimulation
+    # or a different target, e.g. for a quicker sanity check:
+    mvn gatling:test -Dgatling.simulationClass=kreyj.konfplan.performancetest.ConcurrencyCapacitySimulation -DconcurrentUsers=100
+    ```
+
 ## Test Data
 
 The test uses the `src/test/resources/TeilnehmerFeeder.csv` file for test data. The file contains the following columns:

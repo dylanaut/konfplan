@@ -16,5 +16,10 @@ RestartSec=10
 StandardOutput=journal
 StandardError=journal
 
+# Systemds Default-Grenze (haeufig 1024 offene Datei-Deskriptoren) reicht bei mehreren hundert
+# gleichzeitigen HTTP-Verbindungen (siehe backend/.../application.properties, Connection-/
+# Thread-Pool-Tuning fuer ~700 Nutzer) nicht mehr aus.
+LimitNOFILE=65536
+
 [Install]
 WantedBy=multi-user.target

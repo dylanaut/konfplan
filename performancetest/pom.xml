@@ -20,6 +20,11 @@
         <gatling-maven-plugin.version>4.11.0</gatling-maven-plugin.version>
         <scala-maven-plugin.version>4.9.10</scala-maven-plugin.version>
         <netty.version>4.2.1.Final</netty.version>
+
+        <!-- Default-Simulation fuer "mvn gatling:test"; per
+             "-Dgatling.simulationClass=..." auf der Kommandozeile ueberschreibbar
+             (siehe README.md), z.B. fuer ConcurrencyCapacitySimulation. -->
+        <gatling.simulationClass>kreyj.konfplan.performancetest.TeilnehmerSimulation</gatling.simulationClass>
     </properties>
 
     <dependencyManagement>
@@ -77,7 +82,7 @@
                 <artifactId>gatling-maven-plugin</artifactId>
                 <version>${gatling-maven-plugin.version}</version>
                 <configuration>
-                    <simulationClass>kreyj.konfplan.performancetest.TeilnehmerSimulation</simulationClass>
+                    <simulationClass>${gatling.simulationClass}</simulationClass>
                     <resultsFolder>${project.basedir}/target/gatling</resultsFolder>
                     <!--                    <skip>true</skip>-->
                 </configuration>
