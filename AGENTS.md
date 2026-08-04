@@ -131,7 +131,7 @@ views/*.vue           # Top-Level-Seiten-Komponenten geroutet von Vue Router
 - **DTOs leben im Web-Adapter** (`adapter/in/rest`), werden nie in die Service-Schicht weitergegeben.
 - CSV-Import von Verfügbarkeiten erfolgt über 1-basierte Slot-Indizes.
 - **Code-Stil:** `.editorconfig` im Root-Verzeichnis — 4 Leerzeichen für Java/XML, 2 für JS/TS/Vue.
-- **Standard-Passwort** bei Nutzer-Erstellung/Import: `start123` (BCrypt-gehasht).
+- **Standard-Passwort** bei Nutzer-Erstellung/Import: `konfplan` im Dev/Test-Modus, ein zufaelliges UUID-Passwort in Produktion (in beiden Faellen BCrypt-gehasht).
 
 ## Bekannte Besonderheiten & Infrastruktur-Notizen
 

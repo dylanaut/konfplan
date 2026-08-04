@@ -117,7 +117,7 @@ views/*.vue           # Top-level page components routed by Vue Router
 - **Polymorphism:** `@Inheritance(SINGLE_TABLE)` + Jackson `@JsonSubTypes` for Nutzer and Vortrag hierarchies.
 - **CSV import:** Slot indices are 1-based.
 - **Code style:** `.editorconfig` at root — 4 spaces for Java/XML, 2 spaces for JS/TS/Vue.
-- **Default password** on user create/import: `start123` (BCrypt-hashed).
+- **Default password** on user create/import: `konfplan` in dev/test mode, a random UUID in prod (BCrypt-hashed either way).
 
 ## Full-Stack Feature Slice Checklist (Data Model Changes)
 
