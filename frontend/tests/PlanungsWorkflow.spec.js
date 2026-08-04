@@ -126,14 +126,6 @@ async function gotoTab(page, label) {
   await page.locator('nav button', { hasText: label }).click();
 }
 
-// Erzwingt einen frischen loadData()-Durchlauf via handleVeranstaltungChange(), indem die
-// Veranstaltungsauswahl kurz auf "-- Bitte wählen --" und zurück gesetzt wird - ein erneutes
-// selectOption() auf den bereits ausgewählten Wert löst keinen "change"-Event aus.
-async function reloadViaVeranstaltungReselect(page) {
-  await page.locator('select').first().selectOption({ index: 0 });
-  await page.locator('select').first().selectOption({ index: 1 });
-}
-
 test('Vollständiger Workflow: Veranstaltung -> Gebäude -> Slots -> Personen -> Vorträge', async ({ page }) => {
   await mockAdminApis(page);
 
@@ -203,12 +195,6 @@ test('Vollständiger Workflow: Veranstaltung -> Gebäude -> Slots -> Personen ->
   await page.locator('label:has-text("Anmeldename") + input').fill('max.referent');
   await page.locator('label:has-text("E-Mail") + input').fill('max@referent.de');
   await page.getByRole('button', { name: 'Nutzer erstellen' }).click();
-
-  // Anwendungs-Bug-Workaround: handleSaveUser() ruft nach loadData() zusaetzlich
-  // refreshAdmins() auf, das users.value mit der reinen Admin-Liste ueberschreibt und
-  // den gerade angelegten Referenten kurz danach wieder aus allen Nutzerlisten (u.a. der
-  // Referenten-Tabelle und dem Referent-Dropdown im Vortrag-Editor) verschwinden laesst.
-  await reloadViaVeranstaltungReselect(page);
   await expect(page.locator('td:has-text("Max Referent")')).toBeVisible();
 
   // 7. VORTRAG ANLEGEN
@@ -228,8 +214,6 @@ test('Vollständiger Workflow: Veranstaltung -> Gebäude -> Slots -> Personen ->
   await page.locator('label:has-text("Anmeldename") + input').fill('tom.teilnehmer');
   await page.locator('label:has-text("E-Mail") + input').fill('tom@student.de');
   await page.getByRole('button', { name: 'Nutzer erstellen' }).click();
-  // Gleicher Anwendungs-Bug-Workaround wie bei der Referenten-Anlage oben.
-  await reloadViaVeranstaltungReselect(page);
   await expect(page.locator('td:has-text("Tom Teilnehmer")').first()).toBeVisible();
 
   // 9. KONTROLLE IN PLANERSTELLUNG
