@@ -498,6 +498,54 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
       await page.getByRole('button', { name: 'Schließen' }).click();
       await expect(page.getByText('CSV Import Ergebnis')).toHaveCount(0);
     });
+
+    // Regression #39: handleGlobalUpload rief nach loadData() zusätzlich refreshAdmins()
+    // auf, das users.value mit der reinen Admin-Liste überschrieb und damit gerade per CSV
+    // importierte Referenten/Teilnehmer sofort wieder aus der Tabelle verschwinden ließ. Der
+    // Mock unten simuliert genau diesen Zustandswechsel: erst nach dem Import liefert
+    // GET .../nutzer den neuen Referenten - würde die App fälschlich noch refreshAdmins()
+    // (nur GET /api/admin/nutzer, ohne den neuen Referenten) danach aufrufen, bliebe die
+    // Tabelle leer und der Test schlägt fehl.
+    test('importierter Referent erscheint sofort in der Referenten-Tabelle, ohne dass die Veranstaltung neu ausgewählt werden muss', async ({ page }) => {
+      let referentImported = false;
+      const NEW_REFERENT = {
+        id: 999, firstName: 'Erika', lastName: 'Musterfrau', email: 'erika.musterfrau@test.de',
+        role: 'REFERENT', isActive: true, veranstaltungIds: [VID]
+      };
+
+      await page.route(`http://localhost:9000/api/veranstaltungen/${VID}/referenten/import`, route => {
+        referentImported = true;
+        return route.fulfill({ status: 200, json: { anzahlErfolgreich: 1, fehler: [] } });
+      });
+      await page.route(`http://localhost:9000/api/veranstaltungen/${VID}/nutzer`, (route) => {
+        if (route.request().method() === 'GET' && referentImported) {
+          return route.fulfill({ status: 200, json: [...ALL_USERS, NEW_REFERENT] });
+        }
+        return route.fallback();
+      });
+
+      await gotoTab(page, 'Referenten');
+      const [fileChooser] = await Promise.all([
+        page.waitForEvent('filechooser'),
+        page.getByRole('button', { name: 'Import', exact: true }).click()
+      ]);
+      await fileChooser.setFiles({
+        name: 'referenten.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from('Vorname;Nachname;Email;LoginName\nErika;Musterfrau;erika.musterfrau@test.de;erika.musterfrau')
+      });
+
+      await expect(page.getByText('CSV Import Ergebnis')).toBeVisible();
+      // Wichtig: erst nachdem ALLE Folge-Requests von handleGlobalUpload abgeklungen sind
+      // prüfen - sonst würde toBeVisible() (das bis zum Timeout retried) einen nur
+      // kurzzeitig sichtbaren Zwischenzustand fälschlich als Erfolg werten, selbst wenn ein
+      // späterer refreshAdmins()-Aufruf den Referenten danach wieder aus der Liste entfernt.
+      // (Alle Antworten sind gemockt und damit praktisch verzögerungsfrei; 500ms sind ein
+      // großzügiger Puffer für die Kette der await-Aufrufe in handleGlobalUpload plus
+      // Vue-Rerender.)
+      await page.waitForTimeout(500);
+      await expect(page.locator('td:has-text("Musterfrau")')).toBeVisible();
+    });
   });
 
   test.describe('Lösch-Bestätigungen (window.confirm)', () => {
