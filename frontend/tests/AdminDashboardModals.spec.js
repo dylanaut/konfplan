@@ -289,6 +289,7 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
 
       await page.locator('label:has-text("Vorname") + input').fill('Lisa');
       await page.locator('label:has-text("Nachname") + input').fill('Lernend');
+      await page.locator('label:has-text("Anmeldename") + input').fill('lisa.lernend');
       await page.locator('label:has-text("E-Mail") + input').fill('lisa@test.de');
       await page.locator('#gruppe-10a').check();
 
@@ -308,6 +309,7 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
 
       await page.locator('label:has-text("Vorname") + input').fill('Otto');
       await page.locator('label:has-text("Nachname") + input').fill('Organisator');
+      await page.locator('label:has-text("Anmeldename") + input').fill('otto.organisator');
       await page.locator('label:has-text("E-Mail") + input').fill('otto@test.de');
 
       const [request] = await Promise.all([
