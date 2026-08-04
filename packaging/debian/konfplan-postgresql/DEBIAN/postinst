@@ -1,0 +1,21 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        chmod 640 /etc/konfplan/postgresql.env
+
+        systemctl daemon-reload || true
+        systemctl enable konfplan-postgresql.service || true
+
+        echo ""
+        echo "konfplan-postgresql wurde installiert, aber die Datenbank wurde noch"
+        echo "NICHT angelegt. Bitte zuerst /etc/konfplan/postgresql.env anpassen"
+        echo "(DB_PASSWORD) und dann ausfuehren:"
+        echo "  sudo systemctl start konfplan-postgresql.service"
+        echo "Logs: journalctl -u konfplan-postgresql.service"
+        echo ""
+        ;;
+esac
+
+exit 0

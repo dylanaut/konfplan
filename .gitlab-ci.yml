@@ -110,8 +110,8 @@ deploy_to_production:
         # 1. SSH zum Server
         # 2. Docker-Image aus der GitLab Registry pullen
         # 3. Alten Container stoppen und neuen starten
-        # Die App erwartet einen erreichbaren MS-SQL-Server (siehe application.properties,
-        # %prod.quarkus.datasource.jdbc.url) - z.B. via des konfplan-mssql-Debian-Pakets
+        # Die App erwartet eine erreichbare PostgreSQL-Datenbank (siehe application.properties,
+        # %prod.quarkus.datasource.jdbc.url) - z.B. via des konfplan-postgresql-Debian-Pakets
         # (packaging/debian/) auf demselben Host unter DB_HOST=localhost.
         # DB_PASSWORD, BREVO_SMTP_USER und BREVO_SMTP_PASSWORD werden NICHT hier hartkodiert,
         # sondern als maskierte/geschützte CI/CD-Variablen im GitLab-Projekt hinterlegt

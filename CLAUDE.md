@@ -157,4 +157,4 @@ Remote is **GitHub** (`github.com/dylanaut/konfplan`, private), authenticated vi
 - **Deadlines** (`deadlineReferenten`, `deadlineTeilnehmer`) gate editability in each dashboard.
 - **Room conflict checks** are cross-event (a room booked in one Veranstaltung blocks it in another).
 - **Vite** is configured to produce a `manifest.json` used by Quarkus Quinoa to embed frontend assets.
-- **DB scripts:** `db/init_db.sh` and `db/ensure_prod_db.sh` for PostgreSQL setup.
+- **DB scripts:** `db/ensure_prod_db.sh` and `db/ensure_prod_infra.sh` for local PostgreSQL/Mailpit setup (Docker-based, dev/test use). Production `.deb` packaging lives under `packaging/debian/` (see its `README.md`).

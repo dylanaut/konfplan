@@ -1,0 +1,15 @@
+Package: konfplan-postgresql
+Version: 1.0.0-1
+Section: database
+Priority: optional
+Architecture: all
+Depends: postgresql
+Maintainer: KonfPlan <juergen.krey@msg.group>
+Description: PostgreSQL-Datenbank fuer KonfPlan
+ PostgreSQL ist bereits offiziell im Debian-13-Hauptrepository enthalten
+ (Depends: postgresql) - anders als MS SQL Server wird hier kein Docker-
+ Container benoetigt.
+ .
+ Dieses Paket installiert einen einmaligen systemd-Oneshot-Service, der die
+ KonfPlan-Datenbank und den zugehoerigen Datenbank-Benutzer in der lokalen
+ PostgreSQL-Instanz idempotent anlegt, sobald PostgreSQL laeuft.
