@@ -52,11 +52,14 @@
 import { ref } from 'vue';
 import { useAuthStore } from './stores/auth';
 import { useEventContextStore } from './stores/eventContext';
+import { useInactivityLogout } from './composables/useInactivityLogout';
 import { Menu as MenuIcon } from '@lucide/vue';
 
 const auth = useAuthStore();
 const eventContext = useEventContextStore();
 const mobileMenuOpen = ref(false);
+
+useInactivityLogout();
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 </script>
