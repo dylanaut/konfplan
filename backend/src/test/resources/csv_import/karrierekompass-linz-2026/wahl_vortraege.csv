@@ -1,34 +1,34 @@
 istPflicht;Titel;Referent_LoginName;wahlSlots;Inhalt;wiederholbar;maxWiederholungen;Pflichtgruppe;Pflichtraum;Pflichtslot;Ausstattung;Berufsfeld
 false;Rechtsanwalt / Jura Studium / Studium Wirtschaftsrecht ;stephan.arens;1,2,3,4;Rechtsanwalt / Jura Studium / Studium Wirtschaftsrecht ;true;2;;;;Beamer;Wirtschaft, Verwaltung, Recht und Gesellschaft
-false;Entwicklungszusammenarbeit ;mart.schaefer;1,2,3,4;Entwicklungszusammenarbeit ;true;2;;;;Beamer;Soziales, Pädagogik und Theologie
-false;Luft- und Raumfahrtingenieur;anke.pagels-kerp;1,2,3,4;Luft- und Raumfahrtingenieur;true;2;;;;Beamer;Metall-, Maschinen- und Fahrzeugbau
-false;Fachkraft für Arbeitssicherheit ;chrisumilgl;1,2,3,4;Fachkraft für Arbeitssicherheit ;true;2;;;;Beamer;Verkehr, Logistik, Schutz und Sicherheit
-false;Operationstechnische/Anästhesietechnische Assistenz;madleen883.schneider;1,2,3,4;Operationstechnische/Anästhesietechnische Assistenz;true;2;;;;Beamer;Gesundheit
-false;"Pflegefachmann/Pflegefachfrau; medizinische Fachangestellte; operationstechnische Assistenten; medizinische Technologie für Radiologie; medizinische Technologie für Laboratoriumsanalytik; Pharmazeutisch technische Angestellte oder p. kaufmännische Angestellte";kheidrich;1,2,3,4;"Pflegefachmann/Pflegefachfrau; medizinische Fachangestellte; operationstechnische Assistenten; medizinische Technologie für Radiologie; medizinische Technologie für Laboratoriumsanalytik; Pharmazeutisch technische Angestellte oder p. kaufmännische Angestellte";true;2;;;;Beamer;Gesundheit
-false;Bankkaufmann/ Bankkauffrau ;bianca-eileen.koenig;1,2,3,4;Bankkaufmann/ Bankkauffrau ;true;2;;;;Beamer;Wirtschaft, Verwaltung, Recht und Gesellschaft
-false;Kaufmann (m/w/d) für Groß- und Außenhandelsmanagement;messenverwaltung;1,2,3,4;Kaufmann (m/w/d) für Groß- und Außenhandelsmanagement;true;2;;;;Beamer;Unternehmensführung, Organisation, Einkauf, Vertrieb und Marketing
-false;Süßwarentechnologie | Lebensmittelchemie | Industriekaufleute ;l.diederich;1,2,3,4;Süßwarentechnologie | Lebensmittelchemie | Industriekaufleute ;true;2;;;;Beamer;Gastronomie, Lebensmittel und Hauswirtschaft
+false;Entwicklungszusammenarbeit ;martin.schaefer;1,2,3,4;Entwicklungszusammenarbeit ;true;2;;;;Beamer;Soziales, Pädagogik und Theologie
+false;Luft- und Raumfahrtingenieur;anke.pagels.kerp;1,2,3,4;Luft- und Raumfahrtingenieur;true;2;;;;Beamer;Metall-, Maschinen- und Fahrzeugbau
+false;Fachkraft für Arbeitssicherheit ;christian.schneider;1,2,3,4;Fachkraft für Arbeitssicherheit ;true;2;;;;Beamer;Verkehr, Logistik, Schutz und Sicherheit
+false;Operationstechnische/Anästhesietechnische Assistenz;madleen.schneider;1,2,3,4;Operationstechnische/Anästhesietechnische Assistenz;true;2;;;;Beamer;Gesundheit
+false;"Pflegefachmann/Pflegefachfrau; medizinische Fachangestellte; operationstechnische Assistenten; medizinische Technologie für Radiologie; medizinische Technologie für Laboratoriumsanalytik; Pharmazeutisch technische Angestellte oder p. kaufmännische Angestellte";katharina.heidrich;1,2,3,4;"Pflegefachmann/Pflegefachfrau; medizinische Fachangestellte; operationstechnische Assistenten; medizinische Technologie für Radiologie; medizinische Technologie für Laboratoriumsanalytik; Pharmazeutisch technische Angestellte oder p. kaufmännische Angestellte";true;2;;;;Beamer;Gesundheit
+false;Bankkaufmann/ Bankkauffrau ;bianca.koenig;1,2,3,4;Bankkaufmann/ Bankkauffrau ;true;2;;;;Beamer;Wirtschaft, Verwaltung, Recht und Gesellschaft
+false;Kaufmann (m/w/d) für Groß- und Außenhandelsmanagement;kira.brauer;1,2,3,4;Kaufmann (m/w/d) für Groß- und Außenhandelsmanagement;true;2;;;;Beamer;Unternehmensführung, Organisation, Einkauf, Vertrieb und Marketing
+false;Süßwarentechnologie | Lebensmittelchemie | Industriekaufleute ;luci.diederich;1,2,3,4;Süßwarentechnologie | Lebensmittelchemie | Industriekaufleute ;true;2;;;;Beamer;Gastronomie, Lebensmittel und Hauswirtschaft
 false;Allgemeine Studienorientierung, Bewerbung an der H-BRS;sarah.kloth;1,2,3,4;Allgemeine Studienorientierung, Bewerbung an der H-BRS;true;2;;;;Beamer;Soziales, Pädagogik und Theologie
-false;Anästhesietechnischer Assistent/ Operationstechnischer Assistent/ Generalistische Pflegeausbildung/ Medizinischer Technologe in der Radiologie/ Physiotherapeut;joanna.fait;1,2,3,4;Anästhesietechnischer Assistent/ Operationstechnischer Assistent/ Generalistische Pflegeausbildung/ Medizinischer Technologe in der Radiologie/ Physiotherapeut;true;2;;;;Beamer;Gesundheit
+false;Anästhesietechnischer Assistent/ Operationstechnischer Assistent/ Generalistische Pflegeausbildung/ Medizinischer Technologe in der Radiologie/ Physiotherapeut;florian.metzler;1,2,3,4;Anästhesietechnischer Assistent/ Operationstechnischer Assistent/ Generalistische Pflegeausbildung/ Medizinischer Technologe in der Radiologie/ Physiotherapeut;true;2;;;;Beamer;Gesundheit
 false;Kaufmann/-frau für Versicherungen und Finanzen;michael.jung;1,2,3,4;Kaufmann/-frau für Versicherungen und Finanzen;true;2;;;;Beamer;Wirtschaft, Verwaltung, Recht und Gesellschaft
-false;Polizeibeamt*innen;pilinz.einstellungsberatung;1,2,3,4;Polizeibeamt*innen;true;2;;;;Beamer;Verkehr, Logistik, Schutz und Sicherheit
+false;Polizeibeamt*innen;david.puetz;1,2,3,4;Polizeibeamt*innen;true;2;;;;Beamer;Verkehr, Logistik, Schutz und Sicherheit
 false;Elektroniker / Industriemechaniker;andreas.schneider;1,2,3,4;Elektroniker / Industriemechaniker;true;2;;;;Beamer;Elektrotechnik
 false;Bundespolizist;michael.diesner;1,2,3,4;Bundespolizist;true;2;;;;Beamer;Verkehr, Logistik, Schutz und Sicherheit
-false;Chemikant, Fachlagerist/Fachkraft Lagerlogistik, Fachinformatiker für Systemintegration;krossa;1,2,3,4;Chemikant, Fachlagerist/Fachkraft Lagerlogistik, Fachinformatiker für Systemintegration;true;2;;;;Beamer;Chemie, Kunststoff, Glas, Textil und Holz
-false;Finanzwirt-in / Diplomfinanzwirt-in ;ausbildung;1,2,3,4;Finanzwirt-in / Diplomfinanzwirt-in ;true;2;;;;Beamer;Wirtschaft, Verwaltung, Recht und Gesellschaft
-false;Physiker;frank;1,2,3,4;Physiker;true;2;;;;Beamer;Naturwissenschaft, Geografie und Informatik
+false;Chemikant, Fachlagerist/Fachkraft Lagerlogistik, Fachinformatiker für Systemintegration;mario.diede;1,2,3,4;Chemikant, Fachlagerist/Fachkraft Lagerlogistik, Fachinformatiker für Systemintegration;true;2;;;;Beamer;Chemie, Kunststoff, Glas, Textil und Holz
+false;Finanzwirt-in / Diplomfinanzwirt-in ;margarete.isaak;1,2,3,4;Finanzwirt-in / Diplomfinanzwirt-in ;true;2;;;;Beamer;Wirtschaft, Verwaltung, Recht und Gesellschaft
+false;Physiker;frank.bensch;1,2,3,4;Physiker;true;2;;;;Beamer;Naturwissenschaft, Geografie und Informatik
 false;Klimaschutz;andrea.schlueter;1,2,3,4;Klimaschutz;true;2;;;;Beamer;Naturwissenschaft, Geografie und Informatik
 false;Jugendvertretung;pascal.labonde;1,2,3,4;Jugendvertretung;true;2;;;;Beamer;Soziales, Pädagogik und Theologie
 false;Werkzeugmechaniker, Industriemechaniker, Elektroniker, Maschinen- u. Anlagenführer,  Industriekauffrau;manuela.schuetzeichel;1,2,3,4;Werkzeugmechaniker, Industriemechaniker, Elektroniker, Maschinen- u. Anlagenführer,  Industriekauffrau;true;2;;;;Beamer;Metall-, Maschinen- und Fahrzeugbau
-false;SHK Anlagenmechaniker, Wasser, Wärme, Klima, Lüftung;markusbouillon;1,2,3,4;SHK Anlagenmechaniker, Wasser, Wärme, Klima, Lüftung;true;2;;;;Beamer;Bau, Architektur, Vermessung und Gebäudetechnik
-false;Militärische und zivile Karrieremöglichkeiten;karrbbbonn;1,2,3,4;Militärische und zivile Karrieremöglichkeiten;true;2;;;;Beamer;Verkehr, Logistik, Schutz und Sicherheit
+false;SHK Anlagenmechaniker, Wasser, Wärme, Klima, Lüftung;markus.bouillon;1,2,3,4;SHK Anlagenmechaniker, Wasser, Wärme, Klima, Lüftung;true;2;;;;Beamer;Bau, Architektur, Vermessung und Gebäudetechnik
+false;Militärische und zivile Karrieremöglichkeiten;lisa.kunkel;1,2,3,4;Militärische und zivile Karrieremöglichkeiten;true;2;;;;Beamer;Verkehr, Logistik, Schutz und Sicherheit
 false;Naturwissenschaftler;philip.born;1,2,3,4;Naturwissenschaftler;true;2;;;;Beamer;Naturwissenschaft, Geografie und Informatik
-false;Bachelorstudiengang Management, Führung, Innovation;weber3;1,2,3,4;Bachelorstudiengang Management, Führung, Innovation;true;2;;;;Beamer;Unternehmensführung, Organisation, Einkauf, Vertrieb und Marketing
+false;Bachelorstudiengang Management, Führung, Innovation;princilia.weber;1,2,3,4;Bachelorstudiengang Management, Führung, Innovation;true;2;;;;Beamer;Unternehmensführung, Organisation, Einkauf, Vertrieb und Marketing
 false;Ausbildung und duales Studium im Bereich Metall und Elektronik ;alexander.gross;1,2,3,4;Ausbildung und duales Studium im Bereich Metall und Elektronik ;true;2;;;;Beamer;Metall-, Maschinen- und Fahrzeugbau
 false;Bankkaufleute ;anne.bollinger;1,2,3,4;Bankkaufleute ;true;2;;;;Beamer;Wirtschaft, Verwaltung, Recht und Gesellschaft
-false;Herzchirurgie;matthiasendlich;1,2,3,4;Herzchirurgie;true;2;;;;Beamer;Gesundheit
-false;Grafikdesigner ;simon.design;1,2,3,4;Grafikdesigner ;true;2;;;;Beamer;Kreativberufe, Medien und Gestaltung
+false;Herzchirurgie;matthias.endlich.boese;1,2,3,4;Herzchirurgie;true;2;;;;Beamer;Gesundheit
+false;Grafikdesigner ;simon.woelfl;1,2,3,4;Grafikdesigner ;true;2;;;;Beamer;Kreativberufe, Medien und Gestaltung
 false;ErzieherIn;anka.kuntze;1,2,3,4;ErzieherIn;true;2;;;;Beamer;Soziales, Pädagogik und Theologie
-false;Eventmanager;benedikt;1,2,3,4;Eventmanager;true;2;;;;Beamer;Tourismus, Sport und Kultur
-false;Forstwirtschaft;bmanns;1,2,3,4;Forstwirtschaft;true;2;;;;Beamer;Land-, Forst-, Tierwirtschaft und Gartenbau
-false;Sportmanagement;schneider1;1,2,3,4;Sportmanagement;true;2;;;;Beamer;Tourismus, Sport und Kultur
+false;Eventmanager;benedikt.feltens;1,2,3,4;Eventmanager;true;2;;;;Beamer;Tourismus, Sport und Kultur
+false;Forstwirtschaft;benedikt.manns;1,2,3,4;Forstwirtschaft;true;2;;;;Beamer;Land-, Forst-, Tierwirtschaft und Gartenbau
+false;Sportmanagement;sebastian.schneider;1,2,3,4;Sportmanagement;true;2;;;;Beamer;Tourismus, Sport und Kultur
