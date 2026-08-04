@@ -11,6 +11,7 @@ import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
+import kreyj.konfplan.domain.service.LoginRateLimiterService;
 import kreyj.konfplan.domain.service.MailService;
 import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.Nutzer;
@@ -28,6 +29,7 @@ import java.util.List;
 import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.Response.Status.ACCEPTED;
 import static jakarta.ws.rs.core.Response.Status.OK;
+import static jakarta.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -44,10 +46,16 @@ class AuthResourceTest {
     @Inject
     MailService mailService;
 
+    @Inject
+    LoginRateLimiterService loginRateLimiterService;
+
 
     @BeforeEach
     void setup() {
         PanacheMock.mock(Nutzer.class);
+        // Zustand des Rate-Limiters zwischen Testfaellen zuruecksetzen, sonst wuerden sich
+        // die Fehlversuch-Zaehler der einzelnen Tests gegenseitig beeinflussen.
+        loginRateLimiterService.reset();
     }
 
 
@@ -55,6 +63,7 @@ class AuthResourceTest {
     public void afterEach() {
         // clear the mailbox after each test run if you prefer
         mailbox.clear();
+        loginRateLimiterService.reset();
     }
 
 
@@ -161,5 +170,114 @@ class AuthResourceTest {
                 .statusCode(OK.getStatusCode())
                 .body("token", notNullValue())
                 .body("role", is("TEILNEHMER"));
+    }
+
+
+    @Test
+    void testLogin_Failure_WrongPassword() {
+        Nutzer nutzer = new Teilnehmer();
+        nutzer.assignLoginName("nutzeruser");
+        nutzer.setPasswordHash(BcryptUtil.bcryptHash("correctPassword"));
+        nutzer.setRole("TEILNEHMER");
+        nutzer.setActive(true);
+
+        Mockito.when(Nutzer.findByLoginName("nutzeruser")).thenReturn(nutzer);
+
+        given()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new LoginRequest("nutzeruser", "wrongPassword"))
+                .when().post("/login")
+                .then()
+                .statusCode(UNAUTHORIZED.getStatusCode());
+    }
+
+
+    @Test
+    void testLogin_RateLimited_AfterMaxFailedAttempts() {
+        Mockito.when(Nutzer.findByLoginName("nutzeruser")).thenReturn(null);
+        LoginRequest badLogin = new LoginRequest("nutzeruser", "wrongPassword");
+
+        // Default app.security.login-rate-limit.max-attempts=5: die ersten 5 Fehlversuche
+        // werden regulaer mit 401 abgelehnt.
+        for (int i = 0; i < 5; i++) {
+            given()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(badLogin)
+                    .when().post("/login")
+                    .then()
+                    .statusCode(UNAUTHORIZED.getStatusCode());
+        }
+
+        // Der 6. Versuch von derselben IP wird geblockt, bevor ueberhaupt Anmeldedaten geprueft werden.
+        given()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(badLogin)
+                .when().post("/login")
+                .then()
+                .statusCode(429)
+                .header("Retry-After", notNullValue());
+    }
+
+
+    @Test
+    void testLogin_RateLimit_ResetsAfterSuccessfulLogin() {
+        Nutzer nutzer = new Teilnehmer();
+        nutzer.assignLoginName("nutzeruser");
+        nutzer.setPasswordHash(BcryptUtil.bcryptHash("correctPassword"));
+        nutzer.setRole("TEILNEHMER");
+        nutzer.setActive(true);
+        Mockito.when(Nutzer.findByLoginName("nutzeruser")).thenReturn(nutzer);
+
+        LoginRequest badLogin = new LoginRequest("nutzeruser", "wrongPassword");
+        LoginRequest goodLogin = new LoginRequest("nutzeruser", "correctPassword");
+
+        // 4 Fehlversuche (unterhalb des Limits von 5), dann ein erfolgreicher Login.
+        for (int i = 0; i < 4; i++) {
+            given().contentType(MediaType.APPLICATION_JSON).body(badLogin)
+                    .when().post("/login")
+                    .then().statusCode(UNAUTHORIZED.getStatusCode());
+        }
+        given().contentType(MediaType.APPLICATION_JSON).body(goodLogin)
+                .when().post("/login")
+                .then().statusCode(OK.getStatusCode());
+
+        // Der erfolgreiche Login muss den Fehlversuch-Zaehler zuruecksetzen: erneut 4
+        // Fehlversuche duerfen NICHT blockiert werden (waeren es kumuliert 8, ueber dem Limit).
+        for (int i = 0; i < 4; i++) {
+            given().contentType(MediaType.APPLICATION_JSON).body(badLogin)
+                    .when().post("/login")
+                    .then().statusCode(UNAUTHORIZED.getStatusCode());
+        }
+    }
+
+
+    @Test
+    void testLogin_RateLimit_IsScopedPerIp() {
+        Mockito.when(Nutzer.findByLoginName("nutzeruser")).thenReturn(null);
+        LoginRequest badLogin = new LoginRequest("nutzeruser", "wrongPassword");
+
+        // IP "1.1.1.1" bis zur Sperre ausreizen.
+        for (int i = 0; i < 5; i++) {
+            given()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("X-Forwarded-For", "1.1.1.1")
+                    .body(badLogin)
+                    .when().post("/login")
+                    .then().statusCode(UNAUTHORIZED.getStatusCode());
+        }
+        given()
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-Forwarded-For", "1.1.1.1")
+                .body(badLogin)
+                .when().post("/login")
+                .then().statusCode(429);
+
+        // Eine andere IP ("2.2.2.2") darf davon unberuehrt weiter (regulaer mit 401) anfragen.
+        given()
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("X-Forwarded-For", "2.2.2.2")
+                .body(badLogin)
+                .when().post("/login")
+                .then().statusCode(UNAUTHORIZED.getStatusCode());
     }
 }
