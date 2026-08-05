@@ -1,5 +1,7 @@
 package kreyj.konfplan.domain.service;
 
+import io.quarkus.narayana.jta.QuarkusTransaction;
+import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -10,6 +12,7 @@ import kreyj.konfplan.domain.exception.CsvImportException;
 import kreyj.konfplan.persistence.Veranstaltung;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 
@@ -47,21 +50,28 @@ class VeranstaltungImportServiceTest extends DatabaseCleaner {
 
 
     @Test
-    @Transactional
     void importDataset_createsVeranstaltungAndAttachesAllData() throws Exception {
+        // Bewusst OHNE @Transactional auf der Testmethode: importDataset() setzt per
+        // @TransactionConfiguration einen erhöhten Timeout, was Narayana nur am Einstiegspunkt
+        // einer Transaktion erlaubt (siehe Kommentar dort) - mit einer bereits laufenden
+        // Transaktion (wie es @Transactional auf dieser Methode erzeugen würde) entspräche das
+        // nicht dem echten Aufrufpfad aus VeranstaltungImportResource (dort ebenfalls ohne
+        // vorher offene Transaktion) und würfe "can only be done at the entry level".
         VeranstaltungDto result = veranstaltungImportService.importDataset("valid-event");
 
         assertThat(result).isNotNull();
         assertThat(result.id).isNotNull();
 
-        Veranstaltung veranstaltung = Veranstaltung.findById(result.id);
-        assertThat(veranstaltung).isNotNull();
-        assertThat(veranstaltung.getName()).isEqualTo("Bundle Import Test Event");
-        assertThat(veranstaltung.getSlots()).hasSize(3);
-        assertThat(veranstaltung.referenten()).hasSize(3);
-        assertThat(veranstaltung.teilnehmer()).hasSize(3);
-        assertThat(veranstaltung.getWahlvortraege()).hasSize(2);
-        assertThat(veranstaltung.getPflichtvortraege()).hasSize(1);
+        QuarkusTransaction.requiringNew().run(() -> {
+            Veranstaltung veranstaltung = Veranstaltung.findById(result.id);
+            assertThat(veranstaltung).isNotNull();
+            assertThat(veranstaltung.getName()).isEqualTo("Bundle Import Test Event");
+            assertThat(veranstaltung.getSlots()).hasSize(3);
+            assertThat(veranstaltung.referenten()).hasSize(3);
+            assertThat(veranstaltung.teilnehmer()).hasSize(3);
+            assertThat(veranstaltung.getWahlvortraege()).hasSize(2);
+            assertThat(veranstaltung.getPflichtvortraege()).hasSize(1);
+        });
     }
 
 
@@ -82,5 +92,25 @@ class VeranstaltungImportServiceTest extends DatabaseCleaner {
     void importDataset_rejectsPathTraversal() {
         assertThatThrownBy(() -> veranstaltungImportService.importDataset("../../etc"))
             .isInstanceOf(IllegalArgumentException.class);
+    }
+
+
+    // Regression: der gesamte Bündelimport läuft in einer Transaktion (Alles-oder-nichts); bei
+    // vielen Teilnehmern sprengt allein das BCrypt-Hashing der Passwörter den JTA-Default-
+    // Timeout von 60s, was in %prod (kein 3-Minuten-Override wie in %dev) real zu
+    // "ARJUNA016102: The transaction is not active!" führte (gegen echtes Postgres verifiziert,
+    // 632 Teilnehmer). Ein echter End-to-End-Test mit so vielen Zeilen wäre für die Testsuite zu
+    // langsam - dieser Test prüft daher direkt, dass der großzügigere Timeout konfiguriert ist,
+    // statt auf den globalen Default zu vertrauen.
+    @Test
+    void importDataset_hasExtendedTransactionTimeoutForLargeDatasets() throws NoSuchMethodException {
+        Method method = VeranstaltungImportService.class.getMethod("importDataset", String.class);
+        TransactionConfiguration config = method.getAnnotation(TransactionConfiguration.class);
+
+        assertThat(config)
+            .describedAs("importDataset() muss einen expliziten, grosszuegigen Transaktions-Timeout haben, "
+                + "da %prod (anders als %dev) keinen erhoehten globalen Default-Timeout hat")
+            .isNotNull();
+        assertThat(config.timeout()).isGreaterThanOrEqualTo(180);
     }
 }
