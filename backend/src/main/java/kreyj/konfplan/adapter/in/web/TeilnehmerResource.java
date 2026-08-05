@@ -1,5 +1,7 @@
 package kreyj.konfplan.adapter.in.web;
 
+import io.quarkus.elytron.security.common.BcryptUtil;
+import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
@@ -16,6 +18,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import kreyj.konfplan.adapter.in.web.dto.EmailChangeRequestDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerDto;
@@ -23,18 +26,22 @@ import kreyj.konfplan.adapter.in.web.dto.TeilnehmerVeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
 import kreyj.konfplan.application.port.in.TeilnehmerServiceInterface;
+import kreyj.konfplan.domain.service.MailService;
 import kreyj.konfplan.domain.service.PlanService;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.util.JwtHelper;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
@@ -48,12 +55,17 @@ public class TeilnehmerResource {
     private final JsonWebToken jwt;
     private final TeilnehmerServiceInterface teilnehmerService;
     private final PlanService planService;
+    private final MailService mailService;
+
+    @ConfigProperty(name = "app.frontend.base-url")
+    String frontendBaseUrl;
 
     @SuppressWarnings("CdiInjectionPointsInspection")
-    public TeilnehmerResource(JsonWebToken jwt, TeilnehmerServiceInterface teilnehmerService, PlanService planService) {
+    public TeilnehmerResource(JsonWebToken jwt, TeilnehmerServiceInterface teilnehmerService, PlanService planService, MailService mailService) {
         this.jwt = jwt;
         this.teilnehmerService = teilnehmerService;
         this.planService = planService;
+        this.mailService = mailService;
     }
 
 
@@ -179,6 +191,72 @@ public class TeilnehmerResource {
         } catch (OptimisticLockException e) {
             return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
         }
+    }
+
+
+    @POST
+    @Path("/email-change-request")
+    @RolesAllowed("TEILNEHMER")
+    @Transactional
+    @Operation(summary = "E-Mail-Änderung anfordern", description = "Fordert eine Änderung der E-Mail-Adresse an und sendet Bestätigungs-E-Mails.")
+    public Response requestEmailChange(@RequestBody(description = "Anfrage zur E-Mail-Änderung") EmailChangeRequestDto requestDto) {
+        Nutzer nutzer = Nutzer.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
+        if (null == nutzer) {
+            return Response.status(Response.Status.NOT_FOUND).entity("Nutzer nicht gefunden.").build();
+        }
+
+        // Passwort validieren. Bewusst FORBIDDEN statt UNAUTHORIZED: der Nutzer ist über sein
+        // JWT bereits authentifiziert, das ist nur eine zusaetzliche Bestaetigung - der globale
+        // Response-Interceptor in axios.js behandelt jedes 401 als "Token ungueltig" und meldet
+        // den Nutzer sofort ab, was hier faelschlich die Fehlermeldung im Formular verhindern
+        // wuerde (per Live-Test entdeckt).
+        if (!BcryptUtil.matches(requestDto.currentPassword, nutzer.getPasswordHash())) {
+            return Response.status(Response.Status.FORBIDDEN).entity("Aktuelles Passwort ist falsch.").build();
+        }
+
+        // Prüfen, ob die neue E-Mail bereits existiert
+        if (Nutzer.findByEmail(requestDto.newEmail) != null) {
+            return Response.status(Response.Status.CONFLICT).entity("Die neue E-Mail-Adresse wird bereits verwendet.").build();
+        }
+
+        String oldEmail = nutzer.getEmail();
+        String token = UUID.randomUUID().toString();
+        nutzer.setNewEmail(requestDto.newEmail);
+        nutzer.setEmailChangeToken(token);
+        nutzer.setEmailChangeTokenExpiry(LocalDateTime.now().plusHours(2)); // Token 2 Stunden gültig
+        nutzer.persist();
+
+        // E-Mails senden
+        mailService.sendEmailChangeNotificationOldAddress(nutzer, oldEmail, requestDto.newEmail);
+
+        String confirmationLink = frontendBaseUrl + "/email-change-confirm?token=" + token;
+        mailService.sendEmailChangeConfirmationNewAddress(nutzer, requestDto.newEmail, confirmationLink);
+
+        return Response.ok("Bestätigungs-E-Mail an neue Adresse gesendet. Bitte überprüfen Sie Ihr Postfach.").build();
+    }
+
+
+    @GET
+    @Path("/email-change-confirm")
+    @PermitAll // Dieser Endpunkt muss ohne Authentifizierung erreichbar sein
+    @Transactional
+    @Operation(summary = "E-Mail-Änderung bestätigen", description = "Bestätigt die Änderung der E-Mail-Adresse mit einem Token.")
+    public Response confirmEmailChange(@QueryParam("token") String token) {
+        Nutzer nutzer = Nutzer.find("emailChangeToken", token).firstResult();
+
+        if (null == nutzer || nutzer.getEmailChangeTokenExpiry() == null || nutzer.getEmailChangeTokenExpiry().isBefore(LocalDateTime.now())) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Ungültiger oder abgelaufener Bestätigungslink.").build();
+        }
+
+        // E-Mail aktualisieren
+        nutzer.setEmail(nutzer.getNewEmail());
+        // Temporäre Felder löschen
+        nutzer.setNewEmail(null);
+        nutzer.setEmailChangeToken(null);
+        nutzer.setEmailChangeTokenExpiry(null);
+        nutzer.persist();
+
+        return Response.ok("Ihre E-Mail-Adresse wurde erfolgreich geändert.").build();
     }
 
 
