@@ -283,9 +283,14 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         if (null == teilnehmer) {
             throw new WebApplicationException("Teilnehmer nicht gefunden", Response.Status.NOT_FOUND);
         }
+        // E-Mail-Änderungen laufen ausschließlich über den Bestätigungs-Flow
+        // (TeilnehmerResource#requestEmailChange/#confirmEmailChange), nicht über dieses
+        // allgemeine Profil-Update - sonst könnte eine unbestätigte, evtl. falsch eingegebene
+        // Adresse sofort für Benachrichtigungen verwendet werden.
         String normalizedDtoEmail = StringUtils.isBlank(dto.email) ? null : dto.email.trim().toLowerCase();
         if (!Objects.equals(teilnehmer.getEmail(), normalizedDtoEmail)) {
-            throw new WebApplicationException("E-Mail kann (noch) nicht geändert werden", Response.Status.BAD_REQUEST);
+            throw new WebApplicationException(
+                "E-Mail-Adresse kann nur über 'E-Mail ändern' geändert werden.", Response.Status.BAD_REQUEST);
         }
 
         if (dto.version != null && !teilnehmer.getVersion().equals(dto.version)) {

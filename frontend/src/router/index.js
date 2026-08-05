@@ -3,6 +3,7 @@ import { useAuthStore } from '../stores/auth';
 
 const Login = () => import('../views/Login.vue');
 const ResetPassword = () => import('../views/ResetPassword.vue');
+const EmailChangeConfirm = () => import('../views/EmailChangeConfirm.vue');
 const TeilnehmerDashboard = () => import('../views/TeilnehmerDashboard.vue');
 const ReferentDashboard = () => import('../views/ReferentDashboard.vue');
 const AdminDashboard = () => import('../views/AdminDashboard.vue');
@@ -33,6 +34,12 @@ const routes = [
         path: '/reset-password',
         name: 'ResetPassword',
         component: ResetPassword,
+        meta: { requiresAuth: false }
+    },
+    {
+        path: '/email-change-confirm',
+        name: 'EmailChangeConfirm',
+        component: EmailChangeConfirm,
         meta: { requiresAuth: false }
     },
     {
