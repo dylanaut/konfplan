@@ -1,5 +1,6 @@
 package kreyj.konfplan.domain.service;
 
+import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.ImportResultDto;
@@ -122,6 +123,14 @@ public class VeranstaltungImportService implements VeranstaltungImportServiceInt
     }
 
 
+    // Der gesamte Bündelimport laeuft bewusst in EINER Transaktion (Alles-oder-nichts, siehe
+    // Klassenkommentar) - bei groesseren Teilnehmerzahlen sprengt allein das (bewusst langsame)
+    // BCrypt-Hashing der Passwoerter leicht den JTA-Default-Timeout von 60s (in %prod real
+    // aufgetreten: "ARJUNA016102: The transaction is not active!" bei 632 Teilnehmern). %dev
+    // hat dafuer einen eigenen, grosszuegigeren Default-Timeout (siehe application.properties),
+    // %prod nicht - daher hier ein expliziter, groszuegiger Timeout nur fuer diese eine
+    // Operation statt den globalen Default fuer alle Transaktionen aufzuweichen.
+    @TransactionConfiguration(timeout = 300)
     @Transactional(rollbackOn = Exception.class)
     @Override
     public VeranstaltungDto importDataset(String datasetName) throws Exception {
