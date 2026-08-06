@@ -28,10 +28,10 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="eintrag in sortedPlan" :key="eintrag.slot.id" class="page-break-inside-avoid">
-            <td>{{ formatSlot(eintrag.slot) }}</td>
-            <td>{{ eintrag.vortrag.titel }}</td>
-            <td>{{ eintrag.raum.name }}</td>
+          <tr v-for="(eintrag, idx) in sortedPlan" :key="idx" class="page-break-inside-avoid">
+            <td>{{ formatSlot(eintrag) }}</td>
+            <td>{{ eintrag.vortragTitel }}</td>
+            <td>{{ eintrag.raumName }}</td>
           </tr>
         </tbody>
       </table>
@@ -56,7 +56,7 @@ const error = ref(null);
 
 const sortedPlan = computed(() => {
   if (!reportData.value.plan) return [];
-  return [...reportData.value.plan].sort((a, b) => new Date(a.slot.startTime) - new Date(b.slot.startTime));
+  return [...reportData.value.plan].sort((a, b) => new Date(a.slotBeginn) - new Date(b.slotBeginn));
 });
 
 onMounted(async () => {
@@ -77,10 +77,10 @@ onMounted(async () => {
   }
 });
 
-const formatSlot = (slot) => {
+const formatSlot = (eintrag) => {
   const options = { hour: '2-digit', minute: '2-digit' };
-  const start = new Date(slot.startTime).toLocaleTimeString('de-DE', options);
-  const end = new Date(slot.endTime).toLocaleTimeString('de-DE', options);
+  const start = new Date(eintrag.slotBeginn).toLocaleTimeString('de-DE', options);
+  const end = new Date(eintrag.slotEnde).toLocaleTimeString('de-DE', options);
   return `${start} - ${end}`;
 };
 </script>

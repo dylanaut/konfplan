@@ -1,7 +1,6 @@
 package kreyj.konfplan.adapter.in.web.dto;
 
 import kreyj.konfplan.persistence.Referent;
-import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 
@@ -72,13 +71,23 @@ public class ReportDto {
 
     public static class FreieSlotsDto {
         public final VeranstaltungDto veranstaltung;
-        public final Map<Long, List<Slot>> freieSlots;
+        public final Map<Long, List<SlotDto>> freieSlots;
         public final List<NutzerDto> nutzer; // Kann Teilnehmer oder Referenten enthalten
 
-        public FreieSlotsDto(Veranstaltung veranstaltung, Map<Long, List<Slot>> freieSlots, List<NutzerDto> nutzer) {
+        public FreieSlotsDto(Veranstaltung veranstaltung, Map<Long, List<SlotDto>> freieSlots, List<NutzerDto> nutzer) {
             this.veranstaltung = VeranstaltungDto.from(veranstaltung);
             this.freieSlots = freieSlots;
             this.nutzer = nutzer;
+        }
+    }
+
+    public static class LaufzettelAlleDto {
+        public final VeranstaltungDto veranstaltung;
+        public final Map<Long, List<ZuweisungDto>> plaene;
+
+        public LaufzettelAlleDto(Veranstaltung veranstaltung, Map<Long, List<ZuweisungDto>> plaene) {
+            this.veranstaltung = VeranstaltungDto.from(veranstaltung);
+            this.plaene = plaene;
         }
     }
 }

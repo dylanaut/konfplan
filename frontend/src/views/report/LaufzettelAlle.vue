@@ -20,7 +20,7 @@
       <p class="lead mb-4 print-only">Veranstaltung: {{ reportData.veranstaltung.name }}</p>
 
       <div v-for="(plan, teilnehmerId) in sortedPlaene" :key="teilnehmerId" class="page-break-after">
-        <h4>{{ reportData.plaene[teilnehmerId][0].teilnehmer.firstName }} {{ reportData.plaene[teilnehmerId][0].teilnehmer.lastName }}</h4>
+        <h4>{{ plan[0].teilnehmerName }}</h4>
         <table class="table table-striped table-bordered table-sm">
           <thead class="table-dark">
             <tr>
@@ -31,11 +31,11 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="eintrag in plan" :key="eintrag.slot.id">
-              <td>{{ formatSlot(eintrag.slot) }}</td>
-              <td>{{ eintrag.vortrag.titel }}</td>
-              <td>{{ eintrag.raum.name }}</td>
-              <td>{{ eintrag.vortrag.referent.firstName }} {{ eintrag.vortrag.referent.lastName }}</td>
+            <tr v-for="(eintrag, idx) in plan" :key="idx">
+              <td>{{ formatSlot(eintrag) }}</td>
+              <td>{{ eintrag.vortragTitel }}</td>
+              <td>{{ eintrag.raumName }}</td>
+              <td>{{ eintrag.referentName }}</td>
             </tr>
           </tbody>
         </table>
@@ -63,7 +63,7 @@ const sortedPlaene = computed(() => {
   if (!reportData.value.plaene) return {};
   const sorted = {};
   for (const teilnehmerId in reportData.value.plaene) {
-    sorted[teilnehmerId] = [...reportData.value.plaene[teilnehmerId]].sort((a, b) => new Date(a.slot.startTime) - new Date(b.slot.startTime));
+    sorted[teilnehmerId] = [...reportData.value.plaene[teilnehmerId]].sort((a, b) => new Date(a.slotBeginn) - new Date(b.slotBeginn));
   }
   return sorted;
 });
@@ -85,10 +85,10 @@ onMounted(async () => {
   }
 });
 
-const formatSlot = (slot) => {
+const formatSlot = (eintrag) => {
   const options = { hour: '2-digit', minute: '2-digit' };
-  const start = new Date(slot.startTime).toLocaleTimeString('de-DE', options);
-  const end = new Date(slot.endTime).toLocaleTimeString('de-DE', options);
+  const start = new Date(eintrag.slotBeginn).toLocaleTimeString('de-DE', options);
+  const end = new Date(eintrag.slotEnde).toLocaleTimeString('de-DE', options);
   return `${start} - ${end}`;
 };
 </script>

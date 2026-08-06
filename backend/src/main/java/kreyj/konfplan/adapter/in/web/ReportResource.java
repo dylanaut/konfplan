@@ -62,7 +62,7 @@ public class ReportResource {
         Map<Long, List<ZuweisungDto>> plaene = veranstaltung.teilnehmer().stream()
             .collect(Collectors.toMap(IdEntity::getId, t -> planService.getPlanFuerTeilnehmer(t, veranstaltung)));
 
-        return Response.ok(plaene).build();
+        return Response.ok(new ReportDto.LaufzettelAlleDto(veranstaltung, plaene)).build();
     }
 
 

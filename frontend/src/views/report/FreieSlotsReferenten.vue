@@ -55,13 +55,13 @@ import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 
 const route = useRoute();
-const reportData = ref({ veranstaltung: {}, freieSlots: {}, referenten: [] });
+const reportData = ref({ veranstaltung: {}, freieSlots: {}, nutzer: [] });
 const loading = ref(true);
 const error = ref(null);
 
 const sortedReferenten = computed(() => {
-  if (!reportData.value.referenten) return [];
-  return [...reportData.value.referenten].sort((a, b) => {
+  if (!reportData.value.nutzer) return [];
+  return [...reportData.value.nutzer].sort((a, b) => {
     return a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName);
   });
 });
