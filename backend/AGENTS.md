@@ -48,5 +48,40 @@ kreyj/konfplan/
 
 - Rollen: `ADMIN`, `REFERENT`, `TEILNEHMER`.
 - Alle Endpunkte im `web`-Adapter werden mit `@RolesAllowed` oder `@Authenticated` abgesichert.
-- JWT-Token wird von `AuthResource` ausgestellt.
+- JWT-Token wird von `AuthResource#login` ausgestellt (4h Gültigkeit).
 - Passwörter: BCrypt via `BcryptUtil.bcryptHash()`.
+
+### Rate-Limiting (Login & Forgot-Password)
+
+- `LoginRateLimiterService` und `ForgotPasswordRateLimiterService` (beide `domain/service`) sperren
+  eine anfragende IP nach zu vielen Versuchen innerhalb eines Zeitfensters (konfigurierbar via
+  `app.security.login-rate-limit.*` / `app.security.forgot-password-rate-limit.*`) - Antwort dann
+  `429 Too Many Requests` mit `Retry-After`-Header.
+- Bewusst pro **IP**, nicht pro Anmeldename: sonst könnte ein Angreifer gezielt das Kontingent
+  eines fremden Kontos aufbrauchen und dessen Besitzer aussperren.
+- In-Memory (`ConcurrentHashMap`), passend für den Ein-Instanz-Betrieb der Debian-Pakete - nach
+  einem Neustart sind alle Zähler zurückgesetzt.
+- **Wichtige Falle:** Der `Retry-After`-Header ist kein CORS-safelisted Response-Header. Läuft das
+  Frontend auf einer anderen Origin als das Backend (z.B. Dev: `5173` vs. `9000`), kann ihn das
+  Frontend per `fetch`/`XHR` nur auslesen, wenn das Backend ihn explizit über
+  `quarkus.http.cors.exposed-headers=Retry-After` freigibt (siehe `application.properties`) - ohne
+  diese Freigabe zeigt das Frontend nur eine generische Wartemeldung, auch wenn der Header im
+  tatsächlichen HTTP-Response bereits korrekt gesetzt ist.
+
+### JWT-Invalidierung bei Passwort-Reset
+
+- Ein Passwort-Reset (`AuthResource#resetPassword` per Token, oder der Admin-Rettungsweg
+  `AdminService#resetPassword`) ändert nur den Passwort-Hash - ein bereits ausgestelltes JWT bliebe
+  ohne weitere Maßnahme bis zu seinem regulären Ablauf (4h) gültig, selbst wenn es einem
+  Angreifer gehört.
+- `TokenInvalidationService` (`domain/service`) merkt sich pro Anmeldename einen
+  "ungültig-vor"-Zeitstempel; beide Reset-Pfade rufen `invalidateTokensIssuedBefore(loginName)` auf,
+  nachdem der neue Hash gespeichert wurde.
+- Durchgesetzt wird das über `TokenInvalidationAugmentor` (`adapter/in/web`), einen
+  `SecurityIdentityAugmentor`, der bei **jeder** authentifizierten Anfrage die `iat`-Claim des
+  Tokens gegen diesen Zeitstempel prüft und das Token sonst ablehnt (401) - die von Quarkus
+  vorgesehene Stelle, um ein signatur-gültiges Token nachträglich zu verwerfen.
+- Der Zeitstempel wird auf volle Sekunden abgerundet, da `iat` nur Sekundenpräzision hat - sonst
+  könnte ein direkt im Anschluss (noch in derselben Sekunde) neu ausgestelltes Token fälschlich
+  als "davor" gelten.
+- Ebenfalls In-Memory und damit denselben Neustart-Tradeoff wie beim Rate-Limiting eingehend.
