@@ -18,6 +18,7 @@ import kreyj.konfplan.adapter.in.web.dto.TokenResponse;
 import kreyj.konfplan.domain.service.ForgotPasswordRateLimiterService;
 import kreyj.konfplan.domain.service.LoginRateLimiterService;
 import kreyj.konfplan.domain.service.ProtokollService;
+import kreyj.konfplan.domain.service.TokenInvalidationService;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -43,13 +44,17 @@ public class AuthResource {
 
     private final ForgotPasswordRateLimiterService forgotPasswordRateLimiterService;
 
+    private final TokenInvalidationService tokenInvalidationService;
+
     public AuthResource(@Location("email/passwordReset") MailTemplate passwordResetTemplate,
                         ProtokollService protokollService, LoginRateLimiterService loginRateLimiterService,
-                        ForgotPasswordRateLimiterService forgotPasswordRateLimiterService) {
+                        ForgotPasswordRateLimiterService forgotPasswordRateLimiterService,
+                        TokenInvalidationService tokenInvalidationService) {
         this.loginRateLimiterService = loginRateLimiterService;
         this.forgotPasswordRateLimiterService = forgotPasswordRateLimiterService;
         this.passwordResetTemplate = passwordResetTemplate;
         this.protokollService = protokollService;
+        this.tokenInvalidationService = tokenInvalidationService;
     }
 
     @POST
@@ -113,6 +118,7 @@ public class AuthResource {
         if (nutzer != null && nutzer.getResetTokenExpiry().isAfter(LocalDateTime.now())) {
             nutzer.setPasswordHash(BcryptUtil.bcryptHash(req.newPassword));
             nutzer.setResetToken(null);
+            tokenInvalidationService.invalidateTokensIssuedBefore(nutzer.getLoginName());
             protokollService.log(ProtokollKategorie.SECURITY, "Passwort erfolgreich zurückgesetzt", "Nutzer: " + nutzer.getEmail(), nutzer.getId());
             return Response.ok().build();
         }

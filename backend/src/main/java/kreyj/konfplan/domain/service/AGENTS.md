@@ -18,6 +18,9 @@ Services enthalten die gesamte **Geschäftslogik**. Sie werden von Resource-Klas
 | `DashboardService`    | Aufbereitung von komplexen, aggregierten Daten (inkl. `DashboardData`-Aufbau) für die `ReportResource`-Dashboards. |
 | `MailService`         | Versand von Einladungen, Benachrichtigungen und Passwort-Resets via Mailpit. |
 | `PdfService`          | Erzeugung von Türschildern und Plänen via OpenPDF.                   |
+| `LoginRateLimiterService` | IP-basiertes Rate-Limiting für `/api/auth/login` (siehe `../../../../AGENTS.md` „Security"). |
+| `ForgotPasswordRateLimiterService` | IP-basiertes Rate-Limiting für `/api/auth/forgot-password` (siehe `../../../../AGENTS.md` „Security"). |
+| `TokenInvalidationService` | Merkt sich pro Anmeldename, ab wann ausgestellte JWTs nach einem Passwort-Reset ungültig sind (siehe `../../../../AGENTS.md` „Security"). |
 
 ## Wichtige Logik-Features
 

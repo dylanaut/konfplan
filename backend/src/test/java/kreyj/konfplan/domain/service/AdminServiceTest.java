@@ -16,6 +16,7 @@ import kreyj.konfplan.persistence.Veranstaltung;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -29,6 +30,9 @@ public class AdminServiceTest {
     @Inject
     AdminService adminService;
 
+    @Inject
+    TokenInvalidationService tokenInvalidationService;
+
     private Long testUserId;
     private Veranstaltung veranstaltung;
     private Long tnId;
@@ -36,6 +40,7 @@ public class AdminServiceTest {
     @BeforeEach
     @Transactional
     public void setUp() {
+        tokenInvalidationService.reset();
         // Clean up existing data to avoid conflicts
         Nutzer.deleteAll();
         Veranstaltung.deleteAll();
@@ -302,5 +307,20 @@ public class AdminServiceTest {
     public void testResetPassword_PasswordTooShort_ThrowsException() {
         assertThatExceptionOfType(BusinessException.class)
             .isThrownBy(() -> adminService.resetPassword(testUserId, "kurz"));
+    }
+
+
+    @Test
+    public void testResetPassword_InvalidatesTokensIssuedBeforeTheReset() {
+        // Ein von einem Admin ausgeloester Passwort-Reset (Rettungsweg fuer Konten ohne
+        // funktionierende E-Mail) muss ein bereits gestohlenes/kompromittiertes Token ebenso
+        // ungueltig machen wie der Self-Service-Reset (siehe TokenInvalidationService).
+        Instant beforeReset = Instant.now().minusSeconds(5);
+        assertThat(tokenInvalidationService.isValid("testexample", beforeReset)).isTrue();
+
+        adminService.resetPassword(testUserId, "einNeuesPasswort123");
+
+        assertThat(tokenInvalidationService.isValid("testexample", beforeReset)).isFalse();
+        assertThat(tokenInvalidationService.isValid("testexample", Instant.now().plusSeconds(5))).isTrue();
     }
 }
