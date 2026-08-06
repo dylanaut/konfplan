@@ -50,7 +50,10 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-// Interceptor: Erkennt abgelaufene Tokens (401)
+// Interceptor: Erkennt abgelaufene Tokens (401). Ein 401 von einem @PermitAll-Endpunkt (s.o.)
+// bedeutet NICHT, dass die aktuelle Sitzung ungültig ist - z.B. bei falschen Zugangsdaten in
+// einem Login-Versuch, während in einem anderen Tab noch eine gültige Sitzung besteht; dieser
+// fehlgeschlagene Request hat mit jener Sitzung nichts zu tun und darf sie nicht löschen.
 api.interceptors.response.use(
     (response) => {
         pendingControllers.delete(response.config.__abortController);
@@ -59,7 +62,7 @@ api.interceptors.response.use(
     (error) => {
         pendingControllers.delete(error.config?.__abortController);
 
-        if (error.response?.status === 401) {
+        if (error.response?.status === 401 && !isPublicPath(error.config?.url)) {
             localStorage.removeItem('token');
             localStorage.removeItem('role');
 

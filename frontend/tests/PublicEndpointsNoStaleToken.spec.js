@@ -80,4 +80,30 @@ test.describe('Öffentliche Endpunkte senden kein (evtl. veraltetes) Bearer-Toke
 
     expect(capturedAuthHeader).toBeUndefined();
   });
+
+  test('ein fehlgeschlagener Login-Versuch löscht keine bereits vorhandene, gültige Sitzung', async ({ page }) => {
+    // Szenario: Nutzer ist bereits eingeloggt (z.B. in einem anderen Tab gültig), navigiert
+    // aber auf /login (kein Router-Guard verhindert das) und tippt sich beim Versuch, sich
+    // als jemand anders anzumelden. Der fehlgeschlagene Login-Request hat mit der bestehenden
+    // Sitzung nichts zu tun und darf sie nicht ungültig machen.
+    await page.addInitScript(() => {
+      localStorage.setItem('token', 'still-valid-token-from-elsewhere');
+      localStorage.setItem('role', 'ADMIN');
+    });
+
+    await page.route('http://localhost:9000/api/auth/login', (route) => route.fulfill({ status: 401 }));
+
+    await page.goto('/login');
+    await page.locator('input[type="text"]').first().fill('someone-else');
+    await page.locator('input[type="password"]').first().fill('wrong');
+
+    await Promise.all([
+      page.waitForResponse('http://localhost:9000/api/auth/login'),
+      page.getByRole('button', { name: /anmelden|login/i }).click(),
+    ]);
+    await page.waitForTimeout(500);
+
+    expect(await page.evaluate(() => localStorage.getItem('token'))).toBe('still-valid-token-from-elsewhere');
+    expect(await page.evaluate(() => localStorage.getItem('role'))).toBe('ADMIN');
+  });
 });
