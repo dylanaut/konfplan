@@ -15,7 +15,7 @@
           <button @click="downloadIcs" class="btn btn-outline-secondary me-2">
             <i class="bi bi-calendar-plus"></i> Kalender laden
           </button>
-          <button @click="window.print()" class="btn btn-secondary">
+          <button @click="handlePrint" class="btn btn-secondary">
             <i class="bi bi-printer"></i> Drucken
           </button>
         </div>
@@ -158,6 +158,8 @@ const reportData = ref(null);
 const loading = ref(true);
 const error = ref(null);
 const tnPopup = ref(null);
+
+const handlePrint = () => window.print();
 
 onMounted(async () => {
   if (!props.vid) {

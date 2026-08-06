@@ -90,4 +90,14 @@ public class ReportDto {
             this.plaene = plaene;
         }
     }
+
+    public static class LaufzettelAlleReferentenDto {
+        public final VeranstaltungDto veranstaltung;
+        public final Map<Long, List<ReferentVortragDto>> plaene;
+
+        public LaufzettelAlleReferentenDto(Veranstaltung veranstaltung, Map<Long, List<ReferentVortragDto>> plaene) {
+            this.veranstaltung = VeranstaltungDto.from(veranstaltung);
+            this.plaene = plaene;
+        }
+    }
 }

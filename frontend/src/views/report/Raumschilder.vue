@@ -13,7 +13,7 @@
     <div v-else>
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
         <h1 class="h3">Raumschilder</h1>
-        <button @click="window.print()" class="btn btn-secondary">
+        <button @click="handlePrint" class="btn btn-secondary">
           <i class="bi bi-printer"></i> Drucken
         </button>
       </div>
@@ -70,6 +70,8 @@ const reportData = ref({ veranstaltung: {}, raumplan: {}, raeume: [], slots: [] 
 const loading = ref(true);
 const error = ref(null);
 
+const handlePrint = () => window.print();
+
 const sortedRaeume = computed(() => {
   if (!reportData.value.raeume) return [];
   return [...reportData.value.raeume].sort((a, b) => a.name.localeCompare(b.name));
@@ -90,6 +92,7 @@ onMounted(async () => {
   try {
     const response = await api.get(`/api/reports/${veranstaltungId}/raumschilder-data`);
     reportData.value = response.data;
+    document.title = `${response.data.veranstaltung.name} - Raumschilder`;
   } catch (err) {
     error.value = 'Fehler beim Laden der Daten: ' + (err.response?.data?.message || err.message);
   } finally {

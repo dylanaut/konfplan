@@ -13,7 +13,7 @@
     <template v-else>
       <header class="mb-4 d-flex justify-content-between align-items-center no-print">
         <h1>📅 {{ reportData.veranstaltung.name }} - Teilnehmer-Zuordnungen</h1>
-        <button @click="window.print()" class="btn btn-secondary">
+        <button @click="handlePrint" class="btn btn-secondary">
           <i class="bi bi-printer"></i> Drucken
         </button>
       </header>
@@ -100,6 +100,8 @@ const loading = ref(true);
 const error = ref(null);
 const selectedGruppe = ref('all');
 
+const handlePrint = () => window.print();
+
 onMounted(async () => {
   const veranstaltungId = route.params.vid;
   if (!veranstaltungId) {
@@ -110,6 +112,7 @@ onMounted(async () => {
   try {
     const response = await api.get(`/api/reports/${veranstaltungId}/teilnehmer-dashboard-data`);
     reportData.value = response.data;
+    document.title = `${response.data.veranstaltung.name} - Teilnehmer-Zuordnungen`;
   } catch (err) {
     error.value = 'Fehler beim Laden der Daten: ' + (err.response?.data?.message || err.message);
   } finally {

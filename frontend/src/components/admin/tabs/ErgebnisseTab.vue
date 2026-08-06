@@ -66,10 +66,19 @@
         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div class="flex items-center space-x-2">
             <img src="/logo/konfplan-light_footer.svg" alt="Icon" class="w-5 h-5"/>
-            <span class="font-semibold">Laufzettel (Alle)</span>
+            <span class="font-semibold">Laufzettel für Teilnehmer</span>
           </div>
           <div class="space-x-2">
             <button @click="navigateToReport('LaufzettelAlle')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">Anzeigen</button>
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div class="flex items-center space-x-2">
+            <img src="/logo/konfplan-light_footer.svg" alt="Icon" class="w-5 h-5"/>
+            <span class="font-semibold">Laufzettel für Referenten</span>
+          </div>
+          <div class="space-x-2">
+            <button @click="navigateToReport('LaufzettelAlleReferenten')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">Anzeigen</button>
           </div>
         </div>
         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">

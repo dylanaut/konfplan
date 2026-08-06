@@ -13,7 +13,7 @@
     <div v-else>
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
         <h1 class="h3">Laufzettel für {{ reportData.teilnehmer.firstName }} {{ reportData.teilnehmer.lastName }}</h1>
-        <button @click="window.print()" class="btn btn-secondary">
+        <button @click="handlePrint" class="btn btn-secondary">
           <i class="bi bi-printer"></i> Drucken
         </button>
       </div>
@@ -55,6 +55,8 @@ const route = useRoute();
 const reportData = ref({ veranstaltung: {}, teilnehmer: {}, plan: [] });
 const loading = ref(true);
 const error = ref(null);
+
+const handlePrint = () => window.print();
 
 const sortedPlan = computed(() => {
   if (!reportData.value.plan) return [];

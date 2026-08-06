@@ -162,6 +162,20 @@ class ReportResourceTest {
     }
 
 
+    @Test
+    @TestSecurity(user = "testAdmin", roles = "ADMIN")
+    void getAlleLaufzettelReferentenData_asAdmin_shouldSucceed() {
+        PanacheMock.mock(Veranstaltung.class);
+        Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
+
+        given()
+                .when().get("1/laufzettel-alle-referenten-data")
+                .then()
+                .statusCode(200)
+                .contentType(MediaType.APPLICATION_JSON);
+    }
+
+
     // --- Admin-Reports ---
 
 
