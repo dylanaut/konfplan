@@ -11,6 +11,7 @@ import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
+import kreyj.konfplan.domain.service.ForgotPasswordRateLimiterService;
 import kreyj.konfplan.domain.service.LoginRateLimiterService;
 import kreyj.konfplan.domain.service.MailService;
 import kreyj.konfplan.persistence.Admin;
@@ -49,13 +50,17 @@ class AuthResourceTest {
     @Inject
     LoginRateLimiterService loginRateLimiterService;
 
+    @Inject
+    ForgotPasswordRateLimiterService forgotPasswordRateLimiterService;
+
 
     @BeforeEach
     void setup() {
         PanacheMock.mock(Nutzer.class);
-        // Zustand des Rate-Limiters zwischen Testfaellen zuruecksetzen, sonst wuerden sich
-        // die Fehlversuch-Zaehler der einzelnen Tests gegenseitig beeinflussen.
+        // Zustand der Rate-Limiter zwischen Testfaellen zuruecksetzen, sonst wuerden sich
+        // die Zaehler der einzelnen Tests gegenseitig beeinflussen.
         loginRateLimiterService.reset();
+        forgotPasswordRateLimiterService.reset();
     }
 
 
@@ -64,6 +69,7 @@ class AuthResourceTest {
         // clear the mailbox after each test run if you prefer
         mailbox.clear();
         loginRateLimiterService.reset();
+        forgotPasswordRateLimiterService.reset();
     }
 
 
@@ -124,6 +130,58 @@ class AuthResourceTest {
                 .when().post("/forgot-password")
                 .then()
                 .statusCode(ACCEPTED.getStatusCode());
+    }
+
+
+    @Test
+    void testForgotPassword_RateLimited_AfterMaxAttempts() {
+        Mockito.when(Nutzer.findByLoginName("unknown")).thenReturn(null);
+
+        // Default app.security.forgot-password-rate-limit.max-attempts=5: die ersten 5
+        // Anfragen werden regulaer mit 202 akzeptiert (auch fuer einen unbekannten Anmeldenamen -
+        // forgotPassword() antwortet immer 202, um keine Rueckschluesse zuzulassen).
+        for (int i = 0; i < 5; i++) {
+            given()
+                    .queryParam("loginName", "unknown")
+                    .when().post("/forgot-password")
+                    .then()
+                    .statusCode(ACCEPTED.getStatusCode());
+        }
+
+        // Die 6. Anfrage von derselben IP wird geblockt.
+        given()
+                .queryParam("loginName", "unknown")
+                .when().post("/forgot-password")
+                .then()
+                .statusCode(429)
+                .header("Retry-After", notNullValue());
+    }
+
+
+    @Test
+    void testForgotPassword_RateLimit_IsScopedPerIp() {
+        Mockito.when(Nutzer.findByLoginName("unknown")).thenReturn(null);
+
+        // IP "1.1.1.1" bis zur Sperre ausreizen.
+        for (int i = 0; i < 5; i++) {
+            given()
+                    .queryParam("loginName", "unknown")
+                    .header("X-Forwarded-For", "1.1.1.1")
+                    .when().post("/forgot-password")
+                    .then().statusCode(ACCEPTED.getStatusCode());
+        }
+        given()
+                .queryParam("loginName", "unknown")
+                .header("X-Forwarded-For", "1.1.1.1")
+                .when().post("/forgot-password")
+                .then().statusCode(429);
+
+        // Eine andere IP ("2.2.2.2") darf davon unberuehrt weiter (regulaer mit 202) anfragen.
+        given()
+                .queryParam("loginName", "unknown")
+                .header("X-Forwarded-For", "2.2.2.2")
+                .when().post("/forgot-password")
+                .then().statusCode(ACCEPTED.getStatusCode());
     }
 
 
