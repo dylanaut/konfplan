@@ -51,6 +51,23 @@ kreyj/konfplan/
 - JWT-Token wird von `AuthResource#login` ausgestellt (4h Gültigkeit).
 - Passwörter: BCrypt via `BcryptUtil.bcryptHash()`.
 
+### Admin-Konten ohne E-Mail (Lockout-Schutz)
+
+- `AuthResource#forgotPassword` kann ein Passwort nur zurücksetzen, wenn der Nutzer eine
+  E-Mail-Adresse hinterlegt hat (der Reset-Link wird dorthin verschickt). Ohne E-Mail bricht der
+  Self-Service-Weg ab (Response bleibt trotzdem `202`, um keine Rückschlüsse auf existierende
+  Konten zuzulassen) und protokolliert nur den Versuch.
+- Für `REFERENT`/`TEILNEHMER` gibt es einen übergeordneten `ADMIN`, der das Passwort notfalls
+  zurücksetzen kann - für `ADMIN`-Konten selbst gibt es keine übergeordnete Instanz. Ein
+  `ADMIN` ohne E-Mail wäre bei einem vergessenen Passwort **permanent** ausgesperrt gewesen.
+- **Prävention:** `AdminService#createUser` und `#updateUser` lehnen es ab (`BusinessException` /
+  `UpdateNutzerException`), eine `Admin`-E-Mail-Adresse leer zu setzen oder ein Admin-Konto ohne
+  E-Mail anzulegen.
+- **Recovery (Rettungsweg für bereits bestehende Konten ohne E-Mail):** `AdminService#resetPassword`
+  (`POST /api/admin/nutzer/{id}/reset-password`) setzt das Passwort eines beliebigen Nutzers direkt,
+  ohne E-Mail-Bestätigung - ein anderer `ADMIN` kann damit ein ausgesperrtes Admin-Konto
+  wiederherstellen. Voraussetzung ist, dass mindestens ein zweiter Admin noch Zugriff hat.
+
 ### Rate-Limiting (Login & Forgot-Password)
 
 - `LoginRateLimiterService` und `ForgotPasswordRateLimiterService` (beide `domain/service`) sperren
