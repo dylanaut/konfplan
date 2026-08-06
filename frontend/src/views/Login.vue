@@ -98,12 +98,20 @@ const handleLogin = async () => {
 const handleForgot = async () => {
   loading.value = true;
   try {
-    await api.post(`/api/auth/forgot-password?loginName=${forgotLoginName.value}`);
+    await api.post(`/api/auth/forgot-password?loginName=${encodeURIComponent(forgotLoginName.value)}`);
     forgotSuccess.value = true;
     toast.success("Anfrage gesendet. Bitte prüfen Sie ggf. Ihr Postfach.");
   } catch (e) {
     console.error(e);
-    toast.error("Emailversand fehlgeschlagen. Bitte versuchen Sie es später erneut.");
+    if (e.response?.status === 429) {
+      const retryAfterSeconds = Number(e.response.headers?.['retry-after']);
+      const wartezeit = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+        ? `${Math.ceil(retryAfterSeconds / 60)} Minute(n)`
+        : 'einigen Minuten';
+      toast.error(`Zu viele Anfragen. Bitte in ${wartezeit} erneut versuchen.`);
+    } else {
+      toast.error("Emailversand fehlgeschlagen. Bitte versuchen Sie es später erneut.");
+    }
   } finally {
     loading.value = false;
   }

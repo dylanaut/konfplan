@@ -15,6 +15,7 @@ import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.LoginRequest;
 import kreyj.konfplan.adapter.in.web.dto.ResetRequest;
 import kreyj.konfplan.adapter.in.web.dto.TokenResponse;
+import kreyj.konfplan.domain.service.ForgotPasswordRateLimiterService;
 import kreyj.konfplan.domain.service.LoginRateLimiterService;
 import kreyj.konfplan.domain.service.ProtokollService;
 import kreyj.konfplan.persistence.Nutzer;
@@ -40,9 +41,13 @@ public class AuthResource {
 
     private final LoginRateLimiterService loginRateLimiterService;
 
+    private final ForgotPasswordRateLimiterService forgotPasswordRateLimiterService;
+
     public AuthResource(@Location("email/passwordReset") MailTemplate passwordResetTemplate,
-                        ProtokollService protokollService, LoginRateLimiterService loginRateLimiterService) {
+                        ProtokollService protokollService, LoginRateLimiterService loginRateLimiterService,
+                        ForgotPasswordRateLimiterService forgotPasswordRateLimiterService) {
         this.loginRateLimiterService = loginRateLimiterService;
+        this.forgotPasswordRateLimiterService = forgotPasswordRateLimiterService;
         this.passwordResetTemplate = passwordResetTemplate;
         this.protokollService = protokollService;
     }
@@ -52,7 +57,18 @@ public class AuthResource {
     @PermitAll
     @Transactional
     @Operation(summary = "Passwort vergessen", description = "Fordert eine E-Mail zum Zurücksetzen des Passworts an.")
-    public Response forgotPassword(@QueryParam("loginName") String loginName) {
+    public Response forgotPassword(@Context HttpServerRequest request, @QueryParam("loginName") String loginName) {
+        String ip = clientIp(request);
+
+        if (forgotPasswordRateLimiterService.isBlocked(ip)) {
+            long retryAfterSeconds = forgotPasswordRateLimiterService.remainingBlockDuration(ip).toSeconds();
+            protokollService.log(ProtokollKategorie.SECURITY, "Passwort-Reset blockiert (zu viele Anfragen)", "IP: " + ip);
+            return Response.status(429)
+                    .header("Retry-After", retryAfterSeconds)
+                    .build();
+        }
+        forgotPasswordRateLimiterService.recordAttempt(ip);
+
         Nutzer nutzer = Nutzer.findByLoginName(loginName);
 
         if (nutzer != null) {
