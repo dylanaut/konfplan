@@ -1,5 +1,6 @@
 package kreyj.konfplan.adapter.in.web;
 
+import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
@@ -8,6 +9,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.adapter.in.web.dto.AdminPasswordResetDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.persistence.Admin;
@@ -25,9 +27,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
+import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 import static jakarta.ws.rs.core.Response.Status.CONFLICT;
 import static jakarta.ws.rs.core.Response.Status.CREATED;
 import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
+import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 import static jakarta.ws.rs.core.Response.Status.NO_CONTENT;
 import static jakarta.ws.rs.core.Response.Status.OK;
 import static java.util.Collections.emptyList;
@@ -131,6 +135,56 @@ class AdminResourceTest extends DatabaseCleaner {
         assertThat(user.getNewEmail()).isEqualTo(newEmail);
         assertThat(user.getEmailChangeToken()).isNotNull();
         assertThat(((Teilnehmer) user).getGruppen()).contains("New Group");
+    }
+
+
+    @Test
+    void testResetPassword() {
+        NutzerDto dto = NutzerDto.teilnehmer("reset.me@test.de", "Reset", "Me");
+        dto.loginName = "reset.me";
+        NutzerDto created =
+            given().contentType(ContentType.JSON)
+                .body(dto)
+                .when().post("/nutzer")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .extract().as(NutzerDto.class);
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(new AdminPasswordResetDto("einNeuesPasswort123"))
+            .when().post("/nutzer/{id}/reset-password", created.id)
+            .then()
+            .statusCode(OK.getStatusCode());
+
+        Nutzer updated = Nutzer.findById(created.id);
+        assertThat(BcryptUtil.matches("einNeuesPasswort123", updated.getPasswordHash())).isTrue();
+    }
+
+
+    @Test
+    void testResetPassword_UnknownUser_ReturnsNotFound() {
+        given()
+            .contentType(ContentType.JSON)
+            .body(new AdminPasswordResetDto("einNeuesPasswort123"))
+            .when().post("/nutzer/{id}/reset-password", -1L)
+            .then()
+            .statusCode(NOT_FOUND.getStatusCode());
+    }
+
+
+    @Test
+    void testCreateUser_AdminWithoutEmail_IsRejected() {
+        NutzerDto dto = new NutzerDto("ADMIN", null, "Ohne", "Email", true);
+        dto.loginName = "ohne.email.rest";
+
+        given().contentType(ContentType.JSON)
+            .body(dto)
+            .when().post("/nutzer")
+            .then()
+            .statusCode(BAD_REQUEST.getStatusCode());
+
+        assertThat(Nutzer.findByLoginName("ohne.email.rest")).isNull();
     }
 
 

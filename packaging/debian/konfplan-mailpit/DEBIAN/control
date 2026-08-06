@@ -1,0 +1,16 @@
+Package: konfplan-mailpit
+Version: 1.0.0-1
+Section: mail
+Priority: optional
+Architecture: all
+Depends: docker.io | docker-ce
+Maintainer: KonfPlan <juergen.krey@msg.group>
+Description: Mailpit SMTP-Testserver fuer KonfPlan (Docker-Wrapper)
+ Mailpit faengt ausgehende E-Mails ab und zeigt sie in einer Web-Oberflaeche
+ an, statt sie tatsaechlich zu versenden. Gedacht fuer lokale Installationen
+ oder Testumgebungen ohne echten SMTP-Anbieter (Alternative zu Brevo in
+ %prod.quarkus.mailer.* der Anwendung).
+ .
+ Mailpit bietet kein offizielles .deb-Paket; dieses Paket installiert daher
+ einen systemd-Service, der den offiziellen axllent/mailpit-Docker-Container
+ startet, stoppt und bei Fehlern neu startet.

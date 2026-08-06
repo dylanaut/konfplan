@@ -16,6 +16,7 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.VortragPrioDto;
+import kreyj.konfplan.adapter.in.web.dto.AdminPasswordResetDto;
 import kreyj.konfplan.adapter.in.web.dto.ImportResultDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
@@ -120,6 +121,18 @@ public class AdminResource {
         if (null != nutzerToDelete) {
             adminService.deleteUser(id);
         }
+    }
+
+
+    @POST
+    @Path("/nutzer/{id}/reset-password")
+    @Operation(summary = "Passwort eines Nutzers zurücksetzen", description = "Setzt das Passwort eines beliebigen Nutzers direkt - Rettungsweg für Konten ohne (funktionierende) E-Mail-Adresse, die den Self-Service-Reset nicht nutzen können.")
+    public Response resetPassword(@PathParam("id") Long id, @RequestBody(description = "Das neue Passwort") AdminPasswordResetDto dto) {
+        boolean reset = adminService.resetPassword(id, dto.newPassword);
+        if (!reset) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok().build();
     }
 
 

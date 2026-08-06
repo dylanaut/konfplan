@@ -1,0 +1,13 @@
+[Unit]
+Description=Legt die KonfPlan-Datenbank und den Datenbank-Benutzer in PostgreSQL an
+After=postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=/etc/konfplan/postgresql.env
+ExecStart=/usr/lib/konfplan-postgresql/ensure-db.sh
+
+[Install]
+WantedBy=multi-user.target

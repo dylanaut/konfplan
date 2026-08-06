@@ -108,9 +108,13 @@ public class ReferentResource {
             return Response.status(Response.Status.NOT_FOUND).entity("Nutzer nicht gefunden.").build();
         }
 
-        // Passwort validieren
+        // Passwort validieren. Bewusst FORBIDDEN statt UNAUTHORIZED: der Nutzer ist über sein
+        // JWT bereits authentifiziert, das ist nur eine zusaetzliche Bestaetigung - der globale
+        // Response-Interceptor in axios.js behandelt jedes 401 als "Token ungueltig" und meldet
+        // den Nutzer sofort ab, was hier faelschlich die Fehlermeldung im Formular verhindern
+        // wuerde (per Live-Test entdeckt, siehe TeilnehmerResource#requestEmailChange).
         if (!BcryptUtil.matches(requestDto.currentPassword, nutzer.getPasswordHash())) {
-            return Response.status(Response.Status.UNAUTHORIZED).entity("Aktuelles Passwort ist falsch.").build();
+            return Response.status(Response.Status.FORBIDDEN).entity("Aktuelles Passwort ist falsch.").build();
         }
 
         // Prüfen, ob die neue E-Mail bereits existiert

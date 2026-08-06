@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    remove)
+        systemctl daemon-reload || true
+        ;;
+    purge)
+        systemctl disable konfplan-postgresql.service || true
+        echo "Hinweis: Die PostgreSQL-Datenbank/-Rolle 'konfplan' wurde NICHT geloescht."
+        echo "Das PostgreSQL-Datenverzeichnis selbst wird vom 'postgresql'-Systempaket verwaltet."
+        ;;
+esac
+
+exit 0

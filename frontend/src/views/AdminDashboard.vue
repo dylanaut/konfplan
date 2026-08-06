@@ -96,6 +96,7 @@
                           @triggerUpload="triggerUpload"
                           @openUserModal="openUserModal"
                           @deleteUser="deleteUser"
+                          @openPasswordResetModal="openPasswordResetModal"
       />
 
       <TeilnehmerTab v-if="activeTab === 'teilnehmer' && selectedVid"
@@ -166,6 +167,7 @@
                   :teilnehmerMitPrioritaetenCount="teilnehmerMitPrioritaetenCount"
                   @startOptimization="startPlanning"
                   @cancelOptimization="cancelPlanning"
+                  @exportDzn="exportDzn"
       />
 
       <ProtokollTab v-if="activeTab === 'protokoll'"
@@ -194,6 +196,8 @@
                           @save="handleSaveSlot"/>
     <InviteUserModal :isVisible="showInviteModal" :nutzer="selectedUserForInvite" :futureEvents="futureEvents"
                      @close="showInviteModal = false" @invite="handleInviteUser"/>
+    <PasswordResetModal :isVisible="showPasswordResetModal" :nutzer="selectedUserForPasswordReset"
+                     @close="showPasswordResetModal = false" @reset="handleResetPassword"/>
 
     <!-- CSV Import Feedback Modal -->
     <div v-if="showCsvFeedbackModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -260,6 +264,7 @@ import RaumEditorModal from '../components/RaumEditorModal.vue';
 import EventSlotEditorModal from '../components/EventSlotEditorModal.vue';
 import GebaeudeEditorModal from '../components/GebaeudeEditorModal.vue';
 import InviteUserModal from '../components/InviteUserModal.vue';
+import PasswordResetModal from '../components/PasswordResetModal.vue';
 
 const eventContext = useEventContextStore();
 const availabilityStore = useAvailabilityStore();
@@ -312,6 +317,8 @@ const showSlotModal = ref(false);
 const selectedSlot = ref(null);
 const showInviteModal = ref(false);
 const selectedUserForInvite = ref(null);
+const showPasswordResetModal = ref(false);
+const selectedUserForPasswordReset = ref(null);
 
 const isOptimizing = ref(false);
 const planningPhase = ref(null);
@@ -676,8 +683,12 @@ const handleSaveUser = async (u) => {
     if (u.id) await api.put(`${endpoint}/${u.id}`, u);
     else await api.post(endpoint, u);
     showUserModal.value = false;
-    await loadData();
-    await refreshAdmins();
+    // loadData() liefert bei ausgewählter Veranstaltung bereits die korrekt aus Admin- und
+    // Veranstaltungs-Nutzern zusammengeführte Liste; refreshAdmins() würde diese mit der reinen
+    // Admin-Liste überschreiben. Nur ohne ausgewählte Veranstaltung (z.B. globaler Admin ohne
+    // Veranstaltungsbezug) tut loadData() nichts, daher dort auf refreshAdmins() ausweichen.
+    if (selectedVid.value) await loadData();
+    else await refreshAdmins();
   } catch (e) {
     console.error('Fehler beim Speichern des Nutzers:', e);
   }
@@ -692,8 +703,11 @@ const deleteUser = async (id) => {
       else return;
 
       await api.delete(endpoint);
-      await loadData();
-      await refreshAdmins();
+      // Siehe Kommentar in handleSaveUser: loadData() liefert bei ausgewählter Veranstaltung
+      // bereits die korrekt zusammengeführte Nutzerliste; refreshAdmins() nur als Fallback ohne
+      // ausgewählte Veranstaltung.
+      if (selectedVid.value) await loadData();
+      else await refreshAdmins();
     } catch (e) {
       console.error('Fehler beim Löschen des Nutzers:', e);
     }
@@ -756,6 +770,20 @@ const handleInviteUser = async ({userId, eventId}) => {
     await loadData();
   } catch (e) {
     alert("Fehler beim Einladen: " + (e.response?.data || e.message));
+  }
+};
+
+const openPasswordResetModal = (u) => {
+  selectedUserForPasswordReset.value = u;
+  showPasswordResetModal.value = true;
+};
+const handleResetPassword = async ({userId, newPassword}) => {
+  try {
+    await api.post(`/api/admin/nutzer/${userId}/reset-password`, {newPassword});
+    alert("Passwort erfolgreich zurückgesetzt!");
+    showPasswordResetModal.value = false;
+  } catch (e) {
+    alert("Fehler beim Zurücksetzen des Passworts: " + (e.response?.data?.error || e.response?.data || e.message));
   }
 };
 
@@ -918,6 +946,24 @@ const pollPlanningStatus = () => {
   }, 2000);
 };
 
+const exportDzn = async (solverConfig) => {
+  try {
+    const response = await api.post(`/api/planungen/${selectedVid.value}/dzn`, solverConfig, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(response.data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `veranstaltung_${selectedVid.value}.dzn`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  } catch (e) {
+    console.error('Fehler beim Export der MiniZinc-Datendatei:', e);
+    // responseType 'blob' liefert Fehlerantworten ebenfalls als Blob statt geparstem JSON.
+    const body = e.response?.data instanceof Blob ? JSON.parse(await e.response.data.text()) : e.response?.data;
+    const msg = body?.error || body?.message || e.message;
+    alert('DZN-Export nicht möglich:\n\n' + msg);
+  }
+};
+
 const cancelPlanning = async () => {
   if (confirm('Sind Sie sicher, dass Sie die Planerstellung abbrechen möchten?')) {
     try {
@@ -953,10 +999,13 @@ const handleGlobalUpload = async (event) => {
   try {
     const res = await api.post(finalEndpoint, formData, {headers: {'Content-Type': 'multipart/form-data'}});
     showCsvFeedback(res.data, false);
-    await loadData();
+    // Siehe Kommentar in handleSaveUser: loadData() liefert bei ausgewählter Veranstaltung
+    // bereits die korrekt zusammengeführte Nutzerliste; refreshAdmins() nur als Fallback ohne
+    // ausgewählte Veranstaltung.
+    if (selectedVid.value) await loadData();
+    else await refreshAdmins();
     await refreshVeranstaltungen();
     await refreshGebaeude();
-    await refreshAdmins();
   } catch (e) {
     showCsvFeedback(e.response?.data || e.message, true);
   } finally {

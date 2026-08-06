@@ -110,6 +110,9 @@ async function mockAdminApis(page) {
     if (/^\/api\/admin\/nutzer\/\d+\/einladen\/\d+$/.test(path) && method === 'POST') {
       return json({});
     }
+    if (/^\/api\/admin\/nutzer\/\d+\/reset-password$/.test(path) && method === 'POST') {
+      return json({});
+    }
     if (path === `/api/veranstaltungen/${VID}/nutzer`) {
       if (method === 'GET') return json(ALL_USERS);
       if (method === 'POST') return json({ ...body(), id: 555 }, 201);
@@ -289,6 +292,7 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
 
       await page.locator('label:has-text("Vorname") + input').fill('Lisa');
       await page.locator('label:has-text("Nachname") + input').fill('Lernend');
+      await page.locator('label:has-text("Anmeldename") + input').fill('lisa.lernend');
       await page.locator('label:has-text("E-Mail") + input').fill('lisa@test.de');
       await page.locator('#gruppe-10a').check();
 
@@ -308,6 +312,7 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
 
       await page.locator('label:has-text("Vorname") + input').fill('Otto');
       await page.locator('label:has-text("Nachname") + input').fill('Organisator');
+      await page.locator('label:has-text("Anmeldename") + input').fill('otto.organisator');
       await page.locator('label:has-text("E-Mail") + input').fill('otto@test.de');
 
       const [request] = await Promise.all([
@@ -446,6 +451,45 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
     });
   });
 
+  // Regression #57/#58: Rettungsweg für Admin-Konten ohne (funktionierende) E-Mail-Adresse,
+  // die sich sonst über "Passwort vergessen" nicht selbst wiederherstellen könnten.
+  test.describe('Passwort-Reset-Modal', () => {
+    test('öffnet mit leerem Feld und deaktiviertem Zurücksetzen-Button unter 8 Zeichen', async ({ page }) => {
+      await gotoTab(page, 'Organisatoren');
+      await page.locator('button[title="Passwort zurücksetzen"]').first().click();
+
+      await expect(page.getByText('Passwort zurücksetzen')).toBeVisible();
+      await expect(page.locator('span.font-bold', { hasText: 'Anna Admin' })).toBeVisible();
+      const resetBtn = page.locator('button.btn-primary', { hasText: 'Zurücksetzen' });
+      await expect(resetBtn).toBeDisabled();
+
+      await page.locator('input[type="password"]').fill('kurz');
+      await expect(resetBtn).toBeDisabled();
+
+      await page.getByRole('button', { name: 'Abbrechen' }).click();
+      await expect(page.getByText('Passwort zurücksetzen')).toHaveCount(0);
+    });
+
+    test('setzt das Passwort nach Eingabe von mindestens 8 Zeichen zurück', async ({ page }) => {
+      await gotoTab(page, 'Organisatoren');
+      await page.locator('button[title="Passwort zurücksetzen"]').first().click();
+
+      await page.locator('input[type="password"]').fill('einNeuesPasswort123');
+      const resetBtn = page.locator('button.btn-primary', { hasText: 'Zurücksetzen' });
+      await expect(resetBtn).toBeEnabled();
+
+      const [request, dialog] = await Promise.all([
+        page.waitForRequest(req => /\/api\/admin\/nutzer\/\d+\/reset-password$/.test(req.url()) && req.method() === 'POST'),
+        page.waitForEvent('dialog'),
+        resetBtn.click()
+      ]);
+      expect(request.url()).toContain('/nutzer/100/reset-password');
+      expect(request.postDataJSON()).toEqual({ newPassword: 'einNeuesPasswort123' });
+      expect(dialog.message()).toContain('Passwort erfolgreich zurückgesetzt');
+      await dialog.accept();
+    });
+  });
+
   test.describe('CSV-Import-Ergebnis-Modal', () => {
     test('zeigt die Erfolgsmeldung an und schließt nach 3 Sekunden automatisch', async ({ page }) => {
       await page.route(`http://localhost:9000/api/veranstaltungen/${VID}/teilnehmer/import`, route =>
@@ -495,6 +539,54 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
 
       await page.getByRole('button', { name: 'Schließen' }).click();
       await expect(page.getByText('CSV Import Ergebnis')).toHaveCount(0);
+    });
+
+    // Regression #39: handleGlobalUpload rief nach loadData() zusätzlich refreshAdmins()
+    // auf, das users.value mit der reinen Admin-Liste überschrieb und damit gerade per CSV
+    // importierte Referenten/Teilnehmer sofort wieder aus der Tabelle verschwinden ließ. Der
+    // Mock unten simuliert genau diesen Zustandswechsel: erst nach dem Import liefert
+    // GET .../nutzer den neuen Referenten - würde die App fälschlich noch refreshAdmins()
+    // (nur GET /api/admin/nutzer, ohne den neuen Referenten) danach aufrufen, bliebe die
+    // Tabelle leer und der Test schlägt fehl.
+    test('importierter Referent erscheint sofort in der Referenten-Tabelle, ohne dass die Veranstaltung neu ausgewählt werden muss', async ({ page }) => {
+      let referentImported = false;
+      const NEW_REFERENT = {
+        id: 999, firstName: 'Erika', lastName: 'Musterfrau', email: 'erika.musterfrau@test.de',
+        role: 'REFERENT', isActive: true, veranstaltungIds: [VID]
+      };
+
+      await page.route(`http://localhost:9000/api/veranstaltungen/${VID}/referenten/import`, route => {
+        referentImported = true;
+        return route.fulfill({ status: 200, json: { anzahlErfolgreich: 1, fehler: [] } });
+      });
+      await page.route(`http://localhost:9000/api/veranstaltungen/${VID}/nutzer`, (route) => {
+        if (route.request().method() === 'GET' && referentImported) {
+          return route.fulfill({ status: 200, json: [...ALL_USERS, NEW_REFERENT] });
+        }
+        return route.fallback();
+      });
+
+      await gotoTab(page, 'Referenten');
+      const [fileChooser] = await Promise.all([
+        page.waitForEvent('filechooser'),
+        page.getByRole('button', { name: 'Import', exact: true }).click()
+      ]);
+      await fileChooser.setFiles({
+        name: 'referenten.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from('Vorname;Nachname;Email;LoginName\nErika;Musterfrau;erika.musterfrau@test.de;erika.musterfrau')
+      });
+
+      await expect(page.getByText('CSV Import Ergebnis')).toBeVisible();
+      // Wichtig: erst nachdem ALLE Folge-Requests von handleGlobalUpload abgeklungen sind
+      // prüfen - sonst würde toBeVisible() (das bis zum Timeout retried) einen nur
+      // kurzzeitig sichtbaren Zwischenzustand fälschlich als Erfolg werten, selbst wenn ein
+      // späterer refreshAdmins()-Aufruf den Referenten danach wieder aus der Liste entfernt.
+      // (Alle Antworten sind gemockt und damit praktisch verzögerungsfrei; 500ms sind ein
+      // großzügiger Puffer für die Kette der await-Aufrufe in handleGlobalUpload plus
+      // Vue-Rerender.)
+      await page.waitForTimeout(500);
+      await expect(page.locator('td:has-text("Musterfrau")')).toBeVisible();
     });
   });
 

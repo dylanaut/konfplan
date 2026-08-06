@@ -117,7 +117,7 @@ views/*.vue           # Top-level page components routed by Vue Router
 - **Polymorphism:** `@Inheritance(SINGLE_TABLE)` + Jackson `@JsonSubTypes` for Nutzer and Vortrag hierarchies.
 - **CSV import:** Slot indices are 1-based.
 - **Code style:** `.editorconfig` at root — 4 spaces for Java/XML, 2 spaces for JS/TS/Vue.
-- **Default password** on user create/import: `start123` (BCrypt-hashed).
+- **Default password** on user create/import: `konfplan` in dev/test mode, a random UUID in prod (BCrypt-hashed either way).
 
 ## Full-Stack Feature Slice Checklist (Data Model Changes)
 
@@ -157,4 +157,4 @@ Remote is **GitHub** (`github.com/dylanaut/konfplan`, private), authenticated vi
 - **Deadlines** (`deadlineReferenten`, `deadlineTeilnehmer`) gate editability in each dashboard.
 - **Room conflict checks** are cross-event (a room booked in one Veranstaltung blocks it in another).
 - **Vite** is configured to produce a `manifest.json` used by Quarkus Quinoa to embed frontend assets.
-- **DB scripts:** `db/init_db.sh` and `db/ensure_prod_db.sh` for PostgreSQL setup.
+- **DB scripts:** `db/ensure_prod_db.sh` and `db/ensure_prod_infra.sh` for local PostgreSQL/Mailpit setup (Docker-based, dev/test use). Production `.deb` packaging lives under `packaging/debian/` (see its `README.md`).

@@ -11,6 +11,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonException;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.SolverConfig;
+import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.domain.exception.CollisionsException;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
@@ -227,6 +228,21 @@ public class PlanErstellungService {
                                   List<Long> wahlvortrag_oids,
                                   List<Long> slot_oids,
                                   List<Long> raum_oids) {
+    }
+
+
+    /**
+     * Erzeugt die MiniZinc-Datendatei (.dzn) für eine Veranstaltung, ohne den Solver zu starten -
+     * für den Export/Download-Button in der PlanungTab.vue. Wirft eine {@link BusinessException},
+     * wenn die Vorbedingungen (Teilnehmer, Slots, Wahlvorträge, keine Kollisionen) nicht erfüllt sind.
+     */
+    @Transactional
+    public String generiereDznVorschau(Long veranstaltungId, SolverConfig config, String username) {
+        DznVorbereitung vorbereitung = bereiteDznVor(veranstaltungId, config, username);
+        if (null == vorbereitung) {
+            throw new BusinessException(lastError);
+        }
+        return vorbereitung.dznContent();
     }
 
 

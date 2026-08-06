@@ -1,9 +1,13 @@
 package kreyj.konfplan.domain.service;
 
+import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
+import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.domain.exception.CreateVortragException;
+import kreyj.konfplan.domain.exception.UpdateNutzerException;
 import kreyj.konfplan.domain.exception.UpdateVortragException;
 import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.Nutzer;
@@ -12,6 +16,7 @@ import kreyj.konfplan.persistence.Veranstaltung;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +30,9 @@ public class AdminServiceTest {
     @Inject
     AdminService adminService;
 
+    @Inject
+    TokenInvalidationService tokenInvalidationService;
+
     private Long testUserId;
     private Veranstaltung veranstaltung;
     private Long tnId;
@@ -32,6 +40,7 @@ public class AdminServiceTest {
     @BeforeEach
     @Transactional
     public void setUp() {
+        tokenInvalidationService.reset();
         // Clean up existing data to avoid conflicts
         Nutzer.deleteAll();
         Veranstaltung.deleteAll();
@@ -235,5 +244,83 @@ public class AdminServiceTest {
         // 4. Verify that the email remains the new email
         Nutzer updatedUser = Nutzer.findById(testUserId);
         assertThat(updatedUser.getEmail()).isEqualTo(newEmail);
+    }
+
+
+    // Regression: ein Admin-Konto ohne E-Mail-Adresse kann sich bei vergessenem Passwort nicht
+    // selbst wiederherstellen (AuthResource#forgotPassword) und es gab bislang auch keinen
+    // anderen Weg (siehe testResetPassword_* unten für den neuen Rettungsweg).
+    @Test
+    public void testCreateUser_AdminWithoutEmail_ThrowsException() {
+        NutzerDto dto = new NutzerDto("ADMIN", null, "Ohne", "Email", true);
+        dto.loginName = "ohne.email";
+
+        assertThatExceptionOfType(BusinessException.class)
+            .isThrownBy(() -> adminService.createUser(dto, null));
+
+        assertThat(Nutzer.findByLoginName("ohne.email")).isNull();
+    }
+
+
+    @Test
+    public void testCreateUser_AdminWithEmail_Succeeds() {
+        NutzerDto dto = new NutzerDto("ADMIN", "mit.email@test.de", "Mit", "Email", true);
+        dto.loginName = "mit.email";
+
+        NutzerDto created = adminService.createUser(dto, null);
+
+        assertThat(created.email).isEqualTo("mit.email@test.de");
+    }
+
+
+    @Test
+    public void testUpdateUser_RemovingAdminEmail_ThrowsException() {
+        NutzerDto dto = NutzerDto.from(Nutzer.findById(testUserId));
+        dto.email = null;
+
+        assertThatExceptionOfType(UpdateNutzerException.class)
+            .isThrownBy(() -> adminService.updateUser(testUserId, dto, null));
+
+        assertThat(Nutzer.<Nutzer>findById(testUserId).getEmail()).isEqualTo("test@example.com");
+    }
+
+
+    @Test
+    public void testResetPassword_Success() {
+        boolean result = adminService.resetPassword(testUserId, "einNeuesPasswort123");
+
+        assertThat(result).isTrue();
+        Nutzer updated = Nutzer.findById(testUserId);
+        assertThat(BcryptUtil.matches("einNeuesPasswort123", updated.getPasswordHash())).isTrue();
+    }
+
+
+    @Test
+    public void testResetPassword_UnknownUser_ReturnsFalse() {
+        boolean result = adminService.resetPassword(-1L, "einNeuesPasswort123");
+
+        assertThat(result).isFalse();
+    }
+
+
+    @Test
+    public void testResetPassword_PasswordTooShort_ThrowsException() {
+        assertThatExceptionOfType(BusinessException.class)
+            .isThrownBy(() -> adminService.resetPassword(testUserId, "kurz"));
+    }
+
+
+    @Test
+    public void testResetPassword_InvalidatesTokensIssuedBeforeTheReset() {
+        // Ein von einem Admin ausgeloester Passwort-Reset (Rettungsweg fuer Konten ohne
+        // funktionierende E-Mail) muss ein bereits gestohlenes/kompromittiertes Token ebenso
+        // ungueltig machen wie der Self-Service-Reset (siehe TokenInvalidationService).
+        Instant beforeReset = Instant.now().minusSeconds(5);
+        assertThat(tokenInvalidationService.isValid("testexample", beforeReset)).isTrue();
+
+        adminService.resetPassword(testUserId, "einNeuesPasswort123");
+
+        assertThat(tokenInvalidationService.isValid("testexample", beforeReset)).isFalse();
+        assertThat(tokenInvalidationService.isValid("testexample", Instant.now().plusSeconds(5))).isTrue();
     }
 }

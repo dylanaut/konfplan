@@ -131,7 +131,7 @@ views/*.vue           # Top-Level-Seiten-Komponenten geroutet von Vue Router
 - **DTOs leben im Web-Adapter** (`adapter/in/rest`), werden nie in die Service-Schicht weitergegeben.
 - CSV-Import von Verfügbarkeiten erfolgt über 1-basierte Slot-Indizes.
 - **Code-Stil:** `.editorconfig` im Root-Verzeichnis — 4 Leerzeichen für Java/XML, 2 für JS/TS/Vue.
-- **Standard-Passwort** bei Nutzer-Erstellung/Import: `start123` (BCrypt-gehasht).
+- **Standard-Passwort** bei Nutzer-Erstellung/Import: `konfplan` im Dev/Test-Modus, ein zufaelliges UUID-Passwort in Produktion (in beiden Faellen BCrypt-gehasht).
 
 ## Bekannte Besonderheiten & Infrastruktur-Notizen
 
@@ -140,7 +140,7 @@ views/*.vue           # Top-Level-Seiten-Komponenten geroutet von Vue Router
 - Räume werden **veranstaltungsübergreifend** auf Überschneidungen geprüft (ein Raum in einer Veranstaltung blockiert ihn in einer anderen).
 - Passwort-Reset per E-Mail (Mailpit-Credentials in `application.properties` setzen für Entwicklung).
 - Vite (`vite.config.js`) ist so konfiguriert, dass eine `manifest.json` für die dynamische Einbindung von Assets in Qute-Templates erzeugt wird.
-- **DB-Skripte:** `db/init_db.sh` und `db/ensure_prod_db.sh` für PostgreSQL-Setup.
+- **DB-Skripte:** `db/ensure_prod_db.sh` und `db/ensure_prod_infra.sh` für lokales PostgreSQL/Mailpit-Setup (Docker-basiert, Dev/Test). Produktions-`.deb`-Pakete liegen unter `packaging/debian/` (siehe dessen `README.md`).
 
 ## Git & Feature Workflow
 

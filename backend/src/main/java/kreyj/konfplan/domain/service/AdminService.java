@@ -19,6 +19,7 @@ import kreyj.konfplan.adapter.in.web.dto.csv.RaumVerfuegbarkeitCsvDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.SlotCsvDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.VortragCsvDto;
 import kreyj.konfplan.application.port.in.AdminServiceInterface;
+import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.domain.exception.CreateSlotException;
 import kreyj.konfplan.domain.exception.CreateVortragException;
 import kreyj.konfplan.domain.exception.CsvImportException;
@@ -88,12 +89,15 @@ public class AdminService implements AdminServiceInterface {
     private final MailService mailService;
     private final ProtokollService protokollService;
     private final LaunchMode launchMode;
+    private final TokenInvalidationService tokenInvalidationService;
 
 
-    public AdminService(MailService mailService, ProtokollService protokollService, LaunchMode launchMode) {
+    public AdminService(MailService mailService, ProtokollService protokollService, LaunchMode launchMode,
+                        TokenInvalidationService tokenInvalidationService) {
         this.mailService = mailService;
         this.protokollService = protokollService;
         this.launchMode = launchMode;
+        this.tokenInvalidationService = tokenInvalidationService;
     }
 
 
@@ -146,6 +150,13 @@ public class AdminService implements AdminServiceInterface {
             nutzer = new Teilnehmer();
         } else {
             nutzer = new Admin();
+        }
+
+        // Ohne E-Mail-Adresse ist Passwort-Reset (forgotPassword) unmöglich - für Admins fatal,
+        // da es (anders als bei Referent/Teilnehmer) keine übergeordnete Instanz gibt, die das
+        // Konto sonst wiederherstellen könnte.
+        if (nutzer instanceof Admin && StringUtils.isBlank(dto.email)) {
+            throw new BusinessException("Administrator-Konten benötigen zwingend eine E-Mail-Adresse (sonst ist bei einem vergessenen Passwort keine Wiederherstellung möglich).");
         }
 
         nutzer.assignLoginName(dto.loginName);
@@ -217,7 +228,12 @@ public class AdminService implements AdminServiceInterface {
         // Check for email change
         String oldEmail = nutzer.getEmail();
         if (!Objects.equals(oldEmail, dto.email)) {
-            if (null == dto.email) {
+            if (StringUtils.isBlank(dto.email)) {
+                // Siehe createUser: ein Admin-Konto ohne E-Mail-Adresse ist bei einem
+                // vergessenen Passwort unwiederbringlich verloren.
+                if (nutzer instanceof Admin) {
+                    throw new UpdateNutzerException("Administrator-Konten benötigen zwingend eine E-Mail-Adresse (sonst ist bei einem vergessenen Passwort keine Wiederherstellung möglich).");
+                }
                 // E-Mail-Adresse wird entfernt - keine Bestätigung nötig, da nichts nachzuweisen ist.
                 nutzer.setEmail(null);
                 protokollService.log(ProtokollKategorie.NUTZER, "E-Mail-Adresse entfernt",
@@ -386,6 +402,33 @@ public class AdminService implements AdminServiceInterface {
     }
 
 
+    /**
+     * Setzt das Passwort eines beliebigen Nutzers direkt, ohne E-Mail-Bestätigung - Rettungsweg
+     * für Konten ohne (funktionierende) E-Mail-Adresse, die sich sonst über
+     * {@link kreyj.konfplan.adapter.in.web.AuthResource#forgotPassword} nicht selbst
+     * wiederherstellen könnten (siehe dortiger Kommentar "nur ein Admin kann das Passwort
+     * zurücksetzen" - dieser Weg löst genau das ein).
+     */
+    @Transactional
+    @Override
+    public boolean resetPassword(Long id, String newPassword) {
+        Nutzer nutzer = Nutzer.findById(id);
+        if (null == nutzer) {
+            return false;
+        }
+        if (StringUtils.isBlank(newPassword) || newPassword.length() < 8) {
+            throw new BusinessException("Das neue Passwort muss mindestens 8 Zeichen lang sein.");
+        }
+
+        nutzer.setPasswordHash(BcryptUtil.bcryptHash(newPassword));
+        nutzer.persistAndFlush();
+        tokenInvalidationService.invalidateTokensIssuedBefore(nutzer.getLoginName());
+        protokollService.log(ProtokollKategorie.SECURITY, "Passwort durch Administrator zurückgesetzt",
+            "Passwort für Nutzer '" + nutzer.getLoginName() + "' wurde durch einen Administrator zurückgesetzt.", nutzer.getId());
+        return true;
+    }
+
+
     @Transactional
     @Override
     public void toggleUserStatus(Long id) {
@@ -534,14 +577,18 @@ public class AdminService implements AdminServiceInterface {
                     LOG.warn("Admin-Zeile übersprungen: loginName fehlt.");
                     continue;
                 }
+                // Siehe createUser/updateUser: ein Admin-Konto ohne E-Mail-Adresse ist bei
+                // einem vergessenen Passwort unwiederbringlich verloren.
+                if (StringUtils.isBlank(dto.email)) {
+                    LOG.warn("Admin-Zeile übersprungen: E-Mail-Adresse fehlt (loginName: " + dto.loginName + ").");
+                    continue;
+                }
                 String loginName = dto.loginName.trim().toLowerCase();
                 Nutzer byLoginName = Nutzer.findByLoginName(loginName);
                 if (null == byLoginName) {
                     Admin a = new Admin();
                     a.assignLoginName(loginName);
-                    if (StringUtils.isNotBlank(dto.email)) {
-                        a.setEmail(dto.email.trim().toLowerCase());
-                    }
+                    a.setEmail(dto.email.trim().toLowerCase());
                     a.setFirstName(dto.vorname);
                     a.setLastName(dto.nachname);
                     String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());

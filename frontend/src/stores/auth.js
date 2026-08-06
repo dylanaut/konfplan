@@ -49,9 +49,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     // Direkt nach dem Start von 'mvnw quarkus:dev' gibt es ein knappes Zeitfenster, in dem der
-    // allererste Login-Request scheitert (Verbindungsfehler, weil Backend/Vite-Proxy noch nicht
-    // bereit sind, oder ein transientes 401), obwohl die Zugangsdaten korrekt sind. Statt sofort
-    // eine Fehlermeldung zu zeigen, wird deshalb mehrfach mit kurzer Pause automatisch erneut
+    // allererste Login-Request an einem Verbindungsfehler scheitert, weil Backend/Vite-Proxy
+    // noch nicht bereit sind, obwohl die Zugangsdaten korrekt sind. Statt sofort eine
+    // Fehlermeldung zu zeigen, wird deshalb mehrfach mit kurzer Pause automatisch erneut
     // versucht, bevor der letzte Fehler tatsächlich angezeigt wird.
     const LOGIN_RETRY_ATTEMPTS = 3;
     const LOGIN_RETRY_DELAY_MS = 1200;
@@ -65,6 +65,14 @@ export const useAuthStore = defineStore('auth', () => {
                 return;
             } catch (error) {
                 lastError = error;
+                // Nur bei einem Verbindungsfehler (kein response, s.o.) erneut versuchen. Ein
+                // tatsächliches 401 (falsche Zugangsdaten) oder 429 (Login-Rate-Limit, siehe
+                // LoginRateLimiterService) ist eine deterministische Antwort eines erreichbaren
+                // Servers - ein erneuter Versuch würde nichts bringen und zusätzlich unnötig
+                // gegen das Rate-Limit zählen.
+                if (error.response) {
+                    break;
+                }
                 if (attempt < LOGIN_RETRY_ATTEMPTS) {
                     await new Promise((resolve) => setTimeout(resolve, LOGIN_RETRY_DELAY_MS));
                 }
@@ -75,6 +83,12 @@ export const useAuthStore = defineStore('auth', () => {
             toast.error('Server nicht erreichbar. Startet das Backend gerade? Bitte in wenigen Sekunden erneut versuchen.');
         } else if (lastError.response.status === 401) {
             toast.error('Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.');
+        } else if (lastError.response.status === 429) {
+            const retryAfterSeconds = Number(lastError.response.headers?.['retry-after']);
+            const wartezeit = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+                ? `${Math.ceil(retryAfterSeconds / 60)} Minute(n)`
+                : 'einigen Minuten';
+            toast.error(`Zu viele fehlgeschlagene Login-Versuche. Bitte in ${wartezeit} erneut versuchen.`);
         } else {
             const errorMessage = lastError.response?.data?.message || 'Login fehlgeschlagen. Bitte versuchen Sie es erneut.';
             toast.error(errorMessage);
@@ -82,7 +96,7 @@ export const useAuthStore = defineStore('auth', () => {
         console.error(lastError);
     }
 
-    function logout() {
+    function logout({ reason } = {}) {
         // Eine ggf. laufende Planerstellung serverseitig abbrechen, bevor der Token
         // gelöscht wird (der Endpoint ist ADMIN-only, danach fehlt die Berechtigung).
         // Header wird explizit gesetzt statt über den Request-Interceptor, da localStorage
@@ -101,8 +115,15 @@ export const useAuthStore = defineStore('auth', () => {
         const eventContext = useEventContextStore();
         eventContext.clearEvent();
 
-        toast.info('Sie haben sich erfolgreich abgemeldet.',
-          { timeout: 3000, closeOnClick: true});
+        // reason: 'inactive' kommt von useInactivityLogout() (siehe App.vue) - eigene Meldung,
+        // damit der Nutzer nicht denkt, er hätte sich selbst abgemeldet.
+        if (reason === 'inactive') {
+            toast.info('Sitzung wegen Inaktivität automatisch beendet. Bitte erneut anmelden.',
+              { timeout: 5000, closeOnClick: true });
+        } else {
+            toast.info('Sie haben sich erfolgreich abgemeldet.',
+              { timeout: 3000, closeOnClick: true});
+        }
         router.push('/login');
     }
 
