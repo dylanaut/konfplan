@@ -110,6 +110,9 @@ async function mockAdminApis(page) {
     if (/^\/api\/admin\/nutzer\/\d+\/einladen\/\d+$/.test(path) && method === 'POST') {
       return json({});
     }
+    if (/^\/api\/admin\/nutzer\/\d+\/reset-password$/.test(path) && method === 'POST') {
+      return json({});
+    }
     if (path === `/api/veranstaltungen/${VID}/nutzer`) {
       if (method === 'GET') return json(ALL_USERS);
       if (method === 'POST') return json({ ...body(), id: 555 }, 201);
@@ -445,6 +448,45 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
         einladenBtn.click()
       ]);
       expect(request.url()).toContain(`/einladen/${VID}`);
+    });
+  });
+
+  // Regression #57/#58: Rettungsweg für Admin-Konten ohne (funktionierende) E-Mail-Adresse,
+  // die sich sonst über "Passwort vergessen" nicht selbst wiederherstellen könnten.
+  test.describe('Passwort-Reset-Modal', () => {
+    test('öffnet mit leerem Feld und deaktiviertem Zurücksetzen-Button unter 8 Zeichen', async ({ page }) => {
+      await gotoTab(page, 'Organisatoren');
+      await page.locator('button[title="Passwort zurücksetzen"]').first().click();
+
+      await expect(page.getByText('Passwort zurücksetzen')).toBeVisible();
+      await expect(page.locator('span.font-bold', { hasText: 'Anna Admin' })).toBeVisible();
+      const resetBtn = page.locator('button.btn-primary', { hasText: 'Zurücksetzen' });
+      await expect(resetBtn).toBeDisabled();
+
+      await page.locator('input[type="password"]').fill('kurz');
+      await expect(resetBtn).toBeDisabled();
+
+      await page.getByRole('button', { name: 'Abbrechen' }).click();
+      await expect(page.getByText('Passwort zurücksetzen')).toHaveCount(0);
+    });
+
+    test('setzt das Passwort nach Eingabe von mindestens 8 Zeichen zurück', async ({ page }) => {
+      await gotoTab(page, 'Organisatoren');
+      await page.locator('button[title="Passwort zurücksetzen"]').first().click();
+
+      await page.locator('input[type="password"]').fill('einNeuesPasswort123');
+      const resetBtn = page.locator('button.btn-primary', { hasText: 'Zurücksetzen' });
+      await expect(resetBtn).toBeEnabled();
+
+      const [request, dialog] = await Promise.all([
+        page.waitForRequest(req => /\/api\/admin\/nutzer\/\d+\/reset-password$/.test(req.url()) && req.method() === 'POST'),
+        page.waitForEvent('dialog'),
+        resetBtn.click()
+      ]);
+      expect(request.url()).toContain('/nutzer/100/reset-password');
+      expect(request.postDataJSON()).toEqual({ newPassword: 'einNeuesPasswort123' });
+      expect(dialog.message()).toContain('Passwort erfolgreich zurückgesetzt');
+      await dialog.accept();
     });
   });
 

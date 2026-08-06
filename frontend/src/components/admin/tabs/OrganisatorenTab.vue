@@ -29,6 +29,9 @@
             <button @click="emit('openUserModal', a)" class="text-indigo-600" title="Bearbeiten">
               <PencilIcon class="w-3.5 h-3.5 inline"/>
             </button>
+            <button @click="emit('openPasswordResetModal', a)" class="text-indigo-600" title="Passwort zurücksetzen">
+              <KeyIcon class="w-3.5 h-3.5 inline"/>
+            </button>
             <button @click="emit('deleteUser', a.id)" class="text-red-600">
               <Trash2Icon class="w-3.5 h-3.5 inline"/>
             </button>
@@ -45,6 +48,7 @@
 import { computed, reactive, watch } from 'vue';
 import {
   ArrowUpDown as ArrowUpDownIcon,
+  KeyRound as KeyIcon,
   Pencil as PencilIcon,
   Trash2 as Trash2Icon,
   Upload as UploadIcon
@@ -56,7 +60,7 @@ const props = defineProps({
   pageSize: Number
 });
 
-const emit = defineEmits(['triggerUpload', 'openUserModal', 'deleteUser']);
+const emit = defineEmits(['triggerUpload', 'openUserModal', 'deleteUser', 'openPasswordResetModal']);
 
 const pages = reactive({
   admins: 1

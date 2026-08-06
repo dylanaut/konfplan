@@ -32,8 +32,13 @@
         </div>
 
         <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700 mb-1">E-Mail (optional)</label>
-          <input v-model="form.email" type="email" class="input-field" />
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            E-Mail{{ form.role === 'ADMIN' ? ' (erforderlich für Administratoren)' : ' (optional)' }}
+          </label>
+          <input v-model="form.email" type="email" class="input-field" :required="form.role === 'ADMIN'" />
+          <p v-if="form.role === 'ADMIN'" class="text-xs text-gray-500 mt-1">
+            Ohne E-Mail-Adresse kann ein vergessenes Passwort nicht selbst zurückgesetzt werden.
+          </p>
         </div>
 
         <div class="md:col-span-2">

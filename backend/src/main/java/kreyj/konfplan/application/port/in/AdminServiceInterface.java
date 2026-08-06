@@ -33,6 +33,8 @@ public interface AdminServiceInterface {
 
     boolean deleteUser(Long id);
 
+    boolean resetPassword(Long id, String newPassword);
+
     void toggleUserStatus(Long id);
 
     List<Vortrag> getAllVortraege(Long veranstaltungId);

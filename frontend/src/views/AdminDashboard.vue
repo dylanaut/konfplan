@@ -96,6 +96,7 @@
                           @triggerUpload="triggerUpload"
                           @openUserModal="openUserModal"
                           @deleteUser="deleteUser"
+                          @openPasswordResetModal="openPasswordResetModal"
       />
 
       <TeilnehmerTab v-if="activeTab === 'teilnehmer' && selectedVid"
@@ -195,6 +196,8 @@
                           @save="handleSaveSlot"/>
     <InviteUserModal :isVisible="showInviteModal" :nutzer="selectedUserForInvite" :futureEvents="futureEvents"
                      @close="showInviteModal = false" @invite="handleInviteUser"/>
+    <PasswordResetModal :isVisible="showPasswordResetModal" :nutzer="selectedUserForPasswordReset"
+                     @close="showPasswordResetModal = false" @reset="handleResetPassword"/>
 
     <!-- CSV Import Feedback Modal -->
     <div v-if="showCsvFeedbackModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -261,6 +264,7 @@ import RaumEditorModal from '../components/RaumEditorModal.vue';
 import EventSlotEditorModal from '../components/EventSlotEditorModal.vue';
 import GebaeudeEditorModal from '../components/GebaeudeEditorModal.vue';
 import InviteUserModal from '../components/InviteUserModal.vue';
+import PasswordResetModal from '../components/PasswordResetModal.vue';
 
 const eventContext = useEventContextStore();
 const availabilityStore = useAvailabilityStore();
@@ -313,6 +317,8 @@ const showSlotModal = ref(false);
 const selectedSlot = ref(null);
 const showInviteModal = ref(false);
 const selectedUserForInvite = ref(null);
+const showPasswordResetModal = ref(false);
+const selectedUserForPasswordReset = ref(null);
 
 const isOptimizing = ref(false);
 const planningPhase = ref(null);
@@ -764,6 +770,20 @@ const handleInviteUser = async ({userId, eventId}) => {
     await loadData();
   } catch (e) {
     alert("Fehler beim Einladen: " + (e.response?.data || e.message));
+  }
+};
+
+const openPasswordResetModal = (u) => {
+  selectedUserForPasswordReset.value = u;
+  showPasswordResetModal.value = true;
+};
+const handleResetPassword = async ({userId, newPassword}) => {
+  try {
+    await api.post(`/api/admin/nutzer/${userId}/reset-password`, {newPassword});
+    alert("Passwort erfolgreich zurückgesetzt!");
+    showPasswordResetModal.value = false;
+  } catch (e) {
+    alert("Fehler beim Zurücksetzen des Passworts: " + (e.response?.data?.error || e.response?.data || e.message));
   }
 };
 
