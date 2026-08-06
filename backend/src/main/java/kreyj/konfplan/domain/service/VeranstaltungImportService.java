@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  * Bündelt einen zusammenhängenden Satz von CSV-Dateien (analog zum DataSet-Verfahren aus
@@ -43,6 +45,9 @@ public class VeranstaltungImportService implements VeranstaltungImportServiceInt
         "gebaeude.csv", "organisatoren.csv", "veranstaltungen.csv", "slots.csv", "referenten.csv",
         "teilnehmer.csv", WAHL_VORTRAEGE_CSV, PFLICHT_VORTRAEGE_CSV, "tn_prios.csv",
         "raum_verfuegbarkeiten.csv", "teilnehmer_verfuegbarkeiten.csv", "ref_verfuegbarkeiten.csv");
+
+    private static final int MAX_ZIP_ENTRIES = 200;
+    private static final long MAX_UNCOMPRESSED_BYTES = 20_000_000L;
 
     @ConfigProperty(name = "konfplan.veranstaltung-import.base-path", defaultValue = "import/veranstaltungen")
     String basePath;
@@ -144,7 +149,38 @@ public class VeranstaltungImportService implements VeranstaltungImportServiceInt
                 + String.join(", ", missing));
         }
 
-        LOG.info("Starte Verzeichnis-Import für '" + datasetName + "' ...");
+        return runImport(dir, datasetName);
+    }
+
+
+    /**
+     * Extrahiert ein hochgeladenes ZIP in ein temporäres Verzeichnis und importiert den
+     * enthaltenen CSV-Satz genauso wie {@link #importDataset(String)}. Das temporäre Verzeichnis
+     * wird in jedem Fall (Erfolg wie Fehler) wieder gelöscht.
+     */
+    @Transactional(rollbackOn = Exception.class)
+    @Override
+    public VeranstaltungDto importFromZip(Path zipFilePath) throws Exception {
+        Path tempDir = Files.createTempDirectory("veranstaltung-import-");
+        try {
+            extractZip(zipFilePath, tempDir);
+            Path effectiveRoot = determineEffectiveRoot(tempDir);
+
+            List<String> missing = computeMissingMandatoryFiles(effectiveRoot);
+            if (!missing.isEmpty()) {
+                throw new IllegalArgumentException(
+                    "ZIP enthält nicht alle Pflicht-Dateien. Fehlend: " + String.join(", ", missing));
+            }
+
+            return runImport(effectiveRoot, "ZIP-Upload");
+        } finally {
+            deleteRecursively(tempDir);
+        }
+    }
+
+
+    private VeranstaltungDto runImport(Path dir, String label) throws Exception {
+        LOG.info("Starte Verzeichnis-Import für '" + label + "' ...");
 
         // 1. Gebäude & Räume (optional)
         Path gebaeudeCsv = dir.resolve("gebaeude.csv");
@@ -217,10 +253,89 @@ public class VeranstaltungImportService implements VeranstaltungImportServiceInt
             failIfErrors(refVerfCsv, adminService.importNutzerVerfuegbarkeitenFromCsv(refVerfCsv, Referent.class, vid));
         }
 
-        LOG.info("Verzeichnis-Import für '" + datasetName + "' abgeschlossen: Veranstaltung '"
+        LOG.info("Import für '" + label + "' abgeschlossen: Veranstaltung '"
             + veranstaltung.getName() + "' (id=" + vid + ") angelegt.");
 
         return VeranstaltungDto.from(veranstaltung);
+    }
+
+
+    /**
+     * Extrahiert ein ZIP nach {@code targetDir}. Verteidigung gegen Zip-Slip (Einträge, die
+     * außerhalb von {@code targetDir} landen würden) sowie gegen Zip-Bomben (zu viele Einträge
+     * oder zu große Gesamtgröße).
+     */
+    private void extractZip(Path zipFile, Path targetDir) throws IOException {
+        int entryCount = 0;
+        long totalBytes = 0;
+        try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(zipFile))) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                if (++entryCount > MAX_ZIP_ENTRIES) {
+                    throw new IllegalArgumentException("ZIP enthält zu viele Einträge (max. " + MAX_ZIP_ENTRIES + ").");
+                }
+
+                Path resolved = targetDir.resolve(entry.getName()).normalize();
+                if (!resolved.startsWith(targetDir)) {
+                    throw new IllegalArgumentException("ZIP enthält einen ungültigen Eintrag: " + entry.getName());
+                }
+
+                if (entry.isDirectory()) {
+                    Files.createDirectories(resolved);
+                    continue;
+                }
+
+                Files.createDirectories(resolved.getParent());
+                try (var out = Files.newOutputStream(resolved)) {
+                    byte[] buffer = new byte[8192];
+                    int read;
+                    while ((read = zis.read(buffer)) != -1) {
+                        totalBytes += read;
+                        if (totalBytes > MAX_UNCOMPRESSED_BYTES) {
+                            throw new IllegalArgumentException(
+                                "ZIP-Inhalt ist zu groß (max. " + (MAX_UNCOMPRESSED_BYTES / 1_000_000) + " MB entpackt).");
+                        }
+                        out.write(buffer, 0, read);
+                    }
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Falls das entpackte Verzeichnis keine der bekannten CSV-Dateien direkt enthält, aber genau
+     * ein Unterverzeichnis (typischer Fall: das ZIP wurde aus einem einzelnen Ordner erstellt),
+     * wird eine Ebene tiefer abgestiegen.
+     */
+    private Path determineEffectiveRoot(Path extractedDir) throws IOException {
+        boolean hasKnownFileDirectly = ALL_KNOWN_FILES.stream().anyMatch(f -> Files.exists(extractedDir.resolve(f)));
+        if (hasKnownFileDirectly) {
+            return extractedDir;
+        }
+
+        try (Stream<Path> entries = Files.list(extractedDir)) {
+            List<Path> topLevel = entries.toList();
+            if (topLevel.size() == 1 && Files.isDirectory(topLevel.get(0))) {
+                return topLevel.get(0);
+            }
+        }
+        return extractedDir;
+    }
+
+
+    private void deleteRecursively(Path dir) {
+        try (Stream<Path> paths = Files.walk(dir)) {
+            paths.sorted(Comparator.reverseOrder()).forEach(p -> {
+                try {
+                    Files.delete(p);
+                } catch (IOException e) {
+                    LOG.warn("Konnte temporäre Import-Datei nicht löschen: " + p, e);
+                }
+            });
+        } catch (IOException e) {
+            LOG.warn("Konnte temporäres Import-Verzeichnis nicht vollständig aufräumen: " + dir, e);
+        }
     }
 
 
