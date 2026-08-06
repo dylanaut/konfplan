@@ -14,6 +14,7 @@ import jakarta.ws.rs.core.MediaType;
 import kreyj.konfplan.domain.service.ForgotPasswordRateLimiterService;
 import kreyj.konfplan.domain.service.LoginRateLimiterService;
 import kreyj.konfplan.domain.service.MailService;
+import kreyj.konfplan.domain.service.TokenInvalidationService;
 import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Teilnehmer;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -53,6 +55,9 @@ class AuthResourceTest {
     @Inject
     ForgotPasswordRateLimiterService forgotPasswordRateLimiterService;
 
+    @Inject
+    TokenInvalidationService tokenInvalidationService;
+
 
     @BeforeEach
     void setup() {
@@ -61,6 +66,7 @@ class AuthResourceTest {
         // die Zaehler der einzelnen Tests gegenseitig beeinflussen.
         loginRateLimiterService.reset();
         forgotPasswordRateLimiterService.reset();
+        tokenInvalidationService.reset();
     }
 
 
@@ -70,6 +76,7 @@ class AuthResourceTest {
         mailbox.clear();
         loginRateLimiterService.reset();
         forgotPasswordRateLimiterService.reset();
+        tokenInvalidationService.reset();
     }
 
 
@@ -188,6 +195,7 @@ class AuthResourceTest {
     @Test
     void testResetPassword_Success() {
         Nutzer nutzer = new Teilnehmer();
+        nutzer.assignLoginName("resetuser");
         nutzer.setResetToken("valid-token");
         nutzer.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
         nutzer.setPasswordHash(BcryptUtil.bcryptHash("oldSecretPassword"));
@@ -204,6 +212,36 @@ class AuthResourceTest {
                 .when().post("/reset-password")
                 .then()
                 .statusCode(OK.getStatusCode());
+    }
+
+
+    @Test
+    void testResetPassword_InvalidatesTokensIssuedBeforeTheReset() {
+        // Ein bereits ausgestelltes Token (z.B. bei einem gestohlenen Login) darf nach einem
+        // Passwort-Reset nicht weiterhin gueltig bleiben, bis es regulaer abgelaufen ist (siehe
+        // TokenInvalidationService).
+        Nutzer nutzer = new Teilnehmer();
+        nutzer.assignLoginName("resetuser2");
+        nutzer.setResetToken("valid-token-2");
+        nutzer.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
+        nutzer.setPasswordHash(BcryptUtil.bcryptHash("oldSecretPassword"));
+
+        PanacheQuery query = Mockito.mock(PanacheQuery.class);
+        Mockito.when(Nutzer.find("resetToken", "valid-token-2")).thenReturn(query);
+        Mockito.when(query.firstResult()).thenReturn(nutzer);
+
+        Instant beforeReset = Instant.now().minusSeconds(5);
+        assertThat(tokenInvalidationService.isValid("resetuser2", beforeReset)).isTrue();
+
+        given()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ResetRequest("valid-token-2", "newSecretPassword"))
+                .when().post("/reset-password")
+                .then()
+                .statusCode(OK.getStatusCode());
+
+        assertThat(tokenInvalidationService.isValid("resetuser2", beforeReset)).isFalse();
+        assertThat(tokenInvalidationService.isValid("resetuser2", Instant.now().plusSeconds(5))).isTrue();
     }
 
 

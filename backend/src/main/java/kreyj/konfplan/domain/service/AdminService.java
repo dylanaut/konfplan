@@ -89,12 +89,15 @@ public class AdminService implements AdminServiceInterface {
     private final MailService mailService;
     private final ProtokollService protokollService;
     private final LaunchMode launchMode;
+    private final TokenInvalidationService tokenInvalidationService;
 
 
-    public AdminService(MailService mailService, ProtokollService protokollService, LaunchMode launchMode) {
+    public AdminService(MailService mailService, ProtokollService protokollService, LaunchMode launchMode,
+                        TokenInvalidationService tokenInvalidationService) {
         this.mailService = mailService;
         this.protokollService = protokollService;
         this.launchMode = launchMode;
+        this.tokenInvalidationService = tokenInvalidationService;
     }
 
 
@@ -419,6 +422,7 @@ public class AdminService implements AdminServiceInterface {
 
         nutzer.setPasswordHash(BcryptUtil.bcryptHash(newPassword));
         nutzer.persistAndFlush();
+        tokenInvalidationService.invalidateTokensIssuedBefore(nutzer.getLoginName());
         protokollService.log(ProtokollKategorie.SECURITY, "Passwort durch Administrator zurückgesetzt",
             "Passwort für Nutzer '" + nutzer.getLoginName() + "' wurde durch einen Administrator zurückgesetzt.", nutzer.getId());
         return true;
