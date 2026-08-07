@@ -252,13 +252,13 @@ public class PlanService {
                 Set<String> tnGruppe = teilnehmer.getGruppen();
                 if (tnGruppe != null && tnGruppe.contains(pv.getPflichtgruppe())) {
                     zuweisungen.add(new ZuweisungDto(
-                        teilnehmer.getLastName(),
+                        teilnehmer.getFullName(),
                         pv.getTitel(),
                         pv.getPflichtslot().getStartTime(),
                         pv.getPflichtslot().getEndTime(),
                         pv.getPflichtraum().getName(),
                         pv.getPflichtraum().getGebaeude().getName(),
-                        pv.getReferent().getLastName()
+                        pv.getReferent().getFullName()
                     ));
                 }
             }
@@ -284,13 +284,13 @@ public class PlanService {
 
                             if (slot != null && raum != null) {
                                 zuweisungen.add(new ZuweisungDto(
-                                    teilnehmer.getLastName(),
+                                    teilnehmer.getFullName(),
                                     vortrag.getTitel(),
                                     slot.getStartTime(),
                                     slot.getEndTime(),
                                     raum.getName(),
                                     raum.getGebaeude().getName(),
-                                    vortrag.getReferent().getLastName()
+                                    vortrag.getReferent().getFullName()
                                 ));
                             }
                         }
@@ -346,7 +346,7 @@ public class PlanService {
                     .toList();
                 referentPlan.add(new ReferentVortragDto(pv.getTitel(), pv.getPflichtslot().getStartTime(), pv.getPflichtslot().getEndTime(),
                     pv.getPflichtraum().getName(), pv.getPflichtraum().getGebaeude().getName(),
-                    pv.getReferent().getLastName(), teilnehmerDtos));
+                    pv.getReferent().getFullName(), referent.getOrganisation(), teilnehmerDtos));
             }
 
             List<Wahlvortrag> referentenWahlvortraege = Wahlvortrag.find("veranstaltung = ?1 and referent = ?2", veranstaltung, referent).list();
@@ -380,7 +380,7 @@ public class PlanService {
                         }
                         referentPlan.add(new ReferentVortragDto(wv.getTitel(), slot.startTime, slot.endTime,
                             raum.name, raum.gebaeudeName,
-                            wv.getReferent().getLastName(),
+                            wv.getReferent().getFullName(), referent.getOrganisation(),
                             zugewieseneTeilnehmer));
                     }
                 }

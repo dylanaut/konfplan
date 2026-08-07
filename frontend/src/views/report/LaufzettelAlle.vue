@@ -20,8 +20,12 @@
       </div>
 
       <div v-for="(plan, teilnehmerId) in sortedPlaene" :key="teilnehmerId" class="page-break-after">
-        <h4>{{ plan[0].teilnehmerName }}</h4>
-        <table class="table table-striped table-bordered table-sm">
+        <h4>
+          {{ teilnehmerInfo(teilnehmerId).firstName }} {{ teilnehmerInfo(teilnehmerId).lastName }}
+          <small v-if="teilnehmerInfo(teilnehmerId).gruppen?.length" class="text-muted">({{ teilnehmerInfo(teilnehmerId).gruppen.join(', ') }})</small>
+        </h4>
+        <p v-if="plan.length === 0" class="text-muted">Keine Zuweisungen.</p>
+        <table v-else class="table table-striped table-bordered table-sm">
           <thead class="table-dark">
             <tr>
               <th scope="col">Zeit</th>
@@ -56,7 +60,7 @@ import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
 
 const route = useRoute();
-const reportData = ref({ veranstaltung: {}, plaene: {} });
+const reportData = ref({ veranstaltung: {}, plaene: {}, teilnehmer: [] });
 const loading = ref(true);
 const error = ref(null);
 
@@ -70,6 +74,8 @@ const sortedPlaene = computed(() => {
   }
   return sorted;
 });
+
+const teilnehmerInfo = (teilnehmerId) => reportData.value.teilnehmer?.find(t => String(t.id) === String(teilnehmerId)) || {};
 
 onMounted(async () => {
   const veranstaltungId = route.params.vid;

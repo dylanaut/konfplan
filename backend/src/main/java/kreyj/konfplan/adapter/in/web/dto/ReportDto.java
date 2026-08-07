@@ -84,20 +84,24 @@ public class ReportDto {
     public static class LaufzettelAlleDto {
         public final VeranstaltungDto veranstaltung;
         public final Map<Long, List<ZuweisungDto>> plaene;
+        public final List<NutzerDto> teilnehmer;
 
-        public LaufzettelAlleDto(Veranstaltung veranstaltung, Map<Long, List<ZuweisungDto>> plaene) {
+        public LaufzettelAlleDto(Veranstaltung veranstaltung, Map<Long, List<ZuweisungDto>> plaene, List<NutzerDto> teilnehmer) {
             this.veranstaltung = VeranstaltungDto.from(veranstaltung);
             this.plaene = plaene;
+            this.teilnehmer = teilnehmer;
         }
     }
 
     public static class LaufzettelAlleReferentenDto {
         public final VeranstaltungDto veranstaltung;
         public final Map<Long, List<ReferentVortragDto>> plaene;
+        public final List<NutzerDto> referenten;
 
-        public LaufzettelAlleReferentenDto(Veranstaltung veranstaltung, Map<Long, List<ReferentVortragDto>> plaene) {
+        public LaufzettelAlleReferentenDto(Veranstaltung veranstaltung, Map<Long, List<ReferentVortragDto>> plaene, List<NutzerDto> referenten) {
             this.veranstaltung = VeranstaltungDto.from(veranstaltung);
             this.plaene = plaene;
+            this.referenten = referenten;
         }
     }
 }

@@ -17,5 +17,6 @@ public class ReferentVortragDto {
     public String raumName;
     public String gebaeudeName;
     public String referentName;
+    public String referentOrganisation;
     public List<TeilnehmerDto> teilnehmer;
 }
