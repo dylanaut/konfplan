@@ -1,7 +1,7 @@
 <template>
   <section class="space-y-6 animate-fade-in">
     <!-- Belegungsplan -->
-    <div v-if="belegungsPlan && belegungsPlan.length > 0">
+    <div v-if="eventContext.selectedEvent && belegungsPlan && belegungsPlan.length > 0">
       <Stundenplan :vid="eventContext.selectedEvent.id" />
     </div>
     <div v-else class="text-center text-gray-500 py-12 bg-white rounded-xl shadow-sm border border-gray-100">
@@ -128,7 +128,7 @@ const router = useRouter();
 const eventContext = useEventContextStore();
 
 const navigateToReport = (routeName) => {
-  const vid = eventContext.selectedEvent.id;
+  const vid = eventContext.selectedEvent?.id;
   if (vid) {
     const route = router.resolve({ name: routeName, params: { vid } });
     window.open(route.href, '_blank');
