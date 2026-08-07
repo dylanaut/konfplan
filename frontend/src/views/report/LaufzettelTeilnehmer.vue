@@ -112,6 +112,8 @@ const formatSlot = (eintrag) => {
   }
   body {
     background-color: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .container {
     width: 100% !important;

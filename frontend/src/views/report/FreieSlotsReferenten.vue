@@ -129,6 +129,8 @@ const formatSlot = (slot) => {
   /* Allgemeine Druck-Optimierungen */
   body {
     background-color: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .container {
     width: 100% !important;
