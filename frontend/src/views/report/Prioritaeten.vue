@@ -167,7 +167,7 @@ const getSlotInfo = (wvs, wv_oid) => {
 @media print {
   .no-print { display: none !important; }
   .print-footer { display: block !important; position: fixed; bottom: 0; width: 100%; text-align: center; font-size: 0.8rem; color: #6c757d; }
-  body { background-color: #fff; }
+  body { background-color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .container-fluid { width: 100% !important; padding: 0 !important; margin: 0 !important; }
   .table { font-size: 9pt; }
 }
