@@ -235,6 +235,7 @@ public class ReferentResource {
 
     @GET
     @Path("/plaene")
+    @Transactional
     @Operation(summary = "Persönlichen Plan abrufen", description = "Ruft den persönlichen Vortragsplan des Referenten für eine Veranstaltung ab.")
     public Response getMyPlan(@QueryParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);

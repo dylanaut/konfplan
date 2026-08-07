@@ -282,6 +282,7 @@ public class TeilnehmerResource {
     @GET
     @Path("/veranstaltungen/{vid}/zuweisungen")
     @RolesAllowed("TEILNEHMER")
+    @Transactional
     @Operation(summary = "Persönlichen Plan abrufen")
     public Response getPlan(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);

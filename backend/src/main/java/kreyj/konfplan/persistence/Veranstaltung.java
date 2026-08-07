@@ -260,7 +260,7 @@ public class Veranstaltung extends VersionedEntity {
     }
 
     @JsonIgnore
-    @OneToOne(mappedBy = "veranstaltung", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(mappedBy = "veranstaltung", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     Planungsergebnis planungsergebnis;
 
 
