@@ -19,6 +19,7 @@ import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragPrioDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.TeilnehmerCsvDto;
 import kreyj.konfplan.application.port.in.TeilnehmerServiceInterface;
+import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Pflichtvortrag;
@@ -103,6 +104,9 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
                 dto.endetAm = e.getEndetAm();
                 dto.deadlineTeilnehmer = e.getDeadlineTeilnehmer();
                 dto.planErstellt = Planungsergebnis.count("veranstaltung", e) > 0;
+                dto.logo = e.getLogo();
+                dto.logo_link = e.getLogo_link();
+                dto.organisatorNamen = e.organisatoren().stream().map(Admin::getFullName).toList();
                 return dto;
             })
             .sorted(Comparator.comparing(e -> e.beginntAm))

@@ -11,13 +11,13 @@
     </div>
 
     <div v-else>
+      <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" />
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
         <h1 class="h3">Freie Slots für Referenten</h1>
         <button @click="handlePrint" class="btn btn-secondary">
           <i class="bi bi-printer"></i> Drucken
         </button>
       </div>
-      <p class="lead mb-4 print-only">Veranstaltung: {{ reportData.veranstaltung.name }}</p>
 
       <table class="table table-striped table-bordered">
         <thead class="table-dark">
@@ -53,6 +53,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../../api/axios';
+import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
 
 const route = useRoute();
 const reportData = ref({ veranstaltung: {}, freieSlots: {}, nutzer: [] });

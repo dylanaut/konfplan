@@ -11,6 +11,7 @@
     </div>
 
     <template v-else>
+      <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" />
       <header class="mb-4 d-flex justify-content-between align-items-center no-print">
         <h1>📅 {{ reportData.veranstaltung.name }} - Teilnehmer-Zuordnungen</h1>
         <button @click="handlePrint" class="btn btn-secondary">
@@ -93,6 +94,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../../api/axios';
+import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
 
 const route = useRoute();
 const reportData = ref(null);

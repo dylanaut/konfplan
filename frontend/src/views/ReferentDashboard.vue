@@ -216,12 +216,19 @@
       <div v-else class="space-y-6">
         <div v-for="event in events" :key="event.id" class="border border-gray-200 rounded-lg p-4">
           <div class="flex justify-between items-start mb-4">
-             <div>
-               <h3 class="font-bold text-lg text-gray-800">{{ event.name }}</h3>
-               <p class="text-sm text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
-               <p v-if="event.deadlineReferenten" :class="['text-[10px] font-bold mt-1', isDeadlinePassed(event.deadlineReferenten) ? 'text-red-600' : 'text-orange-600']">
-                  Deadline für Referenten: {{ formatDateTime(event.deadlineReferenten) }}
-               </p>
+             <div class="flex items-center gap-3">
+               <a v-if="event.logo && event.logo_link" :href="event.logo_link" target="_blank" rel="noopener noreferrer">
+                 <img :src="event.logo" :alt="event.name" class="h-10 w-auto object-contain" />
+               </a>
+               <img v-else-if="event.logo" :src="event.logo" :alt="event.name" class="h-10 w-auto object-contain" />
+               <div>
+                 <h3 class="font-bold text-lg text-gray-800">{{ event.name }}</h3>
+                 <p class="text-sm text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
+                 <p v-if="event.organisatorNamen?.length" class="text-xs text-gray-500">{{ event.organisatorNamen.join(', ') }}</p>
+                 <p v-if="event.deadlineReferenten" :class="['text-[10px] font-bold mt-1', isDeadlinePassed(event.deadlineReferenten) ? 'text-red-600' : 'text-orange-600']">
+                    Deadline für Referenten: {{ formatDateTime(event.deadlineReferenten) }}
+                 </p>
+               </div>
              </div>
              <span v-if="isDeadlinePassed(event.deadlineReferenten)" class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">Abgelaufen</span>
              <span v-else-if="!isFutureEvent(event)" class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">Vergangen</span>

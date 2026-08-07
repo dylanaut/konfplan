@@ -3,6 +3,7 @@ package kreyj.konfplan.adapter.in.web.dto;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RegisterForReflection
 public class TeilnehmerVeranstaltungDto {
@@ -12,4 +13,7 @@ public class TeilnehmerVeranstaltungDto {
     public LocalDateTime endetAm;
     public LocalDateTime deadlineTeilnehmer;
     public boolean planErstellt;
+    public String logo;
+    public String logo_link;
+    public List<String> organisatorNamen;
 }

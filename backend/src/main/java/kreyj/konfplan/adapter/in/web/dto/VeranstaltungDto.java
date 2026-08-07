@@ -94,7 +94,7 @@ public class VeranstaltungDto extends AbstractVersionedDto {
                 .filter(u -> u instanceof Admin)
                 .forEach(u -> {
                     dto.getOrganisatorIds().add(u.getId());
-                    dto.getOrganisatorNamen().add(u.getLastName());
+                    dto.getOrganisatorNamen().add(u.getFullName());
                 });
         }
 
