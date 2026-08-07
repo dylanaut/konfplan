@@ -61,8 +61,9 @@ public class ReportResource {
         }
         Map<Long, List<ZuweisungDto>> plaene = veranstaltung.teilnehmer().stream()
             .collect(Collectors.toMap(IdEntity::getId, t -> planService.getPlanFuerTeilnehmer(t, veranstaltung)));
+        List<NutzerDto> teilnehmerDtos = veranstaltung.teilnehmer().stream().map(NutzerDto::from).toList();
 
-        return Response.ok(new ReportDto.LaufzettelAlleDto(veranstaltung, plaene)).build();
+        return Response.ok(new ReportDto.LaufzettelAlleDto(veranstaltung, plaene, teilnehmerDtos)).build();
     }
 
 
@@ -78,8 +79,9 @@ public class ReportResource {
         }
         Map<Long, List<ReferentVortragDto>> plaene = veranstaltung.referenten().stream()
             .collect(Collectors.toMap(IdEntity::getId, r -> planService.getPlanFuerReferent(r, veranstaltung)));
+        List<NutzerDto> referentenDtos = veranstaltung.referenten().stream().map(NutzerDto::from).toList();
 
-        return Response.ok(new ReportDto.LaufzettelAlleReferentenDto(veranstaltung, plaene)).build();
+        return Response.ok(new ReportDto.LaufzettelAlleReferentenDto(veranstaltung, plaene, referentenDtos)).build();
     }
 
 

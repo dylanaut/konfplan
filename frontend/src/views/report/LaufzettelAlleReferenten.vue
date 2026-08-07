@@ -20,8 +20,12 @@
       </div>
 
       <div v-for="(plan, referentId) in sortedPlaene" :key="referentId" class="page-break-after">
-        <h4>{{ plan[0].referentName }}</h4>
-        <table class="table table-striped table-bordered table-sm">
+        <h4>
+          {{ referentInfo(referentId).firstName }} {{ referentInfo(referentId).lastName }}
+          <small v-if="referentInfo(referentId).organisation" class="text-muted">({{ referentInfo(referentId).organisation }})</small>
+        </h4>
+        <p v-if="plan.length === 0" class="text-muted">Keine Vorträge zugewiesen.</p>
+        <table v-else class="table table-striped table-bordered table-sm">
           <thead class="table-dark">
             <tr>
               <th scope="col">Zeit</th>
@@ -54,7 +58,7 @@ import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
 
 const route = useRoute();
-const reportData = ref({ veranstaltung: {}, plaene: {} });
+const reportData = ref({ veranstaltung: {}, plaene: {}, referenten: [] });
 const loading = ref(true);
 const error = ref(null);
 
@@ -68,6 +72,8 @@ const sortedPlaene = computed(() => {
   }
   return sorted;
 });
+
+const referentInfo = (referentId) => reportData.value.referenten?.find(r => String(r.id) === String(referentId)) || {};
 
 onMounted(async () => {
   const veranstaltungId = route.params.vid;
