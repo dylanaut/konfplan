@@ -6,7 +6,15 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht;
 import kreyj.konfplan.adapter.in.web.dto.SolverConfig;
+import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
+import kreyj.konfplan.persistence.Gebaeude;
+import kreyj.konfplan.persistence.Gebaeudetyp;
+import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Planungsergebnis;
+import kreyj.konfplan.persistence.Raum;
+import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Slot;
+import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.adapter.in.web.DatabaseCleaner;
 import org.junit.jupiter.api.BeforeEach;
@@ -115,6 +123,54 @@ public class PlanServiceTest extends DatabaseCleaner {
 
         Planungsergebnis.MinizincResult second = planService.getMinizincResult(veranstaltung);
         assertThat(second.teilnehmer_oids).containsExactly(42L);
+    }
+
+
+    @Test
+    @Transactional
+    public void testGetPlanFuerTeilnehmer_includesPflichtvortrag_evenWhenTeilnehmerNotInMinizincResult() {
+        // Der geteilte Fixture-Planungsergebnis (siehe setup()) hat teilnehmer_oids: [] - der
+        // Teilnehmer taucht also nirgends im MiniZinc-Ergebnis auf (z.B. weil er gar keine
+        // Wahlvortrag-Priorität abgegeben hat). Der Pflichtvortrag ist rein gruppenbasiert und
+        // muss trotzdem erscheinen.
+        Gebaeude gebaeude = new Gebaeude();
+        gebaeude.setName("Hauptgebäude");
+        gebaeude.setTyp(Gebaeudetyp.SCHULE);
+        gebaeude.setPostleitzahl("12345");
+        gebaeude.setOrt("Testort");
+        gebaeude.setStrasse("Teststraße");
+        gebaeude.persist();
+
+        Raum raum = new Raum();
+        raum.setName("Raum 1");
+        raum.setKapazitaet(30);
+        raum.persist();
+        gebaeude.addRaum(raum);
+
+        Slot slot = new Slot("Slot 1", LocalDateTime.of(2024, 1, 1, 9, 0), LocalDateTime.of(2024, 1, 1, 10, 0), veranstaltung);
+        slot.persist();
+        veranstaltung.addSlot(slot);
+
+        Referent referent = new Referent();
+        referent.assignLoginName("referent.pflicht");
+        referent.setEmail("referent.pflicht@example.com");
+        referent.setPasswordHash("hash");
+        referent.persist();
+
+        Pflichtvortrag pflichtvortrag = Pflichtvortrag.create("Pflichtvortrag Gruppe A", "Inhalt", referent, "Gruppe A", raum, slot, veranstaltung);
+        pflichtvortrag.persist();
+
+        Teilnehmer teilnehmer = new Teilnehmer();
+        teilnehmer.assignLoginName("teilnehmer.pflicht");
+        teilnehmer.setEmail("teilnehmer.pflicht@example.com");
+        teilnehmer.setPasswordHash("hash");
+        teilnehmer.addGruppe("Gruppe A");
+        teilnehmer.persist();
+
+        List<ZuweisungDto> plan = planService.getPlanFuerTeilnehmer(teilnehmer, veranstaltung);
+
+        assertThat(plan).hasSize(1);
+        assertThat(plan.get(0).vortragTitel).isEqualTo("Pflichtvortrag Gruppe A");
     }
 
 

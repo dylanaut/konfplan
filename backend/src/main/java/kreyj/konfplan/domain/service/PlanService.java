@@ -241,11 +241,6 @@ public class PlanService {
             Map<Long, Slot> slotMap = vSlots.stream().collect(toMap(IdEntity::getId, Function.identity()));
             Map<Long, Raum> raumMap = vRaeume.stream().collect(toMap(IdEntity::getId, Function.identity()));
 
-            int tnIdx = ArrayUtils.indexOf(tnOids, teilnehmer.getId());
-            if (tnIdx == -1) {
-                return Collections.emptyList();
-            }
-
             List<ZuweisungDto> zuweisungen = new ArrayList<>();
 
             for (Pflichtvortrag pv : veranstaltung.getPflichtvortraege()) {
@@ -263,35 +258,41 @@ public class PlanService {
                 }
             }
 
-            for (int wvIdx = 0; wvIdx < wvOids.length; wvIdx++) {
-                Long vortragId = wvOids[wvIdx];
-                Vortrag vortrag = vortragMap.get(vortragId);
-                if (null == vortrag) {
-                    continue;
-                }
+            // Wahlvortrag-Zuweisungen kommen ausschließlich aus dem MiniZinc-Ergebnis - anders als
+            // Pflichtvorträge (gruppenbasiert, s.o.) ist das nur möglich, wenn der Teilnehmer
+            // überhaupt im Solver-Ergebnis vorkommt.
+            int tnIdx = ArrayUtils.indexOf(tnOids, teilnehmer.getId());
+            if (tnIdx != -1) {
+                for (int wvIdx = 0; wvIdx < wvOids.length; wvIdx++) {
+                    Long vortragId = wvOids[wvIdx];
+                    Vortrag vortrag = vortragMap.get(vortragId);
+                    if (null == vortrag) {
+                        continue;
+                    }
 
-                for (int iIdx = 0; iIdx < besucht[tnIdx][wvIdx].length; iIdx++) {
-                    if (besucht[tnIdx][wvIdx][iIdx]) {
-                        int sIdx = instanzSlot[wvIdx][iIdx] - 1;
-                        int rIdx = instanzRaum[wvIdx][iIdx] - 1;
+                    for (int iIdx = 0; iIdx < besucht[tnIdx][wvIdx].length; iIdx++) {
+                        if (besucht[tnIdx][wvIdx][iIdx]) {
+                            int sIdx = instanzSlot[wvIdx][iIdx] - 1;
+                            int rIdx = instanzRaum[wvIdx][iIdx] - 1;
 
-                        if (sIdx >= 0 && sIdx < slotOids.length && rIdx >= 0 && rIdx < raumOids.length) {
-                            long slotId = slotOids[sIdx];
-                            long raumId = raumOids[rIdx];
+                            if (sIdx >= 0 && sIdx < slotOids.length && rIdx >= 0 && rIdx < raumOids.length) {
+                                long slotId = slotOids[sIdx];
+                                long raumId = raumOids[rIdx];
 
-                            Slot slot = slotMap.get(slotId);
-                            Raum raum = raumMap.get(raumId);
+                                Slot slot = slotMap.get(slotId);
+                                Raum raum = raumMap.get(raumId);
 
-                            if (slot != null && raum != null) {
-                                zuweisungen.add(new ZuweisungDto(
-                                    teilnehmer.getFullName(),
-                                    vortrag.getTitel(),
-                                    slot.getStartTime(),
-                                    slot.getEndTime(),
-                                    raum.getName(),
-                                    raum.getGebaeude().getName(),
-                                    vortrag.getReferent().getFullName()
-                                ));
+                                if (slot != null && raum != null) {
+                                    zuweisungen.add(new ZuweisungDto(
+                                        teilnehmer.getFullName(),
+                                        vortrag.getTitel(),
+                                        slot.getStartTime(),
+                                        slot.getEndTime(),
+                                        raum.getName(),
+                                        raum.getGebaeude().getName(),
+                                        vortrag.getReferent().getFullName()
+                                    ));
+                                }
                             }
                         }
                     }
