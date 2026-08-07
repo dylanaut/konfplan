@@ -3,7 +3,7 @@
 
     <!-- Page Header & Veranstaltungsauswahl -->
     <div
-        class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100 no-print">
       <div class="flex-1">
         <img class="h-12 w-auto mb-2" src="/logo/konfplan-light.svg" alt="Konfplan Logo"/>
         <h1 class="text-xl font-bold text-gray-900">Admin-Bereich</h1>
@@ -21,7 +21,7 @@
     </div>
 
     <!-- Tab-Navigation -->
-    <div class="border-b border-gray-200">
+    <div class="border-b border-gray-200 no-print">
       <nav class="-mb-px flex space-x-6 overflow-x-auto">
         <button v-for="tab in visibleTabs" :key="tab"
                 @click="handleTabClick(tab)"

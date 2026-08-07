@@ -6,3 +6,9 @@
 body {
     @apply antialiased; /* Macht die Schrift auf Macs/iPhones schöner */
 }
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+}

@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-gray-50" id="app">
     <!-- Navigation -->
-    <nav v-if="auth.isAuthenticated" class="bg-indigo-600 text-white p-4 shadow-lg sticky top-0 z-50">
+    <nav v-if="auth.isAuthenticated" class="bg-indigo-600 text-white p-4 shadow-lg sticky top-0 z-50 no-print">
       <div class="container mx-auto flex justify-between items-center">
         <div class="flex items-center gap-4 overflow-hidden">
           <h1 class="font-bold text-xl whitespace-nowrap">KonfPlan</h1>
