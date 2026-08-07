@@ -13,4 +13,7 @@ public class ReferentVeranstaltungDto extends AbstractVersionedDto {
     public LocalDateTime deadlineReferenten;
     public List<Long> vortraegeIds;
     public boolean planErstellt; // Neues Feld
+    public String logo;
+    public String logo_link;
+    public List<String> organisatorNamen;
 }

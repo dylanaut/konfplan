@@ -13,6 +13,7 @@ import kreyj.konfplan.adapter.in.web.dto.ReferentVeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.ReferentCsvDto;
 import kreyj.konfplan.application.port.in.ReferentServiceInterface;
+import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Pflichtvortrag;
@@ -131,6 +132,9 @@ public class ReferentService implements ReferentServiceInterface {
                 .map(IdEntity::getId)
                 .toList();
             dto.planErstellt = Planungsergebnis.count("veranstaltung", e) > 0; // Prüfen, ob ein Ergebnis existiert
+            dto.logo = e.getLogo();
+            dto.logo_link = e.getLogo_link();
+            dto.organisatorNamen = e.organisatoren().stream().map(Admin::getFullName).toList();
             return dto;
         }).sorted(Comparator.comparing(e -> e.beginntAm)).toList();
     }

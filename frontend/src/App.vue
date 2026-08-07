@@ -13,7 +13,10 @@
             </a>
             <div class="flex flex-col min-w-0">
               <span class="font-black text-xs uppercase tracking-tighter truncate">{{ eventContext.selectedEvent.name }}</span>
-              <span class="text-[10px] text-indigo-200 font-bold whitespace-nowrap">{{ formatDate(eventContext.selectedEvent.beginntAm) }}</span>
+              <span class="text-[10px] text-indigo-200 font-bold whitespace-nowrap">{{ formatZeitraum(eventContext.selectedEvent) }}</span>
+              <span v-if="eventContext.selectedEvent.organisatorNamen?.length" class="text-[10px] text-indigo-200 truncate">
+                {{ eventContext.selectedEvent.organisatorNamen.join(', ') }}
+              </span>
             </div>
           </div>
         </div>
@@ -54,14 +57,13 @@ import { useAuthStore } from './stores/auth';
 import { useEventContextStore } from './stores/eventContext';
 import { useInactivityLogout } from './composables/useInactivityLogout';
 import { Menu as MenuIcon } from '@lucide/vue';
+import { formatZeitraum } from './utils/veranstaltungFormat';
 
 const auth = useAuthStore();
 const eventContext = useEventContextStore();
 const mobileMenuOpen = ref(false);
 
 useInactivityLogout();
-
-const formatDate = (d) => d ? new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 </script>
 
 <style>

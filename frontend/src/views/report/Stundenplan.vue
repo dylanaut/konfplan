@@ -9,6 +9,7 @@
       {{ error }}
     </div>
     <div v-else-if="reportData">
+      <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" />
       <header class="mb-4 d-flex justify-content-between align-items-center no-print">
         <h1>📅 Stundenplan {{ reportData.veranstaltung.name }}</h1>
         <div>
@@ -146,6 +147,7 @@
 <script setup>
 import { ref, onMounted, defineProps } from 'vue';
 import api from '../../api/axios';
+import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
 
 const props = defineProps({
   vid: {

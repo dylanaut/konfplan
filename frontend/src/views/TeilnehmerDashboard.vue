@@ -80,12 +80,19 @@
         </div>
         <div v-for="event in events" :key="event.id" class="border border-gray-200 rounded-lg overflow-hidden">
           <div class="p-4 flex justify-between items-center bg-gray-50">
-            <div>
-              <h3 class="font-bold text-lg text-gray-800">{{ event.name }}</h3>
-              <p class="text-xs text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
-              <p v-if="event.deadlineTeilnehmer" :class="['text-[10px] font-bold mt-1', isDeadlinePassed(event.deadlineTeilnehmer) ? 'text-red-600' : 'text-orange-600']">
-                Deadline für Änderungen: {{ formatDateTime(event.deadlineTeilnehmer) }}
-              </p>
+            <div class="flex items-center gap-3">
+              <a v-if="event.logo && event.logo_link" :href="event.logo_link" target="_blank" rel="noopener noreferrer">
+                <img :src="event.logo" :alt="event.name" class="h-10 w-auto object-contain" />
+              </a>
+              <img v-else-if="event.logo" :src="event.logo" :alt="event.name" class="h-10 w-auto object-contain" />
+              <div>
+                <h3 class="font-bold text-lg text-gray-800">{{ event.name }}</h3>
+                <p class="text-xs text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
+                <p v-if="event.organisatorNamen?.length" class="text-xs text-gray-500">{{ event.organisatorNamen.join(', ') }}</p>
+                <p v-if="event.deadlineTeilnehmer" :class="['text-[10px] font-bold mt-1', isDeadlinePassed(event.deadlineTeilnehmer) ? 'text-red-600' : 'text-orange-600']">
+                  Deadline für Änderungen: {{ formatDateTime(event.deadlineTeilnehmer) }}
+                </p>
+              </div>
             </div>
              <div class="flex gap-2">
                <button v-if="event.planErstellt" @click="downloadKalender(event.id)" class="btn-secondary">
