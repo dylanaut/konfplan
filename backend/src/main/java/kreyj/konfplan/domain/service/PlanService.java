@@ -62,6 +62,7 @@ public class PlanService {
      */
     private final Map<Long, CachedMinizincResult> minizincResultCache = new ConcurrentHashMap<>();
 
+
     private record CachedMinizincResult(Long version, Planungsergebnis.MinizincResult result) {
     }
 
@@ -112,8 +113,10 @@ public class PlanService {
             }
         }
 
-        LOG.info("Zuweisungen im Gesamtplan für Veranstaltung " + veranstaltung.getName() + ":\n" +
-            zuweisungen.stream().map(ZuweisungDto::toString).collect(Collectors.joining("\n")));
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Zuweisungen im Gesamtplan für Veranstaltung " + veranstaltung.getName() + ":\n" +
+                zuweisungen.stream().map(ZuweisungDto::toString).collect(Collectors.joining("\n")));
+        }
         return zuweisungen;
     }
 
@@ -178,10 +181,12 @@ public class PlanService {
             }
         }
 
-        LOG.info("Detaillierter Plan für Veranstaltung " + veranstaltung.getName() + ":\n" +
-            detaillierterPlan.stream()
-                .map(RaumBelegungUebersicht::toString)
-                .collect(Collectors.joining("\n")));
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Detaillierter Plan für Veranstaltung " + veranstaltung.getName() + ":\n" +
+                detaillierterPlan.stream()
+                    .map(RaumBelegungUebersicht::toString)
+                    .collect(Collectors.joining("\n")));
+        }
 
         return detaillierterPlan;
     }

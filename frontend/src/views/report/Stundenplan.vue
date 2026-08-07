@@ -22,7 +22,7 @@
         </div>
       </header>
 
-      <div class="row mb-3">
+      <div class="row mb-3 no-print">
         <h2 class="border-bottom pb-2 mb-3">📊 Übersicht</h2>
         <div class="col-md-4">
           <div class="card bg-success text-white shadow-sm">
