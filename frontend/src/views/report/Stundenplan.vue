@@ -14,7 +14,7 @@
         <h1>📅 Stundenplan {{ reportData.veranstaltung.name }}</h1>
         <div>
           <button @click="downloadIcs" class="btn btn-outline-secondary me-2">
-            <i class="bi bi-calendar-plus"></i> Kalender laden
+            <i class="bi bi-calendar-plus"></i> Termine exportieren
           </button>
           <button @click="handlePrint" class="btn btn-secondary">
             <i class="bi bi-printer"></i> Drucken
