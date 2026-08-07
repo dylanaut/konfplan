@@ -501,8 +501,8 @@ public class PlanService {
 
 
     @Transactional
-    public Map<Long, List<Slot>> getFreieSlotsReferenten(Veranstaltung veranstaltung) {
-        Map<Long, List<Slot>> freieSlotsReferenten = new HashMap<>();
+    public Map<Long, List<SlotDto>> getFreieSlotsReferenten(Veranstaltung veranstaltung) {
+        Map<Long, List<SlotDto>> freieSlotsReferenten = new HashMap<>();
         Planungsergebnis planungsergebnis = getPlanungsergebnis(veranstaltung);
 
         try {
@@ -546,9 +546,10 @@ public class PlanService {
                     }
                 }
 
-                List<Slot> freieSlots = vSlots.stream()
+                List<SlotDto> freieSlots = vSlots.stream()
                     .filter(slot -> !belegteSlotIdsFuerRef.contains(slot.getId()))
                     .sorted(comparing(Slot::getStartTime))
+                    .map(SlotDto::from)
                     .toList();
                 freieSlotsReferenten.put(referent.getId(), freieSlots);
             }
@@ -561,8 +562,8 @@ public class PlanService {
 
 
     @Transactional
-    public Map<Long, List<Slot>> getFreieSlotsTeilnehmer(Veranstaltung veranstaltung) {
-        Map<Long, List<Slot>> freieSlotsTeilnehmer = new HashMap<>();
+    public Map<Long, List<SlotDto>> getFreieSlotsTeilnehmer(Veranstaltung veranstaltung) {
+        Map<Long, List<SlotDto>> freieSlotsTeilnehmer = new HashMap<>();
         Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
         if (null == planungsergebnis) {
             return Collections.emptyMap();
@@ -607,9 +608,10 @@ public class PlanService {
                     }
                 }
 
-                List<Slot> freieSlots = alleSlots.stream()
+                List<SlotDto> freieSlots = alleSlots.stream()
                     .filter(slot -> !belegteSlotIds.contains(slot.getId()))
                     .sorted(comparing(Slot::getStartTime))
+                    .map(SlotDto::from)
                     .toList();
                 freieSlotsTeilnehmer.put(teilnehmer.getId(), freieSlots);
             }

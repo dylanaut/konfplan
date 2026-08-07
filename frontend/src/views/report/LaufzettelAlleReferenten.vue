@@ -12,32 +12,32 @@
 
     <div v-else>
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
-        <h1 class="h3">Belegungsplan für Raum: {{ reportData.raum.name }}</h1>
+        <h1 class="h3">Laufzettel für alle Referenten</h1>
         <button @click="handlePrint" class="btn btn-secondary">
           <i class="bi bi-printer"></i> Drucken
         </button>
       </div>
       <p class="lead mb-4 print-only">Veranstaltung: {{ reportData.veranstaltung.name }}</p>
-      <p class="lead mb-4 print-only">Raum: {{ reportData.raum.name }}</p>
 
-      <table class="table table-striped table-bordered">
-        <thead class="table-dark">
-          <tr>
-            <th scope="col">Zeit</th>
-            <th scope="col">Vortrag</th>
-            <th scope="col">Referent</th>
-            <th scope="col">Teilnehmer</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="eintrag in sortedBelegung" :key="eintrag.slot.id" class="page-break-inside-avoid">
-            <td>{{ formatSlot(eintrag.slot) }}</td>
-            <td>{{ eintrag.vortrag.titel }}</td>
-            <td>{{ eintrag.vortrag.referent.firstName }} {{ eintrag.vortrag.referent.lastName }}</td>
-            <td>{{ eintrag.teilnehmerNamen.join(', ') }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div v-for="(plan, referentId) in sortedPlaene" :key="referentId" class="page-break-after">
+        <h4>{{ plan[0].referentName }}</h4>
+        <table class="table table-striped table-bordered table-sm">
+          <thead class="table-dark">
+            <tr>
+              <th scope="col">Zeit</th>
+              <th scope="col">Vortrag</th>
+              <th scope="col">Raum</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(eintrag, idx) in plan" :key="idx">
+              <td>{{ formatSlot(eintrag) }}</td>
+              <td>{{ eintrag.vortragTitel }}</td>
+              <td>{{ eintrag.raumName }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- Druck-spezifischer Footer -->
@@ -53,28 +53,32 @@ import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 
 const route = useRoute();
-const reportData = ref({ veranstaltung: {}, raum: {}, belegung: {} });
+const reportData = ref({ veranstaltung: {}, plaene: {} });
 const loading = ref(true);
 const error = ref(null);
 
 const handlePrint = () => window.print();
 
-const sortedBelegung = computed(() => {
-  if (!reportData.value.belegung) return [];
-  return Object.values(reportData.value.belegung).sort((a, b) => new Date(a.slot.startTime) - new Date(b.slot.startTime));
+const sortedPlaene = computed(() => {
+  if (!reportData.value.plaene) return {};
+  const sorted = {};
+  for (const referentId in reportData.value.plaene) {
+    sorted[referentId] = [...reportData.value.plaene[referentId]].sort((a, b) => new Date(a.slotBeginn) - new Date(b.slotBeginn));
+  }
+  return sorted;
 });
 
 onMounted(async () => {
   const veranstaltungId = route.params.vid;
-  const raumId = route.params.rid;
-  if (!veranstaltungId || !raumId) {
-    error.value = "Veranstaltungs- oder Raum-ID in der URL nicht gefunden.";
+  if (!veranstaltungId) {
+    error.value = "Keine Veranstaltungs-ID in der URL gefunden.";
     loading.value = false;
     return;
   }
   try {
-    const response = await api.get(`/api/reports/${veranstaltungId}/raum/${raumId}/belegungsplan-data`);
+    const response = await api.get(`/api/reports/${veranstaltungId}/laufzettel-alle-referenten-data`);
     reportData.value = response.data;
+    document.title = `${response.data.veranstaltung.name} - Laufzettel (Referenten)`;
   } catch (err) {
     error.value = 'Fehler beim Laden der Daten: ' + (err.response?.data?.message || err.message);
   } finally {
@@ -82,10 +86,10 @@ onMounted(async () => {
   }
 });
 
-const formatSlot = (slot) => {
+const formatSlot = (eintrag) => {
   const options = { hour: '2-digit', minute: '2-digit' };
-  const start = new Date(slot.startTime).toLocaleTimeString('de-DE', options);
-  const end = new Date(slot.endTime).toLocaleTimeString('de-DE', options);
+  const start = new Date(eintrag.slotBeginn).toLocaleTimeString('de-DE', options);
+  const end = new Date(eintrag.slotEnde).toLocaleTimeString('de-DE', options);
   return `${start} - ${end}`;
 };
 </script>
@@ -108,8 +112,8 @@ const formatSlot = (slot) => {
   .print-only {
     display: block !important;
   }
-  .page-break-inside-avoid {
-    page-break-inside: avoid;
+  .page-break-after {
+    page-break-after: always;
   }
   body {
     background-color: #fff;

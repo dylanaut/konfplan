@@ -17,6 +17,7 @@ const FreieSlotsTeilnehmer = () => import('../views/report/FreieSlotsTeilnehmer.
 const TeilnehmerZuordnungen = () => import('../views/report/TeilnehmerZuordnungen.vue');
 const Prioritaeten = () => import('../views/report/Prioritaeten.vue');
 const LaufzettelAlle = () => import('../views/report/LaufzettelAlle.vue');
+const LaufzettelAlleReferenten = () => import('../views/report/LaufzettelAlleReferenten.vue');
 const Stundenplan = () => import('../views/report/Stundenplan.vue');
 
 const routes = [
@@ -118,6 +119,12 @@ const routes = [
         path: '/admin/veranstaltung/:vid/laufzettel-alle',
         name: 'LaufzettelAlle',
         component: LaufzettelAlle,
+        meta: { requiresAuth: true, role: 'ADMIN' }
+    },
+    {
+        path: '/admin/veranstaltung/:vid/laufzettel-alle-referenten',
+        name: 'LaufzettelAlleReferenten',
+        component: LaufzettelAlleReferenten,
         meta: { requiresAuth: true, role: 'ADMIN' }
     },
     {

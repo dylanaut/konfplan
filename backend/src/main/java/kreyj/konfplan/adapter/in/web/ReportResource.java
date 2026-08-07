@@ -62,7 +62,24 @@ public class ReportResource {
         Map<Long, List<ZuweisungDto>> plaene = veranstaltung.teilnehmer().stream()
             .collect(Collectors.toMap(IdEntity::getId, t -> planService.getPlanFuerTeilnehmer(t, veranstaltung)));
 
-        return Response.ok(plaene).build();
+        return Response.ok(new ReportDto.LaufzettelAlleDto(veranstaltung, plaene)).build();
+    }
+
+
+    @GET
+    @Path("/{vid}/laufzettel-alle-referenten-data")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed("ADMIN")
+    @Operation(summary = "Daten für alle Laufzettel der Referenten (JSON)")
+    public Response getAlleLaufzettelReferentenData(@PathParam("vid") Long vid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        Map<Long, List<ReferentVortragDto>> plaene = veranstaltung.referenten().stream()
+            .collect(Collectors.toMap(IdEntity::getId, r -> planService.getPlanFuerReferent(r, veranstaltung)));
+
+        return Response.ok(new ReportDto.LaufzettelAlleReferentenDto(veranstaltung, plaene)).build();
     }
 
 

@@ -13,7 +13,7 @@
     <div v-else>
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
         <h1 class="h3">Laufzettel für {{ reportData.referent.firstName }} {{ reportData.referent.lastName }}</h1>
-        <button @click="window.print()" class="btn btn-secondary">
+        <button @click="handlePrint" class="btn btn-secondary">
           <i class="bi bi-printer"></i> Drucken
         </button>
       </div>
@@ -28,10 +28,10 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="eintrag in sortedPlan" :key="eintrag.slot.id" class="page-break-inside-avoid">
-            <td>{{ formatSlot(eintrag.slot) }}</td>
-            <td>{{ eintrag.vortrag.titel }}</td>
-            <td>{{ eintrag.raum.name }}</td>
+          <tr v-for="(eintrag, idx) in sortedPlan" :key="idx" class="page-break-inside-avoid">
+            <td>{{ formatSlot(eintrag) }}</td>
+            <td>{{ eintrag.vortragTitel }}</td>
+            <td>{{ eintrag.raumName }}</td>
           </tr>
         </tbody>
       </table>
@@ -54,9 +54,11 @@ const reportData = ref({ veranstaltung: {}, referent: {}, plan: [] });
 const loading = ref(true);
 const error = ref(null);
 
+const handlePrint = () => window.print();
+
 const sortedPlan = computed(() => {
   if (!reportData.value.plan) return [];
-  return [...reportData.value.plan].sort((a, b) => new Date(a.slot.startTime) - new Date(b.slot.startTime));
+  return [...reportData.value.plan].sort((a, b) => new Date(a.slotBeginn) - new Date(b.slotBeginn));
 });
 
 onMounted(async () => {
@@ -77,10 +79,10 @@ onMounted(async () => {
   }
 });
 
-const formatSlot = (slot) => {
+const formatSlot = (eintrag) => {
   const options = { hour: '2-digit', minute: '2-digit' };
-  const start = new Date(slot.startTime).toLocaleTimeString('de-DE', options);
-  const end = new Date(slot.endTime).toLocaleTimeString('de-DE', options);
+  const start = new Date(eintrag.slotBeginn).toLocaleTimeString('de-DE', options);
+  const end = new Date(eintrag.slotEnde).toLocaleTimeString('de-DE', options);
   return `${start} - ${end}`;
 };
 </script>

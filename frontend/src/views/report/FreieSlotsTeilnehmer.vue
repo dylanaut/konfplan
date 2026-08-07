@@ -13,7 +13,7 @@
     <div v-else>
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
         <h1 class="h3">Freie Slots für Teilnehmer</h1>
-        <button @click="window.print()" class="btn btn-secondary">
+        <button @click="handlePrint" class="btn btn-secondary">
           <i class="bi bi-printer"></i> Drucken
         </button>
       </div>
@@ -55,13 +55,15 @@ import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 
 const route = useRoute();
-const reportData = ref({ veranstaltung: {}, freieSlots: {}, teilnehmer: [] });
+const reportData = ref({ veranstaltung: {}, freieSlots: {}, nutzer: [] });
 const loading = ref(true);
 const error = ref(null);
 
+const handlePrint = () => window.print();
+
 const sortedTeilnehmer = computed(() => {
-  if (!reportData.value.teilnehmer) return [];
-  return [...reportData.value.teilnehmer].sort((a, b) => {
+  if (!reportData.value.nutzer) return [];
+  return [...reportData.value.nutzer].sort((a, b) => {
     return a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName);
   });
 });
@@ -80,6 +82,7 @@ onMounted(async () => {
   try {
     const response = await api.get(`/api/reports/${veranstaltungId}/freie-slots-teilnehmer-data`);
     reportData.value = response.data;
+    document.title = `${response.data.veranstaltung.name} - Freie Slots (Teilnehmer)`;
   } catch (err) {
     error.value = 'Fehler beim Laden der Daten: ' + (err.response?.data?.message || err.message);
   } finally {
