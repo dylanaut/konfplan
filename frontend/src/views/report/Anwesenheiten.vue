@@ -13,32 +13,37 @@
     <div v-else>
       <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" />
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
-        <h1 class="h3">Raumübersicht</h1>
+        <h1 class="h3">Anwesenheiten</h1>
         <button @click="handlePrint" class="btn btn-secondary">
           <i class="bi bi-printer"></i> Drucken
         </button>
       </div>
 
-      <table class="table table-striped table-bordered">
-        <thead class="table-dark">
-          <tr>
-            <th scope="col">Raum</th>
-            <th scope="col">Slot</th>
-            <th scope="col">Vortrag</th>
-            <th scope="col">Referent</th>
-          </tr>
-        </thead>
-        <tbody>
-          <template v-for="raum in sortedPlan" :key="raum.raumId">
-            <tr v-for="(belegung, index) in raum.belegungen" :key="belegung.slotId" class="page-break-inside-avoid">
-              <td v-if="index === 0" :rowspan="raum.belegungen.length">{{ raum.raumName }}</td>
-              <td>{{ belegung.slotZeit }}</td>
-              <td>{{ belegung.vortragTitel }}</td>
-              <td>{{ belegung.referentName }}</td>
+      <div v-for="eintrag in vortraege" :key="`${eintrag.slotId}-${eintrag.raumId}`" class="page-break-after">
+        <h4 class="mb-0">{{ eintrag.vortragTitel }}</h4>
+        <p class="text-muted mb-3">
+          {{ eintrag.referentName }} &middot; {{ eintrag.slotZeit }} &middot; {{ eintrag.raumName }}
+        </p>
+        <p v-if="!eintrag.teilnehmerNamen || eintrag.teilnehmerNamen.length === 0" class="text-muted">
+          Keine Teilnehmer zugewiesen.
+        </p>
+        <table v-else class="table table-striped table-bordered table-sm">
+          <thead class="table-dark">
+            <tr>
+              <th scope="col">Teilnehmer</th>
+              <th scope="col" class="text-center" style="width: 100px;">Anwesend</th>
             </tr>
-          </template>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <tr v-for="name in eintrag.teilnehmerNamen" :key="name">
+              <td>{{ name }}</td>
+              <td class="text-center"><span class="checkbox-box"></span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p v-if="vortraege.length === 0" class="text-muted">Keine Vorträge vorhanden.</p>
     </div>
 
     <!-- Druck-spezifischer Footer -->
@@ -61,18 +66,11 @@ const error = ref(null);
 
 const handlePrint = () => window.print();
 
-const sortedPlan = computed(() => {
+const vortraege = computed(() => {
   if (!reportData.value.plan) return [];
-  const byRaum = new Map();
-  for (const eintrag of reportData.value.plan) {
-    if (!byRaum.has(eintrag.raumId)) {
-      byRaum.set(eintrag.raumId, { raumId: eintrag.raumId, raumName: eintrag.raumName, belegungen: [] });
-    }
-    byRaum.get(eintrag.raumId).belegungen.push(eintrag);
-  }
-  return [...byRaum.values()]
-    .sort((a, b) => a.raumName.localeCompare(b.raumName))
-    .map(raum => ({ ...raum, belegungen: [...raum.belegungen].sort((a, b) => a.slotZeit.localeCompare(b.slotZeit)) }));
+  return reportData.value.plan
+    .filter(eintrag => eintrag.vortragTyp !== 'FREI')
+    .sort((a, b) => a.slotZeit.localeCompare(b.slotZeit) || a.raumName.localeCompare(b.raumName));
 });
 
 onMounted(async () => {
@@ -85,6 +83,7 @@ onMounted(async () => {
   try {
     const response = await api.get(`/api/reports/${veranstaltungId}/raeume-data`);
     reportData.value = response.data;
+    document.title = `${response.data.veranstaltung.name} - Anwesenheiten`;
   } catch (err) {
     error.value = 'Fehler beim Laden der Daten: ' + (err.response?.data?.message || err.message);
   } finally {
@@ -111,8 +110,8 @@ onMounted(async () => {
   .print-only {
     display: block !important;
   }
-  .page-break-inside-avoid {
-    page-break-inside: avoid;
+  .page-break-after {
+    page-break-after: always;
   }
   body {
     background-color: #fff;
@@ -131,5 +130,13 @@ onMounted(async () => {
 
 .print-footer, .print-only {
   display: none;
+}
+
+.checkbox-box {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #495057;
+  vertical-align: middle;
 }
 </style>
