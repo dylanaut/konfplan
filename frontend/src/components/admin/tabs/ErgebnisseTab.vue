@@ -10,7 +10,7 @@
     </div>
 
     <!-- Planqualität -->
-    <div v-if="belegungsPlan && belegungsPlan.length > 0" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+    <div v-if="belegungsPlan && belegungsPlan.length > 0" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 no-print">
       <h3 class="text-sm font-bold mb-3">Planqualität</h3>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
         <div class="p-3 bg-gray-50 rounded-lg">
@@ -33,7 +33,7 @@
     </div>
 
     <!-- Artefakte -->
-    <div v-if="belegungsPlan && belegungsPlan.length > 0" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+    <div v-if="belegungsPlan && belegungsPlan.length > 0" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 no-print">
       <h3 class="text-sm font-bold mb-3">Berichte</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
