@@ -46,12 +46,32 @@ Zur Laufzeit/gitignored erzeugt: `.env`, `secrets/*.txt`, `keycloak-realm.genera
 **nicht** überschrieben (ein Redeploy rotiert also keine Passwörter versehentlich). Ablauf:
 
 1. Generiert (falls nicht vorhanden) `secrets/db_password.txt`, `secrets/keycloak_admin_password.txt`,
-   `secrets/keycloak_admin_cli_secret.txt`, `secrets/brevo_smtp_password.txt` via `openssl rand -hex 32`
-   (Hex statt Base64, damit die Werte auch in URL-Query-Parametern/form-urlencoded Requests ohne
-   Sonderfälle funktionieren - Base64 enthält `+`, `/`, `=`).
-2. Rendert `keycloak-realm.template.json` → `keycloak-realm.generated.json`: ersetzt
+   `secrets/keycloak_admin_cli_secret.txt` via `openssl rand -hex 32` (Hex statt Base64, damit die
+   Werte auch in URL-Query-Parametern/form-urlencoded Requests ohne Sonderfälle funktionieren -
+   Base64 enthält `+`, `/`, `=`). Diese drei erzeugt/braucht ausschließlich diese Anwendung selbst.
+2. Legt (falls nicht vorhanden) eine **leere** `secrets/brevo_smtp_password.txt` an - der Wert
+   kommt von außen (dein Brevo-Account, siehe unten) und wird deshalb nie zufällig generiert.
+3. Rendert `keycloak-realm.template.json` → `keycloak-realm.generated.json`: ersetzt
    `__ADMIN_CLI_SECRET__` durch den generierten Wert und `__APP_PUBLIC_URL__` durch
    `APP_PUBLIC_URL` aus `.env` (Redirect-URIs des Frontend-Clients).
+
+=== Mailversand-Zugangsdaten (Brevo)
+
+`BREVO_SMTP_USER` (dein Brevo-Login) kommt als normale, nicht-geheime Variable aus `.env` -
+siehe Kommentar dort. Das zugehörige Passwort ist ein echter SMTP-Schlüssel aus deinem
+Brevo-Account (https://app.brevo.com → *SMTP & API* → *SMTP-Schlüssel*) und muss **manuell**
+eingetragen werden, `bootstrap.sh` kann ihn nicht erraten:
+
+[source,bash]
+----
+echo '<dein-brevo-smtp-schluessel>' > secrets/brevo_smtp_password.txt
+chmod 600 secrets/brevo_smtp_password.txt
+----
+
+`bootstrap.sh` warnt, falls `BREVO_SMTP_USER` gesetzt, die Secret-Datei aber noch leer ist.
+Alternative ohne echten Brevo-Account: Profil `mailpit` statt `BREVO_SMTP_USER` nutzen (kein
+echter Versand, Test-Postfach unter `http://localhost:8025`) - dann bleibt die leere
+Platzhalter-Datei einfach unbenutzt.
 
 In `docker-compose.yml` werden die Secrets per `secrets:`-Block eingebunden und dort, wo das
 Image selbst kein `_FILE`-Suffix unterstützt (Keycloak, App), per überschriebenem `command` aus
@@ -187,6 +207,19 @@ praktisch keine echten Bestandsnutzer) betrifft das bei einem *erstmaligen* Prod
 genau einen Fall: den Bootstrap-Admin aus `V2__data.sql` (`juergenkrey`). Dieser Account existiert
 nur als Datenbankzeile, nicht in Keycloak - er muss einmalig manuell über die Keycloak-Admin-
 Konsole angelegt werden (Login-Name muss mit `juergenkrey` übereinstimmen, Rolle `ADMIN`).
+
+== Persistenz über Neustarts hinweg
+
+Keycloak speichert seinen gesamten Zustand (Nutzer, Rollen-Zuweisungen, Client-Konfiguration) in
+seiner eigenen PostgreSQL-Datenbank (`KC_DB=postgres`, siehe `docker-compose.yml`) - nicht im
+Container selbst. Diese Datenbank liegt im benannten Docker-Volume `deploy_postgres-data`, das
+`docker compose stop`/`restart`/`down` (ohne `-v`) unberührt lässt; nur `docker compose down -v`
+oder ein manuelles `docker volume rm` löschen es. Der `--import-realm`-Flag beim Keycloak-Start
+importiert das Realm nur beim allerersten Mal (danach: "Realm 'konfplan' already exists. Import
+skipped") - spätere Starts lesen ausschließlich den bereits persistierten Zustand.
+
+Konkret verifiziert: Admin-Login + ein eigens angelegter Testnutzer überleben einen vollen
+`docker compose down` (ohne `-v`) + `up` unverändert.
 
 == Backup-Hinweise
 
