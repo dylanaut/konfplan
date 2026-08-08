@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import router from '../router';
 import api, { cancelAllRequests } from '../api/axios';
 import { useToast } from 'vue-toastification';
 import { useEventContextStore } from './eventContext';
-import jwtDecode from 'jwt-decode';
+import keycloak from '../keycloak';
+
+const KNOWN_ROLES = ['ADMIN', 'REFERENT', 'TEILNEHMER'];
 
 export const useAuthStore = defineStore('auth', () => {
     const token = ref(localStorage.getItem('token') || null);
@@ -16,91 +17,29 @@ export const useAuthStore = defineStore('auth', () => {
     const isSpeaker = computed(() => userRole.value === 'REFERENT');
     const isParticipant = computed(() => userRole.value === 'TEILNEHMER');
 
-    function setToken(newToken) {
+    // Wird nach erfolgreicher Keycloak-Anmeldung (main.js, keycloak.js-Token-Refresh) mit dem
+    // rohen Access-Token und dem von keycloak-js bereits dekodierten Payload aufgerufen.
+    function setToken(newToken, parsed) {
         token.value = newToken;
         localStorage.setItem('token', newToken);
 
-        try {
-            const decoded = jwtDecode(newToken);
-            const role = decoded.groups[0] || null;
-            userRole.value = role;
+        const roles = parsed?.realm_access?.roles ?? [];
+        const role = roles.find((r) => KNOWN_ROLES.includes(r)) ?? null;
+        userRole.value = role;
+        if (role) {
             localStorage.setItem('role', role);
-        } catch (error) {
-            console.error("Fehler beim Dekodieren des Tokens:", error);
-            logout();
+        } else {
+            localStorage.removeItem('role');
         }
     }
 
-    function handleLoginSuccess(response) {
-        const newToken = response.data.token;
-        setToken(newToken);
-        toast.success('Login erfolgreich!');
-
-        // Redirect based on role
-        if (isAdmin.value) {
-            router.push('/admin');
-        } else if (isSpeaker.value) {
-            router.push('/referent');
-        } else if (isParticipant.value) {
-            router.push('/teilnehmer');
-        } else {
-            router.push('/'); // Fallback
-        }
-    }
-
-    // Direkt nach dem Start von 'mvnw quarkus:dev' gibt es ein knappes Zeitfenster, in dem der
-    // allererste Login-Request an einem Verbindungsfehler scheitert, weil Backend/Vite-Proxy
-    // noch nicht bereit sind, obwohl die Zugangsdaten korrekt sind. Statt sofort eine
-    // Fehlermeldung zu zeigen, wird deshalb mehrfach mit kurzer Pause automatisch erneut
-    // versucht, bevor der letzte Fehler tatsächlich angezeigt wird.
-    const LOGIN_RETRY_ATTEMPTS = 3;
-    const LOGIN_RETRY_DELAY_MS = 1200;
-
-    async function login(credentials) {
-        let lastError;
-
-        for (let attempt = 1; attempt <= LOGIN_RETRY_ATTEMPTS; attempt++) {
-            try {
-                handleLoginSuccess(await api.post('/api/auth/login', credentials));
-                return;
-            } catch (error) {
-                lastError = error;
-                // Nur bei einem Verbindungsfehler (kein response, s.o.) erneut versuchen. Ein
-                // tatsächliches 401 (falsche Zugangsdaten) oder 429 (Login-Rate-Limit, siehe
-                // LoginRateLimiterService) ist eine deterministische Antwort eines erreichbaren
-                // Servers - ein erneuter Versuch würde nichts bringen und zusätzlich unnötig
-                // gegen das Rate-Limit zählen.
-                if (error.response) {
-                    break;
-                }
-                if (attempt < LOGIN_RETRY_ATTEMPTS) {
-                    await new Promise((resolve) => setTimeout(resolve, LOGIN_RETRY_DELAY_MS));
-                }
-            }
-        }
-
-        if (!lastError.response) {
-            toast.error('Server nicht erreichbar. Startet das Backend gerade? Bitte in wenigen Sekunden erneut versuchen.');
-        } else if (lastError.response.status === 401) {
-            toast.error('Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.');
-        } else if (lastError.response.status === 429) {
-            const retryAfterSeconds = Number(lastError.response.headers?.['retry-after']);
-            const wartezeit = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
-                ? `${Math.ceil(retryAfterSeconds / 60)} Minute(n)`
-                : 'einigen Minuten';
-            toast.error(`Zu viele fehlgeschlagene Login-Versuche. Bitte in ${wartezeit} erneut versuchen.`);
-        } else {
-            const errorMessage = lastError.response?.data?.message || 'Login fehlgeschlagen. Bitte versuchen Sie es erneut.';
-            toast.error(errorMessage);
-        }
-        console.error(lastError);
+    function login(options) {
+        keycloak.login(options);
     }
 
     function logout({ reason } = {}) {
         // Eine ggf. laufende Planerstellung serverseitig abbrechen, bevor der Token
-        // gelöscht wird (der Endpoint ist ADMIN-only, danach fehlt die Berechtigung).
-        // Header wird explizit gesetzt statt über den Request-Interceptor, da localStorage
-        // gleich im Anschluss geleert wird und der Interceptor sonst ins Leere liefe.
+        // geloescht wird (der Endpoint ist ADMIN-only, danach fehlt die Berechtigung).
         if (isAdmin.value && token.value) {
             api.delete('/api/planungen', { headers: { Authorization: `Bearer ${token.value}` } })
                 .catch(() => {});
@@ -116,15 +55,13 @@ export const useAuthStore = defineStore('auth', () => {
         eventContext.clearEvent();
 
         // reason: 'inactive' kommt von useInactivityLogout() (siehe App.vue) - eigene Meldung,
-        // damit der Nutzer nicht denkt, er hätte sich selbst abgemeldet.
+        // damit der Nutzer nicht denkt, er hätte sich selbst abgemeldet. Der eigentliche Redirect
+        // erfolgt gleich im Anschluss durch keycloak.logout(), daher hier kein router.push mehr.
         if (reason === 'inactive') {
             toast.info('Sitzung wegen Inaktivität automatisch beendet. Bitte erneut anmelden.',
               { timeout: 5000, closeOnClick: true });
-        } else {
-            toast.info('Sie haben sich erfolgreich abgemeldet.',
-              { timeout: 3000, closeOnClick: true});
         }
-        router.push('/login');
+        keycloak.logout({ redirectUri: window.location.origin + '/' });
     }
 
     return {

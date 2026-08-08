@@ -1,4 +1,5 @@
 import axios from 'axios';
+import keycloak from '../keycloak';
 
 import.meta.env.VITE_API_URL = undefined;
 const api = axios.create({
@@ -8,37 +9,21 @@ const api = axios.create({
 // Alle aktuell offenen Requests, damit sie bei Logout gesammelt abgebrochen werden können.
 const pendingControllers = new Set();
 
-// Endpunkte, die im Backend @PermitAll sind (siehe AuthResource, ReferentResource,
-// TeilnehmerResource) - hier darf ein evtl. noch in localStorage vorhandenes (z.B.
-// abgelaufenes) Token NICHT mitgeschickt werden. Quarkus' JWT-Security-Layer lehnt jede
-// Anfrage mit einem ungültigen Bearer-Token bereits VOR der @PermitAll-Prüfung mit 401 ab
-// (per Live-Test verifiziert) - der Response-Interceptor unten würde das fälschlich als
-// "Sitzung abgelaufen" werten und die Seite verlassen, was genau auf diesen öffentlichen
-// Seiten (Passwort/E-Mail per Link zurücksetzen/bestätigen) fatal ist, da der Nutzer dort
-// gerade deshalb ist, weil er ggf. gar keine gültige Sitzung (mehr) hat.
-const PUBLIC_PATHS = [
-    '/api/auth/login',
-    '/api/auth/forgot-password',
-    '/api/auth/reset-password',
-    '/api/referenten/email-change-confirm',
-    '/api/teilnehmer/email-change-confirm',
-];
-
-function isPublicPath(url) {
-    return !!url && PUBLIC_PATHS.some((path) => url.startsWith(path));
-}
-
-// Interceptor: Fügt das JWT-Token automatisch in den Header ein (außer bei @PermitAll-
-// Endpunkten, s.o.) und hängt einen AbortSignal an, damit der Request bei Logout
-// abgebrochen werden kann.
-api.interceptors.request.use((config) => {
+// Interceptor: Erneuert das Keycloak-Token bei Bedarf (falls es in <30s ablaeuft) und haengt es
+// als Bearer-Header an. Faellt auf einen ggf. per localStorage gesetzten Token zurueck (z.B.
+// Playwright-Tests, die eine Session ohne echten Keycloak-Login simulieren, siehe auth.js).
+// Zusaetzlich ein AbortSignal, damit der Request bei Logout abgebrochen werden kann.
+api.interceptors.request.use(async (config) => {
     config.headers = config.headers ?? {};
 
-    if (!isPublicPath(config.url)) {
-        const token = localStorage.getItem('token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
+    try {
+        await keycloak.updateToken(30);
+    } catch {
+        // Keine (mehr gueltige) Keycloak-Session - Fallback unten greift ggf. trotzdem.
+    }
+    const token = keycloak.token ?? localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
     }
 
     if (!config.signal) {
@@ -50,10 +35,8 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-// Interceptor: Erkennt abgelaufene Tokens (401). Ein 401 von einem @PermitAll-Endpunkt (s.o.)
-// bedeutet NICHT, dass die aktuelle Sitzung ungültig ist - z.B. bei falschen Zugangsdaten in
-// einem Login-Versuch, während in einem anderen Tab noch eine gültige Sitzung besteht; dieser
-// fehlgeschlagene Request hat mit jener Sitzung nichts zu tun und darf sie nicht löschen.
+// Interceptor: Erkennt eine ungueltig gewordene Sitzung (401) und schickt den Nutzer zurueck
+// zu Keycloaks Login-Seite.
 api.interceptors.response.use(
     (response) => {
         pendingControllers.delete(response.config.__abortController);
@@ -62,13 +45,10 @@ api.interceptors.response.use(
     (error) => {
         pendingControllers.delete(error.config?.__abortController);
 
-        if (error.response?.status === 401 && !isPublicPath(error.config?.url)) {
+        if (error.response?.status === 401) {
             localStorage.removeItem('token');
             localStorage.removeItem('role');
-
-            if (window.location.pathname !== '/login') {
-                window.location = '/login';
-            }
+            keycloak.login();
         }
         return Promise.reject(error);
     }

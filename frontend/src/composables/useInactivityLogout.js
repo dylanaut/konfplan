@@ -3,10 +3,9 @@ import { useAuthStore } from '../stores/auth';
 
 /**
  * Sitzung wird nach dieser Dauer ohne Nutzerinteraktion automatisch beendet. Sicherheits-
- * massnahme, kein Performance-Feature: die Anmeldung ist zustandslos per JWT (kein
- * Server-Session-Objekt, das dadurch entlastet wuerde, siehe AuthResource) - der Zweck ist,
- * das Zeitfenster zu begrenzen, in dem ein unbeaufsichtigtes, entsperrtes Geraet missbraucht
- * werden koennte, unabhaengig von der vollen JWT-Gueltigkeit von 4h.
+ * massnahme, kein Performance-Feature: der Zweck ist, das Zeitfenster zu begrenzen, in dem ein
+ * unbeaufsichtigtes, entsperrtes Geraet missbraucht werden koennte, unabhaengig von der vollen
+ * Gueltigkeit der Keycloak-Session.
  */
 export const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 

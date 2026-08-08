@@ -1,9 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 
-const Login = () => import('../views/Login.vue');
-const ResetPassword = () => import('../views/ResetPassword.vue');
-const EmailChangeConfirm = () => import('../views/EmailChangeConfirm.vue');
+const Redirecting = () => import('../views/Redirecting.vue');
 const TeilnehmerDashboard = () => import('../views/TeilnehmerDashboard.vue');
 const ReferentDashboard = () => import('../views/ReferentDashboard.vue');
 const AdminDashboard = () => import('../views/AdminDashboard.vue');
@@ -24,24 +22,8 @@ const Anwesenheiten = () => import('../views/report/Anwesenheiten.vue');
 const routes = [
     {
         path: '/',
-        redirect: '/login'
-    },
-    {
-        path: '/login',
-        name: 'Login',
-        component: Login,
-        meta: { requiresAuth: false }
-    },
-    {
-        path: '/reset-password',
-        name: 'ResetPassword',
-        component: ResetPassword,
-        meta: { requiresAuth: false }
-    },
-    {
-        path: '/email-change-confirm',
-        name: 'EmailChangeConfirm',
-        component: EmailChangeConfirm,
+        name: 'Redirecting',
+        component: Redirecting,
         meta: { requiresAuth: false }
     },
     {
@@ -143,7 +125,7 @@ const routes = [
     },
     {
         path: '/:pathMatch(.*)*',
-        redirect: '/login'
+        redirect: '/'
     }
 ];
 
@@ -158,12 +140,13 @@ router.beforeEach((to, from, next) => {
     const requiredRole = to.meta?.role ?? null;
 
     if (requiresAuth && !authStore.isAuthenticated) {
-        return next('/login');
+        authStore.login({ redirectUri: window.location.origin + to.fullPath });
+        return next(false);
     }
 
     if (requiresAuth && requiredRole && authStore.userRole !== requiredRole) {
         console.warn(`Zugriff verweigert: Rolle ${requiredRole} erforderlich.`);
-        return next('/login');
+        return next('/');
     }
 
     next();
