@@ -7538,3 +7538,8 @@ build/
 /.idea/copilotDiffState.xml
 /backend/src/main/resources/minizinc/messekompass_2026.dzn
 /backend/src/main/resources/minizinc/result.json
+
+### KonfPlan Deployment (deploy/bootstrap.sh) ###
+/deploy/.env
+/deploy/secrets/
+/deploy/keycloak-realm.generated.json
