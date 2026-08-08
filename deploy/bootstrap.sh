@@ -46,9 +46,23 @@ echo "🔐 Pruefe/generiere Secrets..."
 generate_secret_if_missing db_password
 generate_secret_if_missing keycloak_admin_password
 generate_secret_if_missing keycloak_admin_cli_secret
-# Wird nur gebraucht, wenn kein Profil "mailpit" genutzt wird (echter SMTP-Versand) - trotzdem
-# immer generieren, da docker-compose sonst die fehlende Secret-Datei als Fehler behandelt.
-generate_secret_if_missing brevo_smtp_password
+
+# brevo_smtp_password ist KEIN lokal generierbares Passwort, sondern ein externes Zugangsdatum
+# aus deinem Brevo-Account (https://app.brevo.com -> SMTP & API -> SMTP-Schluessel) - anders als
+# db_password/keycloak_*, die diese Anwendung selbst erzeugt und ausschliesslich lokal braucht.
+# Wird nur eine leere Platzhalter-Datei angelegt (falls sie fehlt), NIE ein Zufallswert - eine
+# zufaellig generierte "Brevo-Passwort"-Datei wuerde den echten Mailversand mit einem
+# Auth-Fehler scheitern lassen, ohne dass das beim Bootstrap auffaellt.
+if [[ ! -f secrets/brevo_smtp_password.txt ]]; then
+    echo "✨ Lege leere secrets/brevo_smtp_password.txt an (Platzhalter)..."
+    touch secrets/brevo_smtp_password.txt
+    chmod 600 secrets/brevo_smtp_password.txt
+fi
+if grep -q "^BREVO_SMTP_USER=" .env 2>/dev/null && [[ ! -s secrets/brevo_smtp_password.txt ]]; then
+    echo "⚠️  BREVO_SMTP_USER ist in .env gesetzt, aber secrets/brevo_smtp_password.txt ist leer."
+    echo "    Echten SMTP-Schluessel aus deinem Brevo-Account eintragen, sonst schlaegt der Mailversand fehl:"
+    echo "    echo '<dein-brevo-smtp-schluessel>' > secrets/brevo_smtp_password.txt && chmod 600 secrets/brevo_smtp_password.txt"
+fi
 
 # --- Realm-Template rendern ---
 echo "🧩 Rendere keycloak-realm.generated.json..."
