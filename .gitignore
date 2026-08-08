@@ -7536,3 +7536,5 @@ build/
 /backend/package-lock.json
 /backend/package.json
 /.idea/copilotDiffState.xml
+/backend/src/main/resources/minizinc/messekompass_2026.dzn
+/backend/src/main/resources/minizinc/result.json

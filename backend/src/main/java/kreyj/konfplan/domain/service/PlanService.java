@@ -495,7 +495,9 @@ public class PlanService {
                 }
             }
 
-            LOG.info(raumplanDebug(veranstaltung, raumplan, raumMap, slotMap));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug(raumplanDebug(veranstaltung, raumplan, raumMap, slotMap));
+            }
 
             return raumplan;
 
