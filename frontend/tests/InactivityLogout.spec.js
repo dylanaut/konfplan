@@ -30,7 +30,7 @@ test.describe('Inactivity-Auto-Logout', () => {
 
     await page.clock.fastForward(INACTIVITY_TIMEOUT_MS + 1000);
 
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/$/);
     await expect(page.getByText('Sitzung wegen Inaktivität automatisch beendet.')).toBeVisible();
   });
 
@@ -59,6 +59,6 @@ test.describe('Inactivity-Auto-Logout', () => {
 
     // Jetzt den Rest des (zurückgesetzten) Timeouts ablaufen lassen -> Abmeldung erfolgt.
     await page.clock.fastForward(10000);
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/$/);
   });
 });

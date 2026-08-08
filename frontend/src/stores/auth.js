@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import router from '../router';
 import api, { cancelAllRequests } from '../api/axios';
 import { useToast } from 'vue-toastification';
 import { useEventContextStore } from './eventContext';
@@ -61,7 +62,15 @@ export const useAuthStore = defineStore('auth', () => {
             toast.info('Sitzung wegen Inaktivität automatisch beendet. Bitte erneut anmelden.',
               { timeout: 5000, closeOnClick: true });
         }
-        keycloak.logout({ redirectUri: window.location.origin + '/' });
+
+        // Nur bei einer echten Keycloak-Session per echtem Redirect abmelden (invalidiert auch
+        // das SSO-Cookie bei Keycloak selbst) - ohne eine solche Session (z.B. Token nur lokal
+        // gesetzt) gaebe es dort nichts abzumelden, ein Redirect zu Keycloak waere unnoetig.
+        if (keycloak.authenticated) {
+            keycloak.logout({ redirectUri: window.location.origin + '/' });
+        } else {
+            router.push('/');
+        }
     }
 
     return {
