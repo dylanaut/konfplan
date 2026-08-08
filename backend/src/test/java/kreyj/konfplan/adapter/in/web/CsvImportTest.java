@@ -1,11 +1,13 @@
 package kreyj.konfplan.adapter.in.web;
 
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
+import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.Berufsfeld;
@@ -34,6 +36,9 @@ import static org.hamcrest.CoreMatchers.containsString;
 @TestSecurity(user = "admin@test.de", roles = "ADMIN")
 @QuarkusTestResource(H2DatabaseTestResource.class)
 class CsvImportTest extends DatabaseCleaner {
+
+    @InjectMock
+    KeycloakUserProvisioningService keycloakUserProvisioningService;
     @TestHTTPResource
     @TestHTTPEndpoint(GebaeudeResource.class)
     URL gebaeudeEndpoint;
@@ -51,7 +56,6 @@ class CsvImportTest extends DatabaseCleaner {
         Admin admin = new Admin();
         admin.assignLoginName("admin");
         admin.setEmail("admin@test.de");
-        admin.setPasswordHash("hash");
         admin.persist();
 
         Referent r = new Referent();
@@ -59,7 +63,6 @@ class CsvImportTest extends DatabaseCleaner {
         r.setEmail("vortrag@ref.de");
         r.setFirstName("Max");
         r.setLastName("Ref");
-        r.setPasswordHash("hash");
         r.persist();
 
         Gebaeude gebaeude = setupGebaeude("RKS_LINZ");

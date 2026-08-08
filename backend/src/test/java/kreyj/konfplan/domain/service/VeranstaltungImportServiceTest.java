@@ -2,6 +2,7 @@ package kreyj.konfplan.domain.service;
 
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -27,6 +28,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @QuarkusTest
 class VeranstaltungImportServiceTest extends DatabaseCleaner {
+
+    @InjectMock
+    KeycloakUserProvisioningService keycloakUserProvisioningService;
 
     @Inject
     VeranstaltungImportService veranstaltungImportService;

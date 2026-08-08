@@ -1,12 +1,14 @@
 package kreyj.konfplan.adapter.in.web;
 
 import io.quarkus.narayana.jta.QuarkusTransaction;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
+import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Admin;
@@ -18,7 +20,6 @@ import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.VeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
-import kreyj.konfplan.util.JwtHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +30,6 @@ import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.Response.Status.CONFLICT;
 import static jakarta.ws.rs.core.Response.Status.CREATED;
 import static jakarta.ws.rs.core.Response.Status.OK;
-import static kreyj.konfplan.util.JwtHelper.tokenFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 
@@ -38,6 +38,10 @@ import static org.hamcrest.CoreMatchers.is;
 @QuarkusTestResource(H2DatabaseTestResource.class)
 @TestHTTPEndpoint(VeranstaltungResource.class)
 class VeranstaltungResourceTest extends DatabaseCleaner {
+
+    @InjectMock
+    KeycloakUserProvisioningService keycloakUserProvisioningService;
+
     @TestHTTPResource
     @TestHTTPEndpoint(AdminResource.class)
     URL adminEndpoint;
@@ -51,7 +55,6 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
         Admin admin = new Admin();
         admin.assignLoginName("admintest");
         admin.setEmail("admin@test.de");
-        admin.setPasswordHash("hash");
         admin.persist();
 
         Veranstaltung v = new Veranstaltung();
@@ -151,7 +154,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
 
         // 1. Create a Referent and a Wahlvortrag
         NutzerDto refDto = NutzerDto.referent(referentEmail, "Referent", "Test");
-        refDto.loginName = referentEmail; // muss mit dem im Token unten verwendeten upn übereinstimmen
+        refDto.loginName = referentEmail;
         NutzerDto referent =
                 given()
                     .baseUri(adminEndpoint.toString())
@@ -183,10 +186,8 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
                 .extract().as(VortragDto.class);
         assertThat(adminFetchedVortrag.version).isNotNull().isEqualTo(0L);
 
-        // 3. Referent (via JWT token) fetches vortrag data
-        String referentToken = tokenFor(referentEmail, "REFERENT");
+        // 3. Zweiter Fetch (simuliert eine zweite, parallele Session) vor Admins Update
         VortragDto referentFetchedVortrag = given()
-                .auth().oauth2(referentToken)
                 .when().get("/{vid}/vortraege/{vortragId}", testVid, vortragId)
                 .then()
                 .statusCode(OK.getStatusCode())
@@ -211,10 +212,9 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
         assertThat(adminUpdate.titel).isEqualTo("Admin Updated Vortrag Titel");
         assertThat(adminUpdate.version).isEqualTo(adminFetchedVortrag.version + 1);
 
-        // 5. Referent attempts to update with outdated version (should fail with CONFLICT.getStatusCode() Conflict)
+        // 5. Zweite Session versucht Update mit veralteter Version (muss CONFLICT liefern)
         referentFetchedVortrag.titel = "Referent Updated Vortrag Titel"; // This change should not be saved
         given()
-                .auth().oauth2(referentToken)
                 .contentType(ContentType.JSON)
                 .body(referentFetchedVortrag) // This DTO has the old version
                 .when()
@@ -276,7 +276,6 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
     @Test
     void testOptimisticLockingForVeranstaltungUpdate() {
         final Long[] vIdArray = {0L};
-        String admin2Email = "admin2@example.com";
 
         QuarkusTransaction.requiringNew().run(() -> {
             Veranstaltung v = new Veranstaltung();
@@ -285,12 +284,6 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
             v.setEndetAm(LocalDateTime.now().plusDays(2));
             v.persist();
             vIdArray[0] = v.getId();
-
-            Admin admin2 = new Admin();
-            admin2.assignLoginName(admin2Email);
-            admin2.setEmail(admin2Email);
-            admin2.setPasswordHash("hash");
-            admin2.persist();
         });
         Long vId = vIdArray[0];
 
@@ -307,10 +300,8 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
             .statusCode(OK.getStatusCode())
             .extract().as(VeranstaltungDto.class);
 
-        // 3. Admin 2 (via JWT token) fetches veranstaltung data
-        String admin2Token = JwtHelper.tokenFor(admin2Email, "ADMIN");
+        // 3. Zweite Session fetcht veranstaltung data vor Admin 1's Update
         VeranstaltungDto admin2FetchedVeranstaltung = given()
-            .auth().oauth2(admin2Token)
             .when().get("/{id}", vId)
             .then()
             .statusCode(OK.getStatusCode())
@@ -335,10 +326,9 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
             .describedAs("Version should be incremented")
             .isEqualTo(admin1FetchedVeranstaltung.version + 1);
 
-        // 5. Admin 2 attempts to update with outdated version (should fail with CONFLICT.getStatusCode() Conflict)
+        // 5. Zweite Session versucht Update mit veralteter Version (muss CONFLICT liefern)
         admin2FetchedVeranstaltung.setName("Admin2 Updated Event Name"); // This change should not be saved
         given()
-            .auth().oauth2(admin2Token)
             .contentType(ContentType.JSON)
             .body(admin2FetchedVeranstaltung) // This DTO has the old version
             .when().put("/{id}", vId)

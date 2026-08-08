@@ -24,10 +24,6 @@ public class MailService {
 
     private final MailTemplate deregistrationNotificationTemplate;
 
-    private final MailTemplate emailChangeNotificationOldAddressTemplate;
-
-    private final MailTemplate emailChangeConfirmationNewAddressTemplate;
-
     @SuppressWarnings("CdiInjectionPointsInspection")
     public MailService(
         @ConfigProperty(name = "app.mail.admin", defaultValue = "konfplan@yahoo.com")
@@ -36,17 +32,11 @@ public class MailService {
         @Location("email/registrationConfirmation")
         MailTemplate registrationConfirmationTemplate,
         @Location("email/deregistrationNotification")
-        MailTemplate deregistrationNotificationTemplate,
-        @Location("email/emailChangeNotificationOldAddress")
-        MailTemplate emailChangeNotificationOldAddressTemplate,
-        @Location("email/emailChangeConfirmationNewAddress")
-        MailTemplate emailChangeConfirmationNewAddressTemplate) {
+        MailTemplate deregistrationNotificationTemplate) {
         this.adminEmail = adminEmail;
         this.mailer = mailer;
         this.registrationConfirmationTemplate = registrationConfirmationTemplate;
         this.deregistrationNotificationTemplate = deregistrationNotificationTemplate;
-        this.emailChangeNotificationOldAddressTemplate = emailChangeNotificationOldAddressTemplate;
-        this.emailChangeConfirmationNewAddressTemplate = emailChangeConfirmationNewAddressTemplate;
     }
 
 
@@ -143,60 +133,6 @@ public class MailService {
             .subscribe().with(
                 success -> System.out.println("Deregistration notification mail sent to " + nutzer.getEmail()),
                 failure -> System.err.println("Failed to send deregistration notification mail: " + failure.getMessage())
-            );
-    }
-
-
-    /**
-     * Sendet eine Benachrichtigung an die alte E-Mail-Adresse, dass diese geändert wurde.
-     *
-     * @param nutzer   Der Nutzer, dessen E-Mail geändert wurde.
-     * @param oldEmail Die alte E-Mail-Adresse.
-     * @param newEmail Die neue E-Mail-Adresse.
-     */
-
-    public void sendEmailChangeNotificationOldAddress(Nutzer nutzer, String oldEmail, String newEmail) {
-        if (null == oldEmail) {
-            return;
-        }
-        emailChangeNotificationOldAddressTemplate.to(oldEmail)
-            .subject("Wichtige Information: Deine E-Mail-Adresse wurde geändert")
-            .from(adminEmail)
-            .data("firstName", nutzer.getFirstName())
-            .data("lastName", nutzer.getLastName())
-            .data("oldEmail", oldEmail)
-            .data("newEmail", newEmail)
-            .send()
-            .subscribe().with(
-                success -> System.out.println("Email change notification (old address) mail sent to " + oldEmail),
-                failure -> System.err.println("Failed to send email change notification (old address) mail: " + failure.getMessage())
-            );
-    }
-
-
-    /**
-     * Sendet eine Bestätigungs-E-Mail an die neue E-Mail-Adresse.
-     *
-     * @param nutzer           Der Nutzer, dessen E-Mail geändert wird.
-     * @param newEmail         Die neue E-Mail-Adresse.
-     * @param confirmationLink Der Link zur Bestätigung der neuen E-Mail-Adresse.
-     */
-
-    public void sendEmailChangeConfirmationNewAddress(Nutzer nutzer, String newEmail, String confirmationLink) {
-        if (null == newEmail) {
-            return;
-        }
-        emailChangeConfirmationNewAddressTemplate.to(newEmail)
-            .subject("Bitte bestätige deine neue E-Mail-Adresse für den KonfPlan")
-            .from(adminEmail)
-            .data("firstName", nutzer.getFirstName())
-            .data("lastName", nutzer.getLastName())
-            .data("newEmail", newEmail)
-            .data("confirmationLink", confirmationLink)
-            .send()
-            .subscribe().with(
-                success -> System.out.println("Email change confirmation (new address) mail sent to " + newEmail),
-                failure -> System.err.println("Failed to send email change confirmation (new address) mail: " + failure.getMessage())
             );
     }
 

@@ -4,10 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.opencsv.bean.CsvBindByName;
-import io.quarkus.security.jpa.Password;
-import io.quarkus.security.jpa.Roles;
-import io.quarkus.security.jpa.UserDefinition;
-import io.quarkus.security.jpa.Username;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorColumn;
@@ -26,7 +22,6 @@ import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.NaturalId;
 
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
@@ -40,7 +35,6 @@ import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
 @Setter
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "role", discriminatorType = DiscriminatorType.STRING)
-@UserDefinition
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "role", visible = true)
 @JsonSubTypes({
     @JsonSubTypes.Type(value = Admin.class, name = "ADMIN"),
@@ -51,18 +45,16 @@ public abstract class Nutzer extends VersionedEntity {
     @NaturalId
     @Column(name = "login_name", unique = true, nullable = false, updatable = false)
     @Setter(AccessLevel.NONE)
-    @Username
     private String loginName;
 
     @Column(unique = true)
     @CsvBindByName(column = "Email")
     private String email;
 
-    @Password
-    @Column(name = "password_hash")
-    private String passwordHash;
+    // Verknuepfung zum Keycloak-User (Identitaet/Passwort liegen dort, nicht mehr lokal).
+    @Column(name = "keycloak_id", unique = true)
+    private String keycloakId;
 
-    @Roles
     @Column(name = "role", insertable = false, updatable = false)
     private String role;
 
@@ -76,22 +68,6 @@ public abstract class Nutzer extends VersionedEntity {
 
     @Column(name = "is_active")
     private boolean isActive = true;
-
-    @Column(name = "reset_token")
-    private String resetToken;
-
-    @Column(name = "reset_token_expiry")
-    private LocalDateTime resetTokenExpiry;
-
-    // Felder für E-Mail-Adressänderung
-    @Column(name = "new_email")
-    private String newEmail;
-
-    @Column(name = "email_change_token")
-    private String emailChangeToken;
-
-    @Column(name = "email_change_token_expiry")
-    private LocalDateTime emailChangeTokenExpiry;
 
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(

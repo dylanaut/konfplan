@@ -1,10 +1,12 @@
 package kreyj.konfplan.adapter.in.web;
 
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
+import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Admin;
@@ -27,6 +29,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @TestHTTPEndpoint(VeranstaltungResource.class)
 class NutzerInheritanceTest extends DatabaseCleaner {
 
+    @InjectMock
+    KeycloakUserProvisioningService keycloakUserProvisioningService;
+
     Long testVid;
 
 
@@ -36,7 +41,6 @@ class NutzerInheritanceTest extends DatabaseCleaner {
         Admin admin = new Admin();
         admin.assignLoginName("org");
         admin.setEmail("org@test.de");
-        admin.setPasswordHash("hash");
         admin.persist();
 
         Veranstaltung v = new Veranstaltung();

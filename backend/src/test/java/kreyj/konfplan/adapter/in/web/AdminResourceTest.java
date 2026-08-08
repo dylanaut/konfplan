@@ -1,17 +1,18 @@
 package kreyj.konfplan.adapter.in.web;
 
-import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.AdminPasswordResetDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
+import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
@@ -40,12 +41,18 @@ import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 
 @QuarkusTest
 @TestSecurity(user = "admin@example.com", roles = "ADMIN")
 @QuarkusTestResource(H2DatabaseTestResource.class)
 @TestHTTPEndpoint(AdminResource.class)
 class AdminResourceTest extends DatabaseCleaner {
+
+    @InjectMock
+    KeycloakUserProvisioningService keycloakUserProvisioningService;
 
     Long adminId;
 
@@ -56,7 +63,6 @@ class AdminResourceTest extends DatabaseCleaner {
         Admin admin = new Admin();
         admin.assignLoginName("admin@example.com");
         admin.setEmail("admin@example.com");
-        admin.setPasswordHash("hash");
         admin.persist();
 
         adminId = admin.getId();
@@ -124,17 +130,16 @@ class AdminResourceTest extends DatabaseCleaner {
                 .when().put("/nutzer/{id}", created.id)
                 .then()
                 .statusCode(OK.getStatusCode())
-                .extract().as(NutzerDto.class); // Email should not have changed yet
+                .extract().as(NutzerDto.class);
 
-        assertThat(updated.email)
-            .describedAs("Email should not have changed yet, unless newEmail is confirmed")
-            .isEqualTo(oldEmail);
+        // Admin-getriebene E-Mail-Aenderung wird direkt uebernommen (keine Bestaetigung mehr
+        // noetig - das Self-Service-Aequivalent laeuft jetzt ueber Keycloaks Account-Console).
+        assertThat(updated.email).isEqualTo(newEmail);
 
         Nutzer user = Nutzer.findById(updated.id);
-        assertThat(user.getEmail()).isEqualTo(oldEmail);
-        assertThat(user.getNewEmail()).isEqualTo(newEmail);
-        assertThat(user.getEmailChangeToken()).isNotNull();
+        assertThat(user.getEmail()).isEqualTo(newEmail);
         assertThat(((Teilnehmer) user).getGruppen()).contains("New Group");
+        verify(keycloakUserProvisioningService).updateUser(user);
     }
 
 
@@ -158,7 +163,7 @@ class AdminResourceTest extends DatabaseCleaner {
             .statusCode(OK.getStatusCode());
 
         Nutzer updated = Nutzer.findById(created.id);
-        assertThat(BcryptUtil.matches("einNeuesPasswort123", updated.getPasswordHash())).isTrue();
+        verify(keycloakUserProvisioningService).resetPassword(eq(updated), eq("einNeuesPasswort123"));
     }
 
 
@@ -271,7 +276,6 @@ class AdminResourceTest extends DatabaseCleaner {
             Referent referent = new Referent();
             referent.assignLoginName("ref");
             referent.setEmail("ref@test.de");
-            referent.setPasswordHash("hash");
 
             referent.persist();
             refId[0] = referent.getId();
@@ -311,7 +315,6 @@ class AdminResourceTest extends DatabaseCleaner {
             Teilnehmer t = new Teilnehmer();
             t.assignLoginName("teilnehmerexample");
             t.setEmail("teilnehmer@example.com");
-            t.setPasswordHash("password");
             t.setFirstName("Original");
             t.setLastName("Name");
             t.persist();

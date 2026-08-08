@@ -2,7 +2,6 @@ package kreyj.konfplan.domain.service;
 
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
-import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.runtime.LaunchMode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.OptimisticLockException;
@@ -89,15 +88,15 @@ public class AdminService implements AdminServiceInterface {
     private final MailService mailService;
     private final ProtokollService protokollService;
     private final LaunchMode launchMode;
-    private final TokenInvalidationService tokenInvalidationService;
+    private final KeycloakUserProvisioningService keycloakUserProvisioningService;
 
 
     public AdminService(MailService mailService, ProtokollService protokollService, LaunchMode launchMode,
-                        TokenInvalidationService tokenInvalidationService) {
+                        KeycloakUserProvisioningService keycloakUserProvisioningService) {
         this.mailService = mailService;
         this.protokollService = protokollService;
         this.launchMode = launchMode;
-        this.tokenInvalidationService = tokenInvalidationService;
+        this.keycloakUserProvisioningService = keycloakUserProvisioningService;
     }
 
 
@@ -152,7 +151,7 @@ public class AdminService implements AdminServiceInterface {
             nutzer = new Admin();
         }
 
-        // Ohne E-Mail-Adresse ist Passwort-Reset (forgotPassword) unmöglich - für Admins fatal,
+        // Ohne E-Mail-Adresse ist Passwort-Reset über Keycloak unmöglich - für Admins fatal,
         // da es (anders als bei Referent/Teilnehmer) keine übergeordnete Instanz gibt, die das
         // Konto sonst wiederherstellen könnte.
         if (nutzer instanceof Admin && StringUtils.isBlank(dto.email)) {
@@ -166,7 +165,7 @@ public class AdminService implements AdminServiceInterface {
         nutzer.setActive(dto.isActive);
 
         String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
-        nutzer.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
+        keycloakUserProvisioningService.createUser(nutzer, tempPassword);
 
         if (nutzer instanceof Referent r) {
             r.setBiography(dto.biography);
@@ -225,7 +224,9 @@ public class AdminService implements AdminServiceInterface {
             throw new OptimisticLockException("Der Nutzer wurde zwischenzeitlich von Dritten geändert. Bitte aktualisieren Sie die Daten und versuchen Sie es erneut.");
         }
 
-        // Check for email change
+        // Admin-getriebene E-Mail-Änderung wird direkt übernommen (keine Bestätigung nötig -
+        // anders als bei einer Self-Service-Änderung, die es nicht mehr gibt: das läuft jetzt
+        // über Keycloaks Account-Console).
         String oldEmail = nutzer.getEmail();
         if (!Objects.equals(oldEmail, dto.email)) {
             if (StringUtils.isBlank(dto.email)) {
@@ -234,35 +235,23 @@ public class AdminService implements AdminServiceInterface {
                 if (nutzer instanceof Admin) {
                     throw new UpdateNutzerException("Administrator-Konten benötigen zwingend eine E-Mail-Adresse (sonst ist bei einem vergessenen Passwort keine Wiederherstellung möglich).");
                 }
-                // E-Mail-Adresse wird entfernt - keine Bestätigung nötig, da nichts nachzuweisen ist.
                 nutzer.setEmail(null);
                 protokollService.log(ProtokollKategorie.NUTZER, "E-Mail-Adresse entfernt",
                     "E-Mail-Adresse für Nutzer '" + nutzer.getLoginName() + "' entfernt (vormals '" + oldEmail + "').", nutzer.getId());
             } else {
-                // Check if the new email is already in use
                 if (Nutzer.findByEmail(dto.email) != null) {
                     throw new UpdateNutzerException("Die neue E-Mail-Adresse wird bereits verwendet.");
                 }
-
-                // Generate a confirmation token
-                String token = UUID.randomUUID().toString();
-                nutzer.setNewEmail(dto.email);
-                nutzer.setEmailChangeToken(token);
-                nutzer.setEmailChangeTokenExpiry(LocalDateTime.now().plusHours(24)); // Token is valid for 24 hours
-
-                // Send confirmation email to the new address
-                mailService.sendEmailChangeConfirmationNewAddress(nutzer, dto.email, token);
-                // Notify the user at their old address (nur falls eine alte Adresse existierte)
-                mailService.sendEmailChangeNotificationOldAddress(nutzer, oldEmail, dto.email);
-
-                protokollService.log(ProtokollKategorie.NUTZER, "E-Mail-Änderung eingeleitet",
-                    "E-Mail-Änderung für Nutzer '" + nutzer.getLoginName() + "' zu '" + dto.email + "' eingeleitet.", nutzer.getId());
+                nutzer.setEmail(dto.email);
+                protokollService.log(ProtokollKategorie.NUTZER, "E-Mail-Adresse geändert",
+                    "E-Mail-Adresse für Nutzer '" + nutzer.getLoginName() + "' von '" + oldEmail + "' zu '" + dto.email + "' geändert.", nutzer.getId());
             }
         }
 
         nutzer.setFirstName(dto.firstName);
         nutzer.setLastName(dto.lastName);
         nutzer.setActive(dto.isActive);
+        keycloakUserProvisioningService.updateUser(nutzer);
 
         if (null != vUpdateIds) {
             Set<Long> oldVIds = nutzer.getVeranstaltungen().stream().map(IdEntity::getId).collect(Collectors.toSet());
@@ -321,37 +310,6 @@ public class AdminService implements AdminServiceInterface {
 
     @Transactional
     @Override
-    public boolean confirmEmailChange(String token) {
-        Nutzer nutzer = Nutzer.find("emailChangeToken", token).firstResult();
-
-        if (null == nutzer) {
-            LOG.warn("Ungültiger Token für E-Mail-Änderung: " + token);
-            return false;
-        }
-
-        if (nutzer.getEmailChangeTokenExpiry().isBefore(LocalDateTime.now())) {
-            LOG.warn("Abgelaufener Token für E-Mail-Änderung für Nutzer: " + nutzer.getEmail());
-            nutzer.setEmailChangeToken(null);
-            nutzer.setEmailChangeTokenExpiry(null);
-            nutzer.setNewEmail(null);
-            return false;
-        }
-
-        String oldEmail = nutzer.getEmail();
-        nutzer.setEmail(nutzer.getNewEmail());
-        nutzer.setNewEmail(null);
-        nutzer.setEmailChangeToken(null);
-        nutzer.setEmailChangeTokenExpiry(null);
-
-        protokollService.log(ProtokollKategorie.NUTZER, "E-Mail-Adresse bestätigt",
-            "E-Mail-Adresse für Nutzer von '" + oldEmail + "' zu '" + nutzer.getEmail() + "' geändert.", nutzer.getId());
-
-        return true;
-    }
-
-
-    @Transactional
-    @Override
     public void inviteUserToEvent(Long nutzerId, Long veranstaltungId) {
         Objects.requireNonNull(nutzerId, "userId darf nicht null sein.");
         Objects.requireNonNull(veranstaltungId, "veranstaltungId darf nicht null sein.");
@@ -392,6 +350,7 @@ public class AdminService implements AdminServiceInterface {
             mailService.sendUserDeletionNotification(nutzer);
 
             String email = nutzer.getEmail();
+            keycloakUserProvisioningService.deleteUser(nutzer);
             boolean deleted = Nutzer.deleteById(id);
             if (deleted) {
                 protokollService.log(ProtokollKategorie.NUTZER, "Nutzer gelöscht", "Nutzer '" + email + "' gelöscht.", id);
@@ -403,11 +362,9 @@ public class AdminService implements AdminServiceInterface {
 
 
     /**
-     * Setzt das Passwort eines beliebigen Nutzers direkt, ohne E-Mail-Bestätigung - Rettungsweg
-     * für Konten ohne (funktionierende) E-Mail-Adresse, die sich sonst über
-     * {@link kreyj.konfplan.adapter.in.web.AuthResource#forgotPassword} nicht selbst
-     * wiederherstellen könnten (siehe dortiger Kommentar "nur ein Admin kann das Passwort
-     * zurücksetzen" - dieser Weg löst genau das ein).
+     * Setzt das Passwort eines beliebigen Nutzers in Keycloak direkt - Rettungsweg für Konten
+     * ohne (funktionierende) E-Mail-Adresse, die den Passwort-Reset-Flow von Keycloak selbst
+     * nicht nutzen können.
      */
     @Transactional
     @Override
@@ -420,9 +377,7 @@ public class AdminService implements AdminServiceInterface {
             throw new BusinessException("Das neue Passwort muss mindestens 8 Zeichen lang sein.");
         }
 
-        nutzer.setPasswordHash(BcryptUtil.bcryptHash(newPassword));
-        nutzer.persistAndFlush();
-        tokenInvalidationService.invalidateTokensIssuedBefore(nutzer.getLoginName());
+        keycloakUserProvisioningService.resetPassword(nutzer, newPassword);
         protokollService.log(ProtokollKategorie.SECURITY, "Passwort durch Administrator zurückgesetzt",
             "Passwort für Nutzer '" + nutzer.getLoginName() + "' wurde durch einen Administrator zurückgesetzt.", nutzer.getId());
         return true;
@@ -435,6 +390,7 @@ public class AdminService implements AdminServiceInterface {
         Nutzer entity = Nutzer.findById(id);
         if (entity != null) {
             entity.setActive(!entity.isActive());
+            keycloakUserProvisioningService.updateUser(entity);
             protokollService.log(ProtokollKategorie.NUTZER, "Nutzer-Status geändert", "Status von '" + entity.getEmail() + "' auf " + (entity.isActive() ?
                 "aktiv" : "inaktiv") + " geändert.", id);
         }
@@ -592,7 +548,7 @@ public class AdminService implements AdminServiceInterface {
                     a.setFirstName(dto.vorname);
                     a.setLastName(dto.nachname);
                     String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
-                    a.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
+                    keycloakUserProvisioningService.createUser(a, tempPassword);
                     a.persistAndFlush();
                     count++;
                     protokollService.log(ProtokollKategorie.NUTZER, "Organisator importiert", "Organisator '" + loginName + "' via CSV importiert.", a.getId());
