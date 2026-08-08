@@ -1,6 +1,6 @@
 package kreyj.konfplan.domain.service;
 
-import io.quarkus.elytron.security.common.BcryptUtil;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -16,13 +16,13 @@ import kreyj.konfplan.persistence.Veranstaltung;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 
 @QuarkusTest
 public class AdminServiceTest {
@@ -30,8 +30,8 @@ public class AdminServiceTest {
     @Inject
     AdminService adminService;
 
-    @Inject
-    TokenInvalidationService tokenInvalidationService;
+    @InjectMock
+    KeycloakUserProvisioningService keycloakUserProvisioningService;
 
     private Long testUserId;
     private Veranstaltung veranstaltung;
@@ -40,7 +40,6 @@ public class AdminServiceTest {
     @BeforeEach
     @Transactional
     public void setUp() {
-        tokenInvalidationService.reset();
         // Clean up existing data to avoid conflicts
         Nutzer.deleteAll();
         Veranstaltung.deleteAll();
@@ -157,99 +156,9 @@ public class AdminServiceTest {
     }
 
 
-    @Test
-    @Transactional
-    public void testConfirmEmailChange_Success() {
-        // 1. Initiate email change
-        String newEmail = "new.email@example.com";
-        String token = UUID.randomUUID().toString();
-        Nutzer testUser = Nutzer.findById(testUserId);
-        testUser.setNewEmail(newEmail);
-        testUser.setEmailChangeToken(token);
-        testUser.setEmailChangeTokenExpiry(LocalDateTime.now().plusHours(1));
-
-        // 2. Confirm email change
-        boolean result = adminService.confirmEmailChange(token);
-
-        // 3. Verify the change
-        assertThat(result).isTrue();
-        Nutzer updatedUser = Nutzer.findById(testUserId);
-        assertThat(updatedUser.getEmail()).isEqualTo(newEmail);
-        assertThat(updatedUser.getNewEmail()).isNull();
-        assertThat(updatedUser.getEmailChangeToken()).isNull();
-        assertThat(updatedUser.getEmailChangeTokenExpiry()).isNull();
-    }
-
-    @Test
-    public void testConfirmEmailChange_InvalidToken() {
-        // 1. Initiate email change
-        String newEmail = "new.email@example.com";
-        Nutzer testUser = Nutzer.findById(testUserId);
-        testUser.setNewEmail(newEmail);
-        testUser.setEmailChangeToken(UUID.randomUUID().toString());
-        testUser.setEmailChangeTokenExpiry(LocalDateTime.now().plusHours(1));
-
-        // 2. Attempt to confirm with an invalid token
-        boolean result = adminService.confirmEmailChange("invalid-token");
-
-        // 3. Verify that the change did not happen
-        assertThat(result).isFalse();
-        Nutzer user = Nutzer.findById(testUserId);
-        assertThat(user.getEmail()).isEqualTo("test@example.com");
-        assertThat(user.getNewEmail()).isEqualTo(newEmail); // The pending email should still be there
-    }
-
-    @Test
-    @Transactional
-    public void testConfirmEmailChange_ExpiredToken() {
-        // 1. Initiate email change with an expired token
-        String newEmail = "new.email@example.com";
-        String token = UUID.randomUUID().toString();
-        Nutzer testUser = Nutzer.findById(testUserId);
-        testUser.setNewEmail(newEmail);
-        testUser.setEmailChangeToken(token);
-        testUser.setEmailChangeTokenExpiry(LocalDateTime.now().minusHours(1)); // Token is already expired
-
-        // 2. Attempt to confirm with the expired token
-        boolean result = adminService.confirmEmailChange(token);
-
-        // 3. Verify that the change did not happen and the token fields are cleared
-        assertThat(result).isFalse();
-        Nutzer user = Nutzer.findById(testUserId);
-        assertThat(user.getEmail()).isEqualTo("test@example.com");
-        assertThat(user.getNewEmail()).isNull();
-        assertThat(user.getEmailChangeToken()).isNull();
-        assertThat(user.getEmailChangeTokenExpiry()).isNull();
-    }
-
-    @Test
-    @Transactional
-    public void testConfirmEmailChange_MultipleConfirmations() {
-        // 1. Initiate email change
-        String newEmail = "new.email@example.com";
-        String token = UUID.randomUUID().toString();
-        Nutzer testUser = Nutzer.findById(testUserId);
-        testUser.setNewEmail(newEmail);
-        testUser.setEmailChangeToken(token);
-        testUser.setEmailChangeTokenExpiry(LocalDateTime.now().plusHours(1));
-
-        // 2. Confirm email change for the first time
-        boolean firstResult = adminService.confirmEmailChange(token);
-        assertThat(firstResult).isTrue();
-
-        // 3. Attempt to confirm the change again with the same token
-        boolean secondResult = adminService.confirmEmailChange(token);
-        assertThat(secondResult).isFalse();
-
-        // 4. Verify that the email remains the new email
-        Nutzer updatedUser = Nutzer.findById(testUserId);
-        assertThat(updatedUser.getEmail()).isEqualTo(newEmail);
-    }
-
-
     // Regression: ein Admin-Konto ohne E-Mail-Adresse kann sich bei vergessenem Passwort nicht
-    // selbst wiederherstellen (AuthResource#forgotPassword) und es gab bislang auch keinen
-    // anderen Weg (siehe testResetPassword_* unten für den neuen Rettungsweg).
+    // selbst wiederherstellen (Keycloaks Passwort-Reset braucht eine E-Mail-Adresse) und es gab
+    // bislang auch keinen anderen Weg (siehe testResetPassword_* unten für den Rettungsweg).
     @Test
     public void testCreateUser_AdminWithoutEmail_ThrowsException() {
         NutzerDto dto = new NutzerDto("ADMIN", null, "Ohne", "Email", true);
@@ -291,7 +200,7 @@ public class AdminServiceTest {
 
         assertThat(result).isTrue();
         Nutzer updated = Nutzer.findById(testUserId);
-        assertThat(BcryptUtil.matches("einNeuesPasswort123", updated.getPasswordHash())).isTrue();
+        verify(keycloakUserProvisioningService).resetPassword(eq(updated), eq("einNeuesPasswort123"));
     }
 
 
@@ -307,20 +216,5 @@ public class AdminServiceTest {
     public void testResetPassword_PasswordTooShort_ThrowsException() {
         assertThatExceptionOfType(BusinessException.class)
             .isThrownBy(() -> adminService.resetPassword(testUserId, "kurz"));
-    }
-
-
-    @Test
-    public void testResetPassword_InvalidatesTokensIssuedBeforeTheReset() {
-        // Ein von einem Admin ausgeloester Passwort-Reset (Rettungsweg fuer Konten ohne
-        // funktionierende E-Mail) muss ein bereits gestohlenes/kompromittiertes Token ebenso
-        // ungueltig machen wie der Self-Service-Reset (siehe TokenInvalidationService).
-        Instant beforeReset = Instant.now().minusSeconds(5);
-        assertThat(tokenInvalidationService.isValid("testexample", beforeReset)).isTrue();
-
-        adminService.resetPassword(testUserId, "einNeuesPasswort123");
-
-        assertThat(tokenInvalidationService.isValid("testexample", beforeReset)).isFalse();
-        assertThat(tokenInvalidationService.isValid("testexample", Instant.now().plusSeconds(5))).isTrue();
     }
 }

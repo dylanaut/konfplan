@@ -154,7 +154,6 @@ public class PlanServiceTest extends DatabaseCleaner {
         Referent referent = new Referent();
         referent.assignLoginName("referent.pflicht");
         referent.setEmail("referent.pflicht@example.com");
-        referent.setPasswordHash("hash");
         referent.persist();
 
         Pflichtvortrag pflichtvortrag = Pflichtvortrag.create("Pflichtvortrag Gruppe A", "Inhalt", referent, "Gruppe A", raum, slot, veranstaltung);
@@ -163,7 +162,6 @@ public class PlanServiceTest extends DatabaseCleaner {
         Teilnehmer teilnehmer = new Teilnehmer();
         teilnehmer.assignLoginName("teilnehmer.pflicht");
         teilnehmer.setEmail("teilnehmer.pflicht@example.com");
-        teilnehmer.setPasswordHash("hash");
         teilnehmer.addGruppe("Gruppe A");
         teilnehmer.persist();
 

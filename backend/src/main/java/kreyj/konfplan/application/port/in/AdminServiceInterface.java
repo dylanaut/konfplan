@@ -27,8 +27,6 @@ public interface AdminServiceInterface {
 
     NutzerDto updateUser(Long id, NutzerDto dto, List<Long> vUpdateIds);
 
-    boolean confirmEmailChange(String token);
-
     void inviteUserToEvent(Long nutzerId, Long veranstaltungId);
 
     boolean deleteUser(Long id);

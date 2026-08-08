@@ -54,7 +54,6 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         Admin admin = new Admin();
         admin.assignLoginName("adminexample");
         admin.setEmail("admin@example.com");
-        admin.setPasswordHash("hash");
         admin.persist();
 
         gebaeude = new Gebaeude();
@@ -103,7 +102,6 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         referent.setEmail("ref@example.com");
         referent.setFirstName("Ref");
         referent.setLastName("Erent");
-        referent.setPasswordHash("hash");
         referent.persist();
         referent.addVeranstaltung(veranstaltung);
 
@@ -112,7 +110,6 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
         referent2.setEmail("ref2@example.com");
         referent2.setFirstName("Ref2");
         referent2.setLastName("Erent2");
-        referent2.setPasswordHash("hash");
         referent2.persist();
         referent2.addVeranstaltung(veranstaltung);
 

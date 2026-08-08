@@ -1,10 +1,12 @@
 package kreyj.konfplan.adapter.in.web;
 
 import io.quarkus.narayana.jta.QuarkusTransaction;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.quarkus.test.security.jwt.Claim;
-import io.quarkus.test.security.jwt.JwtSecurity;
+import io.quarkus.test.security.oidc.Claim;
+import io.quarkus.test.security.oidc.OidcSecurity;
+import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import jakarta.inject.Inject;
 import kreyj.konfplan.domain.service.AdminService;
 import kreyj.konfplan.domain.service.GebaeudeService;
@@ -34,6 +36,9 @@ import static io.restassured.RestAssured.given;
  */
 @QuarkusTest
 class ReferentPlaeneTest extends DatabaseCleaner {
+
+    @InjectMock
+    KeycloakUserProvisioningService keycloakUserProvisioningService;
 
     @Inject
     GebaeudeService gebaeudeService;
@@ -98,7 +103,7 @@ class ReferentPlaeneTest extends DatabaseCleaner {
 
     @Test
     @TestSecurity(user = "erster.referent", roles = "REFERENT")
-    @JwtSecurity(claims = {@Claim(key = "upn", value = "erster.referent")})
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "erster.referent")})
     void getMyPlan_fuerReferentMitBestehendemPlan_shouldSucceed() {
         given()
             .when().get("/api/referenten/plaene?vid=" + vid)

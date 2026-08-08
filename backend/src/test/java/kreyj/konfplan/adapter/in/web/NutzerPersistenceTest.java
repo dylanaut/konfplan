@@ -1,10 +1,12 @@
 package kreyj.konfplan.adapter.in.web;
 
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
+import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Admin;
@@ -31,6 +33,9 @@ import static org.hamcrest.Matchers.matchesPattern;
 @TestHTTPEndpoint(VeranstaltungResource.class)
 class NutzerPersistenceTest extends DatabaseCleaner {
 
+    @InjectMock
+    KeycloakUserProvisioningService keycloakUserProvisioningService;
+
     public static final String TEST_VERANSTALTUNG = "Test Veranstaltung";
     Long testVid;
 
@@ -49,7 +54,6 @@ class NutzerPersistenceTest extends DatabaseCleaner {
         Admin admin = new Admin();
         admin.assignLoginName("organisator");
         admin.setEmail("organisator@test.de");
-        admin.setPasswordHash("hash");
         admin.persist();
 
         Veranstaltung v = new Veranstaltung();

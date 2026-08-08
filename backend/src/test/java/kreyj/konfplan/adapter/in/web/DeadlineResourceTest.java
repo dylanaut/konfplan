@@ -1,13 +1,12 @@
 package kreyj.konfplan.adapter.in.web;
 
-import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.quarkus.test.security.jwt.Claim;
-import io.quarkus.test.security.jwt.JwtSecurity;
+import io.quarkus.test.security.oidc.Claim;
+import io.quarkus.test.security.oidc.OidcSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Referent;
@@ -54,7 +53,6 @@ class DeadlineResourceTest extends DatabaseCleaner {
         Referent r = new Referent();
         r.assignLoginName("referent@test.de");
         r.setEmail("referent@test.de");
-        r.setPasswordHash(BcryptUtil.bcryptHash("test"));
         r.persist();
         refId = r.getId();
 
@@ -62,7 +60,6 @@ class DeadlineResourceTest extends DatabaseCleaner {
         Teilnehmer t = new Teilnehmer();
         t.assignLoginName("teilnehmer@test.de");
         t.setEmail("teilnehmer@test.de");
-        t.setPasswordHash(BcryptUtil.bcryptHash("test"));
         t.persist();
         t.addVeranstaltung(v);
         tnId = t.getId();
@@ -79,8 +76,8 @@ class DeadlineResourceTest extends DatabaseCleaner {
 
     @Test
     @TestSecurity(user = "referent@test.de", roles = "REFERENT")
-    @JwtSecurity(claims = {
-            @Claim(key = "upn", value = "referent@test.de")
+    @OidcSecurity(claims = {
+            @Claim(key = "preferred_username", value = "referent@test.de")
     })
     @TestHTTPEndpoint(ReferentResource.class)
     void testReferentDeadlineExceeded() {
@@ -116,10 +113,9 @@ class DeadlineResourceTest extends DatabaseCleaner {
 
     @Test
     @TestSecurity(user = "teilnehmer@test.de", roles = "TEILNEHMER")
-    @JwtSecurity(claims = {
-            @Claim(key = "upn", value = "teilnehmer@test.de")
+    @OidcSecurity(claims = {
+            @Claim(key = "preferred_username", value = "teilnehmer@test.de")
     })
-
     @TestHTTPEndpoint(PrioritaetenResource.class)
     void testTeilnehmerDeadlineExceeded() {
         VortragPrioDto req = new VortragPrioDto(wahlvortragId, 1);

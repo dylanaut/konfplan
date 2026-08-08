@@ -30,31 +30,10 @@
           <label class="block text-sm font-medium text-gray-700">E-Mail-Adresse</label>
           <div class="flex items-center gap-2">
             <input :value="profile.email || '(keine hinterlegt)'" type="text" class="input-field flex-1" disabled />
-            <button @click="showEmailChangeForm = !showEmailChangeForm" type="button" class="btn-secondary whitespace-nowrap">
-              <MailIcon class="w-4 h-4 mr-2" /> E-Mail ändern
-            </button>
           </div>
-
-          <div v-if="showEmailChangeForm" class="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
-            <p class="text-xs text-gray-500">
-              An die neue Adresse wird ein Bestätigungslink gesendet - erst nach dem Klick darauf
-              wird die E-Mail-Adresse tatsächlich geändert.
-            </p>
-            <div>
-              <label class="block text-xs font-medium text-gray-700">Neue E-Mail-Adresse</label>
-              <input v-model="emailChangeForm.newEmail" type="email" class="input-field" />
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-gray-700">Aktuelles Passwort (zur Bestätigung)</label>
-              <input v-model="emailChangeForm.currentPassword" type="password" class="input-field" />
-            </div>
-            <div class="flex gap-2">
-              <button @click="requestEmailChange" :disabled="!canRequestEmailChange || isRequestingEmailChange" class="btn-primary">
-                <SaveIcon class="w-4 h-4 mr-2" /> Bestätigungs-E-Mail senden
-              </button>
-              <button @click="cancelEmailChange" type="button" class="btn-secondary">Abbrechen</button>
-            </div>
-          </div>
+          <p class="mt-1 text-xs text-gray-500">
+            Änderungen an E-Mail-Adresse und Passwort erfolgen über das Keycloak-Benutzerkonto.
+          </p>
         </div>
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700">Gruppen</label>
@@ -222,11 +201,9 @@ import { useRouter } from 'vue-router';
 import api from '../api/axios';
 import {
   User as UserIcon,
-  Mail as MailIcon,
   CalendarCheck as CalendarCheckIcon,
   Printer as PrinterIcon,
   Download as DownloadIcon,
-  Save as SaveIcon,
   SaveAll as SaveAllIcon,
   CheckCircleIcon,
   ChevronDownIcon,
@@ -256,16 +233,8 @@ const profile = ref({
   gruppen: [],
   version: 0
 });
-const showEmailChangeForm = ref(false);
-const emailChangeForm = ref({ newEmail: '', currentPassword: '' });
-const isRequestingEmailChange = ref(false);
-
 const hasAvailabilityChanges = computed(() => {
   return JSON.stringify(availabilities.value) !== JSON.stringify(initialAvailabilities.value);
-});
-
-const canRequestEmailChange = computed(() => {
-  return !!emailChangeForm.value.newEmail && !!emailChangeForm.value.currentPassword;
 });
 
 const groupedVortraege = computed(() => {
@@ -427,25 +396,6 @@ const savePriorities = async () => {
   } catch (error) {
     console.error('Fehler beim Speichern der Prioritäten:', error);
     alert('Fehler: ' + (error.response?.data?.message || error.message));
-  }
-};
-
-const cancelEmailChange = () => {
-  showEmailChangeForm.value = false;
-  emailChangeForm.value = { newEmail: '', currentPassword: '' };
-};
-
-const requestEmailChange = async () => {
-  isRequestingEmailChange.value = true;
-  try {
-    await api.post('/api/teilnehmer/email-change-request', emailChangeForm.value);
-    alert('Bestätigungs-E-Mail wurde an die neue Adresse gesendet. Bitte Postfach prüfen.');
-    cancelEmailChange();
-  } catch (error) {
-    console.error('Fehler beim Anfordern der E-Mail-Änderung:', error);
-    alert('Fehler: ' + (error.response?.data?.message || error.response?.data || error.message));
-  } finally {
-    isRequestingEmailChange.value = false;
   }
 };
 

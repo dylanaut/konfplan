@@ -1,11 +1,13 @@
 package kreyj.konfplan.adapter.in.web;
 
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
+import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.Gebaeude;
@@ -34,6 +36,9 @@ import static org.hamcrest.CoreMatchers.containsString;
 @QuarkusTestResource(H2DatabaseTestResource.class)
 @TestHTTPEndpoint(VeranstaltungResource.class)
 class CsvFileImportTest extends DatabaseCleaner {
+
+    @InjectMock
+    KeycloakUserProvisioningService keycloakUserProvisioningService;
     public static final String CSV_DIR = "csv_import/import-test/";
 
     @TestHTTPResource
@@ -54,7 +59,6 @@ class CsvFileImportTest extends DatabaseCleaner {
         Admin admin = new Admin();
         admin.assignLoginName("admintest");
         admin.setEmail("admin@test.de");
-        admin.setPasswordHash("hash");
         admin.persist();
     }
 

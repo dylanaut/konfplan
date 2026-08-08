@@ -1,10 +1,12 @@
 package kreyj.konfplan.adapter.in.web;
 
 import io.quarkus.narayana.jta.QuarkusTransaction;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
-import io.quarkus.test.security.jwt.Claim;
-import io.quarkus.test.security.jwt.JwtSecurity;
+import io.quarkus.test.security.oidc.Claim;
+import io.quarkus.test.security.oidc.OidcSecurity;
+import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import jakarta.inject.Inject;
 import kreyj.konfplan.domain.service.AdminService;
 import kreyj.konfplan.domain.service.GebaeudeService;
@@ -35,6 +37,9 @@ import static io.restassured.RestAssured.given;
  */
 @QuarkusTest
 class TeilnehmerVortraegeUndPrioritaetenTest extends DatabaseCleaner {
+
+    @InjectMock
+    KeycloakUserProvisioningService keycloakUserProvisioningService;
 
     @Inject
     GebaeudeService gebaeudeService;
@@ -99,7 +104,7 @@ class TeilnehmerVortraegeUndPrioritaetenTest extends DatabaseCleaner {
 
     @Test
     @TestSecurity(user = "alex.alfa", roles = "TEILNEHMER")
-    @JwtSecurity(claims = {@Claim(key = "upn", value = "alex.alfa")})
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "alex.alfa")})
     void vortraegeUndPrioritaeten_fuerTeilnehmerMitBestehendemPlan_shouldSucceed() {
         given()
             .when().get("/api/teilnehmer/veranstaltungen/{vid}/vortraege", vid)

@@ -1,0 +1,66 @@
+{
+  "realm": "konfplan",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "roles": {
+    "realm": [
+      { "name": "ADMIN", "description": "Administrator/Organisator" },
+      { "name": "REFERENT", "description": "Referent (Vortragender)" },
+      { "name": "TEILNEHMER", "description": "Teilnehmer" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "konfplan-frontend",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://localhost:9000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "http://localhost:9000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
+      "clientId": "konfplan-backend",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "konfplan-admin-cli",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "secret": "dev-secret"
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-konfplan-admin-cli",
+      "enabled": true,
+      "serviceAccountClientId": "konfplan-admin-cli",
+      "clientRoles": {
+        "realm-management": ["manage-users", "view-users", "view-realm"]
+      }
+    }
+  ]
+}

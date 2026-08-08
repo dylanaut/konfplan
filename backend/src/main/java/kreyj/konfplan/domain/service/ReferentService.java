@@ -1,7 +1,6 @@
 package kreyj.konfplan.domain.service;
 
 import com.opencsv.bean.CsvToBeanBuilder;
-import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.runtime.LaunchMode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.OptimisticLockException;
@@ -50,12 +49,15 @@ public class ReferentService implements ReferentServiceInterface {
 
     private final ProtokollService protokollService;
     private LaunchMode launchMode;
+    private final KeycloakUserProvisioningService keycloakUserProvisioningService;
 
 
-    public ReferentService(MailService mailService, ProtokollService protokollService, LaunchMode launchMode) {
+    public ReferentService(MailService mailService, ProtokollService protokollService, LaunchMode launchMode,
+                           KeycloakUserProvisioningService keycloakUserProvisioningService) {
         this.mailService = mailService;
         this.protokollService = protokollService;
         this.launchMode = launchMode;
+        this.keycloakUserProvisioningService = keycloakUserProvisioningService;
     }
 
 
@@ -90,6 +92,7 @@ public class ReferentService implements ReferentServiceInterface {
             referent.setFirstName(dto.firstName);
             referent.setLastName(dto.lastName);
             referent.setEmail(dto.email);
+            keycloakUserProvisioningService.updateUser(referent);
             protokollService.log(ProtokollKategorie.NUTZER, "Profil aktualisiert", "Referenten-Profil '" + loginName + "' aktualisiert.", referent.getId());
         }
     }
@@ -435,9 +438,6 @@ public class ReferentService implements ReferentServiceInterface {
                     if (StringUtils.isNotBlank(dto.email)) {
                         ref.setEmail(dto.email.trim().toLowerCase());
                     }
-                    String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
-                    ref.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
-                    ref.persistAndFlush();
                 } else if (existingNutzer instanceof Referent) {
                     ref = (Referent) existingNutzer;
                 } else {
@@ -452,6 +452,10 @@ public class ReferentService implements ReferentServiceInterface {
                 ref.setSlogan(dto.slogan);
                 ref.setBiography(dto.biografie);
 
+                if (null == existingNutzer) {
+                    String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
+                    keycloakUserProvisioningService.createUser(ref, tempPassword);
+                }
                 ref.persistAndFlush();
                 ref.addVeranstaltung(veranstaltung);
 

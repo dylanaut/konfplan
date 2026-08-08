@@ -2,7 +2,6 @@ package kreyj.konfplan.domain.service;
 
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
-import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.runtime.LaunchMode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.OptimisticLockException;
@@ -54,12 +53,15 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
     private final ProtokollService protokollService;
     private final MailService mailService;
     private final LaunchMode launchMode;
+    private final KeycloakUserProvisioningService keycloakUserProvisioningService;
 
 
-    public TeilnehmerService(ProtokollService protokollService, MailService mailService, LaunchMode launchMode) {
+    public TeilnehmerService(ProtokollService protokollService, MailService mailService, LaunchMode launchMode,
+                             KeycloakUserProvisioningService keycloakUserProvisioningService) {
         this.protokollService = protokollService;
         this.mailService = mailService;
         this.launchMode = launchMode;
+        this.keycloakUserProvisioningService = keycloakUserProvisioningService;
     }
 
 
@@ -170,7 +172,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         user.assignLoginName(loginName);
         user.addVeranstaltung(v);
         String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
-        user.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
+        keycloakUserProvisioningService.createUser(user, tempPassword);
 
         user.persistAndFlush();
         protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer erstellt", "Teilnehmer " + user.getEmail() + " für Veranstaltung " + v.getName() + " erstellt.", user.getId(), veranstaltungId);
@@ -239,7 +241,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
                     }
 
                     String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
-                    tn.setPasswordHash(BcryptUtil.bcryptHash(tempPassword));
+                    keycloakUserProvisioningService.createUser(tn, tempPassword);
 
                     tn.persistAndFlush();
                     tn.addVeranstaltung(v);
@@ -267,6 +269,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
     public void deleteUser(Nutzer nutzer) {
         String email = nutzer.getEmail();
         Long id = nutzer.getId();
+        keycloakUserProvisioningService.deleteUser(nutzer);
         nutzer.delete();
         protokollService.log(ProtokollKategorie.NUTZER, "Nutzer gelöscht", "Nutzer " + email + " gelöscht.", id);
     }
@@ -276,6 +279,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
     @Override
     public void toggleActive(Nutzer nutzer) {
         nutzer.setActive(!nutzer.isActive());
+        keycloakUserProvisioningService.updateUser(nutzer);
         nutzer.persistAndFlush();
         protokollService.log(ProtokollKategorie.NUTZER, "Nutzer-Status geändert", "Nutzer " + nutzer.getEmail() + " ist jetzt " + (nutzer.isActive() ? "aktiv" : "inaktiv") + ".", nutzer.getId());
     }
@@ -287,10 +291,8 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         if (null == teilnehmer) {
             throw new WebApplicationException("Teilnehmer nicht gefunden", Response.Status.NOT_FOUND);
         }
-        // E-Mail-Änderungen laufen ausschließlich über den Bestätigungs-Flow
-        // (TeilnehmerResource#requestEmailChange/#confirmEmailChange), nicht über dieses
-        // allgemeine Profil-Update - sonst könnte eine unbestätigte, evtl. falsch eingegebene
-        // Adresse sofort für Benachrichtigungen verwendet werden.
+        // E-Mail-Änderungen laufen ausschließlich über Keycloaks Account-Console, nicht über
+        // dieses allgemeine Profil-Update.
         String normalizedDtoEmail = StringUtils.isBlank(dto.email) ? null : dto.email.trim().toLowerCase();
         if (!Objects.equals(teilnehmer.getEmail(), normalizedDtoEmail)) {
             throw new WebApplicationException(
