@@ -6,6 +6,17 @@
 :source-highlighter: rouge
 :sectnums:
 
+[NOTE]
+====
+**Status: umgesetzt** (Issue #88, PR #89). Dieses Dokument ist der ursprüngliche Entwurf und weicht
+in einigen Details vom tatsächlichen Ergebnis ab: Keycloak-Username = `loginName` (nicht `email`,
+da bei Referent/Teilnehmer optional), kein Migrationsskript für Bestandspasswörter (es gab keine
+echten Bestandsnutzer), Dev-Realm via Quarkus Keycloak Dev Services + Realm-Import statt manuellem
+`docker run`/`kcadm`, `KeycloakUserProvisioningService` statt direktem Admin-Client-Aufruf in
+`AdminService`. Aktueller Stand siehe `AGENTS.md` (Security-Abschnitt) und
+`keycloak/konfplan-realm.json`.
+====
+
 == Überblick
 
 === Ausgangslage

@@ -9,7 +9,6 @@
 @startuml
 left to right direction
 actor "ADMIN" as ADMIN
-actor "PUBLIC" as PUBLIC
 actor "REFERENT" as REFERENT
 actor "TEILNEHMER" as TEILNEHMER
 package "KonfPlan API" {
@@ -30,9 +29,6 @@ package "KonfPlan API" {
   (getRaumVerfuegbarkeiten) as getRaumVerfuegbarkeiten
   (updateRaumVerfuegbarkeit) as updateRaumVerfuegbarkeit
   (updateTeilnehmerPrioritaet) as updateTeilnehmerPrioritaet
-  (forgotPassword) as forgotPassword
-  (resetPassword) as resetPassword
-  (login) as login
   (update) as update
   (delete) as delete
   (create) as create
@@ -52,8 +48,6 @@ package "KonfPlan API" {
   (getMyPlan) as getMyPlan
   (getReferent) as getReferent
   (cloneTalkForEvent) as cloneTalkForEvent
-  (requestEmailChange) as requestEmailChange
-  (confirmEmailChange) as confirmEmailChange
   (getReferentenVortraege) as getReferentenVortraege
   (registerTalkForEvent) as registerTalkForEvent
   (getReferentVeranstaltungen) as getReferentVeranstaltungen
@@ -143,8 +137,6 @@ ADMIN --> deleteVortrag
 ADMIN --> getMyPlan
 ADMIN --> getReferent
 ADMIN --> cloneTalkForEvent
-ADMIN --> requestEmailChange
-ADMIN --> confirmEmailChange
 ADMIN --> getReferentenVortraege
 ADMIN --> registerTalkForEvent
 ADMIN --> getVerfuegbarkeiten
@@ -207,9 +199,6 @@ ADMIN --> importVortraege
 ADMIN --> getRaumVerfuegbarkeiten
 ADMIN --> getVeranstaltungsVortrag
 ADMIN --> saveTeilnehmerPrioritaeten
-PUBLIC --> forgotPassword
-PUBLIC --> resetPassword
-PUBLIC --> login
 REFERENT --> updateProfile
 REFERENT --> createVortrag
 REFERENT --> updateVortrag
@@ -217,8 +206,6 @@ REFERENT --> deleteVortrag
 REFERENT --> getMyPlan
 REFERENT --> getReferent
 REFERENT --> cloneTalkForEvent
-REFERENT --> requestEmailChange
-REFERENT --> confirmEmailChange
 REFERENT --> getReferentenVortraege
 REFERENT --> registerTalkForEvent
 REFERENT --> getVerfuegbarkeiten
@@ -324,25 +311,6 @@ TEILNEHMER --> getVortraege
 | ADMIN
 |===
 
-=== AuthResource
-
-[cols="2,1,3,2", options="header"]
-|===
-| Aktion | Method | Pfad | Rollen
-| forgotPassword
-| POST
-| `/api/auth/forgot-password`
-| PUBLIC
-| resetPassword
-| POST
-| `/api/auth/reset-password`
-| PUBLIC
-| login
-| POST
-| `/api/auth/login`
-| PUBLIC
-|===
-
 === GebaeudeResource
 
 [cols="2,1,3,2", options="header"]
@@ -437,14 +405,6 @@ TEILNEHMER --> getVortraege
 | cloneTalkForEvent
 | POST
 | `/api/referenten/veranstaltungen/{targetEventId}/vortraege/{sourceVortragId}/clone`
-| ADMIN, REFERENT
-| requestEmailChange
-| POST
-| `/api/referenten/email-change-request`
-| ADMIN, REFERENT
-| confirmEmailChange
-| GET
-| `/api/referenten/email-change-confirm`
 | ADMIN, REFERENT
 | getReferentenVortraege
 | GET

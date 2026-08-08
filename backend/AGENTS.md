@@ -48,57 +48,40 @@ kreyj/konfplan/
 
 - Rollen: `ADMIN`, `REFERENT`, `TEILNEHMER`.
 - Alle Endpunkte im `web`-Adapter werden mit `@RolesAllowed` oder `@Authenticated` abgesichert.
-- JWT-Token wird von `AuthResource#login` ausgestellt (4h Gültigkeit).
-- Passwörter: BCrypt via `BcryptUtil.bcryptHash()`.
+- Identität liegt komplett bei **Keycloak**: Login, Passwörter und Passwort-Reset laufen über
+  Keycloaks gehostete Login-Seite bzw. Account-Console, nicht mehr über einen eigenen Endpunkt.
+  Das Backend validiert eingehende Tokens nur noch via `quarkus-oidc` (kein eigenes JWT, kein
+  lokaler Passwort-Hash mehr).
+- `Nutzer` enthält nur noch `keycloakId` als Verknüpfung zum Keycloak-User; die Rolle steckt im
+  Token-Claim `realm_access.roles` (`quarkus.oidc.roles.role-claim-path`, siehe
+  `application.properties`).
+- Frontend nutzt `keycloak-js` mit Authorization Code Flow (Redirect statt eigenem Formular).
+- Dev-Modus: Quarkus Keycloak Dev Services startet automatisch einen Container; Realm-Import aus
+  `src/main/resources/keycloak/konfplan-realm.json` (Rollen, Clients, Service-Account für den
+  Admin-REST-Client).
+
+### `KeycloakUserProvisioningService` (`domain/service`)
+
+- Einzige Stelle, die den Keycloak Admin REST Client (`quarkus-keycloak-admin-rest-client`)
+  anspricht - `createUser`/`updateUser`/`resetPassword`/`deleteUser`, eingebunden in
+  `AdminService`, `TeilnehmerService`, `ReferentService` an jeder Stelle, die früher direkt einen
+  `passwordHash` gesetzt hat.
+- Passwort-Konvention beim Anlegen: `konfplan` (nicht-temporär) in Dev/Test, eine zufällige UUID
+  (`temporary=true`, `requiredActions=["UPDATE_PASSWORD"]`) in Prod - Keycloak erzwingt dort eine
+  Passwortänderung beim ersten Login.
 
 ### Admin-Konten ohne E-Mail (Lockout-Schutz)
 
-- `AuthResource#forgotPassword` kann ein Passwort nur zurücksetzen, wenn der Nutzer eine
-  E-Mail-Adresse hinterlegt hat (der Reset-Link wird dorthin verschickt). Ohne E-Mail bricht der
-  Self-Service-Weg ab (Response bleibt trotzdem `202`, um keine Rückschlüsse auf existierende
-  Konten zuzulassen) und protokolliert nur den Versuch.
-- Für `REFERENT`/`TEILNEHMER` gibt es einen übergeordneten `ADMIN`, der das Passwort notfalls
-  zurücksetzen kann - für `ADMIN`-Konten selbst gibt es keine übergeordnete Instanz. Ein
-  `ADMIN` ohne E-Mail wäre bei einem vergessenen Passwort **permanent** ausgesperrt gewesen.
+- Keycloaks Passwort-Reset-Flow braucht eine E-Mail-Adresse (der Reset-Link wird dorthin
+  verschickt). Für `REFERENT`/`TEILNEHMER` gibt es einen übergeordneten `ADMIN`, der das Passwort
+  notfalls per Admin-REST-API zurücksetzen kann - für `ADMIN`-Konten selbst gibt es keine
+  übergeordnete Instanz. Ein `ADMIN` ohne E-Mail wäre bei einem vergessenen Passwort
+  **permanent** ausgesperrt.
 - **Prävention:** `AdminService#createUser` und `#updateUser` lehnen es ab (`BusinessException` /
   `UpdateNutzerException`), eine `Admin`-E-Mail-Adresse leer zu setzen oder ein Admin-Konto ohne
   E-Mail anzulegen.
 - **Recovery (Rettungsweg für bereits bestehende Konten ohne E-Mail):** `AdminService#resetPassword`
-  (`POST /api/admin/nutzer/{id}/reset-password`) setzt das Passwort eines beliebigen Nutzers direkt,
-  ohne E-Mail-Bestätigung - ein anderer `ADMIN` kann damit ein ausgesperrtes Admin-Konto
-  wiederherstellen. Voraussetzung ist, dass mindestens ein zweiter Admin noch Zugriff hat.
-
-### Rate-Limiting (Login & Forgot-Password)
-
-- `LoginRateLimiterService` und `ForgotPasswordRateLimiterService` (beide `domain/service`) sperren
-  eine anfragende IP nach zu vielen Versuchen innerhalb eines Zeitfensters (konfigurierbar via
-  `app.security.login-rate-limit.*` / `app.security.forgot-password-rate-limit.*`) - Antwort dann
-  `429 Too Many Requests` mit `Retry-After`-Header.
-- Bewusst pro **IP**, nicht pro Anmeldename: sonst könnte ein Angreifer gezielt das Kontingent
-  eines fremden Kontos aufbrauchen und dessen Besitzer aussperren.
-- In-Memory (`ConcurrentHashMap`), passend für den Ein-Instanz-Betrieb der Debian-Pakete - nach
-  einem Neustart sind alle Zähler zurückgesetzt.
-- **Wichtige Falle:** Der `Retry-After`-Header ist kein CORS-safelisted Response-Header. Läuft das
-  Frontend auf einer anderen Origin als das Backend (z.B. Dev: `5173` vs. `9000`), kann ihn das
-  Frontend per `fetch`/`XHR` nur auslesen, wenn das Backend ihn explizit über
-  `quarkus.http.cors.exposed-headers=Retry-After` freigibt (siehe `application.properties`) - ohne
-  diese Freigabe zeigt das Frontend nur eine generische Wartemeldung, auch wenn der Header im
-  tatsächlichen HTTP-Response bereits korrekt gesetzt ist.
-
-### JWT-Invalidierung bei Passwort-Reset
-
-- Ein Passwort-Reset (`AuthResource#resetPassword` per Token, oder der Admin-Rettungsweg
-  `AdminService#resetPassword`) ändert nur den Passwort-Hash - ein bereits ausgestelltes JWT bliebe
-  ohne weitere Maßnahme bis zu seinem regulären Ablauf (4h) gültig, selbst wenn es einem
-  Angreifer gehört.
-- `TokenInvalidationService` (`domain/service`) merkt sich pro Anmeldename einen
-  "ungültig-vor"-Zeitstempel; beide Reset-Pfade rufen `invalidateTokensIssuedBefore(loginName)` auf,
-  nachdem der neue Hash gespeichert wurde.
-- Durchgesetzt wird das über `TokenInvalidationAugmentor` (`adapter/in/web`), einen
-  `SecurityIdentityAugmentor`, der bei **jeder** authentifizierten Anfrage die `iat`-Claim des
-  Tokens gegen diesen Zeitstempel prüft und das Token sonst ablehnt (401) - die von Quarkus
-  vorgesehene Stelle, um ein signatur-gültiges Token nachträglich zu verwerfen.
-- Der Zeitstempel wird auf volle Sekunden abgerundet, da `iat` nur Sekundenpräzision hat - sonst
-  könnte ein direkt im Anschluss (noch in derselben Sekunde) neu ausgestelltes Token fälschlich
-  als "davor" gelten.
-- Ebenfalls In-Memory und damit denselben Neustart-Tradeoff wie beim Rate-Limiting eingehend.
+  (`POST /api/admin/nutzer/{id}/reset-password`) setzt das Passwort eines beliebigen Nutzers direkt
+  in Keycloak, ohne E-Mail-Bestätigung - ein anderer `ADMIN` kann damit ein ausgesperrtes
+  Admin-Konto wiederherstellen. Voraussetzung ist, dass mindestens ein zweiter Admin noch Zugriff
+  hat.
