@@ -39,7 +39,7 @@ Die Anwendung setzt auf folgende Kerntechnologien:
 | ORM | Hibernate ORM Panache (Active Record Pattern)
 | Datenbank | PostgreSQL (Prod/Dev), H2 (Test)
 | Migration | Flyway
-| Security | JWT (SmallRye), BCrypt, `quarkus-security-jpa`
+| Security | OIDC-Token-Verifikation gegen Keycloak (`quarkus-oidc`), Keycloak Admin REST Client
 | PlanErstellung | MiniZinc (externer Prozess via `PlanErstellungService`)
 | CSV-Import | OpenCSV 5.11.2
 | PDF-Export | OpenPDF 2.0.3
@@ -85,7 +85,7 @@ cd frontend && npm install && npm run dev
 [[_backend_spezifika]]
 == 5. Backend-Spezifika
 
-Das Backend ist eine *Quarkus 3.33.1*-Anwendung (Java 21) mit RESTful API, JWT-Security und einer PostgreSQL-Datenbank für Dev/Prod sowie H2 für Tests. Es folgt einer klassischen Dreischicht-Architektur: `presentation` → `service` → `persistence`.
+Das Backend ist eine *Quarkus 3.33.1*-Anwendung (Java 21) mit RESTful API, OIDC-Security gegen Keycloak und einer PostgreSQL-Datenbank für Dev/Prod sowie H2 für Tests. Es folgt einer klassischen Dreischicht-Architektur: `presentation` → `service` → `persistence`.
 
 === Paketstruktur (`src/main/java/kreyj/konfplan/`)
 
@@ -102,7 +102,9 @@ Wichtige Konfigurationen:
 *   **Port:** 9000
 *   **CORS:** Für Frontend-Dev auf Port 5173 aktiviert.
 *   **Datenbank:** PostgreSQL (Docker Dev Services im Dev-Modus, konfiguriert für Prod), H2 In-Memory für Tests.
-*   **JWT:** RSA-Schlüsselpaar in `src/main/resources/` (PEM-Dateien).
+*   **OIDC:** Token-Verifikation gegen Keycloak (`quarkus-oidc`); im Dev-Modus startet Quarkus
+    automatisch einen Keycloak-Container (Dev Services), Realm-Import aus
+    `src/main/resources/keycloak/konfplan-realm.json`.
 *   **Hibernate:** `drop-and-create` (Dev/Test) bzw. `update` (Prod).
 *   **Flyway:** Zur Schema-Migration genutzt.
 
@@ -119,8 +121,10 @@ Wichtige Konfigurationen:
 
 *   **Rollen:** `ADMIN`, `REFERENT`, `TEILNEHMER`.
 *   Alle Endpunkte mit `@RolesAllowed` oder `@Authenticated` absichern.
-*   JWT-Token wird von `AuthResource` ausgestellt.
-*   Passwörter: BCrypt via `BcryptUtil.bcryptHash()`.
+*   Identität, Login und Passwörter liegen komplett bei Keycloak - kein eigenes JWT, kein
+    lokaler Passwort-Hash mehr. `Nutzer` enthält nur noch `keycloakId` als Verknüpfung.
+*   `KeycloakUserProvisioningService` (`domain/service`) ist die einzige Stelle, die den
+    Keycloak Admin REST Client anspricht (Nutzer anlegen/aktualisieren/löschen, Passwort-Reset).
 
 === Geschäftslogik-Highlights
 

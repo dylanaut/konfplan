@@ -55,7 +55,7 @@ cd frontend && npx playwright test
 | Architecture | Hexagonal (Ports & Adapters) |
 | ORM | Hibernate ORM Panache (Active Record) |
 | Database | PostgreSQL (prod/dev), H2 (test), Flyway migrations |
-| Security | JWT (SmallRye), BCrypt, `quarkus-security-jpa` |
+| Security | OIDC token verification against Keycloak (`quarkus-oidc`), Keycloak Admin REST Client for user provisioning |
 | Scheduling | MiniZinc (external process via `PlanErstellungService`) |
 | Frontend | Vue 3, Vite, Tailwind CSS, Pinia, Vue Router, Axios |
 | Integration | Quarkus Quinoa (embeds frontend build into backend) |
@@ -96,13 +96,14 @@ All entities extend `VersionedEntity` (Panache Active Record, `Long id`, `@Versi
 ### Frontend Structure (`frontend/src/`)
 
 ```
-api/axios.js          # Central Axios instance with JWT interceptor
+api/axios.js          # Central Axios instance; attaches/refreshes the Keycloak token per request
+keycloak.js           # keycloak-js client instance (Authorization Code Flow)
 components/
 ├── admin/tabs/       # Tab components for the Admin dashboard
 └── *.vue             # Shared UI components (modals, buttons, pagination)
-router/index.js       # Route definitions and navigation guards
+router/index.js       # Route definitions and navigation guards (redirect to Keycloak login)
 stores/
-├── auth.js           # Login/logout/token (drives the Axios JWT interceptor)
+├── auth.js           # isAuthenticated/role/login/logout wrapping keycloak-js
 ├── eventContext.js   # Globally selected Veranstaltung
 └── availability.js   # Map<userId, Set<slotId>> for user/room availability
 views/*.vue           # Top-level page components routed by Vue Router
@@ -117,7 +118,8 @@ views/*.vue           # Top-level page components routed by Vue Router
 - **Polymorphism:** `@Inheritance(SINGLE_TABLE)` + Jackson `@JsonSubTypes` for Nutzer and Vortrag hierarchies.
 - **CSV import:** Slot indices are 1-based.
 - **Code style:** `.editorconfig` at root — 4 spaces for Java/XML, 2 spaces for JS/TS/Vue.
-- **Default password** on user create/import: `konfplan` in dev/test mode, a random UUID in prod (BCrypt-hashed either way).
+- **Identity/passwords live in Keycloak**, not in the database — `Nutzer` only carries a `keycloakId` link. `KeycloakUserProvisioningService` (`domain/service`) is the sole caller of the Keycloak Admin REST Client (used from `AdminService`/`TeilnehmerService`/`ReferentService` on every create/update/delete/reset-password).
+- **Default password** on user create/import: `konfplan` (non-temporary) in dev/test mode, a random UUID (temporary, forces a Keycloak-side password change on first login) in prod.
 
 ## Full-Stack Feature Slice Checklist (Data Model Changes)
 
@@ -152,6 +154,7 @@ Remote is **GitHub** (`github.com/dylanaut/konfplan`, private), authenticated vi
 
 ## Infrastructure Notes
 
+- **Keycloak**: in dev mode, Quarkus Keycloak Dev Services auto-starts a container (needs Docker) and imports the realm from `backend/src/main/resources/keycloak/konfplan-realm.json` (roles, `konfplan-frontend`/`konfplan-backend`/`konfplan-admin-cli` clients). Fixed at `http://localhost:8180` so the frontend's hardcoded `keycloak.js` config can reach it directly. In `%test`, `quarkus.oidc` stays enabled (needed for the `JsonWebToken` CDI producer) but points at a dummy, never-contacted URL — tests use `@TestSecurity`/`@OidcSecurity` instead of a real Keycloak.
 - **MiniZinc** must be installed and on `PATH` (configured as `/opt/homebrew/bin/minizinc` in `application.properties`).
 - **Mailpit** is used in dev for outgoing email; configure credentials in `application.properties`.
 - **Deadlines** (`deadlineReferenten`, `deadlineTeilnehmer`) gate editability in each dashboard.

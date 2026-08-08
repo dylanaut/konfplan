@@ -9,7 +9,6 @@ Tests sind **Quarkus-Integrationstests** die eine vollständige Anwendungsinstan
 ```
 src/test/
 ├── java/kreyj/konfplan/resource/
-│   ├── AuthResourceTest.java          # Login, Token-Validierung
 │   ├── AdminResourceTest.java         # Admin-CRUD
 │   ├── UserPersistenceTest.java       # User-Vererbungshierarchie + Persistenz
 │   ├── UserInheritanceTest.java       # Polymorphie-Tests für User-Typen
@@ -57,7 +56,6 @@ class MeineResourceTest {
         // Minimale Testdaten anlegen
         Admin admin = new Admin();
         admin.email = "admin@test.de";
-        admin.passwordHash = "hash";
         admin.persist();
 
         Veranstaltung v = new Veranstaltung();

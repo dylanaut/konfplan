@@ -60,7 +60,7 @@ Tests verwenden **H2** In-Memory-Datenbank; Produktion/Entwicklung verwendet **P
 | ORM          | Hibernate ORM Panache (Active Record Pattern)     |
 | Datenbank    | PostgreSQL (Prod/Dev), H2 (Test)                  |
 | Migration    | Flyway                                            |
-| Security     | JWT (SmallRye), BCrypt, `quarkus-security-jpa`    |
+| Security     | OIDC-Token-Verifikation gegen Keycloak (`quarkus-oidc`), Keycloak Admin REST Client |
 | PlanErstellung  | MiniZinc (externer Prozess via `PlanErstellungService`) |
 | CSV-Import   | OpenCSV 5.11.2                                    |
 | PDF-Export   | OpenPDF 2.0.3                                     |
@@ -95,13 +95,14 @@ util/                 # Hilfsfunktionen
 Struktur unter `frontend/src/`:
 
 ```
-api/axios.js          # Zentrale Axios-Instanz mit JWT-Interceptor
+api/axios.js          # Zentrale Axios-Instanz; haengt/erneuert das Keycloak-Token je Request
+keycloak.js           # keycloak-js-Client-Instanz (Authorization Code Flow)
 components/
 ├── admin/tabs/       # Tab-Komponenten für Admin-Dashboard
 └── *.vue             # Gemeinsame UI-Komponenten (Modals, Buttons, Pagination)
-router/index.js       # Route-Definitionen und Navigation Guards
+router/index.js       # Route-Definitionen und Navigation Guards (Redirect zu Keycloak-Login)
 stores/
-├── auth.js           # Login/Logout/Token (steuert JWT-Interceptor)
+├── auth.js           # isAuthenticated/Rolle/login/logout als Wrapper um keycloak-js
 ├── eventContext.js   # Global ausgewählte Veranstaltung
 └── availability.js   # Map<userId, Set<slotId>> für Nutzer-/Raum-Verfügbarkeit
 views/*.vue           # Top-Level-Seiten-Komponenten geroutet von Vue Router
@@ -131,14 +132,15 @@ views/*.vue           # Top-Level-Seiten-Komponenten geroutet von Vue Router
 - **DTOs leben im Web-Adapter** (`adapter/in/rest`), werden nie in die Service-Schicht weitergegeben.
 - CSV-Import von Verfügbarkeiten erfolgt über 1-basierte Slot-Indizes.
 - **Code-Stil:** `.editorconfig` im Root-Verzeichnis — 4 Leerzeichen für Java/XML, 2 für JS/TS/Vue.
-- **Standard-Passwort** bei Nutzer-Erstellung/Import: `konfplan` im Dev/Test-Modus, ein zufaelliges UUID-Passwort in Produktion (in beiden Faellen BCrypt-gehasht).
+- **Identität/Passwörter liegen in Keycloak**, nicht in der Datenbank — `Nutzer` trägt nur `keycloakId` als Verknüpfung. `KeycloakUserProvisioningService` (`domain/service`) ist die einzige Stelle, die den Keycloak Admin REST Client aufruft.
+- **Standard-Passwort** bei Nutzer-Erstellung/Import: `konfplan` (nicht temporär) im Dev/Test-Modus, ein zufälliges UUID-Passwort (temporär, erzwingt Keycloak-seitig eine Änderung beim ersten Login) in Produktion.
 
 ## Bekannte Besonderheiten & Infrastruktur-Notizen
 
 - **MiniZinc** muss auf dem System installiert sein und im PATH sein (konfiguriert als `/opt/homebrew/bin/minizinc` in `application.properties` für macOS).
 - Deadlines (`deadlineReferenten`, `deadlineTeilnehmer`) steuern die Bearbeitbarkeit von Daten in den jeweiligen Dashboards.
 - Räume werden **veranstaltungsübergreifend** auf Überschneidungen geprüft (ein Raum in einer Veranstaltung blockiert ihn in einer anderen).
-- Passwort-Reset per E-Mail (Mailpit-Credentials in `application.properties` setzen für Entwicklung).
+- **Keycloak**: Im Dev-Modus startet Quarkus Keycloak Dev Services automatisch einen Container (Docker nötig) und importiert das Realm aus `backend/src/main/resources/keycloak/konfplan-realm.json`. Passwort-Reset läuft über Keycloaks eigene Login-Seite, nicht mehr über einen Mailpit-Link aus dieser App.
 - Vite (`vite.config.js`) ist so konfiguriert, dass eine `manifest.json` für die dynamische Einbindung von Assets in Qute-Templates erzeugt wird.
 - **DB-Skripte:** `db/ensure_prod_db.sh` und `db/ensure_prod_infra.sh` für lokales PostgreSQL/Mailpit-Setup (Docker-basiert, Dev/Test). Produktions-`.deb`-Pakete liegen unter `packaging/debian/` (siehe dessen `README.md`).
 
