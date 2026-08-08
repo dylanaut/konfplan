@@ -1,0 +1,154 @@
+# Docker-Compose-Deployment für KonfPlan (App + PostgreSQL + Keycloak + optional Caddy/Mailpit).
+#
+# Funktioniert identisch lokal (macOS + UTM-VM) und auf einem Cloud-Host (z.B. Hetzner) - der
+# Unterschied steckt ausschließlich in deploy/.env (siehe .env.example) und dem aktivierten
+# Compose-Profile "public", nicht in dieser Datei.
+#
+# App und Keycloak sind standardmäßig nur an 127.0.0.1 gebunden (sicher per Default: von außen
+# nicht erreichbar, lokal per "http://localhost:9000" trotzdem nutzbar) - Caddy erreicht beide
+# unabhängig von der Host-Portbindung immer intern über den Compose-Service-Namen.
+#
+#   (kein Profil) - lokal/UTM: App+Keycloak per "http://localhost:<port>" erreichbar, kein TLS
+#                   (kein öffentlicher Host, daher auch keine Let's-Encrypt-Zertifikate möglich).
+#   public         - Hetzner/Internet: zusätzlich Caddy als TLS-Reverse-Proxy (automatisches
+#                    Let's Encrypt, Ports 80/443 öffentlich gebunden).
+#   mailpit        - zusätzlich Mailpit statt echtem SMTP (z.B. Brevo) - für Staging/Tests ohne
+#                    echten Mailversand.
+#
+# Passwörter kommen NIE aus dieser Datei oder aus .env, sondern aus Docker-Compose-File-Secrets
+# (secrets/*.txt, von bootstrap.sh serverseitig generiert, siehe Deployment.adoc).
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  keycloak_admin_password:
+    file: ./secrets/keycloak_admin_password.txt
+  keycloak_admin_cli_secret:
+    file: ./secrets/keycloak_admin_cli_secret.txt
+  brevo_smtp_password:
+    file: ./secrets/brevo_smtp_password.txt
+
+volumes:
+  postgres-data:
+  caddy-data:
+  caddy-config:
+
+services:
+
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: konfplan
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    volumes:
+      # Postgres 18+ erwartet den Mount-Punkt eine Ebene hoeher als frueher (legt selbst einen
+      # Major-Version-Unterordner an) - siehe backend/src/main/docker/docker-compose.yml.
+      - postgres-data:/var/lib/postgresql
+      # Legt zusaetzlich die "keycloak"-Datenbank an (nur beim allerersten Start mit leerem
+      # Datenverzeichnis - der offizielle Postgres-Entrypoint fuehrt *.sql hier nur einmalig aus).
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: postgres
+      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME:-localhost}
+      KC_HOSTNAME_STRICT: "false"
+      # Caddy (Profil "public") terminiert TLS und spricht Keycloak intern per HTTP an. Ohne
+      # Caddy (lokal/UTM) wird Keycloak stattdessen direkt per HTTP erreicht.
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+    secrets:
+      - db_password
+      - keycloak_admin_password
+    volumes:
+      # Realm-Import: von bootstrap.sh aus keycloak-realm.template.json generiert (enthaelt das
+      # tatsaechliche Admin-CLI-Client-Secret, daher nicht im Repo, siehe .gitignore).
+      - ./keycloak-realm.generated.json:/opt/keycloak/data/import/konfplan-realm.json:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        export KC_BOOTSTRAP_ADMIN_PASSWORD="$$(cat /run/secrets/keycloak_admin_password)" &&
+        export KC_DB_PASSWORD="$$(cat /run/secrets/db_password)" &&
+        exec /opt/keycloak/bin/kc.sh start --import-realm
+    ports:
+      - "${KEYCLOAK_PORT_BINDING:-127.0.0.1:8080:8080}"
+
+  app:
+    image: ghcr.io/dylanaut/konfplan:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: konfplan
+      DB_USER: postgres
+      KC_SERVER_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
+      KC_REALM: konfplan
+      FRONTEND_BASE_URL: ${APP_PUBLIC_URL:-http://localhost:9000}
+      # Nur relevant, wenn Profil "mailpit" NICHT aktiv ist (echter SMTP-Versand, z.B. Brevo).
+      BREVO_SMTP_USER: ${BREVO_SMTP_USER:-}
+      QUARKUS_MAILER_HOST: ${MAILER_HOST:-mailpit}
+      QUARKUS_MAILER_PORT: ${MAILER_PORT:-1025}
+      QUARKUS_MAILER_START_TLS: ${MAILER_START_TLS:-DISABLED}
+    secrets:
+      - db_password
+      - keycloak_admin_cli_secret
+      - brevo_smtp_password
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        export DB_PASSWORD="$$(cat /run/secrets/db_password)" &&
+        export KC_ADMIN_CLI_SECRET="$$(cat /run/secrets/keycloak_admin_cli_secret)" &&
+        export BREVO_SMTP_PASSWORD="$$(cat /run/secrets/brevo_smtp_password)" &&
+        exec /opt/jboss/container/java/run/run-java.sh
+    ports:
+      - "${APP_PORT_BINDING:-127.0.0.1:9000:9000}"
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+    profiles: ["mailpit"]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - app
+      - keycloak
+    environment:
+      # Werden von bootstrap.sh vor "docker compose --profile public up" geprueft (Compose
+      # evaluiert ${VAR:?} leider fuer JEDEN Service beim Parsen, auch fuer inaktive Profile -
+      # eine harte Pflicht-Variable hier wuerde daher auch den lokalen/UTM-Fall ohne Caddy brechen).
+      APP_HOSTNAME: ${APP_HOSTNAME:-}
+      KEYCLOAK_HOSTNAME: ${KEYCLOAK_HOSTNAME:-}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    profiles: ["public"]

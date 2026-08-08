@@ -1,0 +1,16 @@
+{
+	email {$ACME_EMAIL}
+}
+
+# App und Keycloak brauchen getrennte (Sub-)Domains, keinen gemeinsamen Pfad-Präfix - Keycloak
+# geht von seinem eigenen Hostname/Root-Pfad aus (Realm-/Redirect-URLs, Admin-Konsole-Assets).
+# Beide DNS-Namen muessen als A-Record auf die IP dieses Servers zeigen, damit Caddy per
+# HTTP-01-Challenge automatisch ein Let's-Encrypt-Zertifikat beziehen kann.
+
+{$APP_HOSTNAME} {
+	reverse_proxy app:9000
+}
+
+{$KEYCLOAK_HOSTNAME} {
+	reverse_proxy keycloak:8080
+}

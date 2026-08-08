@@ -1,0 +1,214 @@
+= KonfPlan: Docker-Compose-Deployment (UTM lokal + Hetzner Cloud)
+:toc: left
+:toc-title: Inhalt
+:toclevels: 3
+:icons: font
+:sectnums:
+
+== Überblick
+
+Dieses Verfahren startet alle Komponenten (App, PostgreSQL, Keycloak, optional Caddy/Mailpit)
+über ein einziges `docker-compose.yml` unter `deploy/` - identisch nutzbar lokal in einer
+UTM-VM auf dem Mac und auf einem Cloud-Server wie Hetzner. Es ist ein zusätzliches, alternatives
+Verfahren zum bestehenden `.deb`/systemd-Weg (`packaging/debian/`, `install.sh`) - beide bleiben
+unabhängig voneinander bestehen.
+
+Passwörter (DB, Keycloak-Admin, Keycloak-Admin-CLI-Client-Secret) werden **niemals** im Repo,
+in `docker-compose.yml` oder in `.env` hinterlegt. `deploy/bootstrap.sh` generiert sie beim
+ersten Lauf direkt auf dem jeweiligen Host in `deploy/secrets/*.txt` (chmod 600, `.gitignore`'d)
+und bindet sie per Docker-Compose-File-Secrets read-only in die Container - nichts wird
+übertragen, nichts landet in `docker inspect`/Prozessumgebung.
+
+== Voraussetzungen
+
+* Docker Engine + Compose-Plugin (`docker compose version` sollte funktionieren)
+* `openssl` (für die Secret-Generierung, auf macOS/Debian bereits vorhanden)
+* Für das Profil `public` (Hetzner): zwei DNS-A-Records auf die Server-IP (siehe unten)
+
+== Verzeichnis `deploy/`
+
+[cols="1,3", options="header"]
+|===
+| Datei | Zweck
+| `docker-compose.yml` | Alle Services (App, Postgres, Keycloak, Caddy, Mailpit)
+| `bootstrap.sh` | Generiert fehlende Secrets, rendert das Keycloak-Realm-Template
+| `.env.example` | Nicht-geheime Konfiguration (Hostnames, Ports, Image-Tag) - nach `.env` kopieren
+| `keycloak-realm.template.json` | Realm-Vorlage (Rollen/Clients), Platzhalter für Secret + Domain
+| `Caddyfile` | Reverse-Proxy-Konfiguration für Profil `public` (automatisches Let's Encrypt)
+| `postgres-init/` | Legt beim allerersten Start zusätzlich die `keycloak`-Datenbank an
+|===
+
+Zur Laufzeit/gitignored erzeugt: `.env`, `secrets/*.txt`, `keycloak-realm.generated.json`.
+
+== Secrets-Handling im Detail
+
+`bootstrap.sh` ist idempotent: einmal generierte Secret-Dateien werden bei erneutem Aufruf
+**nicht** überschrieben (ein Redeploy rotiert also keine Passwörter versehentlich). Ablauf:
+
+1. Generiert (falls nicht vorhanden) `secrets/db_password.txt`, `secrets/keycloak_admin_password.txt`,
+   `secrets/keycloak_admin_cli_secret.txt`, `secrets/brevo_smtp_password.txt` via `openssl rand -hex 32`
+   (Hex statt Base64, damit die Werte auch in URL-Query-Parametern/form-urlencoded Requests ohne
+   Sonderfälle funktionieren - Base64 enthält `+`, `/`, `=`).
+2. Rendert `keycloak-realm.template.json` → `keycloak-realm.generated.json`: ersetzt
+   `__ADMIN_CLI_SECRET__` durch den generierten Wert und `__APP_PUBLIC_URL__` durch
+   `APP_PUBLIC_URL` aus `.env` (Redirect-URIs des Frontend-Clients).
+
+In `docker-compose.yml` werden die Secrets per `secrets:`-Block eingebunden und dort, wo das
+Image selbst kein `_FILE`-Suffix unterstützt (Keycloak, App), per überschriebenem `command` aus
+`/run/secrets/*` gelesen und vor dem eigentlichen Start exportiert. PostgreSQL unterstützt
+`POSTGRES_PASSWORD_FILE` nativ.
+
+== Lokal auf macOS mit UTM
+
+Sinnvoll, um das komplette Compose-Setup vor einem echten Cloud-Deploy zu testen.
+
+. UTM installieren (`brew install --cask utm` oder von https://mac.getutm.app).
+. Neue VM erstellen: *Virtualize* (nicht Emulate, da Apple Silicon) → Linux → Debian 13 oder
+  Ubuntu 24.04 ARM64-Server-ISO. Netzwerk-Modus *Shared Network* reicht, damit die VM per SSH
+  und über einen Port-Forward erreichbar ist.
+. In der VM: Docker installieren (offizielles Docker-Repo, nicht `docker.io` aus den
+  Distributions-Paketen, da das Compose-Plugin sonst fehlt):
++
+[source,bash]
+----
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER   # neu einloggen, damit die Gruppe greift
+----
+. Repo (oder nur `deploy/`) auf die VM bringen, z.B. per `git clone` oder `scp -r deploy/ vm:~/konfplan-deploy/`.
+. Im `deploy/`-Verzeichnis:
++
+[source,bash]
+----
+cp .env.example .env    # Standardwerte reichen lokal meist unveraendert
+./bootstrap.sh
+docker compose up -d
+----
+. App unter `http://<VM-IP-oder-localhost>:9000`, Keycloak-Admin-Konsole unter
+  `http://<VM-IP-oder-localhost>:8080` erreichbar (Login: `admin` / Inhalt von
+  `secrets/keycloak_admin_password.txt`).
+
+== Hetzner Cloud (öffentlich erreichbar)
+
+=== Server erstellen
+
+Über die Hetzner-Cloud-Console oder die `hcloud`-CLI, z.B.:
+
+[source,bash]
+----
+hcloud server create --name konfplan --type cx22 --image debian-13 --ssh-key <dein-key-name>
+----
+
+Ein `cx22` (2 vCPU/4 GB) reicht für App+Postgres+Keycloak im Kleinbetrieb.
+
+=== DNS
+
+Zwei A-Records auf die Server-IP anlegen (Keycloak braucht einen eigenen Hostnamen, siehe
+`Caddyfile` - kein gemeinsamer Pfad-Präfix mit der App):
+
+[source]
+----
+konfplan.<deine-domain>       A   <server-ip>
+auth.konfplan.<deine-domain>  A   <server-ip>
+----
+
+=== Firewall
+
+Nur SSH, HTTP und HTTPS öffentlich erlauben - Postgres/Keycloak/App-Ports NICHT (sie sind ohnehin
+per `127.0.0.1:...`-Bindung in `docker-compose.yml` schon nicht von außen erreichbar, siehe
+Kommentar dort; die Firewall ist die zweite Verteidigungslinie).
+
+[source,bash]
+----
+hcloud firewall create --name konfplan-fw
+hcloud firewall add-rule konfplan-fw --direction in --protocol tcp --port 22 --source-ips 0.0.0.0/0,::/0
+hcloud firewall add-rule konfplan-fw --direction in --protocol tcp --port 80 --source-ips 0.0.0.0/0,::/0
+hcloud firewall add-rule konfplan-fw --direction in --protocol tcp --port 443 --source-ips 0.0.0.0/0,::/0
+hcloud firewall apply-to-resource konfplan-fw --type server --server konfplan
+----
+
+=== Docker installieren, Deploy übertragen
+
+Wie im UTM-Fall (`curl -fsSL https://get.docker.com | sudo sh`), dann per `scp`/`git clone` das
+`deploy/`-Verzeichnis auf den Server bringen.
+
+=== `.env` für Profil `public` ausfüllen
+
+[source,bash]
+----
+cp .env.example .env
+----
+
+In `.env` zusätzlich (siehe auskommentierte Zeilen dort):
+
+[source]
+----
+APP_HOSTNAME=konfplan.<deine-domain>
+KEYCLOAK_HOSTNAME=auth.konfplan.<deine-domain>
+APP_PUBLIC_URL=https://konfplan.<deine-domain>
+ACME_EMAIL=<deine-email>          # Let's-Encrypt-Kontaktadresse
+BREVO_SMTP_USER=<dein-brevo-login>  # oder Profil "mailpit" statt echtem SMTP nutzen
+----
+
+=== Starten
+
+[source,bash]
+----
+./bootstrap.sh public
+docker compose --profile public up -d
+----
+
+Caddy bezieht beim ersten Start automatisch Let's-Encrypt-Zertifikate für beide Domains (dauert
+wenige Sekunden, sichtbar in `docker compose logs caddy -f`). App/Keycloak sind dann NICHT mehr
+direkt per Port erreichbar, nur noch über Caddy (Port 80/443).
+
+=== Smoke-Test
+
+[source,bash]
+----
+curl -sI https://konfplan.<deine-domain>/
+curl -s https://auth.konfplan.<deine-domain>/realms/konfplan/.well-known/openid-configuration | jq .issuer
+----
+
+== Update / Redeploy
+
+[source,bash]
+----
+docker compose pull app          # neues Image von ghcr.io
+docker compose up -d app         # nur die App neu starten, DB/Keycloak laufen weiter
+----
+
+`bootstrap.sh` vorher erneut auszuführen ist unschädlich (überschreibt keine bestehenden
+Secrets), aber i.d.R. nicht nötig, solange sich `.env` nicht geändert hat.
+
+== Der eine echte Bestandsaccount
+
+Anders als bei der Keycloak-Migration selbst (siehe `keycloak-migration.adoc` - dort gab es
+praktisch keine echten Bestandsnutzer) betrifft das bei einem *erstmaligen* Produktions-Deploy
+genau einen Fall: den Bootstrap-Admin aus `V2__data.sql` (`juergenkrey`). Dieser Account existiert
+nur als Datenbankzeile, nicht in Keycloak - er muss einmalig manuell über die Keycloak-Admin-
+Konsole angelegt werden (Login-Name muss mit `juergenkrey` übereinstimmen, Rolle `ADMIN`).
+
+== Backup-Hinweise
+
+* **PostgreSQL**: Volume `deploy_postgres-data` enthält sowohl die App- als auch die
+  Keycloak-Datenbank. Klassischer `pg_dump`/Volume-Snapshot reicht für einen Kleinbetrieb.
+* **Keycloak-Realm**: `docker compose exec keycloak /opt/keycloak/bin/kc.sh export --dir /tmp/export --realm konfplan`
+  exportiert den aktuellen (durch Admin-UI-Änderungen ggf. abweichenden) Realm-Zustand - nützlich
+  vor größeren Änderungen, ersetzt aber kein DB-Backup.
+* **Secrets**: `deploy/secrets/` ist der einzige Ort, an dem die Passwörter existieren - bei
+  einem Server-Wechsel/Wiederherstellung müssen sie mitgesichert werden (z.B. verschlüsselt,
+  getrennt von einem reinen DB-Backup).
+
+== Troubleshooting
+
+* **Keycloak startet, aber `/realms/konfplan/...` liefert 404**: Realm-Import schlägt bei
+  bereits existierendem Realm mit gleichem Namen aber abweichendem Inhalt NICHT automatisch neu
+  an - `--import-realm` überspringt existierende Realms. Für einen erzwungenen Reimport das
+  Postgres-Volume der `keycloak`-Datenbank leeren (Datenverlust für alle Keycloak-Änderungen!)
+  oder den Realm manuell über die Admin-Konsole löschen und neu starten.
+* **Caddy bekommt kein Zertifikat**: DNS-A-Records prüfen (`dig +short <hostname>` muss die
+  Server-IP liefern) und dass Port 80 tatsächlich von außen erreichbar ist (Cloud-Firewall +
+  ggf. zusätzlich `ufw`).
+* **App kann Keycloak nicht erreichen**: `KC_SERVER_URL`/`KEYCLOAK_INTERNAL_URL` muss auf den
+  Compose-Service-Namen zeigen (`http://keycloak:8080`), nicht auf `localhost` - beide Container
+  laufen im selben Compose-Netzwerk und erreichen sich über den Service-Namen.
