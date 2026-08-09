@@ -11,5 +11,6 @@ Description: PostgreSQL-Datenbank fuer KonfPlan
  Container benoetigt.
  .
  Dieses Paket installiert einen einmaligen systemd-Oneshot-Service, der die
- KonfPlan-Datenbank und den zugehoerigen Datenbank-Benutzer in der lokalen
- PostgreSQL-Instanz idempotent anlegt, sobald PostgreSQL laeuft.
+ KonfPlan-Datenbank, eine zusaetzliche "keycloak"-Datenbank (fuer das optionale
+ konfplan-keycloak-Paket) und den zugehoerigen Datenbank-Benutzer in der
+ lokalen PostgreSQL-Instanz idempotent anlegt, sobald PostgreSQL laeuft.
