@@ -1,0 +1,25 @@
+Package: konfplan-keycloak
+Version: 1.0.0-1
+Section: web
+Priority: optional
+Architecture: all
+Depends: docker.io | docker-ce
+Recommends: konfplan-postgresql
+Maintainer: KonfPlan <juergen.krey@msg.group>
+Description: Keycloak Identity-Provider fuer KonfPlan (Docker-Wrapper)
+ KonfPlan authentifiziert Nutzer ueber Keycloak (OIDC) statt einer eigenen
+ Nutzerverwaltung. Keycloak bietet kein offizielles .deb-Paket; dieses Paket
+ installiert daher einen systemd-Service, der den offiziellen
+ quay.io/keycloak/keycloak-Docker-Container startet, stoppt und bei Fehlern
+ neu startet - analog zu konfplan-mailpit.
+ .
+ Keycloak legt seinen Zustand (Realm, Nutzer, Rollen) in einer eigenen
+ Datenbank auf der KonfPlan-PostgreSQL-Instanz ab (siehe konfplan-postgresql)
+ - beide Pakete sollten gemeinsam installiert werden. Der Realm-Import wird
+ beim ersten Start aus einer Vorlage gerendert (Admin-CLI-Client-Secret,
+ oeffentliche App-URL), siehe /etc/konfplan/keycloak.env.
+ .
+ Enthaelt KEINE TLS-Terminierung. Fuer eine oeffentlich erreichbare Installation
+ entweder einen eigenen Reverse-Proxy mit TLS vorschalten oder stattdessen das
+ Docker-Compose-Verfahren unter deploy/ nutzen (Caddy + automatisches
+ Let's Encrypt).

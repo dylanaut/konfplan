@@ -1,0 +1,30 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        chmod 640 /etc/konfplan/keycloak.env
+
+        mkdir -p /var/lib/konfplan-keycloak/import
+        chmod 700 /var/lib/konfplan-keycloak
+
+        systemctl daemon-reload || true
+        systemctl enable konfplan-keycloak.service || true
+
+        echo ""
+        echo "konfplan-keycloak wurde installiert, aber noch NICHT gestartet."
+        echo "Vorher unbedingt konfigurieren: /etc/konfplan/keycloak.env"
+        echo "  - DB_PASSWORD (= dasselbe wie in postgresql.env)"
+        echo "  - KC_ADMIN_PASSWORD (Login fuer die Admin-Konsole, Benutzername 'admin')"
+        echo "  - KC_ADMIN_CLI_SECRET (= dasselbe wie KC_ADMIN_CLI_SECRET in konfplan.env)"
+        echo "  - KC_HOSTNAME, APP_PUBLIC_URL (oeffentliche Adressen dieser Installation)"
+        echo "konfplan-postgresql muss VOR diesem Service laufen (legt die 'keycloak'-DB an)."
+        echo "Starten mit:"
+        echo "  sudo systemctl start konfplan-keycloak.service"
+        echo "Admin-Konsole danach unter http://<server>:8080 erreichbar."
+        echo "Logs: journalctl -u konfplan-keycloak.service -f"
+        echo ""
+        ;;
+esac
+
+exit 0

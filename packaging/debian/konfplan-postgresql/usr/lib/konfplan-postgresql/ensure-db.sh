@@ -26,4 +26,15 @@ else
     echo "Datenbank '$DB_NAME' existiert bereits."
 fi
 
-echo "PostgreSQL: Datenbank '$DB_NAME' und Rolle '$DB_USER' sind bereit."
+# Zusaetzliche, separate Datenbank fuer Keycloak (siehe konfplan-keycloak-Paket) - dieselbe
+# Rolle wie die App, aber eigene Datenbank. Wird immer angelegt (auch ohne installiertes
+# konfplan-keycloak-Paket) - eine ungenutzte leere Datenbank ist harmlos, das haelt dieses
+# Skript einfacher als eine Bedingtheit auf ein anderes Paket.
+if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='keycloak'" | grep -q 1; then
+    sudo -u postgres createdb -O "$DB_USER" "keycloak"
+    echo "Datenbank 'keycloak' angelegt (Owner: $DB_USER)."
+else
+    echo "Datenbank 'keycloak' existiert bereits."
+fi
+
+echo "PostgreSQL: Datenbanken '$DB_NAME'+'keycloak' und Rolle '$DB_USER' sind bereit."

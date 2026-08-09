@@ -2,7 +2,7 @@
 #
 # Installations-Skript für die KonfPlan-Anwendung auf einem frischen Debian 13
 # (Trixie) Server. Baut die Anwendung aus dem Quellcode und installiert sie
-# zusammen mit PostgreSQL und Mailpit über die drei .deb-Pakete unter
+# zusammen mit PostgreSQL, Keycloak und Mailpit über die vier .deb-Pakete unter
 # packaging/debian/ (siehe packaging/debian/README.md für Details und
 # Troubleshooting).
 #
@@ -26,9 +26,10 @@ echo "--> Schritt 2: Anwendung wird gebaut..."
 echo "--> Schritt 3: Debian-Pakete werden gebaut..."
 packaging/debian/build-all.sh
 
-# --- Schritt 4: PostgreSQL und Mailpit installieren ---
-echo "--> Schritt 4: PostgreSQL und Mailpit werden installiert..."
+# --- Schritt 4: PostgreSQL, Keycloak und Mailpit installieren ---
+echo "--> Schritt 4: PostgreSQL, Keycloak und Mailpit werden installiert..."
 sudo apt-get install -y ./packaging/debian/konfplan-postgresql/konfplan-postgresql_*_all.deb
+sudo apt-get install -y ./packaging/debian/konfplan-keycloak/konfplan-keycloak_*_all.deb
 sudo apt-get install -y ./packaging/debian/konfplan-mailpit/konfplan-mailpit_*_all.deb
 
 # --- Schritt 5: Anwendung installieren ---
@@ -50,11 +51,13 @@ echo "Installation abgeschlossen!"
 echo ""
 echo "Vor dem ersten Start noch konfigurieren:"
 echo "  sudo nano /etc/konfplan/postgresql.env  # DB_PASSWORD setzen"
+echo "  sudo nano /etc/konfplan/keycloak.env     # DB_PASSWORD (= das in postgresql.env), KC_ADMIN_PASSWORD, KC_ADMIN_CLI_SECRET, KC_HOSTNAME, APP_PUBLIC_URL"
 echo "  sudo nano /etc/konfplan/mailpit.env      # optional, Standardwerte meist ok"
-echo "  sudo nano /etc/konfplan/konfplan.env     # DB_PASSWORD (= das in postgresql.env), BREVO_SMTP_* oder Mailpit-Variablen"
+echo "  sudo nano /etc/konfplan/konfplan.env     # DB_PASSWORD (= das in postgresql.env), KC_ADMIN_CLI_SECRET (= das in keycloak.env), BREVO_SMTP_* oder Mailpit-Variablen"
 echo ""
 echo "Dann starten (in dieser Reihenfolge):"
 echo "  sudo systemctl start konfplan-postgresql.service"
+echo "  sudo systemctl start konfplan-keycloak.service"
 echo "  sudo systemctl start konfplan-mailpit.service"
 echo "  sudo systemctl start konfplan.service"
 echo ""

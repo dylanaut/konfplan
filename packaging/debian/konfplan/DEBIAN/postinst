@@ -25,8 +25,8 @@ case "$1" in
 
         echo ""
         echo "KonfPlan wurde installiert, aber noch NICHT gestartet."
-        echo "Bitte zuerst /etc/konfplan/konfplan.env anpassen (DB_PASSWORD, ggf. BREVO_SMTP_*"
-        echo "oder Mailpit-Werte, JWT-Issuer) und dann starten mit:"
+        echo "Bitte zuerst /etc/konfplan/konfplan.env anpassen (DB_PASSWORD, KC_ADMIN_CLI_SECRET,"
+        echo "ggf. BREVO_SMTP_* oder Mailpit-Werte) und dann starten mit:"
         echo "  sudo systemctl start konfplan.service"
         echo "Logs: journalctl -u konfplan.service -f"
         echo ""

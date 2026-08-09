@@ -1,0 +1,17 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    remove)
+        systemctl stop konfplan-keycloak.service || true
+        docker rm -f konfplan-keycloak > /dev/null 2>&1 || true
+        systemctl daemon-reload || true
+        ;;
+    purge)
+        systemctl disable konfplan-keycloak.service || true
+        rm -rf /var/lib/konfplan-keycloak
+        echo "Hinweis: Die 'keycloak'-Datenbank in PostgreSQL wurde NICHT geloescht."
+        ;;
+esac
+
+exit 0

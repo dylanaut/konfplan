@@ -1,0 +1,37 @@
+[Unit]
+Description=Keycloak Identity-Provider fuer KonfPlan (Docker-Container)
+After=docker.service network-online.target konfplan-postgresql.service
+Requires=docker.service konfplan-postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/konfplan/keycloak.env
+ExecStartPre=/usr/lib/konfplan-keycloak/ensure-realm.sh
+ExecStartPre=-/usr/bin/docker rm -f konfplan-keycloak
+# --network host: der Container muss die native PostgreSQL-Instanz des Hosts unter
+# "localhost" erreichen (KC_DB_URL_HOST) - auf einem Debian-Server (kein Docker Desktop)
+# gibt es sonst keinen einfachen Weg vom Container zum Host ueber "localhost".
+ExecStart=/usr/bin/docker run --rm --name konfplan-keycloak \
+    --network host \
+    -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
+    -e KC_BOOTSTRAP_ADMIN_PASSWORD=${KC_ADMIN_PASSWORD} \
+    -e KC_DB=postgres \
+    -e KC_DB_URL_HOST=localhost \
+    -e KC_DB_URL_DATABASE=keycloak \
+    -e KC_DB_USERNAME=${DB_USER} \
+    -e KC_DB_PASSWORD=${DB_PASSWORD} \
+    -e KC_HTTP_PORT=${KEYCLOAK_PORT} \
+    -e KC_HOSTNAME=${KC_HOSTNAME} \
+    -e KC_HOSTNAME_STRICT=false \
+    -e KC_HTTP_ENABLED=true \
+    -e KC_PROXY_HEADERS=xforwarded \
+    -v /var/lib/konfplan-keycloak/import/konfplan-realm.json:/opt/keycloak/data/import/konfplan-realm.json:ro \
+    quay.io/keycloak/keycloak:26.5 start --import-realm
+ExecStop=/usr/bin/docker stop -t 30 konfplan-keycloak
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target
