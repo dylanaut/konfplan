@@ -12,7 +12,7 @@
 
     <properties>
         <opencsv.version>5.11.2</opencsv.version>
-        <openpdf.version>2.0.3</openpdf.version>
+        <openpdf.version>3.0.5</openpdf.version>
         <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
         <jsoup.version>1.15.3</jsoup.version>
         <surefire-plugin.version>3.5.6</surefire-plugin.version>
