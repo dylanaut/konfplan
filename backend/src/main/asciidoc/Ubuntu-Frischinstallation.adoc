@@ -1,0 +1,265 @@
+= KonfPlan: Frischinstallation auf Ubuntu (Docker Compose vs. .deb-Pakete)
+:toc: left
+:toc-title: Inhalt
+:toclevels: 3
+:icons: font
+:sectnums:
+
+== Überblick
+
+Dieses Dokument fasst zwei vollständige Installationswege für eine *frische Ubuntu-Maschine*
+(getestet gegen Ubuntu 24.04 LTS Server) zusammen und ergänzt sie um den Weg, die Anwendung
+direkt aus dem Quellcode zu bauen und ihre automatisierten Tests laufen zu lassen.
+Beide Deployment-Wege existieren unabhängig voneinander im Repo und werden an anderer Stelle
+bereits im Detail beschrieben - dieses Dokument dient als kompakter Einstiegspunkt, der beide
+nebeneinanderstellt:
+
+[cols="1,3,3", options="header"]
+|===
+| Weg | Vorteil | Ausführliche Doku
+| Docker Compose | Isoliert (App/DB/Keycloak je eigener Container), einfaches Backup/Umzug, identisch nutzbar lokal (UTM) und auf Hetzner Cloud | `Deployment-DockerCompose.adoc`
+| `.deb`-Pakete (systemd) | Näher an einer klassischen Server-Installation (PostgreSQL nativ statt Container), `apt`-verwaltet | `packaging/debian/README.md`, `install.sh`
+|===
+
+Für beide Wege gilt: Passwörter/Secrets landen **nie** im Repository - sie werden beim jeweiligen
+Setup automatisch generiert bzw. in `.env`-/`*.env`-Dateien außerhalb des Repos gepflegt.
+
+== Gemeinsame Voraussetzungen
+
+Auf der frischen Ubuntu-Maschine zunächst installieren:
+
+[source,bash]
+----
+sudo apt-get update
+sudo apt-get install -y git curl openssl openjdk-21-jdk nodejs npm
+
+# Docker: NICHT das docker.io-Paket aus den Ubuntu-Repos (Compose-Plugin fehlt dort),
+# sondern das offizielle Docker-Repo - wird für beide Wege gebraucht
+# (Weg A direkt, Weg B für Keycloak/Mailpit-Container):
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER
+newgrp docker   # oder ab-/anmelden, damit die Gruppenzugehörigkeit greift
+docker compose version   # sollte funktionieren
+----
+
+MiniZinc (Constraint-Solver für die PlanErstellung, sowohl zur Laufzeit als auch für Backend-Tests
+nötig):
+
+[source,bash]
+----
+sudo apt-get install -y minizinc || true
+minizinc --version
+----
+
+Falls das Paket in den Ubuntu-Repos fehlt oder zu alt ist, alternativ das Release-Bundle laden
+(wie in der CI, `.github/workflows/ci.yml`):
+
+[source,bash]
+----
+ASSET_URL=$(curl -fsSL https://api.github.com/repos/MiniZinc/MiniZincIDE/releases/latest \
+  | grep -o '"browser_download_url": *"[^"]*bundle-linux-x86_64\.tgz"' | head -1 | cut -d'"' -f4)
+curl -fsSL -o /tmp/minizinc.tgz "$ASSET_URL"
+mkdir -p "$HOME/minizinc" && tar -xzf /tmp/minizinc.tgz -C "$HOME/minizinc" --strip-components=1
+"$HOME/minizinc/bin/minizinc" --version
+export MINIZINC_PATH="$HOME/minizinc/bin/minizinc"   # überschreibt minizinc.path in application.properties
+----
+
+Repository klonen:
+
+[source,bash]
+----
+git clone https://github.com/dylanaut/konfplan.git
+cd konfplan
+----
+
+== Weg A: Docker Compose
+
+Alle Komponenten (App, PostgreSQL, Keycloak, optional Mailpit) laufen als Container, gesteuert über
+`deploy/docker-compose.yml`. Details/Troubleshooting/Hetzner-Profil `public` (TLS via Caddy) siehe
+`Deployment-DockerCompose.adoc` - hier nur der lokale/lokal-öffentliche Standardfall (Profil ohne
+`--profile`, entspricht dem UTM-Fall).
+
+[source,bash]
+----
+cd deploy
+cp .env.example .env        # Standardwerte reichen lokal unveraendert
+./bootstrap.sh              # generiert DB-/Keycloak-Passwoerter in secrets/*.txt (idempotent)
+docker compose up -d        # startet App + Postgres + Keycloak (+ optional Mailpit)
+----
+
+Danach:
+
+* *App*: `http://localhost:9000`
+* *Keycloak-Admin-Konsole*: `http://localhost:8080` - Login `admin` / Inhalt von
+  `deploy/secrets/keycloak_admin_password.txt`
+* Status/Logs: `docker compose ps`, `docker compose logs -f app`
+
+=== Erster Login-Account
+
+Der DB-seitige Bootstrap-Admin (`juergenkrey`, aus `V2__data.sql`) existiert nur als Datenbankzeile,
+nicht in Keycloak. Er muss **einmalig manuell** über die Keycloak-Admin-Konsole angelegt werden:
+Login-Name muss exakt `juergenkrey` lauten, Rolle `ADMIN` zuweisen. Erst danach ist ein Login in der
+App als Admin möglich.
+
+=== Smoke-Test
+
+[source,bash]
+----
+curl -sI http://localhost:9000/
+curl -s http://localhost:8080/realms/konfplan/.well-known/openid-configuration | jq .issuer
+----
+
+=== Auf-/Abbauen
+
+[source,bash]
+----
+docker compose stop     # Daten bleiben im Docker-Volume erhalten
+docker compose down -v  # Volumes inkl. aller Daten (DB, Keycloak-Realm-Aenderungen) loeschen
+----
+
+== Weg B: .deb-Pakete (systemd)
+
+Vier eigenständige `.deb`-Pakete (App, PostgreSQL-Setup, Keycloak-Container, Mailpit-Container),
+siehe `packaging/debian/README.md`. `install.sh` im Repo-Root automatisiert Bauen + Installieren in
+einem Rutsch.
+
+=== Ein-Kommando-Variante
+
+[source,bash]
+----
+./install.sh
+----
+
+Baut Backend+Frontend, erzeugt und installiert alle vier `.deb`-Pakete und öffnet ggf. Port 9000 in
+`ufw`. Konfiguration und Start bleiben danach manuell (siehe unten) - keiner der Services startet
+automatisch.
+
+=== Manuelle Variante (mehr Kontrolle)
+
+[source,bash]
+----
+# 1. Backend + Frontend bauen
+cd backend && ../mvnw clean package -DskipTests && cd ..
+
+# 2. Alle vier .deb-Pakete bauen
+packaging/debian/build-all.sh
+
+# 3. Installieren - Reihenfolge beachten
+sudo apt-get install -y docker.io   # fuer konfplan-keycloak/-mailpit
+sudo apt-get install -y ./packaging/debian/konfplan-postgresql/konfplan-postgresql_*_all.deb
+sudo apt-get install -y ./packaging/debian/konfplan-keycloak/konfplan-keycloak_*_all.deb
+sudo apt-get install -y ./packaging/debian/konfplan-mailpit/konfplan-mailpit_*_all.deb
+sudo apt-get install -y ./packaging/debian/konfplan/konfplan_*_all.deb   # zieht openjdk-21-jre-headless + minizinc nach
+----
+
+=== Konfiguration vor dem ersten Start
+
+Reihenfolge beachten (`konfplan-keycloak.service` braucht `konfplan-postgresql.service`,
+`konfplan.service` braucht eine erreichbare Keycloak-Instanz):
+
+[source,bash]
+----
+sudo nano /etc/konfplan/postgresql.env  # DB_PASSWORD setzen
+sudo systemctl start konfplan-postgresql.service
+
+sudo nano /etc/konfplan/keycloak.env    # DB_PASSWORD (= postgresql.env), KC_ADMIN_PASSWORD,
+                                         # KC_ADMIN_CLI_SECRET, KC_HOSTNAME, APP_PUBLIC_URL
+sudo systemctl start konfplan-keycloak.service
+
+sudo nano /etc/konfplan/mailpit.env     # optional, Standardwerte meist ok
+sudo systemctl start konfplan-mailpit.service
+
+sudo nano /etc/konfplan/konfplan.env    # DB_PASSWORD (= postgresql.env),
+                                         # KC_ADMIN_CLI_SECRET (= keycloak.env),
+                                         # BREVO_SMTP_* oder Mailpit-Variablen
+sudo systemctl start konfplan.service
+----
+
+`DB_NAME`/`DB_USER` müssen in `konfplan.env` und `postgresql.env` übereinstimmen (Standard:
+`konfplan` in beiden). `KC_ADMIN_CLI_SECRET` muss in `konfplan.env` und `keycloak.env` identisch
+sein. Ebenso `KC_SERVER_URL`/`KC_HOSTNAME`+`KEYCLOAK_PORT` und `FRONTEND_BASE_URL`/`APP_PUBLIC_URL`.
+
+Die App ist danach unter `http://<server>:9000` erreichbar. Der Bootstrap-Admin-Account
+(`juergenkrey`) muss - genau wie bei Weg A - einmalig manuell in der Keycloak-Admin-Konsole angelegt
+werden.
+
+=== Logs & Status
+
+[source,bash]
+----
+journalctl -u konfplan.service -f
+systemctl status konfplan.service konfplan-postgresql.service konfplan-keycloak.service konfplan-mailpit.service
+----
+
+=== Troubleshooting (Auszug)
+
+* **`konfplan-postgresql.service` schlägt fehl**: `systemctl status postgresql` prüfen - das
+  Oneshot-Skript nutzt lokale Peer-Authentifizierung, funktioniert nur auf demselben Host.
+* **Keycloak-Login funktioniert nicht**: prüfen, ob `keycloak`-Datenbank existiert
+  (`konfplan-postgresql.service` muss vorher gelaufen sein) und ob `KC_ADMIN_CLI_SECRET` in beiden
+  `.env`-Dateien identisch ist.
+* **Firewall**: nur `9000/tcp` (App) und ggf. `8025/tcp` (Mailpit-UI) öffnen. Port 5432
+  (PostgreSQL), 8080 (Keycloak), 1025 (Mailpit-SMTP) NICHT nach außen öffnen.
+* **Deinstallation**: `sudo apt-get remove konfplan konfplan-postgresql konfplan-keycloak
+  konfplan-mailpit` (behält Konfiguration); `apt-get purge` entfernt zusätzlich Konfiguration und
+  Systembenutzer, lässt aber die PostgreSQL-Datenbanken/-Rolle als Sicherheitsnetz bestehen.
+
+Vollständige Details siehe `packaging/debian/README.md`.
+
+== Vergleich
+
+[cols="1,2,2", options="header"]
+|===
+| | Docker Compose (Weg A) | .deb-Pakete (Weg B)
+| PostgreSQL | Container | nativ (`apt install postgresql`)
+| Keycloak/Mailpit | Container | Container (systemd-verwaltet)
+| App | Container (Image von ghcr.io) | nativ (fast-jar via systemd)
+| TLS (öffentlicher Betrieb) | Profil `public` inkl. Caddy/Let's-Encrypt | kein TLS - für öffentlichen Betrieb stattdessen Weg A nutzen
+| Update | `docker compose pull app && docker compose up -d app` | neues `.deb` bauen und `apt-get install -y ./konfplan_*.deb`
+|===
+
+== Aus dem Quellcode bauen und automatisierte Tests laufen lassen
+
+Unabhängig vom gewählten Deployment-Weg lässt sich die Anwendung auf derselben Maschine auch direkt
+aus dem Quellcode bauen und testen.
+
+=== Backend-Tests
+
+Nutzen H2 in-memory, brauchen aber MiniZinc auf `PATH`/`MINIZINC_PATH` (siehe oben):
+
+[source,bash]
+----
+./mvnw clean install -DskipTests      # baut Backend + Frontend (Quinoa ruft npm auf)
+cd backend && ../mvnw test            # alle Backend-Tests
+# einzelne Klasse/Methode:
+../mvnw test -Dtest=AdminServiceTest
+../mvnw test -Dtest=AdminServiceTest#methodName
+----
+
+=== Frontend-E2E-Tests (Playwright)
+
+Siehe `frontend/docs/Playwright.adoc`. Braucht eine laufende App im **Dev-Modus** (nicht die
+Docker-Compose- oder `.deb`-Instanz aus den Wegen A/B - dort fehlen die Dev-Testdaten):
+
+[source,bash]
+----
+# Terminal 1: Backend im Dev-Modus (startet Dev Services fuer Postgres+Keycloak, braucht Docker)
+cd backend && ../mvnw quarkus:dev
+
+# Terminal 2: Playwright
+cd frontend
+npm install
+npx playwright install --with-deps
+npx playwright test
+----
+
+Der Test `PlanungsWorkflow.spec.js` loggt sich als `juergenkrey@yahoo.de` / `start123` ein und
+durchläuft den kompletten Planungs-Workflow.
+
+== Weiterführende Dokumente
+
+* `Deployment-DockerCompose.adoc` - Details zu Weg A, inkl. Hetzner-Cloud-Profil `public` mit TLS
+* `packaging/debian/README.md` - Details zu Weg B
+* `Betrieb mit JRE.adoc` - Dev-/Prod-Workflow, Quinoa-Integration
+* `Betrieb mit Native Image.adoc` - dritter, (noch) nicht paketierter Weg via GraalVM
+* `frontend/docs/Playwright.adoc` - E2E-Test-Details
