@@ -22,6 +22,7 @@
         <plantuml-generator-maven-plugin.version>3.0.1</plantuml-generator-maven-plugin.version>
         <asciidoctor-maven-plugin.version>3.2.0</asciidoctor-maven-plugin.version>
         <asciidoctorj-diagram.version>3.2.1</asciidoctorj-diagram.version>
+        <asciidoctorj-diagram-plantuml.version>1.2026.2</asciidoctorj-diagram-plantuml.version>
         <quarkus-quinoa.version>2.8.4</quarkus-quinoa.version>
         <assertj.version>3.27.7</assertj.version>
         <quarkus-mailpit.version>2.1.2</quarkus-mailpit.version>
@@ -400,7 +401,7 @@
                                 </goals>
                                 <phase>generate-test-sources</phase>
                                 <configuration>
-                                    <outputFilename>${project.basedir}/src/main/asciidoc/VM-Klassendiagramm.dot
+                                    <outputFilename>../../src/main/asciidoc/KonfPlan-Klassendiagramm.dot
                                     </outputFilename>
                                     <scanPackages>
                                         <scanPackage>
@@ -445,6 +446,11 @@
                                 <groupId>org.asciidoctor</groupId>
                                 <artifactId>asciidoctorj-diagram</artifactId>
                                 <version>${asciidoctorj-diagram.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.asciidoctor</groupId>
+                                <artifactId>asciidoctorj-diagram-plantuml</artifactId>
+                                <version>${asciidoctorj-diagram-plantuml.version}</version>
                             </dependency>
 
                             <dependency>

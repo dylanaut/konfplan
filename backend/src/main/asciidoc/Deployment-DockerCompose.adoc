@@ -7,17 +7,13 @@
 
 == Überblick
 
-Dieses Verfahren startet alle Komponenten (App, PostgreSQL, Keycloak, optional Caddy/Mailpit)
-über ein einziges `docker-compose.yml` unter `deploy/` - identisch nutzbar lokal in einer
-UTM-VM auf dem Mac und auf einem Cloud-Server wie Hetzner. Es ist ein zusätzliches, alternatives
-Verfahren zum bestehenden `.deb`/systemd-Weg (`packaging/debian/`, `install.sh`) - beide bleiben
-unabhängig voneinander bestehen.
+Dieses Verfahren startet alle Komponenten (App, PostgreSQL, Keycloak, optional Caddy/Mailpit) über ein einziges `docker-compose
+.yml` unter `deploy/` - identisch nutzbar lokal in einer UTM-VM auf dem Mac (https://kofler.info/ubuntu-24-04-utm/[Anleitung
+Kofler], Downloads unter https://cdimage.ubuntu.com//ubuntu/noble/daily-live/current/[cdimage.ubuntu]) und auf einem Cloud-Server
+wie Hetzner.
+Es ist ein zusätzliches, alternatives Verfahren zum bestehenden `.deb`/systemd-Weg (`packaging/debian/`, `install.sh`) - beide bleiben unabhängig voneinander bestehen.
 
-Passwörter (DB, Keycloak-Admin, Keycloak-Admin-CLI-Client-Secret) werden **niemals** im Repo,
-in `docker-compose.yml` oder in `.env` hinterlegt. `deploy/bootstrap.sh` generiert sie beim
-ersten Lauf direkt auf dem jeweiligen Host in `deploy/secrets/*.txt` (chmod 600, `.gitignore`'d)
-und bindet sie per Docker-Compose-File-Secrets read-only in die Container - nichts wird
-übertragen, nichts landet in `docker inspect`/Prozessumgebung.
+Passwörter (DB, Keycloak-Admin, Keycloak-Admin-CLI-Client-Secret) werden **niemals** im Repo, in `docker-compose.yml` oder in `.env` hinterlegt. `deploy/bootstrap.sh` generiert sie beim ersten Lauf direkt auf dem jeweiligen Host in `deploy/secrets/*.txt` (chmod 600, .gitignore'd) und bindet sie per Docker-Compose-File-Secrets read-only in die Container - nichts wird übertragen, nichts landet in `docker inspect`/Prozessumgebung.
 
 == Voraussetzungen
 
@@ -27,7 +23,7 @@ und bindet sie per Docker-Compose-File-Secrets read-only in die Container - nich
 
 == Verzeichnis `deploy/`
 
-[cols="1,3", options="header"]
+[cols="1,3",options="header"]
 |===
 | Datei | Zweck
 | `docker-compose.yml` | Alle Services (App, Postgres, Keycloak, Caddy, Mailpit)
@@ -43,23 +39,21 @@ Zur Laufzeit/gitignored erzeugt: `.env`, `secrets/*.txt`, `keycloak-realm.genera
 == Secrets-Handling im Detail
 
 `bootstrap.sh` ist idempotent: einmal generierte Secret-Dateien werden bei erneutem Aufruf
-**nicht** überschrieben (ein Redeploy rotiert also keine Passwörter versehentlich). Ablauf:
+**nicht** überschrieben (ein Redeploy rotiert also keine Passwörter versehentlich).
+Ablauf:
 
 1. Generiert (falls nicht vorhanden) `secrets/db_password.txt`, `secrets/keycloak_admin_password.txt`,
-   `secrets/keycloak_admin_cli_secret.txt` via `openssl rand -hex 32` (Hex statt Base64, damit die
-   Werte auch in URL-Query-Parametern/form-urlencoded Requests ohne Sonderfälle funktionieren -
-   Base64 enthält `+`, `/`, `=`). Diese drei erzeugt/braucht ausschließlich diese Anwendung selbst.
-2. Legt (falls nicht vorhanden) eine **leere** `secrets/brevo_smtp_password.txt` an - der Wert
-   kommt von außen (dein Brevo-Account, siehe unten) und wird deshalb nie zufällig generiert.
+`secrets/keycloak_admin_cli_secret.txt` via `openssl rand -hex 32` (Hex statt Base64, damit die Werte auch in URL-Query-Parametern/form-urlencoded Requests ohne Sonderfälle funktionieren - Base64 enthält `+`, `/`, `=`).
+Diese drei erzeugt/braucht ausschließlich diese Anwendung selbst.
+2. Legt (falls nicht vorhanden) eine **leere** `secrets/brevo_smtp_password.txt` an - der Wert kommt von außen (dein Brevo-Account, siehe unten) und wird deshalb nie zufällig generiert.
 3. Rendert `keycloak-realm.template.json` → `keycloak-realm.generated.json`: ersetzt
-   `__ADMIN_CLI_SECRET__` durch den generierten Wert und `__APP_PUBLIC_URL__` durch
-   `APP_PUBLIC_URL` aus `.env` (Redirect-URIs des Frontend-Clients).
+`__ADMIN_CLI_SECRET__` durch den generierten Wert und `__APP_PUBLIC_URL__` durch
+`APP_PUBLIC_URL` aus `.env` (Redirect-URIs des Frontend-Clients).
 
 === Mailversand-Zugangsdaten (Brevo)
 
-`BREVO_SMTP_USER` (dein Brevo-Login) kommt als normale, nicht-geheime Variable aus `.env` -
-siehe Kommentar dort. Das zugehörige Passwort ist ein echter SMTP-Schlüssel aus deinem
-Brevo-Account (https://app.brevo.com → *SMTP & API* → *SMTP-Schlüssel*) und muss **manuell**
+`BREVO_SMTP_USER` (dein Brevo-Login) kommt als normale, nicht-geheime Variable aus `.env` - siehe Kommentar dort.
+Das zugehörige Passwort ist ein echter SMTP-Schlüssel aus deinem Brevo-Account (https://app.brevo.com → *SMTP & API* → *SMTP-Schlüssel*) und muss **manuell**
 eingetragen werden, `bootstrap.sh` kann ihn nicht erraten:
 
 [source,bash]
@@ -69,13 +63,11 @@ chmod 600 secrets/brevo_smtp_password.txt
 ----
 
 `bootstrap.sh` warnt, falls `BREVO_SMTP_USER` gesetzt, die Secret-Datei aber noch leer ist.
-Alternative ohne echten Brevo-Account: Profil `mailpit` statt `BREVO_SMTP_USER` nutzen (kein
-echter Versand, Test-Postfach unter `http://localhost:8025`) - dann bleibt die leere
-Platzhalter-Datei einfach unbenutzt.
+Alternative ohne echten Brevo-Account: Profil `mailpit` statt `BREVO_SMTP_USER` nutzen (kein echter Versand, Test-Postfach unter `http://localhost:8025`) - dann bleibt die leere Platzhalter-Datei einfach unbenutzt.
 
-In `docker-compose.yml` werden die Secrets per `secrets:`-Block eingebunden und dort, wo das
-Image selbst kein `_FILE`-Suffix unterstützt (Keycloak, App), per überschriebenem `command` aus
-`/run/secrets/*` gelesen und vor dem eigentlichen Start exportiert. PostgreSQL unterstützt
+In `docker-compose.yml` werden die Secrets per `secrets:`-Block eingebunden und dort, wo das Image selbst kein `_FILE`-Suffix unterstützt (Keycloak, App), per überschriebenem `command` aus
+`/run/secrets/*` gelesen und vor dem eigentlichen Start exportiert.
+PostgreSQL unterstützt
 `POSTGRES_PASSWORD_FILE` nativ.
 
 == Lokal auf macOS mit UTM
@@ -83,11 +75,9 @@ Image selbst kein `_FILE`-Suffix unterstützt (Keycloak, App), per überschriebe
 Sinnvoll, um das komplette Compose-Setup vor einem echten Cloud-Deploy zu testen.
 
 . UTM installieren (`brew install --cask utm` oder von https://mac.getutm.app).
-. Neue VM erstellen: *Virtualize* (nicht Emulate, da Apple Silicon) → Linux → Debian 13 oder
-  Ubuntu 24.04 ARM64-Server-ISO. Netzwerk-Modus *Shared Network* reicht, damit die VM per SSH
-  und über einen Port-Forward erreichbar ist.
-. In der VM: Docker installieren (offizielles Docker-Repo, nicht `docker.io` aus den
-  Distributions-Paketen, da das Compose-Plugin sonst fehlt):
+. Neue VM erstellen: *Virtualize* (nicht Emulate, da Apple Silicon) → Linux → Debian 13 oder Ubuntu 24.04 ARM64-Server-ISO.
+Netzwerk-Modus *Shared Network* reicht, damit die VM per SSH und über einen Port-Forward erreichbar ist.
+. In der VM: Docker installieren (offizielles Docker-Repo, nicht `docker.io` aus den Distributions-Paketen, da das Compose-Plugin sonst fehlt):
 +
 [source,bash]
 ----
@@ -104,8 +94,8 @@ cp .env.example .env    # Standardwerte reichen lokal meist unveraendert
 docker compose up -d
 ----
 . App unter `http://<VM-IP-oder-localhost>:9000`, Keycloak-Admin-Konsole unter
-  `http://<VM-IP-oder-localhost>:8080` erreichbar (Login: `admin` / Inhalt von
-  `secrets/keycloak_admin_password.txt`).
+`http://<VM-IP-oder-localhost>:8080` erreichbar (Login: `admin` / Inhalt von
+`secrets/keycloak_admin_password.txt`).
 
 == Hetzner Cloud (öffentlich erreichbar)
 
@@ -133,9 +123,7 @@ auth.konfplan.<deine-domain>  A   <server-ip>
 
 === Firewall
 
-Nur SSH, HTTP und HTTPS öffentlich erlauben - Postgres/Keycloak/App-Ports NICHT (sie sind ohnehin
-per `127.0.0.1:...`-Bindung in `docker-compose.yml` schon nicht von außen erreichbar, siehe
-Kommentar dort; die Firewall ist die zweite Verteidigungslinie).
+Nur SSH, HTTP und HTTPS öffentlich erlauben - Postgres/Keycloak/App-Ports NICHT (sie sind ohnehin per `127.0.0.1:...`-Bindung in `docker-compose.yml` schon nicht von außen erreichbar, siehe Kommentar dort; die Firewall ist die zweite Verteidigungslinie).
 
 [source,bash]
 ----
@@ -177,9 +165,8 @@ BREVO_SMTP_USER=<dein-brevo-login>  # oder Profil "mailpit" statt echtem SMTP nu
 docker compose --profile public up -d
 ----
 
-Caddy bezieht beim ersten Start automatisch Let's-Encrypt-Zertifikate für beide Domains (dauert
-wenige Sekunden, sichtbar in `docker compose logs caddy -f`). App/Keycloak sind dann NICHT mehr
-direkt per Port erreichbar, nur noch über Caddy (Port 80/443).
+Caddy bezieht beim ersten Start automatisch Let's-Encrypt-Zertifikate für beide Domains (dauert wenige Sekunden, sichtbar in `docker compose logs caddy -f`).
+App/Keycloak sind dann NICHT mehr direkt per Port erreichbar, nur noch über Caddy (Port 80/443).
 
 === Smoke-Test
 
@@ -197,51 +184,37 @@ docker compose pull app          # neues Image von ghcr.io
 docker compose up -d app         # nur die App neu starten, DB/Keycloak laufen weiter
 ----
 
-`bootstrap.sh` vorher erneut auszuführen ist unschädlich (überschreibt keine bestehenden
-Secrets), aber i.d.R. nicht nötig, solange sich `.env` nicht geändert hat.
+`bootstrap.sh` vorher erneut auszuführen ist unschädlich (überschreibt keine bestehenden Secrets), aber i.d.R. nicht nötig, solange sich `.env` nicht geändert hat.
 
 == Der eine echte Bestandsaccount
 
-Anders als bei der Keycloak-Migration selbst (siehe `keycloak-migration.adoc` - dort gab es
-praktisch keine echten Bestandsnutzer) betrifft das bei einem *erstmaligen* Produktions-Deploy
-genau einen Fall: den Bootstrap-Admin aus `V2__data.sql` (`juergenkrey`). Dieser Account existiert
-nur als Datenbankzeile, nicht in Keycloak - er muss einmalig manuell über die Keycloak-Admin-
-Konsole angelegt werden (Login-Name muss mit `juergenkrey` übereinstimmen, Rolle `ADMIN`).
+Anders als bei der Keycloak-Migration selbst (siehe `keycloak-migration.adoc` - dort gab es praktisch keine echten Bestandsnutzer) betrifft das bei einem *erstmaligen* Produktions-Deploy genau einen Fall: den Bootstrap-Admin aus `V2__data.sql` (`juergenkrey`).
+Dieser Account existiert nur als Datenbankzeile, nicht in Keycloak - er muss einmalig manuell über die Keycloak-Admin- Konsole angelegt werden (Login-Name muss mit `juergenkrey` übereinstimmen, Rolle `ADMIN`).
 
 == Persistenz über Neustarts hinweg
 
-Keycloak speichert seinen gesamten Zustand (Nutzer, Rollen-Zuweisungen, Client-Konfiguration) in
-seiner eigenen PostgreSQL-Datenbank (`KC_DB=postgres`, siehe `docker-compose.yml`) - nicht im
-Container selbst. Diese Datenbank liegt im benannten Docker-Volume `deploy_postgres-data`, das
+Keycloak speichert seinen gesamten Zustand (Nutzer, Rollen-Zuweisungen, Client-Konfiguration) in seiner eigenen PostgreSQL-Datenbank (`KC_DB=postgres`, siehe `docker-compose.yml`) - nicht im Container selbst.
+Diese Datenbank liegt im benannten Docker-Volume `deploy_postgres-data`, das
 `docker compose stop`/`restart`/`down` (ohne `-v`) unberührt lässt; nur `docker compose down -v`
-oder ein manuelles `docker volume rm` löschen es. Der `--import-realm`-Flag beim Keycloak-Start
-importiert das Realm nur beim allerersten Mal (danach: "Realm 'konfplan' already exists. Import
-skipped") - spätere Starts lesen ausschließlich den bereits persistierten Zustand.
+oder ein manuelles `docker volume rm` löschen es.
+Der `--import-realm`-Flag beim Keycloak-Start importiert das Realm nur beim allerersten Mal (danach: "Realm 'konfplan' already exists.
+Import skipped") - spätere Starts lesen ausschließlich den bereits persistierten Zustand.
 
 Konkret verifiziert: Admin-Login + ein eigens angelegter Testnutzer überleben einen vollen
 `docker compose down` (ohne `-v`) + `up` unverändert.
 
 == Backup-Hinweise
 
-* **PostgreSQL**: Volume `deploy_postgres-data` enthält sowohl die App- als auch die
-  Keycloak-Datenbank. Klassischer `pg_dump`/Volume-Snapshot reicht für einen Kleinbetrieb.
+* **PostgreSQL**: Volume `deploy_postgres-data` enthält sowohl die App- als auch die Keycloak-Datenbank.
+Klassischer `pg_dump`/Volume-Snapshot reicht für einen Kleinbetrieb.
 * **Keycloak-Realm**: `docker compose exec keycloak /opt/keycloak/bin/kc.sh export --dir /tmp/export --realm konfplan`
-  exportiert den aktuellen (durch Admin-UI-Änderungen ggf. abweichenden) Realm-Zustand - nützlich
-  vor größeren Änderungen, ersetzt aber kein DB-Backup.
-* **Secrets**: `deploy/secrets/` ist der einzige Ort, an dem die Passwörter existieren - bei
-  einem Server-Wechsel/Wiederherstellung müssen sie mitgesichert werden (z.B. verschlüsselt,
-  getrennt von einem reinen DB-Backup).
+exportiert den aktuellen (durch Admin-UI-Änderungen ggf. abweichenden) Realm-Zustand - nützlich vor größeren Änderungen, ersetzt aber kein DB-Backup.
+* **Secrets**: `deploy/secrets/` ist der einzige Ort, an dem die Passwörter existieren - bei einem Server-Wechsel/Wiederherstellung müssen sie mitgesichert werden (z.B. verschlüsselt, getrennt von einem reinen DB-Backup).
 
 == Troubleshooting
 
-* **Keycloak startet, aber `/realms/konfplan/...` liefert 404**: Realm-Import schlägt bei
-  bereits existierendem Realm mit gleichem Namen aber abweichendem Inhalt NICHT automatisch neu
-  an - `--import-realm` überspringt existierende Realms. Für einen erzwungenen Reimport das
-  Postgres-Volume der `keycloak`-Datenbank leeren (Datenverlust für alle Keycloak-Änderungen!)
-  oder den Realm manuell über die Admin-Konsole löschen und neu starten.
-* **Caddy bekommt kein Zertifikat**: DNS-A-Records prüfen (`dig +short <hostname>` muss die
-  Server-IP liefern) und dass Port 80 tatsächlich von außen erreichbar ist (Cloud-Firewall +
-  ggf. zusätzlich `ufw`).
-* **App kann Keycloak nicht erreichen**: `KC_SERVER_URL`/`KEYCLOAK_INTERNAL_URL` muss auf den
-  Compose-Service-Namen zeigen (`http://keycloak:8080`), nicht auf `localhost` - beide Container
-  laufen im selben Compose-Netzwerk und erreichen sich über den Service-Namen.
+* **Keycloak startet, aber `/realms/konfplan/...` liefert 404**: Realm-Import schlägt bei bereits existierendem Realm mit gleichem Namen aber abweichendem Inhalt NICHT automatisch neu an - `--import-realm` überspringt existierende Realms.
+Für einen erzwungenen Reimport das Postgres-Volume der `keycloak`-Datenbank leeren (Datenverlust für alle Keycloak-Änderungen!) oder den Realm manuell über die Admin-Konsole löschen und neu starten.
+* **Caddy bekommt kein Zertifikat**: DNS-A-Records prüfen (`dig +short <hostname>` muss die Server-IP liefern) und dass Port 80 tatsächlich von außen erreichbar ist (Cloud-Firewall +
+ggf. zusätzlich `ufw`).
+* **App kann Keycloak nicht erreichen**: `KC_SERVER_URL`/`KEYCLOAK_INTERNAL_URL` muss auf den Compose-Service-Namen zeigen (`http://keycloak:8080`), nicht auf `localhost` - beide Container laufen im selben Compose-Netzwerk und erreichen sich über den Service-Namen.

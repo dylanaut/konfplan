@@ -145,7 +145,7 @@ kcadm add-roles \
 
 === Strategie
 
-Keycloak akzeptiert BCrypt-Hashes im `CredentialRepresentation`-Format. Da alle CSV-importierten Nutzer das Standardpasswort `start123` haben, gibt es zwei Optionen:
+Keycloak akzeptiert BCrypt-Hashes im `CredentialRepresentation`-Format. Da alle CSV-importierten Nutzer das Standardpasswort `konfplan` haben, gibt es zwei Optionen:
 
 |===
 | Option | Vorteil | Nachteil
@@ -153,9 +153,10 @@ Keycloak akzeptiert BCrypt-Hashes im `CredentialRepresentation`-Format. Da alle 
 | `temporary=true` setzen | Einfach | Alle Nutzer müssen Passwort neu setzen
 |===
 
-[RECOMMENDATION]
+[TIP]
 ====
-Empfehlung: BCrypt-Hashes migrieren (`start123`-Hash ist bekannt), plus `requiredActions: ["UPDATE_PASSWORD"]` setzen — so können Nutzer ihr Passwort beim nächsten Login ändern, müssen es aber nicht sofort.
+Empfehlung: BCrypt-Hashes migrieren (`konfplan`-Hash ist bekannt), plus `requiredActions: ["UPDATE_PASSWORD"]` setzen — so können
+Nutzer ihr Passwort beim nächsten Login ändern, müssen es aber nicht sofort.
 ====
 
 === Migrationsskript (Python)

@@ -1,73 +1,60 @@
 = Verfügbarkeiten
 
-== Referenten - 
-geben ihre Verfügbarkeit für Zeit-Slots direkt selbst an 
+== Referenten -
+geben ihre Verfügbarkeit für Zeit-Slots direkt selbst an
 
 OP: individuelle maxWiederholungen werden noch nicht in PlanErstellung /MiniZinc DZN berücksichtigt
 
 == Pflichtvorträge (PV)
 Grundsätzlich liegt eine PV die Teilnehmer über ihre Gruppe (=PV.pflichtgruppe), den Slot (pflichtslot) und den Raum (pflichtraum) für den Vortrag fest.
 Konsequenz ist
-* Teilnehmer sind im Slot nicht verfügbar 
+* Teilnehmer sind im Slot nicht verfügbar
 * Raum ist im Slot belegt
 
 
-Hier kommen die UseCases...
+.Use-Cases Pflichtvorträge
+|===
+| Name | Vorbedingungen | Effekte
 
-== UseCase PV erzeugen
-bei der Anlage müsse  Verfügbarkeiten geprüft werden:
-* Raum darf für Slot nicht belegt sein
+| Pflichtvortrag erzeugen
+a|
+* Raum darf für Slot nicht belegt sein +
 * jeder TN der Gruppe muss für Slot verfügbar sein
+a|
+* Pflichtvortrag angelegt
+* Raumverfügbarkeit für Raum /Slot entfernt
+* Teillnehmerverfügbarkeit für alle Mitglieder der PV-Gruppe für Raum /Slot entfernt
 
-== UseCases PV ändern
-
-1. UseCase Slot ändern
-
-Vorbedingungen:
-* alle TN der Gruppe müssen im neuen Slot verfügbar sein 
+| Slot eines ex. Pflichtvortrags ändern
+a|
+* alle TN der Gruppe müssen im neuen Slot verfügbar sein
 * Raum ist im neuen Slot belegbar
-
-Effekte:
+a|
 * Raum wird für alten Slot wieder belegbar
-* alle TN der Gruppe sind im alten Slot wieder verfügbar 
+* alle TN der Gruppe sind im alten Slot wieder verfügbar
 * Raum ist für neuen Slot belegt
-* alle TN der Gruppe sind im neuen Slot nicht verfügbar  
+* alle TN der Gruppe sind im neuen Slot nicht verfügbar
 
-2. UseCase Raum ändern
-
-Vorbedingungen:
+| Raum eines ex. Pflichtvortrags ändern
+a|
 * Raum ist im neuen Slot belegbar
 * Raumkapazität reicht für Anzahl der Teilnehmer aus
-
-Effekte:
+a|
 * Alter Raum wird für Slot wieder belegbar
 * Neuer Raum ist für Slot belegt
 
-
-3. UseCase Gruppe ändern
-Die PV soll für eine neue, andere Gruppe Pflicht werden.
-Raum und Zeit bleiben unverändert.
-
-Vorbedingungen:
+| Gruppe eines ex. Pflichtvortrags ändern
+a|
 * Raumkapazität für Slot reicht für Anzahl der Teilnehmer aus
-* alle TN der neuen Gruppe müssen im neuen Slot verfügbar sein 
-
-
-Effekte:
-* alle TN der alten Gruppe sind im Slot wieder verfügbar 
+* alle TN der neuen Gruppe müssen im neuen Slot verfügbar sein
+a|
+* alle TN der alten Gruppe sind im Slot wieder verfügbar
 * alle TN der neuen Gruppe sind im Slot nicht mehr verfügbar
 
-
-== UseCase PV löschen
-
-Vorbedingungen:
-keine
-
-Effekte:
+| Pflichtvortrag löschen
+| -
+a|
 * alle Teilnehmer der Gruppe sind für Slot wieder verfügbar
-* Raum ist in Slot wieder belegbar 
+* Raum ist in Slot wieder belegbar
 
-
-
-OP: explizite Modellierung von Teilnehmer-Gruppen
-Oder Individuelle Zusammenstellung von Gruppe 
+|===

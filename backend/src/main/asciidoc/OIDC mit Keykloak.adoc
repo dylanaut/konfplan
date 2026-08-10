@@ -131,14 +131,16 @@ Jetzt musst du Quarkus nur noch sagen, wie es mit dem Keycloak-Container spreche
 
 === Schritt 4: Alles starten und testen
 
-1.  *Starte deine Anwendung im Dev-Modus:*
+. *Starte deine Anwendung im Dev-Modus:*
++
 [source,bash]
 ----
 cd backend
 ../mvnw quarkus:dev
 ----
 
-2.  *Beobachte die Logs:* Du wirst sehen, wie Quarkus den Keycloak-Docker-Container startet und deinen Realm importiert. Die Logs sehen etwa so aus:
+. *Beobachte die Logs:* Du wirst sehen, wie Quarkus den Keycloak-Docker-Container startet und deinen Realm importiert. Die Logs sehen etwa so aus:
++
 [source,text]
 ----
 INFO  [io.qua.key.dev.KeycloakDevServicesProcessor] (Quarkus Main Thread) Dev Services for Keycloak starting.
@@ -147,12 +149,12 @@ INFO  [io.qua.tes.com.TesCon] (Quarkus Main Thread) Creating container for image
 INFO  [io.qua.key.dev.KeycloakDevServicesProcessor] (Quarkus Main Thread) Importing realm 'konfplan' from 'konfplan-realm.json'.
 ----
 
-3.  *Keycloak Admin-Konsole öffnen:*
+. *Keycloak Admin-Konsole öffnen:*
 *   Gehe zu `http://localhost:8081`.
 *   Klicke auf "Administration Console".
 *   Logge dich mit dem Super-Admin-Benutzer ein, den Dev Services anlegt (Benutzer: `admin`, Passwort: `admin`).
 
-4.  *Deinen Realm überprüfen:*
+.  *Deinen Realm überprüfen:*
 *   In der Konsole siehst du oben links den "master"-Realm. Klicke darauf und wähle deinen `konfplan`-Realm aus.
 *   Unter "Clients" findest du `konfplan-backend`.
 *   Unter "Users" findest du deine drei angelegten Benutzer (`admin`, `referent`, `teilnehmer`).
@@ -257,12 +259,13 @@ Du musst deine Anwendung (vertreten durch Keycloak) bei jedem externen Anbieter 
 
 ==== Beispiel: Google
 
-1.  Gehe zur https://console.cloud.google.com/apis/credentials[Google Cloud Console].
-2.  Erstelle ein neues Projekt oder wähle ein bestehendes aus.
-3.  Gehe zu "Anmeldedaten", klicke auf "+ Anmeldedaten erstellen" und wähle "OAuth-Client-ID".
-4.  Wähle als Anwendungstyp "Webanwendung".
-5.  Gib einen Namen ein (z.B. "KonfPlan Keycloak Broker").
-6.  Füge unter *Autorisierte Weiterleitungs-URIs* die entscheidende Keycloak-URL hinzu:
+. Gehe zur https://console.cloud.google.com/apis/credentials[Google Cloud Console].
+. Erstelle ein neues Projekt oder wähle ein bestehendes aus.
+. Gehe zu "Anmeldedaten", klicke auf "+ Anmeldedaten erstellen" und wähle "OAuth-Client-ID".
+. Wähle als Anwendungstyp "Webanwendung".
+. Gib einen Namen ein (z.B. "KonfPlan Keycloak Broker").
+. Füge unter *Autorisierte Weiterleitungs-URIs* die entscheidende Keycloak-URL hinzu:
++
 [IMPORTANT]
 ====
 Die Weiterleitungs-URI (Redirect URI) folgt immer diesem Muster:
@@ -270,17 +273,18 @@ Die Weiterleitungs-URI (Redirect URI) folgt immer diesem Muster:
 
     Für deine lokale Entwicklungsumgebung lautet die URL also:
     `http://localhost:8081/realms/konfplan/broker/google/endpoint`
-    ====
-7.  Nach dem Speichern erhältst du eine **Client-ID** und ein **Client-Secret**. Kopiere diese Werte und füge sie in deine `konfplan-realm.json` an den Stellen `<1>` und `<2>` ein.
+====
+
+. Nach dem Speichern erhältst du eine **Client-ID** und ein **Client-Secret**. Kopiere diese Werte und füge sie in deine `konfplan-realm.json` an den Stellen `<1>` und `<2>` ein.
 
 ==== Beispiel: GitHub
 
-1.  Gehe zu deinen GitHub-Einstellungen -> "Developer settings" -> "OAuth Apps" -> "New OAuth App".
-2.  Gib einen Anwendungsnamen ein.
-3.  Homepage URL: `http://localhost:9000`
-4.  *Authorization callback URL*: Hier kommt wieder die Keycloak-Broker-URL hinein:
+. Gehe zu deinen GitHub-Einstellungen -> "Developer settings" -> "OAuth Apps" -> "New OAuth App".
+. Gib einen Anwendungsnamen ein.
+. Homepage URL: `http://localhost:9000`
+. *Authorization callback URL*: Hier kommt wieder die Keycloak-Broker-URL hinein: +
 `http://localhost:8081/realms/konfplan/broker/github/endpoint`
-5.  Nach dem Registrieren erhältst du eine **Client ID** und kannst ein **Client Secret** generieren. Füge diese in deine `konfplan-realm.json` ein.
+. Nach dem Registrieren erhältst du eine **Client ID** und kannst ein **Client Secret** generieren. Füge diese in deine `konfplan-realm.json` ein.
 
 === Schritt 3: Die Frontend-Anmeldung anpassen
 

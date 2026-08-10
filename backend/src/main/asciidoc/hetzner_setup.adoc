@@ -1,0 +1,185 @@
+= Hetzner Sizing
+:toc:
+
+Das Hosten des gesamten Setups über *Docker Compose* ist die beste Entscheidung.
+Es isoliert die Tools sauber voneinander, erleichtert Backups und macht den Umzug auf einen anderen Server extrem einfach.
+
+Hier ist die empfohlene Ressourcen-Dimensionierung für Ihre Docker-Umgebung sowie eine fertige Struktur-Vorlage für Ihre `docker-compose.yml`.
+
+== Ressourcen-Verteilung im Docker-Netzwerk (Min. 16 GB, optimal 32 GB RAM)
+
+* MiniZinc (8 vCPUs / 4–12 GB RAM): +
+Muss über Docker-Limits Zugriff auf alle 8 Kerne erhalten.
+Der RAM-Bedarf hängt stark von Ihren mathematischen Modellen ab
+.
+
+* Keycloak (2–4 GB RAM): +
+Läuft auf Quarkus-Basis sehr stabil, benötigt für 1000 Nutzer aber ausreichend JVM-Speicher.
+
+* Datenbank (PostgreSQL) (2–4 GB RAM): +
+Speicher für Connection-Pooling von Keycloak und MiniZinc-Ergebnissen.
+
+* Mailpit & Reverse Proxy (Unter 1 GB RAM): Extrem leichtfüßig.
+
+=== Docker Compose Struktur (Produktionsbereit)
+
+Für ein solches Setup benötigen Sie zwingend einen Reverse Proxy (wie Traefik oder Nginx Proxy Manager).
+Dieser kümmert sich automatisch um die SSL-Zertifikate (Let's Encrypt), da Keycloak ohne HTTPS (SSL) die Arbeit verweigert.
+
+Hier ist ein bewährtes Template für Ihre Konfiguration:
+
+[source,yaml]
+----
+version: '3.8'
+
+services:
+  # --- DATENBANK (Für Keycloak und Anwendungsdaten) ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: production_db
+    environment:
+      POSTGRES_DB: keycloak_db
+      POSTGRES_USER: keycloak_user
+      POSTGRES_PASSWORD: StrongSecurePassword123!
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - server_network
+    deploy:
+      resources:
+        limits:
+          memory: 4000M
+
+  # --- IDENTITY MANAGEMENT (Keycloak für 1000 Nutzer) ---
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: keycloak_service
+    command: start --optimized
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
+      KC_DB_USERNAME: keycloak_user
+      KC_DB_PASSWORD: StrongSecurePassword123!
+      KC_HOSTNAME: auth.ihre-domain.de
+      KC_PROXY_HEADERS: xforwarded
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: AdminSecurePassword123!
+    depends_on:
+      - postgres
+    networks:
+      - server_network
+    deploy:
+      resources:
+        limits:
+          memory: 4000M
+
+  # --- E-MAIL TESTING (Mailpit) ---
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit_service
+    # Port 1025 für SMTP (Keycloak sendet hierhin Mails)
+    # Port 8025 für das Web-UI (Mails im Browser lesen)
+    environment:
+      MP_MAX_MESSAGES: 5000
+    networks:
+      - server_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # --- RECHEN-ENGINE (MiniZinc mit 8 CPUs) ---
+  minizinc:
+    image: minizinc/minizinc:latest-alpine
+    container_name: minizinc_solver
+    # Falls MiniZinc als API laufen soll, nutzen Sie ein passendes Wrapper-Image.
+    # Hier setzen wir die harten Limits für die 8 zugewiesenen CPUs:
+    deploy:
+      resources:
+        limits:
+          cpus: '8.0'
+          memory: 12000M
+    networks:
+      - server_network
+
+volumes:
+  postgres_data:
+
+networks:
+  server_network:
+    driver: bridge
+----
+
+Wichtige Docker-Optimierungen für Ihr Vorhaben
+
+. CPU Pinning für MiniZinc: +
+Standardmäßig teilt Docker die CPU-Zyklen dynamisch auf.
+Da MiniZinc mathematische Optimierungen durchführt, sollten Sie im API-Wrapper oder beim Aufruf des MiniZinc-Befehls explizit den Parameter `--parallel 8` oder `-p 8` mitgeben, damit der Solver intern auch alle 8 zugewiesenen Kerne nutzt.
+
+. Keycloak Produktionsmodus: +
+Im Template ist der Befehl `start --optimized` hinterlegt.
+Das sorgt dafür, dass Keycloak extrem schnell startet und für hohe Lasten (1000 Nutzer) optimiert ist.
+
+. Persistente Daten: +
+Die Datenbank nutzt ein benanntes Docker Volume (`postgres_data`).
+Sichern Sie diesen Ordner auf dem Host-System (z. B. via `rclone` oder Hetzner Backup-Slots) täglich ab.
+
+== Vorab-Installation auf MacBook (M2)
+
+Da Ihr zukünftiger Hetzner-Server jedoch auf einer AMD64-Architektur (Intel/AMD) laufen wird, Ihr Mac aber eine ARM64-Architektur (M2) nutzt, müssen Sie beim Testen auf eine Besonderheit achten: *Die CPU-Architektur*.
+
+Für ein reibungsloses Testen empfehle ich Ihnen folgenden UTM (Lokale Linux-VM) Ansatz
+
+Wenn Sie die exakte Server-Umgebung (Ubuntu/Debian) inklusive der Linux-Befehle, Firewall-Regeln und Paketmanager simulieren möchten, nutzen Sie eine virtuelle Maschine.
+
+.Vorgehen:
+. Die kostenlose Virtualisierungs-Software UTM (getutm.app) herunterladen.
+
+. Ein Ubuntu Server Image (ARM64) herunterladen und in UTM als virtuelle Maschine installieren (das nutzt die volle Geschwindigkeit des M2).
+
+. In dieser Linux-VM Docker installieren und Ihr Docker Compose Setup starten.
+
+=== Anpassung der docker-compose.yml für den Mac-Test
+
+Wenn Sie direkt über Ansatz 1 (Docker Desktop) testen, sollten Sie zwei Zeilen in der Datei für den lokalen Test anpassen bzw. auskommentieren:
+
+. CPU-Limits entfernen: Ihr M2 hat eine andere Kern-Struktur (Performance- und Effizienzkerne).
+Begrenzen Sie MiniZinc lokal nicht direkt auf 8 Kerne, da dies die Emulation ausbremsen kann.
+
+. Domain-Namen: Ersetzen Sie `auth.ihre-domain.de` durch `localhost`.
+
+Die angepasste Sektion für Keycloak auf dem Mac:
+
+[source,yaml]
+----
+keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: keycloak_service
+    command: start-dev # Für lokales Testen ohne HTTPS/SSL-Zwang
+    environment:
+        KC_DB: postgres
+        KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
+        KC_DB_USERNAME: keycloak_user
+        KC_DB_PASSWORD: StrongSecurePassword123!
+        KC_HOSTNAME: localhost
+    ports:
+      - "8080:8080" # Macht Keycloak auf dem Mac unter http://localhost:8080 erreichbar
+    depends_on:
+      - postgres
+    networks:
+      - server_network
+----
+
+Ebenso sollten Sie bei Mailpit die Ports freigeben, um die Oberfläche auf dem Mac aufzurufen:
+
+[source,yaml]
+----
+mailpit:
+  image: axllent/mailpit:latest
+  container_name: mailpit_service
+  ports:
+    - "8025:8025" # Web-UI unter http://localhost:8025 öffnen
+    - "1025:1025" # SMTP-Port
+  networks:
+    - server_network
+----

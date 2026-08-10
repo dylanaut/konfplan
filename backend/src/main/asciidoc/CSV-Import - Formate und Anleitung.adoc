@@ -76,7 +76,7 @@ Legt Gebäude inklusive aller ihrer Räume an.
 | `Hausnummer` | nein | Text |
 | `PLZ` | ja | Text |
 | `Ort` | ja | Text |
-| `Räume` | nein | `Name:Kapazität:Etage\|Name:Kapazität:Etage\|...` | Etage ist optional (`Name:Kapazität` reicht). **Reihenfolge ist fix: Name, dann Kapazität (Zahl!), dann Etage.** Vertauschte Reihenfolge führt dazu, dass der Raum stillschweigend übersprungen wird (siehe <<bekannte_probleme,Bekannte Probleme im Beispieldatensatz>>).
+| `Räume` | nein | `Name:Kapazität:Etage\|Name:Kapazität:Etage\|...` | Etage ist optional (`Name:Kapazität` reicht). **Reihenfolge ist fix: Name, dann Kapazität (Zahl!), dann Etage.** Vertauschte Reihenfolge führt dazu, dass der Raum stillschweigend übersprungen wird.
 |===
 
 .Beispiel
@@ -139,7 +139,7 @@ Karrierekompass Linz 2026;2026-09-16 15:00;2026-09-16 19:00;kathrin.jessen@rks-l
 
 CAUTION: `Gruppen` und `Gebaeude_Namen` sind beides Pipe-getrennte Textlisten und daher rein optisch
 leicht verwechselbar. Ein Vertauschen fällt beim Import nicht als Fehler auf, sondern führt still dazu,
-dass keines der beiden Felder etwas Sinnvolles enthält (siehe <<bekannte_probleme,Bekannte Probleme im Beispieldatensatz>>) – nach dem Import unbedingt prüfen, ob der Veranstaltung die erwarteten Gebäude
+dass keines der beiden Felder etwas Sinnvolles enthält – nach dem Import unbedingt prüfen, ob der Veranstaltung die erwarteten Gebäude
 zugeordnet sind.
 
 === slots.csv – Zeit-Slots
@@ -227,7 +227,7 @@ technisch eine gemeinsame Datei möglich wäre.
 |===
 | Spalte | Pflicht | Hinweis
 
-| `istPflicht` | nein | `true` oder `false` (Kleinschreibung, kein anderer Wert – siehe <<bekannte_probleme,Bekannte Probleme im Beispieldatensatz>>). Steuert, welche der folgenden Spalten ausgewertet werden.
+| `istPflicht` | nein | `true` oder `false` (Kleinschreibung, kein anderer Wert. Steuert, welche der folgenden Spalten ausgewertet werden.
 | `Titel` | ja |
 | `Referent_Email` | ja | Muss ein bereits importierter Referent sein.
 | `Inhalt` | nein | Beschreibungstext des Vortrags.

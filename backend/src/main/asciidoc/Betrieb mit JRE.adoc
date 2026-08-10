@@ -79,8 +79,9 @@ java -jar backend/target/quarkus-app/quarkus-run.jar
 
 * **Das Ergebnis:**
 ** Die gesamte Anwendung (inkl. UI) läuft auf einem einzigen Port (Standard: `9000`).
-** Das Frontend wird unter `http://localhost:9000/` ausgeliefert.
-** Die API ist unter `http://localhost:9000/api/...` erreichbar.
+** Das Frontend wird unter `http://localhost:<PORT>/` ausgeliefert.
+** Die API ist im DEV Mode unter `http://localhost:<PORT>/q/dev-ui` erreichbar.
+** Das rohe OpenAPI Schema ist unter `http://localhost:<PORT>/q/openapi` abrufbar.
 
 === Zugangsdaten für Produktion (Mailserver, DB)
 
@@ -127,3 +128,53 @@ quarkus.http.cors.origins=http://localhost:5173
 ====
 Stelle sicher, dass **Node.js** und **npm** auf deinem System installiert sind, da Quinoa diese Tools während des Maven-Builds aufruft.
 ====
+
+== 4. Installation auf UTM (lokale Virtualisierung auf Mac)
+
+Hier kommen die Schritte, um die Quarkus Anwendung konfplan samt Abhängigkeiten zu installieren und im PROD Modus starten,
+sowohl native als auch mit JRE.
+
+=== JVM/JRE-Modus unter Debian/Ubuntu
+
+Für den JVM/JRE-Modus existieren zwei bereits vorhandene, fertige Wege im Repo.
+
+==== Weg A: Docker Compose (empfohlen für UTM – bereits explizit dafür gebaut)
+
+`deploy/docker-compose.yml` hat genau ein #local#-Profil für diesen Fall (Mac+UTM, kein TLS nötig, im Gegensatz zum #public#-Profil für Hetzner+Caddy). Läuft im JVM-Modus (Image ghcr.io/dylanaut/konfplan, baut auf Dockerfile.jvm).
+
+====   Weg B: .deb-Pakete (nativer systemd-Betrieb, kein App-Container)
+
+Ubuntu ist Debian-basiert, die Paketnamen (openjdk-21-jre-headless, minizinc, postgresql, docker.io) sind identisch:
+[source,shell]
+----
+git clone https://github.com/dylanaut/konfplan.git && cd konfplan
+./install.sh
+----
+
+Baut Frontend+Backend, erstellt/installiert alle 4 .deb-Pakete (konfplan-postgresql → konfplan-keycloak → konfplan-mailpit →
+konfplan), siehe packaging/debian/README.md. Läuft ebenfalls im JVM-Modus (fast-jar, kein Native Image).
+
+. Native Image (GraalVM) – manuell, noch nicht paketiert
+
+backend/src/main/asciidoc/Betrieb mit Native Image.adoc beschreibt den Build:
+
+[source,shell]
+----
+# Cross-Build von macOS für linux/amd64 (falls die VM x86_64 ist) bzw. ohne
+# --platform, falls die VM aarch64 ist (Apple-Silicon-Host, UTM meist gleiche Arch):
+./mvnw clean package -Dnative -DskipTests \
+    -Dquarkus.native.container-runtime-options=--platform=linux/amd64
+----
+
+Ergebnis ist ein `-runner`-Binary, das du auf die VM kopierst und dort mit Env-Vars (DB_*, KC_SERVER_URL, KC_REALM,
+KC_ADMIN_CLI_SECRET, BREVO_SMTP_*/Mailpit) startest – kein JRE auf der VM nötig.
+
+. Native Image unter Debian/Ubuntu
+
+  Auf der Ubuntu-VM:
+  sudo apt-get update && sudo apt-get install -y docker.io docker-compose-plugin git
+  git clone https://github.com/dylanaut/konfplan.git && cd konfplan/deploy
+  ./bootstrap.sh          # generiert Secrets (DB, Keycloak-Admin/Client) serverseitig
+  docker compose --profile local up -d
+  Details/Troubleshooting: backend/src/main/asciidoc/Deployment-DockerCompose.adoc.
+
