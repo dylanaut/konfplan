@@ -64,11 +64,68 @@ mkdir -p "$HOME/minizinc" && tar -xzf /tmp/minizinc.tgz -C "$HOME/minizinc" --st
 export MINIZINC_PATH="$HOME/minizinc/bin/minizinc"   # überschreibt minizinc.path in application.properties
 ----
 
-Repository klonen:
+=== Repository klonen (privates Repo, `gh` CLI + PAT)
+
+`https://github.com/dylanaut/konfplan` ist ein **privates** Repository. Ein einfaches
+`git clone https://github.com/...` scheitert auf einer frischen Maschine mit
+`Password authentication is not supported` - GitHub akzeptiert seit 2021 über HTTPS nur noch
+einen *Personal Access Token* (PAT) oder SSH, kein Account-Passwort mehr. Der einfachste Weg auf
+einer frischen VM ist die `gh`-CLI, die den PAT einmalig hinterlegt und danach auch normales
+`git clone`/`git pull`/`git push` transparent authentifiziert.
+
+==== `gh` CLI installieren
+
+Offizielles APT-Repo (funktioniert identisch auf Debian und Ubuntu, siehe
+https://github.com/cli/cli/blob/trunk/docs/install_linux.md):
 
 [source,bash]
 ----
-git clone https://github.com/dylanaut/konfplan.git
+(type -p wget >/dev/null || sudo apt-get install wget -y)
+sudo mkdir -p -m 755 /etc/apt/keyrings
+out=$(mktemp) && wget -nv -O "$out" https://cli.github.com/packages/githubcli-archive-keyring.gpg
+sudo cp "$out" /etc/apt/keyrings/githubcli-archive-keyring.gpg
+sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+sudo mkdir -p -m 755 /etc/apt/sources.list.d
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+  | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+sudo apt-get update
+sudo apt-get install -y gh
+----
+
+==== Personal Access Token (PAT) erzeugen
+
+Auf github.com: *Settings → Developer settings → Personal access tokens* (fine-grained oder
+classic) → neues Token mit Lesezugriff (`repo`-Scope bei classic bzw. *Contents: Read* bei
+fine-grained) auf `dylanaut/konfplan` erzeugen. Token direkt nach Erzeugung kopieren - er wird von
+GitHub nur einmal angezeigt.
+
+==== `gh` authentifizieren und Git dafür einrichten
+
+[source,bash]
+----
+# Interaktiv (Browser/Terminal auf derselben Maschine verfuegbar):
+gh auth login
+# -> "GitHub.com" -> "HTTPS" -> "Paste an authentication token" -> Token einfuegen
+
+# Alternative fuer eine headless VM ohne Browser (Token vorher z.B. per Password-Manager-CLI
+# oder einer chmod-600-Datei bereitstellen, NICHT direkt in der Shell-History belassen):
+gh auth login --with-token < token.txt
+
+# Prüfen:
+gh auth status
+
+# Git selbst (nicht nur "gh repo clone") auf den gh-Credential-Helper umstellen, damit auch
+# "git clone/pull/push" mit https://github.com/... ohne weitere Eingabe funktionieren:
+gh auth setup-git
+----
+
+==== Klonen
+
+[source,bash]
+----
+gh repo clone dylanaut/konfplan
+# aequivalent, sobald "gh auth setup-git" gelaufen ist, auch:
+# git clone https://github.com/dylanaut/konfplan.git
 cd konfplan
 ----
 
