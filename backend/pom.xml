@@ -401,13 +401,16 @@
                                 </goals>
                                 <phase>generate-test-sources</phase>
                                 <configuration>
-                                    <outputFilename>../../src/main/asciidoc/KonfPlan-Klassendiagramm.dot
+                                    <outputFilename>../../src/main/asciidoc/KonfPlan-Klassendiagramm.puml
                                     </outputFilename>
                                     <scanPackages>
                                         <scanPackage>
                                             kreyj.konfplan.persistence
                                         </scanPackage>
                                     </scanPackages>
+                                  <addJPAAnnotations>true</addJPAAnnotations>
+                                  <asciidocDiagramImageFormat>svg</asciidocDiagramImageFormat>
+                                  <useShortClassNames>true</useShortClassNames>
                                 </configuration>
                             </execution>
                         </executions>

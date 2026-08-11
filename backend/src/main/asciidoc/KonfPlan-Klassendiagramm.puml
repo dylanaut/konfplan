@@ -1,0 +1,383 @@
+@startuml
+
+class Admin <<Entity>>  {
+}
+
+
+enum Berufsfeld {
+	{field} +BAU_ARCHITEKTUR_VERMESSUNG_UND_GEBAEUDETECHNIK
+	{field} +CHEMIE_KUNSTSTOFF_GLAS_TEXTIL_UND_HOLZ
+	{field} +ELEKTROTECHNIK
+	{field} +GASTRONOMIE_LEBENSMITTEL_UND_HAUSWIRTSCHAFT
+	{field} +GESUNDHEIT
+	{field} +IT_UND_COMPUTER
+	{field} +KREATIVBERUFE_MEDIEN_UND_GESTALTUNG
+	{field} +LAND_FORST_TIERWIRTSCHAFT_UND_GARTENBAU
+	{field} +METALL_MASCHINEN_UND_FAHRZEUGBAU
+	{field} +NATURWISSENSCHAFT_GEOGRAFIE_UND_INFORMATIK
+	{field} +ROHSTOFFGEWINNUNG_PRODUKTION_UND_FERTIGUNG
+	{field} +SOZIALES_PAEDAGOGIK_UND_THEOLOGIE
+	{field} +TOURISMUS_SPORT_UND_KULTUR
+	{field} +UNTERNEHMENSFUEHRUNG_ORGANISATION_EINKAUF_VERTRIEB_UND_MARKETING
+	{field} +VERKEHR_LOGISTIK_SCHUTZ_UND_SICHERHEIT
+	{field} +WIRTSCHAFT_VERWALTUNG_RECHT_UND_GESELLSCHAFT
+}
+
+
+class Gebaeude <<Entity>>  {
+	{field} +hausnummer : String
+	{field} +@Column("") name : String
+	{field} +@Column("") ort : String
+	{field} +@Column("") postleitzahl : String
+	{field} +@Column("") strasse : String
+	{method} +addRaum ( other : Raum ) : void
+	{method} +removeRaum ( other : Raum ) : void
+}
+
+
+enum Gebaeudetyp {
+	{field} +EXTERN
+	{field} +KINO
+	{field} +SAAL
+	{field} +SCHULE
+	{field} +SPORTHALLE
+}
+
+
+class IdEntity <<MappedSuperclass>>  {
+	{field} +@Id id : Long
+	{method} +equals ( o : Object ) : boolean
+	{method} +hashCode () : int
+	{method} +toString () : String
+}
+
+
+class LocalDateTimeConverter {
+	{field} {static} -FORMATTER : DateTimeFormatter
+	{method} +convertToDatabaseColumn ( dateTime : LocalDateTime ) : String
+	{method} +convertToEntityAttribute ( dbValue : String ) : LocalDateTime
+}
+
+
+class LongSetConverter {
+	{field} {static} -mapper : ObjectMapper
+	{method} +convertToDatabaseColumn ( attribute : Set ) : String
+	{method} +convertToEntityAttribute ( dbData : String ) : Set
+}
+
+
+class MinizincResult {
+	{field} +besucht : boolean[][][]
+	{field} +guete : int
+	{field} +instanz_raum : int[][]
+	{field} +instanz_slot : int[][]
+	{field} +raum_oids : long[]
+	{field} +raumwechsel : int
+	{field} +slot_oids : long[]
+	{field} +teilnehmer_oids : long[]
+	{field} +wahlvortrag_oids : long[]
+	{field} +zuweisungen : int
+	{method} +toJson () : String
+}
+
+
+abstract class Nutzer <<Entity>>  {
+	{field} +@Column("") email : String
+	{field} +@Column("first_name") firstName : String
+	{field} -@Column("is_active") isActive : boolean
+	{field} +@Column("keycloak_id") keycloakId : String
+	{field} +@Column("last_name") lastName : String
+	{field} -@Column("login_name") loginName : String
+	{field} +@Column("role") role : String
+	{method} +addVeranstaltung ( v : Veranstaltung ) : void
+	{method} +assignLoginName ( raw : String ) : void
+	{method}  {static} +findByEmail ( e : String ) : Nutzer
+	{method}  {static} +findByLoginName ( loginName : String ) : Nutzer
+	{method} +getFullName () : String
+	{method} +getVerfuegbarkeit ( veranstaltung : Veranstaltung ) : NutzerVerfuegbarkeit
+	{method} +isActive () : boolean
+	{method}  {static} -normalizeLoginName ( raw : String ) : String
+	{method} +removeVeranstaltung ( v : Veranstaltung ) : void
+	{method} +setActive ( isActive : boolean ) : void
+	{method} +updateVerfuegbarkeit ( slot : Slot , veranstaltung : Veranstaltung , verfuegbar : boolean ) : void
+	{method} +updateVerfuegbarkeit ( slot : Slot , veranstaltung : Veranstaltung , verfuegbar : boolean , createIfMissing : boolean ) : void
+}
+
+
+class NutzerVerfuegbarkeit <<Entity>>  <<Table>>  {
+ {TableName=NutzerVerfuegbarkeit}
+--
+	{field} -@Column("nutzer_id") @Id nutzerId : Long
+	{method}  {static} +alleNutzerVerfuegbar ( teilnehmer : List , slotId : Long , veranstaltungId : Long ) : boolean
+	{method}  {static} +isNutzerVerfuegbar ( teilnehmer : Teilnehmer , slot : Slot , veranstaltung : Veranstaltung ) : boolean
+}
+
+
+class NutzerVerfuegbarkeitId {
+	{field} -nutzerId : Long
+	{field} -veranstaltungId : Long
+	{method} +equals ( o : Object ) : boolean
+	{method} +hashCode () : int
+	{method}  {static} +nvId ( nutzer : Nutzer , veranstaltung : Veranstaltung ) : NutzerVerfuegbarkeitId
+	{method}  {static} +nvIdL ( nutzerId : Long , veranstaltungId : Long ) : NutzerVerfuegbarkeitId
+}
+
+
+class Pflichtvortrag <<Entity>>  {
+	{field} -pflichtgruppe : String
+	{method}  {static} +create ( titel : String , inhalt : String , referent : Referent , pflichtgruppe : String , pflichtraum : Raum , pflichtslot : Slot , veranstaltung : Veranstaltung ) : Pflichtvortrag
+	{method} -initNutzerVerfuegbarkeitFuerGruppe () : void
+	{method} -initRaumVerfuegbarkeiten () : void
+	{method} -initReferentVerfuegbarkeit () : void
+	{method} +istPflicht () : boolean
+	{method} +updatePflichtgruppe ( neuePflichtgruppe : String ) : void
+	{method} +updatePflichtraum ( neuerRaum : Raum ) : void
+	{method} +updatePflichtslot ( neuerSlot : Slot ) : void
+	{method} +wiederherstelleVerfuegbarkeiten () : void
+}
+
+
+class Planungsergebnis <<Entity>>  {
+	{field} +@Column("") jsonErgebnis : String
+	{field} +solverConfig : SolverConfig
+	{method}  {static} +getPlanungsergebnis ( veranstaltung : Veranstaltung ) : Planungsergebnis
+}
+
+
+class Prioritaet <<Entity>>  {
+	{field} {static} +PRIO_MAX : int
+	{field} {static} +PRIO_MIN : int
+	{field} +prioWert : int
+}
+
+
+class Protokoll <<Entity>>  {
+	{field} +@Column("") akteur : String
+	{field} +@Column("") details : String
+	{field} +@Column("") ereignis : String
+	{field} +referenzId : Long
+	{field} +veranstaltungId : Long
+	{field} +@Column("") zeitpunkt : LocalDateTime
+}
+
+
+enum ProtokollKategorie {
+	{field} +GEBAEUDE
+	{field} +LOGIN
+	{field} +NUTZER
+	{field} +PLANUNG
+	{field} +RAUM
+	{field} +SECURITY
+	{field} +STAMMDATEN
+	{field} +SYSTEM
+	{field} +VERANSTALTUNG
+	{field} +VORTRAEGE
+}
+
+
+class Raum <<Entity>>  {
+	{field} +etage : String
+	{field} +@Column("") kapazitaet : Integer
+	{field} +@Column("") name : String
+	{method} +deleteRaumVerfuegbarkeit ( veranstaltung : Veranstaltung ) : void
+	{method} +updateRaumVerfuegbarkeit ( slot : Slot , veranstaltung : Veranstaltung , verfuegbar : boolean ) : void
+	{method} +updateRaumVerfuegbarkeit ( slot : Slot , veranstaltung : Veranstaltung , verfuegbar : boolean , createIfMissing : boolean ) : void
+}
+
+
+class RaumVerfuegbarkeit <<Entity>>  <<Table>>  {
+ {TableName=RaumVerfuegbarkeit}
+--
+	{field} -@Column("raum_id") @Id raumId : Long
+	{method}  {static} +isRaumGebucht ( raumId : Long , slotId : Long , veranstaltungId : Long ) : boolean
+	{method}  {static} +isRaumVerfuegbar ( raum : Raum , slot : Slot , veranstaltung : Veranstaltung ) : boolean
+	{method} +toString () : String
+}
+
+
+class RaumVerfuegbarkeitId {
+	{field} -raumId : Long
+	{field} -veranstaltungId : Long
+	{method} +equals ( o : Object ) : boolean
+	{method} +hashCode () : int
+	{method}  {static} +rvId ( raum : Raum , veranstaltung : Veranstaltung ) : RaumVerfuegbarkeitId
+	{method}  {static} +rvIdL ( raumId : Long , veranstaltungId : Long ) : RaumVerfuegbarkeitId
+}
+
+
+class Referent <<Entity>>  {
+	{field} +@Column("biography") biography : String
+	{field} +@Column("job_role") jobRole : String
+	{field} +@Column("organisation") organisation : String
+	{field} +@Column("slogan") slogan : String
+	{method} +addVortrag ( aVortrag : Vortrag ) : void
+	{method} +removeVortrag ( aVortrag : Vortrag ) : void
+}
+
+
+class Slot <<Entity>>  {
+	{field} +description : String
+	{field} +endTime : LocalDateTime
+	{field} +startTime : LocalDateTime
+	{method} +compareTo ( o : Slot ) : int
+	{method} +ende () : String
+	{method} +getSlotZeit () : String
+	{method} +start () : String
+	{method} +tag () : String
+}
+
+
+class Teilnehmer <<Entity>>  {
+	{field} -@Column("gruppen") gruppen : Set
+	{method} +addGruppe ( gruppe : String ) : void
+	{method} +addPrioritaet ( prioritaet : Prioritaet ) : void
+	{method} +gehoertZuGruppe ( gruppe : String ) : boolean
+	{method}  {static} +getGruppenTeilnehmer ( gruppenName : String , veranstaltung : Veranstaltung ) : List
+	{method} +removeGruppe ( gruppe : String ) : void
+	{method} +removePrioritaet ( prioritaet : Prioritaet ) : void
+}
+
+
+class Veranstaltung <<Entity>>  <<Table>>  {
+ {TableUniqueConstraints=UniqueConstraint (columnNames=[name,beginntAm] )}
+--
+	{field} +@Column("") beginntAm : LocalDateTime
+	{field} +deadlineReferenten : LocalDateTime
+	{field} +deadlineTeilnehmer : LocalDateTime
+	{field} +endetAm : LocalDateTime
+	{field} +@Column("gruppen") gruppen : Set
+	{field} +logo : String
+	{field} +logo_link : String
+	{field} +@Column("") name : String
+	{method} +addGebaeude ( aGebaeude : Gebaeude ) : void
+	{method} +addGruppe ( gruppenName : String ) : boolean
+	{method} +addNutzer ( nutzer : Nutzer ) : void
+	{method} +addSlot ( slot : Slot ) : void
+	{method} +addVortrag ( aVortrag : Vortrag ) : void
+	{method} +endeTag () : String
+	{method} +endeZeit () : String
+	{method} +getOrte () : List
+	{method} +getPflichtvortraege () : List
+	{method} +getRaeume () : List
+	{method} +getSlotIds () : Set
+	{method} +getWahlvortraege () : List
+	{method} +organisatoren () : List
+	{method} +referenten () : List
+	{method} +removeGebaeude ( aGebaeude : Gebaeude ) : void
+	{method} +removeGruppe ( gruppenName : String ) : boolean
+	{method} +removeNutzer ( nutzer : Nutzer ) : void
+	{method} +removeSlot ( slot : Slot ) : void
+	{method} +removeVortrag ( aVortrag : Vortrag ) : void
+	{method} +startTag () : String
+	{method} +startZeit () : String
+	{method} +teilnehmer () : List
+	{method} +zeitraum () : String
+	{method} +zeitraumTage () : String
+}
+
+
+abstract class VeranstaltungsVerfuegbarkeit <<MappedSuperclass>>  {
+	{field} #@Column("veranstaltung_id") @Id veranstaltungId : Long
+	{field} +@Column("slot_id") verfuegbareSlotIds : Set
+	{method} +addSlot ( slotId : Long ) : boolean
+	{method} +addSlot ( slot : Slot ) : boolean
+	{method} +isVerfuegbar ( slotId : Long ) : boolean
+	{method} +isVerfuegbar ( slot : Slot ) : boolean
+	{method} +removeSlot ( slotId : Long ) : boolean
+	{method} +removeSlot ( slot : Slot ) : boolean
+}
+
+
+class VersionedEntity <<MappedSuperclass>>  {
+	{field} +version : Long
+}
+
+
+abstract class Vortrag <<Entity>>  <<Table>>  {
+ {TableName=Vortrag}
+--
+	{field} {static} +MAX_VORTRAG_TITEL_LAENGE : int
+	{field} +ausstattung : String
+	{field} +@Column("") inhalt : String
+	{field} +@Column("") titel : String
+	{method}  {abstract} +istPflicht () : boolean
+	{method} +updateVerfuegbarkeit ( slot : Slot , veranstaltung : Veranstaltung , verfuegbar : boolean , createIfMissing : boolean ) : void
+}
+
+
+class VortragVerfuegbarkeit <<Entity>>  <<Table>>  {
+ {TableName=VortragVerfuegbarkeit}
+--
+	{field} -@Column("vortrag_id") @Id vortragId : Long
+	{method}  {static} +isVortragEinplanbar ( vortrag : Vortrag , slot : Slot , veranstaltung : Veranstaltung ) : boolean
+}
+
+
+class VortragVerfuegbarkeitId {
+	{field} -veranstaltungId : Long
+	{field} -vortragId : Long
+	{method} +equals ( o : Object ) : boolean
+	{method} +hashCode () : int
+	{method}  {static} +vvId ( vortrag : Vortrag , veranstaltung : Veranstaltung ) : VortragVerfuegbarkeitId
+	{method}  {static} +vvIdL ( vortragId : Long , veranstaltungId : Long ) : VortragVerfuegbarkeitId
+}
+
+
+class Wahlvortrag <<Entity>>  {
+	{field} +maxWiederholungen : int
+	{field} +wiederholbar : boolean
+	{method}  {static} +create ( titel : String , inhalt : String , referent : Referent , wiederholbar : boolean , maxWiederholungen : int , veranstaltung : Veranstaltung ) : Wahlvortrag
+	{method} +deleteVerfuegbarkeit () : void
+	{method} +istPflicht () : boolean
+	{method} -provideVortragVerfuegbarkeit () : void
+}
+
+
+
+
+Admin --|>  Nutzer
+Gebaeude "1" o-- "0..*"  Raum :  @OneToMany\nraeume
+Gebaeude "1" o-- "0..*"  Veranstaltung :  @ManyToMany\nveranstaltungen
+Gebaeude -->  Gebaeudetyp :  @Column("")\ntyp
+Gebaeude --|>  VersionedEntity
+Nutzer "1" o-- "0..*"  Veranstaltung :  @ManyToMany\nveranstaltungen
+Nutzer --|>  VersionedEntity
+NutzerVerfuegbarkeit --|>  VeranstaltungsVerfuegbarkeit
+Pflichtvortrag -->  Raum :  @ManyToOne\npflichtraum
+Pflichtvortrag -->  Slot :  @ManyToOne\npflichtslot
+Pflichtvortrag --|>  Vortrag
+Planungsergebnis -->  Veranstaltung :  @OneToOne\nveranstaltung
+Planungsergebnis --|>  VersionedEntity
+Prioritaet -->  Teilnehmer :  @ManyToOne\nteilnehmer
+Prioritaet -->  Wahlvortrag :  @ManyToOne\nvortrag
+Prioritaet --|>  IdEntity
+Protokoll -->  ProtokollKategorie :  @Column("")\nkategorie
+Protokoll --|>  IdEntity
+Raum "1" o-- "0..*"  Pflichtvortrag :  @OneToMany\npflichtvortraege
+Raum -->  Gebaeude :  @ManyToOne\ngebaeude
+Raum --|>  VersionedEntity
+RaumVerfuegbarkeit --|>  VeranstaltungsVerfuegbarkeit
+Referent "1" o-- "0..*"  Vortrag :  @OneToMany\nvortraege
+Referent --|>  Nutzer
+Slot "1" o-- "0..*"  Pflichtvortrag :  @OneToMany\npflichtvortraege
+Slot -->  Veranstaltung :  @ManyToOne\nveranstaltung
+Slot --|>  VersionedEntity
+Teilnehmer "1" o-- "0..*"  Prioritaet :  @OneToMany\nprioritaeten
+Teilnehmer --|>  Nutzer
+Veranstaltung "1" o-- "0..*"  Gebaeude :  @ManyToMany\ngebaeude
+Veranstaltung "1" o-- "0..*"  Nutzer :  @ManyToMany\nnutzer
+Veranstaltung "1" o-- "0..*"  Slot :  @OneToMany\nslots
+Veranstaltung "1" o-- "0..*"  Vortrag :  @OneToMany\nvortraege
+Veranstaltung -->  Planungsergebnis :  @OneToOne\nplanungsergebnis
+Veranstaltung --|>  VersionedEntity
+VersionedEntity --|>  IdEntity
+Vortrag -->  Berufsfeld :  @Column("")\nberufsfeld
+Vortrag -->  Referent :  @ManyToOne\nreferent
+Vortrag -->  Veranstaltung :  @ManyToOne\nveranstaltung
+Vortrag --|>  VersionedEntity
+VortragVerfuegbarkeit --|>  VeranstaltungsVerfuegbarkeit
+Wahlvortrag "1" o-- "0..*"  Prioritaet :  @OneToMany\nprioritaeten
+Wahlvortrag --|>  Vortrag
+
+
+@enduml

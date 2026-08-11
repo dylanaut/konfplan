@@ -380,8 +380,16 @@ cd backend
  -Dquarkus.hibernate-orm.scripts.generation.drop-target=target/schema-drop.sql
 ====
 
-
+[page-layout=landscape]
+<<<
 ==== Klassendiagramm (Entitäten)
 
-graphviz::./KonfPlan-Klassendiagramm.dot[format=svg, alt="KonfPlan-Klassendiagramm"]
+[plantuml, class_diagram, svg]
+....
+include::KonfPlan-Klassendiagramm.puml[]
+....
 
+ [page-layout=portrait]
+<<<
+
+weiter hochkant

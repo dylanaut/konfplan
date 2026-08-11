@@ -7,6 +7,7 @@ import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
+import kreyj.konfplan.adapter.in.web.AdminResource;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -27,14 +28,14 @@ import java.util.stream.Collectors;
 class UseCaseScanner {
 
     public static void main(String[] args) throws Exception {
-        String basePackage = "kreyj.konfplan.presentation";
-        String outputPath = args.length > 0 ? args[0] : "src/main/asciidoc/VM-Anwendungsfälle.adoc";
+        String basePackage = AdminResource.class.getPackage().getName();
+        String outputPath = args.length > 0 ? args[0] : "src/main/asciidoc/KonfPlan-API.adoc";
 
         System.out.println("Scanning package: " + basePackage);
         Set<Class<?>> classes = findClasses(basePackage);
 
         StringBuilder adoc = new StringBuilder();
-        adoc.append("= Automatisch generierte UseCase Dokumentation\n");
+        adoc.append("= Automatisch generierte API Dokumentation\n");
         adoc.append(":toc: left\n:sectnums:\n\n");
 
         Map<String, List<String>> roleToUCs = new TreeMap<>();
@@ -73,7 +74,7 @@ class UseCaseScanner {
         }
 
         // Use Case Diagram
-        adoc.append("== UseCase Diagramm (PlantUML)\n\n");
+        adoc.append("== API Diagramm (PlantUML)\n\n");
         adoc.append("[plantuml, usecase-gen, svg]\n----\n@startuml\nleft to right direction\n");
         for (String role : roleToUCs.keySet()) {
             adoc.append("actor \"").append(role).append("\" as ").append(role.replace("-", "_")).append("\n");
