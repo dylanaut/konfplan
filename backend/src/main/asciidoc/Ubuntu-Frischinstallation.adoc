@@ -205,14 +205,31 @@ unabhängig funktionieren oder ebenfalls betroffen sein). Docker Compose bricht 
 parallelen Image-Pulls ab, sobald einer fehlschlägt - die übrigen Images erscheinen dann nur als
 "Interrupted", nicht als eigentlicher Fehler.
 
-Abhilfe (IT/Netzwerk-Team des jeweiligen Unternehmens fragen, welche der beiden Optionen zutrifft):
+**Wichtig, bevor man einen generischen Unternehmens-Proxy sucht:** In Netzen, in denen bereits ein
+interner npm-Mirror für `registry.npmjs.org` genutzt wird (siehe `frontend/.npmrc`), lief bei
+diesem Fehlerbild kein klassischer System-/Shell-Proxy (`HTTP_PROXY`/`HTTPS_PROXY`) - weder
+`scutil --proxy` (macOS) noch die Shell-Umgebung, `git`- oder `npm`-Konfiguration zeigten einen
+konfigurierten Proxy. Das Muster ist eher gezieltes Blocken/Umleiten einzelner öffentlicher
+Registries als ein genereller Forward-Proxy für allen Traffic. Deshalb zuerst dort prüfen, wo das
+tatsächliche Problem auftritt (auf der betroffenen VM selbst, nicht auf dem Host-Rechner):
 
-* **Proxy**: Docker-Daemon auf den Unternehmens-Proxy verweisen, z.B. via
-  `/etc/systemd/system/docker.service.d/http-proxy.conf` (`HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY`),
-  danach `sudo systemctl daemon-reload && sudo systemctl restart docker`.
-* **Registry-Mirror**: Falls ein interner Pull-Through-Cache/Mirror für Docker-Hub-Images existiert
-  (analog zum internen npm-Mirror für `registry.npmjs.org`), diesen in `/etc/docker/daemon.json`
-  unter `"registry-mirrors": ["<interne-mirror-url>"]` eintragen und Docker neu starten.
+[source,bash]
+----
+env | grep -i proxy
+cat /etc/environment
+cat /etc/apt/apt.conf.d/*proxy* 2>/dev/null   # falls apt bereits ueber einen Proxy laeuft, Docker aber nicht
+----
+
+Abhilfe, je nachdem was zutrifft (im Zweifel IT/Netzwerk-Team fragen):
+
+* **Registry-Mirror** (naheliegender, falls das Nexus-Muster wie beim npm-Mirror zutrifft): falls
+  im selben internen Nexus/Artifactory zusätzlich ein Docker/OCI-Proxy-Repository existiert, dessen
+  URL in `/etc/docker/daemon.json` unter `"registry-mirrors": ["<interne-mirror-url>"]` eintragen
+  und Docker neu starten.
+* **Proxy** (nur falls tatsächlich einer existiert, z.B. auf der VM selbst gefunden): Docker-Daemon
+  darauf verweisen, z.B. via `/etc/systemd/system/docker.service.d/http-proxy.conf`
+  (`HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY`), danach
+  `sudo systemctl daemon-reload && sudo systemctl restart docker`.
 
 == Weg B: .deb-Pakete (systemd)
 
