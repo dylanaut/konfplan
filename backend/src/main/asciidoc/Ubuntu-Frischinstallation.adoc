@@ -415,6 +415,38 @@ curl -s https://auth.{subdom}.<deine-domain>/realms/konfplan/.well-known/openid-
 Bootstrap-Admin-Account (`juergenkrey`) danach wie gehabt einmalig manuell in der
 Keycloak-Admin-Konsole anlegen.
 
+=== Externer Erreichbarkeits-Check
+
+Der Smoke-Test oben läuft typischerweise direkt auf der VM. Um zu prüfen, ob der Dienst auch
+tatsächlich **von außen** (z.B. von deinem eigenen Rechner, nicht per SSH auf der VM) erreichbar
+ist, der Reihe nach - jeder Schritt baut auf dem vorherigen auf, bei einem Fehlschlag zuerst dort
+suchen:
+
+[source,bash]
+----
+# 1. DNS: loest die Domain auf die richtige Server-IP auf?
+dig +short {subdom}.<deine-domain>
+dig +short auth.{subdom}.<deine-domain>
+
+# 2. Reiner TCP-Verbindungstest (ohne HTTP), prueft ob der Port von aussen offen ist
+nc -zv {subdom}.<deine-domain> 80
+nc -zv {subdom}.<deine-domain> 443
+
+# 3. Tatsaechlicher HTTP(S)-Request von aussen
+curl -sI https://{subdom}.<deine-domain>/
+curl -s https://auth.{subdom}.<deine-domain>/realms/konfplan/.well-known/openid-configuration | jq .issuer
+
+# 4. TLS-Zertifikat pruefen (gueltig, richtige Domain, nicht abgelaufen)
+echo | openssl s_client -connect {subdom}.<deine-domain>:443 -servername {subdom}.<deine-domain> 2>/dev/null \
+  | openssl x509 -noout -issuer -dates
+----
+
+Typische Fehlerquellen der Reihe nach: DNS zeigt noch nicht auf die richtige IP (1), Cloud-Firewall/
+`ufw` lässt 80/443 nicht durch (2), oder Caddy hat noch kein Zertifikat bezogen (3/4 - dann
+`docker compose logs caddy -f` auf der VM prüfen). Mit dem lokalen Profil (`127.0.0.1`-Bindung, kein
+Caddy/TLS) schlagen alle vier Schritte erwartungsgemäß fehl - das funktioniert erst nach dem Umstieg
+auf Profil `public`.
+
 === Port 80/443 ohne `ufw` freigeben
 
 Falls kein lokales `ufw` genutzt werden soll (z.B. weil ausschließlich über eine Cloud-Firewall
