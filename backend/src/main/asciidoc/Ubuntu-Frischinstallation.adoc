@@ -5,6 +5,8 @@
 :icons: font
 :sectnums:
 
+:subdom: rks-konfplan
+
 == Überblick
 
 Dieses Dokument fasst zwei vollständige Installationswege für eine *frische Ubuntu-Maschine*
@@ -303,17 +305,17 @@ erworben werden.
 [cols="1,2,2", options="header"]
 |===
 | Typ | Name/Host | Wert
-| A | `konfplan` (bzw. `konfplan.<sub>`) | `<server-ip>`
-| A | `auth.konfplan` | `<server-ip>`
+| A | `{subdom}` (bzw. `{subdom}.<sub>`) | `<server-ip>`
+| A | `auth.{subdom}` | `<server-ip>`
 |===
 
 .. Propagation prüfen, bevor `bootstrap.sh public`/`docker compose --profile public up -d`
 gestartet wird - sonst scheitert Caddys automatischer Let's-Encrypt-Bezug:
 +
-[source,bash]
+[source,bash,subs="attributes"]
 ----
-dig +short konfplan.<deine-domain>
-dig +short auth.konfplan.<deine-domain>
+dig +short {subdom}.<deine-domain>
+dig +short auth.{subdom}.<deine-domain>
 ----
 Beide sollten `<server-ip>` liefern.
 --
@@ -359,21 +361,29 @@ Läuft der Server bei einem Cloud-Provider (z.B. Hetzner Cloud), zusätzlich pr�
 80/443 durchlassen, sonst bleibt es trotz `ufw allow` von außen blockiert.
 
 . **`.env` umstellen** (nur unschädlich, falls noch keine echten Daten drin sind - siehe Hinweis
-oben):
+oben). Symmetrisch zum jeweils genutzten Start-Kommando abbauen (also mit denselben
+`--profile`-Flags, z.B. `mailpit`, falls bisher lokal damit getestet wurde):
 +
 [source,bash]
 ----
 cd deploy
-docker compose down -v
+docker compose --profile mailpit down -v   # -v loescht auch das Postgres-Volume (App-DB + Keycloak-Daten)
+
+# optional zusaetzlich die gepullten Images entfernen (erzwingt einen frischen Pull beim naechsten up,
+# nicht zwingend noetig):
+# docker compose --profile mailpit down -v --rmi all
 ----
++
+`docker login ghcr.io` muss danach **nicht** wiederholt werden - die Zugangsdaten liegen in
+`~/.docker/config.json` auf dem Host und überstehen `docker compose down -v` unberührt.
 +
 In `.env` ergänzen/anpassen:
 +
 [source]
 ----
-APP_HOSTNAME=konfplan.<deine-domain>
-KEYCLOAK_HOSTNAME=auth.konfplan.<deine-domain>
-APP_PUBLIC_URL=https://konfplan.<deine-domain>
+APP_HOSTNAME={subdom}.<deine-domain>
+KEYCLOAK_HOSTNAME=auth.{subdom}.<deine-domain>
+APP_PUBLIC_URL=https://{subdom}.<deine-domain>
 ACME_EMAIL=<deine-email>
 ----
 +
@@ -398,8 +408,8 @@ nur noch über Caddy (80/443) erreichbar.
 +
 [source,bash]
 ----
-curl -sI https://konfplan.<deine-domain>/
-curl -s https://auth.konfplan.<deine-domain>/realms/konfplan/.well-known/openid-configuration | jq .issuer
+curl -sI https://{subdom}.<deine-domain>/
+curl -s https://auth.{subdom}.<deine-domain>/realms/konfplan/.well-known/openid-configuration | jq .issuer
 ----
 
 Bootstrap-Admin-Account (`juergenkrey`) danach wie gehabt einmalig manuell in der
