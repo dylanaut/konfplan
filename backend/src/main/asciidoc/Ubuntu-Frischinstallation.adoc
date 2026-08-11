@@ -248,11 +248,42 @@ Keycloak-Admin-Konsole.
 . **DNS**: zwei A-Records auf die öffentliche Server-IP (App und Keycloak brauchen getrennte
 Hostnamen):
 +
-[source]
+--
+.. Öffentliche IP des Servers ermitteln:
++
+[source,bash]
 ----
-konfplan.<deine-domain>       A   <server-ip>
-auth.konfplan.<deine-domain>  A   <server-ip>
+curl -4 ifconfig.me
 ----
+(alternativ aus der Cloud-Provider-Konsole ablesen, z.B. Hetzner Cloud Console am Server).
+
+.. Ins DNS-Management der Domain einloggen - dort, wo die Domain registriert/verwaltet wird, z.B.
+**Hetzner DNS Console** (`dns.hetzner.com`, passt gut zu Hetzner Cloud) oder die
+Konsole des jeweiligen Registrars/DNS-Anbieters (Cloudflare, IONOS/1&1, Namecheap, GoDaddy, ...) -
+Bereich meist "DNS" oder "Nameserver-Einstellungen" genannt. Ohne eigene, selbst verwaltete Domain
+funktioniert das Profil `public` mit echtem TLS nicht - die Domain muss vorher bei einem Registrar
+erworben werden.
+
+.. Zwei A-Records anlegen (Feldnamen variieren je Anbieter, meist "Name"/"Host" und
+"Wert"/"Ziel"/"Points to"):
++
+[cols="1,2,2", options="header"]
+|===
+| Typ | Name/Host | Wert
+| A | `konfplan` (bzw. `konfplan.<sub>`) | `<server-ip>`
+| A | `auth.konfplan` | `<server-ip>`
+|===
+
+.. Propagation prüfen, bevor `bootstrap.sh public`/`docker compose --profile public up -d`
+gestartet wird - sonst scheitert Caddys automatischer Let's-Encrypt-Bezug:
++
+[source,bash]
+----
+dig +short konfplan.<deine-domain>
+dig +short auth.konfplan.<deine-domain>
+----
+Beide sollten `<server-ip>` liefern.
+--
 
 . **Firewall**: nur SSH (den tatsächlich genutzten Port, ggf. abweichend von 22), HTTP (80) und
 HTTPS (443) von außen erlauben - Postgres/Keycloak/App-Ports NICHT:
