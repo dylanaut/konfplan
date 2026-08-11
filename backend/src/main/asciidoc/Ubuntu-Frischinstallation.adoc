@@ -372,6 +372,89 @@ curl -s https://auth.konfplan.<deine-domain>/realms/konfplan/.well-known/openid-
 Bootstrap-Admin-Account (`juergenkrey`) danach wie gehabt einmalig manuell in der
 Keycloak-Admin-Konsole anlegen.
 
+=== Port 80/443 ohne `ufw` freigeben
+
+Falls kein lokales `ufw` genutzt werden soll (z.B. weil ausschließlich über eine Cloud-Firewall
+gefiltert wird), gibt es zwei Alternativen:
+
+* **Direkt per `iptables`**:
++
+[source,bash]
+----
+sudo iptables -I INPUT -p tcp --dport 80 -j ACCEPT
+sudo iptables -I INPUT -p tcp --dport 443 -j ACCEPT
+----
++
+Gilt nur bis zum nächsten Neustart, sofern nicht persistiert:
+`sudo apt-get install -y iptables-persistent && sudo netfilter-persistent save`.
+
+* **Nur über die Cloud-Firewall** (z.B. Hetzner Cloud Console → *Firewalls*, oder per CLI):
++
+[source,bash]
+----
+hcloud firewall create --name konfplan-fw
+hcloud firewall add-rule konfplan-fw --direction in --protocol tcp --port 80 --source-ips 0.0.0.0/0,::/0
+hcloud firewall add-rule konfplan-fw --direction in --protocol tcp --port 443 --source-ips 0.0.0.0/0,::/0
+hcloud firewall apply-to-resource konfplan-fw --type server --server <server-name>
+----
++
+Bei anderen Providern analog über deren Konsole/CLI (AWS Security Group, etc.).
+
+Vor dem Umstieg erst prüfen, was auf der VM überhaupt aktiv ist:
+[source,bash]
+----
+sudo ufw status
+sudo iptables -L -n --line-numbers
+sudo nft list ruleset 2>/dev/null
+----
+Ubuntu nutzt standardmäßig `nftables` als Kernel-Backend, `ufw` ist nur ein Frontend dafür - ohne
+`ufw` kann trotzdem eine andere Regel blockieren, oder lokal blockiert gar nichts und der
+eigentliche Filter sitzt ausschließlich in der Cloud-Firewall.
+
+=== `ufw` wieder entfernen
+
+[source,bash]
+----
+sudo ufw disable                # zuerst deaktivieren, bevor irgendetwas entfernt wird
+sudo systemctl stop ufw
+sudo systemctl disable ufw
+sudo apt-get purge -y ufw
+----
+
+**Falls danach noch `ufw`-Chains in `iptables`/`nftables` sichtbar sind** (z.B. `ufw-before-input`,
+`ufw-after-input`, ...): Der zuverlässigste Weg ist `ufw`s eigener Reset, *bevor* das Paket entfernt
+wird - der räumt gezielt nur die von `ufw` angelegten Chains auf, ohne Dockers eigene Chains
+(`DOCKER`, `DOCKER-USER`, `DOCKER-ISOLATION-STAGE-1/2`) anzufassen, die für die laufenden
+KonfPlan-Container gebraucht werden:
+
+[source,bash]
+----
+sudo apt-get install -y ufw     # falls schon entfernt, kurz erneut installieren
+sudo ufw reset                  # fragt Bestaetigung (y), entfernt alle ufw-Chains/-Regeln sauber
+sudo systemctl stop ufw
+sudo systemctl disable ufw
+sudo apt-get purge -y ufw
+----
+
+Kontrolle, dass nichts mehr übrig ist:
+[source,bash]
+----
+sudo iptables -L -n | grep -i ufw
+sudo ip6tables -L -n | grep -i ufw
+----
+
+[IMPORTANT]
+====
+Nicht `iptables -F`/`-X` (alles flushen) als Abkürzung nutzen - das entfernt auch Dockers eigene
+Chains, wodurch die laufenden Container bis zu einem `sudo systemctl restart docker` (das seine
+Chains neu anlegt) falsch geroutet/unerreichbar werden können. Falls doch ein harter Reset gemacht
+wird, direkt danach `sudo systemctl restart docker` ausführen.
+
+Außerdem: Ohne `ufw` (und ohne eigene `iptables`/`nftables`-Regeln) ist die VM lokal offen für
+eingehenden Traffic auf allen Ports - sicherstellen, dass die Cloud-Firewall bereits die
+gewünschten Regeln (nur SSH-Port, 80, 443) hat, *bevor* `ufw` entfernt wird.
+====
+
 == Weg B: .deb-Pakete (systemd)
 
 Vier eigenständige `.deb`-Pakete (App, PostgreSQL-Setup, Keycloak-Container, Mailpit-Container),
