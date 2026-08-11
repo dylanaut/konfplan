@@ -13,7 +13,7 @@ Kofler], Downloads unter https://cdimage.ubuntu.com//ubuntu/noble/daily-live/cur
 wie Hetzner.
 Es ist ein zusätzliches, alternatives Verfahren zum bestehenden `.deb`/systemd-Weg (`packaging/debian/`, `install.sh`) - beide bleiben unabhängig voneinander bestehen.
 
-Passwörter (DB, Keycloak-Admin, Keycloak-Admin-CLI-Client-Secret) werden **niemals** im Repo, in `docker-compose.yml` oder in `.env` hinterlegt. `deploy/bootstrap.sh` generiert sie beim ersten Lauf direkt auf dem jeweiligen Host in `deploy/secrets/*.txt` (chmod 600, .gitignore'd) und bindet sie per Docker-Compose-File-Secrets read-only in die Container - nichts wird übertragen, nichts landet in `docker inspect`/Prozessumgebung.
+Passwörter (DB, Keycloak-Admin, Keycloak-Admin-CLI-Client-Secret) werden **niemals** im Repo, in `docker-compose.yml` oder in `.env` hinterlegt. `deploy/bootstrap.sh` generiert sie beim ersten Lauf direkt auf dem jeweiligen Host in `deploy/secrets/*.txt` (chmod 644, `secrets/`-Verzeichnis selbst chmod 700, .gitignore'd) und bindet sie per Docker-Compose-File-Secrets read-only in die Container - nichts wird übertragen, nichts landet in `docker inspect`/Prozessumgebung. 644 statt 600, da die App-/Keycloak-Images als Nicht-root-User laufen (z.B. UID 185) und die Host-Dateirechte beim Bind-Mount erhalten bleiben - bei 600 gäbe es dort "Permission denied".
 
 == Voraussetzungen
 
@@ -59,7 +59,7 @@ eingetragen werden, `bootstrap.sh` kann ihn nicht erraten:
 [source,bash]
 ----
 echo '<dein-brevo-smtp-schluessel>' > secrets/brevo_smtp_password.txt
-chmod 600 secrets/brevo_smtp_password.txt
+chmod 644 secrets/brevo_smtp_password.txt
 ----
 
 `bootstrap.sh` warnt, falls `BREVO_SMTP_USER` gesetzt, die Secret-Datei aber noch leer ist.

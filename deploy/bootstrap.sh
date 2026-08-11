@@ -2,10 +2,16 @@
 set -euo pipefail
 
 # Bereitet ein frisches (oder bereits laufendes) Deployment vor:
-#   1. Generiert fehlende Passwoerter direkt auf diesem Host in secrets/*.txt (chmod 600) -
+#   1. Generiert fehlende Passwoerter direkt auf diesem Host in secrets/*.txt (chmod 644) -
 #      nichts wird jemals uebertragen, im Repo committed oder in .env/docker-compose.yml
 #      hinterlegt. Bereits vorhandene Secret-Dateien werden NICHT ueberschrieben, damit ein
 #      erneuter Aufruf (z.B. bei einem Redeploy) keine Passwoerter rotiert.
+#      644 statt 600: Docker-Compose-File-Secrets werden per Bind-Mount mit den
+#      Host-Dateirechten in die Container gereicht: App-/Keycloak-Image laufen als
+#      Nicht-root-User (z.B. UID 185), der bei 600 (nur Owner-Host-User darf lesen)
+#      die Datei nicht lesen kann - "Permission denied" beim Start. 644 ist hier
+#      unschaedlich, da die Secrets ohnehin read-only in isolierte Container gemountet
+#      werden; die Absicherung gegenueber anderen Host-Usern kommt vom "chmod 700 secrets".
 #   2. Rendert keycloak-realm.template.json -> keycloak-realm.generated.json mit dem
 #      generierten Admin-CLI-Secret und der konfigurierten App-URL.
 #
@@ -38,7 +44,7 @@ generate_secret_if_missing() {
         # Query-Parameter, form-urlencoded Requests, YAML) erst kodiert werden muessten - Hex
         # (nur [0-9a-f]) ist ueberall ohne Sonderfaelle sicher.
         openssl rand -hex 32 > "$file"
-        chmod 600 "$file"
+        chmod 644 "$file"
     fi
 }
 
@@ -56,12 +62,12 @@ generate_secret_if_missing keycloak_admin_cli_secret
 if [[ ! -f secrets/brevo_smtp_password.txt ]]; then
     echo "✨ Lege leere secrets/brevo_smtp_password.txt an (Platzhalter)..."
     touch secrets/brevo_smtp_password.txt
-    chmod 600 secrets/brevo_smtp_password.txt
+    chmod 644 secrets/brevo_smtp_password.txt
 fi
 if grep -q "^BREVO_SMTP_USER=" .env 2>/dev/null && [[ ! -s secrets/brevo_smtp_password.txt ]]; then
     echo "⚠️  BREVO_SMTP_USER ist in .env gesetzt, aber secrets/brevo_smtp_password.txt ist leer."
     echo "    Echten SMTP-Schluessel aus deinem Brevo-Account eintragen, sonst schlaegt der Mailversand fehl:"
-    echo "    echo '<dein-brevo-smtp-schluessel>' > secrets/brevo_smtp_password.txt && chmod 600 secrets/brevo_smtp_password.txt"
+    echo "    echo '<dein-brevo-smtp-schluessel>' > secrets/brevo_smtp_password.txt && chmod 644 secrets/brevo_smtp_password.txt"
 fi
 
 # --- Realm-Template rendern ---
@@ -75,7 +81,7 @@ sed \
     -e "s|__ADMIN_CLI_SECRET__|${ADMIN_CLI_SECRET}|g" \
     -e "s|__APP_PUBLIC_URL__|${APP_URL}|g" \
     keycloak-realm.template.json > keycloak-realm.generated.json
-chmod 600 keycloak-realm.generated.json
+chmod 644 keycloak-realm.generated.json
 
 # --- Pflichtvariablen fuer Profil "public" (Caddy/TLS) ---
 # Bewusst hier statt per Compose "${VAR:?...}" geprueft: Compose wertet solche Pflicht-Variablen

@@ -167,6 +167,39 @@ Danach:
   `deploy/secrets/keycloak_admin_password.txt`
 * Status/Logs: `docker compose ps`, `docker compose logs -f app`
 
+=== Troubleshooting: App-Container crash-loopt mit "Permission denied" auf Secrets
+
+Falls `docker compose logs app` sowas zeigt:
+
+[source]
+----
+cat: /run/secrets/db_password: Permission denied
+cat: /run/secrets/keycloak_admin_cli_secret: Permission denied
+cat: /run/secrets/brevo_smtp_password: Permission denied
+...
+Caused by: ...KeycloakAdminClientException: Failed to create Keycloak admin client:
+grant type 'client_credentials' requires client secret.
+----
+
+startet der App-Container gar nicht - ein im Browser sichtbarer Redirect-Loop/Fehler auf der
+App-Domain ist dann meist nur ein Folgesymptom (Caddy leitet an einen nie erreichbaren Upstream
+weiter). Ursache: `deploy/bootstrap.sh` legt die Secret-Dateien mit restriktiven Rechten an, die
+App-/Keycloak-Container laufen aber als Nicht-root-User (z.B. `USER 185` im `Dockerfile.jvm`) -
+Docker-Compose-File-Secrets werden per Bind-Mount mit den Host-Dateirechten in die Container
+gereicht, sodass dieser User die Datei des Host-Owners nicht lesen kann. Ab der aktuellen
+`bootstrap.sh`-Version (chmod 644 statt 600) tritt das bei neu generierten Secrets nicht mehr auf;
+bei bereits vorhandenen Secret-Dateien (z.B. aus einem älteren Lauf) manuell nachziehen:
+
+[source,bash]
+----
+cd deploy
+chmod 644 secrets/db_password.txt secrets/keycloak_admin_cli_secret.txt \
+          secrets/keycloak_admin_password.txt secrets/brevo_smtp_password.txt \
+          keycloak-realm.generated.json
+docker compose restart app
+docker compose logs app -f   # sollte jetzt sauber hochfahren
+----
+
 === Erster Login-Account
 
 Der DB-seitige Bootstrap-Admin (`juergenkrey`, aus `V2__data.sql`) existiert nur als Datenbankzeile,
