@@ -172,6 +172,39 @@ nicht in Keycloak. Er muss **einmalig manuell** über die Keycloak-Admin-Konsole
 Login-Name muss exakt `juergenkrey` lauten, Rolle `ADMIN` zuweisen. Erst danach ist ein Login in der
 App als Admin möglich.
 
+Das geht statt per Web-UI auch komplett per Kommandozeile über das in Keycloak eingebaute
+`kcadm.sh`:
+
+[source,bash]
+----
+cd deploy
+
+# 1. kcadm gegen den lokalen Keycloak mit dem Admin-Account authentifizieren
+docker compose exec keycloak /opt/keycloak/bin/kcadm.sh config credentials \
+  --server http://localhost:8080 --realm master --user admin \
+  --password "$(cat secrets/keycloak_admin_password.txt)"
+
+# 2. Nutzer im "konfplan"-Realm anlegen - Login-Name MUSS exakt "juergenkrey" sein
+docker compose exec keycloak /opt/keycloak/bin/kcadm.sh create users -r konfplan \
+  -s username=juergenkrey \
+  -s email=juergenkrey@yahoo.de \
+  -s enabled=true \
+  -s emailVerified=true
+
+# 3. Passwort setzen (das eigentliche Login-Passwort - nicht der Hash aus V2__data.sql!)
+docker compose exec keycloak /opt/keycloak/bin/kcadm.sh set-password -r konfplan \
+  --username juergenkrey --new-password "<dein-passwort>" --temporary=false
+
+# 4. Realm-Rolle ADMIN zuweisen
+docker compose exec keycloak /opt/keycloak/bin/kcadm.sh add-roles -r konfplan \
+  --uusername juergenkrey --rolename ADMIN
+----
+
+Das Passwort aus Schritt 3 ist das künftige Login-Passwort für die App - der `password_hash` in
+`V2__data.sql` ist irrelevant, da Zugangsdaten ausschließlich in Keycloak liegen (siehe CLAUDE.md:
+"Identity/passwords live in Keycloak, not in the database"). Die DB-Zeile dient nur dazu, den
+Login-Namen `juergenkrey` beim ersten Login mit dem bestehenden `ADMIN`-Datensatz zu verknüpfen.
+
 === Smoke-Test
 
 [source,bash]
