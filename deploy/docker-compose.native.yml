@@ -1,0 +1,32 @@
+# Override fuer docker-compose.yml, um den "app"-Service statt des JVM-Images
+# (ghcr.io/dylanaut/konfplan:${IMAGE_TAG}, gebaut aus Dockerfile.jvm) ein natives Image
+# (gebaut aus backend/src/main/docker/Dockerfile.native) zu betreiben.
+#
+# Voraussetzung: Das native Image wurde bereits fuer die Ziel-Architektur der VM gebaut und
+# gepusht (siehe Ubuntu-Frischinstallation.adoc, Abschnitt "Native Image in der Cloud
+# deployen"), z.B.:
+#
+#   docker buildx build --platform linux/amd64 \
+#     -f backend/src/main/docker/Dockerfile.native \
+#     -t ghcr.io/dylanaut/konfplan:native \
+#     backend --push
+#
+# Dockerfile.native nutzt ein anderes Entrypoint (direkt "./application" statt des JVM-Image-
+# spezifischen "run-java.sh") und einen anderen Container-User (1001 statt 185) als
+# Dockerfile.jvm - deshalb reicht ein reiner Image-Tag-Wechsel in .env NICHT, sondern
+# entrypoint/command/working_dir muessen fuer den "app"-Service mit ueberschrieben werden.
+#
+# Verwendung (zusaetzlich zur Basis-Datei, NICHT alleine):
+#   docker compose -f docker-compose.yml -f docker-compose.native.yml --profile mailpit up -d
+
+services:
+  app:
+    image: ghcr.io/dylanaut/konfplan:native
+    working_dir: /work
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        export DB_PASSWORD="$$(cat /run/secrets/db_password)" &&
+        export KC_ADMIN_CLI_SECRET="$$(cat /run/secrets/keycloak_admin_cli_secret)" &&
+        export BREVO_SMTP_PASSWORD="$$(cat /run/secrets/brevo_smtp_password)" &&
+        exec ./application -Dquarkus.http.host=0.0.0.0

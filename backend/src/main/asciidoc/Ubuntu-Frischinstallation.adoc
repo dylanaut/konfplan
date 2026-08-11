@@ -563,6 +563,63 @@ eingehenden Traffic auf allen Ports - sicherstellen, dass die Cloud-Firewall ber
 gewünschten Regeln (nur SSH-Port, 80, 443) hat, *bevor* `ufw` entfernt wird.
 ====
 
+=== Native Image in der Cloud deployen
+
+Statt des JVM-Images (`ghcr.io/dylanaut/konfplan:$\{IMAGE_TAG}`, per CI aus `Dockerfile.jvm`
+gebaut) lässt sich auch ein natives Image (GraalVM, siehe `Betrieb mit Native Image.adoc`) auf
+derselben Docker-Compose-Infrastruktur betreiben. Dafür gibt es **keine CI-Automatisierung** -
+das native Image muss manuell gebaut und gepusht werden, und `Dockerfile.native` nutzt ein
+anderes Entrypoint (`./application` statt des JVM-Image-spezifischen `run-java.sh`) sowie einen
+anderen Container-User (`1001` statt `185`) - ein reiner Image-Tag-Wechsel in `.env` reicht daher
+**nicht**.
+
+. **Ziel-Architektur der Cloud-VM prüfen** - ein natives Executable läuft nur auf der Architektur,
+für die es gebaut wurde:
++
+[source,bash]
+----
+ssh -p <ssh-port> <user>@<vm> uname -m
+----
+
+. **Native Image bauen und pushen** (auf dem Build-Rechner, z.B. dem Mac - Cross-Build für die
+VM-Architektur, hier `linux/amd64`; braucht 4-8 GB freien RAM, siehe
+`Betrieb mit Native Image.adoc`):
++
+[source,bash]
+----
+./mvnw clean package -Dnative -DskipTests \
+  -Dquarkus.native.container-runtime-options=--platform=linux/amd64
+
+# Achtung: PAT braucht hier Scope "write:packages" (nicht nur "read:packages" wie beim Pull)
+echo "<PAT-mit-write:packages>" | docker login ghcr.io -u <dein-github-username> --password-stdin
+
+docker buildx build --platform linux/amd64 \
+  -f backend/src/main/docker/Dockerfile.native \
+  -t ghcr.io/dylanaut/konfplan:native \
+  backend --push
+----
+
+. **`app`-Service per Override-Datei auf das native Image umstellen**: `deploy/docker-compose.native.yml`
+überschreibt Image, `working_dir` und `entrypoint`/`command` des `app`-Service - Postgres,
+Keycloak, Mailpit und Caddy bleiben unverändert aus `docker-compose.yml`.
+
+. **Auf der Cloud-VM starten**:
++
+[source,bash]
+----
+cd deploy
+docker compose -f docker-compose.yml -f docker-compose.native.yml --profile mailpit up -d
+----
++
+(`--profile public` bzw. weitere Profile analog zusätzlich anhängen, falls bereits auf das
+`public`-Profil umgestellt wurde.)
+
+**Alternative ohne Docker für die App:** Die `-runner`-Datei aus dem Build (`backend/target/*-runner`)
+lässt sich auch direkt per `scp` auf die VM kopieren und dort als systemd-Service mit Env-Vars
+starten (kein JRE nötig) - analog zum `.deb`-Weg, aber manuell statt paketiert. Postgres/Keycloak
+müssten dann weiterhin separat erreichbar sein (z.B. weiterhin aus `docker-compose.yml`, nur ohne
+den `app`-Service).
+
 == Weg B: .deb-Pakete (systemd)
 
 Vier eigenständige `.deb`-Pakete (App, PostgreSQL-Setup, Keycloak-Container, Mailpit-Container),
