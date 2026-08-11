@@ -286,7 +286,25 @@ Beide sollten `<server-ip>` liefern.
 --
 
 . **Firewall**: nur SSH (den tatsächlich genutzten Port, ggf. abweichend von 22), HTTP (80) und
-HTTPS (443) von außen erlauben - Postgres/Keycloak/App-Ports NICHT:
+HTTPS (443) von außen erlauben - Postgres/Keycloak/App-Ports NICHT. Das betrifft die OS-Firewall
+auf der VM selbst (`ufw`), zusätzlich zu einer eventuell vorgeschalteten Cloud-Firewall (siehe
+unten):
++
+[source,bash]
+----
+# Status pruefen (zeigt, ob ufw ueberhaupt aktiv/installiert ist)
+sudo ufw status verbose
+
+# falls nicht installiert:
+sudo apt-get install -y ufw
+----
++
+[IMPORTANT]
+====
+Unbedingt zuerst den tatsächlich genutzten SSH-Port erlauben, bevor `ufw enable` läuft - sonst
+sperrt man sich selbst aus der VM aus (Wiederherstellung dann meist nur über die
+Cloud-Provider-Konsole möglich).
+====
 +
 [source,bash]
 ----
@@ -296,7 +314,16 @@ sudo ufw allow 443/tcp
 sudo ufw enable
 ----
 +
-Läuft der Server bei einem Cloud-Provider, zusätzlich die Cloud-Firewall entsprechend konfigurieren.
+Danach prüfen, dass 80/tcp und 443/tcp als `ALLOW` gelistet sind:
++
+[source,bash]
+----
+sudo ufw status numbered
+----
++
+Läuft der Server bei einem Cloud-Provider (z.B. Hetzner Cloud), zusätzlich prüfen, ob dort
+**zusätzlich** eine Cloud-Firewall vorgeschaltet ist - die muss unabhängig von `ufw` ebenfalls Port
+80/443 durchlassen, sonst bleibt es trotz `ufw allow` von außen blockiert.
 
 . **`.env` umstellen** (nur unschädlich, falls noch keine echten Daten drin sind - siehe Hinweis
 oben):
