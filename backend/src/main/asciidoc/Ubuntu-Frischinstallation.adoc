@@ -136,6 +136,20 @@ Alle Komponenten (App, PostgreSQL, Keycloak, optional Mailpit) laufen als Contai
 `Deployment-DockerCompose.adoc` - hier nur der lokale/lokal-öffentliche Standardfall (Profil ohne
 `--profile`, entspricht dem UTM-Fall).
 
+=== Vorab: Docker-Login bei `ghcr.io`
+
+Das `app`-Image (`ghcr.io/dylanaut/konfplan:latest`) ist - wie das Repository selbst - **privat**.
+Ein `docker compose up` ohne vorherigen Login schlägt mit `unauthorized` fehl (die anderen
+Images wie `keycloak`/`mailpit` werden dabei ebenfalls abgebrochen, da Compose bei einem
+Pull-Fehler alle parallelen Pulls stoppt). Mit einem PAT mit Scope `read:packages` einloggen
+(derselbe PAT wie für `gh`/`git` funktioniert, sofern er diesen Scope hat, sonst zusätzlichen PAT
+erzeugen):
+
+[source,bash]
+----
+echo "<dein-PAT>" | docker login ghcr.io -u <dein-github-username> --password-stdin
+----
+
 [source,bash]
 ----
 cd deploy
@@ -173,6 +187,32 @@ curl -s http://localhost:8080/realms/konfplan/.well-known/openid-configuration |
 docker compose stop     # Daten bleiben im Docker-Volume erhalten
 docker compose down -v  # Volumes inkl. aller Daten (DB, Keycloak-Realm-Aenderungen) loeschen
 ----
+
+=== Troubleshooting: `docker.io` nicht erreichbar (Corporate-Netz)
+
+In manchen Firmennetzen (z.B. mit TLS-Interception/Proxy-Zwang für ausgehenden Traffic) scheitert
+der Pull einzelner Images mit einer Meldung wie:
+
+[source]
+----
+failed to resolve reference "docker.io/axllent/mailpit:latest": failed to do request:
+Head "https://registry-1.docker.io/v2/...": dial tcp ...: connect: connection refused
+----
+
+Das ist kein KonfPlan-/Compose-Problem, sondern eine Netzwerk-Restriktion des Hosts: Der Docker-
+Daemon kommt nicht direkt zu Docker Hub raus (andere Registries wie `ghcr.io` können davon
+unabhängig funktionieren oder ebenfalls betroffen sein). Docker Compose bricht dabei alle
+parallelen Image-Pulls ab, sobald einer fehlschlägt - die übrigen Images erscheinen dann nur als
+"Interrupted", nicht als eigentlicher Fehler.
+
+Abhilfe (IT/Netzwerk-Team des jeweiligen Unternehmens fragen, welche der beiden Optionen zutrifft):
+
+* **Proxy**: Docker-Daemon auf den Unternehmens-Proxy verweisen, z.B. via
+  `/etc/systemd/system/docker.service.d/http-proxy.conf` (`HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY`),
+  danach `sudo systemctl daemon-reload && sudo systemctl restart docker`.
+* **Registry-Mirror**: Falls ein interner Pull-Through-Cache/Mirror für Docker-Hub-Images existiert
+  (analog zum internen npm-Mirror für `registry.npmjs.org`), diesen in `/etc/docker/daemon.json`
+  unter `"registry-mirrors": ["<interne-mirror-url>"]` eintragen und Docker neu starten.
 
 == Weg B: .deb-Pakete (systemd)
 
