@@ -231,6 +231,89 @@ Abhilfe, je nachdem was zutrifft (im Zweifel IT/Netzwerk-Team fragen):
   (`HTTP_PROXY`/`HTTPS_PROXY`/`NO_PROXY`), danach
   `sudo systemctl daemon-reload && sudo systemctl restart docker`.
 
+=== Von lokal zu öffentlich (Profil `public`)
+
+Das oben beschriebene Standard-Setup bindet die App per `APP_PORT_BINDING=127.0.0.1:9000:9000`
+nur an `localhost` - von außen (auch nicht aus dem gleichen LAN) nicht erreichbar. Für einen
+**dauerhaft öffentlich erreichbaren** Betrieb (echte Domain + automatisches TLS) auf das Profil
+`public` umsteigen (Details siehe `Deployment-DockerCompose.adoc`, Abschnitt "Hetzner Cloud").
+
+**Wichtig, falls bereits mit lokalem Profil gestartet wurde:** `--import-realm` importiert das
+Keycloak-Realm nur beim allerersten Start. Ein Client, der bereits mit
+`APP_PUBLIC_URL=http://localhost:9000` importiert wurde, bekommt die neue Domain nicht automatisch
+nachgetragen. Solange noch keine echten Nutzdaten existieren, ist ein sauberer Neustart mit den
+richtigen Werten von Anfang an einfacher als nachträgliches Editieren der Redirect-URIs in der
+Keycloak-Admin-Konsole.
+
+. **DNS**: zwei A-Records auf die öffentliche Server-IP (App und Keycloak brauchen getrennte
+Hostnamen):
++
+[source]
+----
+konfplan.<deine-domain>       A   <server-ip>
+auth.konfplan.<deine-domain>  A   <server-ip>
+----
+
+. **Firewall**: nur SSH (den tatsächlich genutzten Port, ggf. abweichend von 22), HTTP (80) und
+HTTPS (443) von außen erlauben - Postgres/Keycloak/App-Ports NICHT:
++
+[source,bash]
+----
+sudo ufw allow <ssh-port>/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+----
++
+Läuft der Server bei einem Cloud-Provider, zusätzlich die Cloud-Firewall entsprechend konfigurieren.
+
+. **`.env` umstellen** (nur unschädlich, falls noch keine echten Daten drin sind - siehe Hinweis
+oben):
++
+[source,bash]
+----
+cd deploy
+docker compose down -v
+----
++
+In `.env` ergänzen/anpassen:
++
+[source]
+----
+APP_HOSTNAME=konfplan.<deine-domain>
+KEYCLOAK_HOSTNAME=auth.konfplan.<deine-domain>
+APP_PUBLIC_URL=https://konfplan.<deine-domain>
+ACME_EMAIL=<deine-email>
+----
++
+Mailversand: entweder `BREVO_SMTP_USER=<dein-brevo-login>` (echter Versand) setzen oder weiterhin
+Profil `mailpit` zusätzlich nutzen (Testpostfach, dann aber ebenfalls nicht öffentlich exponieren).
+
+. **Starten**:
++
+[source,bash]
+----
+./bootstrap.sh public
+docker compose --profile public up -d
+# optional zusaetzlich Mailpit statt echtem SMTP:
+docker compose --profile public --profile mailpit up -d
+----
++
+Caddy bezieht beim ersten Start automatisch Let's-Encrypt-Zertifikate für beide Domains
+(`docker compose logs caddy -f` zum Verfolgen). App/Keycloak sind danach nicht mehr direkt per Port,
+nur noch über Caddy (80/443) erreichbar.
+
+. **Smoke-Test**:
++
+[source,bash]
+----
+curl -sI https://konfplan.<deine-domain>/
+curl -s https://auth.konfplan.<deine-domain>/realms/konfplan/.well-known/openid-configuration | jq .issuer
+----
+
+Bootstrap-Admin-Account (`juergenkrey`) danach wie gehabt einmalig manuell in der
+Keycloak-Admin-Konsole anlegen.
+
 == Weg B: .deb-Pakete (systemd)
 
 Vier eigenständige `.deb`-Pakete (App, PostgreSQL-Setup, Keycloak-Container, Mailpit-Container),
