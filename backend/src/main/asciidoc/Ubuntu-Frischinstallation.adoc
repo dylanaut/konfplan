@@ -494,6 +494,14 @@ Vier eigenständige `.deb`-Pakete (App, PostgreSQL-Setup, Keycloak-Container, Ma
 siehe `packaging/debian/README.md`. `install.sh` im Repo-Root automatisiert Bauen + Installieren in
 einem Rutsch.
 
+**Wichtig:** Anders als das Docker-Image (das per `.github/workflows/ci.yml` bei jedem Push auf
+`main` automatisch gebaut und nach `ghcr.io/dylanaut/konfplan` gepusht wird, siehe Weg A) gibt es für
+die `.deb`-Pakete **keine CI-/Release-Automatisierung**: kein Workflow-Schritt baut sie vor, kein
+GitHub Release stellt sie als Artefakt bereit. Auch `mvn install`/`mvn package` löst
+`packaging/debian/build-all.sh` nicht automatisch aus - das ist bewusst ein separater, manueller
+Schritt. Wer Weg B nutzt, baut die vier Pakete also bei jeder Installation selbst lokal auf der
+Zielmaschine aus dem geklonten Repo-Checkout (genau das macht `install.sh`).
+
 === Ein-Kommando-Variante
 
 [source,bash]
