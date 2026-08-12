@@ -22,6 +22,10 @@ indent_size = 2
 [*.md]
 trim_trailing_whitespace = false
 
+# .properties files - Specific rule to prevent line wrapping
+[*.properties]
+max_line_length = off
+
 # CSV files - Specific rule to prevent line wrapping
 [*.csv]
 max_line_length = off

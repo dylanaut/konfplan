@@ -1,6 +1,7 @@
 package kreyj.konfplan.persistence.converter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.inject.Inject;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 import org.apache.commons.lang3.StringUtils;
@@ -10,8 +11,9 @@ import java.util.Set;
 
 @Converter
 public class LongSetConverter implements AttributeConverter<Set<Long>, String> {
+    @Inject
+    ObjectMapper mapper;
 
-    private static final ObjectMapper mapper = new ObjectMapper();
 
     @Override
     public String convertToDatabaseColumn(Set<Long> attribute) {
@@ -25,6 +27,7 @@ public class LongSetConverter implements AttributeConverter<Set<Long>, String> {
         }
     }
 
+
     @Override
     public Set<Long> convertToEntityAttribute(String dbData) {
         if (StringUtils.isBlank(dbData)) {
@@ -32,7 +35,7 @@ public class LongSetConverter implements AttributeConverter<Set<Long>, String> {
         }
         try {
             return mapper.readValue(dbData,
-                    mapper.getTypeFactory().constructCollectionType(Set.class, Long.class));
+                mapper.getTypeFactory().constructCollectionType(Set.class, Long.class));
         } catch (Exception e) {
             throw new IllegalArgumentException("Set<Long> konnte nicht deserialisiert werden", e);
         }

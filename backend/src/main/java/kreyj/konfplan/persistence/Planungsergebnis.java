@@ -2,6 +2,7 @@ package kreyj.konfplan.persistence;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.inject.Inject;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
@@ -22,7 +23,6 @@ import org.hibernate.type.SqlTypes;
 @Getter
 @Setter
 public class Planungsergebnis extends VersionedEntity {
-
     @OneToOne
     @JoinColumn(name = "veranstaltung_id", nullable = false, unique = true)
     private Veranstaltung veranstaltung;
@@ -42,6 +42,9 @@ public class Planungsergebnis extends VersionedEntity {
 
     @SuppressWarnings("unused")
     public static class MinizincResult {
+        @Inject
+        ObjectMapper objectMapper;
+
         // enthält für jeden Wahlvortrag und über alle Instanzen die MZ-SlotId
         public int[][] instanz_slot;
         // enthält für jeden Raum und über alle Instanzen die MZ-RaumId
@@ -61,7 +64,7 @@ public class Planungsergebnis extends VersionedEntity {
 
         public String toJson() {
             try {
-                return new ObjectMapper().writeValueAsString(this);
+                return objectMapper.writeValueAsString(this);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }

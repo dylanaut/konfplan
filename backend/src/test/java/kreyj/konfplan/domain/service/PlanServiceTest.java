@@ -32,6 +32,9 @@ public class PlanServiceTest extends DatabaseCleaner {
     @Inject
     PlanService planService;
 
+    @Inject
+    ObjectMapper objectMapper;
+
     private Veranstaltung veranstaltung;
 
 
@@ -78,7 +81,6 @@ public class PlanServiceTest extends DatabaseCleaner {
         String jsonErgebnis = planungsergebnis.getJsonErgebnis();
         assertThat(jsonErgebnis).isNotNull();
 
-        ObjectMapper objectMapper = new ObjectMapper();
         final Planungsergebnis.MinizincResult[] results = {null};
 
         // The primary assertion is implicit: the test fails if a HibernateException is thrown.
