@@ -90,8 +90,11 @@ chmod 644 keycloak-realm.generated.json
 if [[ "${1:-}" == "public" ]]; then
     missing=()
     [[ -z "${APP_HOSTNAME:-}" ]] && missing+=(APP_HOSTNAME)
-    [[ -z "${KEYCLOAK_HOSTNAME:-}" ]] && missing+=(KEYCLOAK_HOSTNAME)
     [[ -z "${ACME_EMAIL:-}" ]] && missing+=(ACME_EMAIL)
+    # Ohne explizit gesetzte KEYCLOAK_PUBLIC_URL wuerde Keycloak in Prod klaglos auf den
+    # lokalen Default (http://localhost:8080/auth) zurueckfallen - ein Fehlschlagen hier ist
+    # der Fehlkonfiguration im Betrieb vorzuziehen.
+    [[ -z "${KEYCLOAK_PUBLIC_URL:-}" ]] && missing+=(KEYCLOAK_PUBLIC_URL)
     if [[ ${#missing[@]} -gt 0 ]]; then
         echo "❌ Profil 'public' braucht folgende Variablen in .env: ${missing[*]}"
         exit 1

@@ -163,8 +163,9 @@ docker compose up -d        # startet App + Postgres + Keycloak (+ optional Mail
 Danach:
 
 * *App*: `http://localhost:9000`
-* *Keycloak-Admin-Konsole*: `http://localhost:8080` - Login `admin` / Inhalt von
-  `deploy/secrets/keycloak_admin_password.txt`
+* *Keycloak-Admin-Konsole*: `http://localhost:8080/auth` - Login `admin` / Inhalt von
+  `deploy/secrets/keycloak_admin_password.txt` (Keycloak läuft immer, auch lokal, unter dem
+  Pfad `/auth`, siehe `KC_HTTP_RELATIVE_PATH` in `docker-compose.yml`)
 * Status/Logs: `docker compose ps`, `docker compose logs -f app`
 
 === Troubleshooting: App-Container crash-loopt mit "Permission denied" auf Secrets
@@ -216,7 +217,7 @@ cd deploy
 
 # 1. kcadm gegen den lokalen Keycloak mit dem Admin-Account authentifizieren
 docker compose exec keycloak /opt/keycloak/bin/kcadm.sh config credentials \
-  --server http://localhost:8080 --realm master --user admin \
+  --server http://localhost:8080/auth --realm master --user admin \
   --password "$(cat secrets/keycloak_admin_password.txt)"
 
 # 2. Nutzer im "konfplan"-Realm anlegen - Login-Name MUSS exakt "juergenkrey" sein
@@ -245,7 +246,7 @@ Login-Namen `juergenkrey` beim ersten Login mit dem bestehenden `ADMIN`-Datensat
 [source,bash]
 ----
 curl -sI http://localhost:9000/
-curl -s http://localhost:8080/realms/konfplan/.well-known/openid-configuration | jq .issuer
+curl -s http://localhost:8080/auth/realms/konfplan/.well-known/openid-configuration | jq .issuer
 ----
 
 === Auf-/Abbauen
@@ -313,8 +314,10 @@ nachgetragen. Solange noch keine echten Nutzdaten existieren, ist ein sauberer N
 richtigen Werten von Anfang an einfacher als nachträgliches Editieren der Redirect-URIs in der
 Keycloak-Admin-Konsole.
 
-. **DNS**: zwei A-Records auf die öffentliche Server-IP (App und Keycloak brauchen getrennte
-Hostnamen):
+. **DNS**: ein A-Record auf die öffentliche Server-IP. App und Keycloak teilen sich denselben
+Hostnamen - Keycloak läuft unter dem Pfad `/auth` (`KC_HTTP_RELATIVE_PATH`, siehe
+`Caddyfile`), braucht also keinen eigenen A-Record. Praktisch, falls der Cloud-/DNS-Betreiber
+keine weiteren A-Records für Subdomains ausstellen will:
 +
 --
 .. Öffentliche IP des Servers ermitteln:
@@ -332,14 +335,13 @@ Bereich meist "DNS" oder "Nameserver-Einstellungen" genannt. Ohne eigene, selbst
 funktioniert das Profil `public` mit echtem TLS nicht - die Domain muss vorher bei einem Registrar
 erworben werden.
 
-.. Zwei A-Records anlegen (Feldnamen variieren je Anbieter, meist "Name"/"Host" und
+.. Einen A-Record anlegen (Feldnamen variieren je Anbieter, meist "Name"/"Host" und
 "Wert"/"Ziel"/"Points to"):
 +
 [cols="1,2,2", options="header"]
 |===
 | Typ | Name/Host | Wert
 | A | `{subdom}` (bzw. `{subdom}.<sub>`) | `<server-ip>`
-| A | `auth.{subdom}` | `<server-ip>`
 |===
 
 .. Propagation prüfen, bevor `bootstrap.sh public`/`docker compose --profile public up -d`
@@ -348,9 +350,8 @@ gestartet wird - sonst scheitert Caddys automatischer Let's-Encrypt-Bezug:
 [source,bash,subs="attributes"]
 ----
 dig +short {subdom}.<deine-domain>
-dig +short auth.{subdom}.<deine-domain>
 ----
-Beide sollten `<server-ip>` liefern.
+Sollte `<server-ip>` liefern.
 --
 
 . **Firewall**: nur SSH (den tatsächlich genutzten Port, ggf. abweichend von 22), HTTP (80) und
@@ -415,8 +416,8 @@ In `.env` ergänzen/anpassen:
 [source]
 ----
 APP_HOSTNAME={subdom}.<deine-domain>
-KEYCLOAK_HOSTNAME=auth.{subdom}.<deine-domain>
 APP_PUBLIC_URL=https://{subdom}.<deine-domain>
+KEYCLOAK_PUBLIC_URL=https://{subdom}.<deine-domain>/auth
 ACME_EMAIL=<deine-email>
 ----
 +
@@ -433,7 +434,7 @@ docker compose --profile public up -d
 docker compose --profile public --profile mailpit up -d
 ----
 +
-Caddy bezieht beim ersten Start automatisch Let's-Encrypt-Zertifikate für beide Domains
+Caddy bezieht beim ersten Start automatisch ein Let's-Encrypt-Zertifikat für die Domain
 (`docker compose logs caddy -f` zum Verfolgen). App/Keycloak sind danach nicht mehr direkt per Port,
 nur noch über Caddy (80/443) erreichbar.
 
@@ -442,7 +443,7 @@ nur noch über Caddy (80/443) erreichbar.
 [source,bash]
 ----
 curl -sI https://{subdom}.<deine-domain>/
-curl -s https://auth.{subdom}.<deine-domain>/realms/konfplan/.well-known/openid-configuration | jq .issuer
+curl -s https://{subdom}.<deine-domain>/auth/realms/konfplan/.well-known/openid-configuration | jq .issuer
 ----
 
 Bootstrap-Admin-Account (`juergenkrey`) danach wie gehabt einmalig manuell in der
@@ -459,7 +460,6 @@ suchen:
 ----
 # 1. DNS: loest die Domain auf die richtige Server-IP auf?
 dig +short {subdom}.<deine-domain>
-dig +short auth.{subdom}.<deine-domain>
 
 # 2. Reiner TCP-Verbindungstest (ohne HTTP), prueft ob der Port von aussen offen ist
 nc -zv {subdom}.<deine-domain> 80
@@ -467,7 +467,7 @@ nc -zv {subdom}.<deine-domain> 443
 
 # 3. Tatsaechlicher HTTP(S)-Request von aussen
 curl -sI https://{subdom}.<deine-domain>/
-curl -s https://auth.{subdom}.<deine-domain>/realms/konfplan/.well-known/openid-configuration | jq .issuer
+curl -s https://{subdom}.<deine-domain>/auth/realms/konfplan/.well-known/openid-configuration | jq .issuer
 
 # 4. TLS-Zertifikat pruefen (gueltig, richtige Domain, nicht abgelaufen)
 echo | openssl s_client -connect {subdom}.<deine-domain>:443 -servername {subdom}.<deine-domain> 2>/dev/null \

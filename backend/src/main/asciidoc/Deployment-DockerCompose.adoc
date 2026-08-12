@@ -19,7 +19,7 @@ Passwörter (DB, Keycloak-Admin, Keycloak-Admin-CLI-Client-Secret) werden **niem
 
 * Docker Engine + Compose-Plugin (`docker compose version` sollte funktionieren)
 * `openssl` (für die Secret-Generierung, auf macOS/Debian bereits vorhanden)
-* Für das Profil `public` (Hetzner): zwei DNS-A-Records auf die Server-IP (siehe unten)
+* Für das Profil `public` (Hetzner): ein DNS-A-Record auf die Server-IP (siehe unten)
 
 == Verzeichnis `deploy/`
 
@@ -94,8 +94,10 @@ cp .env.example .env    # Standardwerte reichen lokal meist unveraendert
 docker compose up -d
 ----
 . App unter `http://<VM-IP-oder-localhost>:9000`, Keycloak-Admin-Konsole unter
-`http://<VM-IP-oder-localhost>:8080` erreichbar (Login: `admin` / Inhalt von
-`secrets/keycloak_admin_password.txt`).
+`http://<VM-IP-oder-localhost>:8080/auth` erreichbar (Login: `admin` / Inhalt von
+`secrets/keycloak_admin_password.txt`). Keycloak läuft immer (auch lokal, unabhängig vom
+Profil `public`) unter dem Pfad `/auth` (`KC_HTTP_RELATIVE_PATH`), damit Prod und lokal
+identisch konfiguriert sind.
 
 == Hetzner Cloud (öffentlich erreichbar)
 
@@ -112,13 +114,13 @@ Ein `cx22` (2 vCPU/4 GB) reicht für App+Postgres+Keycloak im Kleinbetrieb.
 
 === DNS
 
-Zwei A-Records auf die Server-IP anlegen (Keycloak braucht einen eigenen Hostnamen, siehe
-`Caddyfile` - kein gemeinsamer Pfad-Präfix mit der App):
+Ein A-Record auf die Server-IP anlegen. Keycloak teilt sich die Domain mit der App und läuft
+unter dem Pfad `/auth` (`KC_HTTP_RELATIVE_PATH`, siehe `Caddyfile`) - kein eigener Hostname
+mehr nötig, falls der DNS-/Cloud-Betreiber keine weiteren A-Records erlaubt:
 
 [source]
 ----
 konfplan.<deine-domain>       A   <server-ip>
-auth.konfplan.<deine-domain>  A   <server-ip>
 ----
 
 === Firewall
@@ -151,8 +153,8 @@ In `.env` zusätzlich (siehe auskommentierte Zeilen dort):
 [source]
 ----
 APP_HOSTNAME=konfplan.<deine-domain>
-KEYCLOAK_HOSTNAME=auth.konfplan.<deine-domain>
 APP_PUBLIC_URL=https://konfplan.<deine-domain>
+KEYCLOAK_PUBLIC_URL=https://konfplan.<deine-domain>/auth
 ACME_EMAIL=<deine-email>          # Let's-Encrypt-Kontaktadresse
 BREVO_SMTP_USER=<dein-brevo-login>  # oder Profil "mailpit" statt echtem SMTP nutzen
 ----
@@ -165,7 +167,7 @@ BREVO_SMTP_USER=<dein-brevo-login>  # oder Profil "mailpit" statt echtem SMTP nu
 docker compose --profile public up -d
 ----
 
-Caddy bezieht beim ersten Start automatisch Let's-Encrypt-Zertifikate für beide Domains (dauert wenige Sekunden, sichtbar in `docker compose logs caddy -f`).
+Caddy bezieht beim ersten Start automatisch ein Let's-Encrypt-Zertifikat für die Domain (dauert wenige Sekunden, sichtbar in `docker compose logs caddy -f`).
 App/Keycloak sind dann NICHT mehr direkt per Port erreichbar, nur noch über Caddy (Port 80/443).
 
 === Smoke-Test
@@ -173,7 +175,7 @@ App/Keycloak sind dann NICHT mehr direkt per Port erreichbar, nur noch über Cad
 [source,bash]
 ----
 curl -sI https://konfplan.<deine-domain>/
-curl -s https://auth.konfplan.<deine-domain>/realms/konfplan/.well-known/openid-configuration | jq .issuer
+curl -s https://konfplan.<deine-domain>/auth/realms/konfplan/.well-known/openid-configuration | jq .issuer
 ----
 
 == Update / Redeploy
@@ -217,4 +219,4 @@ exportiert den aktuellen (durch Admin-UI-Änderungen ggf. abweichenden) Realm-Zu
 Für einen erzwungenen Reimport das Postgres-Volume der `keycloak`-Datenbank leeren (Datenverlust für alle Keycloak-Änderungen!) oder den Realm manuell über die Admin-Konsole löschen und neu starten.
 * **Caddy bekommt kein Zertifikat**: DNS-A-Records prüfen (`dig +short <hostname>` muss die Server-IP liefern) und dass Port 80 tatsächlich von außen erreichbar ist (Cloud-Firewall +
 ggf. zusätzlich `ufw`).
-* **App kann Keycloak nicht erreichen**: `KC_SERVER_URL`/`KEYCLOAK_INTERNAL_URL` muss auf den Compose-Service-Namen zeigen (`http://keycloak:8080`), nicht auf `localhost` - beide Container laufen im selben Compose-Netzwerk und erreichen sich über den Service-Namen.
+* **App kann Keycloak nicht erreichen**: `KC_SERVER_URL`/`KEYCLOAK_INTERNAL_URL` muss auf den Compose-Service-Namen zeigen (`http://keycloak:8080/auth`, mit Pfad `/auth`), nicht auf `localhost` - beide Container laufen im selben Compose-Netzwerk und erreichen sich über den Service-Namen.

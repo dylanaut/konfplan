@@ -69,7 +69,13 @@ services:
       KC_DB_URL_HOST: postgres
       KC_DB_URL_DATABASE: keycloak
       KC_DB_USERNAME: postgres
-      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME:-localhost}
+      # KC_HOSTNAME als volle URL (Keycloak-26-"Hostname v2") statt nur Hostname - so kann
+      # Keycloak unter einem Pfad-Praefix auf derselben Domain wie die App laufen (kein
+      # eigener A-Record fuer Keycloak noetig). KC_HTTP_RELATIVE_PATH sorgt dafuer, dass
+      # Keycloak intern selbst unter genau diesem Pfad served - Caddy muss den Pfad dadurch
+      # nicht umschreiben (siehe Caddyfile).
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8080/auth}
+      KC_HTTP_RELATIVE_PATH: /auth
       KC_HOSTNAME_STRICT: "false"
       # Caddy (Profil "public") terminiert TLS und spricht Keycloak intern per HTTP an. Ohne
       # Caddy (lokal/UTM) wird Keycloak stattdessen direkt per HTTP erreicht.
@@ -102,7 +108,7 @@ services:
       DB_PORT: "5432"
       DB_NAME: konfplan
       DB_USER: postgres
-      KC_SERVER_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
+      KC_SERVER_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080/auth}
       KC_REALM: konfplan
       FRONTEND_BASE_URL: ${APP_PUBLIC_URL:-http://localhost:9000}
       # Nur relevant, wenn Profil "mailpit" NICHT aktiv ist (echter SMTP-Versand, z.B. Brevo).
@@ -142,7 +148,6 @@ services:
       # evaluiert ${VAR:?} leider fuer JEDEN Service beim Parsen, auch fuer inaktive Profile -
       # eine harte Pflicht-Variable hier wuerde daher auch den lokalen/UTM-Fall ohne Caddy brechen).
       APP_HOSTNAME: ${APP_HOSTNAME:-}
-      KEYCLOAK_HOSTNAME: ${KEYCLOAK_HOSTNAME:-}
       ACME_EMAIL: ${ACME_EMAIL:-}
     ports:
       - "80:80"
