@@ -1,5 +1,21 @@
 <template>
   <section class="space-y-6 animate-fade-in">
+    <!-- Vorbereitung: unabhängig von einem bereits erstellten Plan verfügbar -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 no-print">
+      <h3 class="text-sm font-bold mb-3">Vorbereitung</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div class="flex items-center space-x-2">
+            <img src="/logo/konfplan-light_footer.svg" alt="Icon" class="w-5 h-5"/>
+            <span class="font-semibold">Abstimmungsfragebögen (Teilnehmer)</span>
+          </div>
+          <div class="space-x-2">
+            <button @click="navigateToReport('AbstimmungsfragebogenAlle')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">Anzeigen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Belegungsplan -->
     <div v-if="eventContext.selectedEvent && belegungsPlan && belegungsPlan.length > 0">
       <Stundenplan :vid="eventContext.selectedEvent.id" />

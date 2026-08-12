@@ -204,6 +204,20 @@ public class ReportResource {
 
 
     @GET
+    @Path("/{vid}/abstimmungsfragebogen-data")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed("ADMIN")
+    @Operation(summary = "Daten für Abstimmungsfragebögen aller Teilnehmer (JSON)")
+    public Response getAbstimmungsfragebogenData(@PathParam("vid") Long vid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(new ReportDto.AbstimmungsfragebogenDto(veranstaltung)).build();
+    }
+
+
+    @GET
     @Path("/{vid}/stundenplan-data")
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed("ADMIN")

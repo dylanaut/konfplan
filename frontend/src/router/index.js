@@ -15,6 +15,7 @@ const FreieSlotsTeilnehmer = () => import('../views/report/FreieSlotsTeilnehmer.
 const TeilnehmerZuordnungen = () => import('../views/report/TeilnehmerZuordnungen.vue');
 const Prioritaeten = () => import('../views/report/Prioritaeten.vue');
 const LaufzettelAlle = () => import('../views/report/LaufzettelAlle.vue');
+const AbstimmungsfragebogenAlle = () => import('../views/report/AbstimmungsfragebogenAlle.vue');
 const LaufzettelAlleReferenten = () => import('../views/report/LaufzettelAlleReferenten.vue');
 const Stundenplan = () => import('../views/report/Stundenplan.vue');
 const Anwesenheiten = () => import('../views/report/Anwesenheiten.vue');
@@ -108,6 +109,12 @@ const routes = [
         path: '/admin/veranstaltung/:vid/laufzettel-alle-referenten',
         name: 'LaufzettelAlleReferenten',
         component: LaufzettelAlleReferenten,
+        meta: { requiresAuth: true, role: 'ADMIN' }
+    },
+    {
+        path: '/admin/veranstaltung/:vid/abstimmungsfragebogen-alle',
+        name: 'AbstimmungsfragebogenAlle',
+        component: AbstimmungsfragebogenAlle,
         meta: { requiresAuth: true, role: 'ADMIN' }
     },
     {

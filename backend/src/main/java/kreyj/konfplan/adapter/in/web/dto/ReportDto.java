@@ -3,7 +3,11 @@ package kreyj.konfplan.adapter.in.web.dto;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Vortrag;
+import kreyj.konfplan.persistence.Wahlvortrag;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -102,6 +106,54 @@ public class ReportDto {
             this.veranstaltung = VeranstaltungDto.from(veranstaltung);
             this.plaene = plaene;
             this.referenten = referenten;
+        }
+    }
+
+    public static class AbstimmungsfragebogenDto {
+        public final VeranstaltungDto veranstaltung;
+        public final List<LegendeEintragDto> legende;
+        public final List<NutzerDto> teilnehmer;
+
+        public AbstimmungsfragebogenDto(Veranstaltung veranstaltung) {
+            this.veranstaltung = VeranstaltungDto.from(veranstaltung);
+
+            List<Wahlvortrag> sortiert = veranstaltung.getWahlvortraege().stream()
+                .sorted(Comparator
+                    .comparing((Wahlvortrag v) -> v.getBerufsfeld() == null ? Integer.MAX_VALUE : v.getBerufsfeld().ordinal())
+                    .thenComparing(Vortrag::getTitel, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+
+            List<LegendeEintragDto> eintraege = new ArrayList<>();
+            int nummer = 1;
+            for (Wahlvortrag v : sortiert) {
+                eintraege.add(new LegendeEintragDto(nummer++, v));
+            }
+            this.legende = eintraege;
+
+            this.teilnehmer = veranstaltung.teilnehmer().stream()
+                .map(NutzerDto::from)
+                .sorted(Comparator
+                    .comparing((NutzerDto t) -> null == t.lastName ? "" : t.lastName, String.CASE_INSENSITIVE_ORDER)
+                    .thenComparing(t -> null == t.firstName ? "" : t.firstName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+        }
+    }
+
+    public static class LegendeEintragDto {
+        public final int nummer;
+        public final String titel;
+        public final String inhalt;
+        public final String berufsfeldName;
+        public final String referentName;
+        public final String referentOrganisation;
+
+        public LegendeEintragDto(int nummer, Wahlvortrag vortrag) {
+            this.nummer = nummer;
+            this.titel = vortrag.getTitel();
+            this.inhalt = vortrag.getInhalt();
+            this.berufsfeldName = vortrag.getBerufsfeld() != null ? vortrag.getBerufsfeld().getName() : null;
+            this.referentName = vortrag.getReferent().getFullName();
+            this.referentOrganisation = vortrag.getReferent().getOrganisation();
         }
     }
 }
