@@ -1,633 +1,617 @@
-Nachname;Vorname;Email;Gruppen;LoginName
-Albaiad;Leen;;8a;leen.albaiad
-Albatran;Murhf;;8a;murhf.albatran
-Belilovskiy;Luka;;8a;luka.belilovskiy
-Birrenbach;Mona;;8a;mona.birrenbach
-Bornheim;Ben;;8a;ben.bornheim
-Borodavchuk;Denys;;8a;denys.borodavchuk
-Caglar;Emir;;8a;emir.caglar
-Carmona Rodriguez;Emily;;8a;emily.carmona.rodriguez
-Cazals;Matthieu;;8a;matthieu.cazals
-Effern;Diego;;8a;diego.effern
-Engels;Leonie;;8a;leonie.engels
-Hartung;Max Bao Nam;;8a;max.bao.nam.hartung
-Hoti;Deliza;;8a;deliza.hoti
-Kartal;Talia;;8a;talia.kartal
-Korth;Karla;;8a;karla.korth
-Köster;Jana;;8a;jana.koester
-Krause;Isabella;;8a;isabella.krause
-Krueger;Maximilian;;8a;maximilian.krueger
-Nowack;Laurin;;8a;laurin.nowack
-Ockenfels;Jule;;8a;jule.ockenfels
-Ruthenbeck;Sibel;;8a;sibel.ruthenbeck
-Saal;Anna-Maria;;8a;anna.maria.saal
-Schmitz;Martha-Louise;;8a;martha.louise.schmitz
-Schneider;Benedikt;;8a;benedikt.schneider
-Sharma;Riya;;8a;riya.sharma
-Siebertz;Elias;;8a;elias.siebertz
-Streeck;Neele;;8a;neele.streeck
-Zalesskaia;Daria;;8a;daria.zalesskaia
-Alfter;Julian;;8b;julian.alfter
-Al Sharaa;Hala;;8b;hala.al.sharaa
-Beyer;Emil;;8b;emil.beyer
-Chahid;Jonas;;8b;jonas.chahid
-Do;Thanh Long;;8b;thanh.long.do
-Dreglea;Darius;;8b;darius.dreglea
-Duijvekam;Lilly;;8b;lilly.duijvekam
-Firlus;Julia;;8b;julia.firlus
-Frömbgen;Elias;;8b;elias.froembgen
-Gambino-Kleemann;Lia;;8b;lia.gambino.kleemann
-Hanft;Laura;;8b;laura.hanft
-Königs;Anton;;8b;anton.koenigs
-Kowalik;Jowita Aleksandra;;8b;jowita.aleksandra.kowalik
-Nawlo;Layan;;8b;layan.nawlo
-Neve;Jean;;8b;jean.neve
-Ockenfels;Lucas;;8b;lucas.ockenfels
-Probst;Nikolas;;8b;nikolas.probst
-Reufels;Sophie;;8b;sophie.reufels
-Riadi;Linah;;8b;linah.riadi
-Ruppert;Sara;;8b;sara.ruppert
-Schwarz;Mila;;8b;mila.schwarz
-Siebertz;Enno;;8b;enno.siebertz
-Stemann;Vincent;;8b;vincent.stemann
-Suntrup;Johannes Konrad;;8b;johannes.konrad.suntrup
-Walter;Katharina;;8b;katharina.walter
-Wotzke;Lina;;8b;lina.wotzke
-Zahn;Sarah;;8b;sarah.zahn
-Zeichner;Elias;;8b;elias.zeichner
-Łukoszek;Jan Henryk;;8b;jan.henryk.lukoszek
-Antweiler;Mike;;8c;mike.antweiler
-Bärnwald;Celina;;8c;celina.baernwald
-Buhr;Marlene;;8c;marlene.buhr
-Chunangamparampan;Lena;;8c;lena.chunangamparampan
-Collura;Sanjo;;8c;sanjo.collura
-Dimitrievska;Emilia;;8c;emilia.dimitrievska
-Ermtraud;Mia;;8c;mia.ermtraud
-Frye;Lúthien;;8c;luthien.frye
-Hadaschik;Greta;;8c;greta.hadaschik
-Haupt;Sofia;;8c;sofia.haupt
-Hoffmann;Lara;;8c;lara.hoffmann
-Jünger;Luca;;8c;luca.juenger
-Le;Emily Bao Nhi;;8c;emily.bao.nhi.le
-Mertesacker;Luke;;8c;luke.mertesacker
-Nguyen;Phung;;8c;phung.nguyen
-Niederée;Marie Josefine;;8c;marie.josefine.niederee
-Pogorelow;Kristian;;8c;kristian.pogorelow
-Schoss;Jonas;;8c;jonas.schoss
-Simonis;Marisa;;8c;marisa.simonis
-Stein;Lea Sophie;;8c;lea.sophie.stein
-Stumpf;Melissa;;8c;melissa.stumpf
-Swirsky;Tanja;;8c;tanja.swirsky
-Vetsch;Ella;;8c;ella.vetsch
-Weiß;Klara;;8c;klara.weiss
-Zeichner;Benjamin;;8c;benjamin.zeichner
-Zeichner;Rosa;;8c;rosa.zeichner
-Akden;Caner;;9a;caner.akden
-Fossemer;Amelie;;9a;amelie.fossemer
-Francisco;Qasim;;9a;qasim.francisco
-Glätzner;Sophie;;9a;sophie.glaetzner
-Kauferstein;Marlena;;9a;marlena.kauferstein
-Kedikoglu;Harun;;9a;harun.kedikoglu
-Köpcke;Marlene;;9a;marlene.koepcke
-Kröger;Ronja;;9a;ronja.kroeger
-Kröll;Maike;;9a;maike.kroell
-Laniewski;Michal;;9a;michal.laniewski
-Lopez;Ilaria;;9a;ilaria.lopez
-Martin;Hannah;;9a;hannah.martin
-Moch;Demian;;9a;demian.moch
-Mohamed;Chia;;9a;chia.mohamed
-Samadova;Lala;;9a;lala.samadova
-Scharfenstein;Zoe;;9a;zoe.scharfenstein
-Schlüter;Ruby;;9a;ruby.schlueter
-Schmitz;Jonah;;9a;jonah.schmitz
-Schneider;Lena;;9a;lena.schneider
-Schuh;Fabian;;9a;fabian.schuh
-Seidensticker;Paula;;9a;paula.seidensticker
-Seyffert;Lisa Marie;;9a;lisa.marie.seyffert
-Unsaeng;Neo;;9a;neo.unsaeng
-Zimmermann;Darius;;9a;darius.zimmermann
-Atzl;Helena Maria;;9b;helena.maria.atzl
-Bleckwenn;Mira;;9b;mira.bleckwenn
-Celik;Azra;;9b;azra.celik
-Dehms;Tobias;;9b;tobias.dehms
-Heinold;Samuel;;9b;samuel.heinold
-Herzog;Felix;;9b;felix.herzog
-Id;Razan;;9b;razan.id
-Kasperowicz;Gracja Viktoria;;9b;gracja.viktoria.kasperowicz
-Kilicaslan;Baran;;9b;baran.kilicaslan
-Koch;Maximilian;;9b;maximilian.koch
-Kolfenbach;Dorian;;9b;dorian.kolfenbach
-Krudwig;Lia;;9b;lia.krudwig
-Lange;Pascal;;9b;pascal.lange
-Mende;Sophia;;9b;sophia.mende
-Moll;Laurin Jonathan;;9b;laurin.jonathan.moll
-Musah;Sherifa-Mandeeya;;9b;sherifa.mandeeya.musah
-Nietzard;Malou;;9b;malou.nietzard
-Nowack;Milan;;9b;milan.nowack
-Reetz;Luis;;9b;luis.reetz
-Reinartz;Simon;;9b;simon.reinartz
-Richarz;Thomas;;9b;thomas.richarz
-Römer;Paula;;9b;paula.roemer
-Rondot;Lotta;;9b;lotta.rondot
-Stein;Ida-Marie;;9b;ida.marie.stein
-Waldek;Jonas;;9b;jonas.waldek
-Walker;Marius;;9b;marius.walker
-Barth;Mia;;9c;mia.barth
-Bell;Lennox;;9c;lennox.bell
-Blank;Janne;;9c;janne.blank
-Bock;Justus;;9c;justus.bock
-Chaisree;Kwanchnok;;9c;kwanchnok.chaisree
-Drehjou;Mohammed;;9c;mohammed.drehjou
-Dünnes;Marie Sophie;;9c;marie.sophie.duennes
-Esch;Christina;;9c;christina.esch
-Frömbgen;David;;9c;david.froembgen
-Frömbgen;Lara;;9c;lara.froembgen
-Gashi;Loriana;;9c;loriana.gashi
-Hausen;Greta;;9c;greta.hausen
-Hramov;Darija;;9c;darija.hramov
-Jütte;Manuel;;9c;manuel.juette
-Kasapovic;Amir;;9c;amir.kasapovic
-Khazdouzian;Jona;;9c;jona.khazdouzian
-Peukert;Charlotte;;9c;charlotte.peukert
-Reicke;Konrad;;9c;konrad.reicke
-Schmitz;Lana;;9c;lana.schmitz
-Sülzer;Frieda;;9c;frieda.suelzer
-Wierschem;Josephine;;9c;josephine.wierschem
-Winkler;Sophia;;9c;sophia.winkler
-Zeiler;Takumi;;9c;takumi.zeiler
-Zilles;Lia;;9c;lia.zilles
-Alabdullah;Ibrahim;;9d;ibrahim.alabdullah
-Asteroth;Emma;;9d;emma.asteroth
-Avdiu;Ardit;;9d;ardit.avdiu
-Baqeri;Melika;;9d;melika.baqeri
-Boshtraj;Rina;;9d;rina.boshtraj
-Braun;Nico;;9d;nico.braun
-Bunjaku;Léon;;9d;leon.bunjaku
-Kes;Hakan;;9d;hakan.kes
-Kopaci;Arsela;;9d;arsela.kopaci
-Krueger;Lara;;9d;lara.krueger
-Lange;Olivia;;9d;olivia.lange
-Laumann;Lena;;9d;lena.laumann
-Mohammedali;Yussuf;;9d;yussuf.mohammedali
-Paschke;Samia;;9d;samia.paschke
-Samaan;Mahrael;;9d;mahrael.samaan
-Sartor;Florian;;9d;florian.sartor
-Schäfer;Carlotta;;9d;carlotta.schaefer
-Schneider;Mara;;9d;mara.schneider
-Schütte;Felix;;9d;felix.schuette
-Solak;Kutan;;9d;kutan.solak
-Strauß;Raphaela;;9d;raphaela.strauss
-Temna;Oleksandra;;9d;oleksandra.temna
-Tsanaktsidis;Leandra;;9d;leandra.tsanaktsidis
-Zimmermann;Johann;;9d;johann.zimmermann
-Antal;Andreas;;10a;andreas.antal
-Arend;Merlin;;10a;merlin.arend
-Ceylan;Esmeray;;10a;esmeray.ceylan
-Duijvekam;Ronja;;10a;ronja.duijvekam
-Enns;Elin;;10a;elin.enns
-Ergin;Lorin Su;;10a;lorin.su.ergin
-Hirzmann;Emma;;10a;emma.hirzmann
-Hoß;Niklas;;10a;niklas.hoss
-Kaminski;Lisa;;10a;lisa.kaminski
-Kamp;Luca;;10a;luca.kamp
-Klingenberger;Alexander;;10a;alexander.klingenberger
-Koll;Luca;;10a;luca.koll
-Kreutzmann;Lenja;;10a;lenja.kreutzmann
-Kuntze;Moritz;;10a;moritz.kuntze
-Labonde;Lana;;10a;lana.labonde
-Le;Anna;;10a;anna.le
-Pochynok;Vladyslav;;10a;vladyslav.pochynok
-Schinabeck;Leah;;10a;leah.schinabeck
-Spitzer;Magdalena Karin Marie;;10a;magdalena.karin.marie.spitzer
-Sydorzhewski;Uliana;;10a;uliana.sydorzhewski
-von Almen;Coco;;10a;coco.von.almen
-Becker;Friedrich;;10b;friedrich.becker
-Blaschczok;Samuel;;10b;samuel.blaschczok
-Böker;Lara;;10b;lara.boeker
-Dogan;Rozerin;;10b;rozerin.dogan
-Emmerich;Suri;;10b;suri.emmerich
-Fischer;Jack;;10b;jack.fischer
-Kirsch;Ben;;10b;ben.kirsch
-Klein;Silvia;;10b;silvia.klein
-Laut;Lea;;10b;lea.laut
-Lindlohr;Maya;;10b;maya.lindlohr
-Nietzard;Lennox;;10b;lennox.nietzard
-Prasser;Pit;;10b;pit.prasser
-Ruch;Scarlett;;10b;scarlett.ruch
-Schwarz;Paulina;;10b;paulina.schwarz
-Simonis;Naira;;10b;naira.simonis
-Sopart;Johanna;;10b;johanna.sopart
-Szumilas;Wiktoria-Vanessa;;10b;wiktoria.vanessa.szumilas
-Vázquez y Vázquez;Joya;;10b;joya.vazquez.y.vazquez
-Warmth;Maximilian;;10b;maximilian.warmth
-Weber;Hannah;;10b;hannah.weber
-Wiemer;Pascal;;10b;pascal.wiemer
-Alaktaa;Hala;;10c;hala.alaktaa
-Avdyli;Vesa;;10c;vesa.avdyli
-Balaba;Daria;;10c;daria.balaba
-Born;Emma;;10c;emma.born
-Böyer;Valentin;;10c;valentin.boeyer
-Ditter;Emma Carolina;;10c;emma.carolina.ditter
-Effert;Joshua;;10c;joshua.effert
-Ince;Fabian;;10c;fabian.ince
-Kuznetsova;Sofiia;;10c;sofiia.kuznetsova
-Lo Iacono;Giuliana;;10c;giuliana.lo.iacono
-Mielke;Johanna;;10c;johanna.mielke
-Muthers;Jonas;;10c;jonas.muthers
-Özkaya;Aylin;;10c;aylin.özkaya
-Reichelt;Lucas;;10c;lucas.reichelt
-Rohloff;Philine;;10c;philine.rohloff
-Saad;Goudy;;10c;goudy.saad
-Sartor;Joris;;10c;joris.sartor
-Schlüter;Leonie;;10c;leonie.schlueter
-Schmitz;Fynn;;10c;fynn.schmitz
-Seib;Elias;;10c;elias.seib
-Trudrung;Philipp;;10c;philipp.trudrung
-Winkler;Henrik;;10c;henrik.winkler
-Abdul-Raouf;Maryam;;11;maryam.abdul.raouf
-Adolphi;Bjarne Mathias;;11;bjarne.mathias.adolphi
-Alkesaab;Rehma;;11;rehma.alkesaab
-Aßenmacher;Magnus;;11;magnus.assenmacher
-Aycicek;Hansa Yagmur;;11;hansa.yagmur.aycicek
-Bakhtin;Mykola;;11;mykola.bakhtin
-Beck;Cilian Raúl;;11;cilian.raul.beck
-Becker-Röttgen;Merle;;11;merle.becker.roettgen
-Busley;Sophia;;11;sophia.busley
-Ceylan;Seymen;;11;seymen.ceylan
-Chrenko;Marlene;;11;marlene.chrenko
-Diederich;Marie Sofie;;11;marie.sofie.diederich
-Dönhoff;Fee;;11;fee.doenhoff
-Dorniak;Marie Louisa;;11;marie.louisa.dorniak
-Emrich;Sarah Michelle;;11;sarah.michelle.emrich
-Ertürk;Ümit;;11;ümit.ertuerk
-Frye;Philip;;11;philip.frye
-Gerolstein;Celina Sophie;;11;celina.sophie.gerolstein
-Guzday;Kevin;;11;kevin.guzday
-Guzday;Leon;;11;leon.guzday
-Häfner;Lena;;11;lena.haefner
-Hagedorn;Fynn;;11;fynn.hagedorn
-Hartmann;Lena;;11;lena.hartmann
-Hermann;Leonie Caitriana;;11;leonie.caitriana.hermann
-Hermann;Pauline Frederike;;11;pauline.frederike.hermann
-Hildebrandt;Elias;;11;elias.hildebrandt
-Hillmann;Fabian Linus;;11;fabian.linus.hillmann
-Hoffmann;Alexander;;11;alexander.hoffmann
-Homscheid;Lars;;11;lars.homscheid
-Ivanov;Tymur;;11;tymur.ivanov
-Jesse;Elias;;11;elias.jesse
-Kandels;Nils;;11;nils.kandels
-Kanoglu;Karl Alan;;11;karl.alan.kanoglu
-Kasperowicz;Oskar Szymon;;11;oskar.szymon.kasperowicz
-Keller;Tim;;11;tim.keller
-Khatibifard;Mohammadmahdi;;11;mohammadmahdi.khatibifard
-Khazdouzian;Jolie Shanti;;11;jolie.shanti.khazdouzian
-Knoop;Justin;;11;justin.knoop
-Kokums;Kristers;;11;kristers.kokums
-Königs;Tim;;11;tim.koenigs
-Kröger;Timo Alfred;;11;timo.alfred.kroeger
-Kröll;Melina;;11;melina.kroell
-Kronfoth;Kyra;;11;kyra.kronfoth
-Kuruc;Petra;;11;petra.kuruc
-Lampke;Maximilian;;11;maximilian.lampke
-Lay;Bennet Laurin;;11;bennet.laurin.lay
-Lokaj;Artian;;11;artian.lokaj
-Mancoglu;Furkan;;11;furkan.mancoglu
-Martin;Lara;;11;lara.martin
-Mertesacker;Annalena;;11;annalena.mertesacker
-Milinkovic;Katarina;;11;katarina.milinkovic
-Müller;Leni;;11;leni.mueller
-Munsch;Moritz;;11;moritz.munsch
-Muthers;Nele;;11;nele.muthers
-Napelyani;Haniya;;11;haniya.napelyani
-Neve;Tatiana Marie;;11;tatiana.marie.neve
-Nguyen;Khanh Ly;;11;khanh.ly.nguyen
-Nguyen;Quang-Binh;;11;quang.binh.nguyen
-Pöpping;Melina;;11;melina.poepping
-Profitlich;Leon;;11;leon.profitlich
-Prytula;Nazar;;11;nazar.prytula
-Reitz;Emilia Maria;;11;emilia.maria.reitz
-Rodriguez Escher;Helena;;11;helena.rodriguez.escher
-Runkel;Yasmin;;11;yasmin.runkel
-Sahinbay;Saltuk Emir;;11;saltuk.emir.sahinbay
-Salimi;Marwa;;11;marwa.salimi
-Sartor;Finja;;11;finja.sartor
-Schmitz;Carlotta Marit;;11;carlotta.marit.schmitz
-Schneider;Sara Marie;;11;sara.marie.schneider
-Schnurr;Isabel;;11;isabel.schnurr
-Schopp;Lina;;11;lina.schopp
-Seidel;Ngoc Vy;;11;ngoc.vy.seidel
-Splitt;Emilie;;11;emilie.splitt
-Stahl;Leonie;;11;leonie.stahl
-Stehle;Kimberly;;11;kimberly.stehle
-Stockhausen;Eric;;11;eric.stockhausen
-Trude;Maximilian;;11;maximilian.trude
-Tschauner;Maximilian;;11;maximilian.tschauner
-Wagner;Ann-Sophie;;11;ann.sophie.wagner
-Walker;Clarissa Maria;;11;clarissa.maria.walker
-Wangkunklang;Marisa;;11;marisa.wangkunklang
-Warjuschin;Evelyn;;11;evelyn.warjuschin
-Warmth;Marlene;;11;marlene.warmth
-Watts;Erik Günther Hadrick;;11;erik.guenther.hadrick.watts
-Weißenfels;Matthias;;11;matthias.weissenfels
-Willscheid;Miriam;;11;miriam.willscheid
-Wotzke;Maya;;11;maya.wotzke
-Yaldir;Mert-Alim;;11;mert.alim.yaldir
-Zeiler;Mariko Sophia;;11;mariko.sophia.zeiler
-Zeqa;Nderon;;11;nderon.zeqa
-Apel;Dana;;12;dana.apel
-Babaliga;Cosmin;;12;cosmin.babaliga
-Bock;Hannah;;12;hannah.bock
-Caglar;Ceylin;;12;ceylin.caglar
-Can;Cagatay;;12;cagatay.can
-Carmona Rodriguez;Leonie;;12;leonie.carmona.rodriguez
-Ciancia;Valentina;;12;valentina.ciancia
-Debus;Lion;;12;lion.debus
-Dick;Sophie;;12;sophie.dick
-Emmel;Kian;;12;kian.emmel
-Ergin;Laser;;12;laser.ergin
-Freiseis;Luca;;12;luca.freiseis
-Frerk;Mia;;12;mia.frerk
-Fritzen;Jonas;;12;jonas.fritzen
-Gashi;Elian;;12;elian.gashi
-Glätzner;Anna;;12;anna.glaetzner
-Grewe;Caroline;;12;caroline.grewe
-Gummersbach;Jana;;12;jana.gummersbach
-Habel;Lea;;12;lea.habel
-Hafner;Julia;;12;julia.hafner
-Hasanaj;Benet;;12;benet.hasanaj
-Hecken;Mina;;12;mina.hecken
-Henze;Marc;;12;marc.henze
-Hofmann;Sophie Pay;;12;sophie.pay.hofmann
-Islamovic;Adina;;12;adina.islamovic
-Jirowetz;Philip;;12;philip.jirowetz
-Jodl;Eva;;12;eva.jodl
-Jodl;Franziska;;12;franziska.jodl
-Jütte;Fabian;;12;fabian.juette
-Kaminski;Johanna;;12;johanna.kaminski
-Kauferstein;Mia;;12;mia.kauferstein
-Klein;Tobias;;12;tobias.klein
-Klescher;Joline;;12;joline.klescher
-Kossmann;Philipp Lennart;;12;philipp.lennart.kossmann
-Kouraichi;Zainab;;12;zainab.kouraichi
-Koyuncu;Zozan;;12;zozan.koyuncu
-Kuqi;Leonit;;12;leonit.kuqi
-Lange;Yuna Amélie;;12;yuna.amelie.lange
-Lecher;Ruben Fynn;;12;ruben.fynn.lecher
-Meixner;Dominik Jonathan;;12;dominik.jonathan.meixner
-Meller;Jens Christian;;12;jens.christian.meller
-Mendykowski;Mateusz;;12;mateusz.mendykowski
-Moll;Anneke;;12;anneke.moll
-Mroz;Aleksandra;;12;aleksandra.mroz
-Muratovic;Denis;;12;denis.muratovic
-Nasution;Maël-Damai Alexis August;;12;maël.damai.alexis.august.nasution
-Nguyen;Quang-Sinh;;12;quang.sinh.nguyen
-Ohly;Hannah;;12;hannah.ohly
-Padure;David;;12;david.padure
-Philippsen;Max Constantin;;12;max.constantin.philippsen
-Pogorelow;Paul Alexander;;12;paul.alexander.pogorelow
-Reetz;Helene;;12;helene.reetz
-Reither;Johanna;;12;johanna.reither
-Reuter;Hannah;;12;hannah.reuter
-Reuter;Lisa;;12;lisa.reuter
-Richarz;Julian;;12;julian.richarz
-Römer;Jonas;;12;jonas.roemer
-Rondot;Ronja;;12;ronja.rondot
-Ruthenbeck;Ayla;;12;ayla.ruthenbeck
-Rys;Emilia;;12;emilia.rys
-Schäfer;Lennart Jakob Johannes;;12;lennart.jakob.johannes.schaefer
-Scherer;Zoé;;12;zoe.scherer
-Schlochtermeier;Lena Luisa;;12;lena.luisa.schlochtermeier
-Schmitz;David;;12;david.schmitz
-Schneider;Denise;;12;denise.schneider
-Schönenberg;Leon;;12;leon.schoenenberg
-Schumacher;Felix Jonathan;;12;felix.jonathan.schumacher
-Siljkovic;Armin;;12;armin.siljkovic
-Simons;Johanna Maria;;12;johanna.maria.simons
-Solak;Atakan;;12;atakan.solak
-Solinski;Bastian Timon;;12;bastian.timon.solinski
-Tillmann;Leni;;12;leni.tillmann
-Traore;Fabian;;12;fabian.traore
-von Bargen;Aaron Sebastian;;12;aaron.sebastian.von.bargen
-Wagner;Anna;;13;anna.wagner
-Wahab;David;;12;david.wahab
-Waldek;Daniel;;12;daniel.waldek
-Wegele;Diana;;12;diana.wegele
-Weiler;Tim;;12;tim.weiler
-Wolf;Fabian;;12;fabian.wolf
-Zeqa;Nderim;;12;nderim.zeqa
-Alfter;Naja;;10.3;naja.alfter
-Arndt;Franziska;;10.3;franziska.arndt
-Baran;Erdem;;10.3;erdem.baran
-Biermann;Kira;;10.3;kira.biermann
-Bikhan;Fiona;;10.3;fiona.bikhan
-Bornheim;Tom;;10.3;tom.bornheim
-Bornscheid;Benjamin Robin;;10.3;benjamin_robin.bornscheid
-Buschmann;Luis;;10.3;luis.buschmann
-Buslei;Mark Christopher;;10.3;mark_christopher.buslei
-Görres;Jonathan;;10.3;jonathan.görres
-Henze;Leni;;10.3;leni.henze
-Jähne;Lara;;10.3;lara.jähne
-Klöckner;Maya;;10.3;maya.klöckner
-Kölzer;Julia;;10.3;julia.kölzer
-Meffert;Josephine;;10.3;josephine.meffert
-Neifer;Alessandro;;10.3;alessandro.neifer
-Pettineo;Maria Sophie;;10.3;maria_sophie.pettineo
-Radu;Raisa Maria;;10.3;raisa_maria.radu
-Schmitz;Jason;;10.3;jason.schmitz
-Schwartz;Nico;;10.3;nico.schwartz
-Shupan;Alevtyna;;10.3;alevtyna.shupan
-Alnajar;Yousef;;10.4;yousef.alnajar
-Dütz;Kilian;;10.4;kilian.dütz
-Fuchs;Julia Alexandra;;10.4;julia_alexandra.fuchs
-Guzeev;Josef;;10.4;josef.guzeev
-Iberhysaj;Ilirian;;10.4;ilirian.iberhysaj
-Imdahl;Lara;;10.4;lara.imdahl
-Jordan;Georgiy;;10.4;georgiy.jordan
-Klaes;Felix;;10.4;felix.klaes
-Knieps;Neo;;10.4;neo.knieps
-Knopp;Hannah;;10.4;hannah.knopp
-Kobbe;Noor;;10.4;noor.kobbe
-Kreuzberg;Lena;;10.4;lena.kreuzberg
-Mertesacker;Noah;;10.4;noah.mertesacker
-Nanić;Irma;;10.4;irma.nanic
-Petraglia;Kilian;;10.4;kilian.petraglia
-Riebesehl;Maximilian;;10.4;maximilian.riebesehl
-Shevchenko;Nikita;;10.4;nikita.shevchenko
-Töws;Tobias;;10.4;tobias.töws
-Westphal;Phillip;;10.4;phillip.westphal
-Zimmermann;Charlotte;;10.4;charlotte.zimmermann
-Adams;Tjasse-Elias;;10.5;tjasse-elias.adams
-Bektas;Luis;;10.5;luis.bektas
-Cetin;Can;;10.5;can.cetin
-Chanthawong;Alissia;;10.5;alissia.chanthawong
-Doroshenko;Liliia;;10.5;liliia.doroshenko
-Füller;René Luca;;10.5;rene_luca.fueller
-Ghanoum;Ragda;;10.5;ragda.ghanoum
-Huskic;Dilara;;10.5;dilara.huskic
-Jabar;Jacob;;10.5;jacob.jabar
-Koçak;Yasin;;10.5;yasin.koçak
-Kücükbal;Melis;;10.5;melis.kuecuekbal
-Majewski;Marvin;;10.5;marvin.majewski
-Mertensacker;Lara;;10.5;lara.mertensacker
-Muscolino;Fabrizio Angelo;;10.5;fabrizio_angelo.muscolino
-Rath;Leon Björn;;10.5;leon_bjoern.rath
-Rodrigues Dalla Bona;Leandro;;10.5;leandro.rodrigues_dalla_bona
-Sen;Selin;;10.5;selin.sen
-Tekin;Akin;;10.5;akin.tekin
-Theisen;Luis;;10.5;luis.theisen
-Wahidie;Mohammad;;10.5;mohammad.wahidie
-Warzecha;Maya;;10.5;maya.warzecha
-Watroba;Oliwia Anna;;10.5;oliwia_anna.watroba
-Boiko;Oleksandra;;8.1;oleksandra.boiko
-Cehan;Anastasia;;8.1;anastasia.cehan
-Cehan;Alessia;;8.1;alessia.cehan
-Cristea;Alexandru;;8.1;alexandru.cristea
-Iberhysaj;Elea;;8.1;elea.iberhysaj
-Krasniqi;Leona;;8.1;leona.krasniqi
-Kunic;Luka;;8.1;luka.kunic
-Landar;Yaroslava;;8.1;yaroslava.landar
-Langenfeld;Collin;;8.1;collin.langenfeld
-Potapenko;Emìlìâ;;8.1;emilia.potapenko
-Radkiewicz;Laura;;8.1;laura.radkiewicz
-Schmitz;Mia;;8.1;mia.schmitz
-Schmitz;Tayler;;8.1;tayler.schmitz
-Sefrin;David;;8.1;david.sefrin
-Shaban;Ashraf;;8.1;ashraf.shaban
-Sus;Moses;;8.1;moses.sus
-Toz;Atilla;;8.1;atilla.toz
-Tymoshuk;Daniella;;8.1;daniella.tymoshuk
-Adams;Amy;;8.3;amy.adams
-Al Sharaa;Adham;;8.3;adham.al_sharaa
-Bacaj;Alex;;8.3;alex.bacaj
-Boppard;Matthea;;8.3;matthea.boppard
-Brücken;Tom;;8.3;tom.bruecken
-Debus;Milo;;8.3;milo.debus
-Degen;Philipp;;8.3;philipp.degen
-Dütz;Alicia;;8.3;alicia.duetz
-Fetaj;Getoar;;8.3;getoar.fetaj
-Jochmus-Stöcke;Aina;;8.3;aina.jochmus-stoecke
-Jünger;Maya;;8.3;maya.juenger
-Knieps;Ellen;;8.3;ellen.knieps
-Kreps;Amy;;8.3;amy.kreps
-Kroon;Jesse;;8.3;jesse.kroon
-Löwen;Roman;;8.3;roman.luewen
-Moch;Jonathan;;8.3;jonathan.moch
-Pfefferkorn;Jayden;;8.3;jayden.pfefferkorn
-Prause;Mila Paulina;;8.3;mila_paulina.prause
-Saal;Charlotte;;8.3;charlotte.saal
-Salz;Leonard;;8.3;leonard.salz
-Samaam;Youssef;;8.3;youssef.samaam
-Schulte;Erik;;8.3;erik.schulte
-Senk;Isabell;;8.3;isabell.senk
-Siebenmorgen;Lukas;;8.3;lukas.siebenmorgen
-Söllinger;Luca;;8.3;luca.soellinger
-Voß;Jocelyn;;8.3;jocelyn.vosz
-Weber;Julian;;8.3;julian.weber
-Ates;Berfin;;8.4;berfin.ates
-Buhr;Vincent;;8.4;vincent.buhr
-Dötsch;Mariella;;8.4;mariella.doetsch
-Gavak;Aykan;;8.4;aykan.gavak
-Gjocaj;Eljona;;8.4;eljona.gjocaj
-Grabanica;Fahire;;8.4;fahire.grabanica
-Hefner;Jan;;8.4;jan.hefner
-Hohn;Finnegan;;8.4;finnegan.hohn
-Jasiqi;Aurela;;8.4;aurela.jasiqi
-Kabaoglu;Esila;;8.4;esila.kabaoglu
-Kabaoglu;Yaman;;8.4;yaman.kabaoglu
-Keller;Julian;;8.4;julian.keller
-Kerp;Till;;8.4;till.kerp
-Kuburas;Elvin;;8.4;elvin.kuburas
-Kuqi;Leart;;8.4;leart.kuqi
-Labonde;Finn;;8.4;finn.labonde
-Liebenau;Kjell;;8.4;kjell.liebenau
-Maksutaj;Lia;;8.4;lia.maksutaj
-Pettineo;Gabriel;;8.4;gabriel.pettineo
-Reufels;Lea;;8.4;lea.reufels
-Ramaj;Elonisa;;8.4;elonisa.ramaj
-Schläger;Jordan;;8.4;jordan.schlaeger
-Schlömer;Marla;;8.4;marla.schloemer
-Schwarz;Shane;;8.4;shane.schwarz
-Storck;Tim;;8.4;tim.storck
-Szumilas;Julia-Laura;;8.4;julia-laura.szumilas
-Theodor;Odile;;8.4;odile.theodor
-Wahidie;Yonis;;8.4;yonis.wahidie
-Ahmad;Janet;;9.1;janet.ahmad
-Amer;Osama;;9.1;osama.amer
-Chmiel;Michele;;9.1;michele.chmiel
-Golmohamadi;Sarina;;9.1;sarina.golmohamadi
-Hajoula;Inas;;9.1;inas.hajoula
-Henseler;Luca;;9.1;luca.henseler
-Köchy;Fabrice;;9.1;fabrice.koechy
-Kröner;Amelie;;9.1;amelie.kroener
-Lual;Lual;;9.1;lual.lual
-Mertensacker;Lena;;9.1;lena.mertensacker
-Sander;Amy;;9.1;amy.sander
-Schmitz;Emely;;9.1;emely.schmitz
-Trufanova;Sofiia;;9.1;sofiia.trufanova
-Yaldir;Hayal;;9.1;hayal.yaldir
-Ahmad;Amer;;9.2;amer.ahmad
-Decker;Nele;;9.2;nele.decker
-Derr;Kristina;;9.2;kristina.derr
-Fielenbach;Julien;;9.2;julien.fielenbach
-Kheralla;Said;;9.2;said.kheralla
-Kramer;Ben;;9.2;ben.kramer
-Kuqi;Fijona;;9.2;fijona.kuqi
-Kusz;Josephine;;9.2;josephine.kusz
-Mahler;Marie;;9.2;marie.mahler
-Nanić;Sumeja;;9.2;sumeja.nanic
-Neubarth;Niclas;;9.2;niclas.neubarth
-Rahimi;Mohadisa;;9.2;mohadisa.rahimi
-Šerifović;Luca;;9.2;luca.serifovic
-Sus;Philemon;;9.2;philemon.sus
-Yaldir;Masal;;9.2;masal.yaldir
-Zbierski;Brayan;;9.2;brayan.zbierski
-Al Sharaa;Lama;;9.3;lama.al_sharaa
-Alnajar;Laith;;9.3;laith.alnajar
-Bay;Dorian James;;9.3;dorian_james.bay
-Blum-Biermann;Gina;;9.3;gina.blum-biermann
-Bouillon;Carla;;9.3;carla.bouillon
-Derr;Jonatan;;9.3;jonatan.derr
-Faßbender;Lina Marie;;9.3;lina_marie.fassbender
-Gerhartz;Nina;;9.3;nina.gerhartz
-Jandali;Nori;;9.3;nori.jandali
-Kas;Burcin;;9.3;burcin.kas
-Kas;Büsra;;9.3;buesra.kas
-Kirichevskyi;Benjamin;;9.3;benjamin.kirichevskyi
-Klimetzki;Benjamin;;9.3;benjamin.klimetzki
-Knaus;Lena;;9.3;lena.knaus
-Köhler;Mia;;9.3;mia.koehler
-Kronfoth;Tommy;;9.3;tommy.kronfoth
-Krupp;Nico;;9.3;nico.krupp
-Lunov;Kyryl;;9.3;kyryl.lunov
-Paus;Jason;;9.3;jason.paus
-Plag;Johanna;;9.3;johanna.plag
-Röhrig;Felix;;9.3;felix.roehrig
-Sama;Lisa;;9.3;lisa.sama
-Schäfer;Maximilian;;9.3;maximilian.schaefer
-Schmitz;Dean;;9.3;dean.schmitz
-Yaldir;Yaren;;9.3;yaren.yaldir
-Cazacu;Marius-Robert;;9.4;marius-robert.cazacu
-Christmann;Bennet;;9.4;bennet.christmann
-Diesner;Anna;;9.4;anna.diesner
-Dörper;Lina;;9.4;lina.doerper
-Emrich;Isabella;;9.4;isabella.emrich
-Gattung;Phillipp;;9.4;phillipp.gattung
-Grygenć;Melissa;;9.4;melissa.grygenc
-Hefner;John-Marlon;;9.4;john-marlon.hefner
-Hefner;Marian-Alexander;;9.4;marian-alexander.hefner
-Kappes;Anna;;9.4;anna.kappes
-Kirichevskyi;Eva;;9.4;eva.kirichevskyi
-Kretschmann;Lena;;9.4;lena.kretschmann
-Lange;Viktoria;;9.4;viktoria.lange
-Lartey;Isabella;;9.4;isabella.lartey
-Lorscheid;Kilian;;9.4;kilian.lorscheid
-Malenko;Dmytro;;9.4;dmytro.malenko
-Manfredi;Juline;;9.4;juline.manfredi
-Menden;Luca;;9.4;luca.menden
-Rondi;Jule;;9.4;jule.rondi
-Sahlan;Ceylin;;9.4;ceylin.sahlan
-Schmitz;Timo;;9.4;timo.schmitz
-Tautermann;Sara;;9.4;sara.tautermann
-Theisen;Zoe;;9.4;zoe.theisen
-Töws;Sara;;9.4;sara.toews
-Voßnacker;Mathis;;9.4;mathis.vossnacker
+﻿Name;Nachname;Vorname;Klasse;Schule;Messe;Gruppen;LoginName;Email
+Albaiad, Leen;Albaiad;Leen;9a;MGL;M_1;9a|MGL|M_1;l.albaiad;
+Albatran, Murhf;Albatran;Murhf;9a;MGL;M_2;9a|MGL|M_2;m.albatran;
+Belilovskiy, Luka;Belilovskiy;Luka;9a;MGL;M_3;9a|MGL|M_3;l.belilovskiy;
+Birrenbach, Mona;Birrenbach;Mona;9a;MGL;M_4;9a|MGL|M_4;m.birrenbach;
+Bornheim, Ben;Bornheim;Ben;9a;MGL;M_1;9a|MGL|M_1;b.bornheim;
+Borodavchuk, Denys;Borodavchuk;Denys;9a;MGL;M_2;9a|MGL|M_2;d.borodavchuk;
+Caglar, Emir;Caglar;Emir;9a;MGL;M_3;9a|MGL|M_3;e.caglar;
+Carmona Rodriguez, Emily;Carmona Rodriguez;Emily;9a;MGL;M_4;9a|MGL|M_4;e.carmonarodriguez;
+Cazals, Matthieu;Cazals;Matthieu;9a;MGL;M_1;9a|MGL|M_1;m.cazals;
+Effern, Diego;Effern;Diego;9a;MGL;M_2;9a|MGL|M_2;d.effern;
+Engels, Leonie;Engels;Leonie;9a;MGL;M_3;9a|MGL|M_3;l.engels;
+Hartung, Max Bao Nam;Hartung;Max Bao Nam;9a;MGL;M_4;9a|MGL|M_4;m.hartung;
+Hoti, Deliza;Hoti;Deliza;9a;MGL;M_1;9a|MGL|M_1;d.hoti;
+Kartal, Talia;Kartal;Talia;9a;MGL;M_2;9a|MGL|M_2;t.kartal;
+Korth, Karla;Korth;Karla;9a;MGL;M_3;9a|MGL|M_3;k.korth;
+Köster, Jana;Köster;Jana;9a;MGL;M_4;9a|MGL|M_4;j.koester;
+Krause, Isabella;Krause;Isabella;9a;MGL;M_1;9a|MGL|M_1;i.krause;
+Krueger, Maximilian;Krueger;Maximilian;9a;MGL;M_2;9a|MGL|M_2;m.krueger;
+Nowack, Laurin;Nowack;Laurin;9a;MGL;M_3;9a|MGL|M_3;l.nowack;
+Ockenfels, Jule;Ockenfels;Jule;9a;MGL;M_4;9a|MGL|M_4;j.ockenfels;
+Ruthenbeck, Sibel;Ruthenbeck;Sibel;9a;MGL;M_1;9a|MGL|M_1;s.ruthenbeck;
+Saal, Anna-Maria;Saal;Anna-Maria;9a;MGL;M_2;9a|MGL|M_2;a.saal;
+Schmitz, Martha-Louise;Schmitz;Martha-Louise;9a;MGL;M_3;9a|MGL|M_3;m.schmitz;
+Schneider, Benedikt;Schneider;Benedikt;9a;MGL;M_4;9a|MGL|M_4;b.schneider;
+Sharma, Riya;Sharma;Riya;9a;MGL;M_1;9a|MGL|M_1;r.sharma;
+Siebertz, Elias;Siebertz;Elias;9a;MGL;M_2;9a|MGL|M_2;e.siebertz;
+Streeck, Neele;Streeck;Neele;9a;MGL;M_3;9a|MGL|M_3;n.streeck;
+Sülzer, Frieda;Sülzer;Frieda;9a;MGL;M_4;9a|MGL|M_4;f.suelzer;
+Zalesskaia, Daria;Zalesskaia;Daria;9a;MGL;M_1;9a|MGL|M_1;d.zalesskaia;
+Alfter, Julian;Alfter;Julian;9b;MGL;M_2;9b|MGL|M_2;j.alfter;
+Al Sharaa, Hala;Al Sharaa;Hala;9b;MGL;M_3;9b|MGL|M_3;h.alsharaa;
+Beyer, Emil;Beyer;Emil;9b;MGL;M_4;9b|MGL|M_4;e.beyer;
+Chahid, Jonas;Chahid;Jonas;9b;MGL;M_1;9b|MGL|M_1;j.chahid;
+Do, Thanh Long;Do;Thanh Long;9b;MGL;M_2;9b|MGL|M_2;t.do;
+Dreglea, Darius;Dreglea;Darius;9b;MGL;M_3;9b|MGL|M_3;d.dreglea;
+Duijvekam, Lilly;Duijvekam;Lilly;9b;MGL;M_4;9b|MGL|M_4;l.duijvekam;
+Firlus, Julia;Firlus;Julia;9b;MGL;M_1;9b|MGL|M_1;j.firlus;
+Frömbgen, Elias;Frömbgen;Elias;9b;MGL;M_2;9b|MGL|M_2;e.froembgen;
+Hanft, Laura;Hanft;Laura;9b;MGL;M_3;9b|MGL|M_3;l.hanft;
+Königs, Anton;Königs;Anton;9b;MGL;M_4;9b|MGL|M_4;a.koenigs;
+Kowalik, Jowita Aleksandra;Kowalik;Jowita Aleksandra;9b;MGL;M_1;9b|MGL|M_1;j.kowalik;
+Neve, Jean;Neve;Jean;9b;MGL;M_2;9b|MGL|M_2;j.neve;
+Ockenfels, Lucas;Ockenfels;Lucas;9b;MGL;M_3;9b|MGL|M_3;l.ockenfels;
+Reufels, Sophie;Reufels;Sophie;9b;MGL;M_4;9b|MGL|M_4;s.reufels;
+Riadi, Linah;Riadi;Linah;9b;MGL;M_1;9b|MGL|M_1;l.riadi;
+Ruppert, Sara;Ruppert;Sara;9b;MGL;M_2;9b|MGL|M_2;s.ruppert;
+Schwarz, Mila;Schwarz;Mila;9b;MGL;M_3;9b|MGL|M_3;m.schwarz;
+Siebertz, Enno;Siebertz;Enno;9b;MGL;M_4;9b|MGL|M_4;en.siebertz;
+Stemann, Vincent;Stemann;Vincent;9b;MGL;M_1;9b|MGL|M_1;v.stemann;
+Suntrup, Johannes Konrad;Suntrup;Johannes Konrad;9b;MGL;M_2;9b|MGL|M_2;j.suntrup;
+Walter, Wagner;Walter;Wagner;9b;MGL;M_3;9b|MGL|M_3;w.walter;
+Wotzke, Lina;Wotzke;Lina;9b;MGL;M_4;9b|MGL|M_4;l.wotzke;
+Zahn, Sarah;Zahn;Sarah;9b;MGL;M_1;9b|MGL|M_1;s.zahn;
+Zeichner, Elias;Zeichner;Elias;9b;MGL;M_2;9b|MGL|M_2;e.zeichner;
+Łukoszek, Jan Henryk;Łukoszek;Jan Henryk;9b;MGL;M_3;9b|MGL|M_3;j.ukoszek;
+Antweiler, Mike;Antweiler;Mike;9c;MGL;M_4;9c|MGL|M_4;m.antweiler;
+Bärnwald, Celina;Bärnwald;Celina;9c;MGL;M_1;9c|MGL|M_1;c.baernwald;
+Buhr, Marlene;Buhr;Marlene;9c;MGL;M_2;9c|MGL|M_2;m.buhr;
+Chunangamparampan, Lena;Chunangamparampan;Lena;9c;MGL;M_3;9c|MGL|M_3;l.chunangamparampan;
+Dimitrievska, Emilia;Dimitrievska;Emilia;9c;MGL;M_4;9c|MGL|M_4;e.dimitrievska;
+Ermtraud, Mia;Ermtraud;Mia;9c;MGL;M_1;9c|MGL|M_1;m.ermtraud;
+Frye, Lúthien;Frye;Lúthien;9c;MGL;M_2;9c|MGL|M_2;l.frye;
+Hadaschik, Greta;Hadaschik;Greta;9c;MGL;M_3;9c|MGL|M_3;g.hadaschik;
+Haupt, Sofia;Haupt;Sofia;9c;MGL;M_4;9c|MGL|M_4;s.haupt;
+Hoffmann, Lara;Hoffmann;Lara;9c;MGL;M_1;9c|MGL|M_1;l.hoffmann;
+Jünger, Luca;Jünger;Luca;9c;MGL;M_2;9c|MGL|M_2;l.juenger;
+Le, Emily Bao Nhi;Le;Emily Bao Nhi;9c;MGL;M_3;9c|MGL|M_3;e.le;
+Mertesacker, Luke;Mertesacker;Luke;9c;MGL;M_4;9c|MGL|M_4;l.mertesacker;
+Nguyen, Phung;Nguyen;Phung;9c;MGL;M_1;9c|MGL|M_1;p.nguyen;
+Niederée, Marie Josefine;Niederée;Marie Josefine;9c;MGL;M_2;9c|MGL|M_2;m.niederee;
+Pogorelow, Kristian;Pogorelow;Kristian;9c;MGL;M_3;9c|MGL|M_3;k.pogorelow;
+Schoss, Jonas;Schoss;Jonas;9c;MGL;M_4;9c|MGL|M_4;j.schoss;
+Simonis, Marisa;Simonis;Marisa;9c;MGL;M_1;9c|MGL|M_1;m.simonis;
+Stein, Lea Sophie;Stein;Lea Sophie;9c;MGL;M_2;9c|MGL|M_2;l.stein;
+Stumpf, Melissa;Stumpf;Melissa;9c;MGL;M_3;9c|MGL|M_3;m.stumpf;
+Swirsky, Tanja;Swirsky;Tanja;9c;MGL;M_4;9c|MGL|M_4;t.swirsky;
+Vetsch, Ella;Vetsch;Ella;9c;MGL;M_1;9c|MGL|M_1;e.vetsch;
+Weiß, Klara;Weiß;Klara;9c;MGL;M_2;9c|MGL|M_2;k.weiss;
+Zeichner, Benjamin;Zeichner;Benjamin;9c;MGL;M_3;9c|MGL|M_3;b.zeichner;
+Zeichner, Rosa;Zeichner;Rosa;9c;MGL;M_4;9c|MGL|M_4;r.zeichner;
+Akden, Caner;Akden;Caner;10a;MGL;M_1;10a|MGL|M_1;c.akden;
+Fossemer, Amelie;Fossemer;Amelie;10a;MGL;M_2;10a|MGL|M_2;a.fossemer;
+Francisco, Qasim;Francisco;Qasim;10a;MGL;M_3;10a|MGL|M_3;q.francisco;
+Glätzner, Sophie;Glätzner;Sophie;10a;MGL;M_4;10a|MGL|M_4;s.glaetzner;
+Kauferstein, Marlena;Kauferstein;Marlena;10a;MGL;M_1;10a|MGL|M_1;m.kauferstein;
+Kedikoglu, Harun;Kedikoglu;Harun;10a;MGL;M_2;10a|MGL|M_2;h.kedikoglu;
+Köpcke, Marlene;Köpcke;Marlene;10a;MGL;M_3;10a|MGL|M_3;m.koepcke;
+Kröger, Ronja;Kröger;Ronja;10a;MGL;M_4;10a|MGL|M_4;r.kroeger;
+Kröll, Maike;Kröll;Maike;10a;MGL;M_1;10a|MGL|M_1;m.kroell;
+Laniewski, Michal;Laniewski;Michal;10a;MGL;M_2;10a|MGL|M_2;m.laniewski;
+Lopez, Ilaria;Lopez;Ilaria;10a;MGL;M_3;10a|MGL|M_3;i.lopez;
+Martin, Hannah;Martin;Hannah;10a;MGL;M_4;10a|MGL|M_4;h.martin;
+Moch, Demian;Moch;Demian;10a;MGL;M_1;10a|MGL|M_1;d.moch;
+Mohamed, Chia;Mohamed;Chia;10a;MGL;M_2;10a|MGL|M_2;c.mohamed;
+Pektas, Alya;Pektas;Alya;10a;MGL;M_3;10a|MGL|M_3;a.pektas;
+Samadova, Lala;Samadova;Lala;10a;MGL;M_4;10a|MGL|M_4;l.samadova;
+Scharfenstein, Zoe;Scharfenstein;Zoe;10a;MGL;M_1;10a|MGL|M_1;z.scharfenstein;
+Schlüter, Ruby;Schlüter;Ruby;10a;MGL;M_2;10a|MGL|M_2;r.schlueter;
+Schmitz, Jonah;Schmitz;Jonah;10a;MGL;M_3;10a|MGL|M_3;j.schmitz;
+Schneider, Lena;Schneider;Lena;10a;MGL;M_4;10a|MGL|M_4;l.schneider;
+Schuh, Fabian;Schuh;Fabian;10a;MGL;M_1;10a|MGL|M_1;f.schuh;
+Seidensticker, Paula;Seidensticker;Paula;10a;MGL;M_2;10a|MGL|M_2;p.seidensticker;
+Seyffert, Lisa Marie;Seyffert;Lisa Marie;10a;MGL;M_3;10a|MGL|M_3;l.seyffert;
+Zimmermann, Darius;Zimmermann;Darius;10a;MGL;M_4;10a|MGL|M_4;d.zimmermann;
+Atzl, Helena Maria;Atzl;Helena Maria;10b;MGL;M_1;10b|MGL|M_1;h.atzl;
+Atzl, Lukas;Atzl;Lukas;10b;MGL;M_2;10b|MGL|M_2;l.atzl;
+Bleckwenn, Mira;Bleckwenn;Mira;10b;MGL;M_3;10b|MGL|M_3;m.bleckwenn;
+Celik, Azra;Celik;Azra;10b;MGL;M_4;10b|MGL|M_4;a.celik;
+Dehms, Tobias;Dehms;Tobias;10b;MGL;M_1;10b|MGL|M_1;t.dehms;
+Heinold, Samuel;Heinold;Samuel;10b;MGL;M_2;10b|MGL|M_2;s.heinold;
+Herzog, Felix;Herzog;Felix;10b;MGL;M_3;10b|MGL|M_3;f.herzog;
+Id, Razan;Id;Razan;10b;MGL;M_4;10b|MGL|M_4;r.id;
+Kasperowicz, Gracja Viktoria;Kasperowicz;Gracja Viktoria;10b;MGL;M_1;10b|MGL|M_1;g.kasperowicz;
+Kilicaslan, Baran;Kilicaslan;Baran;10b;MGL;M_2;10b|MGL|M_2;b.kilicaslan;
+Koch, Maximilian;Koch;Maximilian;10b;MGL;M_3;10b|MGL|M_3;m.koch;
+Kolfenbach, Dorian;Kolfenbach;Dorian;10b;MGL;M_4;10b|MGL|M_4;d.kolfenbach;
+Krudwig, Lia;Krudwig;Lia;10b;MGL;M_1;10b|MGL|M_1;l.krudwig;
+Lange, Pascal;Lange;Pascal;10b;MGL;M_2;10b|MGL|M_2;p.lange;
+Mende, Sophia;Mende;Sophia;10b;MGL;M_3;10b|MGL|M_3;s.mende;
+Moll, Laurin Jonathan;Moll;Laurin Jonathan;10b;MGL;M_4;10b|MGL|M_4;l.moll;
+Musah, Sherifa-Mandeeya;Musah;Sherifa-Mandeeya;10b;MGL;M_1;10b|MGL|M_1;s.musah;
+Nietzard, Malou;Nietzard;Malou;10b;MGL;M_2;10b|MGL|M_2;m.nietzard;
+Nowack, Milan;Nowack;Milan;10b;MGL;M_3;10b|MGL|M_3;m.nowack;
+Reetz, Luis;Reetz;Luis;10b;MGL;M_4;10b|MGL|M_4;l.reetz;
+Reinartz, Simon;Reinartz;Simon;10b;MGL;M_1;10b|MGL|M_1;s.reinartz;
+Richarz, Thomas;Richarz;Thomas;10b;MGL;M_2;10b|MGL|M_2;t.richarz;
+Römer, Paula;Römer;Paula;10b;MGL;M_3;10b|MGL|M_3;p.roemer;
+Rondot, Lotta;Rondot;Lotta;10b;MGL;M_4;10b|MGL|M_4;l.rondot;
+Stein, Ida-Marie;Stein;Ida-Marie;10b;MGL;M_1;10b|MGL|M_1;i.stein;
+Unsaeng, Neo;Unsaeng;Neo;10b;MGL;M_2;10b|MGL|M_2;n.unsaeng;
+Waldek, Jonas;Waldek;Jonas;10b;MGL;M_3;10b|MGL|M_3;j.waldek;
+Walker, Marius;Walker;Marius;10b;MGL;M_4;10b|MGL|M_4;m.walker;
+Barth, Mia;Barth;Mia;10c;MGL;M_1;10c|MGL|M_1;m.barth;
+Bell, Lennox;Bell;Lennox;10c;MGL;M_2;10c|MGL|M_2;l.bell;
+Blank, Janne;Blank;Janne;10c;MGL;M_3;10c|MGL|M_3;j.blank;
+Bock, Justus;Bock;Justus;10c;MGL;M_4;10c|MGL|M_4;j.bock;
+Chaisree, Numai;Chaisree;Numai;10c;MGL;M_1;10c|MGL|M_1;n.chaisree;
+Drehjou, Mohammed;Drehjou;Mohammed;10c;MGL;M_2;10c|MGL|M_2;m.drehjou;
+Dünnes, Marie Sophie;Dünnes;Marie Sophie;10c;MGL;M_3;10c|MGL|M_3;m.duennes;
+Esch, Christina;Esch;Christina;10c;MGL;M_4;10c|MGL|M_4;c.esch;
+Frömbgen, Lara;Frömbgen;Lara;10c;MGL;M_1;10c|MGL|M_1;l.froembgen;
+Gashi, Loriana;Gashi;Loriana;10c;MGL;M_2;10c|MGL|M_2;l.gashi;
+Hausen, Greta;Hausen;Greta;10c;MGL;M_3;10c|MGL|M_3;g.hausen;
+Hramov, Darija;Hramov;Darija;10c;MGL;M_4;10c|MGL|M_4;d.hramov;
+Jütte, Manuel;Jütte;Manuel;10c;MGL;M_1;10c|MGL|M_1;m.juette;
+Kasapovic, Amir;Kasapovic;Amir;10c;MGL;M_2;10c|MGL|M_2;a.kasapovic;
+Khazdouzian, Jona;Khazdouzian;Jona;10c;MGL;M_3;10c|MGL|M_3;j.khazdouzian;
+Laut, Lea;Laut;Lea;10c;MGL;M_4;10c|MGL|M_4;l.laut;
+Mantei, Ewald;Mantei;Ewald;10c;MGL;M_1;10c|MGL|M_1;e.mantei;
+Peukert, Charlotte;Peukert;Charlotte;10c;MGL;M_2;10c|MGL|M_2;c.peukert;
+Reicke, Konrad;Reicke;Konrad;10c;MGL;M_3;10c|MGL|M_3;k.reicke;
+Schmitz, Lana;Schmitz;Lana;10c;MGL;M_4;10c|MGL|M_4;l.schmitz;
+Wierschem, Josephine;Wierschem;Josephine;10c;MGL;M_1;10c|MGL|M_1;j.wierschem;
+Winkler, Sophia;Winkler;Sophia;10c;MGL;M_2;10c|MGL|M_2;s.winkler;
+Zeiler, Takumi;Zeiler;Takumi;10c;MGL;M_3;10c|MGL|M_3;t.zeiler;
+Zilles, Lia;Zilles;Lia;10c;MGL;M_4;10c|MGL|M_4;l.zilles;
+Alabdullah, Ibrahim;Alabdullah;Ibrahim;10d;MGL;M_1;10d|MGL|M_1;i.alabdullah;
+Asteroth, Emma;Asteroth;Emma;10d;MGL;M_2;10d|MGL|M_2;e.asteroth;
+Avdiu, Ardit;Avdiu;Ardit;10d;MGL;M_3;10d|MGL|M_3;a.avdiu;
+Baqeri, Melika;Baqeri;Melika;10d;MGL;M_4;10d|MGL|M_4;m.baqeri;
+Boshtraj, Rina;Boshtraj;Rina;10d;MGL;M_1;10d|MGL|M_1;r.boshtraj;
+Braun, Nico;Braun;Nico;10d;MGL;M_2;10d|MGL|M_2;n.braun;
+Bunjaku, Léon;Bunjaku;Léon;10d;MGL;M_3;10d|MGL|M_3;l.bunjaku;
+Frömbgen, David;Frömbgen;David;10d;MGL;M_4;10d|MGL|M_4;d.froembgen;
+Kes, Hakan;Kes;Hakan;10d;MGL;M_1;10d|MGL|M_1;h.kes;
+Kopaci, Arsela;Kopaci;Arsela;10d;MGL;M_2;10d|MGL|M_2;a.kopaci;
+Krueger, Lara;Krueger;Lara;10d;MGL;M_3;10d|MGL|M_3;l.krueger;
+Kuntze, Moritz;Kuntze;Moritz;10d;MGL;M_4;10d|MGL|M_4;m.kuntze;
+Lange, Olivia;Lange;Olivia;10d;MGL;M_1;10d|MGL|M_1;o.lange;
+Laumann, Lena;Laumann;Lena;10d;MGL;M_2;10d|MGL|M_2;l.laumann;
+Mohammedali, Yussuf;Mohammedali;Yussuf;10d;MGL;M_3;10d|MGL|M_3;y.mohammedali;
+Paschke, Samia;Paschke;Samia;10d;MGL;M_4;10d|MGL|M_4;s.paschke;
+Samaan, Mahrael;Samaan;Mahrael;10d;MGL;M_1;10d|MGL|M_1;m.samaan;
+Sartor, Florian;Sartor;Florian;10d;MGL;M_2;10d|MGL|M_2;f.sartor;
+Schäfer, Carlotta;Schäfer;Carlotta;10d;MGL;M_3;10d|MGL|M_3;c.schaefer;
+Schütte, Felix;Schütte;Felix;10d;MGL;M_4;10d|MGL|M_4;f.schuette;
+Solak, Kutan;Solak;Kutan;10d;MGL;M_1;10d|MGL|M_1;k.solak;
+Strauß, Raphaela;Strauß;Raphaela;10d;MGL;M_2;10d|MGL|M_2;r.strauss;
+Temna, Oleksandra;Temna;Oleksandra;10d;MGL;M_3;10d|MGL|M_3;o.temna;
+Tsanaktsidis, Leandra;Tsanaktsidis;Leandra;10d;MGL;M_4;10d|MGL|M_4;l.tsanaktsidis;
+Zimmermann, Johann;Zimmermann;Johann;10d;MGL;M_1;10d|MGL|M_1;j.zimmermann;
+Alaktaa, Hala;Alaktaa;Hala;11;MGL;M_2;11|MGL|M_2;h.alaktaa;
+Avdyl, Rehma;Avdyl;Rehma;11;MGL;M_3;11|MGL|M_3;r.avdyl;
+Antal, Andreas;Antal;Andreas;11;MGL;M_4;11|MGL|M_4;a.antal;
+Arend, Merlin;Arend;Merlin;11;MGL;M_1;11|MGL|M_1;m.arend;
+Balaba, Daria;Balaba;Daria;11;MGL;M_2;11|MGL|M_2;d.balaba;
+Becker, Friedrich;Becker;Friedrich;11;MGL;M_3;11|MGL|M_3;f.becker;
+Blaschczok, Samuel;Blaschczok;Samuel;11;MGL;M_4;11|MGL|M_4;s.blaschczok;
+Böker, Lara;Böker;Lara;11;MGL;M_1;11|MGL|M_1;l.boeker;
+Born, Emma;Born;Emma;11;MGL;M_2;11|MGL|M_2;e.born;
+Böyer, Valentin;Böyer;Valentin;11;MGL;M_3;11|MGL|M_3;v.boeyer;
+Ceylan, Esmeray;Ceylan;Esmeray;11;MGL;M_4;11|MGL|M_4;e.ceylan;
+Ditter, Emma Carolina;Ditter;Emma Carolina;11;MGL;M_1;11|MGL|M_1;e.ditter;
+Dogan, Rozerin;Dogan;Rozerin;11;MGL;M_2;11|MGL|M_2;r.dogan;
+Dönhoff, Fee;Dönhoff;Fee;11;MGL;M_3;11|MGL|M_3;f.doenhoff;
+Duijvekam, Ronja;Duijvekam;Ronja;11;MGL;M_4;11|MGL|M_4;r.duijvekam;
+Effert, Joshua;Effert;Joshua;11;MGL;M_1;11|MGL|M_1;j.effert;
+Emmerich, Suri;Emmerich;Suri;11;MGL;M_2;11|MGL|M_2;s.emmerich;
+Enns, Elin;Enns;Elin;11;MGL;M_3;11|MGL|M_3;e.enns;
+Ergin, Lorin Su;Ergin;Lorin Su;11;MGL;M_4;11|MGL|M_4;l.ergin;
+Fischer, Jack;Fischer;Jack;11;MGL;M_1;11|MGL|M_1;j.fischer;
+Heidel, Pepe;Heidel;Pepe;11;MGL;M_2;11|MGL|M_2;p.heidel;
+Hirzmann, Emma;Hirzmann;Emma;11;MGL;M_3;11|MGL|M_3;e.hirzmann;
+Honcharov, Iwan;Honcharov;Iwan;11;MGL;M_4;11|MGL|M_4;i.honcharov;
+Hoß, Niklas;Hoß;Niklas;11;MGL;M_1;11|MGL|M_1;n.hoss;
+Ince, Fabian;Ince;Fabian;11;MGL;M_2;11|MGL|M_2;f.ince;
+Jordan, Georgiy;Jordan;Georgiy;11;MGL;M_3;11|MGL|M_3;g.jordan;
+Kaminski, Lisa;Kaminski;Lisa;11;MGL;M_4;11|MGL|M_4;l.kaminski;
+Kamp, Luca;Kamp;Luca;11;MGL;M_1;11|MGL|M_1;l.kamp;
+Kirsch, Ben;Kirsch;Ben;11;MGL;M_2;11|MGL|M_2;b.kirsch;
+Klein, Silvia;Klein;Silvia;11;MGL;M_3;11|MGL|M_3;s.klein;
+Klingenberger, Alexander;Klingenberger;Alexander;11;MGL;M_4;11|MGL|M_4;a.klingenberger;
+Koll, Luca;Koll;Luca;11;MGL;M_1;11|MGL|M_1;l.koll;
+Koyuncu, Sila;Koyuncu;Sila;11;MGL;M_2;11|MGL|M_2;s.koyuncu;
+Kreutzmann, Lenja;Kreutzmann;Lenja;11;MGL;M_3;11|MGL|M_3;l.kreutzmann;
+Kux, Eva;Kux;Eva;11;MGL;M_4;11|MGL|M_4;e.kux;
+Kuznetsova, Sofiia;Kuznetsova;Sofiia;11;MGL;M_1;11|MGL|M_1;s.kuznetsova;
+Labonde, Lana;Labonde;Lana;11;MGL;M_2;11|MGL|M_2;l.labonde;
+Le, Anna;Le;Anna;11;MGL;M_3;11|MGL|M_3;a.le;
+Lindlohr, Maya;Lindlohr;Maya;11;MGL;M_4;11|MGL|M_4;m.lindlohr;
+Lo Iacono, Giuliana;Lo Iacono;Giuliana;11;MGL;M_1;11|MGL|M_1;g.loiacono;
+Mielke, Johanna;Mielke;Johanna;11;MGL;M_2;11|MGL|M_2;j.mielke;
+Muthers, Jonas;Muthers;Jonas;11;MGL;M_3;11|MGL|M_3;j.muthers;
+Nguyen, Ly;Nguyen;Ly;11;MGL;M_4;11|MGL|M_4;l.nguyen;
+Özkaya, Aylin;Özkaya;Aylin;11;MGL;M_1;11|MGL|M_1;a.oezkaya;
+Pochynok, Vladyslav;Pochynok;Vladyslav;11;MGL;M_2;11|MGL|M_2;v.pochynok;
+Prasser, Pit;Prasser;Pit;11;MGL;M_3;11|MGL|M_3;p.prasser;
+Prytula, Nazar;Prytula;Nazar;11;MGL;M_4;11|MGL|M_4;n.prytula;
+Reichelt, Lucas;Reichelt;Lucas;11;MGL;M_1;11|MGL|M_1;l.reichelt;
+Rodrigues Dalla Bona, Leonardo;Rodrigues Dalla Bona;Leonardo;11;MGL;M_2;11|MGL|M_2;l.rodriguesdallabona;
+Ruch, Scarlett;Ruch;Scarlett;11;MGL;M_3;11|MGL|M_3;s.ruch;
+Saad, Goudy;Saad;Goudy;11;MGL;M_4;11|MGL|M_4;g.saad;
+Sartor, Joris;Sartor;Joris;11;MGL;M_1;11|MGL|M_1;j.sartor;
+Scharfenstein, Ben;Scharfenstein;Ben;11;MGL;M_2;11|MGL|M_2;b.scharfenstein;
+Schinabeck, Leah;Schinabeck;Leah;11;MGL;M_3;11|MGL|M_3;l.schinabeck;
+Schlüter, Leonie;Schlüter;Leonie;11;MGL;M_4;11|MGL|M_4;l.schlueter;
+Schwarz, Paulina;Schwarz;Paulina;11;MGL;M_1;11|MGL|M_1;p.schwarz;
+Seib, Elias;Seib;Elias;11;MGL;M_2;11|MGL|M_2;e.seib;
+Simonis, Naira;Simonis;Naira;11;MGL;M_3;11|MGL|M_3;n.simonis;
+Spitzer, Magdalena Karin Marie;Spitzer;Magdalena Karin Marie;11;MGL;M_4;11|MGL|M_4;m.spitzer;
+Splitt, Emilie;Splitt;Emilie;11;MGL;M_1;11|MGL|M_1;e.splitt;
+Sydorzhewski, Uliana;Sydorzhewski;Uliana;11;MGL;M_2;11|MGL|M_2;u.sydorzhewski;
+Szumilas, Wiktoria-Vanessa;Szumilas;Wiktoria-Vanessa;11;MGL;M_3;11|MGL|M_3;w.szumilas;
+Töws, Tobias;Töws;Tobias;11;MGL;M_4;11|MGL|M_4;t.toews;
+Trudrung, Philipp;Trudrung;Philipp;11;MGL;M_1;11|MGL|M_1;p.trudrung;
+Vázquez y Vázquez, Joya;Vázquez y Vázquez;Joya;11;MGL;M_2;11|MGL|M_2;j.vazquezyvazquez;
+von Almen, Coco;von Almen;Coco;11;MGL;M_3;11|MGL|M_3;c.vonalmen;
+Wangkunklang, Marisa;Wangkunklang;Marisa;11;MGL;M_4;11|MGL|M_4;m.wangkunklang;
+Weber, Hannah;Weber;Hannah;11;MGL;M_1;11|MGL|M_1;h.weber;
+Wiemer, Pascal;Wiemer;Pascal;11;MGL;M_2;11|MGL|M_2;p.wiemer;
+Winkler, Henrik;Winkler;Henrik;11;MGL;M_3;11|MGL|M_3;h.winkler;
+Abdul-Raouf, Maryam;Abdul-Raouf;Maryam;12;MGL;M_4;12|MGL|M_4;m.abdul-raouf;
+Adolphi, Bjarne;Adolphi;Bjarne;12;MGL;M_1;12|MGL|M_1;b.adolphi;
+Aßenmacher, Magnus;Aßenmacher;Magnus;12;MGL;M_2;12|MGL|M_2;m.assenmacher;
+Aycicek, Hansa Yagmur;Aycicek;Hansa Yagmur;12;MGL;M_3;12|MGL|M_3;h.aycicek;
+Bakhtin, Mykola;Bakhtin;Mykola;12;MGL;M_4;12|MGL|M_4;m.bakhtin;
+Beck, Cilian;Beck;Cilian;12;MGL;M_1;12|MGL|M_1;c.beck;
+Becker-Röttgen, Merle;Becker-Röttgen;Merle;12;MGL;M_2;12|MGL|M_2;m.becker-roettgen;
+Busley, Sophia;Busley;Sophia;12;MGL;M_3;12|MGL|M_3;s.busley;
+Ceylan, Seymen;Ceylan;Seymen;12;MGL;M_4;12|MGL|M_4;s.ceylan;
+Chrenko, Marlene;Chrenko;Marlene;12;MGL;M_1;12|MGL|M_1;m.chrenko;
+Diederich, Marie Sofie;Diederich;Marie Sofie;12;MGL;M_2;12|MGL|M_2;m.diederich;
+Dorniak, Marie;Dorniak;Marie;12;MGL;M_3;12|MGL|M_3;m.dorniak;
+Emrich, Sarah;Emrich;Sarah;12;MGL;M_4;12|MGL|M_4;s.emrich;
+Ertürk, Ümit;Ertürk;Ümit;12;MGL;M_1;12|MGL|M_1;u.ertuerk;
+Frye, Philip;Frye;Philip;12;MGL;M_2;12|MGL|M_2;p.frye;
+Gerolstein, Celina;Gerolstein;Celina;12;MGL;M_3;12|MGL|M_3;c.gerolstein;
+Guzday, Kevin;Guzday;Kevin;12;MGL;M_4;12|MGL|M_4;k.guzday;
+Guzday, Leon;Guzday;Leon;12;MGL;M_1;12|MGL|M_1;l.guzday;
+Häfner, Lena;Häfner;Lena;12;MGL;M_2;12|MGL|M_2;l.haefner;
+Hagedorn, Fynn;Hagedorn;Fynn;12;MGL;M_3;12|MGL|M_3;f.hagedorn;
+Hartmann, Lena;Hartmann;Lena;12;MGL;M_4;12|MGL|M_4;l.hartmann;
+Hermann, Leonie;Hermann;Leonie;12;MGL;M_1;12|MGL|M_1;l.hermann;
+Hermann, Pauline;Hermann;Pauline;12;MGL;M_2;12|MGL|M_2;p.hermann;
+Hildebrandt, Elias;Hildebrandt;Elias;12;MGL;M_3;12|MGL|M_3;e.hildebrandt;
+Hillmann, Fabian;Hillmann;Fabian;12;MGL;M_4;12|MGL|M_4;f.hillmann;
+Hoffmann, Alexander;Hoffmann;Alexander;12;MGL;M_1;12|MGL|M_1;a.hoffmann;
+Homscheid, Lars;Homscheid;Lars;12;MGL;M_2;12|MGL|M_2;l.homscheid;
+Ivanov, Tymur;Ivanov;Tymur;12;MGL;M_3;12|MGL|M_3;t.ivanov;
+Jesse, Elias;Jesse;Elias;12;MGL;M_4;12|MGL|M_4;e.jesse;
+Kandels, Nils;Kandels;Nils;12;MGL;M_1;12|MGL|M_1;n.kandels;
+Kanoglu, Karl Alan;Kanoglu;Karl Alan;12;MGL;M_2;12|MGL|M_2;k.kanoglu;
+Kasperowicz, Oskar;Kasperowicz;Oskar;12;MGL;M_3;12|MGL|M_3;o.kasperowicz;
+Keller, Tim;Keller;Tim;12;MGL;M_4;12|MGL|M_4;t.keller;
+Khatibifard, Mohammadmahdi;Khatibifard;Mohammadmahdi;12;MGL;M_1;12|MGL|M_1;m.khatibifard;
+Khazdouzian, Jolie;Khazdouzian;Jolie;12;MGL;M_2;12|MGL|M_2;jo.khazdouzian;
+Knoop, Justin;Knoop;Justin;12;MGL;M_3;12|MGL|M_3;j.knoop;
+Kokums, Kristers;Kokums;Kristers;12;MGL;M_4;12|MGL|M_4;k.kokums;
+Königs, Tim;Königs;Tim;12;MGL;M_1;12|MGL|M_1;t.koenigs;
+Kröger, Timo;Kröger;Timo;12;MGL;M_2;12|MGL|M_2;t.kroeger;
+Kröll, Melina;Kröll;Melina;12;MGL;M_3;12|MGL|M_3;me.kroell;
+Kronfoth, Kyra;Kronfoth;Kyra;12;MGL;M_4;12|MGL|M_4;k.kronfoth;
+Kuruc, Petra;Kuruc;Petra;12;MGL;M_1;12|MGL|M_1;p.kuruc;
+Lampke, Maximilian;Lampke;Maximilian;12;MGL;M_2;12|MGL|M_2;m.lampke;
+Lay, Bennet;Lay;Bennet;12;MGL;M_3;12|MGL|M_3;b.lay;
+Lokaj, Artian;Lokaj;Artian;12;MGL;M_4;12|MGL|M_4;a.lokaj;
+Mancoglu, Furkan;Mancoglu;Furkan;12;MGL;M_1;12|MGL|M_1;f.mancoglu;
+Martin, Lara;Martin;Lara;12;MGL;M_2;12|MGL|M_2;l.martin;
+Mertesacker, Annalena;Mertesacker;Annalena;12;MGL;M_3;12|MGL|M_3;a.mertesacker;
+Milinkovic, Katarina;Milinkovic;Katarina;12;MGL;M_4;12|MGL|M_4;k.milinkovic;
+Müller, Leni;Müller;Leni;12;MGL;M_1;12|MGL|M_1;l.mueller;
+Munsch, Moritz;Munsch;Moritz;12;MGL;M_2;12|MGL|M_2;m.munsch;
+Muthers, Nele;Muthers;Nele;12;MGL;M_3;12|MGL|M_3;n.muthers;
+Napelyani, Haniya;Napelyani;Haniya;12;MGL;M_4;12|MGL|M_4;h.napelyani;
+Neve, Tatiana;Neve;Tatiana;12;MGL;M_1;12|MGL|M_1;t.neve;
+Nguyen, Quang-Binh;Nguyen;Quang-Binh;12;MGL;M_2;12|MGL|M_2;q.nguyen;
+Pöpping, Melina;Pöpping;Melina;12;MGL;M_3;12|MGL|M_3;m.poepping;
+Profitlich, Leon;Profitlich;Leon;12;MGL;M_4;12|MGL|M_4;l.profitlich;
+Reitz, Emilia;Reitz;Emilia;12;MGL;M_1;12|MGL|M_1;e.reitz;
+Rodriguez Escher, Helena;Rodriguez Escher;Helena;12;MGL;M_2;12|MGL|M_2;h.rodriguezescher;
+Runkel, Yasmin;Runkel;Yasmin;12;MGL;M_3;12|MGL|M_3;y.runkel;
+Sahinbay, Emir;Sahinbay;Emir;12;MGL;M_4;12|MGL|M_4;e.sahinbay;
+Salimi, Marwa;Salimi;Marwa;12;MGL;M_1;12|MGL|M_1;m.salimi;
+Sartor, Finja;Sartor;Finja;12;MGL;M_2;12|MGL|M_2;fi.sartor;
+Schmitz, Carlotta;Schmitz;Carlotta;12;MGL;M_3;12|MGL|M_3;c.schmitz;
+Schneider, Sara;Schneider;Sara;12;MGL;M_4;12|MGL|M_4;s.schneider;
+Schnurr, Isabel;Schnurr;Isabel;12;MGL;M_1;12|MGL|M_1;i.schnurr;
+Schopp, Lina;Schopp;Lina;12;MGL;M_2;12|MGL|M_2;l.schopp;
+Seidel, Vy;Seidel;Vy;12;MGL;M_3;12|MGL|M_3;v.seidel;
+Stahl, Leonie;Stahl;Leonie;12;MGL;M_4;12|MGL|M_4;l.stahl;
+Stehle, Kimberly;Stehle;Kimberly;12;MGL;M_1;12|MGL|M_1;k.stehle;
+Stockhausen, Eric;Stockhausen;Eric;12;MGL;M_2;12|MGL|M_2;e.stockhausen;
+Trude, Maximilian;Trude;Maximilian;12;MGL;M_3;12|MGL|M_3;m.trude;
+Tschauner, Maximilian;Tschauner;Maximilian;12;MGL;M_4;12|MGL|M_4;m.tschauner;
+Wagner, Ann-Sophie;Wagner;Ann-Sophie;12;MGL;M_1;12|MGL|M_1;a.wagner;
+Walker, Clarissa;Walker;Clarissa;12;MGL;M_2;12|MGL|M_2;c.walker;
+Warjuschin, Evelyn;Warjuschin;Evelyn;12;MGL;M_3;12|MGL|M_3;e.warjuschin;
+Watts, Erik;Watts;Erik;12;MGL;M_4;12|MGL|M_4;e.watts;
+Weißenfels, Matthias;Weißenfels;Matthias;12;MGL;M_1;12|MGL|M_1;m.weissenfels;
+Willscheid, Miriam;Willscheid;Miriam;12;MGL;M_2;12|MGL|M_2;m.willscheid;
+Wotzke, Maya;Wotzke;Maya;12;MGL;M_3;12|MGL|M_3;m.wotzke;
+Yaldir, Mert-Alim;Yaldir;Mert-Alim;12;MGL;M_4;12|MGL|M_4;m.yaldir;
+Zeiler, Mariko;Zeiler;Mariko;12;MGL;M_1;12|MGL|M_1;m.zeiler;
+Zeqa, Nderon;Zeqa;Nderon;12;MGL;M_2;12|MGL|M_2;n.zeqa;
+Apel, Dana;Apel;Dana;13;MGL;M_3;13|MGL|M_3;d.apel;
+Babaliga, Cosmin;Babaliga;Cosmin;13;MGL;M_4;13|MGL|M_4;c.babaliga;
+Bock, Hannah;Bock;Hannah;13;MGL;M_1;13|MGL|M_1;h.bock;
+Caglar, Ceylin;Caglar;Ceylin;13;MGL;M_2;13|MGL|M_2;c.caglar;
+Can, Cagatay;Can;Cagatay;13;MGL;M_3;13|MGL|M_3;c.can;
+Carmona Rodriguez, Leonie;Carmona Rodriguez;Leonie;13;MGL;M_4;13|MGL|M_4;l.carmonarodriguez;
+Ciancia, Valentina;Ciancia;Valentina;13;MGL;M_1;13|MGL|M_1;v.ciancia;
+Debus, Lion;Debus;Lion;13;MGL;M_2;13|MGL|M_2;l.debus;
+Dick, Sophie;Dick;Sophie;13;MGL;M_3;13|MGL|M_3;s.dick;
+Emmel, Kian;Emmel;Kian;13;MGL;M_4;13|MGL|M_4;k.emmel;
+Ergin, Laşer;Ergin;Laşer;13;MGL;M_1;13|MGL|M_1;la.ergin;
+Freiseis, Luca;Freiseis;Luca;13;MGL;M_2;13|MGL|M_2;l.freiseis;
+Frerk, Mia;Frerk;Mia;13;MGL;M_3;13|MGL|M_3;m.frerk;
+Fritzen, Jonas;Fritzen;Jonas;13;MGL;M_4;13|MGL|M_4;j.fritzen;
+Gashi, Elian;Gashi;Elian;13;MGL;M_1;13|MGL|M_1;e.gashi;
+Glätzner, Anna;Glätzner;Anna;13;MGL;M_2;13|MGL|M_2;a.glaetzner;
+Grewe, Caroline;Grewe;Caroline;13;MGL;M_3;13|MGL|M_3;c.grewe;
+Gummersbach, Jana;Gummersbach;Jana;13;MGL;M_4;13|MGL|M_4;j.gummersbach;
+Habel, Lea;Habel;Lea;13;MGL;M_1;13|MGL|M_1;l.habel;
+Hafner, Julia;Hafner;Julia;13;MGL;M_2;13|MGL|M_2;j.hafner;
+Hasanaj, Benet;Hasanaj;Benet;13;MGL;M_3;13|MGL|M_3;b.hasanaj;
+Hecken, Mina;Hecken;Mina;13;MGL;M_4;13|MGL|M_4;m.hecken;
+Henze, Marc;Henze;Marc;13;MGL;M_1;13|MGL|M_1;m.henze;
+Hofmann, Pay;Hofmann;Pay;13;MGL;M_2;13|MGL|M_2;p.hofmann;
+Islamovic, Adina;Islamovic;Adina;13;MGL;M_3;13|MGL|M_3;a.islamovic;
+Jodl, Eva;Jodl;Eva;13;MGL;M_4;13|MGL|M_4;e.jodl;
+Jodl, Franziska;Jodl;Franziska;13;MGL;M_1;13|MGL|M_1;f.jodl;
+Jütte, Fabian;Jütte;Fabian;13;MGL;M_2;13|MGL|M_2;f.juette;
+Kaminski, Johanna;Kaminski;Johanna;13;MGL;M_3;13|MGL|M_3;j.kaminski;
+Kauferstein, Mia;Kauferstein;Mia;13;MGL;M_4;13|MGL|M_4;mi.kauferstein;
+Klein, Tobias;Klein;Tobias;13;MGL;M_1;13|MGL|M_1;t.klein;
+Klescher, Joline;Klescher;Joline;13;MGL;M_2;13|MGL|M_2;j.klescher;
+Kossmann, Philipp;Kossmann;Philipp;13;MGL;M_3;13|MGL|M_3;p.kossmann;
+Kouraichi, Zainab;Kouraichi;Zainab;13;MGL;M_4;13|MGL|M_4;z.kouraichi;
+Koyuncu, Zozan;Koyuncu;Zozan;13;MGL;M_1;13|MGL|M_1;z.koyuncu;
+Kuqi, Leonit;Kuqi;Leonit;13;MGL;M_2;13|MGL|M_2;l.kuqi;
+Lange, Yuna Amélie;Lange;Yuna Amélie;13;MGL;M_3;13|MGL|M_3;y.lange;
+Lecher, Fynn;Lecher;Fynn;13;MGL;M_4;13|MGL|M_4;f.lecher;
+Meixner, Dominik;Meixner;Dominik;13;MGL;M_1;13|MGL|M_1;d.meixner;
+Meller, Jens;Meller;Jens;13;MGL;M_2;13|MGL|M_2;j.meller;
+Mendykowski, Mateusz;Mendykowski;Mateusz;13;MGL;M_3;13|MGL|M_3;m.mendykowski;
+Moll, Anneke Jolien;Moll;Anneke Jolien;13;MGL;M_4;13|MGL|M_4;a.moll;
+Mroz, Aleksandra;Mroz;Aleksandra;13;MGL;M_1;13|MGL|M_1;a.mroz;
+Muratovic, Denis;Muratovic;Denis;13;MGL;M_2;13|MGL|M_2;d.muratovic;
+Nasution, Maël;Nasution;Maël;13;MGL;M_3;13|MGL|M_3;m.nasution;
+Nguyen, Quang-Sinh;Nguyen;Quang-Sinh;13;MGL;M_4;13|MGL|M_4;qu.nguyen;
+Ohly, Hannah;Ohly;Hannah;13;MGL;M_1;13|MGL|M_1;h.ohly;
+Philippsen, Max;Philippsen;Max;13;MGL;M_2;13|MGL|M_2;m.philippsen;
+Pogorelow, Paul;Pogorelow;Paul;13;MGL;M_3;13|MGL|M_3;p.pogorelow;
+Reetz, Helene;Reetz;Helene;13;MGL;M_4;13|MGL|M_4;h.reetz;
+Reither, Johanna;Reither;Johanna;13;MGL;M_1;13|MGL|M_1;j.reither;
+Reuter, Hannah;Reuter;Hannah;13;MGL;M_2;13|MGL|M_2;h.reuter;
+Reuter, Lisa;Reuter;Lisa;13;MGL;M_3;13|MGL|M_3;l.reuter;
+Richarz, Julian;Richarz;Julian;13;MGL;M_4;13|MGL|M_4;j.richarz;
+Römer, Jonas;Römer;Jonas;13;MGL;M_1;13|MGL|M_1;j.roemer;
+Rondot, Ronja;Rondot;Ronja;13;MGL;M_2;13|MGL|M_2;r.rondot;
+Ruthenbeck, Ayla;Ruthenbeck;Ayla;13;MGL;M_3;13|MGL|M_3;a.ruthenbeck;
+Rys, Emilia;Rys;Emilia;13;MGL;M_4;13|MGL|M_4;e.rys;
+Schäfer, Lennart;Schäfer;Lennart;13;MGL;M_1;13|MGL|M_1;l.schaefer;
+Scherer, Zoé;Scherer;Zoé;13;MGL;M_2;13|MGL|M_2;z.scherer;
+Schlochtermeier, Lena;Schlochtermeier;Lena;13;MGL;M_3;13|MGL|M_3;l.schlochtermeier;
+Schmitz, David;Schmitz;David;13;MGL;M_4;13|MGL|M_4;d.schmitz;
+Schneider, Denise;Schneider;Denise;13;MGL;M_1;13|MGL|M_1;d.schneider;
+Schönenberg, Leon;Schönenberg;Leon;13;MGL;M_2;13|MGL|M_2;l.schoenenberg;
+Schumacher, Felix;Schumacher;Felix;13;MGL;M_3;13|MGL|M_3;f.schumacher;
+Siljkovic, Armin;Siljkovic;Armin;13;MGL;M_4;13|MGL|M_4;a.siljkovic;
+Simons, Johanna;Simons;Johanna;13;MGL;M_1;13|MGL|M_1;j.simons;
+Solak, Atakan;Solak;Atakan;13;MGL;M_2;13|MGL|M_2;a.solak;
+Solinski, Bastian;Solinski;Bastian;13;MGL;M_3;13|MGL|M_3;b.solinski;
+Tillmann, Leni;Tillmann;Leni;13;MGL;M_4;13|MGL|M_4;l.tillmann;
+Traore, Fabian;Traore;Fabian;13;MGL;M_1;13|MGL|M_1;f.traore;
+von Bargen, Aaron;von Bargen;Aaron;13;MGL;M_2;13|MGL|M_2;a.vonbargen;
+Wagner, Anna;Wagner;Anna;13;MGL;M_3;13|MGL|M_3;an.wagner;
+Wahab, David;Wahab;David;13;MGL;M_4;13|MGL|M_4;d.wahab;
+Waldek, Daniel;Waldek;Daniel;13;MGL;M_1;13|MGL|M_1;d.waldek;
+Wegele, Diana;Wegele;Diana;13;MGL;M_2;13|MGL|M_2;d.wegele;
+Weiler, Tim;Weiler;Tim;13;MGL;M_3;13|MGL|M_3;t.weiler;
+Wolf, Fabian;Wolf;Fabian;13;MGL;M_4;13|MGL|M_4;f.wolf;
+Zeqa, Nderim;Zeqa;Nderim;13;MGL;M_1;13|MGL|M_1;nd.zeqa;
+Al Sharaa, Lama;Al Sharaa;Lama;10.3;RKS;M_1;10.3|RKS|M_1;l.alsharaa;
+Alnajar, Laith;Alnajar;Laith;10.3;RKS;M_2;10.3|RKS|M_2;l.alnajar;
+Blum-Biermann, Gina;Blum-Biermann;Gina;10.3;RKS;M_3;10.3|RKS|M_3;g.blum-biermann;
+Bouillon, Carla;Bouillon;Carla;10.3;RKS;M_4;10.3|RKS|M_4;c.bouillon;
+Decker, Nele;Decker;Nele;10.3;RKS;M_1;10.3|RKS|M_1;n.decker;
+Derr, Jonatan;Derr;Jonatan;10.3;RKS;M_2;10.3|RKS|M_2;j.derr;
+Faßbender, Lina Marie;Faßbender;Lina Marie;10.3;RKS;M_3;10.3|RKS|M_3;l.fassbender;
+Gerhartz, Nina;Gerhartz;Nina;10.3;RKS;M_4;10.3|RKS|M_4;n.gerhartz;
+Hajoula, Inas;Hajoula;Inas;10.3;RKS;M_1;10.3|RKS|M_1;i.hajoula;
+Jandali, Nori Emil Louis;Jandali;Nori Emil Louis;10.3;RKS;M_2;10.3|RKS|M_2;n.jandali;
+Kas, Burcin;Kas;Burcin;10.3;RKS;M_3;10.3|RKS|M_3;b.kas;
+Kas, Büsra;Kas;Büsra;10.3;RKS;M_4;10.3|RKS|M_4;bu.kas;
+Kirichevskyi, Veniamin;Kirichevskyi;Veniamin;10.3;RKS;M_1;10.3|RKS|M_1;v.kirichevskyi;
+Klimetzki, Benjamin Henry;Klimetzki;Benjamin Henry;10.3;RKS;M_2;10.3|RKS|M_2;b.klimetzki;
+Knaus, Lena;Knaus;Lena;10.3;RKS;M_3;10.3|RKS|M_3;l.knaus;
+Köhler, Mia Sophie;Köhler;Mia Sophie;10.3;RKS;M_4;10.3|RKS|M_4;m.koehler;
+Kronfoth, Tommy;Kronfoth;Tommy;10.3;RKS;M_1;10.3|RKS|M_1;t.kronfoth;
+Krupp, Nico;Krupp;Nico;10.3;RKS;M_2;10.3|RKS|M_2;n.krupp;
+Nanić, Sumeja;Nanić;Sumeja;10.3;RKS;M_3;10.3|RKS|M_3;s.nanic;
+Paus, Jason Phinnien;Paus;Jason Phinnien;10.3;RKS;M_4;10.3|RKS|M_4;j.paus;
+Plag, Johanna;Plag;Johanna;10.3;RKS;M_1;10.3|RKS|M_1;j.plag;
+Röhrig, Felix;Röhrig;Felix;10.3;RKS;M_2;10.3|RKS|M_2;f.roehrig;
+Sama, Lisa Marie;Sama;Lisa Marie;10.3;RKS;M_3;10.3|RKS|M_3;l.sama;
+Maximilian Schäfer Louis, Maximilian Louis;Maximilian Schäfer Louis;Maximilian Louis;10.3;RKS;M_4;10.3|RKS|M_4;m.maximilianschaeferlouis;
+Schmitz, Dean;Schmitz;Dean;10.3;RKS;M_1;10.3|RKS|M_1;de.schmitz;
+Yaldir, Yaren;Yaldir;Yaren;10.3;RKS;M_2;10.3|RKS|M_2;y.yaldir;
+Ahmad, Janet;Ahmad;Janet;10.4;RKS;M_3;10.4|RKS|M_3;j.ahmad;
+Cazacu, Marius-Robert;Cazacu;Marius-Robert;10.4;RKS;M_4;10.4|RKS|M_4;m.cazacu;
+Christmann, Bennet;Christmann;Bennet;10.4;RKS;M_1;10.4|RKS|M_1;b.christmann;
+Diesner, Anna Theresa;Diesner;Anna Theresa;10.4;RKS;M_2;10.4|RKS|M_2;a.diesner;
+Dörper, Lina;Dörper;Lina;10.4;RKS;M_3;10.4|RKS|M_3;l.doerper;
+Emrich, Isabella Marie;Emrich;Isabella Marie;10.4;RKS;M_4;10.4|RKS|M_4;i.emrich;
+Gattung, Phillipp Luis;Gattung;Phillipp Luis;10.4;RKS;M_1;10.4|RKS|M_1;p.gattung;
+Golmohamadi, Sarina;Golmohamadi;Sarina;10.4;RKS;M_2;10.4|RKS|M_2;s.golmohamadi;
+Grygenć, Melissa;Grygenć;Melissa;10.4;RKS;M_3;10.4|RKS|M_3;m.grygenc;
+Hefner, John-Marlon;Hefner;John-Marlon;10.4;RKS;M_4;10.4|RKS|M_4;j.hefner;
+Hefner, Marian-Alexander;Hefner;Marian-Alexander;10.4;RKS;M_1;10.4|RKS|M_1;m.hefner;
+Kappes, Anna Marie;Kappes;Anna Marie;10.4;RKS;M_2;10.4|RKS|M_2;a.kappes;
+Kirichevska, Yeva;Kirichevska;Yeva;10.4;RKS;M_3;10.4|RKS|M_3;y.kirichevska;
+Kretschmann, Lena Marie;Kretschmann;Lena Marie;10.4;RKS;M_4;10.4|RKS|M_4;l.kretschmann;
+Lange, Viktoria;Lange;Viktoria;10.4;RKS;M_1;10.4|RKS|M_1;v.lange;
+Lartey, Isabella Rose;Lartey;Isabella Rose;10.4;RKS;M_2;10.4|RKS|M_2;i.lartey;
+Lorscheid, Kilian;Lorscheid;Kilian;10.4;RKS;M_3;10.4|RKS|M_3;k.lorscheid;
+Malenko, Dmytro;Malenko;Dmytro;10.4;RKS;M_4;10.4|RKS|M_4;d.malenko;
+Manfredi, Juline;Manfredi;Juline;10.4;RKS;M_1;10.4|RKS|M_1;j.manfredi;
+Menden, Luca;Menden;Luca;10.4;RKS;M_2;10.4|RKS|M_2;l.menden;
+Rondi, Jule;Rondi;Jule;10.4;RKS;M_3;10.4|RKS|M_3;j.rondi;
+Sahlan, Cennet Ceylin;Sahlan;Cennet Ceylin;10.4;RKS;M_4;10.4|RKS|M_4;c.sahlan;
+Schmitz, Timo;Schmitz;Timo;10.4;RKS;M_1;10.4|RKS|M_1;t.schmitz;
+Tautermann, Sara Kristin;Tautermann;Sara Kristin;10.4;RKS;M_2;10.4|RKS|M_2;s.tautermann;
+Theisen, Zoe Liah Monique;Theisen;Zoe Liah Monique;10.4;RKS;M_3;10.4|RKS|M_3;z.theisen;
+Töws, Sara;Töws;Sara;10.4;RKS;M_4;10.4|RKS|M_4;s.toews;
+Voßnacker, Mathis Friedrich;Voßnacker;Mathis Friedrich;10.4;RKS;M_1;10.4|RKS|M_1;m.vossnacker;
+Almelhm, Razan;Almelhm;Razan;8.1;RKS;M_2;8.1|RKS|M_2;r.almelhm;
+Amer, Bilal Mohamed;Amer;Bilal Mohamed;8.1;RKS;M_3;8.1|RKS|M_3;b.amer;
+Arab, Assma;Arab;Assma;8.1;RKS;M_4;8.1|RKS|M_4;a.arab;
+Arab, Nima;Arab;Nima;8.1;RKS;M_1;8.1|RKS|M_1;n.arab;
+Arabia, Asmaa;Arabia;Asmaa;8.1;RKS;M_2;8.1|RKS|M_2;a.arabia;
+Beucher, Lena;Beucher;Lena;8.1;RKS;M_3;8.1|RKS|M_3;l.beucher;
+Danninger, Carl Ludwig;Danninger;Carl Ludwig;8.1;RKS;M_4;8.1|RKS|M_4;c.danninger;
+Eraslan, Asya-Perihan;Eraslan;Asya-Perihan;8.1;RKS;M_1;8.1|RKS|M_1;a.eraslan;
+Fechner, Caroline;Fechner;Caroline;8.1;RKS;M_2;8.1|RKS|M_2;c.fechner;
+Heinrichs, Merita;Heinrichs;Merita;8.1;RKS;M_3;8.1|RKS|M_3;m.heinrichs;
+Hoxhaj, Nuara;Hoxhaj;Nuara;8.1;RKS;M_4;8.1|RKS|M_4;n.hoxhaj;
+Ibrahimi, Asnat;Ibrahimi;Asnat;8.1;RKS;M_1;8.1|RKS|M_1;a.ibrahimi;
+Kabaoglu, Eymen;Kabaoglu;Eymen;8.1;RKS;M_2;8.1|RKS|M_2;e.kabaoglu;
+Kacar, Ilayda;Kacar;Ilayda;8.1;RKS;M_3;8.1|RKS|M_3;i.kacar;
+Kandels, Mia;Kandels;Mia;8.1;RKS;M_4;8.1|RKS|M_4;m.kandels;
+Knopp, Iduna;Knopp;Iduna;8.1;RKS;M_1;8.1|RKS|M_1;i.knopp;
+Machado Vaz de Almeida, Elson Daniel;Machado Vaz de Almeida;Elson Daniel;8.1;RKS;M_2;8.1|RKS|M_2;e.machadovazdealmeida;
+Michels, Lian;Michels;Lian;8.1;RKS;M_3;8.1|RKS|M_3;l.michels;
+Noori, Hamayoun;Noori;Hamayoun;8.1;RKS;M_4;8.1|RKS|M_4;h.noori;
+Potapenko, Veronìka;Potapenko;Veronìka;8.1;RKS;M_1;8.1|RKS|M_1;v.potapenko;
+Qassoum, Yasmin;Qassoum;Yasmin;8.1;RKS;M_2;8.1|RKS|M_2;y.qassoum;
+Schäfer, Lea;Schäfer;Lea;8.1;RKS;M_3;8.1|RKS|M_3;le.schaefer;
+Sus, Moses;Sus;Moses;8.1;RKS;M_4;8.1|RKS|M_4;m.sus;
+Swart Vaz de Almeida, Gláucia Marcela;Swart Vaz de Almeida;Gláucia Marcela;8.1;RKS;M_1;8.1|RKS|M_1;g.swartvazdealmeida;
+Tymoshuk, Daniella;Tymoshuk;Daniella;8.1;RKS;M_2;8.1|RKS|M_2;d.tymoshuk;
+Voßnacker, Jacob Elias;Voßnacker;Jacob Elias;8.1;RKS;M_3;8.1|RKS|M_3;j.vossnacker;
+Al Sharaa, Siba;Al Sharaa;Siba;8.3;RKS;M_4;8.3|RKS|M_4;s.alsharaa;
+Alhamad, Ela Luna;Alhamad;Ela Luna;8.3;RKS;M_1;8.3|RKS|M_1;e.alhamad;
+Avdyli, Agnesa;Avdyli;Agnesa;8.3;RKS;M_2;8.3|RKS|M_2;a.avdyli;
+Biermann, Laurin;Biermann;Laurin;8.3;RKS;M_3;8.3|RKS|M_3;l.biermann;
+Cangir, Aynur Arife;Cangir;Aynur Arife;8.3;RKS;M_4;8.3|RKS|M_4;a.cangir;
+Cavus, Polat;Cavus;Polat;8.3;RKS;M_1;8.3|RKS|M_1;p.cavus;
+Celik, Lecwan Deniz;Celik;Lecwan Deniz;8.3;RKS;M_2;8.3|RKS|M_2;l.celik;
+Chmiel, Etienne;Chmiel;Etienne;8.3;RKS;M_3;8.3|RKS|M_3;e.chmiel;
+Cortes Menendez, Aitana;Cortes Menendez;Aitana;8.3;RKS;M_4;8.3|RKS|M_4;a.cortesmenendez;
+Dankanich, Nicole;Dankanich;Nicole;8.3;RKS;M_1;8.3|RKS|M_1;n.dankanich;
+Danylevych, Denys;Danylevych;Denys;8.3;RKS;M_2;8.3|RKS|M_2;d.danylevych;
+Gwozdek, Luca Marian;Gwozdek;Luca Marian;8.3;RKS;M_3;8.3|RKS|M_3;l.gwozdek;
+Jandali, Milo Willi;Jandali;Milo Willi;8.3;RKS;M_4;8.3|RKS|M_4;m.jandali;
+Kirsch, Nik;Kirsch;Nik;8.3;RKS;M_1;8.3|RKS|M_1;n.kirsch;
+Klaes, Piet Severin;Klaes;Piet Severin;8.3;RKS;M_2;8.3|RKS|M_2;p.klaes;
+Klein, David;Klein;David;8.3;RKS;M_3;8.3|RKS|M_3;d.klein;
+Maksutaj, Lia;Maksutaj;Lia;8.3;RKS;M_4;8.3|RKS|M_4;l.maksutaj;
+Otten, Julius Michael;Otten;Julius Michael;8.3;RKS;M_1;8.3|RKS|M_1;j.otten;
+Patti, Cristian;Patti;Cristian;8.3;RKS;M_2;8.3|RKS|M_2;c.patti;
+Röhrig, Tim;Röhrig;Tim;8.3;RKS;M_3;8.3|RKS|M_3;t.roehrig;
+Simo, Diego Darnell;Simo;Diego Darnell;8.3;RKS;M_4;8.3|RKS|M_4;d.simo;
+Simo, Rafael Darrell;Simo;Rafael Darrell;8.3;RKS;M_1;8.3|RKS|M_1;r.simo;
+Sushko, Bohdan;Sushko;Bohdan;8.3;RKS;M_2;8.3|RKS|M_2;b.sushko;
+Bouillon, Henry;Bouillon;Henry;8.4;RKS;M_3;8.4|RKS|M_3;h.bouillon;
+Chacho, Fiyoleen;Chacho;Fiyoleen;8.4;RKS;M_4;8.4|RKS|M_4;f.chacho;
+Derr, Herbert;Derr;Herbert;8.4;RKS;M_1;8.4|RKS|M_1;h.derr;
+Erol, Muhammed Semi;Erol;Muhammed Semi;8.4;RKS;M_2;8.4|RKS|M_2;m.erol;
+Franke, Nico;Franke;Nico;8.4;RKS;M_3;8.4|RKS|M_3;n.franke;
+Glas, Zoey;Glas;Zoey;8.4;RKS;M_4;8.4|RKS|M_4;z.glas;
+Höhl, Sebastian;Höhl;Sebastian;8.4;RKS;M_1;8.4|RKS|M_1;s.hoehl;
+Janz, Paul Falk;Janz;Paul Falk;8.4;RKS;M_2;8.4|RKS|M_2;p.janz;
+Kaap, Jonas;Kaap;Jonas;8.4;RKS;M_3;8.4|RKS|M_3;j.kaap;
+Kablan, Emir;Kablan;Emir;8.4;RKS;M_4;8.4|RKS|M_4;e.kablan;
+Khani, Lian;Khani;Lian;8.4;RKS;M_1;8.4|RKS|M_1;l.khani;
+Laubenstein, Emilio Jóel;Laubenstein;Emilio Jóel;8.4;RKS;M_2;8.4|RKS|M_2;e.laubenstein;
+Lützenkirchen, Maxim;Lützenkirchen;Maxim;8.4;RKS;M_3;8.4|RKS|M_3;m.luetzenkirchen;
+Mazrekaj, Erlisa;Mazrekaj;Erlisa;8.4;RKS;M_4;8.4|RKS|M_4;e.mazrekaj;
+Rosbach, Michael Roman;Rosbach;Michael Roman;8.4;RKS;M_1;8.4|RKS|M_1;m.rosbach;
+Rosenthal, Ole Michel;Rosenthal;Ole Michel;8.4;RKS;M_2;8.4|RKS|M_2;o.rosenthal;
+Stockhausen, Mia Sophie;Stockhausen;Mia Sophie;8.4;RKS;M_3;8.4|RKS|M_3;m.stockhausen;
+Süß, Max;Süß;Max;8.4;RKS;M_4;8.4|RKS|M_4;m.suess;
+Voß, Maja Leonie;Voß;Maja Leonie;8.4;RKS;M_1;8.4|RKS|M_1;m.voss;
+Ziegler, Hanna;Ziegler;Hanna;8.4;RKS;M_2;8.4|RKS|M_2;h.ziegler;
+Ziegler, Marie;Ziegler;Marie;8.4;RKS;M_3;8.4|RKS|M_3;m.ziegler;
+Zimmermann, Emma Sophie;Zimmermann;Emma Sophie;8.4;RKS;M_4;8.4|RKS|M_4;e.zimmermann;
+Abdul Raouf, Mahmoud;Abdul Raouf;Mahmoud;9.1;RKS;M_1;9.1|RKS|M_1;m.abdulraouf;
+Ayash, Judi;Ayash;Judi;9.1;RKS;M_2;9.1|RKS|M_2;j.ayash;
+Boiko, Oleksandra;Boiko;Oleksandra;9.1;RKS;M_3;9.1|RKS|M_3;o.boiko;
+Cehan, Maila Alessia;Cehan;Maila Alessia;9.1;RKS;M_4;9.1|RKS|M_4;m.cehan;
+Cehan, Izmar Anastasia;Cehan;Izmar Anastasia;9.1;RKS;M_1;9.1|RKS|M_1;i.cehan;
+Grimpe, Anastasia Angelina;Grimpe;Anastasia Angelina;9.1;RKS;M_2;9.1|RKS|M_2;a.grimpe;
+Iberhysaj, Elea;Iberhysaj;Elea;9.1;RKS;M_3;9.1|RKS|M_3;e.iberhysaj;
+Karbowski, Finn;Karbowski;Finn;9.1;RKS;M_4;9.1|RKS|M_4;f.karbowski;
+Kunic, Aleksandar Luka;Kunic;Aleksandar Luka;9.1;RKS;M_1;9.1|RKS|M_1;a.kunic;
+Kurz, Maya Charline;Kurz;Maya Charline;9.1;RKS;M_2;9.1|RKS|M_2;m.kurz;
+Landar, Yaroslava;Landar;Yaroslava;9.1;RKS;M_3;9.1|RKS|M_3;y.landar;
+Langenfeld, Collin;Langenfeld;Collin;9.1;RKS;M_4;9.1|RKS|M_4;c.langenfeld;
+Lentzen, Kaya Luana;Lentzen;Kaya Luana;9.1;RKS;M_1;9.1|RKS|M_1;k.lentzen;
+Neumann, Kimberly Vivien Jill;Neumann;Kimberly Vivien Jill;9.1;RKS;M_2;9.1|RKS|M_2;k.neumann;
+Nolting, Can David;Nolting;Can David;9.1;RKS;M_3;9.1|RKS|M_3;c.nolting;
+Potapenko, Emìlìâ;Potapenko;Emìlìâ;9.1;RKS;M_4;9.1|RKS|M_4;e.potapenko;
+Radkiewicz, Laura;Radkiewicz;Laura;9.1;RKS;M_1;9.1|RKS|M_1;l.radkiewicz;
+Schmitz, Mia Joline;Schmitz;Mia Joline;9.1;RKS;M_2;9.1|RKS|M_2;mi.schmitz;
+Sefrin, David;Sefrin;David;9.1;RKS;M_3;9.1|RKS|M_3;d.sefrin;
+Toz, Atilla;Toz;Atilla;9.1;RKS;M_4;9.1|RKS|M_4;a.toz;
+Adams, Amy Sofie;Adams;Amy Sofie;9.3;RKS;M_1;9.3|RKS|M_1;a.adams;
+Al Sharaa, Adham;Al Sharaa;Adham;9.3;RKS;M_2;9.3|RKS|M_2;a.alsharaa;
+Bacaj, Alex;Bacaj;Alex;9.3;RKS;M_3;9.3|RKS|M_3;a.bacaj;
+Boppard, Matthea Christina Leonora;Boppard;Matthea Christina Leonora;9.3;RKS;M_4;9.3|RKS|M_4;m.boppard;
+Brücken, Tom;Brücken;Tom;9.3;RKS;M_1;9.3|RKS|M_1;t.bruecken;
+Debus, Milo;Debus;Milo;9.3;RKS;M_2;9.3|RKS|M_2;m.debus;
+Degen, Philipp;Degen;Philipp;9.3;RKS;M_3;9.3|RKS|M_3;p.degen;
+Dütz, Alicia;Dütz;Alicia;9.3;RKS;M_4;9.3|RKS|M_4;a.duetz;
+Fetaj, Getoar;Fetaj;Getoar;9.3;RKS;M_1;9.3|RKS|M_1;g.fetaj;
+Jochmus-Stöcke, Aina Maria Eleonore;Jochmus-Stöcke;Aina Maria Eleonore;9.3;RKS;M_2;9.3|RKS|M_2;a.jochmus-stoecke;
+Jünger, Maya;Jünger;Maya;9.3;RKS;M_3;9.3|RKS|M_3;m.juenger;
+Knieps, Ellen Felizitas;Knieps;Ellen Felizitas;9.3;RKS;M_4;9.3|RKS|M_4;e.knieps;
+Kreps, Amy Vita;Kreps;Amy Vita;9.3;RKS;M_1;9.3|RKS|M_1;a.kreps;
+Kroon, Jesse Kiamo Keanu;Kroon;Jesse Kiamo Keanu;9.3;RKS;M_2;9.3|RKS|M_2;j.kroon;
+Löwen, Roman;Löwen;Roman;9.3;RKS;M_3;9.3|RKS|M_3;r.loewen;
+Lunov, Kyryl;Lunov;Kyryl;9.3;RKS;M_4;9.3|RKS|M_4;k.lunov;
+Moch, Jonathan Mischa;Moch;Jonathan Mischa;9.3;RKS;M_1;9.3|RKS|M_1;j.moch;
+Pfefferkorn, Jayden Brian;Pfefferkorn;Jayden Brian;9.3;RKS;M_2;9.3|RKS|M_2;j.pfefferkorn;
+Prause, Mila Paulina;Prause;Mila Paulina;9.3;RKS;M_3;9.3|RKS|M_3;m.prause;
+Saal, Charlotte;Saal;Charlotte;9.3;RKS;M_4;9.3|RKS|M_4;c.saal;
+Salz, Johann Leonard;Salz;Johann Leonard;9.3;RKS;M_1;9.3|RKS|M_1;j.salz;
+Samaam, Youssef;Samaam;Youssef;9.3;RKS;M_2;9.3|RKS|M_2;y.samaam;
+Sander, Amy Christine;Sander;Amy Christine;9.3;RKS;M_3;9.3|RKS|M_3;a.sander;
+Schulte, Erik;Schulte;Erik;9.3;RKS;M_4;9.3|RKS|M_4;e.schulte;
+Senk, Isabell;Senk;Isabell;9.3;RKS;M_1;9.3|RKS|M_1;i.senk;
+Siebenmorgen, Lukas;Siebenmorgen;Lukas;9.3;RKS;M_2;9.3|RKS|M_2;l.siebenmorgen;
+Söllinger, Luca;Söllinger;Luca;9.3;RKS;M_3;9.3|RKS|M_3;l.soellinger;
+Voß, Jocelyn Isabelle;Voß;Jocelyn Isabelle;9.3;RKS;M_4;9.3|RKS|M_4;j.voss;
+Weber, Julian;Weber;Julian;9.3;RKS;M_1;9.3|RKS|M_1;j.weber;
+Ates, Berfin;Ates;Berfin;9.4;RKS;M_2;9.4|RKS|M_2;b.ates;
+Buhr, Vincent;Buhr;Vincent;9.4;RKS;M_3;9.4|RKS|M_3;v.buhr;
+Dötsch, Mariella;Dötsch;Mariella;9.4;RKS;M_4;9.4|RKS|M_4;m.doetsch;
+Gavak, Aykan;Gavak;Aykan;9.4;RKS;M_1;9.4|RKS|M_1;a.gavak;
+Gjocaj, Eljona;Gjocaj;Eljona;9.4;RKS;M_2;9.4|RKS|M_2;e.gjocaj;
+Grabanica, Fahire;Grabanica;Fahire;9.4;RKS;M_3;9.4|RKS|M_3;f.grabanica;
+Hefner, Jan Poul;Hefner;Jan Poul;9.4;RKS;M_4;9.4|RKS|M_4;ja.hefner;
+Hohn, Finnegan Floyd;Hohn;Finnegan Floyd;9.4;RKS;M_1;9.4|RKS|M_1;f.hohn;
+Jasiqi, Aurela;Jasiqi;Aurela;9.4;RKS;M_2;9.4|RKS|M_2;a.jasiqi;
+Kabaoglu, Esila;Kabaoglu;Esila;9.4;RKS;M_3;9.4|RKS|M_3;es.kabaoglu;
+Kabaoglu, Yaman;Kabaoglu;Yaman;9.4;RKS;M_4;9.4|RKS|M_4;y.kabaoglu;
+Keller, Julian;Keller;Julian;9.4;RKS;M_1;9.4|RKS|M_1;j.keller;
+Kerp, Till;Kerp;Till;9.4;RKS;M_2;9.4|RKS|M_2;t.kerp;
+Krasniqi, Leona Jemine;Krasniqi;Leona Jemine;9.4;RKS;M_3;9.4|RKS|M_3;l.krasniqi;
+Kuburas, Elvin;Kuburas;Elvin;9.4;RKS;M_4;9.4|RKS|M_4;e.kuburas;
+Kuqi, Leart;Kuqi;Leart;9.4;RKS;M_1;9.4|RKS|M_1;le.kuqi;
+Labonde, Finn Lukas;Labonde;Finn Lukas;9.4;RKS;M_2;9.4|RKS|M_2;f.labonde;
+Liebenau, Kjell;Liebenau;Kjell;9.4;RKS;M_3;9.4|RKS|M_3;k.liebenau;
+Pettineo, Jeremia Gabriel;Pettineo;Jeremia Gabriel;9.4;RKS;M_4;9.4|RKS|M_4;j.pettineo;
+Ramaj, Elonisa;Ramaj;Elonisa;9.4;RKS;M_1;9.4|RKS|M_1;e.ramaj;
+Reufels, Lea;Reufels;Lea;9.4;RKS;M_2;9.4|RKS|M_2;l.reufels;
+Schläger, Jordan Felix;Schläger;Jordan Felix;9.4;RKS;M_3;9.4|RKS|M_3;j.schlaeger;
+Schlömer, Marla;Schlömer;Marla;9.4;RKS;M_4;9.4|RKS|M_4;m.schloemer;
+Schmitz, Tayler;Schmitz;Tayler;9.4;RKS;M_1;9.4|RKS|M_1;ta.schmitz;
+Schwarz, Shane Philip;Schwarz;Shane Philip;9.4;RKS;M_2;9.4|RKS|M_2;s.schwarz;
+Shaban, Ashraf Katari;Shaban;Ashraf Katari;9.4;RKS;M_3;9.4|RKS|M_3;a.shaban;
+Storck, Tim;Storck;Tim;9.4;RKS;M_4;9.4|RKS|M_4;t.storck;
+Szumilas, Julia-Laura;Szumilas;Julia-Laura;9.4;RKS;M_1;9.4|RKS|M_1;j.szumilas;
+Theodor, Odile;Theodor;Odile;9.4;RKS;M_2;9.4|RKS|M_2;o.theodor;
+Wahidie, Mohammad Yonis;Wahidie;Mohammad Yonis;9.4;RKS;M_3;9.4|RKS|M_3;m.wahidie;
