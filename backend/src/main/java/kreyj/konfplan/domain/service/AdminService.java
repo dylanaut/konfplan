@@ -158,6 +158,15 @@ public class AdminService implements AdminServiceInterface {
             throw new BusinessException("Administrator-Konten benötigen zwingend eine E-Mail-Adresse (sonst ist bei einem vergessenen Passwort keine Wiederherstellung möglich).");
         }
 
+        // Vor dem Keycloak-Aufruf prüfen (statt den DB-Unique-Constraint bzw. Keycloaks eigene
+        // Prüfung crashen zu lassen) - sonst landet ein ungefangener 500er beim Client.
+        if (Nutzer.findByLoginName(dto.loginName) != null) {
+            throw new BusinessException("Der Login-Name '" + dto.loginName + "' ist bereits vergeben.");
+        }
+        if (StringUtils.isNotBlank(dto.email) && Nutzer.findByEmail(dto.email) != null) {
+            throw new BusinessException("Die E-Mail-Adresse '" + dto.email + "' wird bereits verwendet.");
+        }
+
         nutzer.assignLoginName(dto.loginName);
         nutzer.setEmail(dto.email);
         nutzer.setFirstName(dto.firstName);

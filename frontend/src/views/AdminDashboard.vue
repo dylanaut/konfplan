@@ -690,7 +690,7 @@ const handleSaveUser = async (u) => {
     if (selectedVid.value) await loadData();
     else await refreshAdmins();
   } catch (e) {
-    console.error('Fehler beim Speichern des Nutzers:', e);
+    alert("Fehler beim Speichern des Nutzers: " + (e.response?.data?.error || e.response?.data || e.message));
   }
 };
 const deleteUser = async (id) => {
