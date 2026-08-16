@@ -42,8 +42,6 @@ public class Planungsergebnis extends VersionedEntity {
 
     @SuppressWarnings("unused")
     public static class MinizincResult {
-        @Inject
-        ObjectMapper objectMapper;
 
         // enthält für jeden Wahlvortrag und über alle Instanzen die MZ-SlotId
         public int[][] instanz_slot;
@@ -62,9 +60,9 @@ public class Planungsergebnis extends VersionedEntity {
         public int raumwechsel;
 
 
-        public String toJson() {
+        public String toJson(final ObjectMapper mapper) {
             try {
-                return objectMapper.writeValueAsString(this);
+                return mapper.writeValueAsString(this);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }

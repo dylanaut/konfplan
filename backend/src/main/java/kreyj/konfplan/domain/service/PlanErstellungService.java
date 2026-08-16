@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.json.Json;
 import jakarta.json.JsonException;
 import jakarta.transaction.Transactional;
@@ -699,7 +700,7 @@ public class PlanErstellungService {
                 auffuellungService.fuelleAuf(veranstaltung, result, config.getMaxWvsProTn());
             }
 
-            String fixedJson = result.toJson();
+            String fixedJson = result.toJson(objectMapper);
             LOG.info("###" + fixedJson);
 
             ergebnis.setJsonErgebnis(fixedJson);

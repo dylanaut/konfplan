@@ -1,1 +1,5 @@
 istPflicht;Titel;Referent_LoginName;Pflichtgruppe;Pflichtraum;Pflichtslot;Inhalt;wiederholbar;maxWiederholungen;wahlSlots;Ausstattung;Berufsfeld
+true;Messe;aufsicht.messe;M_1;Aula RKS/MGL;1;Messebesuch;false;0;;;
+true;Messe;aufsicht.messe;M_2;Aula RKS/MGL;2;Messebesuch;false;0;;;
+true;Messe;aufsicht.messe;M_3;Aula RKS/MGL;3;Messebesuch;false;0;;;
+true;Messe;aufsicht.messe;M_4;Aula RKS/MGL;4;Messebesuch;false;0;;;
