@@ -1,12 +1,13 @@
 package kreyj.konfplan.adapter.in.web.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import kreyj.konfplan.persistence.AbschlussTyp;
 import kreyj.konfplan.persistence.Berufsfeld;
-import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
+import kreyj.konfplan.persistence.Veranlagung;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
@@ -28,7 +29,9 @@ public class VortragDto extends AbstractVersionedDto {
     public String ausstattung;
     public Berufsfeld berufsfeld; // Neues Feld
     public String berufsfeldName;
-    public Set<Neigung> neigungen = new HashSet<>();
+    public AbschlussTyp abschluss;
+    public String abschlussName;
+    public Set<Veranlagung> veranlagungen = new HashSet<>();
     public boolean istPflicht;
     public boolean wiederholbar;
     public Set<Long> verfuegbareSlotIds = new HashSet<>();
@@ -99,6 +102,8 @@ public class VortragDto extends AbstractVersionedDto {
         dto.ausstattung = v.getAusstattung();
         dto.berufsfeld = v.getBerufsfeld();
         dto.berufsfeldName = v.getBerufsfeld() != null ? v.getBerufsfeld().getName() : null;
+        dto.abschluss = v.getAbschluss();
+        dto.abschlussName = v.getAbschluss() != null ? v.getAbschluss().getName() : null;
         dto.veranstaltungId = v.getVeranstaltung().getId();
         dto.veranstaltungName = v.getVeranstaltung().getName();
 
@@ -109,7 +114,7 @@ public class VortragDto extends AbstractVersionedDto {
         if (v instanceof Wahlvortrag wahlvortrag) {
             dto.wiederholbar = wahlvortrag.isWiederholbar();
             dto.maxWiederholungen = wahlvortrag.getMaxWiederholungen();
-            dto.neigungen = wahlvortrag.getNeigungen();
+            dto.veranlagungen = wahlvortrag.getVeranlagungen();
             VortragVerfuegbarkeit vv = VortragVerfuegbarkeit.findById(vvId(
                     wahlvortrag, wahlvortrag.getVeranstaltung()));
             if (null == vv) {
@@ -145,12 +150,13 @@ public class VortragDto extends AbstractVersionedDto {
         vortrag.setInhalt(dto.inhalt);
         vortrag.setAusstattung(dto.ausstattung);
         vortrag.setBerufsfeld(dto.berufsfeld);
+        vortrag.setAbschluss(dto.abschluss);
         vortrag.setVeranstaltung(Veranstaltung.findById(dto.veranstaltungId));
         vortrag.setReferent(Referent.findById(dto.referentId));
         if (vortrag instanceof Wahlvortrag wahlvortrag) {
             wahlvortrag.setWiederholbar(dto.wiederholbar);
             wahlvortrag.setMaxWiederholungen(dto.maxWiederholungen);
-            wahlvortrag.setNeigungen(dto.neigungen);
+            wahlvortrag.setVeranlagungen(dto.veranlagungen);
         } else {
             Pflichtvortrag pflichtvortrag = (Pflichtvortrag) vortrag;
             pflichtvortrag.updatePflichtgruppe(dto.pflichtGruppe);

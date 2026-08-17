@@ -225,7 +225,7 @@ public class ReferentService implements ReferentServiceInterface {
             Wahlvortrag nw = new Wahlvortrag();
             nw.setWiederholbar(sw.isWiederholbar());
             nw.setMaxWiederholungen(sw.getMaxWiederholungen());
-            nw.setNeigungen(sw.getNeigungen());
+            nw.setVeranlagungen(sw.getVeranlagungen());
             // Wir übernehmen keine Slots, da diese veranstaltungsspezifisch sind!
             vortrag = nw;
         } else {
@@ -238,6 +238,7 @@ public class ReferentService implements ReferentServiceInterface {
         vortrag.setInhalt(vortrag.getInhalt());
         vortrag.setAusstattung(vortrag.getAusstattung());
         vortrag.setBerufsfeld(vortrag.getBerufsfeld());
+        vortrag.setAbschluss(vortrag.getAbschluss());
         vortrag.setReferent(referent);
         vortrag.setVeranstaltung(veranstaltung);
         vortrag.persistAndFlush();
@@ -286,7 +287,7 @@ public class ReferentService implements ReferentServiceInterface {
             Wahlvortrag nw = new Wahlvortrag();
             nw.setWiederholbar(sw.isWiederholbar());
             nw.setMaxWiederholungen(sw.getMaxWiederholungen());
-            nw.setNeigungen(sw.getNeigungen());
+            nw.setVeranlagungen(sw.getVeranlagungen());
             // Wahl-Slots werden nicht kopiert, da sie veranstaltungsspezifisch sind.
             zielVortrag = nw;
         } else if (quellVortrag instanceof Pflichtvortrag) {
@@ -300,6 +301,7 @@ public class ReferentService implements ReferentServiceInterface {
         zielVortrag.setInhalt(quellVortrag.getInhalt()); // AbstractText wird kopiert und kann angepasst werden
         zielVortrag.setAusstattung(quellVortrag.getAusstattung());
         zielVortrag.setBerufsfeld(quellVortrag.getBerufsfeld());
+        zielVortrag.setAbschluss(quellVortrag.getAbschluss());
         zielVortrag.setReferent(referent);
         zielVortrag.setVeranstaltung(veranstaltung);
         zielVortrag.persistAndFlush();
@@ -353,10 +355,11 @@ public class ReferentService implements ReferentServiceInterface {
         vortrag.setInhalt(dto.inhalt);
         vortrag.setAusstattung(dto.ausstattung);
         vortrag.setBerufsfeld(dto.berufsfeld);
+        vortrag.setAbschluss(dto.abschluss);
 
         if (vortrag instanceof Wahlvortrag wahlvortrag) {
             wahlvortrag.setWiederholbar(dto.wiederholbar);
-            wahlvortrag.setNeigungen(dto.neigungen);
+            wahlvortrag.setVeranlagungen(dto.veranlagungen);
             if (dto.maxWiederholungen > 0) {
                 wahlvortrag.setMaxWiederholungen(dto.maxWiederholungen);
             }

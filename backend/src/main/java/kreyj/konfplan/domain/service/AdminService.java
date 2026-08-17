@@ -28,6 +28,7 @@ import kreyj.konfplan.domain.exception.UpdateNutzerException;
 import kreyj.konfplan.domain.exception.UpdateVortragException;
 import kreyj.konfplan.domain.exception.VeranstaltungException;
 import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.AbschlussTyp;
 import kreyj.konfplan.persistence.Berufsfeld;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.IdEntity;
@@ -185,8 +186,8 @@ public class AdminService implements AdminServiceInterface {
             if (null != dto.gruppen) {
                 dto.gruppen.forEach(t::addGruppe);
             }
-            if (null != dto.neigungen) {
-                t.setNeigungen(dto.neigungen);
+            if (null != dto.veranlagungen) {
+                t.setVeranlagungen(dto.veranlagungen);
             }
             if (null != dto.prioritaeten) {
                 dto.prioritaeten.forEach(prioDto -> {
@@ -299,8 +300,8 @@ public class AdminService implements AdminServiceInterface {
             if (null != dto.gruppen) {
                 dto.gruppen.forEach(t::addGruppe);
             }
-            if (null != dto.neigungen) {
-                t.setNeigungen(dto.neigungen);
+            if (null != dto.veranlagungen) {
+                t.setVeranlagungen(dto.veranlagungen);
             }
             if (null != dto.prioritaeten) {
                 dto.prioritaeten.forEach(prioDto -> {
@@ -506,12 +507,13 @@ public class AdminService implements AdminServiceInterface {
         } else {
             created = Wahlvortrag.create(vortragDto.titel, vortragDto.inhalt, referent,
                 vortragDto.wiederholbar, vortragDto.maxWiederholungen, veranstaltung);
-            ((Wahlvortrag) created).setNeigungen(vortragDto.neigungen);
+            ((Wahlvortrag) created).setVeranlagungen(vortragDto.veranlagungen);
         }
 
 
         created.setAusstattung(vortragDto.ausstattung);
         created.setBerufsfeld(vortragDto.berufsfeld);
+        created.setAbschluss(vortragDto.abschluss);
         created.persistAndFlush();
 
 
@@ -708,6 +710,16 @@ public class AdminService implements AdminServiceInterface {
                         }
                     }
 
+                    if (StringUtils.isNotBlank(csvDto.abschluss)) {
+                        AbschlussTyp foundAbschluss = findAbschlussByPrefix(csvDto.abschluss);
+                        if (foundAbschluss != null) {
+                            dto.abschluss = foundAbschluss;
+                        } else {
+                            LOG.warn("Vortrag '" + csvDto.titel + "' übersprungen: Ungültiger oder nicht eindeutiger Abschluss '" + csvDto.abschluss + "'.");
+                            continue;
+                        }
+                    }
+
                     dto.referentId = referent.getId();
 
                     try {
@@ -754,6 +766,24 @@ public class AdminService implements AdminServiceInterface {
         for (Berufsfeld feld : Berufsfeld.values()) {
             if (feld.getName().toLowerCase().startsWith(normalizedPrefix)) {
                 matches.add(feld);
+            }
+        }
+        if (matches.size() == 1) {
+            return matches.getFirst();
+        }
+        return null; // Not found or ambiguous
+    }
+
+
+    private AbschlussTyp findAbschlussByPrefix(String prefix) {
+        if (StringUtils.isBlank(prefix)) {
+            return null;
+        }
+        String normalizedPrefix = prefix.trim().toLowerCase();
+        List<AbschlussTyp> matches = new ArrayList<>();
+        for (AbschlussTyp typ : AbschlussTyp.values()) {
+            if (typ.getName().toLowerCase().startsWith(normalizedPrefix)) {
+                matches.add(typ);
             }
         }
         if (matches.size() == 1) {
@@ -1175,6 +1205,7 @@ public class AdminService implements AdminServiceInterface {
         entity.setInhalt(updated.inhalt);
         entity.setAusstattung(updated.ausstattung);
         entity.setBerufsfeld(updated.berufsfeld);
+        entity.setAbschluss(updated.abschluss);
 
         if (entity instanceof Pflichtvortrag pv && updated.istPflicht) {
             pv.updatePflichtgruppe(updated.pflichtGruppe);
@@ -1183,7 +1214,7 @@ public class AdminService implements AdminServiceInterface {
         } else if (entity instanceof Wahlvortrag wv && !updated.istPflicht) {
             wv.setWiederholbar(updated.wiederholbar);
             wv.setMaxWiederholungen(updated.maxWiederholungen);
-            wv.setNeigungen(updated.neigungen);
+            wv.setVeranlagungen(updated.veranlagungen);
 
             VortragVerfuegbarkeit vv = VortragVerfuegbarkeit.findById(vvIdL(updated.id, veranstaltungId));
             if (null == vv) {

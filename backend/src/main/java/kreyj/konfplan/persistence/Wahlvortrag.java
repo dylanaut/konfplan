@@ -43,10 +43,10 @@ public class Wahlvortrag extends Vortrag {
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "wahlvortrag_neigungen", joinColumns = @JoinColumn(name = "vortrag_id"))
+    @CollectionTable(name = "wahlvortrag_veranlagungen", joinColumns = @JoinColumn(name = "vortrag_id"))
     @Enumerated(EnumType.STRING)
-    @Column(name = "neigung", length = 50)
-    private Set<Neigung> neigungen = new HashSet<>();
+    @Column(name = "veranlagung", length = 50)
+    private Set<Veranlagung> veranlagungen = new HashSet<>();
 
 
     // -------------------------------------------------------------------
@@ -125,15 +125,15 @@ public class Wahlvortrag extends Vortrag {
     }
 
 
-    public Set<Neigung> getNeigungen() {
-        return Collections.unmodifiableSet(neigungen);
+    public Set<Veranlagung> getVeranlagungen() {
+        return Collections.unmodifiableSet(veranlagungen);
     }
 
 
-    public void setNeigungen(Set<Neigung> neueNeigungen) {
-        neigungen.clear();
-        if (null != neueNeigungen) {
-            neigungen.addAll(neueNeigungen);
+    public void setVeranlagungen(Set<Veranlagung> neueVeranlagungen) {
+        veranlagungen.clear();
+        if (null != neueVeranlagungen) {
+            veranlagungen.addAll(neueVeranlagungen);
         }
     }
 }

@@ -21,6 +21,9 @@ public class VortragCsvDto {
     @CsvBindByName(column = "Berufsfeld")
     public String berufsfeld;
 
+    @CsvBindByName(column = "Abschluss")
+    public String abschluss;
+
     @CsvBindByName(column = "wiederholbar")
     public boolean wiederholbar;
 

@@ -31,10 +31,10 @@ public class Teilnehmer extends Nutzer {
     private Set<Prioritaet> prioritaeten = new HashSet<>();
 
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "teilnehmer_neigungen", joinColumns = @JoinColumn(name = "teilnehmer_id"))
+    @CollectionTable(name = "teilnehmer_veranlagungen", joinColumns = @JoinColumn(name = "teilnehmer_id"))
     @Enumerated(EnumType.STRING)
-    @Column(name = "neigung", length = 50)
-    private Set<Neigung> neigungen = new HashSet<>();
+    @Column(name = "veranlagung", length = 50)
+    private Set<Veranlagung> veranlagungen = new HashSet<>();
 
 
     // -------------------------------------------------------------------
@@ -113,15 +113,15 @@ public class Teilnehmer extends Nutzer {
     }
 
 
-    public Set<Neigung> getNeigungen() {
-        return Collections.unmodifiableSet(neigungen);
+    public Set<Veranlagung> getVeranlagungen() {
+        return Collections.unmodifiableSet(veranlagungen);
     }
 
 
-    public void setNeigungen(Set<Neigung> neueNeigungen) {
-        neigungen.clear();
-        if (null != neueNeigungen) {
-            neigungen.addAll(neueNeigungen);
+    public void setVeranlagungen(Set<Veranlagung> neueVeranlagungen) {
+        veranlagungen.clear();
+        if (null != neueVeranlagungen) {
+            veranlagungen.addAll(neueVeranlagungen);
         }
     }
 }
