@@ -69,6 +69,7 @@ public class GebaeudeService {
             CsvToBean<GebaeudeRaeumeCsvDto> csvToBean = new CsvToBeanBuilder<GebaeudeRaeumeCsvDto>(reader)
                 .withType(GebaeudeRaeumeCsvDto.class)
                 .withSeparator(';')
+                .withFilter(line -> line.length > 0 && !line[0].startsWith("#"))
                 .withIgnoreEmptyLine(true)
                 .withIgnoreLeadingWhiteSpace(true)
                 .withThrowExceptions(false)

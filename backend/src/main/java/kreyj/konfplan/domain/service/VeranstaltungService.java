@@ -154,6 +154,7 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
             CsvToBean<VeranstaltungCsvDto> csvToBean = new CsvToBeanBuilder<VeranstaltungCsvDto>(reader)
                 .withType(VeranstaltungCsvDto.class)
                 .withSeparator(';')
+                .withFilter(line -> line.length > 0 && !line[0].startsWith("#"))
                 .withIgnoreEmptyLine(true)
                 .withIgnoreLeadingWhiteSpace(true)
                 .withThrowExceptions(false)

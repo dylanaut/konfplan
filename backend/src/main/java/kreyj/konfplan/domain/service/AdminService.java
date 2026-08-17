@@ -534,6 +534,7 @@ public class AdminService implements AdminServiceInterface {
             CsvToBean<AdminCsvDto> csvToBean = new CsvToBeanBuilder<AdminCsvDto>(reader)
                 .withType(AdminCsvDto.class)
                 .withSeparator(';')
+                .withFilter(line -> line.length > 0 && !line[0].startsWith("#"))
                 .withIgnoreLeadingWhiteSpace(true)
                 .withThrowExceptions(false)
                 .build();
@@ -607,6 +608,7 @@ public class AdminService implements AdminServiceInterface {
             CsvToBean<VortragCsvDto> csvToBean = new CsvToBeanBuilder<VortragCsvDto>(reader)
                 .withType(VortragCsvDto.class)
                 .withSeparator(';')
+                .withFilter(line -> line.length > 0 && !line[0].startsWith("#"))
                 .withIgnoreEmptyLine(true)
                 .withIgnoreLeadingWhiteSpace(true)
                 .withThrowExceptions(false) // Allow parsing to continue on errors
@@ -784,9 +786,12 @@ public class AdminService implements AdminServiceInterface {
                     .toList();
                 LOG.debug("Titel:\n" + wahlvortraege.stream().map(Wahlvortrag::getTitel).collect(Collectors.joining("\n")));
                 legendIndexMap = parseLegende(line.substring(LEGENDE_TOKEN.length()), wahlvortraege);
-                LOG.debug("legendIndexMap:\n" + legendIndexMap.entrySet().stream().sorted(Map.Entry.comparingByKey())
-                    .map(entry -> entry.getKey() + " -> " + entry.getValue().getTitel())
-                    .collect(Collectors.joining("\n")));
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("legendIndexMap:\n" + legendIndexMap.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                        .map(entry -> entry.getKey() + " -> " + entry.getValue().getTitel())
+                        .collect(Collectors.joining("\n")));
+                }
             } else {
                 LOG.error("CSV-Import (WV-Prioritäten) abgebrochen: Legende fehlt.");
                 throw new CsvImportException(csvFilePath, "Legende fehlt.");
@@ -1103,6 +1108,7 @@ public class AdminService implements AdminServiceInterface {
             CsvToBean<SlotCsvDto> csvToBean = new CsvToBeanBuilder<SlotCsvDto>(reader)
                 .withType(SlotCsvDto.class)
                 .withSeparator(';')
+                .withFilter(line -> line.length > 0 && !line[0].startsWith("#"))
                 .withIgnoreLeadingWhiteSpace(true)
                 .withThrowExceptions(false)
                 .build();
@@ -1439,6 +1445,7 @@ public class AdminService implements AdminServiceInterface {
                 .withType(NutzerVerfuegbarkeitCsvDto.class)
                 .withSeparator(';')
                 .withIgnoreEmptyLine(true)
+                .withFilter(line -> line.length > 0 && !line[0].startsWith("#"))
                 .withIgnoreLeadingWhiteSpace(true)
                 .withThrowExceptions(false)
                 .build();
@@ -1506,6 +1513,7 @@ public class AdminService implements AdminServiceInterface {
             CsvToBean<RaumVerfuegbarkeitCsvDto> csvToBean = new CsvToBeanBuilder<RaumVerfuegbarkeitCsvDto>(reader)
                 .withType(RaumVerfuegbarkeitCsvDto.class)
                 .withSeparator(';')
+                .withFilter(line -> line.length > 0 && !line[0].startsWith("#"))
                 .withIgnoreEmptyLine(true)
                 .withIgnoreLeadingWhiteSpace(true)
                 .withThrowExceptions(false)

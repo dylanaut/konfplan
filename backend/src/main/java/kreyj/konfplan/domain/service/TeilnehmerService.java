@@ -196,10 +196,10 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         try (FileReader reader = new FileReader(csvFilePath.toFile())) {
             CsvToBean<TeilnehmerCsvDto> csvToBean = new CsvToBeanBuilder<TeilnehmerCsvDto>(reader)
                 .withType(TeilnehmerCsvDto.class)
+                .withFilter(line -> line.length > 0 && !line[0].startsWith("#"))
                 .withIgnoreEmptyLine(true)
                 .withIgnoreLeadingWhiteSpace(true)
                 .withSeparator(';')
-                .withFilter(line -> line.length > 0 && !line[0].startsWith("#"))
                 .withThrowExceptions(false).build();
 
             List<TeilnehmerCsvDto> beans = csvToBean.parse();

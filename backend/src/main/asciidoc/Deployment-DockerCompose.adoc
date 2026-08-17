@@ -188,10 +188,56 @@ docker compose up -d app         # nur die App neu starten, DB/Keycloak laufen w
 
 `bootstrap.sh` vorher erneut auszuführen ist unschädlich (überschreibt keine bestehenden Secrets), aber i.d.R. nicht nötig, solange sich `.env` nicht geändert hat.
 
+=== Lokal gebautes Image statt `ghcr.io`-Release verwenden
+
+Für Tests eines noch nicht gemergten Standes, ohne über die CI (`.github/workflows/ci.yml`) zu gehen. Zwei Varianten:
+
+**Option A - Image lokal bauen und selbst nach `ghcr.io` pushen (empfohlen, nutzt den bestehenden `IMAGE_TAG`-Mechanismus unverändert):**
+
+[source,bash]
+----
+# 1. Lokal wie die CI bauen (identisch zu ci.yml)
+./mvnw clean install -DskipTests
+cd backend
+
+# 2. Image mit demselben Dockerfile/Kontext wie CI bauen, eigenen Tag vergeben
+docker build -f src/main/docker/Dockerfile.jvm -t ghcr.io/dylanaut/konfplan:local-test .
+
+# 3. Bei ghcr.io einloggen (GitHub PAT mit Scope 'write:packages') und pushen
+echo $GH_PAT | docker login ghcr.io -u <dein-github-user> --password-stdin
+docker push ghcr.io/dylanaut/konfplan:local-test
+----
+
+Auf dem Server danach in `.env`:
+
+[source]
+----
+IMAGE_TAG=local-test
+----
+
+und wie gewohnt `docker compose pull app && docker compose up -d app`. `docker-compose.yml` muss dafür nicht angepasst werden, da `app.image` bereits `ghcr.io/dylanaut/konfplan:${IMAGE_TAG:-latest}` verwendet.
+
+**Option B - ganz ohne Registry, Image direkt auf den Server kopieren:**
+
+[source,bash]
+----
+# lokal
+docker build -f backend/src/main/docker/Dockerfile.jvm -t ghcr.io/dylanaut/konfplan:local-test backend
+docker save ghcr.io/dylanaut/konfplan:local-test | gzip | ssh <user>@<server> "gunzip | docker load"
+----
+
+Auf dem Server ebenfalls `IMAGE_TAG=local-test` in `.env` setzen, aber `docker compose up -d app`
+**ohne vorheriges `docker compose pull`** aufrufen - sonst versucht Compose, `local-test` von
+`ghcr.io` zu ziehen und schlägt fehl, da der Tag dort nicht existiert.
+
+WARNING: In beiden Fällen danach `IMAGE_TAG` wieder auf `latest` zurückstellen, sonst bleibt der Server dauerhaft auf dem manuell gebauten Stand und bekommt keine künftigen CI-Releases mehr.
+
 == Der eine echte Bestandsaccount
 
 Anders als bei der Keycloak-Migration selbst (siehe `keycloak-migration.adoc` - dort gab es praktisch keine echten Bestandsnutzer) betrifft das bei einem *erstmaligen* Produktions-Deploy genau einen Fall: den Bootstrap-Admin aus `V2__data.sql` (`juergenkrey`).
-Dieser Account existiert nur als Datenbankzeile, nicht in Keycloak - er muss einmalig manuell über die Keycloak-Admin- Konsole angelegt werden (Login-Name muss mit `juergenkrey` übereinstimmen, Rolle `ADMIN`).
+Dieser Account existiert nur als Datenbankzeile, nicht in Keycloak - er muss einmalig manuell über die Keycloak-Admin- Konsole
+angelegt werden (Login-Name muss mit `juergenkrey` übereinstimmen, Rolle `ADMIN`). +
+(Siehe Ubuntu-Frischinstallation.adoc, "Erster Login-Account")
 
 == Persistenz über Neustarts hinweg
 

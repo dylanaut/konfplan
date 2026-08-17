@@ -103,5 +103,5 @@ fi
 
 echo "✅ Bereit. Beispiele:"
 echo "   Lokal/UTM:        docker compose up -d"
-echo "   Mit Test-Mailer:  docker compose --profile mailpit up -d"
-echo "   Hetzner (public): ./bootstrap.sh public && docker compose --profile public up -d"
+echo "   Mit Mailpit:  docker compose --profile mailpit up -d"
+echo "   public: ./bootstrap.sh public && docker compose --profile public up -d"

@@ -423,6 +423,7 @@ public class ReferentService implements ReferentServiceInterface {
             List<ReferentCsvDto> beans = new CsvToBeanBuilder<ReferentCsvDto>(reader)
                 .withType(ReferentCsvDto.class)
                 .withSeparator(';')
+                .withFilter(line -> line.length > 0 && !line[0].startsWith("#"))
                 .withIgnoreEmptyLine(true)
                 .withIgnoreLeadingWhiteSpace(true)
                 .build()

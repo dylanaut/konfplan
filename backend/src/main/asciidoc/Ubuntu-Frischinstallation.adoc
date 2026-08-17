@@ -354,11 +354,12 @@ dig +short {subdom}.<deine-domain>
 Sollte `<server-ip>` liefern.
 --
 
-. **Firewall**: nur SSH (den tatsächlich genutzten Port, ggf. abweichend von 22), HTTP (80) und
+==== Firewall mit `ufw`
+
+Nur SSH (den tatsächlich genutzten Port, ggf. abweichend von 22), HTTP (80) und
 HTTPS (443) von außen erlauben - Postgres/Keycloak/App-Ports NICHT. Das betrifft die OS-Firewall
 auf der VM selbst (`ufw`), zusätzlich zu einer eventuell vorgeschalteten Cloud-Firewall (siehe
-unten):
-+
+unten): +
 [source,bash]
 ----
 # Status pruefen (zeigt, ob ufw ueberhaupt aktiv/installiert ist)
@@ -367,14 +368,12 @@ sudo ufw status verbose
 # falls nicht installiert:
 sudo apt-get install -y ufw
 ----
-+
 [IMPORTANT]
 ====
 Unbedingt zuerst den tatsächlich genutzten SSH-Port erlauben, bevor `ufw enable` läuft - sonst
 sperrt man sich selbst aus der VM aus (Wiederherstellung dann meist nur über die
 Cloud-Provider-Konsole möglich).
 ====
-+
 [source,bash]
 ----
 sudo ufw allow <ssh-port>/tcp
@@ -382,14 +381,11 @@ sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 sudo ufw enable
 ----
-+
-Danach prüfen, dass 80/tcp und 443/tcp als `ALLOW` gelistet sind:
-+
+Danach prüfen, dass `80/tcp` und `443/tcp` als `ALLOW` gelistet sind:
 [source,bash]
 ----
 sudo ufw status numbered
 ----
-+
 Läuft der Server bei einem Cloud-Provider (z.B. Hetzner Cloud), zusätzlich prüfen, ob dort
 **zusätzlich** eine Cloud-Firewall vorgeschaltet ist - die muss unabhängig von `ufw` ebenfalls Port
 80/443 durchlassen, sonst bleibt es trotz `ufw allow` von außen blockiert.
@@ -407,18 +403,17 @@ docker compose --profile mailpit down -v   # -v loescht auch das Postgres-Volume
 # nicht zwingend noetig):
 # docker compose --profile mailpit down -v --rmi all
 ----
-+
 `docker login ghcr.io` muss danach **nicht** wiederholt werden - die Zugangsdaten liegen in
 `~/.docker/config.json` auf dem Host und überstehen `docker compose down -v` unberührt.
 +
 In `.env` ergänzen/anpassen:
 +
-[source]
+[source,subs="attributes"]
 ----
-APP_HOSTNAME={subdom}.<deine-domain>
-APP_PUBLIC_URL=https://{subdom}.<deine-domain>
-KEYCLOAK_PUBLIC_URL=https://{subdom}.<deine-domain>/auth
-ACME_EMAIL=<deine-email>
+APP_HOSTNAME={subdom}.&lt;deine-domain>
+APP_PUBLIC_URL=https://{subdom}.&lt;deine-domain>
+KEYCLOAK_PUBLIC_URL=https://{subdom}.&lt;deine-domain>/auth
+ACME_EMAIL=&lt;deine-email>
 ----
 +
 Mailversand: entweder `BREVO_SMTP_USER=<dein-brevo-login>` (echter Versand) setzen oder weiterhin
@@ -456,21 +451,21 @@ tatsächlich **von außen** (z.B. von deinem eigenen Rechner, nicht per SSH auf 
 ist, der Reihe nach - jeder Schritt baut auf dem vorherigen auf, bei einem Fehlschlag zuerst dort
 suchen:
 
-[source,bash]
+[source,bash,subs="attributes"]
 ----
 # 1. DNS: loest die Domain auf die richtige Server-IP auf?
-dig +short {subdom}.<deine-domain>
+dig +short {subdom}.&lt;deine-domain>
 
 # 2. Reiner TCP-Verbindungstest (ohne HTTP), prueft ob der Port von aussen offen ist
-nc -zv {subdom}.<deine-domain> 80
-nc -zv {subdom}.<deine-domain> 443
+nc -zv {subdom}.&lt;deine-domain> 80
+nc -zv {subdom}.&lt;deine-domain> 443
 
 # 3. Tatsaechlicher HTTP(S)-Request von aussen
-curl -sI https://{subdom}.<deine-domain>/
-curl -s https://{subdom}.<deine-domain>/auth/realms/konfplan/.well-known/openid-configuration | jq .issuer
+curl -sI https://{subdom}.&lt;deine-domain>/
+curl -s https://{subdom}.&lt;deine-domain>/auth/realms/konfplan/.well-known/openid-configuration | jq .issuer
 
 # 4. TLS-Zertifikat pruefen (gueltig, richtige Domain, nicht abgelaufen)
-echo | openssl s_client -connect {subdom}.<deine-domain>:443 -servername {subdom}.<deine-domain> 2>/dev/null \
+echo | openssl s_client -connect {subdom}.&lt;deine-domain>:443 -servername {subdom}.&lt;deine-domain> 2>/dev/null \
   | openssl x509 -noout -issuer -dates
 ----
 
