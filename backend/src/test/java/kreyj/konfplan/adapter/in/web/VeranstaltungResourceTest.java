@@ -12,6 +12,7 @@ import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import java.net.URL;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.Response.Status.CONFLICT;
@@ -233,6 +235,49 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
         assertThat(finalVortrag.version)
                 .describedAs("Version should be the same as admin's update")
                 .isEqualTo(adminUpdate.version);
+    }
+
+
+    @Test
+    void testWahlvortrag_NeigungenRoundTripAndReplace() {
+        final String referentEmail = "neigungen-referent@test.de";
+        NutzerDto refDto = NutzerDto.referent(referentEmail, "Referent", "Test");
+        refDto.loginName = referentEmail;
+        NutzerDto referent =
+                given()
+                        .baseUri(adminEndpoint.toString())
+                        .basePath("/nutzer")
+                        .contentType(ContentType.JSON)
+                        .body(refDto)
+                        .when().post()
+                        .then()
+                        .statusCode(OK.getStatusCode())
+                        .extract().as(NutzerDto.class);
+
+        VortragDto wvDto = new VortragDto(false, "Vortrag mit Neigungen", "Inhalt", referent.id, testVid);
+        wvDto.neigungen = Set.of(Neigung.EMPATHISCH, Neigung.KOMMUNIKATIV);
+
+        VortragDto created =
+                given().contentType(ContentType.JSON)
+                        .body(wvDto)
+                        .when().post("/{vid}/vortraege", testVid)
+                        .then()
+                        .statusCode(CREATED.getStatusCode())
+                        .extract().as(VortragDto.class);
+
+        assertThat(created.neigungen).containsExactlyInAnyOrder(Neigung.EMPATHISCH, Neigung.KOMMUNIKATIV);
+
+        // Update mit anderer Auswahl muss die vorherige vollstaendig ersetzen (Checkbox-UI).
+        created.neigungen = Set.of(Neigung.PRAGMATISCH);
+        VortragDto updated =
+                given().contentType(ContentType.JSON)
+                        .body(created)
+                        .when().put("/{vid}/vortraege/{vortragId}", testVid, created.id)
+                        .then()
+                        .statusCode(OK.getStatusCode())
+                        .extract().as(VortragDto.class);
+
+        assertThat(updated.neigungen).containsExactly(Neigung.PRAGMATISCH);
     }
 
 

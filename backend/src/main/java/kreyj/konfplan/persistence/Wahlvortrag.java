@@ -1,16 +1,25 @@
 package kreyj.konfplan.persistence;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PreRemove;
 import jakarta.transaction.Transactional;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -31,6 +40,13 @@ public class Wahlvortrag extends Vortrag {
     @OneToMany(mappedBy = "vortrag", orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<Prioritaet> prioritaeten;
 
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "wahlvortrag_neigungen", joinColumns = @JoinColumn(name = "vortrag_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "neigung", length = 50)
+    private Set<Neigung> neigungen = new HashSet<>();
 
 
     // -------------------------------------------------------------------
@@ -105,6 +121,19 @@ public class Wahlvortrag extends Vortrag {
         } else {
             throw new IllegalStateException("VortragVerfuegbarkeit für Vortrag "
                     + this.getTitel() + " und " + veranstaltung.getName() + " existiert bereits");
+        }
+    }
+
+
+    public Set<Neigung> getNeigungen() {
+        return Collections.unmodifiableSet(neigungen);
+    }
+
+
+    public void setNeigungen(Set<Neigung> neueNeigungen) {
+        neigungen.clear();
+        if (null != neueNeigungen) {
+            neigungen.addAll(neueNeigungen);
         }
     }
 }

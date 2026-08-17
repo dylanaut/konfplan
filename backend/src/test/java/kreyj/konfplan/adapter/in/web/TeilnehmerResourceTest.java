@@ -12,6 +12,7 @@ import io.restassured.http.ContentType;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
+import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Teilnehmer;
 import org.junit.jupiter.api.AfterEach;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Set;
 
 import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -73,5 +75,30 @@ class TeilnehmerResourceTest extends DatabaseCleaner {
             .statusCode(BAD_REQUEST.getStatusCode());
 
         assertThat(Nutzer.<Nutzer>findById(teilnehmerId).getEmail()).isEqualTo("tom.alt@test.de");
+    }
+
+
+    @Test
+    @TestSecurity(user = "tom.teilnehmer", roles = "TEILNEHMER")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "tom.teilnehmer")})
+    void updateProfile_setsNeigungen() {
+        NutzerDto dto = new NutzerDto();
+        dto.email = "tom.alt@test.de";
+        dto.firstName = "Tom";
+        dto.lastName = "Teilnehmer";
+        dto.gruppen = List.of();
+        dto.neigungen = Set.of(Neigung.HILFSBEREIT, Neigung.STRUKTURIERT);
+        dto.isActive = true;
+        dto.version = 0L;
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(dto)
+            .when().put("/profile")
+            .then()
+            .statusCode(200);
+
+        assertThat(Teilnehmer.<Teilnehmer>findById(teilnehmerId).getNeigungen())
+            .containsExactlyInAnyOrder(Neigung.HILFSBEREIT, Neigung.STRUKTURIERT);
     }
 }

@@ -199,6 +199,21 @@
             Ich bin bereit, den Vortrag bei hoher Nachfrage mehrfach zu halten.
           </label>
         </div>
+
+        <div class="p-4 bg-amber-50 rounded-lg">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Neigungen (welche Neigungen adressiert dieser Vortrag inhaltlich?)</label>
+          <div class="space-y-3">
+            <div v-for="gruppe in neigungenNachKategorie" :key="gruppe.kategorie">
+              <p class="text-xs font-semibold text-gray-500 mb-1">{{ gruppe.kategorieBezeichnung }}</p>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <div v-for="neigung in gruppe.neigungen" :key="neigung.name" class="flex items-center gap-2 bg-white p-2 rounded-md border" :title="neigung.beschreibung">
+                  <input :id="`talk-neigung-${neigung.name}`" type="checkbox" :value="neigung.name" v-model="selectedTalk.neigungen" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300" :disabled="isDeadlinePassedForTalk(selectedTalk)">
+                  <label :for="`talk-neigung-${neigung.name}`" class="text-sm font-medium text-gray-700">{{ neigung.bezeichnung }}</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -278,10 +293,26 @@ import { ref, onMounted, computed, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api/axios';
 import { useAuthStore } from '../stores/auth';
+import { useNeigungStore } from '../stores/neigung';
 import { User as UserIcon, FileText as FileTextIcon, Calendar as CalendarIcon, Save as SaveIcon, Plus as PlusIcon, Edit as EditIcon, Trash2 as Trash2Icon, ListChecks as ListChecksIcon, Check as CheckIcon, X as XIcon, CalendarCheck as CalendarCheckIcon, Printer as PrinterIcon, Download as DownloadIcon, CalendarPlus } from '@lucide/vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const neigungStore = useNeigungStore();
+neigungStore.fetchNeigungen();
+
+const neigungenNachKategorie = computed(() => {
+  const gruppen = [];
+  for (const neigung of neigungStore.neigungen) {
+    let gruppe = gruppen.find(g => g.kategorie === neigung.kategorie);
+    if (!gruppe) {
+      gruppe = { kategorie: neigung.kategorie, kategorieBezeichnung: neigung.kategorieBezeichnung, neigungen: [] };
+      gruppen.push(gruppe);
+    }
+    gruppe.neigungen.push(neigung);
+  }
+  return gruppen;
+});
 const referent = ref({
   id: null,
   loginName: '',
@@ -415,6 +446,7 @@ const addNewTalk = () => {
     inhalt: '',
     ausstattung: '',
     wiederholbar: false,
+    neigungen: [],
     verfuegIds: [],
     veranstaltungId: availableEvent.id
   };

@@ -1,5 +1,6 @@
 package kreyj.konfplan.adapter.in.web;
 
+import io.quarkus.hibernate.orm.panache.Panache;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Gebaeude;
@@ -29,6 +30,10 @@ public abstract class DatabaseCleaner {
         RaumVerfuegbarkeit.deleteAll();
         VortragVerfuegbarkeit.deleteAll();
         Prioritaet.deleteAll();
+        // @ElementCollection-Tabellen auf Subklassen (Wahlvortrag/Teilnehmer) werden bei einem
+        // Bulk-Delete auf der Basisklasse nicht automatisch mitgeloescht.
+        Panache.getEntityManager().createNativeQuery("delete from wahlvortrag_neigungen").executeUpdate();
+        Panache.getEntityManager().createNativeQuery("delete from teilnehmer_neigungen").executeUpdate();
         Vortrag.deleteAll();
         Nutzer.deleteAll();
         Slot.deleteAll();

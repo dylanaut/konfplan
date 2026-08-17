@@ -3,6 +3,7 @@ package kreyj.konfplan.adapter.in.web.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import kreyj.konfplan.persistence.IdEntity;
+import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Referent;
@@ -36,6 +37,7 @@ public class NutzerDto extends AbstractVersionedDto {
     // Teilnehmer-spezifisch
     public List<String> gruppen;
     public List<VortragPrioDto> prioritaeten;
+    public Set<Neigung> neigungen;
 
 
     public NutzerDto(String role, String email, String firstName, String lastName, boolean active) {
@@ -111,6 +113,7 @@ public class NutzerDto extends AbstractVersionedDto {
             dto.slogan = r.getSlogan();
         } else if (u instanceof Teilnehmer tn) {
             dto.gruppen = tn.getGruppen().stream().sorted(StringHelper.NUM_OR_ALPHA_COMPARATOR).toList();
+            dto.neigungen = tn.getNeigungen();
             Set<Prioritaet> tnPrioritaeten = tn.getPrioritaeten();
             List<VortragPrioDto> mappedPrios = tnPrioritaeten.stream()
                 .filter(p -> p.getPrioWert() > 0)
