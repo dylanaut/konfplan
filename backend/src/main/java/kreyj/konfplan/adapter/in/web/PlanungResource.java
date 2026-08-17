@@ -13,6 +13,7 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
+import kreyj.konfplan.adapter.in.web.dto.FileUploadDto;
 import kreyj.konfplan.adapter.in.web.dto.SolverConfig;
 import kreyj.konfplan.domain.service.PlanErstellungService;
 import org.eclipse.microprofile.context.ManagedExecutor;
@@ -21,6 +22,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.logging.Logger;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -88,5 +90,31 @@ public class PlanungResource {
         return Response.ok(dznContent)
             .header("Content-Disposition", "attachment; filename=\"veranstaltung_" + vid + ".dzn\"")
             .build();
+    }
+
+    @POST
+    @Path("/{vid}/export")
+    @Produces("application/zip")
+    @Operation(summary = "MiniZinc-Exportpaket erzeugen",
+        description = "Erzeugt ein ZIP mit .dzn-Datei, MiniZinc-Modell und Metadaten (Oid-Zuordnung) für eine Veranstaltung, "
+            + "um sie extern (z.B. auf einem Hochleistungsrechner) mit der minizinc-CLI zu berechnen.")
+    public Response exportBundle(@PathParam("vid") Long vid, @RequestBody(description = "Die Konfiguration für den Solver") SolverConfig config, @Context SecurityContext securityContext) throws IOException {
+        String username = securityContext.getUserPrincipal().getName();
+        byte[] zip = planErstellungService.erstelleExportBundle(vid, config, username);
+        return Response.ok(zip)
+            .header("Content-Disposition", "attachment; filename=\"veranstaltung_" + vid + "_export.zip\"")
+            .build();
+    }
+
+    @POST
+    @Path("/{vid}/import")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Operation(summary = "Extern berechnetes MiniZinc-Ergebnis importieren",
+        description = "Nimmt ein ZIP mit metadata.json (aus dem Export) und dem MiniZinc-Ergebnis (ergebnis.json) entgegen "
+            + "und speichert es als Planungsergebnis für die Veranstaltung.")
+    public Response importBundle(@PathParam("vid") Long vid, FileUploadDto data, @Context SecurityContext securityContext) throws IOException {
+        String username = securityContext.getUserPrincipal().getName();
+        planErstellungService.importErgebnisBundle(vid, data.file.uploadedFile(), username);
+        return Response.ok("Ergebnis importiert.").build();
     }
 }

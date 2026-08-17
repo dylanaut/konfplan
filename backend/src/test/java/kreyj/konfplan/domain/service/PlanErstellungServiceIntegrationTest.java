@@ -1,9 +1,12 @@
 package kreyj.konfplan.domain.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.adapter.in.web.dto.PlanExportMetadata;
+import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
@@ -23,6 +26,7 @@ import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -32,6 +36,9 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import static java.util.stream.Collectors.joining;
 import static kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht.VORTRAG_TITEL_FREI;
@@ -48,6 +55,9 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
     @Inject
     PlanService planService;
+
+    @Inject
+    ObjectMapper objectMapper;
 
     private Gebaeude schule;
 
@@ -583,6 +593,104 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
                     assertThat(e.getExceptionType()).isEqualTo(MinizincException.MZ_Exception.TIMEOUT);
                     assertThat(e.getMessage()).contains("1 Sek.");
                 });
+    }
+
+    @Test
+    public void testExportUndImportBundle_ergibtGueltigesErgebnis() throws Exception {
+        Veranstaltung veranstaltung = simpleSetup(true);
+        SolverConfig config = new SolverConfig(10, 4, 1);
+
+        byte[] exportZip = planErstellungService.erstelleExportBundle(veranstaltung.getId(), config, "username");
+        String dznContent = new String(extractZipEntry(exportZip, "veranstaltung.dzn"), StandardCharsets.UTF_8);
+        assertThat(dznContent).describedAs("Export-Bundle sollte eine .dzn-Datei enthalten.").isNotEmpty();
+
+        // Die Berechnung, die auf dem externen (Hochleistungs-)Rechner passieren würde: echte
+        // minizinc-CLI direkt gegen die exportierte .dzn-Datei aufrufen.
+        URL modelUrl = getClass().getClassLoader().getResource("minizinc/konfplan.mzn");
+        Path tempDzn = Files.createTempFile("planung_export_", ".dzn");
+        Files.writeString(tempDzn, dznContent, StandardCharsets.UTF_8);
+        String rohErgebnis;
+        try {
+            rohErgebnis = planErstellungService.rufeMiniZincAuf(Paths.get(modelUrl.toURI()), tempDzn, config);
+        } finally {
+            Files.deleteIfExists(tempDzn);
+        }
+
+        // Import-Paket bauen: unveränderte metadata.json aus dem Export + die rohe Solver-Ausgabe.
+        Path importZip = Files.createTempFile("ergebnis_import_", ".zip");
+        try {
+            try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(importZip))) {
+                zos.putNextEntry(new ZipEntry("metadata.json"));
+                zos.write(extractZipEntry(exportZip, "metadata.json"));
+                zos.closeEntry();
+                zos.putNextEntry(new ZipEntry("ergebnis.json"));
+                zos.write(rohErgebnis.getBytes(StandardCharsets.UTF_8));
+                zos.closeEntry();
+            }
+
+            planErstellungService.importErgebnisBundle(veranstaltung.getId(), importZip, "username");
+        } finally {
+            Files.deleteIfExists(importZip);
+        }
+
+        Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
+        assertThat(ergebnis).describedAs("Planungsergebnis sollte nach dem Import vorhanden sein.").isNotNull();
+        assertThat(ergebnis.getJsonErgebnis()).contains("instanz_slot");
+
+        List<RaumBelegungUebersicht> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
+        boolean tn1InWahlvortrag1 = belegungsplan.stream()
+                .anyMatch(b -> "Wahlvortrag 1".equals(b.getVortragTitel()) && b.getTeilnehmerNamen().contains("Pan, Peter"));
+        assertThat(tn1InWahlvortrag1)
+                .describedAs("Der importierte Plan sollte identisch zu einem lokal berechneten Plan sein.")
+                .isTrue();
+    }
+
+    @Test
+    public void testImportErgebnisBundle_wirftBeiVeraenderterVeranstaltung() throws Exception {
+        Veranstaltung veranstaltung = simpleSetup(true);
+        SolverConfig config = new SolverConfig(10, 4, 1);
+        byte[] exportZip = planErstellungService.erstelleExportBundle(veranstaltung.getId(), config, "username");
+
+        // Metadaten manipulieren: eine Teilnehmer-Oid faelschen, als wäre zwischen Export und
+        // Import ein anderer Teilnehmer angelegt/gelöscht worden.
+        PlanExportMetadata metadata = objectMapper.readValue(extractZipEntry(exportZip, "metadata.json"), PlanExportMetadata.class);
+        metadata.setTeilnehmerOids(List.of(999999L));
+
+        String dummyErgebnis = "{\"instanz_slot\":[0],\"instanz_raum\":[0],\"besucht\":[false],\"guete\":0,\"zuweisungen\":0,\"raumwechsel\":0}";
+
+        Path importZip = Files.createTempFile("ergebnis_import_tampered_", ".zip");
+        try {
+            try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(importZip))) {
+                zos.putNextEntry(new ZipEntry("metadata.json"));
+                zos.write(objectMapper.writeValueAsBytes(metadata));
+                zos.closeEntry();
+                zos.putNextEntry(new ZipEntry("ergebnis.json"));
+                zos.write(dummyErgebnis.getBytes(StandardCharsets.UTF_8));
+                zos.closeEntry();
+            }
+
+            assertThatExceptionOfType(BusinessException.class)
+                    .isThrownBy(() -> planErstellungService.importErgebnisBundle(veranstaltung.getId(), importZip, "username"));
+        } finally {
+            Files.deleteIfExists(importZip);
+        }
+
+        Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
+        assertThat(ergebnis)
+                .describedAs("Bei fehlgeschlagenem Konsistenz-Check darf kein Planungsergebnis gespeichert werden.")
+                .isNull();
+    }
+
+    private static byte[] extractZipEntry(byte[] zipBytes, String entryName) throws java.io.IOException {
+        try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                if (entryName.equals(entry.getName())) {
+                    return zis.readAllBytes();
+                }
+            }
+        }
+        throw new AssertionError("Zip-Eintrag nicht gefunden: " + entryName);
     }
 
     // -------------------------------------------------------------------

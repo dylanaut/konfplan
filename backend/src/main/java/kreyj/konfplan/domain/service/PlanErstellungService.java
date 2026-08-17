@@ -11,6 +11,7 @@ import jakarta.inject.Inject;
 import jakarta.json.Json;
 import jakarta.json.JsonException;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.adapter.in.web.dto.PlanExportMetadata;
 import kreyj.konfplan.adapter.in.web.dto.SolverConfig;
 import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.domain.exception.CollisionsException;
@@ -33,8 +34,10 @@ import org.jboss.logging.Logger;
 import org.jspecify.annotations.NonNull;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.URL;
@@ -53,6 +56,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
@@ -197,10 +203,11 @@ public class PlanErstellungService {
         String vName = veranstaltung.getName();
         werfeBeiKollisionen(veranstaltung, veranstaltungId, username);
 
-        List<Teilnehmer> teilnehmer = veranstaltung.teilnehmer().stream().sorted(Comparator.comparing(IdEntity::getId)).toList();
-        List<Wahlvortrag> wahlvortraege = veranstaltung.getWahlvortraege().stream().sorted(Comparator.comparing(IdEntity::getId)).toList();
-        List<Slot> slots = veranstaltung.getSlots().stream().sorted().toList();
-        List<Raum> raeume = veranstaltung.getRaeume().stream().sorted(Comparator.comparing(IdEntity::getId)).toList();
+        PlanungsDaten daten = ladeSortiertePlanungsdaten(veranstaltung);
+        List<Teilnehmer> teilnehmer = daten.teilnehmer();
+        List<Wahlvortrag> wahlvortraege = daten.wahlvortraege();
+        List<Slot> slots = daten.slots();
+        List<Raum> raeume = daten.raeume();
 
         if (slots.isEmpty() || teilnehmer.isEmpty() || wahlvortraege.isEmpty()) {
             LOG.warn("Keine Wahlvorträge, Slots oder Teilnehmer vorhanden. Minizinc Datenerstellung wird nicht gestartet.");
@@ -232,6 +239,26 @@ public class PlanErstellungService {
     }
 
 
+    private record PlanungsDaten(List<Teilnehmer> teilnehmer, List<Wahlvortrag> wahlvortraege,
+                                 List<Slot> slots, List<Raum> raeume) {
+    }
+
+
+    /**
+     * Lädt Teilnehmer/Wahlvorträge/Slots/Räume einer Veranstaltung in derselben, stabilen
+     * Reihenfolge, die auch die MiniZinc-Indizes bestimmt (siehe {@link #generiereDzn}). Wird
+     * sowohl bei der Dzn-Erstellung als auch beim Konsistenz-Check eines Ergebnis-Imports
+     * (Oids müssen exakt zum aktuellen Datenstand passen) verwendet.
+     */
+    private PlanungsDaten ladeSortiertePlanungsdaten(Veranstaltung veranstaltung) {
+        List<Teilnehmer> teilnehmer = veranstaltung.teilnehmer().stream().sorted(Comparator.comparing(IdEntity::getId)).toList();
+        List<Wahlvortrag> wahlvortraege = veranstaltung.getWahlvortraege().stream().sorted(Comparator.comparing(IdEntity::getId)).toList();
+        List<Slot> slots = veranstaltung.getSlots().stream().sorted().toList();
+        List<Raum> raeume = veranstaltung.getRaeume().stream().sorted(Comparator.comparing(IdEntity::getId)).toList();
+        return new PlanungsDaten(teilnehmer, wahlvortraege, slots, raeume);
+    }
+
+
     /**
      * Erzeugt die MiniZinc-Datendatei (.dzn) für eine Veranstaltung, ohne den Solver zu starten -
      * für den Export/Download-Button in der PlanungTab.vue. Wirft eine {@link BusinessException},
@@ -244,6 +271,167 @@ public class PlanErstellungService {
             throw new BusinessException(lastError);
         }
         return vorbereitung.dznContent();
+    }
+
+
+    private static final long MAX_IMPORT_ENTRY_BYTES = 50L * 1024 * 1024;
+    private static final String EXPORT_ENTRY_DZN = "veranstaltung.dzn";
+    private static final String EXPORT_ENTRY_METADATA = "metadata.json";
+    private static final String IMPORT_ENTRY_ERGEBNIS = "ergebnis.json";
+
+
+    /**
+     * Erzeugt ein vollständiges Export-Paket (ZIP) für eine Veranstaltung: die .dzn-Datendatei,
+     * das MiniZinc-Modell (zur Bequemlichkeit auf einem externen Rechner ohne KonfPlan-Setup) und
+     * eine {@code metadata.json} mit der verwendeten Solver-Konfiguration sowie den vier
+     * Oid-Listen, die {@link #importErgebnisBundle} später braucht, um den positionsbasierten
+     * Solver-Output wieder auf die richtigen DB-Ids abzubilden.
+     */
+    public byte[] erstelleExportBundle(Long veranstaltungId, SolverConfig config, String username) throws IOException {
+        DznVorbereitung vorbereitung = bereiteDznVor(veranstaltungId, config, username);
+        if (null == vorbereitung) {
+            throw new BusinessException(lastError);
+        }
+
+        URL modelUrl = getClass().getClassLoader().getResource("minizinc/" + MZN_MODEL_FILE);
+        if (null == modelUrl) {
+            throw new FileNotFoundException("MiniZinc model not found: " + MZN_MODEL_FILE);
+        }
+
+        PlanExportMetadata metadata = new PlanExportMetadata(veranstaltungId, config,
+            vorbereitung.teilnehmer_oids(), vorbereitung.wahlvortrag_oids(),
+            vorbereitung.slot_oids(), vorbereitung.raum_oids());
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            zos.putNextEntry(new ZipEntry(EXPORT_ENTRY_DZN));
+            zos.write(vorbereitung.dznContent().getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry(EXPORT_ENTRY_METADATA));
+            zos.write(objectMapper.writeValueAsBytes(metadata));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry(MZN_MODEL_FILE));
+            try (InputStream modelStream = modelUrl.openStream()) {
+                modelStream.transferTo(zos);
+            }
+            zos.closeEntry();
+        }
+
+        return baos.toByteArray();
+    }
+
+
+    /**
+     * Importiert ein extern (z.B. auf einem Hochleistungsrechner) berechnetes MiniZinc-Ergebnis,
+     * das zuvor über {@link #erstelleExportBundle} exportiert wurde. Erwartet ein ZIP mit der
+     * unveränderten {@code metadata.json} aus dem Export sowie einer {@code ergebnis.json} mit
+     * der (rohen) MiniZinc-Ausgabe - darf die komplette {@code --intermediate}-Ausgabe enthalten,
+     * nicht nur die letzte Zeile, siehe {@link #extrahiereLoesung}.
+     * Bricht mit {@link BusinessException} ab, wenn sich die Veranstaltungsdaten (Teilnehmer,
+     * Wahlvorträge, Slots, Räume) seit dem Export geändert haben - die im Ergebnis kodierten
+     * Solver-Indizes wären sonst nicht mehr den richtigen DB-Ids zuordenbar.
+     */
+    @Transactional
+    public void importErgebnisBundle(Long veranstaltungId, Path zipPath, String username) throws IOException {
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
+        assert veranstaltung != null;
+
+        try {
+            String metadataJson = null;
+            String ergebnisRaw = null;
+
+            try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(zipPath), StandardCharsets.UTF_8)) {
+                ZipEntry entry;
+                while ((entry = zis.getNextEntry()) != null) {
+                    String content = readBounded(zis, MAX_IMPORT_ENTRY_BYTES);
+                    if (EXPORT_ENTRY_METADATA.equals(entry.getName())) {
+                        metadataJson = content;
+                    } else if (IMPORT_ENTRY_ERGEBNIS.equals(entry.getName())) {
+                        ergebnisRaw = content;
+                    }
+                }
+            }
+
+            if (null == metadataJson || null == ergebnisRaw) {
+                throw new BusinessException("Import-Paket unvollständig: '" + EXPORT_ENTRY_METADATA
+                    + "' und '" + IMPORT_ENTRY_ERGEBNIS + "' werden erwartet.");
+            }
+
+            PlanExportMetadata metadata;
+            try {
+                metadata = objectMapper.readValue(metadataJson, PlanExportMetadata.class);
+            } catch (JsonProcessingException e) {
+                throw new BusinessException(EXPORT_ENTRY_METADATA + " ist ungültig: " + e.getMessage());
+            }
+
+            if (!veranstaltungId.equals(metadata.getVeranstaltungId())) {
+                throw new BusinessException("Export-Bundle gehört zu einer anderen Veranstaltung.");
+            }
+            pruefeOidsUnveraendert(veranstaltung, metadata);
+
+            String loesungsJson;
+            try {
+                loesungsJson = extrahiereLoesung(new BufferedReader(new StringReader(ergebnisRaw)), metadata.getSolverConfig().getTimeout());
+            } catch (MinizincException e) {
+                throw new BusinessException(e.getMessage());
+            }
+
+            if (loesungsJson.isEmpty() || !loesungsJson.contains("instanz_slot") || !isValidJson(loesungsJson)) {
+                throw new BusinessException(IMPORT_ENTRY_ERGEBNIS + " enthält keine gültige MiniZinc-Lösung.");
+            }
+
+            DznVorbereitung vorbereitung = new DznVorbereitung(veranstaltung.getName(), "",
+                metadata.getTeilnehmerOids(), metadata.getWahlvortragOids(),
+                metadata.getSlotOids(), metadata.getRaumOids());
+
+            speicherePlanungsergebnis(veranstaltungId, loesungsJson, metadata.getSolverConfig(), vorbereitung);
+            protokollService.log(ProtokollKategorie.PLANUNG, "Planungsergebnis importiert",
+                "Extern berechnetes Planungsergebnis für '" + veranstaltung.getName() + "' importiert.",
+                veranstaltungId, veranstaltungId, username);
+        } catch (BusinessException e) {
+            protokollService.log(ProtokollKategorie.PLANUNG, "Ergebnis-Import fehlgeschlagen", e.getMessage(),
+                veranstaltungId, veranstaltungId, username);
+            throw e;
+        }
+    }
+
+
+    /**
+     * Vergleicht die aktuellen Teilnehmer/Wahlvortrag/Slot/Raum-Ids einer Veranstaltung
+     * (reihenfolgeabhängig, wie beim Dzn-Export) mit den beim Export gespeicherten Oid-Listen.
+     */
+    private void pruefeOidsUnveraendert(Veranstaltung veranstaltung, PlanExportMetadata metadata) {
+        PlanungsDaten daten = ladeSortiertePlanungsdaten(veranstaltung);
+        List<Long> aktuelleTnOids = daten.teilnehmer().stream().map(IdEntity::getId).toList();
+        List<Long> aktuelleWvOids = daten.wahlvortraege().stream().map(IdEntity::getId).toList();
+        List<Long> aktuelleSlotOids = daten.slots().stream().map(IdEntity::getId).toList();
+        List<Long> aktuelleRaumOids = daten.raeume().stream().map(IdEntity::getId).toList();
+
+        if (!aktuelleTnOids.equals(metadata.getTeilnehmerOids())
+            || !aktuelleWvOids.equals(metadata.getWahlvortragOids())
+            || !aktuelleSlotOids.equals(metadata.getSlotOids())
+            || !aktuelleRaumOids.equals(metadata.getRaumOids())) {
+            throw new BusinessException("Veranstaltungsdaten haben sich seit dem Export geändert "
+                + "(andere Teilnehmer/Wahlvorträge/Slots/Räume) - Import abgebrochen.");
+        }
+    }
+
+
+    private static String readBounded(InputStream in, long maxBytes) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        byte[] chunk = new byte[8192];
+        long total = 0;
+        int read;
+        while ((read = in.read(chunk)) != -1) {
+            total += read;
+            if (total > maxBytes) {
+                throw new BusinessException("Datei im Import-Paket ist zu groß (> " + (maxBytes / 1024 / 1024) + " MB).");
+            }
+            buffer.write(chunk, 0, read);
+        }
+        return buffer.toString(StandardCharsets.UTF_8);
     }
 
 
@@ -354,31 +542,46 @@ public class PlanErstellungService {
     public String rufeMiniZincAuf(Path modelPath, Path dznPath, SolverConfig solverConfig) throws IOException, InterruptedException {
         ProcessBuilder pb = getProcessBuilder(modelPath, dznPath, solverConfig);
 
-        String lastJsonSolution = "";
-        StringBuilder fullLog = new StringBuilder();
-
         try {
             runningProcess = pb.start();
             LOG.info("MiniZinc gestartet..");
+            String loesung;
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(runningProcess.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    fullLog.append(line).append(LINE_SEP);
-                    if (line.trim().startsWith("{") && isValidJson(line)) {
-                        lastJsonSolution = line;
-
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debugf("Zwischenlösung gefunden: %s", line);
-                        }
-                    }
-                }
+                loesung = extrahiereLoesung(reader, solverConfig.getTimeout());
             }
 
             int exitCode = runningProcess.waitFor();
             LOG.info("MiniZinc-Prozess beendet mit Exit-Code: " + exitCode);
 
+            return loesung;
         } finally {
             runningProcess = null;
+        }
+    }
+
+
+    /**
+     * Liest MiniZinc-Ausgabe zeilenweise, merkt sich die letzte gültige JSON-Zeile (bei
+     * {@code --intermediate} werden mehrere Zwischenlösungen ausgegeben) und wertet die
+     * bekannten Fehler-/Status-Marker aus. Von {@link #rufeMiniZincAuf} auf die Live-Ausgabe des
+     * Solver-Prozesses angewendet, und von {@link #importErgebnisBundle} auf den Rohtext einer
+     * extern eingesammelten Ergebnisdatei - beide Fälle brauchen dieselbe Validierung, da eine
+     * "roh" umgeleitete MiniZinc-Ausgabe ebenfalls mehrere Zeilen/Marker enthalten kann.
+     */
+    private String extrahiereLoesung(BufferedReader reader, int timeoutSekunden) throws IOException {
+        String lastJsonSolution = "";
+        StringBuilder fullLog = new StringBuilder();
+
+        String line;
+        while ((line = reader.readLine()) != null) {
+            fullLog.append(line).append(LINE_SEP);
+            if (line.trim().startsWith("{") && isValidJson(line)) {
+                lastJsonSolution = line;
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debugf("Zwischenlösung gefunden: %s", line);
+                }
+            }
         }
 
         String output = fullLog.toString();
@@ -397,14 +600,10 @@ public class PlanErstellungService {
 
         if (lastJsonSolution.isEmpty() && output.contains("=====UNKNOWN=====")) {
             throw new MinizincException(MinizincException.MZ_Exception.TIMEOUT,
-                "In der vorgegebenen Zeit (" + solverConfig.getTimeout() + " Sek.) konnte kein Ergebnis berechnet werden.");
+                "In der vorgegebenen Zeit (" + timeoutSekunden + " Sek.) konnte kein Ergebnis berechnet werden.");
         }
 
-        if (!lastJsonSolution.isEmpty()) {
-            return lastJsonSolution;
-        }
-
-        return "";
+        return lastJsonSolution;
     }
 
 

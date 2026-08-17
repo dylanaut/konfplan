@@ -168,6 +168,8 @@
                   @startOptimization="startPlanning"
                   @cancelOptimization="cancelPlanning"
                   @exportDzn="exportDzn"
+                  @exportBundle="exportBundle"
+                  @importErgebnis="importErgebnis"
       />
 
       <ProtokollTab v-if="activeTab === 'protokoll'"
@@ -961,6 +963,36 @@ const exportDzn = async (solverConfig) => {
     const body = e.response?.data instanceof Blob ? JSON.parse(await e.response.data.text()) : e.response?.data;
     const msg = body?.error || body?.message || e.message;
     alert('DZN-Export nicht möglich:\n\n' + msg);
+  }
+};
+
+const exportBundle = async (solverConfig) => {
+  try {
+    const response = await api.post(`/api/planungen/${selectedVid.value}/export`, solverConfig, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(response.data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `veranstaltung_${selectedVid.value}_export.zip`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  } catch (e) {
+    console.error('Fehler beim Export des Planungspakets:', e);
+    // responseType 'blob' liefert Fehlerantworten ebenfalls als Blob statt geparstem JSON.
+    const body = e.response?.data instanceof Blob ? JSON.parse(await e.response.data.text()) : e.response?.data;
+    const msg = body?.error || body?.message || e.message;
+    alert('Export nicht möglich:\n\n' + msg);
+  }
+};
+
+const importErgebnis = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  try {
+    await api.post(`/api/planungen/${selectedVid.value}/import`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    alert('Ergebnis wurde erfolgreich importiert.');
+  } catch (e) {
+    console.error('Fehler beim Import des Planungsergebnisses:', e);
+    alert('Import nicht möglich:\n\n' + (e.response?.data?.error || e.response?.data?.message || e.message));
   }
 };
 
