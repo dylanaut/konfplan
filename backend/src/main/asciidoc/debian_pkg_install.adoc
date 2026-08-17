@@ -1,0 +1,70 @@
+= Zusammenfassung für Debian Package-basierte Installation
+
+NOTE: Zum Teil mit Ausschnitten aus Ubuntu-Frischinstallation.adoc
+
+== Pakete unter Debian installieren / aktualisieren
+
+[source,bash]
+----
+sudo apt-get update
+sudo apt-get install -y git curl openssl openjdk-21-jdk nodejs npm
+
+# Docker: NICHT das docker.io-Paket aus den Ubuntu-Repos (Compose-Plugin fehlt dort),
+# sondern das offizielle Docker-Repo - wird für beide Wege gebraucht
+# (Weg A direkt, Weg B für Keycloak/Mailpit-Container):
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER
+newgrp docker   # oder ab-/anmelden, damit die Gruppenzugehörigkeit greift
+docker compose version
+
+# nvm - vgl. https://github.com/nvm-sh/nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.6/install.sh | bash
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+nvm install 22
+nvm use 22
+nvm alias default 22
+----
+
+[source,bash]
+----
+echo "--> Debian-Pakete werden gebaut..."
+packaging/debian/build-all.sh
+
+echo "--> PostgreSQL, Keycloak und Mailpit werden installiert..."
+sudo apt-get install -y ./packaging/debian/konfplan-postgresql/konfplan-postgresql_*_all.deb
+sudo apt-get install -y ./packaging/debian/konfplan-keycloak/konfplan-keycloak_*_all.deb
+sudo apt-get install -y ./packaging/debian/konfplan-mailpit/konfplan-mailpit_*_all.deb
+
+echo "--> KonfPlan wird installiert..."
+sudo apt-get install -y ./packaging/debian/konfplan/konfplan_*_all.deb
+----
+
+
+== Konfiguration vor dem ersten Start
+Reihenfolge beachten (konfplan-keycloak.service braucht konfplan-postgresql.service, konfplan.service braucht eine erreichbare Keycloak-Instanz):
+
+[source,bash]
+----
+sudo nano /etc/konfplan/postgresql.env  # DB_PASSWORD setzen
+sudo systemctl start konfplan-postgresql.service
+----
+
+sudo nano /etc/konfplan/keycloak.env    # DB_PASSWORD (= postgresql.env), KC_ADMIN_PASSWORD,
+# KC_ADMIN_CLI_SECRET, KC_HOSTNAME, APP_PUBLIC_URL
+sudo systemctl start konfplan-keycloak.service
+
+sudo nano /etc/konfplan/mailpit.env     # optional, Standardwerte meist ok
+sudo systemctl start konfplan-mailpit.service
+
+sudo nano /etc/konfplan/konfplan.env    # DB_PASSWORD (= postgresql.env),
+# KC_ADMIN_CLI_SECRET (= keycloak.env),
+# BREVO_SMTP_* oder Mailpit-Variablen
+sudo systemctl start konfplan.service
+
+DB_NAME/DB_USER müssen in konfplan.env und postgresql.env übereinstimmen (Standard: konfplan in beiden). KC_ADMIN_CLI_SECRET muss in konfplan.env und keycloak.env identisch sein. Ebenso KC_SERVER_URL/KC_HOSTNAME+KEYCLOAK_PORT und FRONTEND_BASE_URL/APP_PUBLIC_URL.
+
+Die App ist danach unter http://<server>:9000 erreichbar. Der Bootstrap-Admin-Account (juergenkrey) muss - genau wie bei Weg A - einmalig manuell in der Keycloak-Admin-Konsole angelegt werden.

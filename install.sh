@@ -16,11 +16,28 @@ echo "=== KonfPlan Installations-Skript (Debian 13) ==="
 # --- Schritt 1: System-Vorbereitung ---
 echo "--> Schritt 1: System wird aktualisiert und Basis-Abhängigkeiten werden installiert..."
 sudo apt-get update
-sudo apt-get install -y openjdk-21-jdk maven nodejs npm docker.io minizinc
+sudo apt-get install -y openjdk-21-jdk maven nodejs npm minizinc
+
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER
+newgrp docker   # oder ab-/anmelden, damit die Gruppenzugehörigkeit greift
+docker compose version
+
+# nvm - vgl. https://github.com/nvm-sh/nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.6/install.sh | bash
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+nvm install 22
+nvm use 22
+nvm alias default 22
+
 
 # --- Schritt 2: Anwendung bauen (Backend + Frontend via Quinoa) ---
 echo "--> Schritt 2: Anwendung wird gebaut..."
-(cd backend && ../mvnw clean package -DskipTests)
+./backend/mvnw clean package -DskipTests
 
 # --- Schritt 3: .deb-Pakete bauen ---
 echo "--> Schritt 3: Debian-Pakete werden gebaut..."

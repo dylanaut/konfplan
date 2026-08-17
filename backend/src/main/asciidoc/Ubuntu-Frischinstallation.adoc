@@ -645,7 +645,7 @@ automatisch.
 [source,bash]
 ----
 # 1. Backend + Frontend bauen
-cd backend && ../mvnw clean package -DskipTests && cd ..
+./backend/mvnw clean package -DskipTests && cd ..
 
 # 2. Alle vier .deb-Pakete bauen
 packaging/debian/build-all.sh

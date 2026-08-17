@@ -86,13 +86,11 @@ ENV LANGUAGE='en_US:en'
 # installieren, damit der Container eigenstaendig lauffaehig ist.
 USER root
 RUN microdnf install -y gzip tar && microdnf clean all
-RUN curl -fsSL https://api.github.com/repos/MiniZinc/MiniZincIDE/releases/latest \
-        | grep -o '"browser_download_url": *"[^"]*bundle-linux-x86_64\.tgz"' \
-        | head -1 | cut -d '"' -f4 > /tmp/minizinc-url \
-    && curl -fsSL -o /tmp/minizinc.tgz "$(cat /tmp/minizinc-url)" \
+ARG MINIZINC_VERSION=2.10.0
+RUN curl -fsSL -o /tmp/minizinc.tgz "https://github.com/MiniZinc/MiniZincIDE/releases/download/${MINIZINC_VERSION}/MiniZincIDE-${MINIZINC_VERSION}-bundle-linux-x86_64.tgz" \
     && mkdir -p /opt/minizinc \
     && tar -xzf /tmp/minizinc.tgz -C /opt/minizinc --strip-components=1 \
-    && rm -f /tmp/minizinc.tgz /tmp/minizinc-url \
+    && rm -f /tmp/minizinc.tgz \
     && chown -R 185:0 /opt/minizinc
 ENV MINIZINC_PATH="/opt/minizinc/bin/minizinc"
 
