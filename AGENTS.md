@@ -141,7 +141,7 @@ views/*.vue           # Top-Level-Seiten-Komponenten geroutet von Vue Router
 - Deadlines (`deadlineReferenten`, `deadlineTeilnehmer`) steuern die Bearbeitbarkeit von Daten in den jeweiligen Dashboards.
 - Räume werden **veranstaltungsübergreifend** auf Überschneidungen geprüft (ein Raum in einer Veranstaltung blockiert ihn in einer anderen).
 - **Keycloak**: Im Dev-Modus startet Quarkus Keycloak Dev Services automatisch einen Container (Docker nötig) und importiert das Realm aus `backend/src/main/resources/keycloak/konfplan-realm.json`. Passwort-Reset läuft über Keycloaks eigene Login-Seite, nicht mehr über einen Mailpit-Link aus dieser App.
-- Vite (`vite.config.js`) ist so konfiguriert, dass eine `manifest.json` für die dynamische Einbindung von Assets in Qute-Templates erzeugt wird.
+- Vite (`vite.config.mjs`) ist so konfiguriert, dass eine `manifest.json` für die dynamische Einbindung von Assets in Qute-Templates erzeugt wird.
 - **DB-Skripte:** `db/ensure_prod_db.sh` und `db/ensure_prod_infra.sh` für lokales PostgreSQL/Mailpit-Setup (Docker-basiert, Dev/Test). Produktions-`.deb`-Pakete liegen unter `packaging/debian/` (siehe dessen `README.md`).
 
 ## Git & Feature Workflow

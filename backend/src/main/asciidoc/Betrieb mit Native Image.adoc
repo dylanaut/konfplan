@@ -22,6 +22,18 @@ Der Build-Prozess integriert über Quinoa automatisch das Frontend und kompilier
 In `application.properties` ist `%prod.quarkus.native.container-build=true` gesetzt. Das `%prod`-Profil ist bei jedem regulären `package`-Build aktiv, d.h. **der Container-Build wird standardmäßig immer erzwungen** – unabhängig davon, was `JAVA_HOME` sagt oder ob `-Dquarkus.native.container-build` explizit angegeben wird.
 ====
 
+=== Vorbereitung für andere Plattformen, z.B. debian
+
+[source,bash]
+----
+sudo apt update && sudo apt install -y curl zip unzip
+curl -s "https://get.sdkman.io" | bash
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+----
+
+
+
+
 === Variante A: Build mit lokalem GraalVM
 Voraussetzung ist ein für dein Host-Betriebssystem/-Architektur passendes GraalVM bzw. Mandrel (z.B. via SDKMAN installiert, `JAVA_HOME` entsprechend gesetzt). Da die Konfiguration den Container-Build erzwingt (siehe oben), muss dieser hier explizit deaktiviert werden:
 
