@@ -8,6 +8,7 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
+import kreyj.konfplan.adapter.in.web.dto.OrganisatorDto;
 import kreyj.konfplan.adapter.in.web.dto.ReferentVeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.ReferentCsvDto;
@@ -138,6 +139,7 @@ public class ReferentService implements ReferentServiceInterface {
             dto.logo = e.getLogo();
             dto.logo_link = e.getLogo_link();
             dto.organisatorNamen = e.organisatoren().stream().map(Admin::getFullName).toList();
+            dto.organisatoren = e.organisatoren().stream().map(OrganisatorDto::from).toList();
             return dto;
         }).sorted(Comparator.comparing(e -> e.beginntAm)).toList();
     }

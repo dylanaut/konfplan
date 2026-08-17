@@ -16,4 +16,5 @@ public class ReferentVeranstaltungDto extends AbstractVersionedDto {
     public String logo;
     public String logo_link;
     public List<String> organisatorNamen;
+    public List<OrganisatorDto> organisatoren;
 }
