@@ -239,7 +239,11 @@
                <div>
                  <h3 class="font-bold text-lg text-gray-800">{{ event.name }}</h3>
                  <p class="text-sm text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
-                 <p v-if="event.organisatorNamen?.length" class="text-xs text-gray-500">{{ event.organisatorNamen.join(', ') }}</p>
+                 <p v-if="event.organisatoren?.length" class="text-xs text-gray-500">
+                   <template v-for="(organisator, index) in event.organisatoren" :key="organisator.id">
+                     <a :href="mailtoLink(organisator.email, event.name)" class="hover:underline">{{ organisator.name }}</a><span v-if="index < event.organisatoren.length - 1">, </span>
+                   </template>
+                 </p>
                  <p v-if="event.deadlineReferenten" :class="['text-[10px] font-bold mt-1', isDeadlinePassed(event.deadlineReferenten) ? 'text-red-600' : 'text-orange-600']">
                     Deadline für Referenten: {{ formatDateTime(event.deadlineReferenten) }}
                  </p>
@@ -483,6 +487,8 @@ const isDeadlinePassed = (deadline) => {
     if (!deadline) return false;
     return new Date(deadline) < new Date();
 };
+
+const mailtoLink = (email, subject) => `mailto:${email}?subject=${encodeURIComponent(subject)}`;
 
 const isAnyDeadlinePassed = computed(() => {
     return events.value.some(e => isDeadlinePassed(e.deadlineReferenten));

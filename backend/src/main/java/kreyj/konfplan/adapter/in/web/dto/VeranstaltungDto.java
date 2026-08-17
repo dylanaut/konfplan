@@ -29,6 +29,7 @@ public class VeranstaltungDto extends AbstractVersionedDto {
     private String logo_link;
     private List<Long> organisatorIds = new ArrayList<>();
     private List<String> organisatorNamen = new ArrayList<>();
+    private List<OrganisatorDto> organisatoren = new ArrayList<>();
     private List<GebaeudeSimpleDto> gebaeude = new ArrayList<>();
     private List<String> gruppen = new ArrayList<>();
 
@@ -95,6 +96,7 @@ public class VeranstaltungDto extends AbstractVersionedDto {
                 .forEach(u -> {
                     dto.getOrganisatorIds().add(u.getId());
                     dto.getOrganisatorNamen().add(u.getFullName());
+                    dto.getOrganisatoren().add(OrganisatorDto.from((Admin) u));
                 });
         }
 

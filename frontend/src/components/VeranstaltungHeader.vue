@@ -10,8 +10,11 @@
     <div class="min-width-0">
       <h2 class="h5 mb-0">{{ veranstaltung.name }}</h2>
       <p class="text-muted small mb-0">{{ formatZeitraum(veranstaltung) }}</p>
-      <p v-if="veranstaltung.organisatorNamen && veranstaltung.organisatorNamen.length" class="text-muted small mb-0">
-        Organisation: {{ veranstaltung.organisatorNamen.join(', ') }}
+      <p v-if="veranstaltung.organisatoren && veranstaltung.organisatoren.length" class="text-muted small mb-0">
+        Organisation:
+        <template v-for="(organisator, index) in veranstaltung.organisatoren" :key="organisator.id">
+          <a :href="mailtoLink(organisator.email)">{{ organisator.name }}</a><span v-if="index < veranstaltung.organisatoren.length - 1">, </span>
+        </template>
       </p>
     </div>
   </div>
@@ -20,12 +23,14 @@
 <script setup>
 import { formatZeitraum } from '../utils/veranstaltungFormat';
 
-defineProps({
+const props = defineProps({
   veranstaltung: {
     type: Object,
     required: true,
   },
 });
+
+const mailtoLink = (email) => `mailto:${email}?subject=${encodeURIComponent(props.veranstaltung.name)}`;
 </script>
 
 <style scoped>
