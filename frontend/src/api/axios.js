@@ -1,9 +1,13 @@
 import axios from 'axios';
 import keycloak from '../keycloak';
 
-import.meta.env.VITE_API_URL = undefined;
+// In Produktion (Quinoa-Deployment: Frontend und Backend auf demselben Origin) muss die
+// baseURL relativ bleiben - ein hartcodierter 'http://localhost:9000'-Fallback wuerde im
+// Browser des Nutzers auf dessen eigenen localhost zeigen, nicht auf den Server.
+// VITE_API_URL (siehe .env.development) ueberschreibt das nur fuer den lokalen Dev-Betrieb,
+// wo Frontend (:5173) und Backend (:9000) getrennte Origins sind.
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:9000',
+    baseURL: import.meta.env.VITE_API_URL || '',
 });
 
 // Alle aktuell offenen Requests, damit sie bei Logout gesammelt abgebrochen werden können.
