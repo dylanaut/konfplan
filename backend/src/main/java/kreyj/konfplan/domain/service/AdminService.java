@@ -185,6 +185,9 @@ public class AdminService implements AdminServiceInterface {
             if (null != dto.gruppen) {
                 dto.gruppen.forEach(t::addGruppe);
             }
+            if (null != dto.neigungen) {
+                t.setNeigungen(dto.neigungen);
+            }
             if (null != dto.prioritaeten) {
                 dto.prioritaeten.forEach(prioDto -> {
                     Wahlvortrag wv = Wahlvortrag.findById(prioDto.vortragId);
@@ -295,6 +298,9 @@ public class AdminService implements AdminServiceInterface {
         } else if (nutzer instanceof Teilnehmer t) {
             if (null != dto.gruppen) {
                 dto.gruppen.forEach(t::addGruppe);
+            }
+            if (null != dto.neigungen) {
+                t.setNeigungen(dto.neigungen);
             }
             if (null != dto.prioritaeten) {
                 dto.prioritaeten.forEach(prioDto -> {
@@ -500,6 +506,7 @@ public class AdminService implements AdminServiceInterface {
         } else {
             created = Wahlvortrag.create(vortragDto.titel, vortragDto.inhalt, referent,
                 vortragDto.wiederholbar, vortragDto.maxWiederholungen, veranstaltung);
+            ((Wahlvortrag) created).setNeigungen(vortragDto.neigungen);
         }
 
 
@@ -1170,6 +1177,7 @@ public class AdminService implements AdminServiceInterface {
         } else if (entity instanceof Wahlvortrag wv && !updated.istPflicht) {
             wv.setWiederholbar(updated.wiederholbar);
             wv.setMaxWiederholungen(updated.maxWiederholungen);
+            wv.setNeigungen(updated.neigungen);
 
             VortragVerfuegbarkeit vv = VortragVerfuegbarkeit.findById(vvIdL(updated.id, veranstaltungId));
             if (null == vv) {

@@ -6,6 +6,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
@@ -27,6 +29,12 @@ public class Teilnehmer extends Nutzer {
 
     @OneToMany(mappedBy = "teilnehmer", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Prioritaet> prioritaeten = new HashSet<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "teilnehmer_neigungen", joinColumns = @JoinColumn(name = "teilnehmer_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "neigung", length = 50)
+    private Set<Neigung> neigungen = new HashSet<>();
 
 
     // -------------------------------------------------------------------
@@ -102,5 +110,18 @@ public class Teilnehmer extends Nutzer {
             return;
         }
         prioritaeten.remove(prioritaet);
+    }
+
+
+    public Set<Neigung> getNeigungen() {
+        return Collections.unmodifiableSet(neigungen);
+    }
+
+
+    public void setNeigungen(Set<Neigung> neueNeigungen) {
+        neigungen.clear();
+        if (null != neueNeigungen) {
+            neigungen.addAll(neueNeigungen);
+        }
     }
 }

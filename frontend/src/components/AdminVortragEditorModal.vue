@@ -113,6 +113,20 @@
               </div>
             </div>
           </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Neigungen (welche Neigungen adressiert dieser Vortrag inhaltlich?)</label>
+            <div class="space-y-3 max-h-64 overflow-y-auto p-2 bg-white border rounded-lg">
+              <div v-for="gruppe in neigungenNachKategorie" :key="gruppe.kategorie">
+                <p class="text-xs font-semibold text-gray-500 mb-1">{{ gruppe.kategorieBezeichnung }}</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div v-for="neigung in gruppe.neigungen" :key="neigung.name" class="flex items-center gap-2 text-xs" :title="neigung.beschreibung">
+                    <input :id="`vortrag-neigung-${neigung.name}`" type="checkbox" :value="neigung.name" v-model="form.neigungen" class="h-4 w-4 rounded" />
+                    <label :for="`vortrag-neigung-${neigung.name}`" class="font-medium text-gray-800">{{ neigung.bezeichnung }}</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="flex justify-end gap-3 pt-4 border-t">
@@ -125,7 +139,24 @@
 </template>
 
 <script setup>
-import { reactive, watch, ref } from 'vue';
+import { computed, reactive, watch, ref } from 'vue';
+import { useNeigungStore } from '../stores/neigung';
+
+const neigungStore = useNeigungStore();
+neigungStore.fetchNeigungen();
+
+const neigungenNachKategorie = computed(() => {
+  const gruppen = [];
+  for (const neigung of neigungStore.neigungen) {
+    let gruppe = gruppen.find(g => g.kategorie === neigung.kategorie);
+    if (!gruppe) {
+      gruppe = { kategorie: neigung.kategorie, kategorieBezeichnung: neigung.kategorieBezeichnung, neigungen: [] };
+      gruppen.push(gruppe);
+    }
+    gruppe.neigungen.push(neigung);
+  }
+  return gruppen;
+});
 
 const BERUFSFELDER = [
     'Land-, Forst-, Tierwirtschaft und Gartenbau',
@@ -172,6 +203,7 @@ const form = reactive({
   pflichtgruppe: '',
   wiederholbar: false,
   maxWiederholungen: 1,
+  neigungen: [],
 });
 
 watch(
@@ -189,6 +221,7 @@ watch(
       form.pflichtgruppe = val?.pflichtgruppe ?? '';
       form.wiederholbar = val?.wiederholbar ?? false;
       form.maxWiederholungen = val?.maxWiederholungen ?? 1;
+      form.neigungen = val?.neigungen ? [...val.neigungen] : [];
       selectedWahlslotIds.value = val?.wahlslots?.map(s => s.id) ?? [];
     },
     { immediate: true }
@@ -217,6 +250,7 @@ const save = () => {
   } else {
     payload.wahlslots = [];
     payload.wiederholbar = false;
+    payload.neigungen = [];
     payload.pflichtraum = props.raeume.find(r => r.id === form.pflichtraum.id);
     payload.pflichtslot = props.slots.find(s => s.id === form.pflichtslot.id);
   }

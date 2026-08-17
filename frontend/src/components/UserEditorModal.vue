@@ -77,6 +77,21 @@
           </div>
         </div>
 
+        <div v-if="form.role === 'TEILNEHMER'" class="md:col-span-2 bg-amber-50 p-4 rounded-lg">
+          <h3 class="text-xs font-bold text-amber-700 uppercase tracking-wider mb-3">Neigungen</h3>
+          <div class="space-y-3">
+            <div v-for="gruppe in neigungenNachKategorie" :key="gruppe.kategorie">
+              <p class="text-xs font-semibold text-gray-500 mb-1">{{ gruppe.kategorieBezeichnung }}</p>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <div v-for="neigung in gruppe.neigungen" :key="neigung.name" class="flex items-center gap-2 bg-white p-2 rounded-md border" :title="neigung.beschreibung">
+                  <input :id="`neigung-${neigung.name}`" type="checkbox" :value="neigung.name" v-model="form.neigungen" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                  <label :for="`neigung-${neigung.name}`" class="text-sm font-medium text-gray-700">{{ neigung.bezeichnung }}</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="md:col-span-2 flex items-center gap-2 mt-2">
           <input id="isActive" v-model="form.isActive" type="checkbox" class="h-4 w-4" />
           <label for="isActive" class="text-sm text-gray-700 font-medium">Nutzerkonto ist aktiv</label>
@@ -94,8 +109,9 @@
 </template>
 
 <script setup>
-import { reactive, watch } from 'vue';
+import { computed, reactive, watch } from 'vue';
 import { useGroupStore } from '../stores/group';
+import { useNeigungStore } from '../stores/neigung';
 
 const props = defineProps({
   isVisible: { type: Boolean, required: true },
@@ -105,6 +121,21 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'save']);
 const groupStore = useGroupStore();
+const neigungStore = useNeigungStore();
+neigungStore.fetchNeigungen();
+
+const neigungenNachKategorie = computed(() => {
+  const gruppen = [];
+  for (const neigung of neigungStore.neigungen) {
+    let gruppe = gruppen.find(g => g.kategorie === neigung.kategorie);
+    if (!gruppe) {
+      gruppe = { kategorie: neigung.kategorie, kategorieBezeichnung: neigung.kategorieBezeichnung, neigungen: [] };
+      gruppen.push(gruppe);
+    }
+    gruppe.neigungen.push(neigung);
+  }
+  return gruppen;
+});
 
 const form = reactive({
   id: null,
@@ -117,6 +148,7 @@ const form = reactive({
   biography: '',
   jobRole: '',
   gruppen: [],
+  neigungen: [],
   version: null,
 });
 
@@ -143,6 +175,7 @@ watch(
       form.biography = val?.biography ?? '';
       form.jobRole = val?.jobRole ?? '';
       form.gruppen = val?.gruppen ? [...val.gruppen] : [];
+      form.neigungen = val?.neigungen ? [...val.neigungen] : [];
     },
     { immediate: true, deep: false }
 );

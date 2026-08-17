@@ -223,6 +223,7 @@ public class ReferentService implements ReferentServiceInterface {
             Wahlvortrag nw = new Wahlvortrag();
             nw.setWiederholbar(sw.isWiederholbar());
             nw.setMaxWiederholungen(sw.getMaxWiederholungen());
+            nw.setNeigungen(sw.getNeigungen());
             // Wir übernehmen keine Slots, da diese veranstaltungsspezifisch sind!
             vortrag = nw;
         } else {
@@ -283,6 +284,7 @@ public class ReferentService implements ReferentServiceInterface {
             Wahlvortrag nw = new Wahlvortrag();
             nw.setWiederholbar(sw.isWiederholbar());
             nw.setMaxWiederholungen(sw.getMaxWiederholungen());
+            nw.setNeigungen(sw.getNeigungen());
             // Wahl-Slots werden nicht kopiert, da sie veranstaltungsspezifisch sind.
             zielVortrag = nw;
         } else if (quellVortrag instanceof Pflichtvortrag) {
@@ -352,6 +354,7 @@ public class ReferentService implements ReferentServiceInterface {
 
         if (vortrag instanceof Wahlvortrag wahlvortrag) {
             wahlvortrag.setWiederholbar(dto.wiederholbar);
+            wahlvortrag.setNeigungen(dto.neigungen);
             if (dto.maxWiederholungen > 0) {
                 wahlvortrag.setMaxWiederholungen(dto.maxWiederholungen);
             }

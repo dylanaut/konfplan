@@ -10,6 +10,7 @@ import kreyj.konfplan.domain.exception.CreateVortragException;
 import kreyj.konfplan.domain.exception.UpdateNutzerException;
 import kreyj.konfplan.domain.exception.UpdateVortragException;
 import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -41,6 +43,9 @@ public class AdminServiceTest {
     @Transactional
     public void setUp() {
         // Clean up existing data to avoid conflicts
+        // @ElementCollection-Tabelle auf der Subklasse Teilnehmer wird bei einem Bulk-Delete auf
+        // Nutzer nicht automatisch mitgeloescht.
+        io.quarkus.hibernate.orm.panache.Panache.getEntityManager().createNativeQuery("delete from teilnehmer_neigungen").executeUpdate();
         Nutzer.deleteAll();
         Veranstaltung.deleteAll();
 
@@ -216,5 +221,41 @@ public class AdminServiceTest {
     public void testResetPassword_PasswordTooShort_ThrowsException() {
         assertThatExceptionOfType(BusinessException.class)
             .isThrownBy(() -> adminService.resetPassword(testUserId, "kurz"));
+    }
+
+
+    @Test
+    public void testCreateUser_TeilnehmerWithNeigungen_Succeeds() {
+        NutzerDto dto = new NutzerDto("TEILNEHMER", "neu@example.com", "Neue", "Person", true);
+        dto.loginName = "neue.person";
+        dto.neigungen = Set.of(Neigung.EMPATHISCH, Neigung.ANALYTISCH);
+
+        NutzerDto created = adminService.createUser(dto, null);
+
+        assertThat(created.neigungen).containsExactlyInAnyOrder(Neigung.EMPATHISCH, Neigung.ANALYTISCH);
+        Teilnehmer persisted = Teilnehmer.findById(created.id);
+        assertThat(persisted.getNeigungen()).containsExactlyInAnyOrder(Neigung.EMPATHISCH, Neigung.ANALYTISCH);
+    }
+
+
+    @Test
+    @Transactional
+    public void testUpdateUser_TeilnehmerNeigungen_ReplacesExistingSet() {
+        Teilnehmer tn = Teilnehmer.findById(tnId);
+        NutzerDto dto = NutzerDto.from(tn);
+        dto.neigungen = Set.of(Neigung.KREATIV, Neigung.NEUGIERIG);
+        adminService.updateUser(tnId, dto, null);
+
+        Teilnehmer updated = Teilnehmer.findById(tnId);
+        assertThat(updated.getNeigungen()).containsExactlyInAnyOrder(Neigung.KREATIV, Neigung.NEUGIERIG);
+
+        // Ein zweites Update mit anderer Auswahl muss die vorherige Auswahl vollstaendig ersetzen
+        // (Checkbox-UI: ein Entfernen einzelner Werte muss moeglich sein, anders als bei gruppen).
+        NutzerDto dto2 = NutzerDto.from(Teilnehmer.findById(tnId));
+        dto2.neigungen = Set.of(Neigung.PRAGMATISCH);
+        adminService.updateUser(tnId, dto2, null);
+
+        Teilnehmer updated2 = Teilnehmer.findById(tnId);
+        assertThat(updated2.getNeigungen()).containsExactly(Neigung.PRAGMATISCH);
     }
 }
