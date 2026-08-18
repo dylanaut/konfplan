@@ -178,10 +178,8 @@ public class AdminService implements AdminServiceInterface {
         keycloakUserProvisioningService.createUser(nutzer, tempPassword);
 
         if (nutzer instanceof Referent r) {
-            r.setBiography(dto.biography);
             r.setJobRole(dto.jobRole);
             r.setOrganisation(dto.organisation);
-            r.setSlogan(dto.slogan);
         } else if (nutzer instanceof Teilnehmer t) {
             if (null != dto.gruppen) {
                 dto.gruppen.forEach(t::addGruppe);
@@ -292,10 +290,8 @@ public class AdminService implements AdminServiceInterface {
         }
 
         if (nutzer instanceof Referent r) {
-            r.setBiography(dto.biography);
             r.setJobRole(dto.jobRole);
             r.setOrganisation(dto.organisation);
-            r.setSlogan(dto.slogan);
         } else if (nutzer instanceof Teilnehmer t) {
             if (null != dto.gruppen) {
                 dto.gruppen.forEach(t::addGruppe);

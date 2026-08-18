@@ -170,8 +170,8 @@ class CsvImportTest extends DatabaseCleaner {
     @TestHTTPEndpoint(VeranstaltungResource.class)
     void testImportReferenten() {
         String refEmail = "max@ref.de";
-        String csv = "Vorname;Nachname;Email;Position;Organisation;Slogan;Biografie;LoginName\n" +
-            "Max;Referent;" + refEmail + ";Experte;TechCorp;Think Big;Bio Text;max";
+        String csv = "Vorname;Nachname;Email;Position;Organisation;LoginName\n" +
+            "Max;Referent;" + refEmail + ";Experte;TechCorp;max";
 
         given()
             .multiPart("file", "referenten.csv", csv.getBytes())

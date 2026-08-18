@@ -90,8 +90,7 @@ class NutzerPersistenceTest extends DatabaseCleaner {
                     "email": "referent@test.de",
                     "firstName": "Jens",
                     "lastName": "Riewa",
-                    "jobRole": "Nachrichtensprecher",
-                    "biography": "Lange Erfahrung im TV."
+                    "jobRole": "Nachrichtensprecher"
                 }
                 """;
 

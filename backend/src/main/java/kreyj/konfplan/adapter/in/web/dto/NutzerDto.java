@@ -29,10 +29,8 @@ public class NutzerDto extends AbstractVersionedDto {
     public List<Long> veranstaltungIds;
 
     // Referent-spezifisch
-    public String biography;
     public String jobRole;
     public String organisation;
-    public String slogan;
 
     // Teilnehmer-spezifisch
     public List<String> gruppen;
@@ -70,18 +68,6 @@ public class NutzerDto extends AbstractVersionedDto {
     }
 
 
-    public static NutzerDto referent(String email, String firstName, String lastName,
-                                     String biography, String jobRole, String organisation, String slogan) {
-        NutzerDto referent = referent(email, firstName, lastName);
-
-        referent.biography = biography;
-        referent.jobRole = jobRole;
-        referent.organisation = organisation;
-        referent.slogan = slogan;
-
-        return referent;
-    }
-
 
     @JsonIgnore
     public String getFullname() {
@@ -107,10 +93,8 @@ public class NutzerDto extends AbstractVersionedDto {
         dto.veranstaltungIds = null != veranstaltungen ? veranstaltungen.stream().map(IdEntity::getId).toList() : emptyList();
 
         if (u instanceof Referent r) {
-            dto.biography = r.getBiography();
             dto.jobRole = r.getJobRole();
             dto.organisation = r.getOrganisation();
-            dto.slogan = r.getSlogan();
         } else if (u instanceof Teilnehmer tn) {
             dto.gruppen = tn.getGruppen().stream().sorted(StringHelper.NUM_OR_ALPHA_COMPARATOR).toList();
             dto.veranlagungen = tn.getVeranlagungen();

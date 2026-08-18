@@ -1,24 +1,24 @@
-Vorname;Nachname;Email;Position;Organisation;Slogan;Biografie;LoginName
-Isabel;Gohr;juergenkrey-isabel_gohr@yahoo.de;Lehrerin;RKS;;;isabel.gohr
-Jennifer;Lehmler;juergenkrey-jennifer_lehmler@yahoo.de;Lehrerin;RKS;;;jennifer.lehmler
-Eva;Leinen-Lartey;juergenkrey-eva_leinen-lartey@yahoo.de;Lehrerin;RKS;;;eva.leinen.lartey
-Dirk;Mattesen;juergenkrey-dirk_mattesen@yahoo.de;Lehrer;RKS;;;dirk.mattesen
-Michael;Weiler;juergenkrey-michael_weiler@yahoo.de;Lehrer;RKS;;;michael.weiler
-Monika;Engler;juergenkrey-monika_engler@yahoo.de;Berufsberaterin;Arbeitsagentur;;;monika.engler
-Manuel;Janzen;juergenkrey-manuel_janzen@yahoo.de;;Stuertz GmbH;Weltweit für Durchblick sorgen - ihr innovativer Hersteller für Fensterbaumaschinen;;manuel.janzen
-Mareike;Müller;juergenkrey-mareike_mueller@yahoo.de;;Stuertz GmbH;Weltweit für Durchblick sorgen - ihr innovativer Hersteller für Fensterbaumaschinen;;mareike.mueller
-Jan;Novak;juergenkrey-jan_novak@yahoo.de;;Stuertz GmbH;Weltweit für Durchblick sorgen - ihr innovativer Hersteller für Fensterbaumaschinen;;jan.novak
-Manuela;Schützeichel;juergenkrey-manuela_schuetzeichel@yahoo.de;;NIEDAX GmbH & Co. KG;Safe die beste Ausbildung;;manuela.schuetzeichel
-Andreas;Weißenfels;juergenkrey-andreas_weissenfels@yahoo.de;;Wirtgen Group;Ausbildung und Karrieremöglichkeiten beim Weltmarktführer;;andreas.weissenfels
-Christiane;Proff;juergenkrey-christiane_proff@yahoo.de;;Hitachi Energy Germany AG;;;christiane.proff
-Sarah;Jansen;juergenkrey-sarah_jansen@yahoo.de;;Verbandsgemeindeverwaltung Linz;;;sarah.jansen
-Federkiel;mit Boschmann/Isaak;juergenkrey-federkiel_boschmann_isaak@yahoo.de;;Finanzamt Neuwied;...und finanziere Polizei, Schulen und vieles mehr - mit deiner Ausbildung oder deinem dualen Studium in den Finanzämtern Rheinland-Pfalz!;;federkiel.mit.boschmann.isaak
-Alicia;Kurz mit Alexandra Merks;juergenkrey-alicia_kurz_alexandra_merks@yahoo.de;;Basalt AG;Ausbildung bei Basalt AG;;alicia.kurz.mit.alexandra.merks
-Katrin;Rascher;juergenkrey-katrin_rascher@yahoo.de;;Oskar Pahlke GmbH Schaumstoffe;Bei Pahlke Schaumstoffe lernst du alles über die Ausbildung zum Kunststoff- und Kautschuktechnologe/-technologin und Maschinen- und Anlagenführer/in!;;katrin.rascher
-Katharina;Heidrich;juergenkrey-katharina_heidrich@yahoo.de;Sladana Martinovic;Pflegefachschule Linz;;;katharina.heidrich
-Andreas;Schneider;juergenkrey-andreas_schneider@yahoo.de;;Birkenstock Productions Rheinland-Pfalz GmbH;;;andreas.schneider
-Nils;Dillmann;juergenkrey-nils_dillmann@yahoo.de;;M. Schulte Söhne GmbH & Co. KG;Vergiss das alte Klischee vom reinen Regale einräumen! Der moderne Handel ist eine High-Tech-Branche, in der Kommunikation auf künstliche Intelligenz und Fingerspitzengefühl auf digitale Effizienz trifft.;;nils.dillmann
-David;Pütz;juergenkrey-david_puetz@yahoo.de;;Polizeipräsidium Koblenz;;;david.puetz
-Ulf;Bonszkowski;juergenkrey-ulf_bonszkowski@yahoo.de;;Bundeswehr;;;ulf.bonszkowski
-Anna;Czernik;juergenkrey-anna_czernik@yahoo.de;Ausbildungsleiterin;X-PHYSIO Bonn;Schule für Physiotherapie und Ergotherapie;;anna.czernik
-Jürgen;Krey (REF);juergenkreyalias-ref@yahoo.com;Referent;msg systems;Was Sie schon immer wissen wollten..;Informatiker aus dem letzten Jahrtausend;juergenkreyalias-ref
+Vorname;Nachname;Email;Position;Organisation;LoginName
+Isabel;Gohr;juergenkrey-isabel_gohr@yahoo.de;Lehrerin;RKS;isabel.gohr
+Jennifer;Lehmler;juergenkrey-jennifer_lehmler@yahoo.de;Lehrerin;RKS;jennifer.lehmler
+Eva;Leinen-Lartey;juergenkrey-eva_leinen-lartey@yahoo.de;Lehrerin;RKS;eva.leinen.lartey
+Dirk;Mattesen;juergenkrey-dirk_mattesen@yahoo.de;Lehrer;RKS;dirk.mattesen
+Michael;Weiler;juergenkrey-michael_weiler@yahoo.de;Lehrer;RKS;michael.weiler
+Monika;Engler;juergenkrey-monika_engler@yahoo.de;Berufsberaterin;Arbeitsagentur;monika.engler
+Manuel;Janzen;juergenkrey-manuel_janzen@yahoo.de;;Stuertz GmbH;manuel.janzen
+Mareike;Müller;juergenkrey-mareike_mueller@yahoo.de;;Stuertz GmbH;mareike.mueller
+Jan;Novak;juergenkrey-jan_novak@yahoo.de;;Stuertz GmbH;jan.novak
+Manuela;Schützeichel;juergenkrey-manuela_schuetzeichel@yahoo.de;;NIEDAX GmbH & Co. KG;manuela.schuetzeichel
+Andreas;Weißenfels;juergenkrey-andreas_weissenfels@yahoo.de;;Wirtgen Group;andreas.weissenfels
+Christiane;Proff;juergenkrey-christiane_proff@yahoo.de;;Hitachi Energy Germany AG;christiane.proff
+Sarah;Jansen;juergenkrey-sarah_jansen@yahoo.de;;Verbandsgemeindeverwaltung Linz;sarah.jansen
+Federkiel;mit Boschmann/Isaak;juergenkrey-federkiel_boschmann_isaak@yahoo.de;;Finanzamt Neuwied;federkiel.mit.boschmann.isaak
+Alicia;Kurz mit Alexandra Merks;juergenkrey-alicia_kurz_alexandra_merks@yahoo.de;;Basalt AG;alicia.kurz.mit.alexandra.merks
+Katrin;Rascher;juergenkrey-katrin_rascher@yahoo.de;;Oskar Pahlke GmbH Schaumstoffe;katrin.rascher
+Katharina;Heidrich;juergenkrey-katharina_heidrich@yahoo.de;Sladana Martinovic;Pflegefachschule Linz;katharina.heidrich
+Andreas;Schneider;juergenkrey-andreas_schneider@yahoo.de;;Birkenstock Productions Rheinland-Pfalz GmbH;andreas.schneider
+Nils;Dillmann;juergenkrey-nils_dillmann@yahoo.de;;M. Schulte Söhne GmbH & Co. KG;nils.dillmann
+David;Pütz;juergenkrey-david_puetz@yahoo.de;;Polizeipräsidium Koblenz;david.puetz
+Ulf;Bonszkowski;juergenkrey-ulf_bonszkowski@yahoo.de;;Bundeswehr;ulf.bonszkowski
+Anna;Czernik;juergenkrey-anna_czernik@yahoo.de;Ausbildungsleiterin;X-PHYSIO Bonn;anna.czernik
+Jürgen;Krey (REF);juergenkreyalias-ref@yahoo.com;Referent;msg systems;juergenkreyalias-ref

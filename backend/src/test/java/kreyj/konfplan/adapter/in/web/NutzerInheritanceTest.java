@@ -65,7 +65,6 @@ class NutzerInheritanceTest extends DatabaseCleaner {
                     "firstName": "Max",
                     "lastName": "Mustermann",
                     "jobRole": "Software Architekt",
-                    "biography": "Langjährige Erfahrung in Java.",
                     "isActive": true
                 }""";
 

@@ -57,10 +57,6 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">Job-Rolle / Position</label>
             <input v-model="form.jobRole" type="text" class="input-field" placeholder="z.B. Softwareentwickler, Manager..." />
           </div>
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Biografie / Kurzvita</label>
-            <textarea v-model="form.biography" rows="3" class="input-field" placeholder="Erzählen Sie etwas über den Referenten..."></textarea>
-          </div>
         </div>
 
         <!-- Rollenspezifische Felder: TEILNEHMER -->
@@ -127,7 +123,6 @@ const form = reactive({
   email: '',
   role: 'TEILNEHMER',
   isActive: true,
-  biography: '',
   jobRole: '',
   gruppen: [],
   veranlagungen: [],
@@ -154,7 +149,6 @@ watch(
       form.email = val?.email ?? '';
       form.role = val?.role ?? 'TEILNEHMER';
       form.isActive = val?.isActive ?? true;
-      form.biography = val?.biography ?? '';
       form.jobRole = val?.jobRole ?? '';
       form.gruppen = val?.gruppen ? [...val.gruppen] : [];
       form.veranlagungen = val?.veranlagungen ? [...val.veranlagungen] : [];

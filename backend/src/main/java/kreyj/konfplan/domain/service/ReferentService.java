@@ -86,10 +86,8 @@ public class ReferentService implements ReferentServiceInterface {
             throw new OptimisticLockException("Der Nutzer wurde zwischenzeitlich von Dritten geändert. Bitte aktualisieren Sie die Daten und versuchen Sie es erneut.");
         }
         if (nutzer instanceof Referent referent) {
-            referent.setBiography(dto.biography);
             referent.setJobRole(dto.jobRole);
             referent.setOrganisation(dto.organisation);
-            referent.setSlogan(dto.slogan);
             referent.setFirstName(dto.firstName);
             referent.setLastName(dto.lastName);
             referent.setEmail(dto.email);
@@ -458,8 +456,6 @@ public class ReferentService implements ReferentServiceInterface {
                 ref.setLastName(dto.nachname);
                 ref.setJobRole(dto.position);
                 ref.setOrganisation(dto.organisation);
-                ref.setSlogan(dto.slogan);
-                ref.setBiography(dto.biografie);
 
                 if (null == existingNutzer) {
                     String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
