@@ -116,6 +116,8 @@ services:
       QUARKUS_MAILER_HOST: ${MAILER_HOST:-mailpit}
       QUARKUS_MAILER_PORT: ${MAILER_PORT:-1025}
       QUARKUS_MAILER_START_TLS: ${MAILER_START_TLS:-DISABLED}
+      QUARKUS_HTTP_PROXY_PROXY_ADDRESS_FORWARDING: "true"
+      QUARKUS_HTTP_PROXY_ALLOW_X_FORWARDED: "true"
     secrets:
       - db_password
       - keycloak_admin_cli_secret
