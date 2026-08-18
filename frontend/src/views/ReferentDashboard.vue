@@ -367,7 +367,7 @@ const fetchEventsForRegistration = async () => {
 const fetchverfuegIdsForEvent = async (vid) => {
    try {
       const res = await api.get(`/api/referenten/veranstaltungen/${vid}/verfuegbarkeiten`);
-      eventverfuegIds[vid] = res.data.filter(v => v.isAvailable).map(v => v.slotId);
+      eventverfuegIds[vid] = res.data.verfuegbareSlotIds ?? [];
    } catch (e) {
       console.error(`Fehler beim Laden der Verfügbarkeiten für Event ${vid}:`, e);
    }
@@ -385,22 +385,19 @@ const toggleEventAvailability = async (event, slotId) => {
    if (isDeadlinePassed(event.deadlineReferenten)) return;
 
    const current = isUserAvailable(event.id, slotId);
-   const newValue = !current;
+   const currentSlotIds = eventverfuegIds[event.id] || [];
+   const updatedSlotIds = current
+      ? currentSlotIds.filter(id => id !== slotId)
+      : [...currentSlotIds, slotId];
 
    try {
       await api.post(`/api/referenten/veranstaltungen/${event.id}/verfuegbarkeiten`, {
-         userId: referent.value.id,
-         slotId: slotId,
-         isAvailable: newValue
+         nutzerId: referent.value.id,
+         veranstaltungId: event.id,
+         verfuegbareSlotIds: updatedSlotIds
       });
 
-      // Lokal aktualisieren
-      if (newValue) {
-         if (!eventverfuegIds[event.id]) eventverfuegIds[event.id] = [];
-         eventverfuegIds[event.id].push(slotId);
-      } else {
-         eventverfuegIds[event.id] = eventverfuegIds[event.id].filter(id => id !== slotId);
-      }
+      eventverfuegIds[event.id] = updatedSlotIds;
    } catch (e) {
       alert("Fehler beim Aktualisieren der Verfügbarkeit: " + (e.response?.data || e.message));
    }
