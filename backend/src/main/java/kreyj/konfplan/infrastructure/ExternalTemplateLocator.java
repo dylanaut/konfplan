@@ -1,5 +1,6 @@
 package kreyj.konfplan.infrastructure;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.Variant;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -23,6 +24,7 @@ public class ExternalTemplateLocator implements TemplateLocator {
     private static final Logger LOG = Logger.getLogger(ExternalTemplateLocator.class);
 
     @ConfigProperty(name = "app.templates.external-path")
+    @SuppressFBWarnings(value = "NP_STORE_INTO_NONNULL_FIELD", justification = "Framework erlaubt hier null-Zuweisung")
     Optional<String> externalPath;
 
 

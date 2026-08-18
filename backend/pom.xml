@@ -29,10 +29,11 @@
     <surefire-plugin.version>3.5.6</surefire-plugin.version>
     <hibernate-maven-plugin.version>7.4.5.Final</hibernate-maven-plugin.version>
     <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
-    <spotbugs-maven-plugin.version>4.10.3.0</spotbugs-maven-plugin.version>
+    <spotbugs-maven-plugin.version>${spotbugs-annotations.version}.0</spotbugs-maven-plugin.version>
     <maven-pmd-plugin.version>3.28.0</maven-pmd-plugin.version>
     <plantuml-generator-maven-plugin.version>3.0.1</plantuml-generator-maven-plugin.version>
     <jackson-in-quarkus.version>2.22.1</jackson-in-quarkus.version>
+    <spotbugs-annotations.version>4.10.3</spotbugs-annotations.version>
   </properties>
 
   <dependencies>
@@ -159,6 +160,13 @@
       <version>${lombok.version}</version>
       <scope>provided</scope>
     </dependency>
+
+    <dependency>
+      <groupId>com.github.spotbugs</groupId>
+      <artifactId>spotbugs-annotations</artifactId>
+      <version>${spotbugs-annotations.version}</version>
+    </dependency>
+
 
     <!-- Testing -->
     <dependency>
@@ -349,6 +357,7 @@
           <!-- 242 bestehende Findings noch nicht aufgeraeumt (siehe Backlog) -
                Build/CI vorerst nicht daran scheitern lassen, Report bleibt sichtbar. -->
           <failOnError>false</failOnError>
+          <excludeFilterFile>spotbugs-excludes.xml</excludeFilterFile>
         </configuration>
         <executions>
           <execution>

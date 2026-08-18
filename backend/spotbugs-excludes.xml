@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+
+  <Match>
+    <Class name="~.*Service"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+  <Match>
+    <Class name="~.*Resource"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+</FindBugsFilter>

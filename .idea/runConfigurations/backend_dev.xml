@@ -7,7 +7,7 @@
         <option name="myRunnerSettings" />
         <option name="myRunnerParameters">
           <MavenRunnerParameters>
-            <option name="cmdOptions" />
+            <option name="cmdOptions" value="quarkus:dev" />
             <option name="profiles">
               <set />
             </option>
