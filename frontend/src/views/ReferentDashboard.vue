@@ -185,7 +185,7 @@
           <textarea v-model="selectedTalk.ausstattung" rows="2" class="input-field" placeholder="z.B. Beamer, Whiteboard, Starkstromanschluss..." :disabled="isDeadlinePassedForTalk(selectedTalk)"></textarea>
         </div>
 
-        <div class="flex items-center gap-4 p-4 bg-indigo-50 rounded-lg">
+        <div v-if="false" class="flex items-center gap-4 p-4 bg-indigo-50 rounded-lg">
           <input v-model="selectedTalk.wiederholbar" type="checkbox" class="w-5 h-5 text-indigo-600" id="repeat" :disabled="isDeadlinePassedForTalk(selectedTalk)" />
           <label for="repeat" class="text-sm font-medium text-indigo-900">
             Ich bin bereit, den Vortrag bei hoher Nachfrage mehrfach zu halten.
