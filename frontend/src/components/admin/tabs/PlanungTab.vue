@@ -88,6 +88,17 @@
             <DownloadIcon class="w-4 h-4"/>
             .dzn exportieren
           </button>
+          <button @click="emit('exportBundle', solverConfig)" title="Export-Paket (.dzn + Modell + Metadaten) für die Berechnung auf einem externen Rechner herunterladen"
+                  class="bg-white/10 hover:bg-white/20 text-white px-4 py-4 rounded-xl font-bold text-sm shadow-lg transition-all flex items-center gap-2">
+            <DownloadIcon class="w-4 h-4"/>
+            Bundle exportieren
+          </button>
+          <button @click="ergebnisFileInput?.click()" title="Extern berechnetes MiniZinc-Ergebnis importieren"
+                  class="bg-white/10 hover:bg-white/20 text-white px-4 py-4 rounded-xl font-bold text-sm shadow-lg transition-all flex items-center gap-2">
+            <UploadIcon class="w-4 h-4"/>
+            Ergebnis importieren
+          </button>
+          <input type="file" ref="ergebnisFileInput" class="hidden" accept=".zip" @change="onErgebnisFileSelected"/>
           <button @click="emit('startOptimization', solverConfig)" :disabled="teilnehmerMitPrioritaetenCount === 0" class="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-white px-8 py-4 rounded-xl font-black text-lg shadow-2xl transition-all transform hover:scale-105 flex items-center gap-3">
             <ZapIcon class="w-5 h-5"/>
             Pläne erstellen
@@ -108,7 +119,7 @@
 
 <script setup>
 import { reactive, computed, ref, watch, onUnmounted } from 'vue';
-import { Loader as LoaderIcon, Zap as ZapIcon, XCircle as CancelIcon, Download as DownloadIcon } from '@lucide/vue';
+import { Loader as LoaderIcon, Zap as ZapIcon, XCircle as CancelIcon, Download as DownloadIcon, Upload as UploadIcon } from '@lucide/vue';
 
 const props = defineProps({
   isPlanning: Boolean,
@@ -124,7 +135,15 @@ const props = defineProps({
   teilnehmerMitPrioritaetenCount: Number,
 });
 
-const emit = defineEmits(['startOptimization', 'cancelOptimization', 'exportDzn']);
+const emit = defineEmits(['startOptimization', 'cancelOptimization', 'exportDzn', 'exportBundle', 'importErgebnis']);
+
+const ergebnisFileInput = ref(null);
+const onErgebnisFileSelected = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  emit('importErgebnis', file);
+  event.target.value = ''; // erlaubt erneutes Auswählen derselben Datei
+};
 
 const solverConfig = reactive({
   solver: 'cp-sat',
