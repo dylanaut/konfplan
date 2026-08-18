@@ -18,11 +18,11 @@ public class VortragCsvDto {
     @CsvBindByName(column = "Ausstattung")
     public String ausstattung;
 
-    @CsvBindByName(column = "Berufsfeld")
-    public String berufsfeld;
-
     @CsvBindByName(column = "Abschluss")
     public String abschluss;
+
+    @CsvBindByName(column = "Veranlagungen") // Pipe-getrennte Liste von Veranlagungen
+    public String veranlagungen;
 
     @CsvBindByName(column = "wiederholbar")
     public boolean wiederholbar;

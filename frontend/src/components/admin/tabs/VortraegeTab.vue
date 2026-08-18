@@ -18,7 +18,6 @@
         <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
         <tr>
           <th @click="toggleSort('vortraege', 'titel')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Titel <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-          <th @click="toggleSort('vortraege', 'berufsfeldName')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Berufsfeld <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
           <th @click="toggleSort('vortraege', 'referentName')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Referent <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
           <th @click="toggleSort('vortraege', 'referentOrganisation')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Organisation <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
           <th @click="toggleSort('vortraege', 'istPflicht')" class="px-4 py-1.5 text-center cursor-pointer hover:text-indigo-600 transition font-bold">Pflicht <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
@@ -28,7 +27,6 @@
         <tbody class="divide-y divide-gray-100">
         <tr v-for="v in paginatedVortraege" :key="v.id" class="hover:bg-gray-50">
           <td class="px-4 py-2 font-bold">{{ v.titel }}</td>
-          <td class="px-4 py-2 text-gray-600">{{ v.berufsfeldName || '-' }}</td>
           <td class="px-4 py-2">{{ v.referentName }}</td>
           <td class="px-4 py-2 text-gray-600">{{ v.referentOrganisation || '-' }}</td>
           <td class="px-4 py-2 text-center">

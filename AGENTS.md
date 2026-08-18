@@ -112,8 +112,9 @@ views/*.vue           # Top-Level-Seiten-Komponenten geroutet von Vue Router
 
 - **Veranstaltung** – Zentrale Entität; hat EventSlots, Gebäude, Nutzer; besitzt Deadlines für Referenten/Teilnehmer.
 - **Nutzer** (SINGLE_TABLE) → Admin | Referent | Teilnehmer
-- **Vortrag** (SINGLE_TABLE) → Pflichtvortrag | Wahlvortrag; hat optional ein `Berufsfeld`.
-- **Berufsfeld** - Enum zur Kategorisierung von Vorträgen.
+- **Vortrag** (SINGLE_TABLE) → Pflichtvortrag | Wahlvortrag; hat optional einen `AbschlussTyp`.
+- **AbschlussTyp** - Enum für den mit einem Vortrag assoziierten Schulabschluss.
+- **Veranlagung** - Enum fachlicher/beruflicher Ausrichtungen; Teilnehmer und Wahlvortrag können jeweils mehrere zuordnen.
 - **EventSlot** – Zeitfenster innerhalb einer Veranstaltung; mit Überschneidungsprüfung.
 - **Zuweisung** – Ordnet Teilnehmer einem Vortrag + Slot + Raum zu.
 - **Prioritaet** – Präferenz eines Teilnehmers für einen Wahlvortrag (Ranking 1-10, 10 = höchste, 0 = keine Präferenz/Hard-Exclude).
@@ -169,7 +170,7 @@ Wenn eine Änderung am Datenmodell als "Full-Stack-Feature-Slice" angefordert wi
 
 1.  **Persistenz-Schicht (Backend):**
     *   **Entität anpassen:** Das neue Feld zur entsprechenden JPA-Entitätsklasse hinzufügen (z.B. `Vortrag.java`).
-    *   **Enum erstellen:** Falls das neue Feld ein Enum ist, die `enum`-Klasse anlegen (z.B. `Berufsfeld.java`).
+    *   **Enum erstellen:** Falls das neue Feld ein Enum ist, die `enum`-Klasse anlegen (z.B. `AbschlussTyp.java`).
     *   **Datenbank-Migration:** Ein neues Flyway-Migrationsskript (`V_... .sql`) erstellen, um das Datenbankschema mit `ALTER TABLE ... ADD COLUMN ...` zu aktualisieren.
 
 2.  **Datenübertragungs-Schicht (Backend):**

@@ -118,9 +118,7 @@ public class ReportDto {
             this.veranstaltung = VeranstaltungDto.from(veranstaltung);
 
             List<Wahlvortrag> sortiert = veranstaltung.getWahlvortraege().stream()
-                .sorted(Comparator
-                    .comparing((Wahlvortrag v) -> v.getBerufsfeld() == null ? Integer.MAX_VALUE : v.getBerufsfeld().ordinal())
-                    .thenComparing(Vortrag::getTitel, String.CASE_INSENSITIVE_ORDER))
+                .sorted(Comparator.comparing(Vortrag::getTitel, String.CASE_INSENSITIVE_ORDER))
                 .toList();
 
             List<LegendeEintragDto> eintraege = new ArrayList<>();
@@ -143,7 +141,6 @@ public class ReportDto {
         public final int nummer;
         public final String titel;
         public final String inhalt;
-        public final String berufsfeldName;
         public final String referentName;
         public final String referentOrganisation;
 
@@ -151,7 +148,6 @@ public class ReportDto {
             this.nummer = nummer;
             this.titel = vortrag.getTitel();
             this.inhalt = vortrag.getInhalt();
-            this.berufsfeldName = vortrag.getBerufsfeld() != null ? vortrag.getBerufsfeld().getName() : null;
             this.referentName = vortrag.getReferent().getFullName();
             this.referentOrganisation = vortrag.getReferent().getOrganisation();
         }

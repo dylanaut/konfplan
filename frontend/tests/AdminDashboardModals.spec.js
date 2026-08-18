@@ -48,7 +48,7 @@ const ALL_USERS = [
 ];
 
 const VORTRAEGE = [
-  { id: 400, titel: 'Wahlvortrag Test', inhalt: 'Inhalt', istPflicht: false, vortrag_typ: 'WAHL', referent: { id: 200 }, wiederholbar: true, maxWiederholungen: 2, ausstattung: 'Beamer', berufsfeld: null, version: 0 },
+  { id: 400, titel: 'Wahlvortrag Test', inhalt: 'Inhalt', istPflicht: false, vortrag_typ: 'WAHL', referent: { id: 200 }, wiederholbar: true, maxWiederholungen: 2, ausstattung: 'Beamer', version: 0 },
   { id: 401, titel: 'Pflichtvortrag Test', inhalt: 'Inhalt', istPflicht: true, vortrag_typ: 'PFLICHT', referent: { id: 200 }, pflichtgruppe: '10a', pflichtraum: { id: 20 }, pflichtslot: { id: 500 }, version: 0 }
 ];
 

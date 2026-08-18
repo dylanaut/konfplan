@@ -11,7 +11,6 @@ import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.AbschlussTyp;
 import kreyj.konfplan.persistence.Admin;
-import kreyj.konfplan.persistence.Berufsfeld;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.Nutzer;
@@ -19,6 +18,7 @@ import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranlagung;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import org.junit.jupiter.api.BeforeEach;
@@ -226,9 +226,9 @@ class CsvImportTest extends DatabaseCleaner {
         String wvTitel = "Java Kurs";
         String pvTitel = "Berufsorientierung";
         String csv = "istPflicht;Titel;Referent_LoginName;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;" +
-            "Pflichtslot;Ausstattung;Berufsfeld\n" +
-            "false;" + wvTitel + ";vortrag;Wahlinhalt;;true;2;;;Beamer;IT\n" +
-            "true;" + pvTitel + ";vortrag;Pflichtinhalt;Pflichtgruppe;false;1;A101;Slot 1;;";
+            "Pflichtslot;Ausstattung\n" +
+            "false;" + wvTitel + ";vortrag;Wahlinhalt;;true;2;;;Beamer\n" +
+            "true;" + pvTitel + ";vortrag;Pflichtinhalt;Pflichtgruppe;false;1;A101;Slot 1;";
 
         given()
             .multiPart("file", "vortraege.csv", csv.getBytes())
@@ -239,8 +239,6 @@ class CsvImportTest extends DatabaseCleaner {
         Wahlvortrag wv = Wahlvortrag.find("titel", wvTitel).firstResult();
         assertThat(wv).describedAs("Wahlvortrag '" +
             wvTitel + "' sollte importiert worden sein").isNotNull();
-        assertThat(wv.getBerufsfeld()).describedAs("Wahlvortrag '" +
-            wvTitel + "' sollte IT Berufsfeld haben").isEqualTo(Berufsfeld.IT_UND_COMPUTER);
         assertThat(wv.getAusstattung()).describedAs("Wahlvortrag '" +
             wvTitel + "' sollte Beamer als Ausstattung haben").isEqualTo("Beamer");
         assertThat(wv.isWiederholbar()).isTrue();
@@ -253,8 +251,8 @@ class CsvImportTest extends DatabaseCleaner {
     void testImportVortraege_mitAbschluss() {
         String wvTitel = "Vortrag mit Abschluss";
         String csv = "istPflicht;Titel;Referent_LoginName;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;" +
-            "Pflichtslot;Ausstattung;Berufsfeld;Abschluss\n" +
-            "false;" + wvTitel + ";vortrag;Wahlinhalt;;true;2;;;Beamer;IT;Allgemeine\n";
+            "Pflichtslot;Ausstattung;Abschluss\n" +
+            "false;" + wvTitel + ";vortrag;Wahlinhalt;;true;2;;;Beamer;Allgemeine\n";
 
         given()
             .multiPart("file", "vortraege.csv", csv.getBytes())
@@ -274,8 +272,8 @@ class CsvImportTest extends DatabaseCleaner {
     void testImportVortraege_ohneAbschluss_bleibtLeer() {
         String wvTitel = "Vortrag ohne Abschluss";
         String csv = "istPflicht;Titel;Referent_LoginName;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;" +
-            "Pflichtslot;Ausstattung;Berufsfeld;Abschluss\n" +
-            "false;" + wvTitel + ";vortrag;Wahlinhalt;;true;2;;;Beamer;IT;\n";
+            "Pflichtslot;Ausstattung;Abschluss\n" +
+            "false;" + wvTitel + ";vortrag;Wahlinhalt;;true;2;;;Beamer;\n";
 
         given()
             .multiPart("file", "vortraege.csv", csv.getBytes())
@@ -286,6 +284,47 @@ class CsvImportTest extends DatabaseCleaner {
         Wahlvortrag wv = Wahlvortrag.find("titel", wvTitel).firstResult();
         assertThat(wv).describedAs("Wahlvortrag '" + wvTitel + "' sollte importiert worden sein").isNotNull();
         assertThat(wv.getAbschluss()).describedAs("Abschluss darf beim CSV-Import leer bleiben").isNull();
+    }
+
+
+    @Test
+    @TestHTTPEndpoint(VeranstaltungResource.class)
+    void testImportVortraege_mitVeranlagungen() {
+        String wvTitel = "Vortrag mit Veranlagungen";
+        String csv = "istPflicht;Titel;Referent_LoginName;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;" +
+            "Pflichtslot;Ausstattung;Veranlagungen\n" +
+            "false;" + wvTitel + ";vortrag;Wahlinhalt;;true;2;;;Beamer;sozial|technisch\n";
+
+        given()
+            .multiPart("file", "vortraege.csv", csv.getBytes())
+            .when().post("/{vid}/vortraege/import", testVid)
+            .then()
+            .statusCode(OK.getStatusCode());
+
+        Wahlvortrag wv = Wahlvortrag.find("titel", wvTitel).firstResult();
+        assertThat(wv).describedAs("Wahlvortrag '" + wvTitel + "' sollte importiert worden sein").isNotNull();
+        assertThat(wv.getVeranlagungen()).describedAs("Wahlvortrag '" +
+            wvTitel + "' sollte sozial und technisch als Veranlagungen haben").containsExactlyInAnyOrder(Veranlagung.SOZIAL, Veranlagung.TECHNISCH);
+    }
+
+
+    @Test
+    @TestHTTPEndpoint(VeranstaltungResource.class)
+    void testImportVortraege_ohneVeranlagungen_bleibtLeer() {
+        String wvTitel = "Vortrag ohne Veranlagungen";
+        String csv = "istPflicht;Titel;Referent_LoginName;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;" +
+            "Pflichtslot;Ausstattung;Veranlagungen\n" +
+            "false;" + wvTitel + ";vortrag;Wahlinhalt;;true;2;;;Beamer;\n";
+
+        given()
+            .multiPart("file", "vortraege.csv", csv.getBytes())
+            .when().post("/{vid}/vortraege/import", testVid)
+            .then()
+            .statusCode(OK.getStatusCode());
+
+        Wahlvortrag wv = Wahlvortrag.find("titel", wvTitel).firstResult();
+        assertThat(wv).describedAs("Wahlvortrag '" + wvTitel + "' sollte importiert worden sein").isNotNull();
+        assertThat(wv.getVeranlagungen()).describedAs("Veranlagungen dürfen beim CSV-Import leer bleiben").isEmpty();
     }
 
 
