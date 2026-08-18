@@ -235,7 +235,6 @@ public class ReferentService implements ReferentServiceInterface {
         vortrag.setTitel(vortrag.getTitel());
         vortrag.setInhalt(vortrag.getInhalt());
         vortrag.setAusstattung(vortrag.getAusstattung());
-        vortrag.setBerufsfeld(vortrag.getBerufsfeld());
         vortrag.setAbschluss(vortrag.getAbschluss());
         vortrag.setReferent(referent);
         vortrag.setVeranstaltung(veranstaltung);
@@ -298,7 +297,6 @@ public class ReferentService implements ReferentServiceInterface {
         zielVortrag.setTitel(quellVortrag.getTitel());
         zielVortrag.setInhalt(quellVortrag.getInhalt()); // AbstractText wird kopiert und kann angepasst werden
         zielVortrag.setAusstattung(quellVortrag.getAusstattung());
-        zielVortrag.setBerufsfeld(quellVortrag.getBerufsfeld());
         zielVortrag.setAbschluss(quellVortrag.getAbschluss());
         zielVortrag.setReferent(referent);
         zielVortrag.setVeranstaltung(veranstaltung);
@@ -352,7 +350,6 @@ public class ReferentService implements ReferentServiceInterface {
         vortrag.setTitel(dto.titel);
         vortrag.setInhalt(dto.inhalt);
         vortrag.setAusstattung(dto.ausstattung);
-        vortrag.setBerufsfeld(dto.berufsfeld);
         vortrag.setAbschluss(dto.abschluss);
 
         if (vortrag instanceof Wahlvortrag wahlvortrag) {

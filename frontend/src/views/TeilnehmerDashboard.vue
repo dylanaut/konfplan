@@ -144,61 +144,80 @@
             </button>
             <div v-if="activeEventId === event.id" class="p-4 border-t border-gray-200 bg-white animate-fade-in">
               <div v-if="vortraege.length > 0">
-                <div class="mb-6">
-                  <h4 class="font-bold text-sm mb-2">Alle Vorträge</h4>
-                  <div class="space-y-2">
-                    <div v-for="group in groupedVortraege" :key="group.berufsfeld">
-                      <h5 class="font-semibold text-xs text-indigo-700 uppercase mt-2">{{ group.berufsfeld }}</h5>
-                      <ol class="list-decimal list-inside space-y-1 text-xs pl-2">
-                        <li v-for="talk in group.vortraege" :key="talk.id">
+                <div class="mb-6 overflow-x-auto">
+                  <table class="text-xs border-collapse">
+                    <thead>
+                      <tr>
+                        <th class="px-2 py-1 text-right sticky left-0 bg-white">Nr.</th>
+                        <th class="px-2 py-1 text-left sticky left-0 bg-white">Vortrag</th>
+                        <th v-for="veranlagung in veranlagungStore.veranlagungen" :key="veranlagung.name"
+                            class="px-1 py-1 text-center align-bottom" :title="veranlagung.beschreibung">
+                          <span class="inline-block whitespace-nowrap text-[9px] font-semibold text-indigo-700"
+                                style="writing-mode: vertical-rl; transform: rotate(180deg);">
+                            {{ veranlagung.bezeichnung }}
+                          </span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="talk in nummeredVortraege" :key="talk.id" class="border-t border-gray-100">
+                        <td class="px-2 py-1 text-right font-black text-indigo-600">{{ talk.nummer }}</td>
+                        <td class="px-2 py-1">
                           <span class="font-semibold">{{ talk.titel }}</span> bei {{ talk.referentName }}
-                          <span v-if="talk.istPflicht" class="ml-2 text-white bg-blue-500 text-[9px] font-bold px-1.5 py-0.5 rounded-full">Pflicht</span>
-                        </li>
-                      </ol>
-                    </div>
-                  </div>
+                          <span v-if="talk.istPflicht" class="ml-1 text-white bg-blue-500 text-[9px] font-bold px-1.5 py-0.5 rounded-full">Pflicht</span>
+                        </td>
+                        <td v-for="veranlagung in veranlagungStore.veranlagungen" :key="veranlagung.name" class="px-1 py-1 text-center text-gray-500">
+                          {{ (talk.veranlagungen || []).includes(veranlagung.name) ? 'X' : '' }}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
 
                 <h4 class="font-bold text-sm mb-2">Meine Prioritäten</h4>
+                <p class="text-[10px] text-gray-500 mb-2">Nummern entsprechen der Legende oben. 10 = höchste Priorität, 1 = niedrigste, leer/0 = kein Interesse.</p>
                  <div class="flex justify-end mb-4">
                   <button @click="savePriorities()" :disabled="isDeadlinePassed(event.deadlineTeilnehmer) || changedPriorities.size === 0" class="btn-save-all">
                     <SaveAllIcon class="w-3.5 h-3.5"/>
                     Meine Prioritäten speichern
                   </button>
                 </div>
-                <table class="min-w-full text-xs">
-                  <thead class="text-[9px] uppercase font-bold text-gray-500 bg-gray-50">
-                    <tr>
-                      <th class="py-2 px-4 text-left">Vortrag</th>
-                      <th class="py-2 px-4 text-left">Referent</th>
-                      <th class="py-2 px-4 text-center">Gewählt</th>
-                      <th class="py-2 px-4 text-center">Zugeteilt</th>
-                      <th class="py-2 px-4 text-center w-24">Meine Priorität (10=höchste, 1=niedrigste)</th>
-                    </tr>
-                  </thead>
-                  <tbody class="bg-white">
-                    <tr v-for="talk in vortraege" :key="talk.id" :class="talk.istPflicht ? 'bg-gray-50' : ''">
-                      <td class="px-4 py-3 font-bold">
-                        {{ talk.titel }}
-                        <span v-if="talk.istPflicht" class="ml-2 text-white bg-blue-500 text-[9px] font-bold px-1.5 py-0.5 rounded-full">Pflicht</span>
-                      </td>
-                      <td class="px-4 py-3 text-gray-600">{{ talk.referentName }}</td>
-                      <td class="px-4 py-3 text-center">
-                        <CheckCircleIcon v-if="getPriority(talk.id).prioWert > 0" class="w-4 h-4 text-green-500 mx-auto" />
-                      </td>
-                      <td class="px-4 py-3 text-center">
-                        <CheckCircleIcon v-if="isAssigned(talk.id)" class="w-4 h-4 text-green-500 mx-auto" />
-                      </td>
-                      <td class="px-4 py-3 text-center">
-                        <input type="number" min="0" max="10"
-                               v-model.number="getPriority(talk.id).prioWert"
-                               @input="markPrioChanged(talk.id)"
-                               :disabled="isDeadlinePassed(event.deadlineTeilnehmer) || talk.istPflicht"
-                               class="w-20 text-center border rounded py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 disabled:bg-gray-200"/>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                <div v-for="(chunk, chunkIndex) in prioritaetenChunks" :key="chunkIndex" class="mb-4 overflow-x-auto">
+                  <table class="text-xs border-collapse">
+                    <thead class="text-[9px] uppercase font-bold text-gray-500 bg-gray-50">
+                      <tr>
+                        <th class="py-2 px-2 text-left sticky left-0 bg-gray-50"></th>
+                        <th v-for="talk in chunk" :key="talk.id" class="py-2 px-1 text-center w-10 min-w-[40px]" :title="talk.titel">
+                          {{ talk.nummer }}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody class="bg-white">
+                      <tr>
+                        <td class="px-2 py-1 text-left font-bold text-gray-600 sticky left-0 bg-white">Gewählt</td>
+                        <td v-for="talk in chunk" :key="'gewaehlt-'+talk.id" class="px-1 py-1 text-center">
+                          <CheckCircleIcon v-if="getPriority(talk.id).prioWert > 0" class="w-3.5 h-3.5 text-green-500 mx-auto" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="px-2 py-1 text-left font-bold text-gray-600 sticky left-0 bg-white">Zugeteilt</td>
+                        <td v-for="talk in chunk" :key="'zugeteilt-'+talk.id" class="px-1 py-1 text-center">
+                          <CheckCircleIcon v-if="isAssigned(talk.id)" class="w-3.5 h-3.5 text-green-500 mx-auto" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="px-2 py-1 text-left font-bold text-gray-600 sticky left-0 bg-white">Priorität</td>
+                        <td v-for="talk in chunk" :key="'prio-'+talk.id" class="px-1 py-1 text-center">
+                          <input type="number" min="0" max="10"
+                                 v-model.number="getPriority(talk.id).prioWert"
+                                 @input="markPrioChanged(talk.id)"
+                                 :disabled="isDeadlinePassed(event.deadlineTeilnehmer) || talk.istPflicht"
+                                 class="w-10 text-center border rounded py-0.5 text-[10px] focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 disabled:bg-gray-200"/>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
               <div v-else class="text-center text-gray-500 py-4">
                 <p>Für diese Veranstaltung sind noch keine Vorträge verfügbar.</p>
@@ -258,20 +277,23 @@ const hasAvailabilityChanges = computed(() => {
   return JSON.stringify(availabilities.value) !== JSON.stringify(initialAvailabilities.value);
 });
 
-const groupedVortraege = computed(() => {
-  const grouped = vortraege.value.reduce((acc, vortrag) => {
-    const key = vortrag.berufsfeld || 'Sonstige';
-    if (!acc[key]) {
-      acc[key] = [];
-    }
-    acc[key].push(vortrag);
-    return acc;
-  }, {});
+const sortedVortraege = computed(() => {
+  return [...vortraege.value].sort((a, b) => a.titel.localeCompare(b.titel));
+});
 
-  return Object.keys(grouped).sort().map(key => ({
-    berufsfeld: key,
-    vortraege: grouped[key]
-  }));
+const nummeredVortraege = computed(() => {
+  return sortedVortraege.value.map((v, index) => ({ ...v, nummer: index + 1 }));
+});
+
+// Bei vielen Vorträgen wird die Prioritäten-Tabelle in mehrere schmalere Tabellen
+// untereinander aufgeteilt, damit sie nicht horizontal zu breit wird.
+const PRIORITAETEN_SPALTEN_PRO_TABELLE = 15;
+const prioritaetenChunks = computed(() => {
+  const chunks = [];
+  for (let i = 0; i < nummeredVortraege.value.length; i += PRIORITAETEN_SPALTEN_PRO_TABELLE) {
+    chunks.push(nummeredVortraege.value.slice(i, i + PRIORITAETEN_SPALTEN_PRO_TABELLE));
+  }
+  return chunks;
 });
 
 const pflichtSlotIds = computed(() => {

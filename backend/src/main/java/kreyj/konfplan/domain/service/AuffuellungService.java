@@ -1,13 +1,13 @@
 package kreyj.konfplan.domain.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import kreyj.konfplan.persistence.Berufsfeld;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranlagung;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import org.jboss.logging.Logger;
@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 
@@ -202,15 +201,14 @@ public class AuffuellungService {
             }
         }
 
-        // Tier 2: aus den eigenen Prioritäten abgeleitetes Berufsfeld.
-        List<Berufsfeld> praeferierteBerufsfelder = eigenePrioritaeten.stream()
-            .map(p -> p.getVortrag().getBerufsfeld())
-            .filter(Objects::nonNull)
+        // Tier 2: Kandidat teilt mindestens eine Veranlagung mit einem priorisierten Vortrag.
+        List<Veranlagung> praeferierteVeranlagungen = eigenePrioritaeten.stream()
+            .flatMap(p -> p.getVortrag().getVeranlagungen().stream())
             .distinct()
             .toList();
-        for (Berufsfeld berufsfeld : praeferierteBerufsfelder) {
+        for (Veranlagung veranlagung : praeferierteVeranlagungen) {
             List<Instanz> treffer = eligibleKandidaten.stream()
-                .filter(k -> berufsfeld.equals(wahlvortragByOid.get(wvOids[k.wvIdx()]).getBerufsfeld()))
+                .filter(k -> wahlvortragByOid.get(wvOids[k.wvIdx()]).getVeranlagungen().contains(veranlagung))
                 .toList();
             if (!treffer.isEmpty()) {
                 return treffer.get(ThreadLocalRandom.current().nextInt(treffer.size()));

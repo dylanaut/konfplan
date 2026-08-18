@@ -29,7 +29,6 @@ import kreyj.konfplan.domain.exception.UpdateVortragException;
 import kreyj.konfplan.domain.exception.VeranstaltungException;
 import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.AbschlussTyp;
-import kreyj.konfplan.persistence.Berufsfeld;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Nutzer;
@@ -42,6 +41,7 @@ import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranlagung;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
@@ -508,7 +508,6 @@ public class AdminService implements AdminServiceInterface {
 
 
         created.setAusstattung(vortragDto.ausstattung);
-        created.setBerufsfeld(vortragDto.berufsfeld);
         created.setAbschluss(vortragDto.abschluss);
         created.persistAndFlush();
 
@@ -696,14 +695,17 @@ public class AdminService implements AdminServiceInterface {
                         dto.maxWiederholungen = csvDto.maxWiederholungen;
                     }
 
-                    if (StringUtils.isNotBlank(csvDto.berufsfeld)) {
-                        Berufsfeld foundBerufsfeld = findBerufsfeldByPrefix(csvDto.berufsfeld);
-                        if (foundBerufsfeld != null) {
-                            dto.berufsfeld = foundBerufsfeld;
-                        } else {
-                            LOG.warn("Vortrag '" + csvDto.titel + "' übersprungen: Ungültiges oder nicht eindeutiges Berufsfeld '" + csvDto.berufsfeld + "'.");
-                            continue;
+                    if (StringUtils.isNotBlank(csvDto.veranlagungen)) {
+                        Set<Veranlagung> gefundeneVeranlagungen = new HashSet<>();
+                        for (String token : csvDto.veranlagungen.split("\\|")) {
+                            Veranlagung gefunden = findVeranlagungByPrefix(token);
+                            if (gefunden != null) {
+                                gefundeneVeranlagungen.add(gefunden);
+                            } else if (StringUtils.isNotBlank(token)) {
+                                LOG.warn("Vortrag '" + csvDto.titel + "': Ungültige oder nicht eindeutige Veranlagung '" + token.trim() + "' übersprungen.");
+                            }
                         }
+                        dto.veranlagungen = gefundeneVeranlagungen;
                     }
 
                     if (StringUtils.isNotBlank(csvDto.abschluss)) {
@@ -753,15 +755,15 @@ public class AdminService implements AdminServiceInterface {
     }
 
 
-    private Berufsfeld findBerufsfeldByPrefix(String prefix) {
+    private Veranlagung findVeranlagungByPrefix(String prefix) {
         if (StringUtils.isBlank(prefix)) {
             return null;
         }
         String normalizedPrefix = prefix.trim().toLowerCase();
-        List<Berufsfeld> matches = new ArrayList<>();
-        for (Berufsfeld feld : Berufsfeld.values()) {
-            if (feld.getName().toLowerCase().startsWith(normalizedPrefix)) {
-                matches.add(feld);
+        List<Veranlagung> matches = new ArrayList<>();
+        for (Veranlagung veranlagung : Veranlagung.values()) {
+            if (veranlagung.getBezeichnung().toLowerCase().startsWith(normalizedPrefix)) {
+                matches.add(veranlagung);
             }
         }
         if (matches.size() == 1) {
@@ -1200,7 +1202,6 @@ public class AdminService implements AdminServiceInterface {
         entity.setTitel(updated.titel);
         entity.setInhalt(updated.inhalt);
         entity.setAusstattung(updated.ausstattung);
-        entity.setBerufsfeld(updated.berufsfeld);
         entity.setAbschluss(updated.abschluss);
 
         if (entity instanceof Pflichtvortrag pv && updated.istPflicht) {

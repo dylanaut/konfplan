@@ -4,26 +4,6 @@ class Admin <<Entity>>  {
 }
 
 
-enum Berufsfeld {
-	{field} +BAU_ARCHITEKTUR_VERMESSUNG_UND_GEBAEUDETECHNIK
-	{field} +CHEMIE_KUNSTSTOFF_GLAS_TEXTIL_UND_HOLZ
-	{field} +ELEKTROTECHNIK
-	{field} +GASTRONOMIE_LEBENSMITTEL_UND_HAUSWIRTSCHAFT
-	{field} +GESUNDHEIT
-	{field} +IT_UND_COMPUTER
-	{field} +KREATIVBERUFE_MEDIEN_UND_GESTALTUNG
-	{field} +LAND_FORST_TIERWIRTSCHAFT_UND_GARTENBAU
-	{field} +METALL_MASCHINEN_UND_FAHRZEUGBAU
-	{field} +NATURWISSENSCHAFT_GEOGRAFIE_UND_INFORMATIK
-	{field} +ROHSTOFFGEWINNUNG_PRODUKTION_UND_FERTIGUNG
-	{field} +SOZIALES_PAEDAGOGIK_UND_THEOLOGIE
-	{field} +TOURISMUS_SPORT_UND_KULTUR
-	{field} +UNTERNEHMENSFUEHRUNG_ORGANISATION_EINKAUF_VERTRIEB_UND_MARKETING
-	{field} +VERKEHR_LOGISTIK_SCHUTZ_UND_SICHERHEIT
-	{field} +WIRTSCHAFT_VERWALTUNG_RECHT_UND_GESELLSCHAFT
-}
-
-
 class Gebaeude <<Entity>>  {
 	{field} +hausnummer : String
 	{field} +@Column("") name : String
@@ -371,7 +351,6 @@ Veranstaltung "1" o-- "0..*"  Vortrag :  @OneToMany\nvortraege
 Veranstaltung -->  Planungsergebnis :  @OneToOne\nplanungsergebnis
 Veranstaltung --|>  VersionedEntity
 VersionedEntity --|>  IdEntity
-Vortrag -->  Berufsfeld :  @Column("")\nberufsfeld
 Vortrag -->  Referent :  @ManyToOne\nreferent
 Vortrag -->  Veranstaltung :  @ManyToOne\nveranstaltung
 Vortrag --|>  VersionedEntity

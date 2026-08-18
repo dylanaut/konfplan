@@ -26,16 +26,13 @@
         </h4>
 
         <h5>Wahlvorträge</h5>
-        <div v-for="gruppe in legendeGruppen" :key="gruppe.berufsfeldName || '_ohne'" class="mb-3">
-          <h6 class="fw-bold">{{ gruppe.berufsfeldName || 'Ohne Berufsfeld' }}</h6>
-          <div v-for="eintrag in gruppe.eintraege" :key="eintrag.nummer" class="mb-2">
-            <div>
-              <strong>{{ eintrag.nummer }}.</strong>
-              {{ eintrag.referentName }} &ndash; {{ eintrag.titel }}
-              <span v-if="eintrag.referentOrganisation" class="text-muted">({{ eintrag.referentOrganisation }})</span>
-            </div>
-            <div v-if="eintrag.inhalt" class="ps-4 small text-muted">{{ eintrag.inhalt }}</div>
+        <div v-for="eintrag in reportData.legende" :key="eintrag.nummer" class="mb-2">
+          <div>
+            <strong>{{ eintrag.nummer }}.</strong>
+            {{ eintrag.referentName }} &ndash; {{ eintrag.titel }}
+            <span v-if="eintrag.referentOrganisation" class="text-muted">({{ eintrag.referentOrganisation }})</span>
           </div>
+          <div v-if="eintrag.inhalt" class="ps-4 small text-muted">{{ eintrag.inhalt }}</div>
         </div>
 
         <h5 class="mt-4">Ihre Prioritäten</h5>
@@ -65,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
@@ -76,21 +73,6 @@ const loading = ref(true);
 const error = ref(null);
 
 const handlePrint = () => window.print();
-
-// Die Legende kommt vom Backend bereits nach Berufsfeld sortiert - hier nur noch in
-// aufeinanderfolgende Gruppen mit gleichem Berufsfeld zusammenfassen.
-const legendeGruppen = computed(() => {
-  const gruppen = [];
-  for (const eintrag of reportData.value.legende || []) {
-    const letzte = gruppen[gruppen.length - 1];
-    if (letzte && letzte.berufsfeldName === eintrag.berufsfeldName) {
-      letzte.eintraege.push(eintrag);
-    } else {
-      gruppen.push({ berufsfeldName: eintrag.berufsfeldName, eintraege: [eintrag] });
-    }
-  }
-  return gruppen;
-});
 
 onMounted(async () => {
   const veranstaltungId = route.params.vid;

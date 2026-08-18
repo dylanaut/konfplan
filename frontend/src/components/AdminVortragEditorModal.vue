@@ -32,16 +32,6 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Berufsfeld</label>
-          <select v-model="form.berufsfeld" class="input-field">
-            <option :value="null">-- Kein Berufsfeld --</option>
-            <option v-for="feld in BERUFSFELDER" :key="feld" :value="feld">
-              {{ feld }}
-            </option>
-          </select>
-        </div>
-
-        <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Abschluss</label>
           <select v-model="form.abschluss" class="input-field">
             <option :value="null">-- Kein Abschluss --</option>
@@ -150,25 +140,6 @@ import { useVeranlagungStore } from '../stores/veranlagung';
 const veranlagungStore = useVeranlagungStore();
 veranlagungStore.fetchVeranlagungen();
 
-const BERUFSFELDER = [
-    'Land-, Forst-, Tierwirtschaft und Gartenbau',
-    'Rohstoffgewinnung, Produktion und Fertigung',
-    'Bau, Architektur, Vermessung und Gebäudetechnik',
-    'Naturwissenschaft, Geografie und Informatik',
-    'Verkehr, Logistik, Schutz und Sicherheit',
-    'Elektrotechnik',
-    'Metall-, Maschinen- und Fahrzeugbau',
-    'IT und Computer',
-    'Chemie, Kunststoff, Glas, Textil und Holz',
-    'Gastronomie, Lebensmittel und Hauswirtschaft',
-    'Gesundheit',
-    'Soziales, Pädagogik und Theologie',
-    'Kreativberufe, Medien und Gestaltung',
-    'Wirtschaft, Verwaltung, Recht und Gesellschaft',
-    'Unternehmensführung, Organisation, Einkauf, Vertrieb und Marketing',
-    'Tourismus, Sport und Kultur',
-];
-
 const ABSCHLUSSTYPEN = [
     'Berufsreife',
     'Mittlere Reife',
@@ -196,7 +167,6 @@ const form = reactive({
   titel: '',
   inhalt: '',
   zielgruppe: '',
-  berufsfeld: null,
   abschluss: null,
   referent: { id: null },
   pflichtraum: { id: null },
@@ -215,7 +185,6 @@ watch(
       form.titel = val?.titel ?? '';
       form.inhalt = val?.inhalt ?? '';
       form.zielgruppe = val?.zielgruppe ?? '';
-      form.berufsfeld = val?.berufsfeld ?? null;
       form.abschluss = val?.abschluss ?? null;
       form.referent.id = val?.referent?.id ?? null;
       form.pflichtraum.id = val?.pflichtraum?.id ?? null;

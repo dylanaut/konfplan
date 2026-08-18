@@ -1,4 +1,4 @@
-istPflicht;Titel;Referent_LoginName;wahlSlots;Inhalt;wiederholbar;maxWiederholungen;Pflichtgruppe;Pflichtraum;Pflichtslot;Ausstattung;Berufsfeld
-false;Traumberuf Berater?;zweiter.referent;[Slot_2,Slot_3];Inhalt Wahlvortrag 1;true;2;;;;Beamer;IT
-false;Traumberuf Informatiker?;erster.referent;[Slot_1,Slot_2,Slot_3];Inhalt Wahlvortrag 2;true;2;;;;Beamer;IT
-false;Mechatroniker;erster.referent;[Slot_1,Slot_2,Slot_3];Inhalt Wahlvortrag 2;true;2;;;;Beamer;METALL
+istPflicht;Titel;Referent_LoginName;wahlSlots;Inhalt;wiederholbar;maxWiederholungen;Pflichtgruppe;Pflichtraum;Pflichtslot;Ausstattung;Veranlagungen
+false;Traumberuf Berater?;zweiter.referent;[Slot_2,Slot_3];Inhalt Wahlvortrag 1;true;2;;;;Beamer;organisatorisch|kaufmännisch
+false;Traumberuf Informatiker?;erster.referent;[Slot_1,Slot_2,Slot_3];Inhalt Wahlvortrag 2;true;2;;;;Beamer;technisch|wissenschaftlich
+false;Mechatroniker;erster.referent;[Slot_1,Slot_2,Slot_3];Inhalt Wahlvortrag 2;true;2;;;;Beamer;technisch|handwerklich

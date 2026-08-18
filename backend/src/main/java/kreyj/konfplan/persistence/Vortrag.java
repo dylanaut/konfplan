@@ -53,11 +53,6 @@ public abstract class Vortrag extends VersionedEntity {
     private String ausstattung;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 100) // Adjust length based on the longest enum constant name
-    @Setter
-    private Berufsfeld berufsfeld;
-
-    @Enumerated(EnumType.STRING)
     @Column(length = 50)
     @Setter
     private AbschlussTyp abschluss;

@@ -2,7 +2,6 @@ package kreyj.konfplan.adapter.in.web.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import kreyj.konfplan.persistence.AbschlussTyp;
-import kreyj.konfplan.persistence.Berufsfeld;
 import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
@@ -27,8 +26,6 @@ public class VortragDto extends AbstractVersionedDto {
     public String titel;
     public String inhalt;
     public String ausstattung;
-    public Berufsfeld berufsfeld; // Neues Feld
-    public String berufsfeldName;
     public AbschlussTyp abschluss;
     public String abschlussName;
     public Set<Veranlagung> veranlagungen = new HashSet<>();
@@ -58,7 +55,7 @@ public class VortragDto extends AbstractVersionedDto {
 
     public VortragDto(String titel, String inhalt, Long referentId, String pflichtGruppe, Long pflichtRaumId, Long pflichtSlotId,
                       Long veranstaltungId) {
-        this(true, titel, inhalt, null, null, referentId, veranstaltungId); // Berufsfeld hinzugefügt
+        this(true, titel, inhalt, null, referentId, veranstaltungId);
 
         Objects.requireNonNull(pflichtGruppe, "Pflichtgruppe darf nicht null sein");
         Objects.requireNonNull(pflichtRaumId, "PflichtraumId darf nicht null sein");
@@ -70,10 +67,10 @@ public class VortragDto extends AbstractVersionedDto {
     }
 
     public VortragDto(boolean istPflicht, String titel, String inhalt, Long referentId, Long veranstaltungId) {
-        this(istPflicht, titel, inhalt, null, null, referentId, veranstaltungId); // Berufsfeld hinzugefügt
+        this(istPflicht, titel, inhalt, null, referentId, veranstaltungId);
     }
 
-    public VortragDto(boolean istPflicht, String titel, String inhalt, String ausstattung, Berufsfeld berufsfeld, Long referentId,
+    public VortragDto(boolean istPflicht, String titel, String inhalt, String ausstattung, Long referentId,
                       Long veranstaltungId) {
         Objects.requireNonNull(titel, "Titel darf nicht null sein");
         Objects.requireNonNull(veranstaltungId, "VeranstaltungId darf nicht null sein");
@@ -83,7 +80,6 @@ public class VortragDto extends AbstractVersionedDto {
         this.titel = titel;
         this.inhalt = inhalt;
         this.ausstattung = ausstattung;
-        this.berufsfeld = berufsfeld;
         this.referentId = referentId;
         this.veranstaltungId = veranstaltungId;
     }
@@ -100,8 +96,6 @@ public class VortragDto extends AbstractVersionedDto {
         dto.titel = v.getTitel();
         dto.inhalt = v.getInhalt();
         dto.ausstattung = v.getAusstattung();
-        dto.berufsfeld = v.getBerufsfeld();
-        dto.berufsfeldName = v.getBerufsfeld() != null ? v.getBerufsfeld().getName() : null;
         dto.abschluss = v.getAbschluss();
         dto.abschlussName = v.getAbschluss() != null ? v.getAbschluss().getName() : null;
         dto.veranstaltungId = v.getVeranstaltung().getId();
@@ -149,7 +143,6 @@ public class VortragDto extends AbstractVersionedDto {
         vortrag.setTitel(dto.titel);
         vortrag.setInhalt(dto.inhalt);
         vortrag.setAusstattung(dto.ausstattung);
-        vortrag.setBerufsfeld(dto.berufsfeld);
         vortrag.setAbschluss(dto.abschluss);
         vortrag.setVeranstaltung(Veranstaltung.findById(dto.veranstaltungId));
         vortrag.setReferent(Referent.findById(dto.referentId));

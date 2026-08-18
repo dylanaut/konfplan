@@ -3,7 +3,6 @@ package kreyj.konfplan.domain.service;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.persistence.Berufsfeld;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.Planungsergebnis;
@@ -12,6 +11,7 @@ import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranlagung;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.adapter.in.web.DatabaseCleaner;
@@ -19,6 +19,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -74,13 +76,13 @@ public class AuffuellungServiceTest extends DatabaseCleaner {
     }
 
 
-    private Wahlvortrag neuerWahlvortrag(Veranstaltung veranstaltung, String titel, Berufsfeld berufsfeld) {
+    private Wahlvortrag neuerWahlvortrag(Veranstaltung veranstaltung, String titel, Veranlagung... veranlagungen) {
         Referent referent = Referent.find("email", "referent@test.com").firstResult();
         Wahlvortrag wv = new Wahlvortrag();
         wv.setTitel(titel);
         wv.setReferent(referent);
         wv.setVeranstaltung(veranstaltung);
-        wv.setBerufsfeld(berufsfeld);
+        wv.setVeranlagungen(new HashSet<>(Arrays.asList(veranlagungen)));
         wv.persist();
         return wv;
     }
@@ -118,8 +120,8 @@ public class AuffuellungServiceTest extends DatabaseCleaner {
     public void eigenePrioritaet_gewinntVorZufaelligerAlternative() {
         Veranstaltung veranstaltung = neueVeranstaltung("Auffuellung-Test-1");
         Slot slot1 = neuerSlot(veranstaltung, 1);
-        Wahlvortrag wv1 = neuerWahlvortrag(veranstaltung, "Wahlvortrag 1", null);
-        Wahlvortrag wv2 = neuerWahlvortrag(veranstaltung, "Wahlvortrag 2", null);
+        Wahlvortrag wv1 = neuerWahlvortrag(veranstaltung, "Wahlvortrag 1");
+        Wahlvortrag wv2 = neuerWahlvortrag(veranstaltung, "Wahlvortrag 2");
         Teilnehmer tnFrei = neuerTeilnehmer(veranstaltung, "frei@test.com");
 
         new Prioritaet(tnFrei, wv2, 1).persist();
@@ -142,19 +144,19 @@ public class AuffuellungServiceTest extends DatabaseCleaner {
 
     @Test
     @Transactional
-    public void berufsfeldAbleitung_wirdGenutztWennEigenePrioritaetNichtLaeuft() {
+    public void veranlagungsAbleitung_wirdGenutztWennEigenePrioritaetNichtLaeuft() {
         Veranstaltung veranstaltung = neueVeranstaltung("Auffuellung-Test-2");
         Slot slot1 = neuerSlot(veranstaltung, 1);
         // wvPraeferiert hat eine Priorität, läuft aber in keiner Instanz (instanz_slot = 0 überall)
-        Wahlvortrag wvPraeferiert = neuerWahlvortrag(veranstaltung, "Präferierter Vortrag", Berufsfeld.IT_UND_COMPUTER);
-        Wahlvortrag wvBerufsfeldMatch = neuerWahlvortrag(veranstaltung, "Berufsfeld-Treffer", Berufsfeld.IT_UND_COMPUTER);
+        Wahlvortrag wvPraeferiert = neuerWahlvortrag(veranstaltung, "Präferierter Vortrag", Veranlagung.TECHNISCH);
+        Wahlvortrag wvVeranlagungsMatch = neuerWahlvortrag(veranstaltung, "Veranlagungs-Treffer", Veranlagung.TECHNISCH);
         Teilnehmer tnFrei = neuerTeilnehmer(veranstaltung, "frei@test.com");
 
         new Prioritaet(tnFrei, wvPraeferiert, 1).persist();
 
         Planungsergebnis.MinizincResult result = ergebnis(
             new long[]{tnFrei.getId()},
-            new long[]{wvPraeferiert.getId(), wvBerufsfeldMatch.getId()},
+            new long[]{wvPraeferiert.getId(), wvVeranlagungsMatch.getId()},
             new long[]{slot1.getId()},
             new long[]{raumGrossId},
             new int[][]{{0}, {1}},
@@ -164,7 +166,7 @@ public class AuffuellungServiceTest extends DatabaseCleaner {
         auffuellungService.fuelleAuf(veranstaltung, result);
 
         assertThat(result.besucht[0][1][0])
-            .describedAs("Berufsfeld-Treffer sollte über die abgeleitete Präferenz gewählt werden").isTrue();
+            .describedAs("Veranlagungs-Treffer sollte über die abgeleitete Präferenz gewählt werden").isTrue();
     }
 
 
@@ -177,7 +179,7 @@ public class AuffuellungServiceTest extends DatabaseCleaner {
         raumKlein.persist();
         Gebaeude.<Gebaeude>findById(schuleId).addRaum(raumKlein);
 
-        Wahlvortrag wv1 = neuerWahlvortrag(veranstaltung, "Wahlvortrag 1", null);
+        Wahlvortrag wv1 = neuerWahlvortrag(veranstaltung, "Wahlvortrag 1");
         Teilnehmer tn1 = neuerTeilnehmer(veranstaltung, "frei1@test.com");
         Teilnehmer tn2 = neuerTeilnehmer(veranstaltung, "frei2@test.com");
 
@@ -202,7 +204,7 @@ public class AuffuellungServiceTest extends DatabaseCleaner {
     public void nichtVerfuegbarerTeilnehmer_wirdNichtEingeplant() {
         Veranstaltung veranstaltung = neueVeranstaltung("Auffuellung-Test-4");
         Slot slot1 = neuerSlot(veranstaltung, 1);
-        Wahlvortrag wv1 = neuerWahlvortrag(veranstaltung, "Wahlvortrag 1", null);
+        Wahlvortrag wv1 = neuerWahlvortrag(veranstaltung, "Wahlvortrag 1");
         Teilnehmer tnAbwesend = neuerTeilnehmer(veranstaltung, "abwesend@test.com");
         tnAbwesend.updateVerfuegbarkeit(slot1, veranstaltung, false);
 
@@ -227,8 +229,8 @@ public class AuffuellungServiceTest extends DatabaseCleaner {
     public void bereitsImSlotVerplanterTeilnehmer_wirdNichtZusaetzlichEingeplant() {
         Veranstaltung veranstaltung = neueVeranstaltung("Auffuellung-Test-5");
         Slot slot1 = neuerSlot(veranstaltung, 1);
-        Wahlvortrag wv1 = neuerWahlvortrag(veranstaltung, "Wahlvortrag 1", null);
-        Wahlvortrag wv2 = neuerWahlvortrag(veranstaltung, "Wahlvortrag 2", null);
+        Wahlvortrag wv1 = neuerWahlvortrag(veranstaltung, "Wahlvortrag 1");
+        Wahlvortrag wv2 = neuerWahlvortrag(veranstaltung, "Wahlvortrag 2");
         Teilnehmer tn = neuerTeilnehmer(veranstaltung, "belegt@test.com");
 
         Planungsergebnis.MinizincResult result = ergebnis(
@@ -255,7 +257,7 @@ public class AuffuellungServiceTest extends DatabaseCleaner {
         Veranstaltung veranstaltung = neueVeranstaltung("Auffuellung-Test-6");
         Slot slot1 = neuerSlot(veranstaltung, 1);
         Slot slot2 = neuerSlot(veranstaltung, 2);
-        Wahlvortrag wv1 = neuerWahlvortrag(veranstaltung, "Wahlvortrag 1", null);
+        Wahlvortrag wv1 = neuerWahlvortrag(veranstaltung, "Wahlvortrag 1");
         Teilnehmer tnFrei = neuerTeilnehmer(veranstaltung, "frei@test.com");
 
         new Prioritaet(tnFrei, wv1, 1).persist();

@@ -77,20 +77,13 @@
             Legende der Wahlvorträge
           </h3>
           <p class="text-gray-500 normal-case font-normal mb-2">Priorität je Vortrag: 10 = höchste, 1 = niedrigste, 0 = keine Präferenz.</p>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
-            <div v-for="group in groupedWahlvortraege" :key="group.berufsfeld">
-              <h4 class="font-bold text-indigo-800 uppercase text-[9px] mb-1">{{ group.berufsfeld }}</h4>
-              <div class="space-y-1">
-                <div v-for="vortrag in group.vortraege" :key="'legende-'+vortrag.id" class="flex gap-2 items-start">
-                  <span class="font-black text-indigo-600 shrink-0 w-4 text-right">{{
-                      sortedWahlvortraege.indexOf(vortrag) + 1
-                    }}:</span>
-                  <span class="text-gray-700 truncate"
-                        :title="`${vortrag.referentName || 'N/A'}${vortrag.referentOrganisation ? ' [' + vortrag.referentOrganisation + ']' : ''}`">
-                    {{ vortrag.titel }}
-                  </span>
-                </div>
-              </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1">
+            <div v-for="(vortrag, index) in sortedWahlvortraege" :key="'legende-'+vortrag.id" class="flex gap-2 items-start">
+              <span class="font-black text-indigo-600 shrink-0 w-4 text-right">{{ index + 1 }}:</span>
+              <span class="text-gray-700 truncate"
+                    :title="`${vortrag.referentName || 'N/A'}${vortrag.referentOrganisation ? ' [' + vortrag.referentOrganisation + ']' : ''}`">
+                {{ vortrag.titel }}
+              </span>
             </div>
           </div>
         </div>
@@ -360,29 +353,7 @@ const teilnehmerGruppen = computed(() => {
 });
 
 const sortedWahlvortraege = computed(() => {
-  return [...props.wahlvortraege].sort((a, b) => {
-    const berufsfeldA = a.berufsfeld || 'Sonstige';
-    const berufsfeldB = b.berufsfeld || 'Sonstige';
-    if (berufsfeldA < berufsfeldB) return -1;
-    if (berufsfeldA > berufsfeldB) return 1;
-    return a.titel.localeCompare(b.titel);
-  });
-});
-
-const groupedWahlvortraege = computed(() => {
-  const grouped = sortedWahlvortraege.value.reduce((acc, vortrag) => {
-    const key = vortrag.berufsfeld || 'Sonstige';
-    if (!acc[key]) {
-      acc[key] = [];
-    }
-    acc[key].push(vortrag);
-    return acc;
-  }, {});
-
-  return Object.keys(grouped).sort().map(key => ({
-    berufsfeld: key,
-    vortraege: grouped[key]
-  }));
+  return [...props.wahlvortraege].sort((a, b) => a.titel.localeCompare(b.titel));
 });
 
 const processList = (list, filterText, sortConfig) => {
