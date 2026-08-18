@@ -27,14 +27,6 @@ public class Referent extends Nutzer {
     @CsvBindByName(column = "Organisation")
     private String organisation;
 
-    @Column(name = "slogan")
-    @CsvBindByName(column = "Slogan")
-    private String slogan;
-
-    @Column(name = "biography", columnDefinition = "TEXT")
-    @CsvBindByName(column = "Biografie")
-    private String biography;
-
     @OneToMany(mappedBy = "referent", cascade = CascadeType.ALL, orphanRemoval = true)
     Set<Vortrag> vortraege = new HashSet<>();
 

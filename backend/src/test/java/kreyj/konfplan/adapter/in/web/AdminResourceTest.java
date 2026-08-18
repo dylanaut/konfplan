@@ -89,8 +89,7 @@ class AdminResourceTest extends DatabaseCleaner {
 
     @Test
     void testCreateUser() {
-        NutzerDto dto = NutzerDto.referent("new@test.de", "Max", "Mustermann",
-            null, null, null, null);
+        NutzerDto dto = NutzerDto.referent("new@test.de", "Max", "Mustermann");
         dto.loginName = "newtest";
 
         given().contentType(ContentType.JSON)

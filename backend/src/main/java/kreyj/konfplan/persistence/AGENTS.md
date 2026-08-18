@@ -11,7 +11,7 @@ Dieses Paket enthält alle JPA-Entitäten nach dem **Panache Active Record Patte
 | `VersionedEntity`   | Basisklasse: `@MappedSuperclass`, Long id (IDENTITY), `@Version Long version`. |
 | `Nutzer`            | Abstrakt; SINGLE_TABLE-Hierarchie; Quarkus Security Integration. Erstellt automatische Verfügbarkeiten bei Veranstaltungszuweisung. |
 | `Admin`             | Nutzer-Subtyp; organisiert Veranstaltungen.                      |
-| `Referent`          | Nutzer-Subtyp; hält Vorträge; hat Biografie, JobRole, Organisation. |
+| `Referent`          | Nutzer-Subtyp; hält Vorträge; hat JobRole, Organisation.         |
 | `Teilnehmer`        | Nutzer-Subtyp; nimmt an Vorträgen teil; hat Gruppe.              |
 | `Veranstaltung`     | Zentrale Entität; hat Slots, Gebäude, Nutzer; besitzt Deadlines für Rollen. |
 | `Vortrag`           | Abstrakt; SINGLE_TABLE; Polymorphie via vortrag_typ.             |

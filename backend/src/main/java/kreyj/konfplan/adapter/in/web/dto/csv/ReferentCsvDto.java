@@ -20,10 +20,4 @@ public class ReferentCsvDto {
 
     @CsvBindByName(column = "Organisation")
     public String organisation;
-
-    @CsvBindByName(column = "Slogan")
-    public String slogan;
-
-    @CsvBindByName(column = "Biografie")
-    public String biografie;
 }

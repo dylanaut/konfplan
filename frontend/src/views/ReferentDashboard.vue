@@ -36,14 +36,6 @@
           <label class="block text-sm font-medium text-gray-700">E-Mail Adresse (optional)</label>
           <input v-model="referent.email" type="email" class="input-field" :disabled="isAnyDeadlinePassed" />
         </div>
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">Slogan</label>
-          <input v-model="referent.slogan" type="text" class="input-field" :disabled="isAnyDeadlinePassed" />
-        </div>
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">Biografie</label>
-          <textarea v-model="referent.biography" rows="4" class="input-field" :disabled="isAnyDeadlinePassed"></textarea>
-        </div>
       </div>
     </section>
 
@@ -308,8 +300,6 @@ const referent = ref({
   organisation: '',
   jobRole: '',
   email: '',
-  slogan: '',
-  biography: '',
 });
 const allSlots = ref([]);
 const vortraege = ref([]);

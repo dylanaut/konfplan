@@ -181,15 +181,13 @@ bei anderer Benennung (z.B. `Vormittag`/`Nachmittag`) wichtig zu wissen.
 | `Email` | ja | Existiert die E-Mail schon als Nutzer (z.B. aus einer anderen Veranstaltung), wird der bestehende Referent aktualisiert und der neuen Veranstaltung zusätzlich zugeordnet.
 | `Position` | nein | Jobbezeichnung, wird im Referentenprofil angezeigt.
 | `Organisation` | nein | Firma/Institution.
-| `Slogan` | nein |
-| `Biografie` | nein |
 |===
 
 .Beispiel
 [source,csv]
 ----
-Vorname;Nachname;Email;Position;Organisation;Slogan;Biografie
-Stephan;Arens;stephan.arens@th-koeln.de;Rechtsanwalt;TH Köln;;
+Vorname;Nachname;Email;Position;Organisation
+Stephan;Arens;stephan.arens@th-koeln.de;Rechtsanwalt;TH Köln
 ----
 
 TIP: Neu angelegte Referenten erhalten das Start-Passwort `start123` und sollten es nach dem ersten
