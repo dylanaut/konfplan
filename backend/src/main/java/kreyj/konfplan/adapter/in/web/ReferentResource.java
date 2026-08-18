@@ -251,8 +251,7 @@ public class ReferentResource {
             return Response.status(Response.Status.NOT_FOUND).entity("NutzerVerfuegbarkeit nicht gefunden.").build();
         }
 
-        nv.getVerfuegbareSlotIds().clear();
-        nv.getVerfuegbareSlotIds().addAll(dto.verfuegbareSlotIds);
+        nv.setVerfuegbareSlotIds(dto.verfuegbareSlotIds);
         nv.persist();
 
         return Response.ok().build();
