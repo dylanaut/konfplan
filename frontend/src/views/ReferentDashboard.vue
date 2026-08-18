@@ -7,9 +7,14 @@
 
     <!-- Sektion 1: Profil & Organisation -->
     <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-      <div class="flex items-center gap-2 mb-6 text-indigo-600">
-        <UserIcon class="w-6 h-6" />
-        <h2 class="text-xl font-bold">Persönliches Profil</h2>
+      <div class="flex items-center justify-between mb-6 text-indigo-600">
+        <div class="flex items-center gap-2">
+          <UserIcon class="w-6 h-6" />
+          <h2 class="text-xl font-bold">Persönliches Profil</h2>
+        </div>
+        <button v-if="isProfileDirty" @click="saveProfile" class="btn-primary-sm">
+          <SaveIcon class="w-4 h-4 mr-1" /> Speichern
+        </button>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="md:col-span-2">
@@ -151,59 +156,6 @@
       </div>
     </section>
 
-    <!-- Sektion: Vortragsdetails -->
-    <section v-if="selectedTalk || isEditingNewTalk" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-      <div class="flex items-center gap-2 mb-6 text-indigo-600">
-        <FileTextIcon class="w-6 h-6" />
-        <h2 class="text-xl font-bold">{{ isEditingNewTalk ? 'Neuen Vortrag anlegen' : 'Vortragsdetails bearbeiten' }}</h2>
-      </div>
-      <div v-if="isDeadlinePassedForTalk(selectedTalk)" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm flex items-center gap-2">
-        <XIcon class="w-5 h-5" />
-        Die Deadline für diese Veranstaltung ist bereits abgelaufen. Änderungen sind nicht mehr möglich.
-      </div>
-      <div class="space-y-4">
-        <div v-if="isEditingNewTalk">
-           <label class="block text-sm font-medium text-gray-700 mb-1">Veranstaltung auswählen</label>
-           <select v-model="selectedTalk.veranstaltungId" class="input-field" required :disabled="isEditingNewTalk && isDeadlinePassedForEventId(selectedTalk.veranstaltungId)">
-              <option :value="null" disabled>-- Bitte wählen --</option>
-              <option v-for="event in events" :key="event.id" :value="event.id" :disabled="isDeadlinePassed(event.deadlineReferenten)">
-                {{ event.name }} {{ isDeadlinePassed(event.deadlineReferenten) ? '(Abgelaufen)' : '' }}
-              </option>
-           </select>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Titel des Vortrags</label>
-          <input v-model="selectedTalk.titel" type="text" class="input-field" :disabled="isDeadlinePassedForTalk(selectedTalk)" />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Abstract (Kurzbeschreibung)</label>
-          <textarea v-model="selectedTalk.inhalt" rows="4" class="input-field" :disabled="isDeadlinePassedForTalk(selectedTalk)"></textarea>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Benötigte Ausstattung (optional)</label>
-          <textarea v-model="selectedTalk.ausstattung" rows="2" class="input-field" placeholder="z.B. Beamer, Whiteboard, Starkstromanschluss..." :disabled="isDeadlinePassedForTalk(selectedTalk)"></textarea>
-        </div>
-
-        <div v-if="false" class="flex items-center gap-4 p-4 bg-indigo-50 rounded-lg">
-          <input v-model="selectedTalk.wiederholbar" type="checkbox" class="w-5 h-5 text-indigo-600" id="repeat" :disabled="isDeadlinePassedForTalk(selectedTalk)" />
-          <label for="repeat" class="text-sm font-medium text-indigo-900">
-            Ich bin bereit, den Vortrag bei hoher Nachfrage mehrfach zu halten.
-          </label>
-        </div>
-
-        <div class="p-4 bg-amber-50 rounded-lg">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Veranlagungen (welche Veranlagungen adressiert dieser Vortrag inhaltlich?)</label>
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-            <div v-for="veranlagung in veranlagungStore.veranlagungen" :key="veranlagung.name" class="flex items-center gap-2 bg-white p-2 rounded-md border" :title="veranlagung.beschreibung">
-              <input :id="`talk-veranlagung-${veranlagung.name}`" type="checkbox" :value="veranlagung.name" v-model="selectedTalk.veranlagungen" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300" :disabled="isDeadlinePassedForTalk(selectedTalk)">
-              <label :for="`talk-veranlagung-${veranlagung.name}`" class="text-sm font-medium text-gray-700">{{ veranlagung.bezeichnung }}</label>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- Sektion: Veranstaltungsanmeldungen -->
     <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       <div class="flex items-center gap-2 mb-6 text-indigo-600">
@@ -270,12 +222,8 @@
       </div>
     </section>
 
-    <!-- Global Save Button -->
-    <div class="fixed bottom-6 right-6" v-if="!isAnyDeadlinePassed || (selectedTalk && !isDeadlinePassedForTalk(selectedTalk))">
-      <button @click="saveAll" class="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-4 rounded-full shadow-2xl font-bold flex items-center gap-2">
-        <SaveIcon /> Alles speichern
-      </button>
-    </div>
+    <ReferentVortragEditorModal :is-visible="showTalkModal" :talk="selectedTalk" :events="events"
+                                @close="closeTalkModal" @save="handleSaveTalk" />
   </div>
 </template>
 
@@ -285,6 +233,7 @@ import { useRouter } from 'vue-router';
 import api from '../api/axios';
 import { useAuthStore } from '../stores/auth';
 import { useVeranlagungStore } from '../stores/veranlagung';
+import ReferentVortragEditorModal from '../components/ReferentVortragEditorModal.vue';
 import { User as UserIcon, FileText as FileTextIcon, Calendar as CalendarIcon, Save as SaveIcon, Plus as PlusIcon, Edit as EditIcon, Trash2 as Trash2Icon, ListChecks as ListChecksIcon, Check as CheckIcon, X as XIcon, CalendarCheck as CalendarCheckIcon, Printer as PrinterIcon, Download as DownloadIcon, CalendarPlus } from '@lucide/vue';
 
 const router = useRouter();
@@ -301,10 +250,12 @@ const referent = ref({
   jobRole: '',
   email: '',
 });
+const originalReferent = ref(null);
 const allSlots = ref([]);
 const vortraege = ref([]);
 const selectedTalk = ref(null);
 const isEditingNewTalk = ref(false);
+const showTalkModal = ref(false);
 const events = ref([]);
 
 // Neue State für Verfügbarkeiten pro Event
@@ -321,8 +272,24 @@ const fetchReferentData = async () => {
   try {
     const userRes = await api.get('/api/referenten/profile');
     referent.value = userRes.data;
+    originalReferent.value = { ...userRes.data };
   } catch (error) {
     console.error("Fehler beim Laden des Referentenprofils:", error);
+  }
+};
+
+const isProfileDirty = computed(() => {
+  return originalReferent.value && JSON.stringify(referent.value) !== JSON.stringify(originalReferent.value);
+});
+
+const saveProfile = async () => {
+  try {
+    await api.put('/api/referenten/profile', referent.value);
+    originalReferent.value = { ...referent.value };
+    alert("Profil gespeichert!");
+  } catch (e) {
+    console.error("Fehler beim Speichern des Profils:", e);
+    alert("Fehler beim Speichern: " + (e.response?.data?.message || e.message));
   }
 };
 
@@ -339,12 +306,6 @@ const fetchReferentenVortraege = async () => {
   try {
     const talksRes = await api.get('/api/referenten/vortraege');
     vortraege.value = talksRes.data;
-    if (vortraege.value.length > 0 && !selectedTalk.value) {
-      selectedTalk.value = { ...vortraege.value[0] };
-    } else if (vortraege.value.length === 0) {
-      selectedTalk.value = null;
-    }
-    isEditingNewTalk.value = false;
   } catch (error) {
     console.error("Fehler beim Laden der Vorträge:", error);
   }
@@ -406,6 +367,7 @@ const toggleEventAvailability = async (event, slotId) => {
 const selectTalk = (talk) => {
   selectedTalk.value = { ...talk };
   isEditingNewTalk.value = false;
+  showTalkModal.value = true;
 };
 
 const addNewTalk = () => {
@@ -425,6 +387,31 @@ const addNewTalk = () => {
     veranstaltungId: availableEvent.id
   };
   isEditingNewTalk.value = true;
+  showTalkModal.value = true;
+};
+
+const closeTalkModal = () => {
+  showTalkModal.value = false;
+  selectedTalk.value = null;
+  isEditingNewTalk.value = false;
+};
+
+const handleSaveTalk = async (talk) => {
+  try {
+    if (isEditingNewTalk.value) {
+      await api.post('/api/referenten/vortraege', talk);
+    } else {
+      await api.put(`/api/referenten/vortraege/${talk.id}`, talk);
+    }
+    showTalkModal.value = false;
+    selectedTalk.value = null;
+    isEditingNewTalk.value = false;
+    await fetchReferentenVortraege();
+    await fetchEventsForRegistration();
+  } catch (e) {
+    console.error("Fehler beim Speichern des Vortrags:", e);
+    alert("Fehler beim Speichern: " + (e.response?.data?.message || e.message));
+  }
 };
 
 const deleteTalk = async (talk) => {
@@ -440,7 +427,6 @@ const deleteTalk = async (talk) => {
   if (!confirm('Sind Sie sicher?')) return;
   try {
     await api.delete(`/api/referenten/vortraege/${talk.id}`);
-    selectedTalk.value = null;
     await fetchReferentenVortraege();
     await fetchEventsForRegistration();
   } catch (e) {
@@ -524,32 +510,6 @@ const deregisterTalkFromEvent = async (eventId, talkId) => {
     await fetchEventsForRegistration();
   } catch (e) {
     console.error("Fehler beim Abmelden:", e);
-  }
-};
-
-const saveAll = async () => {
-  try {
-    // Always attempt to save the profile data, regardless of deadlines
-    // The backend should handle if certain fields are not editable due to deadlines
-    await api.put('/api/referenten/profile', referent.value);
-
-    if (selectedTalk.value) {
-      if (isDeadlinePassedForTalk(selectedTalk.value)) {
-          alert("Deadline für diesen Vortrag abgelaufen. Nur Profil wurde ggf. aktualisiert.");
-      } else {
-          if (isEditingNewTalk.value) {
-            await api.post('/api/referenten/vortraege', selectedTalk.value);
-          } else {
-            await api.put(`/api/referenten/vortraege/${selectedTalk.value.id}`, selectedTalk.value);
-          }
-      }
-      await fetchReferentenVortraege();
-      await fetchEventsForRegistration();
-    }
-    alert("Gespeichert!");
-  } catch (e) {
-    console.error("Fehler beim Speichern:", e);
-    alert("Fehler beim Speichern: " + (e.response?.data?.message || e.message));
   }
 };
 
