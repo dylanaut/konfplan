@@ -308,8 +308,8 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         teilnehmer.setFirstName(dto.firstName);
         teilnehmer.setLastName(dto.lastName);
         dto.gruppen.forEach(teilnehmer::addGruppe);
-        if (null != dto.neigungen) {
-            teilnehmer.setNeigungen(dto.neigungen);
+        if (null != dto.veranlagungen) {
+            teilnehmer.setVeranlagungen(dto.veranlagungen);
         }
         teilnehmer.setActive(dto.isActive);
 
@@ -337,8 +337,8 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         tn.setLastName(tnDto.lastName);
         tn.setEmail(null == tnDto.email ? existing.getEmail() : tnDto.email.trim().toLowerCase());
         tnDto.gruppen.forEach(tn::addGruppe);
-        if (null != tnDto.neigungen) {
-            tn.setNeigungen(tnDto.neigungen);
+        if (null != tnDto.veranlagungen) {
+            tn.setVeranlagungen(tnDto.veranlagungen);
         }
         tn.setActive(tnDto.isActive);
 

@@ -9,6 +9,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.persistence.AbschlussTyp;
 import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.Berufsfeld;
 import kreyj.konfplan.persistence.Gebaeude;
@@ -244,6 +245,47 @@ class CsvImportTest extends DatabaseCleaner {
             wvTitel + "' sollte Beamer als Ausstattung haben").isEqualTo("Beamer");
         assertThat(wv.isWiederholbar()).isTrue();
         assertThat(wv.getMaxWiederholungen()).isEqualTo(2);
+    }
+
+
+    @Test
+    @TestHTTPEndpoint(VeranstaltungResource.class)
+    void testImportVortraege_mitAbschluss() {
+        String wvTitel = "Vortrag mit Abschluss";
+        String csv = "istPflicht;Titel;Referent_LoginName;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;" +
+            "Pflichtslot;Ausstattung;Berufsfeld;Abschluss\n" +
+            "false;" + wvTitel + ";vortrag;Wahlinhalt;;true;2;;;Beamer;IT;Allgemeine\n";
+
+        given()
+            .multiPart("file", "vortraege.csv", csv.getBytes())
+            .when().post("/{vid}/vortraege/import", testVid)
+            .then()
+            .statusCode(OK.getStatusCode());
+
+        Wahlvortrag wv = Wahlvortrag.find("titel", wvTitel).firstResult();
+        assertThat(wv).describedAs("Wahlvortrag '" + wvTitel + "' sollte importiert worden sein").isNotNull();
+        assertThat(wv.getAbschluss()).describedAs("Wahlvortrag '" +
+            wvTitel + "' sollte Allgemeine Hochschulreife als Abschluss haben").isEqualTo(AbschlussTyp.ALLGEMEINE_HOCHSCHULREIFE);
+    }
+
+
+    @Test
+    @TestHTTPEndpoint(VeranstaltungResource.class)
+    void testImportVortraege_ohneAbschluss_bleibtLeer() {
+        String wvTitel = "Vortrag ohne Abschluss";
+        String csv = "istPflicht;Titel;Referent_LoginName;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;" +
+            "Pflichtslot;Ausstattung;Berufsfeld;Abschluss\n" +
+            "false;" + wvTitel + ";vortrag;Wahlinhalt;;true;2;;;Beamer;IT;\n";
+
+        given()
+            .multiPart("file", "vortraege.csv", csv.getBytes())
+            .when().post("/{vid}/vortraege/import", testVid)
+            .then()
+            .statusCode(OK.getStatusCode());
+
+        Wahlvortrag wv = Wahlvortrag.find("titel", wvTitel).firstResult();
+        assertThat(wv).describedAs("Wahlvortrag '" + wvTitel + "' sollte importiert worden sein").isNotNull();
+        assertThat(wv.getAbschluss()).describedAs("Abschluss darf beim CSV-Import leer bleiben").isNull();
     }
 
 

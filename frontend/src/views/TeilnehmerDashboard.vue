@@ -40,20 +40,15 @@
           <input :value="profile.gruppen.join(', ')" type="text" class="input-field" disabled />
         </div>
         <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Meine Neigungen</label>
-          <div class="space-y-3">
-            <div v-for="gruppe in neigungenNachKategorie" :key="gruppe.kategorie">
-              <p class="text-xs font-semibold text-gray-500 mb-1">{{ gruppe.kategorieBezeichnung }}</p>
-              <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-                <div v-for="neigung in gruppe.neigungen" :key="neigung.name" class="flex items-center gap-2 bg-white p-2 rounded-md border" :title="neigung.beschreibung">
-                  <input :id="`profile-neigung-${neigung.name}`" type="checkbox" :value="neigung.name" v-model="profile.neigungen" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300">
-                  <label :for="`profile-neigung-${neigung.name}`" class="text-sm font-medium text-gray-700">{{ neigung.bezeichnung }}</label>
-                </div>
-              </div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Meine Veranlagungen</label>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+            <div v-for="veranlagung in veranlagungStore.veranlagungen" :key="veranlagung.name" class="flex items-center gap-2 bg-white p-2 rounded-md border" :title="veranlagung.beschreibung">
+              <input :id="`profile-veranlagung-${veranlagung.name}`" type="checkbox" :value="veranlagung.name" v-model="profile.veranlagungen" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300">
+              <label :for="`profile-veranlagung-${veranlagung.name}`" class="text-sm font-medium text-gray-700">{{ veranlagung.bezeichnung }}</label>
             </div>
           </div>
           <div class="flex justify-end mt-4">
-            <button @click="saveNeigungen" class="btn-primary">Speichern</button>
+            <button @click="saveVeranlagungen" class="btn-primary">Speichern</button>
           </div>
         </div>
       </div>
@@ -220,7 +215,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api/axios';
-import { useNeigungStore } from '../stores/neigung';
+import { useVeranlagungStore } from '../stores/veranlagung';
 import {
   User as UserIcon,
   CalendarCheck as CalendarCheckIcon,
@@ -253,24 +248,12 @@ const profile = ref({
   lastName: '',
   email: '',
   gruppen: [],
-  neigungen: [],
+  veranlagungen: [],
   version: 0
 });
-const neigungStore = useNeigungStore();
-neigungStore.fetchNeigungen();
+const veranlagungStore = useVeranlagungStore();
+veranlagungStore.fetchVeranlagungen();
 
-const neigungenNachKategorie = computed(() => {
-  const gruppen = [];
-  for (const neigung of neigungStore.neigungen) {
-    let gruppe = gruppen.find(g => g.kategorie === neigung.kategorie);
-    if (!gruppe) {
-      gruppe = { kategorie: neigung.kategorie, kategorieBezeichnung: neigung.kategorieBezeichnung, neigungen: [] };
-      gruppen.push(gruppe);
-    }
-    gruppe.neigungen.push(neigung);
-  }
-  return gruppen;
-});
 const hasAvailabilityChanges = computed(() => {
   return JSON.stringify(availabilities.value) !== JSON.stringify(initialAvailabilities.value);
 });
@@ -324,13 +307,13 @@ const fetchTeilnehmerProfile = async () => {
   }
 };
 
-const saveNeigungen = async () => {
+const saveVeranlagungen = async () => {
   try {
     const response = await api.put('/api/teilnehmer/profile', profile.value);
     profile.value = response.data;
-    alert('Neigungen erfolgreich gespeichert!');
+    alert('Veranlagungen erfolgreich gespeichert!');
   } catch (error) {
-    alert('Fehler beim Speichern der Neigungen: ' + (error.response?.data?.message || error.response?.data || error.message));
+    alert('Fehler beim Speichern der Veranlagungen: ' + (error.response?.data?.message || error.response?.data || error.message));
   }
 };
 

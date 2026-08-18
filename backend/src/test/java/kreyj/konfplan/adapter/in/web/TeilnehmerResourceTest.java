@@ -12,7 +12,7 @@ import io.restassured.http.ContentType;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
-import kreyj.konfplan.persistence.Neigung;
+import kreyj.konfplan.persistence.Veranlagung;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Teilnehmer;
 import org.junit.jupiter.api.AfterEach;
@@ -81,13 +81,13 @@ class TeilnehmerResourceTest extends DatabaseCleaner {
     @Test
     @TestSecurity(user = "tom.teilnehmer", roles = "TEILNEHMER")
     @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "tom.teilnehmer")})
-    void updateProfile_setsNeigungen() {
+    void updateProfile_setsVeranlagungen() {
         NutzerDto dto = new NutzerDto();
         dto.email = "tom.alt@test.de";
         dto.firstName = "Tom";
         dto.lastName = "Teilnehmer";
         dto.gruppen = List.of();
-        dto.neigungen = Set.of(Neigung.HILFSBEREIT, Neigung.STRUKTURIERT);
+        dto.veranlagungen = Set.of(Veranlagung.SOZIAL, Veranlagung.ORGANISATORISCH);
         dto.isActive = true;
         dto.version = 0L;
 
@@ -98,7 +98,7 @@ class TeilnehmerResourceTest extends DatabaseCleaner {
             .then()
             .statusCode(200);
 
-        assertThat(Teilnehmer.<Teilnehmer>findById(teilnehmerId).getNeigungen())
-            .containsExactlyInAnyOrder(Neigung.HILFSBEREIT, Neigung.STRUKTURIERT);
+        assertThat(Teilnehmer.<Teilnehmer>findById(teilnehmerId).getVeranlagungen())
+            .containsExactlyInAnyOrder(Veranlagung.SOZIAL, Veranlagung.ORGANISATORISCH);
     }
 }

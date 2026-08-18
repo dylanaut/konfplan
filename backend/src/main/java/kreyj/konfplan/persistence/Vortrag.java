@@ -57,6 +57,11 @@ public abstract class Vortrag extends VersionedEntity {
     @Setter
     private Berufsfeld berufsfeld;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 50)
+    @Setter
+    private AbschlussTyp abschluss;
+
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "referent_id")
     @JsonIgnoreProperties("vortraege")

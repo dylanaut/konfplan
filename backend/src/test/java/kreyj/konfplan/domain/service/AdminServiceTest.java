@@ -10,7 +10,7 @@ import kreyj.konfplan.domain.exception.CreateVortragException;
 import kreyj.konfplan.domain.exception.UpdateNutzerException;
 import kreyj.konfplan.domain.exception.UpdateVortragException;
 import kreyj.konfplan.persistence.Admin;
-import kreyj.konfplan.persistence.Neigung;
+import kreyj.konfplan.persistence.Veranlagung;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -45,7 +45,7 @@ public class AdminServiceTest {
         // Clean up existing data to avoid conflicts
         // @ElementCollection-Tabelle auf der Subklasse Teilnehmer wird bei einem Bulk-Delete auf
         // Nutzer nicht automatisch mitgeloescht.
-        io.quarkus.hibernate.orm.panache.Panache.getEntityManager().createNativeQuery("delete from teilnehmer_neigungen").executeUpdate();
+        io.quarkus.hibernate.orm.panache.Panache.getEntityManager().createNativeQuery("delete from teilnehmer_veranlagungen").executeUpdate();
         Nutzer.deleteAll();
         Veranstaltung.deleteAll();
 
@@ -225,37 +225,37 @@ public class AdminServiceTest {
 
 
     @Test
-    public void testCreateUser_TeilnehmerWithNeigungen_Succeeds() {
+    public void testCreateUser_TeilnehmerWithVeranlagungen_Succeeds() {
         NutzerDto dto = new NutzerDto("TEILNEHMER", "neu@example.com", "Neue", "Person", true);
         dto.loginName = "neue.person";
-        dto.neigungen = Set.of(Neigung.EMPATHISCH, Neigung.ANALYTISCH);
+        dto.veranlagungen = Set.of(Veranlagung.SOZIAL, Veranlagung.WISSENSCHAFTLICH);
 
         NutzerDto created = adminService.createUser(dto, null);
 
-        assertThat(created.neigungen).containsExactlyInAnyOrder(Neigung.EMPATHISCH, Neigung.ANALYTISCH);
+        assertThat(created.veranlagungen).containsExactlyInAnyOrder(Veranlagung.SOZIAL, Veranlagung.WISSENSCHAFTLICH);
         Teilnehmer persisted = Teilnehmer.findById(created.id);
-        assertThat(persisted.getNeigungen()).containsExactlyInAnyOrder(Neigung.EMPATHISCH, Neigung.ANALYTISCH);
+        assertThat(persisted.getVeranlagungen()).containsExactlyInAnyOrder(Veranlagung.SOZIAL, Veranlagung.WISSENSCHAFTLICH);
     }
 
 
     @Test
     @Transactional
-    public void testUpdateUser_TeilnehmerNeigungen_ReplacesExistingSet() {
+    public void testUpdateUser_TeilnehmerVeranlagungen_ReplacesExistingSet() {
         Teilnehmer tn = Teilnehmer.findById(tnId);
         NutzerDto dto = NutzerDto.from(tn);
-        dto.neigungen = Set.of(Neigung.KREATIV, Neigung.NEUGIERIG);
+        dto.veranlagungen = Set.of(Veranlagung.KREATIV, Veranlagung.MEDIZINISCH);
         adminService.updateUser(tnId, dto, null);
 
         Teilnehmer updated = Teilnehmer.findById(tnId);
-        assertThat(updated.getNeigungen()).containsExactlyInAnyOrder(Neigung.KREATIV, Neigung.NEUGIERIG);
+        assertThat(updated.getVeranlagungen()).containsExactlyInAnyOrder(Veranlagung.KREATIV, Veranlagung.MEDIZINISCH);
 
         // Ein zweites Update mit anderer Auswahl muss die vorherige Auswahl vollstaendig ersetzen
         // (Checkbox-UI: ein Entfernen einzelner Werte muss moeglich sein, anders als bei gruppen).
         NutzerDto dto2 = NutzerDto.from(Teilnehmer.findById(tnId));
-        dto2.neigungen = Set.of(Neigung.PRAGMATISCH);
+        dto2.veranlagungen = Set.of(Veranlagung.TECHNISCH);
         adminService.updateUser(tnId, dto2, null);
 
         Teilnehmer updated2 = Teilnehmer.findById(tnId);
-        assertThat(updated2.getNeigungen()).containsExactly(Neigung.PRAGMATISCH);
+        assertThat(updated2.getVeranlagungen()).containsExactly(Veranlagung.TECHNISCH);
     }
 }
