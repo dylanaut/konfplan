@@ -118,6 +118,8 @@ services:
       QUARKUS_MAILER_START_TLS: ${MAILER_START_TLS:-DISABLED}
       QUARKUS_HTTP_PROXY_PROXY_ADDRESS_FORWARDING: "true"
       QUARKUS_HTTP_PROXY_ALLOW_X_FORWARDED: "true"
+      QUARKUS_HTTP_PROXY_ALLOW_FORWARDED: "true"
+      QUARKUS_HTTP_PROXY_ENABLE_FORWARDED_HOST: "true"
     secrets:
       - db_password
       - keycloak_admin_cli_secret

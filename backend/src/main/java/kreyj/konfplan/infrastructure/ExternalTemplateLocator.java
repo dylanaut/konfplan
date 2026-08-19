@@ -24,7 +24,7 @@ public class ExternalTemplateLocator implements TemplateLocator {
     private static final Logger LOG = Logger.getLogger(ExternalTemplateLocator.class);
 
     @ConfigProperty(name = "app.templates.external-path")
-    @SuppressFBWarnings(value = "NP_STORE_INTO_NONNULL_FIELD", justification = "Framework erlaubt hier null-Zuweisung")
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     Optional<String> externalPath;
 
 
