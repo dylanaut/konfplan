@@ -4,6 +4,17 @@
   "sslRequired": "external",
   "registrationAllowed": false,
   "resetPasswordAllowed": true,
+  "requiredActions": [
+    {
+      "alias": "UPDATE_PASSWORD",
+      "name": "Update Password",
+      "providerId": "UPDATE_PASSWORD",
+      "enabled": true,
+      "defaultAction": true,
+      "priority": 57,
+      "config": {}
+    }
+  ],
   "smtpServer": {
     "host": "__MAILER_HOST__",
     "port": "__MAILER_PORT__",
