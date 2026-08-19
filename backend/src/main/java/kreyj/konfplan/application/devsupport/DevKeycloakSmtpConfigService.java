@@ -16,21 +16,23 @@ import java.util.Map;
  * Der native "Passwort vergessen"-Link im Keycloak-Login-Dialog kann sonst keine Mail
  * verschicken, weil die dev-importierte Realm-JSON keinen smtpServer enthält und der
  * Mailpit-SMTP-Port bei jedem quarkus:dev-Start zufällig neu vergeben wird (kein statischer
- * Wert in der Realm-JSON möglich). Übernimmt daher zur Laufzeit einfach die von Quarkus für
- * den App-eigenen Mailer bereits korrekt aufgelösten quarkus.mailer.host/-port-Werte.
+ * Wert in der Realm-JSON möglich). Übernimmt daher zur Laufzeit den von Quarkus für den
+ * App-eigenen Mailer bereits korrekt aufgelösten Mailpit-Port. Der Host dagegen NICHT von
+ * quarkus.mailer.host - der zeigt auf "localhost" aus Sicht des nativ laufenden App-Prozesses,
+ * aber Keycloak läuft selbst in einem eigenen Docker-Container, für den "localhost" der
+ * Keycloak-Container selbst wäre, nicht der Host-Rechner mit dem gemappten Mailpit-Port.
  */
 @ApplicationScoped
 @IfBuildProfile("dev")
 public class DevKeycloakSmtpConfigService {
+
+    private static final String KEYCLOAK_CONTAINER_HOST_ALIAS = "host.docker.internal";
 
     @Inject
     Keycloak keycloak;
 
     @ConfigProperty(name = "quarkus.keycloak.admin-client.realm")
     String realm;
-
-    @ConfigProperty(name = "quarkus.mailer.host")
-    String mailerHost;
 
     @ConfigProperty(name = "quarkus.mailer.port")
     int mailerPort;
@@ -40,12 +42,12 @@ public class DevKeycloakSmtpConfigService {
         try {
             RealmRepresentation realmRepresentation = keycloak.realm(realm).toRepresentation();
             realmRepresentation.setSmtpServer(Map.of(
-                "host", mailerHost,
+                "host", KEYCLOAK_CONTAINER_HOST_ALIAS,
                 "port", String.valueOf(mailerPort),
                 "from", "konfplan@local"
             ));
             keycloak.realm(realm).update(realmRepresentation);
-            Log.infof("Keycloak-Realm-SMTP für Dev-Modus auf %s:%d gesetzt (Mailpit).", mailerHost, mailerPort);
+            Log.infof("Keycloak-Realm-SMTP für Dev-Modus auf %s:%d gesetzt (Mailpit).", KEYCLOAK_CONTAINER_HOST_ALIAS, mailerPort);
         } catch (Exception e) {
             Log.warn("Konnte Keycloak-Realm-SMTP nicht für den Dev-Modus konfigurieren.", e);
         }
