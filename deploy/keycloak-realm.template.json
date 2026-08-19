@@ -4,6 +4,15 @@
   "sslRequired": "external",
   "registrationAllowed": false,
   "resetPasswordAllowed": true,
+  "smtpServer": {
+    "host": "__MAILER_HOST__",
+    "port": "__MAILER_PORT__",
+    "from": "juergenkrey@yahoo.de",
+    "auth": "__MAILER_AUTH__",
+    "starttls": "__MAILER_STARTTLS__",
+    "user": "__BREVO_SMTP_USER__",
+    "password": "__BREVO_SMTP_PASSWORD__"
+  },
   "roles": {
     "realm": [
       { "name": "ADMIN", "description": "Administrator/Organisator" },
