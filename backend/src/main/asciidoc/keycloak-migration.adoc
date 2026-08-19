@@ -738,8 +738,33 @@ Schritt 7 (Spalten entfernen) erst nach mehreren Tagen stabilen Betriebs ausfüh
 == Offene Punkte
 
 * [x] Keycloak-SMTP für Passwort-Reset-E-Mails im lokalen Dev-Modus konfigurieren (Mailpit) - siehe `DevKeycloakSmtpConfigService` (#154)
-* [ ] Keycloak-SMTP für Passwort-Reset-E-Mails in Prod konfigurieren (Brevo)
+* [x] Keycloak-SMTP für Passwort-Reset-E-Mails in Prod konfigurieren (Brevo) - siehe `ProdKeycloakRealmSyncService` (#176)
 * [ ] `ProtokollService`-Einträge für Auth-Events anpassen (Keycloak-Events via Event-Listener-SPI oder Webhook)
 * [ ] Session-Timeout in Keycloak (`SSO Session Max`) auf 4h setzen (bisheriger JWT-TTL)
 * [ ] `quarkus.oidc.tls.verification=none` für lokale Dev-Setups prüfen (wenn Keycloak kein TLS hat)
 * [ ] Produktiv-Keycloak: TLS, externe DB, HA-Setup
+
+[WARNING]
+====
+Keycloaks `--import-realm` wendet `deploy/keycloak-realm.template.json` nur beim erstmaligen
+Anlegen der Realm an. Änderungen an der Template-JSON wirken sich bei einem bereits laufenden
+Deployment (Realm existiert schon) beim Container-Neustart **nicht** aus - `ProdKeycloakRealmSyncService`
+gleicht deshalb `smtpServer` und die `UPDATE_PASSWORD`-RequiredAction bei jedem App-Start per
+Admin-API ab, unabhängig vom Realm-Import.
+
+Für ein **bereits bestehendes** Deployment (Realm existiert schon vor diesem Update) muss dem
+Service-Account `service-account-konfplan-admin-cli` einmalig manuell die Rolle `manage-realm`
+zugewiesen werden, bevor `ProdKeycloakRealmSyncService` erfolgreich laufen kann (ohne diese Rolle
+schlägt der Sync mit 403 fehl und wird nur als Warnung geloggt, die App startet trotzdem):
+
+[source,bash]
+----
+docker compose -f deploy/docker-compose.yml exec keycloak sh -c '
+  /opt/keycloak/bin/kcadm.sh config credentials --server http://localhost:8080/auth --realm master --user admin --password "$(cat /run/secrets/keycloak_admin_password)" &&
+  /opt/keycloak/bin/kcadm.sh add-roles -r konfplan --uusername service-account-konfplan-admin-cli --cclientid realm-management --rolename manage-realm
+'
+----
+
+Bei einer frischen Installation ist das nicht nötig - die Rolle ist bereits Teil von
+`deploy/keycloak-realm.template.json`.
+====
