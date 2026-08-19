@@ -180,7 +180,7 @@
                  <p class="text-sm text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
                  <p v-if="event.organisatoren?.length" class="text-xs text-gray-500">
                    <template v-for="(organisator, index) in event.organisatoren" :key="organisator.id">
-                     <a :href="mailtoLink(organisator.email, event.name)" class="hover:underline">{{ organisator.name }}</a><span v-if="index < event.organisatoren.length - 1">, </span>
+                     <a :href="mailtoLink(organisator.email, event.name)" class="underline inline-flex items-center gap-1"><MailIcon class="w-3 h-3"/>{{ organisator.name }}</a><span v-if="index < event.organisatoren.length - 1">, </span>
                    </template>
                  </p>
                  <p v-if="event.deadlineReferenten" :class="['text-[10px] font-bold mt-1', isDeadlinePassed(event.deadlineReferenten) ? 'text-red-600' : 'text-orange-600']">
@@ -234,7 +234,7 @@ import api from '../api/axios';
 import { useAuthStore } from '../stores/auth';
 import { useVeranlagungStore } from '../stores/veranlagung';
 import ReferentVortragEditorModal from '../components/ReferentVortragEditorModal.vue';
-import { User as UserIcon, FileText as FileTextIcon, Calendar as CalendarIcon, Save as SaveIcon, Plus as PlusIcon, Edit as EditIcon, Trash2 as Trash2Icon, ListChecks as ListChecksIcon, Check as CheckIcon, X as XIcon, CalendarCheck as CalendarCheckIcon, Printer as PrinterIcon, Download as DownloadIcon, CalendarPlus } from '@lucide/vue';
+import { User as UserIcon, FileText as FileTextIcon, Calendar as CalendarIcon, Save as SaveIcon, Plus as PlusIcon, Edit as EditIcon, Trash2 as Trash2Icon, ListChecks as ListChecksIcon, Check as CheckIcon, X as XIcon, CalendarCheck as CalendarCheckIcon, Printer as PrinterIcon, Download as DownloadIcon, CalendarPlus, Mail as MailIcon } from '@lucide/vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
