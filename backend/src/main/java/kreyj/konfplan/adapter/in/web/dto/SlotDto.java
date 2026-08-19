@@ -1,7 +1,5 @@
 package kreyj.konfplan.adapter.in.web.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.Versioned;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import kreyj.konfplan.persistence.Slot;
 
@@ -21,33 +19,28 @@ public class SlotDto extends AbstractVersionedDto implements Comparable<SlotDto>
     public Long veranstaltungId;
 
 
-    @JsonProperty
-    public String tag() {
+    public String getTag() {
         return DAY_FORMATTER.format(startTime);
     }
 
 
-    @JsonProperty
-    public String start() {
+    public String getStart() {
         return HOUR_FORMATTER.format(startTime);
     }
 
 
-    @JsonProperty
-    public String ende() {
+    public String getEnde() {
         return HOUR_FORMATTER.format(endTime);
     }
 
 
-    @JsonProperty
-    public String zeitraum() {
-        return start() + " - " + ende();
+    public String getZeitraum() {
+        return getStart() + " - " + getEnde();
     }
 
 
-    @JsonProperty
-    public String zeitraumTag() {
-        return tag() + ", " + start() + " - " + ende();
+    public String getZeitraumTag() {
+        return getTag() + ", " + getStart() + " - " + getEnde();
     }
 
     // -------------------------------------------------------------------
