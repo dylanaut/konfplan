@@ -12,6 +12,12 @@
           <UploadIcon class="w-3.5 h-3.5"/>
           Verfügbarkeiten Import
         </button>
+        <button v-if="availabilityStore.hasDirtyAvailabilities()" @click="availabilityStore.saveAvailabilities(selectedVid)"
+                :disabled="isEventFinished"
+                class="btn-save-all">
+          <SaveAllIcon class="w-3.5 h-3.5"/>
+          Alle Änderungen speichern
+        </button>
         <button @click="emit('openUserModal', {role: 'REFERENT'})" class="btn-primary text-xs py-1 px-3">+ Neu</button>
       </div>
     </div>
@@ -74,6 +80,7 @@ import {
   FileText as FileTextIcon,
   Mail as MailIcon,
   Pencil as PencilIcon,
+  SaveAll as SaveAllIcon,
   Trash2 as Trash2Icon,
   Upload as UploadIcon,
   User as UserIcon
@@ -164,6 +171,7 @@ const openReferentPlan = (referent) => {
 <style scoped>
 .btn-primary { @apply rounded-lg bg-indigo-600 px-3 py-1.5 text-white font-bold hover:bg-indigo-700 transition shadow-sm border-none cursor-pointer disabled:opacity-50; }
 .btn-secondary { @apply bg-white text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 font-bold border border-gray-200 transition shadow-sm cursor-pointer disabled:opacity-50; }
+.btn-save-all { @apply bg-orange-500 text-white text-[10px] px-3 py-1 rounded-md shadow-sm transition-all flex items-center gap-2 hover:bg-orange-600 disabled:opacity-50; }
 .input-field { @apply rounded-lg border border-gray-300 px-2 py-1 text-gray-900 focus:ring-2 focus:ring-indigo-500 bg-white; }
 .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
