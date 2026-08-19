@@ -737,7 +737,8 @@ Schritt 7 (Spalten entfernen) erst nach mehreren Tagen stabilen Betriebs ausfüh
 
 == Offene Punkte
 
-* [ ] Keycloak-SMTP für Passwort-Reset-E-Mails konfigurieren (Brevo oder Mailpit)
+* [x] Keycloak-SMTP für Passwort-Reset-E-Mails im lokalen Dev-Modus konfigurieren (Mailpit) - siehe `DevKeycloakSmtpConfigService` (#154)
+* [ ] Keycloak-SMTP für Passwort-Reset-E-Mails in Prod konfigurieren (Brevo)
 * [ ] `ProtokollService`-Einträge für Auth-Events anpassen (Keycloak-Events via Event-Listener-SPI oder Webhook)
 * [ ] Session-Timeout in Keycloak (`SSO Session Max`) auf 4h setzen (bisheriger JWT-TTL)
 * [ ] `quarkus.oidc.tls.verification=none` für lokale Dev-Setups prüfen (wenn Keycloak kein TLS hat)
