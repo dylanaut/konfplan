@@ -31,6 +31,20 @@
       </nav>
     </div>
 
+    <!-- Planerstellung: Inkonsistenzen (bleibt bis "Verstanden" auch über Tab-Wechsel sichtbar) -->
+    <div v-if="planungsInkonsistenzen" class="bg-red-50 border border-red-200 rounded-xl p-4 animate-fade-in no-print">
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex items-start gap-2 min-w-0">
+          <AlertTriangleIcon class="w-5 h-5 shrink-0 mt-0.5 text-red-600"/>
+          <pre class="whitespace-pre-wrap font-sans text-xs text-red-800">{{ planungsInkonsistenzen }}</pre>
+        </div>
+        <button @click="planungsInkonsistenzen = null"
+                class="shrink-0 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg font-bold text-xs">
+          Verstanden
+        </button>
+      </div>
+    </div>
+
     <!-- START-ZUSTAND (Empty State) -->
     <div v-if="!selectedVid && !['veranstaltungen', 'veranstaltungImport', 'gebaeude', 'organisatoren', 'protokoll'].includes(activeTab)"
          class="bg-indigo-50 p-8 rounded-2xl text-center border-2 border-dashed border-indigo-200 animate-fade-in">
@@ -239,6 +253,7 @@ import {useEventContextStore} from '../stores/eventContext';
 import {useAvailabilityStore} from '../stores/availability';
 import { useGroupStore } from '../stores/group';
 import {
+  AlertTriangle as AlertTriangleIcon,
   Calendar as CalendarIcon,
   FileText as FileTextIcon,
   Loader as LoaderIcon,
@@ -324,6 +339,7 @@ const selectedUserForPasswordReset = ref(null);
 
 const isOptimizing = ref(false);
 const planningPhase = ref(null);
+const planungsInkonsistenzen = ref(null);
 let pollingInterval = null;
 const fileInput = ref(null);
 const currentUploadEndpoint = ref('');
@@ -910,6 +926,7 @@ const saveAllParticipantPriorities = async () => {
 const startPlanning = async (solverConfig) => {
   isOptimizing.value = true;
   planningPhase.value = 'VORBEREITUNG';
+  planungsInkonsistenzen.value = null;
   try {
     await api.post(`/api/planungen/${selectedVid.value}`, solverConfig);
     pollPlanningStatus();
@@ -917,8 +934,7 @@ const startPlanning = async (solverConfig) => {
     console.error('Fehler bei der Planerstellung:', e);
     isOptimizing.value = false;
     planningPhase.value = null;
-    const msg = e.response?.data?.error || e.response?.data?.message || e.message;
-    alert('Planerstellung nicht möglich:\n\n' + msg);
+    planungsInkonsistenzen.value = e.response?.data?.error || e.response?.data?.message || e.message;
   }
 };
 
