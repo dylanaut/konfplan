@@ -41,77 +41,81 @@
     </div>
 
     <!-- Planerstellung -->
-    <div class="bg-indigo-900 text-white p-6 rounded-2xl shadow-xl flex flex-col md:flex-row items-end justify-between gap-6">
-      <div class="space-y-3 flex-1 w-full">
-        <h2 class="text-2xl font-black">Planerstellung</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 bg-white/10 p-3 rounded-xl border border-white/10">
-          <div>
-            <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">MiniZinc Solver</label>
-            <select v-model="solverConfig.solver" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1">
-              <option value="cp-sat">Google OR-Tools</option>
-              <option value="Gecode">Gecode</option>
-              <option value="coinbc">COIN-BC</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">Timeout (Sek.)</label>
-            <input v-model.number="solverConfig.timeout" type="number" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
-          </div>
-          <div>
-            <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5"
-                   title="Maximale Anzahl von Wiederholungen pro Vortrag">max. Wiederholungen</label>
-            <input v-model.number="solverConfig.maxInstanzen" type="number" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
-          </div>
-          <div>
-            <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">Leistung (1-5)</label>
-            <input v-model.number="solverConfig.numThreads" type="number" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
-          </div>
-          <div title="Maximale Anzahl Wahlvorträge pro Teilnehmer. 0 = kein Limit">
-            <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">max. WV pro TN (0=∞)</label>
-            <input v-model.number="solverConfig.maxWvsProTn" type="number" min="0" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
-          </div>
-          <div class="flex items-center justify-center pt-3" title="Freie Plätze sollen in Wahlvorträgen mit nicht-verplanten Teilnehmern aufgefüllt werden">
-            <label class="flex items-center space-x-2 cursor-pointer text-xs">
-              <input v-model="solverConfig.auffuellen" type="checkbox" class="bg-indigo-800 border-indigo-600 rounded text-green-500 focus:ring-green-400"/>
-              <span>Auffüllen?</span>
-            </label>
+    <div class="bg-indigo-900 text-white p-6 rounded-2xl shadow-xl space-y-4">
+      <div class="flex flex-col md:flex-row items-end justify-between gap-6">
+        <div class="space-y-3 flex-1 w-full">
+          <h2 class="text-2xl font-black">Planerstellung</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 bg-white/10 p-3 rounded-xl border border-white/10">
+            <div>
+              <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">MiniZinc Solver</label>
+              <select v-model="solverConfig.solver" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1">
+                <option value="cp-sat">Google OR-Tools</option>
+                <option value="Gecode">Gecode</option>
+                <option value="coinbc">COIN-BC</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">Timeout (Sek.)</label>
+              <input v-model.number="solverConfig.timeout" type="number" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
+            </div>
+            <div>
+              <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5"
+                     title="Maximale Anzahl von Wiederholungen pro Vortrag">max. Wiederholungen</label>
+              <input v-model.number="solverConfig.maxInstanzen" type="number" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
+            </div>
+            <div>
+              <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">Leistung (1-5)</label>
+              <input v-model.number="solverConfig.numThreads" type="number" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
+            </div>
+            <div title="Maximale Anzahl Wahlvorträge pro Teilnehmer. 0 = kein Limit">
+              <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">max. WV pro TN (0=∞)</label>
+              <input v-model.number="solverConfig.maxWvsProTn" type="number" min="0" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
+            </div>
+            <div class="flex items-center justify-center pt-3" title="Freie Plätze sollen in Wahlvorträgen mit nicht-verplanten Teilnehmern aufgefüllt werden">
+              <label class="flex items-center space-x-2 cursor-pointer text-xs">
+                <input v-model="solverConfig.auffuellen" type="checkbox" class="bg-indigo-800 border-indigo-600 rounded text-green-500 focus:ring-green-400"/>
+                <span>Auffüllen?</span>
+              </label>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="text-right">
-        <p v-if="teilnehmerMitPrioritaetenCount === 0" class="text-red-300 text-center text-[10px] mt-1.5 font-bold animate-pulse">
-          Keine Prioritäten vorhanden.
-        </p>
-        <div v-if="!isPlanning" class="flex items-center gap-3">
-          <button @click="emit('exportDzn', solverConfig)" title="MiniZinc-Datendatei (.dzn) herunterladen"
-                  class="bg-white/10 hover:bg-white/20 text-white px-4 py-4 rounded-xl font-bold text-sm shadow-lg transition-all flex items-center gap-2">
-            <DownloadIcon class="w-4 h-4"/>
-            .dzn exportieren
-          </button>
-          <button @click="emit('exportBundle', solverConfig)" title="Export-Paket (.dzn + Modell + Metadaten) für die Berechnung auf einem externen Rechner herunterladen"
-                  class="bg-white/10 hover:bg-white/20 text-white px-4 py-4 rounded-xl font-bold text-sm shadow-lg transition-all flex items-center gap-2">
-            <DownloadIcon class="w-4 h-4"/>
-            Bundle exportieren
-          </button>
-          <button @click="ergebnisFileInput?.click()" title="Extern berechnetes MiniZinc-Ergebnis importieren"
-                  class="bg-white/10 hover:bg-white/20 text-white px-4 py-4 rounded-xl font-bold text-sm shadow-lg transition-all flex items-center gap-2">
-            <UploadIcon class="w-4 h-4"/>
-            Ergebnis importieren
-          </button>
-          <input type="file" ref="ergebnisFileInput" class="hidden" accept=".zip" @change="onErgebnisFileSelected"/>
-          <button @click="emit('startOptimization', solverConfig)" :disabled="teilnehmerMitPrioritaetenCount === 0" class="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-white px-8 py-4 rounded-xl font-black text-lg shadow-2xl transition-all transform hover:scale-105 flex items-center gap-3">
-            <ZapIcon class="w-5 h-5"/>
+        <div class="text-right">
+          <p v-if="teilnehmerMitPrioritaetenCount === 0" class="text-red-300 text-center text-[10px] mt-1.5 font-bold animate-pulse">
+            Keine Prioritäten vorhanden.
+          </p>
+          <button v-if="!isPlanning" @click="emit('startOptimization', solverConfig)" :disabled="teilnehmerMitPrioritaetenCount === 0" class="bg-green-500 hover:bg-green-400 disabled:bg-gray-600 text-white px-5 py-2.5 rounded-xl font-black text-sm shadow-2xl transition-all transform hover:scale-105 flex items-center gap-2">
+            <ZapIcon class="w-4 h-4"/>
             Pläne erstellen
           </button>
+          <button v-else-if="planningPhase === 'BERECHNUNG'" @click="emit('cancelOptimization')" class="bg-red-500 hover:bg-red-400 text-white px-5 py-2.5 rounded-xl font-black text-sm shadow-2xl transition-all transform hover:scale-105 flex items-center gap-2">
+            <LoaderIcon class="animate-spin w-4 h-4"/>
+            Erstellung abbrechen ({{ remainingSeconds }}s)
+          </button>
+          <button v-else disabled title="Der Timeout gilt nur für die reine MiniZinc-Berechnung; diese Phase lässt sich nicht abbrechen." class="bg-gray-500 text-white px-5 py-2.5 rounded-xl font-black text-sm shadow-2xl flex items-center gap-2 cursor-not-allowed opacity-80">
+            <LoaderIcon class="animate-spin w-4 h-4"/>
+            {{ planningPhase === 'PERSISTIERUNG' ? 'Ergebnis wird gespeichert...' : 'Vorbereitung läuft...' }}
+          </button>
         </div>
-        <button v-else-if="planningPhase === 'BERECHNUNG'" @click="emit('cancelOptimization')" class="bg-red-500 hover:bg-red-400 text-white px-8 py-4 rounded-xl font-black text-lg shadow-2xl transition-all transform hover:scale-105 flex items-center gap-3">
-          <LoaderIcon class="animate-spin w-5 h-5"/>
-          Erstellung abbrechen ({{ remainingSeconds }}s)
+      </div>
+
+      <!-- Export/Import (extern berechneter Plan) -->
+      <div v-if="!isPlanning" class="flex flex-wrap items-center gap-2 pt-3 border-t border-white/10">
+        <button @click="emit('exportDzn', solverConfig)" title="MiniZinc-Datendatei (.dzn) herunterladen"
+                class="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg font-bold text-xs shadow-lg transition-all flex items-center gap-2">
+          <DownloadIcon class="w-4 h-4"/>
+          .dzn exportieren
         </button>
-        <button v-else disabled title="Der Timeout gilt nur für die reine MiniZinc-Berechnung; diese Phase lässt sich nicht abbrechen." class="bg-gray-500 text-white px-8 py-4 rounded-xl font-black text-lg shadow-2xl flex items-center gap-3 cursor-not-allowed opacity-80">
-          <LoaderIcon class="animate-spin w-5 h-5"/>
-          {{ planningPhase === 'PERSISTIERUNG' ? 'Ergebnis wird gespeichert...' : 'Vorbereitung läuft...' }}
+        <button @click="emit('exportBundle', solverConfig)" title="Export-Paket (.dzn + Modell + Metadaten) für die Berechnung auf einem externen Rechner herunterladen"
+                class="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg font-bold text-xs shadow-lg transition-all flex items-center gap-2">
+          <DownloadIcon class="w-4 h-4"/>
+          Bundle exportieren
         </button>
+        <button @click="ergebnisFileInput?.click()" title="Extern berechnetes MiniZinc-Ergebnis importieren"
+                class="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg font-bold text-xs shadow-lg transition-all flex items-center gap-2">
+          <UploadIcon class="w-4 h-4"/>
+          Ergebnis importieren
+        </button>
+        <input type="file" ref="ergebnisFileInput" class="hidden" accept=".zip" @change="onErgebnisFileSelected"/>
       </div>
     </div>
   </section>
