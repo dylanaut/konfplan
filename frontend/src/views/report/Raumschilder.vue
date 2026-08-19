@@ -38,8 +38,8 @@
                   <tr v-for="slot in sortedSlots" :key="slot.id">
                     <td>{{ formatSlot(slot) }}</td>
                     <template v-if="reportData.raumplan[raum.id] && reportData.raumplan[raum.id][slot.id]">
-                      <td>{{ reportData.raumplan[raum.id][slot.id].vortrag.titel }}</td>
-                      <td>{{ reportData.raumplan[raum.id][slot.id].vortrag.referent.firstName }} {{ reportData.raumplan[raum.id][slot.id].vortrag.referent.lastName }}</td>
+                      <td>{{ reportData.raumplan[raum.id][slot.id].vortragTitel }}</td>
+                      <td>{{ reportData.raumplan[raum.id][slot.id].referentName }}</td>
                     </template>
                     <template v-else>
                       <td colspan="2" class="text-muted">Frei</td>
