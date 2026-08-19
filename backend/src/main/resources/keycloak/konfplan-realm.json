@@ -59,7 +59,7 @@
       "enabled": true,
       "serviceAccountClientId": "konfplan-admin-cli",
       "clientRoles": {
-        "realm-management": ["manage-users", "view-users", "view-realm"]
+        "realm-management": ["manage-users", "view-users", "view-realm", "manage-realm"]
       }
     }
   ]
