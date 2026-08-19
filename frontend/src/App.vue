@@ -27,20 +27,18 @@
         </button>
 
         <!-- Desktop Menu -->
-        <div class="hidden md:flex gap-6 items-center">
-          <router-link v-if="auth.isParticipant" to="/teilnehmer" class="hover:underline text-sm font-bold">tn</router-link>
-          <router-link v-if="auth.isSpeaker" to="/referent" class="hover:underline text-sm font-bold">ref</router-link>
-          <router-link v-if="auth.isAdmin" to="/admin" class="hover:underline text-sm font-bold">adm</router-link>
+        <div class="hidden md:flex gap-6 items-center relative">
+          <button @click="toggleInfoPanel" class="hover:underline text-sm font-bold">Info</button>
           <button @click="auth.logout()" class="bg-indigo-700 hover:bg-indigo-800 px-3 py-1 rounded text-xs font-black transition-colors uppercase">Logout</button>
+          <InfoPanel v-if="infoPanelOpen" class="absolute right-0 top-full mt-2" @close="infoPanelOpen = false" />
         </div>
       </div>
 
       <!-- Mobile Menu Content -->
-      <div v-if="mobileMenuOpen" class="md:hidden mt-4 flex flex-col gap-2 pb-2">
-        <router-link v-if="auth.isParticipant" to="/teilnehmer" @click="mobileMenuOpen = false">tn</router-link>
-        <router-link v-if="auth.isSpeaker" to="/referent" @click="mobileMenuOpen = false">ref</router-link>
-        <router-link v-if="auth.isAdmin" to="/admin" @click="mobileMenuOpen = false">adm</router-link>
+      <div v-if="mobileMenuOpen" class="md:hidden mt-4 flex flex-col gap-2 pb-2 relative">
+        <button @click="toggleInfoPanel" class="text-left">Info</button>
         <button @click="auth.logout()" class="text-left text-red-200">Logout</button>
+        <InfoPanel v-if="infoPanelOpen" @close="infoPanelOpen = false" />
       </div>
     </nav>
 
@@ -58,10 +56,16 @@ import { useEventContextStore } from './stores/eventContext';
 import { useInactivityLogout } from './composables/useInactivityLogout';
 import { Menu as MenuIcon } from '@lucide/vue';
 import { formatZeitraum } from './utils/veranstaltungFormat';
+import InfoPanel from './components/InfoPanel.vue';
 
 const auth = useAuthStore();
 const eventContext = useEventContextStore();
 const mobileMenuOpen = ref(false);
+const infoPanelOpen = ref(false);
+
+const toggleInfoPanel = () => {
+  infoPanelOpen.value = !infoPanelOpen.value;
+};
 
 useInactivityLogout();
 </script>
