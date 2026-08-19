@@ -77,9 +77,45 @@ set -a; source .env; set +a
 ADMIN_CLI_SECRET="$(cat secrets/keycloak_admin_cli_secret.txt)"
 APP_URL="${APP_PUBLIC_URL:-http://localhost:9000}"
 
+# Dieselben Werte/Defaults wie beim App-eigenen Mailer in docker-compose.yml (QUARKUS_MAILER_*),
+# damit Keycloaks nativer "Passwort vergessen"-Flow denselben SMTP-Weg (Mailpit lokal/UTM,
+# Brevo in echtem Prod-Betrieb) nutzt wie der Rest der Anwendung.
+MAILER_HOST_VAL="${MAILER_HOST:-mailpit}"
+MAILER_PORT_VAL="${MAILER_PORT:-1025}"
+MAILER_START_TLS_VAL="${MAILER_START_TLS:-DISABLED}"
+BREVO_SMTP_USER_VAL="${BREVO_SMTP_USER:-}"
+BREVO_SMTP_PASSWORD_VAL="$(cat secrets/brevo_smtp_password.txt)"
+
+# Keycloaks smtpServer-Map erwartet Booleans als Strings "true"/"false". Auth nur, wenn ein
+# Benutzername gesetzt ist (Mailpit im lokalen/UTM-Profil braucht keine Authentifizierung).
+MAILER_AUTH_VAL="false"
+[[ -n "$BREVO_SMTP_USER_VAL" ]] && MAILER_AUTH_VAL="true"
+MAILER_STARTTLS_VAL="false"
+[[ "$MAILER_START_TLS_VAL" == "REQUIRED" ]] && MAILER_STARTTLS_VAL="true"
+
+# Externe Zugangsdaten (Brevo-Nutzername/-Passwort) landen als Wert INNERHALB eines
+# JSON-Strings und brauchen daher zwei Escaping-Schichten: erst JSON-Escaping (\ und " sind in
+# JSON-Strings selbst Sonderzeichen), danach sed-Escaping (&, \, der Trennzeichen-Slash wuerden
+# die Ersetzung sonst stillschweigend verfaelschen).
+json_escape() {
+    printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
+}
+sed_escape_replacement() {
+    printf '%s' "$1" | sed -e 's/[&\\|]/\\&/g'
+}
+escape_for_json_template() {
+    sed_escape_replacement "$(json_escape "$1")"
+}
+
 sed \
-    -e "s|__ADMIN_CLI_SECRET__|${ADMIN_CLI_SECRET}|g" \
+    -e "s|__ADMIN_CLI_SECRET__|$(escape_for_json_template "$ADMIN_CLI_SECRET")|g" \
     -e "s|__APP_PUBLIC_URL__|${APP_URL}|g" \
+    -e "s|__MAILER_HOST__|${MAILER_HOST_VAL}|g" \
+    -e "s|__MAILER_PORT__|${MAILER_PORT_VAL}|g" \
+    -e "s|__MAILER_AUTH__|${MAILER_AUTH_VAL}|g" \
+    -e "s|__MAILER_STARTTLS__|${MAILER_STARTTLS_VAL}|g" \
+    -e "s|__BREVO_SMTP_USER__|$(escape_for_json_template "$BREVO_SMTP_USER_VAL")|g" \
+    -e "s|__BREVO_SMTP_PASSWORD__|$(escape_for_json_template "$BREVO_SMTP_PASSWORD_VAL")|g" \
     keycloak-realm.template.json > keycloak-realm.generated.json
 chmod 644 keycloak-realm.generated.json
 
