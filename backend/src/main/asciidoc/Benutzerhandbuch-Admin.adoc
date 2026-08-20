@@ -1,0 +1,617 @@
+= KonfPlan: Benutzerhandbuch für Administratoren/Organisatoren
+:toc: left
+:toc-title: Inhalt
+:toclevels: 3
+:icons: font
+:source-highlighter: rouge
+:sectnums:
+:imagesdir: images/benutzerhandbuch/admin
+
+[NOTE]
+====
+Dieses Handbuch beschreibt den Admin-Bereich von KonfPlan (Rolle `ADMIN`, auch "Organisator" genannt)
+Feld für Feld: jede Seite (Tab), jeder Dialog und jede Aktion. Screenshots stammen aus dem
+Demo-Datensatz "Karrierekompass Demo" (Login als Organisatorin `kathrin.jessen`).
+====
+
+== Anmeldung und Grundaufbau
+
+Nach der Anmeldung über Keycloak öffnet sich der Admin-Bereich mit einer horizontalen
+Tab-Navigation. Solange noch keine Veranstaltung ausgewählt ist, stehen nur die Tabs
+**Organisatoren**, **Gebäude**, **Veranstaltungen**, **Verzeichnis-Import** und **Protokoll** zur
+Verfügung - alle anderen Tabs benötigen eine ausgewählte Veranstaltung und sind erst danach
+sichtbar: **Teilnehmer**, **Referenten**, **Vorträge**, **Zeit-Slots**, **Planerstellung** und
+**Ergebnisse**.
+
+Oben in der Kopfzeile der Anwendung (auf jeder Seite sichtbar) befinden sich rechts ein
+**Info**-Menüpunkt (zeigt Anwendungsname, Version, Build-Datum, Git-Commit sowie einen
+Mailto-Link an den Entwickler) und der **LOGOUT**-Button.
+
+== Tab "Veranstaltungen"
+
+image::01-veranstaltungen-liste.png[Veranstaltungen-Liste]
+
+Zentrale Verwaltung aller Veranstaltungen (Events) und Auswahl der "aktiven" Veranstaltung, mit
+der in allen anderen Tabs gearbeitet wird.
+
+**Kopfzeile:**
+
+* **Suchen...** – Textfeld, filtert die Tabelle live über alle sichtbaren Spalten.
+* **Import** (Upload-Icon) – öffnet den Datei-Auswahldialog für einen CSV-Import von
+  Veranstaltungen. Deaktiviert (ausgegraut), solange es noch keinen Organisator und kein Gebäude
+  gibt.
+* **+ Neu** – öffnet den Dialog "Neue Veranstaltung anlegen" mit leeren Feldern (siehe unten).
+
+**Tabelle** (Spalten: Name (sortierbar), Datum, Aktionen): Eine Zeile ist optisch hervorgehoben
+(indigo, linker Rahmen), wenn diese Veranstaltung gerade ausgewählt ist. Aktionen pro Zeile:
+
+* **Wählen** (Textlink) – macht diese Veranstaltung zur aktiven Veranstaltung und blendet darunter
+  einen aufklappbaren Detailbereich ein (siehe Screenshot oben).
+* Stift-Icon **Bearbeiten** – öffnet den Editor-Dialog mit den Daten dieser Veranstaltung.
+* Papierkorb-Icon **Löschen** – zeigt einen Bestätigungsdialog ("Löschen?") und löscht bei
+  Bestätigung endgültig.
+
+=== Aufklappbarer Detailbereich der gewählten Veranstaltung
+
+image::03-veranstaltung-gewaehlt-details.png[Details einer gewählten Veranstaltung, Gruppen/Vorträge/Teilnehmer aufgeklappt]
+
+Erscheint als Zeile unterhalb der gewählten Veranstaltung, beim Wählen automatisch aufgeklappt.
+Enthält drei auf-/zuklappbare Abschnitte (Anzahl jeweils in Klammern im Titel):
+
+* **Gruppen** – Textfeld "Neue Gruppe..." + Button **Hinzufügen** legt eine neue Teilnehmergruppe
+  für diese Veranstaltung an (auch per Eingabetaste). Jede vorhandene Gruppe zeigt ihren Namen
+  sowie ein Stift-Icon (**Umbenennen**, öffnet einen Browser-Dialog mit dem aktuellen Namen
+  vorausgefüllt) und ein Papierkorb-Icon (**Löschen**, mit Bestätigungsdialog "Soll die Gruppe …
+  wirklich gelöscht werden? Sie wird von allen Teilnehmern entfernt.").
+* **Vorträge & Referenten** – reine Übersichtstabelle (Titel, Referent, Organisation), nur
+  lesend. Leerzustand: "Bitte Vorträge erfassen."
+* **Teilnehmer** – Tabelle (Name, Gruppen, Aktionen) mit Stift-Icon zum Bearbeiten (öffnet den
+  Nutzer-Editor). Leerzustand: "Bitte Teilnehmer erfassen."
+
+=== Dialog: Veranstaltung anlegen/bearbeiten
+
+image::02-veranstaltung-editor-modal.png[Dialog Neue Veranstaltung anlegen]
+
+Titel je nach Kontext "Veranstaltung bearbeiten" (siehe <<_dialog_veranstaltung_bearbeiten>>) oder
+"Neue Veranstaltung anlegen".
+
+[cols="1,3"]
+|===
+| Feld | Bedeutung
+
+| Name der Veranstaltung
+| Text, Pflichtfeld.
+
+| Beginnt am
+| Datum + Uhrzeit, Pflichtfeld.
+
+| Endet am (optional)
+| Datum + Uhrzeit.
+
+| Deadline für Referenten
+| Datum + Uhrzeit, ab der Referenten ihre Daten nicht mehr ändern können.
+
+| Deadline für Teilnehmer
+| Datum + Uhrzeit, analog für Teilnehmer.
+
+| Organisatoren (Admins)
+| Checkbox-Liste aller Administratoren (Mehrfachauswahl); mindestens einer ist Pflicht – der
+  Speichern-Button bleibt sonst deaktiviert. Leerhinweis, falls noch keine Admins existieren.
+
+| Zugehörige Gebäude
+| Checkbox-Liste aller Gebäude (Mehrfachauswahl, optional).
+
+| Logo URL (optional)
+| Text/URL für ein individuelles Veranstaltungslogo.
+
+| Logo Link URL (optional)
+| URL, wohin ein Klick auf das Logo verlinkt.
+|===
+
+Buttons: **Abbrechen** (schließt ohne zu speichern) / **Speichern** (deaktiviert, wenn kein
+Organisator gewählt ist).
+
+[[_dialog_veranstaltung_bearbeiten]]
+image::04-veranstaltung-editor-modal-bearbeiten.png[Dialog Veranstaltung bearbeiten, vorbefüllt]
+
+== Tab "Verzeichnis-Import"
+
+image::05-verzeichnis-import.png[Verzeichnis-Import]
+
+Importiert einen kompletten CSV-Datensatz (aus einem serverseitigen Verzeichnis oder als
+hochgeladenes ZIP) und legt dabei automatisch eine neue Veranstaltung an.
+
+* Button **Aktualisieren** (mit Dreh-Icon während des Ladens) – lädt die Liste der
+  Server-Verzeichnisse neu.
+* Abschnitt **ZIP-Upload** – Datei-Auswahl (nur `.zip`) + Button **Hochladen und importieren**
+  (Text wechselt zu "Importiere..." während des Vorgangs; deaktiviert ohne ausgewählte Datei oder
+  während des Uploads). Fehler erscheinen als roter Hinweisblock darüber.
+* **Tabelle der Server-Verzeichnisse** – Spalten Verzeichnis (Name), Dateien (grüne Chips =
+  vorhandene Dateien, rote Chips = fehlende Dateien mit Tooltip "Fehlt: …"), Aktion.
+** Button **Importieren** pro Zeile (Text "Importiere..." während des Vorgangs); deaktiviert, wenn
+   das Verzeichnis laut Backend nicht auswählbar ist oder gerade ein anderer Import läuft.
+* Leerzustand: "Keine Veranstaltungsverzeichnisse gefunden."
+
+Nach erfolgreichem Import wird automatisch zur neuen Veranstaltung gewechselt und der Tab
+"Veranstaltungen" aktiviert.
+
+== Tab "Gebäude"
+
+image::06-gebaeude-liste.png[Gebäude-Liste]
+
+Verwaltung von Gebäuden und deren Räumen, plus Verwaltung der Raum-Verfügbarkeit je Zeit-Slot für
+die aktive Veranstaltung.
+
+**Kopfzeile:** Suchfeld "Suchen..."; Button **+ Neues Gebäude** öffnet den Gebäude-Editor leer.
+
+**Gebäude-Tabelle** (Spalten: Name (sortierbar, mit Pfeil-Icon zum Auf-/Zuklappen der Raumliste),
+Ort (sortierbar), Typ (sortierbar), Aktionen):
+
+* Stift-Icon **Gebäude bearbeiten**, Papierkorb-Icon **Gebäude löschen** (Bestätigung "Löschen?").
+* Button **+ Raum** – öffnet den Raum-Editor leer, mit diesem Gebäude vorausgewählt.
+* Der aufgeklappte Bereich zeigt die Raum-Tabelle dieses Gebäudes (Name, Kapazität, Etage,
+  Aktionen: Stift = Raum bearbeiten, Papierkorb = Raum löschen mit Bestätigung). Leerzustand:
+  "Keine Räume vorhanden."
+
+Leerzustand der gesamten Liste: "Bitte Gebäude erfassen."
+
+=== Dialog: Gebäude anlegen/bearbeiten
+
+image::07-gebaeude-editor-modal.png[Dialog Gebäude anlegen]
+
+[cols="1,3"]
+|===
+| Feld | Bedeutung
+
+| Name des Gebäudes
+| Text, Pflichtfeld.
+
+| Gebäudetyp
+| Auswahl: Schule, Kino, Sporthalle, Saal, Extern. Pflichtfeld.
+
+| Straße
+| Text, Pflichtfeld.
+
+| Hausnummer (optional)
+| Text.
+
+| Postleitzahl
+| Text, Pflichtfeld.
+
+| Ort
+| Text, Pflichtfeld.
+|===
+
+Buttons: Abbrechen / Speichern.
+
+=== Dialog: Raum anlegen/bearbeiten
+
+image::08-raum-editor-modal.png[Dialog Raum hinzufügen]
+
+[cols="1,3"]
+|===
+| Feld | Bedeutung
+
+| Name des Raums
+| Text, Pflichtfeld.
+
+| Zugehöriges Gebäude
+| Auswahl, Pflichtfeld; bei bestehenden Räumen gesperrt ("Gebäude kann bei bestehenden Räumen
+  nicht geändert werden.").
+
+| Kapazität (Personen)
+| Zahl, min. 1, Pflichtfeld.
+
+| Etage (optional)
+| Text.
+
+| Verfügbare Zeit-Slots
+| Checkbox-Liste aller Zeit-Slots der Veranstaltung (Mehrfachauswahl), Anzeige als
+  "Bezeichnung: Start – Ende".
+|===
+
+Buttons: Abbrechen / Speichern.
+
+=== Raum-Verfügbarkeiten verwalten
+
+image::09-gebaeude-raum-verfuegbarkeiten.png[Raum-Verfügbarkeiten-Matrix, aufgeklappt]
+
+Auf-/zuklappbarer Abschnitt, nur sichtbar, wenn eine Veranstaltung ausgewählt ist UND
+Zeit-Slots existieren.
+
+* Button **Verfügbarkeiten Import** (Upload-Icon) für einen CSV-Import der Raum-Verfügbarkeiten.
+* Button **Alle Änderungen speichern** – nur sichtbar, wenn ungespeicherte Änderungen vorliegen;
+  deaktiviert, wenn die Veranstaltung bereits beendet ist.
+* **Matrix-Tabelle** – Zeilen = Räume (gruppiert nach Gebäude), Spalten = Zeit-Slots (Uhrzeit als
+  Spaltenkopf); pro Zelle eine Checkbox "in diesem Slot verfügbar". Zeilen mit ungespeicherten
+  Änderungen sind orange hinterlegt. Ein Warndreieck-Icon neben dem Raumnamen erscheint mit
+  Tooltip, wenn dieser Raum durch eine andere Veranstaltung zur gleichen Zeit blockiert ist.
+  Checkboxen sind gesperrt, wenn die Veranstaltung beendet ist.
+* Leerzustand: "Für diese Veranstaltung sind keine Räume zugeordnet."
+
+== Tab "Organisatoren"
+
+image::10-organisatoren-liste.png[Organisatoren-Liste]
+
+Verwaltung der Admin-Konten (Organisatoren), unabhängig von einer bestimmten Veranstaltung.
+
+* Suchfeld "Suchen...", Button **Import** (CSV), Button **+ Neu** (öffnet den Nutzer-Editor mit
+  Rolle "ADMIN" vorbelegt, siehe unten).
+* **Tabelle** (Name (Vor-/Nachname, sortierbar, darunter grau der Anmeldename), Aktionen):
+  Stift-Icon **Bearbeiten**, Schlüssel-Icon **Passwort zurücksetzen** (öffnet den
+  Passwort-Reset-Dialog), Papierkorb-Icon **Löschen** (Bestätigung "Löschen?").
+
+=== Dialog: Nutzer anlegen/bearbeiten
+
+Derselbe Dialog wird für alle drei Rollen (Admin, Referent, Teilnehmer) verwendet, je nach Rolle
+mit leicht unterschiedlichen Feldern.
+
+image::11-user-editor-modal-admin.png[Dialog Neuer Organisator]
+
+image::15-user-editor-modal-teilnehmer.png[Dialog Neuer Teilnehmer]
+
+image::17-user-editor-modal-referent.png[Dialog Neuer Referent]
+
+=== Dialog: Passwort zurücksetzen
+
+image::12-password-reset-modal.png[Dialog Passwort zurücksetzen]
+
+Setzt das Keycloak-Passwort des Nutzers zurück. Buttons: Abbrechen / Zurücksetzen.
+
+== Tab "Teilnehmer"
+
+image::13-teilnehmer-prioritaeten.png[Teilnehmer-Tab, Wahl-Prioritäten aufgeklappt]
+
+Verwaltung der Teilnehmer einer Veranstaltung, ihrer Wahl-Prioritäten und ihrer
+Zeit-Slot-Verfügbarkeit.
+
+**Kopfzeile:** Gruppen-Auswahl ("Alle Gruppen" + je definierte Gruppe), Suchfeld, Button
+**Import** (CSV), Button **+ Neu** (Rolle "TEILNEHMER" vorbelegt).
+
+**Batch-Aktionsleiste** (erscheint, sobald mindestens ein Teilnehmer per Checkbox markiert ist):
+zeigt die Anzahl Ausgewählter; Textlinks **Deaktivieren** (Bestätigung "X Teilnehmer
+deaktivieren?"), **Löschen** (Bestätigung "X Teilnehmer endgültig löschen?"), **E-Mail** (öffnet
+den lokalen E-Mail-Client mit allen ausgewählten Adressen als BCC); Button **ALLE X AUSWÄHLEN**,
+um alle gefilterten Teilnehmer zu markieren.
+
+=== Wahl-Prioritäten verwalten
+
+Auf-/zuklappbarer Abschnitt (Screenshot oben), standardmäßig aufgeklappt.
+
+* Button **Prio Import** (CSV), Button **Alle Änderungen speichern** (nur bei ungespeicherten
+  Änderungen, deaktiviert bei beendeter Veranstaltung).
+* **Legende der Wahlvorträge** – nummerierte Liste aller Wahlvorträge mit Titel und (als Tooltip)
+  Referent/Organisation; "Priorität je Vortrag: 10 = höchste, 1 = niedrigste, 0 = keine
+  Präferenz."
+* **Prioritäten-Matrix** – Zeilen = Teilnehmer (Name, Gruppen), Spalten = Wahlvorträge
+  (nummeriert entsprechend Legende); Zelle = Zahlenfeld 0–10 für die Priorität. Bei
+  ungespeicherter Änderung erscheint neben dem Namen ein oranger **SAVE**-Button für genau diesen
+  Teilnehmer.
+
+=== Verfügbarkeiten verwalten
+
+image::14-teilnehmer-verfuegbarkeiten.png[Teilnehmer-Tab, Verfügbarkeiten aufgeklappt]
+
+Auf-/zuklappbarer Abschnitt, standardmäßig zugeklappt.
+
+* Button **Verfügbarkeiten Import** (CSV), Button **Alle Änderungen speichern**.
+* **Tabelle** – Checkbox "alle auf dieser Seite auswählen", Name (sortierbar, Anmeldename
+  darunter), Gruppen (sortierbar), Aktiv (Häkchen grün/rot, klickbar zum Umschalten), je
+  Zeit-Slot eine Verfügbarkeits-Checkbox, optional Spalte **Plan** (nur wenn bereits ein Plan
+  erstellt wurde: Dokument-Icon öffnet den individuellen Belegungsplan/Laufzettel dieses
+  Teilnehmers in einer neuen Ansicht), Aktionen (Umschlag-Icon **Einladen** öffnet den
+  Einladungs-Dialog, Stift **Bearbeiten**, Papierkorb **Löschen**). Änderungen an
+  Verfügbarkeit/Priorität markieren die Zeile orange.
+* Leerzustand: "Bitte Teilnehmer erfassen."
+
+== Tab "Referenten"
+
+image::16-referenten-liste.png[Referenten-Liste]
+
+Verwaltung der Referenten und ihrer Zeit-Slot-Verfügbarkeit für die aktive Veranstaltung.
+
+* Kopfzeile: Suchfeld, Button **Import** (Referenten-CSV), Button **Verfügbarkeiten Import**
+  (CSV), Button **Alle Änderungen speichern** (nur bei ungespeicherten Änderungen), Button
+  **+ Neu** (Rolle "REFERENT" vorbelegt).
+* **Tabelle** – Name (sortierbar, Anmeldename darunter), Organisation (sortierbar), je Zeit-Slot
+  eine Verfügbarkeits-Checkbox, optional Spalte **Plan** (Dokument-Icon, öffnet den individuellen
+  Laufzettel des Referenten, sobald ein Plan existiert), Aktionen (Stift **Bearbeiten**, Umschlag
+  **Einladen**, Papierkorb **Löschen**).
+* Leerzustand: "Bitte Referenten erfassen."
+
+=== Dialog: Nutzer einladen
+
+image::18-invite-user-modal.png[Dialog Nutzer einladen]
+
+Verschickt (bzw. zeigt) eine Einladung mit den Zugangsdaten für den Nutzer. Buttons: Abbrechen /
+Einladen.
+
+== Tab "Vorträge"
+
+image::19-vortraege-liste.png[Vorträge-Liste]
+
+Verwaltung aller Vorträge (Wahl- und Pflichtvorträge) der aktiven Veranstaltung.
+
+* Kopfzeile: Suchfeld, Button **Import** (CSV, deaktiviert solange keine Zeit-Slots existieren),
+  Button **+ Neu**.
+* **Tabelle** – Titel (sortierbar), Referent (sortierbar), Organisation (sortierbar), Pflicht
+  (sortierbar, Badge "Ja"/"Nein"), Aktionen (Stift **Bearbeiten**, Papierkorb **Löschen** mit
+  Bestätigung; Fehler beim Löschen werden als Meldung angezeigt).
+* Leerzustand: "Bitte Vorträge erfassen."
+
+=== Dialog: Vortrag anlegen/bearbeiten
+
+image::20-vortrag-editor-modal-wahlvortrag.png[Dialog Neuer Vortrag, Typ Wahlvortrag]
+
+Zeigt bei Speicherfehlern eine rote Fehlermeldung oberhalb des Formulars.
+
+[cols="1,3"]
+|===
+| Feld | Bedeutung
+
+| Typ
+| Auswahl Wahlvortrag/Pflichtvortrag, Pflichtfeld, bei bestehendem Vortrag nicht mehr änderbar.
+
+| Titel
+| Text, Pflichtfeld.
+
+| Inhalt / Beschreibung
+| Mehrzeiliger Text (optional).
+
+| Abschluss
+| Auswahl (Kein Abschluss / Berufsreife / Mittlere Reife / Allgemeine Hochschulreife /
+  Fachhochschulreife / Hochschulabschluss), optional.
+
+| Zielgruppe (Info-Text)
+| Freier Text (optional).
+
+| Referent
+| Auswahl aus allen Referenten, Pflichtfeld, bei Pflichtvorträgen gesperrt (Referent liegt dort
+  implizit fest).
+|===
+
+**Nur bei Typ = Pflichtvortrag** (roter Rahmen):
+
+image::21-vortrag-editor-modal-pflichtvortrag.png[Dialog Vortrag, Typ Pflichtvortrag]
+
+[cols="1,3"]
+|===
+| Feld | Bedeutung
+
+| Pflicht-Gruppe (Exakt)
+| Auswahl aus allen Teilnehmergruppen, Pflichtfeld; legt fest, für welche Gruppe der Vortrag
+  verpflichtend ist.
+
+| Pflicht-Raum
+| Auswahl aus allen Räumen (mit Kapazitätsangabe), Pflichtfeld.
+
+| Pflicht-Slot
+| Auswahl aus allen Zeit-Slots, Pflichtfeld.
+|===
+
+**Nur bei Typ = Wahlvortrag** (indigo Rahmen):
+
+[cols="1,3"]
+|===
+| Feld | Bedeutung
+
+| Wiederholbar
+| Checkbox; falls aktiviert, zusätzlich Feld **Max. Wiederholungen** (Zahl, min. 1).
+
+| Verfügbare Wahl-Slots
+| Checkbox-Liste aller Zeit-Slots (Mehrfachauswahl), legt fest, in welchen Slots dieser Vortrag
+  angeboten werden kann.
+
+| Veranlagungen
+| Checkbox-Liste aller definierten Veranlagungen mit Tooltip-Beschreibung (Mehrfachauswahl,
+  inhaltliche Verschlagwortung des Vortrags für den Planungsalgorithmus).
+|===
+
+Buttons: Abbrechen / Speichern.
+
+image::22-vortrag-editor-modal-bearbeiten.png[Dialog Vortrag bearbeiten, vorbefüllt]
+
+== Tab "Zeit-Slots"
+
+image::23-zeit-slots-liste.png[Zeit-Slots-Liste]
+
+Verwaltung der Zeit-Slots (Zeitfenster) der Veranstaltung, in denen Vorträge stattfinden können.
+
+* Kopfzeile: Suchfeld, Button **Import** (CSV), Button **+ Neu**.
+* **Tabelle** – Zeit (sortierbar, formatiert als Datum + Uhrzeit Start – Uhrzeit Ende),
+  Beschreibung (sortierbar), Aktionen (Stift **Bearbeiten**, Papierkorb **Löschen** mit
+  Bestätigung).
+* Leerzustand: "Bitte Zeit-Slots erfassen."
+
+=== Dialog: Zeit-Slot anlegen/bearbeiten
+
+image::24-eventslot-editor-modal.png[Dialog Neuer Zeit-Slot]
+
+[cols="1,3"]
+|===
+| Feld | Bedeutung
+
+| Bezeichnung
+| Text, Pflichtfeld, Platzhalter "z.B. Slot A, Vormittag...".
+
+| Beginn
+| Datum + Uhrzeit, Pflichtfeld.
+
+| Ende
+| Datum + Uhrzeit, Pflichtfeld.
+|===
+
+Buttons: Abbrechen / **Slot erstellen** bzw. **Änderungen speichern**.
+
+== Tab "Planerstellung"
+
+image::25-planerstellung.png[Planerstellung]
+
+Übersicht über alle Planungs-Voraussetzungen sowie Start/Abbruch der automatischen Zuteilung per
+MiniZinc-Solver; zusätzlich Export/Import für eine extern durchgeführte Berechnung.
+
+**Kennzahlen-Übersicht** (rein informativ, 4 Kacheln): Allgemein (Organisatoren, Zeitraum, Anzahl
+Zeit-Slots); Gebäude & Räume (je Gebäude Anzahl Räume + Gesamtkapazität, oder Hinweis "Keine
+Gebäude zugewiesen."); Personen (Anzahl Referenten, Teilnehmer, Teilnehmer mit gesetzten
+Prioritäten); Vorträge (Anzahl Wahl-/Pflichtvorträge).
+
+**Planerstellungs-Block:**
+
+[cols="1,3"]
+|===
+| Feld | Bedeutung
+
+| MiniZinc Solver
+| Auswahl: Google OR-Tools (cp-sat), Gecode, COIN-BC.
+
+| Timeout (Sek.)
+| Zahl; maximale Rechenzeit für den Solver.
+
+| max. Wiederholungen
+| Zahl (Tooltip: "Maximale Anzahl von Wiederholungen pro Vortrag").
+
+| Leistung (1-5)
+| Zahl (Anzahl genutzter Rechenkerne/Threads).
+
+| max. WV pro TN (0=∞)
+| Zahl, min. 0 (Tooltip: "Maximale Anzahl Wahlvorträge pro Teilnehmer. 0 = kein Limit").
+
+| Auffüllen?
+| Checkbox (Tooltip: "Freie Plätze sollen in Wahlvorträgen mit nicht-verplanten Teilnehmern
+  aufgefüllt werden").
+|===
+
+Ein blinkender Warnhinweis "Keine Prioritäten vorhanden." erscheint, falls kein Teilnehmer eine
+Priorität gesetzt hat.
+
+Button **Pläne erstellen** (Blitz-Icon, grün) startet die Berechnung; deaktiviert ohne gesetzte
+Prioritäten. Während der reinen MiniZinc-Berechnungsphase wird er durch **Erstellung abbrechen
+(Xs)** ersetzt (rot, mit laufendem Sekunden-Countdown ab dem eingestellten Timeout; Klick fragt
+eine Bestätigung ab und bricht serverseitig ab). In den Vorbereitungs-/Speicherphasen erscheint
+statt dessen ein nicht klickbarer Button "Vorbereitung läuft..." bzw. "Ergebnis wird
+gespeichert..." (Tooltip erklärt, dass diese Phasen nicht abbrechbar sind).
+
+Nach Abschluss ohne Ergebnis erscheint eine Fehlermeldung; bei Erfolg wechselt die Ansicht
+automatisch in den Tab "Ergebnisse". Inkonsistenzen (z.B. fehlende Voraussetzungen), die den
+Start verhindern, werden als **dauerhaftes rotes Banner oberhalb der Tab-Inhalte** angezeigt
+(bleibt auch bei Tab-Wechsel sichtbar, bis der Button **Verstanden** geklickt wird).
+
+**Export/Import-Zeile** (nur sichtbar, wenn gerade keine Berechnung läuft):
+
+* Button **.dzn exportieren** – lädt die MiniZinc-Datendatei (.dzn) herunter.
+* Button **Bundle exportieren** – lädt ein Export-Paket (.dzn + Modell + Metadaten) für eine
+  externe Berechnung herunter.
+* Button **Ergebnis importieren** – öffnet die Datei-Auswahl (.zip) für ein extern berechnetes
+  Ergebnis.
+
+== Tab "Ergebnisse"
+
+image::26-ergebnisse-uebersicht.png[Ergebnisse-Übersicht mit abgeschlossenem Plan]
+
+Zusammenfassung des erstellten Plans (Stundenplan, Qualitätskennzahlen) sowie zentrale
+Anlaufstelle zum Öffnen aller Berichte/Reports (jeweils in einem neuen Browser-Tab).
+
+* Abschnitt **Vorbereitung** (immer sichtbar, unabhängig von einem vorhandenen Plan): Button
+  **Anzeigen** neben "Abstimmungsfragebögen (Teilnehmer)" öffnet den Report zur Prioritätenerfassung
+  (siehe <<_report_abstimmungsfragebogen>>).
+* **Belegungsplan** – eingebetteter Stundenplan, sobald ein Plan existiert; sonst Hinweis "Kein
+  Planungsergebnis vorhanden. Bitte erstellen Sie zuerst einen Plan im Tab „Planerstellung“."
+* Abschnitt **Planqualität** (nur mit vorhandenem Plan): 4 Kennzahlen – Güte, Zuweisungen,
+  Raumwechsel, Status.
+* Abschnitt **Berichte** (nur mit vorhandenem Plan) – je ein Eintrag mit Button **Anzeigen**,
+  öffnet den jeweiligen Report in einem neuen Tab (siehe <<_reports_berichte>>).
+
+[[_reports_berichte]]
+== Berichte (Reports)
+
+Alle Berichte öffnen sich in einem neuen Browser-Tab und bieten oben rechts einen
+**Drucken**-Button (löst den Browser-Druckdialog mit einem eigenen, für Papier optimierten
+Layout ohne Navigationselemente aus).
+
+[[_report_abstimmungsfragebogen]]
+=== Abstimmungsfragebögen (Teilnehmer)
+
+image::28-report-abstimmungsfragebogen.png[Report Abstimmungsfragebögen]
+
+Druckfertige Fragebögen zur Prioritätenerfassung für alle Teilnehmer – zum Ausdrucken **vor** der
+Planerstellung, falls Teilnehmer ihre Wahlvortrags-Prioritäten nicht direkt online eintragen.
+
+=== Prioritäten Auswertung
+
+image::29-report-prioritaeten.png[Report Prioritäten-Auswertung]
+
+Zeigt, wie gut die Wunsch-Prioritäten der Teilnehmer durch den erstellten Plan erfüllt wurden.
+
+=== Teilnehmer-Zuordnungen
+
+image::30-report-teilnehmer-zuordnungen.png[Report Teilnehmer-Zuordnungen]
+
+Übersicht, welcher Teilnehmer welchem Vortrag/Slot/Raum zugeordnet ist.
+
+=== Raumschilder
+
+image::31-report-raumschilder.png[Report Raumschilder]
+
+Druckfertige Raumschilder mit der Belegung je Zeit-Slot, ein Abschnitt pro Raum.
+
+=== Anwesenheiten
+
+image::32-report-anwesenheiten.png[Report Anwesenheiten]
+
+Anwesenheitslisten je Vortrag/Raum/Slot.
+
+=== Laufzettel für Teilnehmer
+
+image::33-report-laufzettel-alle-teilnehmer.png[Report Laufzettel für Teilnehmer]
+
+Individuelle Laufzettel (persönlicher Stundenplan) aller Teilnehmer gesammelt.
+
+=== Laufzettel für Referenten
+
+image::34-report-laufzettel-alle-referenten.png[Report Laufzettel für Referenten]
+
+Individuelle Laufzettel aller Referenten gesammelt.
+
+=== Freie Slots (Referenten)
+
+image::35-report-freie-slots-referenten.png[Report Freie Slots Referenten]
+
+Zeigt, welche Referenten in welchen Slots noch frei/verfügbar sind.
+
+=== Freie Slots (Teilnehmer)
+
+image::36-report-freie-slots-teilnehmer.png[Report Freie Slots Teilnehmer]
+
+Analog für Teilnehmer.
+
+=== Weitere Reports (aktuell nicht per Button im Tab "Ergebnisse" verlinkt)
+
+Die folgenden zwei Reports existieren als eigene Ansichten und sind über eine direkte URL
+erreichbar, aber aktuell nicht über einen Button im Tab "Ergebnisse" verlinkt:
+
+image::37-report-uebersicht-raeume.png[Report Übersicht Räume]
+
+**Übersicht Räume** – tabellarische Übersicht aller Räume mit ihrer Belegung.
+
+image::38-report-raumbelegungsplan.png[Report Raumbelegungsplan]
+
+**Raumbelegungsplan** – Belegungsplan für einen einzelnen, konkreten Raum.
+
+== Tab "Protokoll"
+
+image::27-protokoll.png[Protokoll]
+
+Revisionssicheres Audit-Log aller sicherheits-/verwaltungsrelevanten Ereignisse (Logins,
+Nutzeränderungen, Planungen etc.), mit Filter- und CSV-Exportfunktion.
+
+* **CSV-Export-Bereich** – Felder **Von** und **Bis** (je Datum), Button **Export CSV** –
+  exportiert alle Einträge im gewählten Zeitraum als CSV-Datei (Meldung "Keine Einträge im
+  gewählten Zeitraum gefunden.", falls leer).
+* **Filter-Bereich** – **Akteur filtern** (Text, Name/E-Mail), **Veranstaltung filtern** (Auswahl,
+  nur Veranstaltungen, die tatsächlich in den Protokolldaten vorkommen, inkl. Option "Ohne
+  Veranstaltung"), **Kategorie filtern** (Auswahl: LOGIN, SECURITY, SYSTEM, VERANSTALTUNG,
+  NUTZER, PLANUNG – farblich unterschiedliche Badges), **Ereignis filtern** (Text-Stichwortsuche).
+* **Tabelle** (alle Spalten außer Ereignis/Details/Ref-ID sortierbar) – Zeitpunkt, Akteur,
+  Veranstaltung, Kategorie (farbiges Badge), Ereignis, Details (gekürzt mit Tooltip für
+  Volltext), Ref-ID.
+* Leerzustand: "Keine Einträge gefunden, die den Filtern entsprechen."

@@ -1,0 +1,157 @@
+= KonfPlan: Benutzerhandbuch für Teilnehmer
+:toc: left
+:toc-title: Inhalt
+:toclevels: 3
+:icons: font
+:source-highlighter: rouge
+:sectnums:
+:imagesdir: images/benutzerhandbuch/teilnehmer
+
+[NOTE]
+====
+Dieses Handbuch beschreibt den Teilnehmer-Bereich von KonfPlan (Rolle `TEILNEHMER`) Feld für
+Feld: jeden Abschnitt der Seite, jede Eingabemöglichkeit und jede Aktion. Screenshots stammen aus
+dem Demo-Datensatz "Karrierekompass Demo" (Login als Teilnehmer `alex.alfa`).
+====
+
+== Grundaufbau
+
+Nach der Anmeldung über Keycloak öffnet sich eine einzige, zentrierte Seite (keine Tabs) mit dem
+KonfPlan-Logo oben, danach zwei Abschnitte untereinander: **Mein Profil** und **Meine
+Veranstaltungen**. Innerhalb jeder Veranstaltungskarte gibt es zwei auf-/zuklappbare
+Unterabschnitte: **Meine Verfügbarkeit** und **Vorträge & Prioritäten**.
+
+Oben in der Kopfzeile der Anwendung befinden sich rechts ein **Info**-Menüpunkt (Anwendungsname,
+Version, Build-Datum, Git-Commit, Mailto-Link an den Entwickler) und der **LOGOUT**-Button.
+
+== Mein Profil
+
+image::01-profil.png[Mein Profil]
+
+Solange die Profildaten laden, steht dort nur "Profildaten werden geladen...". Danach ein
+zweispaltiges Formular:
+
+[cols="1,3"]
+|===
+| Feld | Bedeutung
+
+| Anmeldename
+| Textfeld, schreibgeschützt, zeigt den Login-Namen.
+
+| Vorname
+| Textfeld, schreibgeschützt.
+
+| Nachname
+| Textfeld, schreibgeschützt.
+
+| E-Mail-Adresse
+| Textfeld, schreibgeschützt, zeigt "(keine hinterlegt)" falls leer. Hinweistext darunter:
+  "Änderungen an E-Mail-Adresse und Passwort erfolgen über das Keycloak-Benutzerkonto."
+
+| Gruppen
+| Textfeld, schreibgeschützt, kommagetrennte Liste der Gruppen des Teilnehmers.
+
+| Meine Veranlagungen
+| Checkbox-Raster (2–3 Spalten), eine Checkbox pro definierter Veranlagung, jede mit Label und
+  Tooltip (Beschreibung beim Hovern). Einzig editierbares Feld dieses Abschnitts.
+|===
+
+Button **Speichern** (unten rechts) – speichert die angehakten Veranlagungen; zeigt danach eine
+Erfolgs- bzw. Fehlermeldung. Kein "ungespeichert"-Hinweis/Dirty-State für dieses Formular – der
+Speichern-Button ist immer aktiv, unabhängig davon, ob sich etwas geändert hat.
+
+== Meine Veranstaltungen
+
+Falls der Teilnehmer für keine Veranstaltung angemeldet ist: Hinweistext "Sie sind für keine
+Veranstaltungen angemeldet." Sonst eine Karte pro Veranstaltung mit:
+
+* Logo der Veranstaltung (falls hinterlegt; ist zusätzlich ein Link gesetzt, ist das Logo
+  anklickbar und öffnet den Link in neuem Tab).
+* Name der Veranstaltung, Zeitraum (Start–Ende).
+* Mailto-Links zu allen Organisatoren der Veranstaltung: unterstrichen, mit kleinem
+  Briefumschlag-Icon davor, Klick öffnet das Standard-Mailprogramm mit vorausgefülltem Betreff
+  (Veranstaltungsname).
+* Falls eine Teilnehmer-Deadline gesetzt ist: Zeile "Deadline für Änderungen: TT.MM.JJJJ, HH:MM"
+  – in Orange solange die Deadline noch nicht erreicht ist, in Rot sobald sie verstrichen ist.
+* Button **ICS** (nur sichtbar, wenn für die Veranstaltung bereits ein Plan erstellt wurde) –
+  lädt eine .ics-Kalenderdatei mit den eigenen Terminen herunter.
+* Button **Laufzettel anzeigen** (nur sichtbar, wenn ein Plan erstellt wurde) – öffnet den
+  Laufzettel-Report (siehe <<_report_laufzettel_teilnehmer>>).
+
+=== Meine Verfügbarkeit
+
+image::02-verfuegbarkeit.png[Meine Verfügbarkeit]
+
+Auf-/zuklappbar per Klick auf die Kopfzeile (Chevron-Icon zeigt den Zustand). Beim Aufklappen
+werden die Zeit-Slots der Veranstaltung geladen, nach Tag gruppiert als nebeneinander stehende
+Spalten-Blöcke dargestellt (ein Block pro Tag, Slots als Spalten innerhalb des Blocks mit
+Startzeit als Kopfzeile).
+
+Pro Slot eine **Checkbox** "verfügbar/nicht verfügbar". Slots, die zu einem Pflichtvortrag der
+eigenen Gruppe gehören, sind grau hinterlegt, ihre Checkbox ist deaktiviert und immer angehakt
+(Tooltip: "Pflichtvortrag der eigenen Gruppe - Teilnahme verpflichtend") – der Teilnehmer kann
+sich davon nicht abmelden.
+
+Button **Verfügbarkeit speichern** (oben rechts im Abschnitt) – nur aktiv, wenn sich seit dem
+letzten Speichern etwas geändert hat UND die Teilnehmer-Deadline noch nicht verstrichen ist.
+Speichert alle angehakten Slot-IDs; zeigt Erfolg/Fehler an.
+
+Öffnet man diesen Abschnitt, wird der Abschnitt "Vorträge & Prioritäten" automatisch zugeklappt
+(nur einer von beiden ist gleichzeitig offen).
+
+=== Vorträge & Prioritäten
+
+image::03-vortraege-prioritaeten-legende.png[Vorträge & Prioritäten, Legende]
+
+Ebenfalls auf-/zuklappbar, schließt umgekehrt "Meine Verfügbarkeit". Falls für die Veranstaltung
+noch keine Wahlvorträge existieren: Hinweistext "Für diese Veranstaltung sind noch keine
+Vorträge verfügbar."
+
+**Legende-Tabelle** oben: eine Zeile pro Wahlvortrag (alphabetisch nach Titel sortiert,
+durchnummeriert), zeigt Nummer, "Titel bei Referentenname", ein "Pflicht"-Badge falls es ein
+Pflichtvortrag ist, sowie pro definierter Veranlagung eine Spalte mit "X", falls der Vortrag
+diese Veranlagung anspricht (Spaltenköpfe sind vertikal gedreht beschriftet).
+
+Hinweistext: "Nummern entsprechen der Legende oben. 10 = höchste Priorität, 1 = niedrigste,
+leer/0 = kein Interesse." Button **Meine Prioritäten speichern** (oben rechts) – nur aktiv, wenn
+mindestens eine Priorität geändert wurde und die Deadline nicht verstrichen ist.
+
+image::04-vortraege-prioritaeten-matrix.png[Vorträge & Prioritäten, Matrix]
+
+**Prioritäten-Tabelle(n)**: bei vielen Vorträgen in mehrere schmalere Tabellen à max. 15 Spalten
+aufgeteilt (nebeneinander liegende Vortragsnummern als Spaltenköpfe), mit drei Zeilen:
+
+* **Gewählt** – grünes Häkchen-Icon, wenn für diesen Vortrag ein Prioritätswert > 0 eingetragen
+  ist (reine Anzeige).
+* **Zugeteilt** – grünes Häkchen-Icon, wenn der Teilnehmer laut aktuellem Plan diesem Vortrag
+  tatsächlich zugewiesen ist (reine Anzeige, kein Eingabefeld).
+* **Priorität** – Zahlen-Eingabefeld pro Vortrag, Wertebereich 0–10 (0 = kein Interesse/
+  ausgeschlossen, 1 = niedrigste, 10 = höchste Priorität). Für Pflichtvorträge deaktiviert (der
+  Teilnehmer muss/kann daran nichts ändern), ebenso deaktiviert, wenn die Deadline verstrichen
+  ist.
+
+Die Priorität ist eine rein numerische Eingabe (kein Drag&Drop, keine Dropdown-Auswahl) – man
+tippt direkt die Zahl 0–10 in das kleine Eingabefeld unter der jeweiligen Vortragsnummer.
+
+== Sonderzustände
+
+* Nach Ablauf der jeweiligen Teilnehmer-Deadline werden Verfügbarkeits-Checkboxen,
+  Prioritäts-Eingabefelder und die zugehörigen Speichern-Buttons deaktiviert – Änderungen sind
+  dann nicht mehr möglich, die Daten bleiben aber sichtbar.
+* Speichern-Rückmeldungen (Erfolg/Fehler) erscheinen als Meldungsdialog, keine Toast-Benachrichtigung.
+
+[[_report_laufzettel_teilnehmer]]
+== Bericht: Laufzettel
+
+image::05-report-laufzettel.png[Report Laufzettel für Teilnehmer]
+
+Persönlicher Stundenplan-Report für den Teilnehmer, erreichbar über den Button "Laufzettel
+anzeigen" auf der eigenen Veranstaltungskarte (nur sichtbar, sobald ein Plan erstellt wurde).
+Zeigt oben den Veranstaltungskopf (Name, Zeitraum, Ort), darunter die Überschrift "Laufzettel für
+Vorname Nachname" sowie einen **Drucken**-Button (öffnet den Browser-Druckdialog; ein eigenes
+Druck-Stylesheet blendet Navigationselemente aus und formatiert die Tabelle für Papier).
+
+Die Tabelle hat vier Spalten: **Zeit** (Start–Ende des Slots), **Vortrag** (Titel), **Raum**,
+**Referent** – eine Zeile pro zugewiesenem Termin, chronologisch nach Startzeit sortiert.
+Während des Ladens erscheint ein Spinner, bei einem Fehler eine rote Fehlermeldung statt der
+Tabelle.

@@ -1,0 +1,228 @@
+= KonfPlan: Benutzerhandbuch für Referenten
+:toc: left
+:toc-title: Inhalt
+:toclevels: 3
+:icons: font
+:source-highlighter: rouge
+:sectnums:
+:imagesdir: images/benutzerhandbuch/referent
+
+[NOTE]
+====
+Dieses Handbuch beschreibt den Referenten-Bereich von KonfPlan (Rolle `REFERENT`) Feld für Feld:
+jeden Abschnitt der Seite, jeden Dialog und jede Aktion. Screenshots stammen aus dem
+Demo-Datensatz "Karrierekompass Demo" (Login als Referent `stephan.arens` bzw. `margarete.isaak`).
+====
+
+== Grundaufbau
+
+Nach der Anmeldung über Keycloak öffnet sich eine einzige, durchlaufende Seite (keine Tabs), die
+von oben nach unten fünf Abschnitte zeigt: **Persönliches Profil**, **Mein Zeitplan**, **Meine
+Verfügbarkeit** (pro Veranstaltung), **Meine Vorträge** und **Meine Veranstaltungsanmeldungen**.
+
+Oben in der Kopfzeile der Anwendung befinden sich rechts ein **Info**-Menüpunkt (Anwendungsname,
+Version, Build-Datum, Git-Commit, Mailto-Link an den Entwickler) und der **LOGOUT**-Button.
+
+== Persönliches Profil
+
+image::01-profil-und-zeitplan.png[Persönliches Profil und Mein Zeitplan]
+
+Überschrift mit Personen-Icon. Rechts daneben erscheint ein **Speichern**-Button nur, wenn sich
+mindestens ein Feld gegenüber dem zuletzt geladenen Stand geändert hat – ohne Änderung ist kein
+Button sichtbar.
+
+[cols="1,3"]
+|===
+| Feld | Bedeutung
+
+| Anmeldename
+| Textfeld, dauerhaft ausgegraut/nicht änderbar – der Login-Name ist fest vergeben.
+
+| Vorname
+| Textfeld.
+
+| Nachname
+| Textfeld.
+
+| Organisation
+| Textfeld (z.B. Firma/Institution des Referenten).
+
+| Rolle / Position
+| Textfeld (Funktion innerhalb der Organisation).
+
+| E-Mail Adresse (optional)
+| Textfeld vom Typ E-Mail, ausdrücklich als optional gekennzeichnet.
+|===
+
+Alle Felder außer dem Anmeldenamen werden deaktiviert (ausgegraut, nicht editierbar), sobald für
+irgendeine der Veranstaltungen, an denen der Referent beteiligt ist, die Referenten-Deadline
+bereits abgelaufen ist. Klick auf **Speichern** sendet die Änderungen ab; bei Erfolg erscheint
+eine Bestätigung ("Profil gespeichert!"), bei Fehler eine Fehlermeldung mit der
+Server-Fehlermeldung.
+
+== Mein Zeitplan
+
+Für jede Veranstaltung, an der der Referent teilnimmt, eine Karte mit Name und Datumsspanne. Ist
+der Plan für die Veranstaltung bereits erstellt, erscheinen zwei Buttons:
+
+* **ICS** – lädt eine Kalenderdatei mit den eigenen Vortragsterminen zum Import in
+  Outlook/Kalender-Apps herunter.
+* **Laufzettel anzeigen** – öffnet den persönlichen Laufzettel-Report (siehe
+  <<_report_laufzettel>>).
+
+Ist der Plan noch nicht erstellt, steht dort nur der Hinweistext "Plan noch nicht verfügbar"
+statt der Buttons.
+
+== Meine Verfügbarkeit
+
+image::02-verfuegbarkeit.png[Meine Verfügbarkeit pro Veranstaltung]
+
+Pro Veranstaltung eine Karte mit Name, Datumsspanne und – falls gesetzt – der
+Referenten-Deadline (orange, wird rot sobald abgelaufen). Darunter ein Raster anklickbarer
+Kacheln, eine pro Zeit-Slot der Veranstaltung (Beschriftung z.B. "Mo 09:00 - 09:45").
+
+Ein Klick auf eine Kachel schaltet die eigene Verfügbarkeit für diesen Slot um: aktiv
+(dunkelblau/ausgefüllt) = verfügbar, inaktiv (grau) = nicht verfügbar. Jeder Klick wird sofort
+einzeln gespeichert (kein gesammeltes Speichern nötig) – schlägt das Speichern fehl, erscheint
+eine Fehlermeldung.
+
+Ist die Referenten-Deadline für die Veranstaltung abgelaufen, sind alle Kacheln deaktiviert
+(nicht mehr anklickbar, leicht transparent). Gibt es noch keine Zeit-Slots für die Veranstaltung,
+erscheint stattdessen der Hinweistext "Noch keine Zeit-Slots für diese Veranstaltung angelegt."
+
+== Meine Vorträge
+
+image::03-meine-vortraege.png[Meine Vorträge]
+
+Kopfzeile mit Titel und – sofern keine Deadline abgelaufen ist und mindestens ein Vortrag
+existiert – einem **Neuer Vortrag**-Button oben rechts. Hat der Referent noch gar keinen
+Vortrag, erscheint statt der Liste ein zentrierter Hinweis "Sie haben noch keine Vorträge
+angelegt." mit einem großen Button **Jetzt einen Vortrag hinzufügen** (nur sichtbar, wenn keine
+Deadline abgelaufen ist).
+
+Jeder vorhandene Vortrag erscheint als Zeile mit Titel (oder "Unbenannter Vortrag"), dem Namen
+der zugehörigen Veranstaltung und – falls vorhanden – der Deadline (orange/rot). Rechts zwei
+Aktionen:
+
+* **Bearbeiten** (bzw. **Ansehen**, falls die Deadline für diesen Vortrag abgelaufen ist – dann
+  ist der Dialog nur lesbar) – öffnet den Vortrags-Dialog (siehe unten).
+* **Löschen** (nur sichtbar, wenn die Deadline noch nicht abgelaufen ist) – fragt vorher über
+  einen Bestätigungsdialog "Sind Sie sicher?" nach.
+
+=== Dialog: Vortrag anlegen/bearbeiten
+
+image::04-vortrag-editor-modal-neu.png[Dialog Neuen Vortrag anlegen]
+
+Titel des Dialogs wechselt zwischen "Neuen Vortrag anlegen" (neuer Vortrag) und "Vortragsdetails
+bearbeiten" (bestehender Vortrag, siehe <<_dialog_bearbeiten_referent>>). Ist die Deadline der
+zugehörigen Veranstaltung abgelaufen, erscheint oben ein roter Hinweisblock "Die Deadline für
+diese Veranstaltung ist bereits abgelaufen. Änderungen sind nicht mehr möglich." und alle Felder
+sowie der Speichern-Button werden deaktiviert/ausgeblendet (nur Ansicht + Abbrechen möglich).
+
+[cols="1,3"]
+|===
+| Feld | Bedeutung
+
+| Veranstaltung auswählen
+| Auswahlliste, nur bei einem NEUEN Vortrag sichtbar (bei einem bestehenden Vortrag ist die
+  Veranstaltung fix); Pflichtfeld. Veranstaltungen mit abgelaufener Deadline sind in der Liste
+  als "(Abgelaufen)" markiert und nicht auswählbar.
+
+| Titel des Vortrags
+| Textfeld.
+
+| Abstract (Kurzbeschreibung)
+| Mehrzeiliges Textfeld (4 Zeilen).
+
+| Benötigte Ausstattung (optional)
+| Mehrzeiliges Textfeld (2 Zeilen), Platzhalter "z.B. Beamer, Whiteboard,
+  Starkstromanschluss...".
+
+| Veranlagungen
+| Mehrere Checkboxen (welche beruflichen Veranlagungen/Interessensfelder der Vortrag inhaltlich
+  anspricht), jede mit Tooltip-Beschreibung; Mehrfachauswahl möglich.
+|===
+
+Unten zwei Buttons: **Abbrechen** (schließt ohne zu speichern) und **Speichern** (nur sichtbar,
+wenn nicht gesperrt; speichert die Eingaben und schließt den Dialog).
+
+[[_dialog_bearbeiten_referent]]
+image::05-vortrag-editor-modal-bearbeiten.png[Dialog Vortragsdetails bearbeiten, vorbefüllt]
+
+== Meine Veranstaltungsanmeldungen
+
+image::06-veranstaltungsanmeldungen.png[Meine Veranstaltungsanmeldungen]
+
+Hat der Referent keine Veranstaltungen, erscheint der Hinweis "Es sind keine Veranstaltungen
+verfügbar oder Sie haben sich noch nicht angemeldet." Pro Veranstaltung eine Karte mit
+optionalem Logo (falls hinterlegt, anklickbar/verlinkt), Name, Datumsspanne, den Organisatoren
+als Mailto-Links (unterstrichen, mit Briefumschlag-Icon, öffnet das E-Mail-Programm mit
+vorausgefülltem Betreff) und – falls gesetzt – der Referenten-Deadline.
+
+Rechts oben ein Status-Badge: **Abgelaufen** (rot, Deadline vorbei), **Vergangen** (grau,
+Veranstaltung liegt in der Vergangenheit) oder **Offen** (grün).
+
+Darunter: bereits für diese Veranstaltung angemeldete Vorträge mit einem
+**Zurückziehen**-Button (nur wenn Deadline nicht abgelaufen und Veranstaltung noch in der
+Zukunft liegt; fragt vorher "Abmelden? Dies zieht den Vortrag für diese Veranstaltung zurück."
+als Bestätigung ab). Außerdem, sofern Deadline nicht abgelaufen und Veranstaltung zukünftig ist:
+Vorträge, die der Referent bereits für ANDERE Veranstaltungen angelegt hat und die für diese
+Veranstaltung noch nicht registriert sind, erscheinen ausgegraut mit Button **In dieses Event
+kopieren** (übernimmt den bestehenden Vortrag 1:1 für diese Veranstaltung, mit Erfolgsmeldung
+"Vortrag wurde erfolgreich kopiert.").
+
+== Alle Buttons/Aktionen im Überblick
+
+[cols="1,2"]
+|===
+| Aktion | Wirkung
+
+| Speichern (Profil)
+| Sendet die Profiländerungen ab, Bestätigungs-/Fehlermeldung.
+
+| Verfügbarkeits-Kachel anklicken
+| Sofortiges Umschalten + Speichern der Verfügbarkeit für diesen Slot.
+
+| ICS
+| Download einer .ics-Kalenderdatei mit den eigenen Terminen.
+
+| Laufzettel anzeigen
+| Navigation zum Laufzettel-Report.
+
+| Neuer Vortrag / Jetzt einen Vortrag hinzufügen
+| Öffnet den Vortrags-Dialog leer, vorbelegt mit der ersten Veranstaltung ohne abgelaufene
+  Deadline (gibt es keine, erscheint eine Fehlermeldung und der Dialog öffnet sich nicht).
+
+| Bearbeiten/Ansehen
+| Öffnet den Vortrags-Dialog mit den Daten des Vortrags.
+
+| Löschen
+| Bestätigungsdialog, dann endgültiges Löschen des Vortrags.
+
+| Zurückziehen
+| Bestätigungsdialog, dann Abmelden des Vortrags von dieser Veranstaltung (der Vortrag selbst
+  bleibt für andere Veranstaltungen erhalten).
+
+| In dieses Event kopieren
+| Registriert einen bestehenden Vortrag zusätzlich für diese Veranstaltung.
+
+| Mailto-Links
+| Öffnen das lokale E-Mail-Programm mit der Adresse des Organisators und vorausgefülltem Betreff
+  (Name der Veranstaltung).
+|===
+
+[[_report_laufzettel]]
+== Bericht: Laufzettel
+
+image::07-report-laufzettel.png[Report Laufzettel für Referenten]
+
+Persönlicher Stundenplan-Report für den Referenten, erreichbar über den Button "Laufzettel
+anzeigen" auf der eigenen Zeitplan-Karte. Zeigt oben den Veranstaltungskopf (Name, Zeitraum,
+Organisation), darunter die Überschrift "Laufzettel für Vorname Nachname" sowie einen
+**Drucken**-Button (öffnet den Browser-Druckdialog; ein eigenes Druck-Stylesheet blendet
+Navigationselemente aus und formatiert die Tabelle für Papier).
+
+Die Tabelle hat drei Spalten: **Zeit** (Slot-Zeitraum, z.B. "16:15 - 16:45"), **Vortrag** (Titel
+des in diesem Slot gehaltenen eigenen Vortrags) und **Raum** (zugewiesener Raum), sortiert nach
+Uhrzeit. Bei fehlenden URL-Parametern oder einem Serverfehler erscheint statt der Tabelle eine
+Fehlermeldung.
