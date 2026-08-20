@@ -19,7 +19,7 @@ dem Demo-Datensatz "Karrierekompass Demo" (Login als Teilnehmer `alex.alfa`).
 
 == Grundaufbau
 
-Nach der Anmeldung über Keycloak öffnet sich eine einzige, zentrierte Seite (keine Tabs) mit dem
+Nach der Anmeldung über die Startseite öffnet sich eine einzige, zentrierte Seite (keine Tabs) mit dem
 KonfPlan-Logo oben, danach zwei Abschnitte untereinander: **Mein Profil** und **Meine
 Veranstaltungen**. Innerhalb jeder Veranstaltungskarte gibt es zwei auf-/zuklappbare
 Unterabschnitte: **Meine Verfügbarkeit** und **Vorträge & Prioritäten**.
@@ -29,8 +29,8 @@ Version, Build-Datum, Git-Commit, Mailto-Link an den Entwickler) und der **LOGOU
 
 [NOTE]
 ====
-Bei der allerersten Anmeldung verlangt Keycloak, dass zunächst ein eigenes, neues Passwort
-festgelegt wird, bevor die Anwendung nutzbar ist. Das vom Organisator vergebene
+Bei der allerersten Anmeldung legen Sie ein eigenes, neues Passwort
+fest, bevor die Anwendung nutzbar ist. Das vom Organisator vergebene
 Start-/Einladungspasswort gilt also nur für diesen ersten Login.
 ====
 
@@ -56,7 +56,7 @@ zweispaltiges Formular:
 
 | E-Mail-Adresse
 | Textfeld, schreibgeschützt, zeigt "(keine hinterlegt)" falls leer. Hinweistext darunter:
-  "Änderungen an E-Mail-Adresse und Passwort erfolgen über das Keycloak-Benutzerkonto."
+  "Änderungen an E-Mail-Adresse und Passwort erfolgen über das Benutzerkonto."
 
 | Gruppen
 | Textfeld, schreibgeschützt, kommagetrennte Liste der Gruppen des Teilnehmers.

@@ -53,4 +53,6 @@ false;soziale Arbeit, Studium ohne Abitur;rut.caspari;1,2,3,4;soziale Arbeit, St
 false;Referendariat Lehramt Realschule+ (mit Tim Ley);hannah.roos;1,2,3,4;Referendariat Lehramt Realschule+ (mit Tim Ley);true;2;;;;Beamer;sozial|wissenschaftlich
 false;Schulleiter;bjoern.szikowski;1,2,3,4;Schulleiter;true;2;;;;Beamer;organisatorisch|sozial
 false;Schulleiter;thomas.schmacke;1,2,3,4;Schulleiter;true;2;;;;Beamer;organisatorisch|sozial
-false;Pharmazeuten;c.loebbert;1,2,3,4;Pharmazeuten;true;2;;;;Beamer;medizinisch|wissenschaftlich
+false;Pharmazeuten;m.loebbert;1,2,3,4;Apotheker/-in;true;2;;;;Beamer;medizinisch|wissenschaftlich
+false;Pharmazeuten;m.loebbert;1,2,3,4;Pharmazeutisch technische/r Assistent/in;true;2;;;;Beamer;medizinisch|wissenschaftlich
+false;Pharmazeuten;m.loebbert;1,2,3,4;Pharmazeutisch kaufmännische/r Assistent/in;true;2;;;;Beamer;medizinisch|wissenschaftlich

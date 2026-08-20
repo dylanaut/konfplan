@@ -13,13 +13,13 @@ Gilt für KonfPlan Version {konfplan-version}.
 [NOTE]
 ====
 Dieses Handbuch beschreibt den Referenten-Bereich von KonfPlan (Rolle `REFERENT`) Feld für Feld:
-jeden Abschnitt der Seite, jeden Dialog und jede Aktion. Screenshots stammen aus dem
-Demo-Datensatz "Karrierekompass Demo" (Login als Referent `stephan.arens` bzw. `margarete.isaak`).
+jeden Abschnitt der Seite, jeden Dialog und jede Aktion. Screenshots stammen aus einer
+Demo-Anwendung.
 ====
 
 == Grundaufbau
 
-Nach der Anmeldung über Keycloak öffnet sich eine einzige, durchlaufende Seite (keine Tabs), die
+Nach der Anmeldung über die Startseite öffnet sich eine einzige, durchlaufende Seite (keine Tabs), die
 von oben nach unten fünf Abschnitte zeigt: **Persönliches Profil**, **Mein Zeitplan**, **Meine
 Verfügbarkeit** (pro Veranstaltung), **Meine Vorträge** und **Meine Veranstaltungsanmeldungen**.
 
@@ -28,8 +28,8 @@ Version, Build-Datum, Git-Commit, Mailto-Link an den Entwickler) und der **LOGOU
 
 [NOTE]
 ====
-Bei der allerersten Anmeldung verlangt Keycloak, dass zunächst ein eigenes, neues Passwort
-festgelegt wird, bevor die Anwendung nutzbar ist. Das vom Organisator vergebene
+Bei der allerersten Anmeldung legen Sie ein eigenes, neues Passwort
+fest, bevor die Anwendung nutzbar ist. Das vom Organisator vergebene
 Start-/Einladungspasswort gilt also nur für diesen ersten Login.
 ====
 

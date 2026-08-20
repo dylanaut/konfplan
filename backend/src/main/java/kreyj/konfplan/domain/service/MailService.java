@@ -24,6 +24,8 @@ public class MailService {
 
     private final MailTemplate deregistrationNotificationTemplate;
 
+    private final boolean outboundEnabled;
+
     @SuppressWarnings("CdiInjectionPointsInspection")
     public MailService(
         @ConfigProperty(name = "app.mail.admin", defaultValue = "konfplan@yahoo.com")
@@ -32,11 +34,14 @@ public class MailService {
         @Location("email/registrationConfirmation")
         MailTemplate registrationConfirmationTemplate,
         @Location("email/deregistrationNotification")
-        MailTemplate deregistrationNotificationTemplate) {
+        MailTemplate deregistrationNotificationTemplate,
+        @ConfigProperty(name = "app.mail.outbound.enabled", defaultValue = "false")
+        boolean outboundEnabled) {
         this.adminEmail = adminEmail;
         this.mailer = mailer;
         this.registrationConfirmationTemplate = registrationConfirmationTemplate;
         this.deregistrationNotificationTemplate = deregistrationNotificationTemplate;
+        this.outboundEnabled = outboundEnabled;
     }
 
 
@@ -67,7 +72,7 @@ public class MailService {
 
 
     public void sendEinladungZuVeranstaltung(Nutzer nutzer, Veranstaltung v) {
-        if (nutzer.getEmail() == null) {
+        if (! outboundEnabled || nutzer.getEmail() == null) {
             return;
         }
 
@@ -96,7 +101,7 @@ public class MailService {
      */
 
     public void sendRegistrationConfirmation(Nutzer nutzer) {
-        if (nutzer.getEmail() == null) {
+        if (! outboundEnabled || nutzer.getEmail() == null) {
             return;
         }
         registrationConfirmationTemplate.to(nutzer.getEmail())
@@ -120,7 +125,7 @@ public class MailService {
      */
 
     public void sendUserDeletionNotification(Nutzer nutzer) {
-        if (nutzer.getEmail() == null) {
+        if (! outboundEnabled || nutzer.getEmail() == null) {
             return;
         }
         deregistrationNotificationTemplate.to(nutzer.getEmail())

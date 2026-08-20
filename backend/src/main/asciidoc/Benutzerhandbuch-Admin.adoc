@@ -19,7 +19,7 @@ Demo-Datensatz "Karrierekompass Demo" (Login als Organisatorin `kathrin.jessen`)
 
 == Anmeldung und Grundaufbau
 
-Nach der Anmeldung über Keycloak öffnet sich der Admin-Bereich mit einer horizontalen
+Nach der Anmeldung über die Startseite öffnet sich der Admin-Bereich mit einer horizontalen
 Tab-Navigation. Solange noch keine Veranstaltung ausgewählt ist, stehen nur die Tabs
 **Organisatoren**, **Gebäude**, **Veranstaltungen**, **Verzeichnis-Import** und **Protokoll** zur
 Verfügung - alle anderen Tabs benötigen eine ausgewählte Veranstaltung und sind erst danach
@@ -33,8 +33,8 @@ Mailto-Link an den Entwickler) und der **LOGOUT**-Button.
 [NOTE]
 ====
 Bei der allerersten Anmeldung eines neu angelegten Kontos (egal ob per CSV-Import, über den
-Dialog "+ Neu" oder per Einladung angelegt) verlangt Keycloak, dass zunächst ein eigenes,
-neues Passwort festgelegt wird, bevor die Anwendung nutzbar ist. Das beim Anlegen vergebene
+Dialog "+ Neu" oder per Einladung angelegt) legen Sie ein eigenes,
+neues Passwort fest, bevor die Anwendung nutzbar ist. Das beim Anlegen vergebene
 Start-/Einladungspasswort gilt also nur für diesen ersten Login.
 ====
 
@@ -267,7 +267,7 @@ image::17-user-editor-modal-referent.png[Dialog Neuer Referent]
 
 image::12-password-reset-modal.png[Dialog Passwort zurücksetzen]
 
-Setzt das Keycloak-Passwort des Nutzers zurück. Buttons: Abbrechen / Zurücksetzen.
+Setzt das Passwort des Nutzers zurück. Buttons: Abbrechen / Zurücksetzen.
 
 == Tab "Teilnehmer"
 
