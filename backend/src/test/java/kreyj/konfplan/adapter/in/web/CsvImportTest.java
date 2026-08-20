@@ -123,6 +123,31 @@ class CsvImportTest extends DatabaseCleaner {
             .then()
             .statusCode(OK.getStatusCode())
             .body(containsString("1 Veranstaltung(en) angelegt"));
+
+        Veranstaltung v = Veranstaltung.find("name", "CSV Event").firstResult();
+        assertThat(v).isNotNull();
+        assertThat(v.getDeadlineReferenten()).isEqualTo(LocalDateTime.of(2026, 9, 24, 7, 0));
+        assertThat(v.getDeadlineTeilnehmer()).isEqualTo(LocalDateTime.of(2026, 9, 28, 7, 0));
+    }
+
+
+    @Test
+    @TestHTTPEndpoint(VeranstaltungResource.class)
+    void testImportVeranstaltungenMitExplizitenDeadlines() {
+        String csv = "Name;Beginn;Ende;Deadline_Referenten;Deadline_Teilnehmer;Organisatoren_LoginNames;Gebaeude_Namen;Logo;Logo_link\n" +
+            "CSV Event Deadlines;2026-10-01 07:00;2026-10-01 17:00;2026-09-01 12:00;2026-09-20 12:00;admin;RKS_LINZ;assets/RKS_Logo.png;https://realschuleplus-linz.de/home/home.html";
+
+        given()
+            .multiPart("file", "veranstaltungen.csv", csv.getBytes())
+            .when().post("/import")
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body(containsString("1 Veranstaltung(en) angelegt"));
+
+        Veranstaltung v = Veranstaltung.find("name", "CSV Event Deadlines").firstResult();
+        assertThat(v).isNotNull();
+        assertThat(v.getDeadlineReferenten()).isEqualTo(LocalDateTime.of(2026, 9, 1, 12, 0));
+        assertThat(v.getDeadlineTeilnehmer()).isEqualTo(LocalDateTime.of(2026, 9, 20, 12, 0));
     }
 
 
