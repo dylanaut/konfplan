@@ -44,10 +44,16 @@
     <div class="bg-indigo-900 text-white p-6 rounded-2xl shadow-xl space-y-4">
       <div class="flex flex-col md:flex-row items-end justify-between gap-6">
         <div class="space-y-3 flex-1 w-full">
-          <h2 class="text-2xl font-black">Planerstellung</h2>
+          <h2 class="text-2xl font-black flex items-center gap-2">
+            Planerstellung
+            <HelpTooltip label="Planerstellung" text="Startet die automatische Zuteilung von Teilnehmern zu Wahlvorträgen per MiniZinc-Solver. Prüfe vorher in der Übersicht oben, ob alle Voraussetzungen (Prioritäten, Räume, Zeit-Slots) erfüllt sind."/>
+          </h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 bg-white/10 p-3 rounded-xl border border-white/10">
             <div>
-              <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">MiniZinc Solver</label>
+              <label class="flex items-center gap-1 text-[9px] uppercase font-bold text-indigo-300 mb-0.5">
+                MiniZinc Solver
+                <HelpTooltip label="MiniZinc Solver" text="Welche Solver-Engine die Berechnung durchführt. Google OR-Tools (cp-sat) ist die empfohlene Standardeinstellung."/>
+              </label>
               <select v-model="solverConfig.solver" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1">
                 <option value="cp-sat">Google OR-Tools</option>
                 <option value="Gecode">Gecode</option>
@@ -55,26 +61,37 @@
               </select>
             </div>
             <div>
-              <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">Timeout (Sek.)</label>
+              <label class="flex items-center gap-1 text-[9px] uppercase font-bold text-indigo-300 mb-0.5">
+                Timeout (Sek.)
+                <HelpTooltip label="Timeout" text="Maximale Rechenzeit in Sekunden für die reine Solver-Berechnung. Nach Ablauf wird das bis dahin beste gefundene Ergebnis übernommen."/>
+              </label>
               <input v-model.number="solverConfig.timeout" type="number" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
             </div>
             <div>
-              <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5"
-                     title="Maximale Anzahl von Wiederholungen pro Vortrag">max. Wiederholungen</label>
+              <label class="flex items-center gap-1 text-[9px] uppercase font-bold text-indigo-300 mb-0.5">
+                max. Wiederholungen
+                <HelpTooltip label="max. Wiederholungen" text="Maximale Anzahl von Wiederholungen pro Vortrag."/>
+              </label>
               <input v-model.number="solverConfig.maxInstanzen" type="number" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
             </div>
             <div>
-              <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">Leistung (1-5)</label>
+              <label class="flex items-center gap-1 text-[9px] uppercase font-bold text-indigo-300 mb-0.5">
+                Leistung (1-5)
+                <HelpTooltip label="Leistung" text="Anzahl der für die Berechnung genutzten Rechenkerne (Threads). Höhere Werte können die Berechnung beschleunigen."/>
+              </label>
               <input v-model.number="solverConfig.numThreads" type="number" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
             </div>
-            <div title="Maximale Anzahl Wahlvorträge pro Teilnehmer. 0 = kein Limit">
-              <label class="block text-[9px] uppercase font-bold text-indigo-300 mb-0.5">max. WV pro TN (0=∞)</label>
+            <div>
+              <label class="flex items-center gap-1 text-[9px] uppercase font-bold text-indigo-300 mb-0.5">
+                max. WV pro TN (0=∞)
+                <HelpTooltip label="max. WV pro TN" text="Maximale Anzahl Wahlvorträge pro Teilnehmer. 0 = kein Limit."/>
+              </label>
               <input v-model.number="solverConfig.maxWvsProTn" type="number" min="0" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
             </div>
-            <div class="flex items-center justify-center pt-3" title="Freie Plätze sollen in Wahlvorträgen mit nicht-verplanten Teilnehmern aufgefüllt werden">
+            <div class="flex items-center justify-center pt-3">
               <label class="flex items-center space-x-2 cursor-pointer text-xs">
                 <input v-model="solverConfig.auffuellen" type="checkbox" class="bg-indigo-800 border-indigo-600 rounded text-green-500 focus:ring-green-400"/>
-                <span>Auffüllen?</span>
+                <span class="flex items-center gap-1">Auffüllen? <HelpTooltip label="Auffüllen?" text="Freie Plätze sollen in Wahlvorträgen mit nicht verplanten Teilnehmern aufgefüllt werden."/></span>
               </label>
             </div>
           </div>
@@ -124,6 +141,7 @@
 <script setup>
 import { reactive, computed, ref, watch, onUnmounted } from 'vue';
 import { Loader as LoaderIcon, Zap as ZapIcon, XCircle as CancelIcon, Download as DownloadIcon, Upload as UploadIcon } from '@lucide/vue';
+import HelpTooltip from '../../HelpTooltip.vue';
 
 const props = defineProps({
   isPlanning: Boolean,
