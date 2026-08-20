@@ -1,5 +1,5 @@
 = KonfPlan: Benutzerhandbuch für Referenten
-:konfplan-version: (Version wird beim Build gesetzt)
+:konfplan-version: v1.2
 :toc: left
 :toc-title: Inhalt
 :toclevels: 3
