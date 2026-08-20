@@ -1,4 +1,5 @@
 = KonfPlan: Benutzerhandbuch für Teilnehmer
+:konfplan-version: (Version wird beim Build gesetzt)
 :toc: left
 :toc-title: Inhalt
 :toclevels: 3
@@ -6,6 +7,8 @@
 :source-highlighter: rouge
 :sectnums:
 :imagesdir: images/benutzerhandbuch/teilnehmer
+
+Gilt für KonfPlan Version {konfplan-version}.
 
 [NOTE]
 ====

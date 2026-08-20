@@ -25,12 +25,35 @@
     <a href="mailto:juergenkrey@yahoo.de" class="block mt-3 text-xs text-indigo-600 hover:underline">
       juergenkrey@yahoo.de
     </a>
+
+    <div class="mt-3 pt-3 border-t border-gray-200">
+      <p class="text-[10px] uppercase font-bold text-gray-400 mb-1.5">Benutzerhandbücher</p>
+      <div class="space-y-1">
+        <a v-for="hb in handbuecher" :key="hb.datei"
+           :href="`${apiBase}/handbuecher/${hb.datei}`" target="_blank"
+           class="flex items-center gap-1.5 text-xs text-indigo-600 hover:underline">
+          <FileTextIcon class="w-3.5 h-3.5 shrink-0"/> {{ hb.label }}
+        </a>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { FileText as FileTextIcon } from '@lucide/vue';
 import api from '../api/axios';
+
+// In Produktion (Quinoa) teilen sich Frontend und Backend einen Origin - relative Links reichen.
+// Im lokalen Dev-Betrieb laufen Frontend (:5173) und Backend (:9000) auf getrennten Origins,
+// ein rein relativer Link würde sonst gegen den Vite-Dev-Server aufgelöst (SPA-Fallback statt PDF).
+const apiBase = import.meta.env.VITE_API_URL || '';
+
+const handbuecher = [
+  { datei: 'Benutzerhandbuch-Admin.pdf', label: 'Für Administratoren' },
+  { datei: 'Benutzerhandbuch-Referent.pdf', label: 'Für Referenten' },
+  { datei: 'Benutzerhandbuch-Teilnehmer.pdf', label: 'Für Teilnehmer' },
+];
 
 const emit = defineEmits(['close']);
 
