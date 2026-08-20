@@ -23,6 +23,13 @@ Verfügbarkeit** (pro Veranstaltung), **Meine Vorträge** und **Meine Veranstalt
 Oben in der Kopfzeile der Anwendung befinden sich rechts ein **Info**-Menüpunkt (Anwendungsname,
 Version, Build-Datum, Git-Commit, Mailto-Link an den Entwickler) und der **LOGOUT**-Button.
 
+[NOTE]
+====
+Bei der allerersten Anmeldung verlangt Keycloak, dass zunächst ein eigenes, neues Passwort
+festgelegt wird, bevor die Anwendung nutzbar ist. Das vom Organisator vergebene
+Start-/Einladungspasswort gilt also nur für diesen ersten Login.
+====
+
 == Persönliches Profil
 
 image::01-profil-und-zeitplan.png[Persönliches Profil und Mein Zeitplan]

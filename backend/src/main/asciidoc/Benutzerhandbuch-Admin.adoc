@@ -27,6 +27,14 @@ Oben in der Kopfzeile der Anwendung (auf jeder Seite sichtbar) befinden sich rec
 **Info**-Menüpunkt (zeigt Anwendungsname, Version, Build-Datum, Git-Commit sowie einen
 Mailto-Link an den Entwickler) und der **LOGOUT**-Button.
 
+[NOTE]
+====
+Bei der allerersten Anmeldung eines neu angelegten Kontos (egal ob per CSV-Import, über den
+Dialog "+ Neu" oder per Einladung angelegt) verlangt Keycloak, dass zunächst ein eigenes,
+neues Passwort festgelegt wird, bevor die Anwendung nutzbar ist. Das beim Anlegen vergebene
+Start-/Einladungspasswort gilt also nur für diesen ersten Login.
+====
+
 == Tab "Veranstaltungen"
 
 image::01-veranstaltungen-liste.png[Veranstaltungen-Liste]
