@@ -30,10 +30,11 @@ import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.Wahlvortrag;
+import kreyj.konfplan.util.CsvHelper;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 
-import java.io.FileReader;
+import java.io.Reader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -193,7 +194,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         }
 
         int count = 0;
-        try (FileReader reader = new FileReader(csvFilePath.toFile())) {
+        try (Reader reader = CsvHelper.openCsvReader(csvFilePath)) {
             CsvToBean<TeilnehmerCsvDto> csvToBean = new CsvToBeanBuilder<TeilnehmerCsvDto>(reader)
                 .withType(TeilnehmerCsvDto.class)
                 .withFilter(line -> line.length > 0 && !line[0].startsWith("#"))
