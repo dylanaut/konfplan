@@ -127,6 +127,19 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
     }
 
 
+    private LocalDateTime parseCsvDate(String value, String veranstaltungName, String feldName) {
+        if (StringUtils.isBlank(value)) {
+            return null;
+        }
+        try {
+            return LocalDateTime.parse(value, DATE_FORMAT);
+        } catch (Exception e) {
+            LOG.warn("Veranstaltung '" + veranstaltungName + "': " + feldName + " konnte nicht geparst werden ('" + value + "'), verwende Standardwert.");
+            return null;
+        }
+    }
+
+
     private static LocalDateTime smartDeadLine(LocalDateTime dtoDeadline, LocalDateTime beginntAm, int numDays) {
         if (null == dtoDeadline) {
             if (null == beginntAm) {
@@ -185,8 +198,10 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
                     continue;
                 }
 
-                veranstaltung.setDeadlineReferenten(veranstaltung.getBeginntAm().minusDays(7));
-                veranstaltung.setDeadlineTeilnehmer(veranstaltung.getBeginntAm().minusDays(3));
+                veranstaltung.setDeadlineReferenten(smartDeadLine(
+                    parseCsvDate(csvDto.deadlineReferenten, csvDto.name, "Deadline_Referenten"), veranstaltung.getBeginntAm(), 7));
+                veranstaltung.setDeadlineTeilnehmer(smartDeadLine(
+                    parseCsvDate(csvDto.deadlineTeilnehmer, csvDto.name, "Deadline_Teilnehmer"), veranstaltung.getBeginntAm(), 3));
 
                 veranstaltung.setLogo(csvDto.logo);
                 veranstaltung.setLogo_link(csvDto.logo_link);

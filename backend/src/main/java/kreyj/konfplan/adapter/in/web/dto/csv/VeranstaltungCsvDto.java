@@ -12,6 +12,12 @@ public class VeranstaltungCsvDto {
     @CsvBindByName(column = "Ende")
     public String endetAm;
 
+    @CsvBindByName(column = "Deadline_Referenten") // Format: yyyy-MM-dd HH:mm; falls leer: Beginn - 7 Tage
+    public String deadlineReferenten;
+
+    @CsvBindByName(column = "Deadline_Teilnehmer") // Format: yyyy-MM-dd HH:mm; falls leer: Beginn - 3 Tage
+    public String deadlineTeilnehmer;
+
     @CsvBindByName(column = "Logo")
     public String logo;
 
