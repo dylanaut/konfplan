@@ -69,7 +69,7 @@ export MINIZINC_PATH="$HOME/minizinc/bin/minizinc"   # überschreibt minizinc.pa
 === Repository klonen (privates Repo, `gh` CLI + PAT)
 
 `https://github.com/dylanaut/konfplan` ist ein **privates** Repository. Ein einfaches
-`git clone https://github.com/...` scheitert auf einer frischen Maschine mit
+`git clone https://github.com/DEIN-ACCOUNT/DEIN-REPO.git` scheitert auf einer frischen Maschine mit
 `Password authentication is not supported` - GitHub akzeptiert seit 2021 über HTTPS nur noch
 einen *Personal Access Token* (PAT) oder SSH, kein Account-Passwort mehr. Der einfachste Weg auf
 einer frischen VM ist die `gh`-CLI, die den PAT einmalig hinterlegt und danach auch normales
@@ -347,7 +347,7 @@ erworben werden.
 .. Propagation prüfen, bevor `bootstrap.sh public`/`docker compose --profile public up -d`
 gestartet wird - sonst scheitert Caddys automatischer Let's-Encrypt-Bezug:
 +
-[source,bash,subs="attributes"]
+[source,bash,subs="attributes+"]
 ----
 dig +short {subdom}.<deine-domain>
 ----
@@ -408,7 +408,7 @@ docker compose --profile mailpit down -v   # -v loescht auch das Postgres-Volume
 +
 In `.env` ergänzen/anpassen:
 +
-[source,subs="attributes"]
+[source,subs="attributes+"]
 ----
 APP_HOSTNAME={subdom}.&lt;deine-domain>
 APP_PUBLIC_URL=https://{subdom}.&lt;deine-domain>
@@ -451,7 +451,7 @@ tatsächlich **von außen** (z.B. von deinem eigenen Rechner, nicht per SSH auf 
 ist, der Reihe nach - jeder Schritt baut auf dem vorherigen auf, bei einem Fehlschlag zuerst dort
 suchen:
 
-[source,bash,subs="attributes"]
+[source,bash,subs="attributes+"]
 ----
 # 1. DNS: loest die Domain auf die richtige Server-IP auf?
 dig +short {subdom}.&lt;deine-domain>
