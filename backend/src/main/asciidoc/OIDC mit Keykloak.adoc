@@ -123,7 +123,7 @@ Jetzt musst du Quarkus nur noch sagen, wie es mit dem Keycloak-Container spreche
 ----
 
 *Was bedeuten diese Eigenschaften?*
-*   `%dev.*`: Diese Konfigurationen gelten *nur*, wenn du die Anwendung mit `./mvnw quarkus:dev` startest.
+*   `%dev.`-Präfix: Diese Konfigurationen gelten *nur*, wenn du die Anwendung mit `./mvnw quarkus:dev` startest.
 *   `quarkus.oidc.auth-server-url`: Die URL zum Keycloak-Server. Dev Services startet ihn standardmäßig auf Port `8080`, aber wir legen ihn hier explizit auf `8081`, um Konflikte zu vermeiden. Der Pfad `/realms/konfplan` ist entscheidend.
 *   `quarkus.oidc.client-id` & `secret`: Müssen mit den Werten aus deiner `konfplan-realm.json` übereinstimmen.
 *   `quarkus.oidc.roles.source=realm`: **Sehr wichtig!** Diese Zeile weist Quarkus an, die Benutzerrollen aus dem `realm_access.roles`-Abschnitt des JWT-Tokens zu beziehen, was Keycloaks Standard ist.
