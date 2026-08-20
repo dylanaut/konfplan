@@ -13,11 +13,12 @@ import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.util.CsvHelper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 
-import java.io.FileReader;
+import java.io.Reader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -150,7 +151,7 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
     @Override
     public List<Veranstaltung> importFromCsvDetailed(Path csvFilePath) throws Exception {
         List<Veranstaltung> imported = new ArrayList<>();
-        try (FileReader reader = new FileReader(csvFilePath.toFile())) {
+        try (Reader reader = CsvHelper.openCsvReader(csvFilePath)) {
             CsvToBean<VeranstaltungCsvDto> csvToBean = new CsvToBeanBuilder<VeranstaltungCsvDto>(reader)
                 .withType(VeranstaltungCsvDto.class)
                 .withSeparator(';')

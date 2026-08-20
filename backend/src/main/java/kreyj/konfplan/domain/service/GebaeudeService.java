@@ -9,10 +9,11 @@ import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import kreyj.konfplan.persistence.Raum;
+import kreyj.konfplan.util.CsvHelper;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 
-import java.io.FileReader;
+import java.io.Reader;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -65,7 +66,7 @@ public class GebaeudeService {
     public int importGebaeudeWithRaeumeFromCsv(Path csvFilePath) throws Exception {
         int anzahlGebaeude = 0;
         int anzahlRaeume = 0;
-        try (FileReader reader = new FileReader(csvFilePath.toFile())) {
+        try (Reader reader = CsvHelper.openCsvReader(csvFilePath)) {
             CsvToBean<GebaeudeRaeumeCsvDto> csvToBean = new CsvToBeanBuilder<GebaeudeRaeumeCsvDto>(reader)
                 .withType(GebaeudeRaeumeCsvDto.class)
                 .withSeparator(';')

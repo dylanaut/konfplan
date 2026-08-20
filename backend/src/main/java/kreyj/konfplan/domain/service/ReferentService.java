@@ -26,10 +26,11 @@ import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
 import kreyj.konfplan.persistence.Wahlvortrag;
+import kreyj.konfplan.util.CsvHelper;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 
-import java.io.FileReader;
+import java.io.Reader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -417,7 +418,7 @@ public class ReferentService implements ReferentServiceInterface {
             throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
         }
 
-        try (FileReader reader = new FileReader(csvFilePath.toFile())) {
+        try (Reader reader = CsvHelper.openCsvReader(csvFilePath)) {
             List<ReferentCsvDto> beans = new CsvToBeanBuilder<ReferentCsvDto>(reader)
                 .withType(ReferentCsvDto.class)
                 .withSeparator(';')

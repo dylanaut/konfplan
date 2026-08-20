@@ -46,6 +46,7 @@ import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
 import kreyj.konfplan.persistence.Wahlvortrag;
+import kreyj.konfplan.util.CsvHelper;
 import kreyj.konfplan.util.StringHelper;
 import kreyj.konfplan.util.TemplateExtensions;
 import lombok.AllArgsConstructor;
@@ -53,7 +54,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.Reader;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -527,7 +528,7 @@ public class AdminService implements AdminServiceInterface {
     @Override
     public int importAdminsFromCsv(Path csvFilePath) throws Exception {
         int count = 0;
-        try (FileReader reader = new FileReader(csvFilePath.toFile())) {
+        try (Reader reader = CsvHelper.openCsvReader(csvFilePath)) {
             CsvToBean<AdminCsvDto> csvToBean = new CsvToBeanBuilder<AdminCsvDto>(reader)
                 .withType(AdminCsvDto.class)
                 .withSeparator(';')
@@ -601,7 +602,7 @@ public class AdminService implements AdminServiceInterface {
 
         Map<String, Slot> slotsByName = veranstaltung.getSlots().stream().collect(Collectors.toMap(Slot::getDescription, s -> s));
 
-        try (FileReader reader = new FileReader(csvFilePath.toFile())) {
+        try (Reader reader = CsvHelper.openCsvReader(csvFilePath)) {
             CsvToBean<VortragCsvDto> csvToBean = new CsvToBeanBuilder<VortragCsvDto>(reader)
                 .withType(VortragCsvDto.class)
                 .withSeparator(';')
@@ -804,7 +805,7 @@ public class AdminService implements AdminServiceInterface {
         boolean headerLineFound = false;
         Map<Integer, Wahlvortrag> legendIndexMap;
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(csvFilePath.toFile()))) {
+        try (BufferedReader reader = new BufferedReader(CsvHelper.openCsvReader(csvFilePath))) {
             String line = reader.readLine();
 
             if (line.startsWith(LEGENDE_TOKEN)) {
@@ -1132,7 +1133,7 @@ public class AdminService implements AdminServiceInterface {
             LOG.error("CSV-Import (Slots) abgebrochen: Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
             throw new IllegalArgumentException("Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
         }
-        try (FileReader reader = new FileReader(csvFilePath.toFile())) {
+        try (Reader reader = CsvHelper.openCsvReader(csvFilePath)) {
             CsvToBean<SlotCsvDto> csvToBean = new CsvToBeanBuilder<SlotCsvDto>(reader)
                 .withType(SlotCsvDto.class)
                 .withSeparator(';')
@@ -1468,7 +1469,7 @@ public class AdminService implements AdminServiceInterface {
         List<Long> sortedSlotIds = sortedSlots.stream().map(Slot::getId).toList();
         String nutzerTyp = nutzerKlasse.getSimpleName();
 
-        try (FileReader reader = new FileReader(csvFilePath.toFile())) {
+        try (Reader reader = CsvHelper.openCsvReader(csvFilePath)) {
             CsvToBean<NutzerVerfuegbarkeitCsvDto> csvToBean = new CsvToBeanBuilder<NutzerVerfuegbarkeitCsvDto>(reader)
                 .withType(NutzerVerfuegbarkeitCsvDto.class)
                 .withSeparator(';')
@@ -1537,7 +1538,7 @@ public class AdminService implements AdminServiceInterface {
             .toList();
         List<Long> sortedSlotIds = sortedSlots.stream().map(Slot::getId).toList();
 
-        try (FileReader reader = new FileReader(csvFilePath.toFile())) {
+        try (Reader reader = CsvHelper.openCsvReader(csvFilePath)) {
             CsvToBean<RaumVerfuegbarkeitCsvDto> csvToBean = new CsvToBeanBuilder<RaumVerfuegbarkeitCsvDto>(reader)
                 .withType(RaumVerfuegbarkeitCsvDto.class)
                 .withSeparator(';')
