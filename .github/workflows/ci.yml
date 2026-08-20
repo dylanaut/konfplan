@@ -32,7 +32,10 @@ jobs:
           cache: maven
 
       - name: Build (Backend + Frontend via Quinoa)
-        run: ./mvnw --batch-mode clean install -DskipTests
+        # -Pbuild-user-manuals rendert die Benutzerhandbücher (Admin/Referent/Teilnehmer) als PDF
+        # direkt in META-INF/resources/handbuecher, sodass sie im Anwendungs-Jar landen und über
+        # das Info-Menü herunterladbar sind (siehe backend/pom.xml).
+        run: ./mvnw --batch-mode clean install -DskipTests -Pbuild-user-manuals
 
       - name: Install MiniZinc
         run: |

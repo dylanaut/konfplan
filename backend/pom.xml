@@ -18,6 +18,7 @@
     <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
     <jsoup.version>1.23.1</jsoup.version>
     <asciidoctor-maven-plugin.version>3.2.0</asciidoctor-maven-plugin.version>
+    <build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
     <asciidoctorj-diagram.version>3.2.1</asciidoctorj-diagram.version>
     <asciidoctorj-diagram-plantuml.version>1.2026.2</asciidoctorj-diagram-plantuml.version>
     <assertj.version>3.27.7</assertj.version>
@@ -521,6 +522,193 @@
                     <idprefix/>
                     <idseparator>-</idseparator>
                   </attributes>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>docx</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <!-- 1. Kurz-Version (major.minor) aus dem Projekt-Version ableiten, z.B. 1.2.1-SNAPSHOT -> 1.2 -->
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <version>${build-helper-maven-plugin.version}</version>
+            <executions>
+              <execution>
+                <id>parse-konfplan-version</id>
+                <phase>initialize</phase>
+                <goals>
+                  <goal>parse-version</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- 2. AsciiDoc zu DocBook5 (Zwischenformat, von Pandoc zuverlässig nach docx konvertierbar) -->
+          <plugin>
+            <groupId>org.asciidoctor</groupId>
+            <artifactId>asciidoctor-maven-plugin</artifactId>
+            <version>${asciidoctor-maven-plugin.version}</version>
+            <configuration>
+              <sourceDirectory>src/main/asciidoc</sourceDirectory>
+              <outputDirectory>${project.build.directory}/generated-docbook</outputDirectory>
+              <backend>docbook5</backend>
+              <attributes>
+                <konfplan-version>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}</konfplan-version>
+              </attributes>
+            </configuration>
+            <executions>
+              <execution>
+                <id>generate-docbook</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>process-asciidoc</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!-- 3. DocBook5 zu docx via Pandoc (muss lokal installiert und auf PATH sein) -->
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>3.6.3</version>
+            <executions>
+              <execution>
+                <id>docbook-to-docx</id>
+                <phase>process-resources</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <executable>sh</executable>
+                  <workingDirectory>${project.basedir}</workingDirectory>
+                  <arguments>
+                    <argument>-c</argument>
+                    <argument>
+                      mkdir -p "${project.build.directory}/generated-docx" &amp;&amp;
+                      for f in "${project.build.directory}"/generated-docbook/*.xml; do
+                        name=$(basename "$f" .xml);
+                        pandoc -f docbook -t docx --resource-path=src/main/asciidoc \
+                          -o "${project.build.directory}/generated-docx/${name}.docx" "$f";
+                      done
+                    </argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>build-user-manuals</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <!-- Kurz-Version (major.minor) aus der Projekt-Version ableiten, z.B. 1.2.1-SNAPSHOT -> 1.2 -->
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <version>${build-helper-maven-plugin.version}</version>
+            <executions>
+              <execution>
+                <id>parse-konfplan-version</id>
+                <phase>initialize</phase>
+                <goals>
+                  <goal>parse-version</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <!--
+            Rendert die drei Benutzerhandbücher als PDF direkt in META-INF/resources, damit sie als
+            statische Ressourcen im Anwendungs-Jar landen und über das Info-Menü (InfoPanel.vue)
+            herunterladbar sind - unabhängig vom "docx"-Profil (das dient Word-Export/Review, nicht
+            der Auslieferung mit der Anwendung).
+          -->
+          <plugin>
+            <groupId>org.asciidoctor</groupId>
+            <artifactId>asciidoctor-maven-plugin</artifactId>
+            <version>${asciidoctor-maven-plugin.version}</version>
+            <dependencies>
+              <dependency>
+                <groupId>org.asciidoctor</groupId>
+                <artifactId>asciidoctorj-pdf</artifactId>
+                <version>2.3.23</version>
+                <scope>compile</scope>
+              </dependency>
+            </dependencies>
+            <configuration>
+              <sourceDirectory>src/main/asciidoc</sourceDirectory>
+              <outputDirectory>${project.build.outputDirectory}/META-INF/resources/handbuecher</outputDirectory>
+              <backend>pdf</backend>
+              <!-- Ohne diese Einschränkung spiegelt der Plugin-Default den kompletten
+                   sourceDirectory-Baum in outputDirectory - das würde auch fachfremde Dateien wie
+                   Entwicklerhandbuch.pdf und das Klassendiagramm mit in die Anwendung packen. Ein
+                   leeres <resources/> allein genügt dafür nicht (wird vom Plugin wie "nicht
+                   gesetzt" behandelt) - PDFs betten Bilder ein, daher werden auch die
+                   Quell-Screenshots selbst nicht separat benötigt und komplett ausgeschlossen. -->
+              <resources>
+                <resource>
+                  <directory>${basedir}/src/main/asciidoc</directory>
+                  <excludes>
+                    <exclude>**</exclude>
+                  </excludes>
+                </resource>
+              </resources>
+              <attributes>
+                <konfplan-version>${parsedVersion.majorVersion}.${parsedVersion.minorVersion}</konfplan-version>
+                <source-highlighter>rouge</source-highlighter>
+                <icons>font</icons>
+                <pagenums/>
+                <toc/>
+                <idprefix/>
+                <idseparator>-</idseparator>
+              </attributes>
+            </configuration>
+            <executions>
+              <execution>
+                <id>pdf-benutzerhandbuch-admin</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>process-asciidoc</goal>
+                </goals>
+                <configuration>
+                  <sourceDocumentName>Benutzerhandbuch-Admin.adoc</sourceDocumentName>
+                </configuration>
+              </execution>
+              <execution>
+                <id>pdf-benutzerhandbuch-referent</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>process-asciidoc</goal>
+                </goals>
+                <configuration>
+                  <sourceDocumentName>Benutzerhandbuch-Referent.adoc</sourceDocumentName>
+                </configuration>
+              </execution>
+              <execution>
+                <id>pdf-benutzerhandbuch-teilnehmer</id>
+                <phase>generate-resources</phase>
+                <goals>
+                  <goal>process-asciidoc</goal>
+                </goals>
+                <configuration>
+                  <sourceDocumentName>Benutzerhandbuch-Teilnehmer.adoc</sourceDocumentName>
                 </configuration>
               </execution>
             </executions>
