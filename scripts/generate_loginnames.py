@@ -3,10 +3,13 @@
 
 LoginName = abgekürzter Vorname + "." + Nachname, ASCII-transliteriert (deutsche
 Umlaute/ß nach ae/oe/ue/ss, sonstige Diakritika per Unicode-Normalisierung entfernt)
-und komplett kleingeschrieben. Bei Kollisionen wird der Vorname stückweise verlängert
-(l. -> le. -> leo. ...), erst als letzter Ausweg ein numerisches Suffix angehängt -
-das Ergebnis ist innerhalb der Datei garantiert eindeutig. Bereits gefüllte
-LoginName-Zellen werden nicht verändert, zählen aber als vergeben.
+und komplett kleingeschrieben. Der Vorname wird immer auf mindestens 5 Buchstaben
+gekürzt (bzw. komplett verwendet, falls kürzer). Bei Kollisionen wird der Vorname
+stückweise verlängert (leona. -> leonar. -> leonard. ...); ist er komplett
+ausgeschöpft, wird als letzter Ausweg eine fortlaufende Nummer an den Vornamen
+angehängt (leonard2.mustermann) - das Ergebnis ist innerhalb der Datei garantiert
+eindeutig. Bereits gefüllte LoginName-Zellen werden nicht verändert, zählen aber
+als vergeben.
 
 Zusätzlich werden die LoginNamen bereits existierender Nutzer aus einer laufenden
 Datenbank geladen und wie in der CSV bereits vergebene Namen behandelt. Dadurch
@@ -56,14 +59,15 @@ def make_login(vorname, nachname, taken):
     if not vorname_slug or not nachname_slug:
         return None
 
-    for laenge in range(1, len(vorname_slug) + 1):
+    mindestlaenge = min(5, len(vorname_slug))
+    for laenge in range(mindestlaenge, len(vorname_slug) + 1):
         kandidat = f"{vorname_slug[:laenge]}.{nachname_slug}"
         if kandidat not in taken:
             return kandidat
 
     n = 2
     while True:
-        kandidat = f"{vorname_slug}.{nachname_slug}{n}"
+        kandidat = f"{vorname_slug}{n}.{nachname_slug}"
         if kandidat not in taken:
             return kandidat
         n += 1
