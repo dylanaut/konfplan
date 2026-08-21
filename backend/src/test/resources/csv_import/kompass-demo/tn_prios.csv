@@ -1,5 +1,5 @@
 # Legende: 1=Rechtsanwalt # 2=Entwicklungszusammenarbeit # 3=Raumfahrtingenieur # 4=Arbeitssicherheit # 5=Operationstechnische # 6=Pflegefachmann # 7=Bankkaufmann # 8=Kaufmann # 9=Süßwarentechnologie # 10=Studienorientierung # 11=Anästhesietechn # 12=Versicherungen # 13=Polizeibeamt # 14=Elektroniker # 15=Bundespolizist # 16=Chemikant # 17=Finanzwirt # 18=Physiker # 19=Klimaschutz # 20=Jugendvertretung # 21=Werkzeugmechaniker # 22=Anlagenmechaniker # 23=Militär # 24=Naturwissenschaftler # 25=Management # 26=Metall # 27=Bankkauf # 28=Herzchirurgie # 29=Grafikdesigner # 30=Erzieher # 31=Eventmanager # 32=Forstwirtschaft # 33=Sportmanagement
 Teilnehmer LoginName;Prioritäten
-a.diesner;21:7,20:4,26:8
-j.hefner;27:1,26:5,14:3
-m.hefner;31:1,4:5,17:9,14:2
+anna.diesner;21:7,20:4,26:8
+john.marlon.hefner;27:1,26:5,14:3
+marian.alexander.hefner;31:1,4:5,17:9,14:2
