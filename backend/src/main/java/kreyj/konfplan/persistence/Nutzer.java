@@ -164,7 +164,23 @@ public abstract class Nutzer extends VersionedEntity {
 
 
     public static Nutzer findByEmail(String e) {
-        return find("email", e.toLowerCase()).firstResult();
+        return find("email", e.trim().toLowerCase()).firstResult();
+    }
+
+
+    /**
+     * Wie {@link #findByLoginName(String)}, faellt aber zusaetzlich auf eine Suche per E-Mail
+     * zurueck. Verhindert, dass ein CSV-Import einen zweiten Nutzer mit derselben E-Mail (aber
+     * einem anderen loginName, z.B. aus einem frueheren Import unter leicht abweichendem Namen)
+     * anzulegen versucht - das wuerde erst am DB-weiten UNIQUE-Constraint auf email scheitern und
+     * die laufende Transaktion "vergiften" statt kontrolliert zu ueberspringen.
+     */
+    public static Nutzer findByLoginNameOrEmail(String loginName, String email) {
+        Nutzer byLoginName = findByLoginName(loginName);
+        if (null != byLoginName) {
+            return byLoginName;
+        }
+        return StringUtils.isBlank(email) ? null : findByEmail(email);
     }
 
 

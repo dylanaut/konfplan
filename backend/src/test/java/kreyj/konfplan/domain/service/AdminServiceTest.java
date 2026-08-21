@@ -17,13 +17,17 @@ import kreyj.konfplan.persistence.Veranstaltung;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @QuarkusTest
@@ -257,5 +261,30 @@ public class AdminServiceTest {
 
         Teilnehmer updated2 = Teilnehmer.findById(tnId);
         assertThat(updated2.getVeranlagungen()).containsExactly(Veranlagung.TECHNISCH);
+    }
+
+
+    @Test
+    @Transactional
+    public void importAdminsFromCsv_ueberspringtWennEmailBereitsUnterAnderemLoginNameExistiert() throws Exception {
+        // Simuliert einen fruehreren, nur teilweise geglueckten Import: derselbe Mensch existiert
+        // schon lokal, aber unter einem anderen loginName als im aktuellen CSV.
+        Admin bestehender = new Admin();
+        bestehender.assignLoginName("k.jessen");
+        bestehender.setEmail("kathrin.jessen@rks-linz.de");
+        bestehender.setFirstName("Kathrin");
+        bestehender.setLastName("Jessen");
+        bestehender.persist();
+
+        Path csv = Files.createTempFile("organisatoren", ".csv");
+        Files.writeString(csv, "Vorname;Nachname;LoginName;Email\nKathrin;Jessen;kathrin.jessen;kathrin.jessen@rks-linz.de\n");
+
+        int anzahl = adminService.importAdminsFromCsv(csv);
+
+        assertThat(anzahl).isEqualTo(0);
+        assertThat(Nutzer.findByLoginName("kathrin.jessen")).isNull();
+        verify(keycloakUserProvisioningService, never()).createUser(any(), any());
+
+        Files.deleteIfExists(csv);
     }
 }

@@ -555,8 +555,8 @@ public class AdminService implements AdminServiceInterface {
                     continue;
                 }
                 String loginName = dto.loginName.trim().toLowerCase();
-                Nutzer byLoginName = Nutzer.findByLoginName(loginName);
-                if (null == byLoginName) {
+                Nutzer vorhandenerNutzer = Nutzer.findByLoginNameOrEmail(loginName, dto.email);
+                if (null == vorhandenerNutzer) {
                     Admin a = new Admin();
                     a.assignLoginName(loginName);
                     a.setEmail(dto.email.trim().toLowerCase());
@@ -568,7 +568,8 @@ public class AdminService implements AdminServiceInterface {
                     count++;
                     protokollService.log(ProtokollKategorie.NUTZER, "Organisator importiert", "Organisator '" + loginName + "' via CSV importiert.", a.getId());
                 } else {
-                    LOG.warn("Organisator '" + loginName + "' übersprungen: Existiert bereits.");
+                    LOG.warn("Organisator '" + loginName + "' übersprungen: Nutzer mit diesem LoginName oder dieser E-Mail existiert bereits (vorhandener loginName: '"
+                        + vorhandenerNutzer.getLoginName() + "').");
                 }
             }
         } catch (Exception e) {

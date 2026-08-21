@@ -218,7 +218,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
                 }
 
                 String loginName = csvDto.loginName.trim().toLowerCase();
-                if (Nutzer.findByLoginName(loginName) == null) {
+                if (Nutzer.findByLoginNameOrEmail(loginName, csvDto.email) == null) {
                     Teilnehmer tn = new Teilnehmer();
                     tn.assignLoginName(loginName);
                     if (StringUtils.isNotBlank(csvDto.email)) {

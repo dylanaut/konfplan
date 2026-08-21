@@ -435,7 +435,7 @@ public class ReferentService implements ReferentServiceInterface {
                 }
                 String loginName = dto.loginName.trim().toLowerCase();
 
-                Nutzer existingNutzer = Nutzer.findByLoginName(loginName);
+                Nutzer existingNutzer = Nutzer.findByLoginNameOrEmail(loginName, dto.email);
                 Referent ref;
                 if (null == existingNutzer) {
                     ref = new Referent();
@@ -446,7 +446,8 @@ public class ReferentService implements ReferentServiceInterface {
                 } else if (existingNutzer instanceof Referent) {
                     ref = (Referent) existingNutzer;
                 } else {
-                    LOG.warn("Nutzer mit loginName " + loginName + " existiert bereits, ist aber kein Referent. Überspringe.");
+                    LOG.warn("Nutzer mit loginName " + loginName + " oder gleicher E-Mail existiert bereits (loginName: '"
+                        + existingNutzer.getLoginName() + "'), ist aber kein Referent. Überspringe.");
                     continue;
                 }
 
