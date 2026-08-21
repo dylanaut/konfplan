@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """Füllt eine leere LoginName-Spalte in einer Nutzer-CSV.
 
-LoginName = abgekürzter Vorname + "." + Nachname, ASCII-transliteriert (deutsche
-Umlaute/ß nach ae/oe/ue/ss, sonstige Diakritika per Unicode-Normalisierung entfernt)
-und komplett kleingeschrieben. Der Vorname wird immer auf mindestens 5 Buchstaben
-gekürzt (bzw. komplett verwendet, falls kürzer). Bei Kollisionen wird der Vorname
-stückweise verlängert (leona. -> leonar. -> leonard. ...); ist er komplett
-ausgeschöpft, wird als letzter Ausweg eine fortlaufende Nummer an den Vornamen
-angehängt (leonard2.mustermann) - das Ergebnis ist innerhalb der Datei garantiert
-eindeutig. Bereits gefüllte LoginName-Zellen werden nicht verändert, zählen aber
-als vergeben.
+LoginName = vollständiger erster Vorname + "." + Nachname, ASCII-transliteriert
+(deutsche Umlaute/ß nach ae/oe/ue/ss, sonstige Diakritika per Unicode-Normalisierung
+entfernt) und komplett kleingeschrieben. Bindestriche in Vor- oder Nachname werden
+durch Punkt ersetzt (z.B. "Anna-Lena" -> "anna.lena"). Bei Kollisionen (identischer
+LoginName) wird eine fortlaufende Nummer an den Nachnamen angehängt (max.mustermann,
+max.mustermann2, ...) - das Ergebnis ist innerhalb der Datei garantiert eindeutig.
+Bereits gefüllte LoginName-Zellen werden nicht verändert, zählen aber als vergeben.
 
 Zusätzlich werden die LoginNamen bereits existierender Nutzer aus einer laufenden
 Datenbank geladen und wie in der CSV bereits vergebene Namen behandelt. Dadurch
@@ -48,7 +46,8 @@ def to_ascii_slug(text):
     text = "".join(c for c in text if not unicodedata.combining(c))
     text = text.encode("ascii", "ignore").decode("ascii")
     text = text.lower()
-    return re.sub(r"[^a-z0-9-]+", "", text)
+    text = re.sub(r"[^a-z0-9-]+", "", text)
+    return text.replace("-", ".")
 
 
 def make_login(vorname, nachname, taken):
@@ -59,15 +58,13 @@ def make_login(vorname, nachname, taken):
     if not vorname_slug or not nachname_slug:
         return None
 
-    mindestlaenge = min(5, len(vorname_slug))
-    for laenge in range(mindestlaenge, len(vorname_slug) + 1):
-        kandidat = f"{vorname_slug[:laenge]}.{nachname_slug}"
-        if kandidat not in taken:
-            return kandidat
+    kandidat = f"{vorname_slug}.{nachname_slug}"
+    if kandidat not in taken:
+        return kandidat
 
     n = 2
     while True:
-        kandidat = f"{vorname_slug}{n}.{nachname_slug}"
+        kandidat = f"{vorname_slug}.{nachname_slug}{n}"
         if kandidat not in taken:
             return kandidat
         n += 1
