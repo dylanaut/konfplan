@@ -120,10 +120,16 @@ services:
       QUARKUS_HTTP_PROXY_ALLOW_X_FORWARDED: "true"
       QUARKUS_HTTP_PROXY_ALLOW_FORWARDED: "true"
       QUARKUS_HTTP_PROXY_ENABLE_FORWARDED_HOST: "true"
+      # News-Laufband auf der Login-Seite: optional, siehe ./data/laufband.txt weiter unten.
+      LAUFBAND_PATH: /var/lib/konfplan/laufband.txt
     secrets:
       - db_password
       - keycloak_admin_cli_secret
       - brevo_smtp_password
+    volumes:
+      # Verzeichnis auf dem Host, in das Admins z.B. laufband.txt legen koennen, ohne den
+      # Container neu zu bauen - wird bei jedem Request neu gelesen (siehe LaufbandResource).
+      - ./data:/var/lib/konfplan
     entrypoint: ["/bin/sh", "-c"]
     command:
       - >
