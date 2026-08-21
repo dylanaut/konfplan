@@ -8,6 +8,7 @@
       <template v-else>
         <p class="text-gray-600">KonfPlan - Ihr Konferenzplaner</p>
         <button @click="authStore.login()" class="btn-primary">Anmelden</button>
+        <NewsLaufband />
       </template>
     </div>
   </div>
@@ -17,6 +18,7 @@
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import NewsLaufband from '../components/NewsLaufband.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();

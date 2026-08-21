@@ -60,6 +60,7 @@ build/
 /deploy/.env
 /deploy/secrets/
 /deploy/keycloak-realm.generated.json
+/deploy/data/
 /backend/src/main/asciidoc/*.pdf
 
 ### Accidental root/backend npm artifacts (frontend/node_modules is the real one) ###
