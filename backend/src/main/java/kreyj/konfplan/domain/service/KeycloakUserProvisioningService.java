@@ -64,16 +64,50 @@ public class KeycloakUserProvisioningService {
         }
 
         try (Response response = keycloak.realm(realm).users().create(kcUser)) {
-            if (response.getStatus() != 201) {
+            if (response.getStatus() == 409) {
+                nutzer.setKeycloakId(findExistingKeycloakId(nutzer));
+            } else if (response.getStatus() != 201) {
                 throw new KeycloakProvisioningException(
                     "Keycloak-User für '" + nutzer.getLoginName() + "' konnte nicht angelegt werden (Status " + response.getStatus() + ").");
+            } else {
+                String keycloakId = response.getLocation().getPath().replaceAll(".*/([^/]+)$", "$1");
+                nutzer.setKeycloakId(keycloakId);
             }
-            String keycloakId = response.getLocation().getPath().replaceAll(".*/([^/]+)$", "$1");
-            nutzer.setKeycloakId(keycloakId);
         }
 
         assignRealmRole(nutzer.getKeycloakId(), nutzer.getRole());
         LOG.info("Keycloak-User angelegt: " + nutzer.getLoginName() + " [" + nutzer.getRole() + "]");
+    }
+
+
+    /**
+     * Behandelt Status 409 beim Anlegen: kann z.B. auftreten, wenn ein fruehrerer Importversuch
+     * den Keycloak-User bereits erfolgreich angelegt hat, ein spaeterer Schritt derselben
+     * Transaktion aber fehlschlug und die DB-Aenderungen zurueckgerollt wurden - Keycloak kennt
+     * kein Rollback, der User bleibt dort bestehen ("Split-Brain" zwischen DB und Keycloak).
+     * Statt den Import dauerhaft blockiert zu lassen, wird der bestehende Keycloak-User anhand
+     * von Username oder E-Mail nachgeschlagen und wiederverwendet.
+     */
+    private String findExistingKeycloakId(Nutzer nutzer) {
+        List<UserRepresentation> byUsername = keycloak.realm(realm).users()
+            .searchByUsername(nutzer.getLoginName(), true);
+        if (!byUsername.isEmpty()) {
+            LOG.warn("Keycloak-User '" + nutzer.getLoginName() + "' existierte bereits (Status 409 beim Anlegen) "
+                + "- verknüpfe mit bestehendem Keycloak-Account statt neu anzulegen.");
+            return byUsername.get(0).getId();
+        }
+
+        List<UserRepresentation> byEmail = keycloak.realm(realm).users()
+            .searchByEmail(nutzer.getEmail(), true);
+        if (!byEmail.isEmpty()) {
+            LOG.warn("Keycloak-User mit E-Mail '" + nutzer.getEmail() + "' existierte bereits (Status 409 beim Anlegen "
+                + "von '" + nutzer.getLoginName() + "') - verknüpfe mit bestehendem Keycloak-Account statt neu anzulegen.");
+            return byEmail.get(0).getId();
+        }
+
+        throw new KeycloakProvisioningException(
+            "Keycloak-User für '" + nutzer.getLoginName() + "' konnte nicht angelegt werden (Status 409), "
+                + "aber es wurde auch kein bestehender Keycloak-User per Username oder E-Mail gefunden.");
     }
 
 
