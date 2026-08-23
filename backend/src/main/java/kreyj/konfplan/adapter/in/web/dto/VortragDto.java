@@ -6,7 +6,7 @@ import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
-import kreyj.konfplan.persistence.Veranlagung;
+import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
@@ -28,7 +28,7 @@ public class VortragDto extends AbstractVersionedDto {
     public String ausstattung;
     public AbschlussTyp abschluss;
     public String abschlussName;
-    public Set<Veranlagung> veranlagungen = new HashSet<>();
+    public Set<Neigung> neigungen = new HashSet<>();
     public boolean istPflicht;
     public boolean wiederholbar;
     public Set<Long> verfuegbareSlotIds = new HashSet<>();
@@ -108,7 +108,7 @@ public class VortragDto extends AbstractVersionedDto {
         if (v instanceof Wahlvortrag wahlvortrag) {
             dto.wiederholbar = wahlvortrag.isWiederholbar();
             dto.maxWiederholungen = wahlvortrag.getMaxWiederholungen();
-            dto.veranlagungen = wahlvortrag.getVeranlagungen();
+            dto.neigungen = wahlvortrag.getNeigungen();
             VortragVerfuegbarkeit vv = VortragVerfuegbarkeit.findById(vvId(
                     wahlvortrag, wahlvortrag.getVeranstaltung()));
             if (null == vv) {
@@ -149,7 +149,7 @@ public class VortragDto extends AbstractVersionedDto {
         if (vortrag instanceof Wahlvortrag wahlvortrag) {
             wahlvortrag.setWiederholbar(dto.wiederholbar);
             wahlvortrag.setMaxWiederholungen(dto.maxWiederholungen);
-            wahlvortrag.setVeranlagungen(dto.veranlagungen);
+            wahlvortrag.setNeigungen(dto.neigungen);
         } else {
             Pflichtvortrag pflichtvortrag = (Pflichtvortrag) vortrag;
             pflichtvortrag.updatePflichtgruppe(dto.pflichtGruppe);

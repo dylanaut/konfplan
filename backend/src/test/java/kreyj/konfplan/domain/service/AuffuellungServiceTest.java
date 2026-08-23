@@ -11,7 +11,7 @@ import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
-import kreyj.konfplan.persistence.Veranlagung;
+import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.adapter.in.web.DatabaseCleaner;
@@ -76,13 +76,13 @@ public class AuffuellungServiceTest extends DatabaseCleaner {
     }
 
 
-    private Wahlvortrag neuerWahlvortrag(Veranstaltung veranstaltung, String titel, Veranlagung... veranlagungen) {
+    private Wahlvortrag neuerWahlvortrag(Veranstaltung veranstaltung, String titel, Neigung... neigungen) {
         Referent referent = Referent.find("email", "referent@test.com").firstResult();
         Wahlvortrag wv = new Wahlvortrag();
         wv.setTitel(titel);
         wv.setReferent(referent);
         wv.setVeranstaltung(veranstaltung);
-        wv.setVeranlagungen(new HashSet<>(Arrays.asList(veranlagungen)));
+        wv.setNeigungen(new HashSet<>(Arrays.asList(neigungen)));
         wv.persist();
         return wv;
     }
@@ -144,19 +144,19 @@ public class AuffuellungServiceTest extends DatabaseCleaner {
 
     @Test
     @Transactional
-    public void veranlagungsAbleitung_wirdGenutztWennEigenePrioritaetNichtLaeuft() {
+    public void neigungsAbleitung_wirdGenutztWennEigenePrioritaetNichtLaeuft() {
         Veranstaltung veranstaltung = neueVeranstaltung("Auffuellung-Test-2");
         Slot slot1 = neuerSlot(veranstaltung, 1);
         // wvPraeferiert hat eine Priorität, läuft aber in keiner Instanz (instanz_slot = 0 überall)
-        Wahlvortrag wvPraeferiert = neuerWahlvortrag(veranstaltung, "Präferierter Vortrag", Veranlagung.TECHNISCH);
-        Wahlvortrag wvVeranlagungsMatch = neuerWahlvortrag(veranstaltung, "Veranlagungs-Treffer", Veranlagung.TECHNISCH);
+        Wahlvortrag wvPraeferiert = neuerWahlvortrag(veranstaltung, "Präferierter Vortrag", Neigung.TECHNISCH);
+        Wahlvortrag wvNeigungsMatch = neuerWahlvortrag(veranstaltung, "Neigungs-Treffer", Neigung.TECHNISCH);
         Teilnehmer tnFrei = neuerTeilnehmer(veranstaltung, "frei@test.com");
 
         new Prioritaet(tnFrei, wvPraeferiert, 1).persist();
 
         Planungsergebnis.MinizincResult result = ergebnis(
             new long[]{tnFrei.getId()},
-            new long[]{wvPraeferiert.getId(), wvVeranlagungsMatch.getId()},
+            new long[]{wvPraeferiert.getId(), wvNeigungsMatch.getId()},
             new long[]{slot1.getId()},
             new long[]{raumGrossId},
             new int[][]{{0}, {1}},
@@ -166,7 +166,7 @@ public class AuffuellungServiceTest extends DatabaseCleaner {
         auffuellungService.fuelleAuf(veranstaltung, result);
 
         assertThat(result.besucht[0][1][0])
-            .describedAs("Veranlagungs-Treffer sollte über die abgeleitete Präferenz gewählt werden").isTrue();
+            .describedAs("Neigungs-Treffer sollte über die abgeleitete Präferenz gewählt werden").isTrue();
     }
 
 

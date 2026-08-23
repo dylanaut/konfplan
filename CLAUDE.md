@@ -85,7 +85,7 @@ util/                 # Utilities
 - **Nutzer** (`SINGLE_TABLE` inheritance) → Admin | Referent | Teilnehmer
 - **Vortrag** (`SINGLE_TABLE` inheritance) → Pflichtvortrag | Wahlvortrag; optionally has an `AbschlussTyp`.
 - **AbschlussTyp** – Enum for the school-leaving qualification associated with a talk.
-- **Veranlagung** – Enum of professional/vocational aptitudes; Teilnehmer and Wahlvortrag can each have several.
+- **Neigung** – Enum of professional/vocational aptitudes; Teilnehmer and Wahlvortrag can each have several.
 - **EventSlot** – Time window within an event; overlap checking enforced.
 - **Zuweisung** – Links a Teilnehmer to a Vortrag + Slot + Raum.
 - **Prioritaet** – Teilnehmer's preference ranking (1–10, 10 = highest, 0 = no preference/hard-excluded) for a Wahlvortrag.

@@ -231,7 +231,7 @@ technisch eine gemeinsame Datei möglich wäre.
 | `Inhalt` | nein | Beschreibungstext des Vortrags.
 | `Ausstattung` | nein | Freitext, z.B. `Beamer`.
 | `Abschluss` | nein | Eindeutiger **Anfang** (Präfix, Groß-/Kleinschreibung egal) eines der 5 Abschlusstypen, siehe <<gueltige_abschluesse,Gültige Abschlüsse>>. Mehrdeutige oder unbekannte Präfixe führen dazu, dass die Zeile übersprungen wird.
-| `Veranlagungen` | nein, nur bei Wahlvortrag | Pipe-getrennte Liste von Veranlagungen (z.B. `sozial\|technisch`), siehe <<gueltige_veranlagungen,Gültige Veranlagungen>>. Unbekannte oder mehrdeutige Einträge werden einzeln übersprungen (mit Warnung), ohne den ganzen Vortrag zu verwerfen.
+| `Neigungen` | nein, nur bei Wahlvortrag | Pipe-getrennte Liste von Neigungen (z.B. `sozial\|technisch`), siehe <<gueltige_neigungen,Gültige Neigungen>>. Unbekannte oder mehrdeutige Einträge werden einzeln übersprungen (mit Warnung), ohne den ganzen Vortrag zu verwerfen.
 | `wiederholbar` | nur bei Wahlvortrag | `true`/`false` – darf der Vortrag mehrfach in verschiedenen Slots stattfinden?
 | `maxWiederholungen` | nur bei Wahlvortrag | Zahl, Obergrenze für Wiederholungen.
 | `Pflichtgruppe` | nur bei Pflichtvortrag | Muss eine der Gruppen aus `veranstaltungen.csv`/`teilnehmer.csv` sein.
@@ -242,7 +242,7 @@ technisch eine gemeinsame Datei möglich wäre.
 .Beispiel Wahlvortrag
 [source,csv]
 ----
-istPflicht;Titel;Referent_Email;Inhalt;wiederholbar;maxWiederholungen;Ausstattung;Abschluss;Veranlagungen
+istPflicht;Titel;Referent_Email;Inhalt;wiederholbar;maxWiederholungen;Ausstattung;Abschluss;Neigungen
 false;Rechtsanwalt / Jura;stephan.arens@th-koeln.de;Rechtsanwalt / Jura;true;2;Beamer;Allgemeine;rechtlich|kaufmännisch
 ----
 
@@ -260,13 +260,13 @@ Berufsreife · Mittlere Reife · Allgemeine Hochschulreife · Fachhochschulreife
 
 Es genügt ein eindeutiger Wortanfang, z.B. `Allgemeine` oder `Berufs`.
 
-[[gueltige_veranlagungen]]
-==== Gültige Veranlagungen
+[[gueltige_neigungen]]
+==== Gültige Neigungen
 
 sozial · organisatorisch · medizinisch · technisch · kaufmännisch · kreativ · sportlich · handwerklich
 · wissenschaftlich · öffentlich · rechtlich · ökologisch
 
-Mehrere Veranlagungen werden mit `|` getrennt (z.B. `sozial|technisch`), es genügt jeweils ein
+Mehrere Neigungen werden mit `|` getrennt (z.B. `sozial|technisch`), es genügt jeweils ein
 eindeutiger Wortanfang.
 
 === tn_prios.csv – Prioritäten der Teilnehmer

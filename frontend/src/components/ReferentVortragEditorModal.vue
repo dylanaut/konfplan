@@ -44,11 +44,11 @@
         </div>
 
         <div class="p-4 bg-amber-50 rounded-lg">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Veranlagungen (welche Veranlagungen adressiert dieser Vortrag inhaltlich?)</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Neigungen (welche Neigungen adressiert dieser Vortrag inhaltlich?)</label>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-            <div v-for="veranlagung in veranlagungStore.veranlagungen" :key="veranlagung.name" class="flex items-center gap-2 bg-white p-2 rounded-md border" :title="veranlagung.beschreibung">
-              <input :id="`talk-veranlagung-${veranlagung.name}`" type="checkbox" :value="veranlagung.name" v-model="form.veranlagungen" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300" :disabled="isLocked">
-              <label :for="`talk-veranlagung-${veranlagung.name}`" class="text-sm font-medium text-gray-700">{{ veranlagung.bezeichnung }}</label>
+            <div v-for="neigung in neigungStore.neigungen" :key="neigung.name" class="flex items-center gap-2 bg-white p-2 rounded-md border" :title="neigung.beschreibung">
+              <input :id="`talk-neigung-${neigung.name}`" type="checkbox" :value="neigung.name" v-model="form.neigungen" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300" :disabled="isLocked">
+              <label :for="`talk-neigung-${neigung.name}`" class="text-sm font-medium text-gray-700">{{ neigung.bezeichnung }}</label>
             </div>
           </div>
         </div>
@@ -64,10 +64,10 @@
 
 <script setup>
 import { reactive, watch, computed } from 'vue';
-import { useVeranlagungStore } from '../stores/veranlagung';
+import { useNeigungStore } from '../stores/neigung';
 
-const veranlagungStore = useVeranlagungStore();
-veranlagungStore.fetchVeranlagungen();
+const neigungStore = useNeigungStore();
+neigungStore.fetchNeigungen();
 
 const props = defineProps({
   isVisible: { type: Boolean, required: true },
@@ -86,7 +86,7 @@ const form = reactive({
   ausstattung: '',
   abschluss: null,
   wiederholbar: false,
-  veranlagungen: [],
+  neigungen: [],
 });
 
 watch(
@@ -100,7 +100,7 @@ watch(
       form.ausstattung = val?.ausstattung ?? '';
       form.abschluss = val?.abschluss ?? null;
       form.wiederholbar = val?.wiederholbar ?? false;
-      form.veranlagungen = val?.veranlagungen ? [...val.veranlagungen] : [];
+      form.neigungen = val?.neigungen ? [...val.neigungen] : [];
     },
     { immediate: true }
 );

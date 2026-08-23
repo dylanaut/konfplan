@@ -40,15 +40,15 @@
           <input :value="profile.gruppen.join(', ')" type="text" class="input-field" disabled />
         </div>
         <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Meine Veranlagungen</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Meine Neigungen</label>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-            <div v-for="veranlagung in veranlagungStore.veranlagungen" :key="veranlagung.name" class="flex items-center gap-2 bg-white p-2 rounded-md border" :title="veranlagung.beschreibung">
-              <input :id="`profile-veranlagung-${veranlagung.name}`" type="checkbox" :value="veranlagung.name" v-model="profile.veranlagungen" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300">
-              <label :for="`profile-veranlagung-${veranlagung.name}`" class="text-sm font-medium text-gray-700">{{ veranlagung.bezeichnung }}</label>
+            <div v-for="neigung in neigungStore.neigungen" :key="neigung.name" class="flex items-center gap-2 bg-white p-2 rounded-md border" :title="neigung.beschreibung">
+              <input :id="`profile-neigung-${neigung.name}`" type="checkbox" :value="neigung.name" v-model="profile.neigungen" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300">
+              <label :for="`profile-neigung-${neigung.name}`" class="text-sm font-medium text-gray-700">{{ neigung.bezeichnung }}</label>
             </div>
           </div>
           <div class="flex justify-end mt-4">
-            <button @click="saveVeranlagungen" class="btn-primary">Speichern</button>
+            <button @click="saveNeigungen" class="btn-primary">Speichern</button>
           </div>
         </div>
       </div>
@@ -150,11 +150,11 @@
                       <tr>
                         <th class="px-2 py-1 text-right sticky left-0 bg-white">Nr.</th>
                         <th class="px-2 py-1 text-left sticky left-0 bg-white">Vortrag</th>
-                        <th v-for="veranlagung in veranlagungStore.veranlagungen" :key="veranlagung.name"
-                            class="px-1 py-1 text-center align-bottom" :title="veranlagung.beschreibung">
+                        <th v-for="neigung in neigungStore.neigungen" :key="neigung.name"
+                            class="px-1 py-1 text-center align-bottom" :title="neigung.beschreibung">
                           <span class="inline-block whitespace-nowrap text-[9px] font-semibold text-indigo-700"
                                 style="writing-mode: vertical-rl; transform: rotate(180deg);">
-                            {{ veranlagung.bezeichnung }}
+                            {{ neigung.bezeichnung }}
                           </span>
                         </th>
                       </tr>
@@ -166,8 +166,8 @@
                           <span class="font-semibold">{{ talk.titel }}</span> bei {{ talk.referentName }}
                           <span v-if="talk.istPflicht" class="ml-1 text-white bg-blue-500 text-[9px] font-bold px-1.5 py-0.5 rounded-full">Pflicht</span>
                         </td>
-                        <td v-for="veranlagung in veranlagungStore.veranlagungen" :key="veranlagung.name" class="px-1 py-1 text-center text-gray-500">
-                          {{ (talk.veranlagungen || []).includes(veranlagung.name) ? 'X' : '' }}
+                        <td v-for="neigung in neigungStore.neigungen" :key="neigung.name" class="px-1 py-1 text-center text-gray-500">
+                          {{ (talk.neigungen || []).includes(neigung.name) ? 'X' : '' }}
                         </td>
                       </tr>
                     </tbody>
@@ -234,7 +234,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api/axios';
-import { useVeranlagungStore } from '../stores/veranlagung';
+import { useNeigungStore } from '../stores/neigung';
 import {
   User as UserIcon,
   CalendarCheck as CalendarCheckIcon,
@@ -268,11 +268,11 @@ const profile = ref({
   lastName: '',
   email: '',
   gruppen: [],
-  veranlagungen: [],
+  neigungen: [],
   version: 0
 });
-const veranlagungStore = useVeranlagungStore();
-veranlagungStore.fetchVeranlagungen();
+const neigungStore = useNeigungStore();
+neigungStore.fetchNeigungen();
 
 const hasAvailabilityChanges = computed(() => {
   return JSON.stringify(availabilities.value) !== JSON.stringify(initialAvailabilities.value);
@@ -330,13 +330,13 @@ const fetchTeilnehmerProfile = async () => {
   }
 };
 
-const saveVeranlagungen = async () => {
+const saveNeigungen = async () => {
   try {
     const response = await api.put('/api/teilnehmer/profile', profile.value);
     profile.value = response.data;
-    alert('Veranlagungen erfolgreich gespeichert!');
+    alert('Neigungen erfolgreich gespeichert!');
   } catch (error) {
-    alert('Fehler beim Speichern der Veranlagungen: ' + (error.response?.data?.message || error.response?.data || error.message));
+    alert('Fehler beim Speichern der Neigungen: ' + (error.response?.data?.message || error.response?.data || error.message));
   }
 };
 

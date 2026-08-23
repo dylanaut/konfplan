@@ -114,7 +114,7 @@ views/*.vue           # Top-Level-Seiten-Komponenten geroutet von Vue Router
 - **Nutzer** (SINGLE_TABLE) → Admin | Referent | Teilnehmer
 - **Vortrag** (SINGLE_TABLE) → Pflichtvortrag | Wahlvortrag; hat optional einen `AbschlussTyp`.
 - **AbschlussTyp** - Enum für den mit einem Vortrag assoziierten Schulabschluss.
-- **Veranlagung** - Enum fachlicher/beruflicher Ausrichtungen; Teilnehmer und Wahlvortrag können jeweils mehrere zuordnen.
+- **Neigung** - Enum fachlicher/beruflicher Ausrichtungen; Teilnehmer und Wahlvortrag können jeweils mehrere zuordnen.
 - **EventSlot** – Zeitfenster innerhalb einer Veranstaltung; mit Überschneidungsprüfung.
 - **Zuweisung** – Ordnet Teilnehmer einem Vortrag + Slot + Raum zu.
 - **Prioritaet** – Präferenz eines Teilnehmers für einen Wahlvortrag (Ranking 1-10, 10 = höchste, 0 = keine Präferenz/Hard-Exclude).

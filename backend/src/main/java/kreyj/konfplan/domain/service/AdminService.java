@@ -41,7 +41,7 @@ import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
-import kreyj.konfplan.persistence.Veranlagung;
+import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
@@ -185,8 +185,8 @@ public class AdminService implements AdminServiceInterface {
             if (null != dto.gruppen) {
                 dto.gruppen.forEach(t::addGruppe);
             }
-            if (null != dto.veranlagungen) {
-                t.setVeranlagungen(dto.veranlagungen);
+            if (null != dto.neigungen) {
+                t.setNeigungen(dto.neigungen);
             }
             if (null != dto.prioritaeten) {
                 dto.prioritaeten.forEach(prioDto -> {
@@ -297,8 +297,8 @@ public class AdminService implements AdminServiceInterface {
             if (null != dto.gruppen) {
                 dto.gruppen.forEach(t::addGruppe);
             }
-            if (null != dto.veranlagungen) {
-                t.setVeranlagungen(dto.veranlagungen);
+            if (null != dto.neigungen) {
+                t.setNeigungen(dto.neigungen);
             }
             if (null != dto.prioritaeten) {
                 dto.prioritaeten.forEach(prioDto -> {
@@ -504,7 +504,7 @@ public class AdminService implements AdminServiceInterface {
         } else {
             created = Wahlvortrag.create(vortragDto.titel, vortragDto.inhalt, referent,
                 vortragDto.wiederholbar, vortragDto.maxWiederholungen, veranstaltung);
-            ((Wahlvortrag) created).setVeranlagungen(vortragDto.veranlagungen);
+            ((Wahlvortrag) created).setNeigungen(vortragDto.neigungen);
         }
 
 
@@ -697,17 +697,17 @@ public class AdminService implements AdminServiceInterface {
                         dto.maxWiederholungen = csvDto.maxWiederholungen;
                     }
 
-                    if (StringUtils.isNotBlank(csvDto.veranlagungen)) {
-                        Set<Veranlagung> gefundeneVeranlagungen = new HashSet<>();
-                        for (String token : csvDto.veranlagungen.split("\\|")) {
-                            Veranlagung gefunden = findVeranlagungByPrefix(token);
+                    if (StringUtils.isNotBlank(csvDto.neigungen)) {
+                        Set<Neigung> gefundeneNeigungen = new HashSet<>();
+                        for (String token : csvDto.neigungen.split("\\|")) {
+                            Neigung gefunden = findNeigungByPrefix(token);
                             if (gefunden != null) {
-                                gefundeneVeranlagungen.add(gefunden);
+                                gefundeneNeigungen.add(gefunden);
                             } else if (StringUtils.isNotBlank(token)) {
-                                LOG.warn("Vortrag '" + csvDto.titel + "': Ungültige oder nicht eindeutige Veranlagung '" + token.trim() + "' übersprungen.");
+                                LOG.warn("Vortrag '" + csvDto.titel + "': Ungültige oder nicht eindeutige Neigung '" + token.trim() + "' übersprungen.");
                             }
                         }
-                        dto.veranlagungen = gefundeneVeranlagungen;
+                        dto.neigungen = gefundeneNeigungen;
                     }
 
                     if (StringUtils.isNotBlank(csvDto.abschluss)) {
@@ -757,15 +757,15 @@ public class AdminService implements AdminServiceInterface {
     }
 
 
-    private Veranlagung findVeranlagungByPrefix(String prefix) {
+    private Neigung findNeigungByPrefix(String prefix) {
         if (StringUtils.isBlank(prefix)) {
             return null;
         }
         String normalizedPrefix = prefix.trim().toLowerCase();
-        List<Veranlagung> matches = new ArrayList<>();
-        for (Veranlagung veranlagung : Veranlagung.values()) {
-            if (veranlagung.getBezeichnung().toLowerCase().startsWith(normalizedPrefix)) {
-                matches.add(veranlagung);
+        List<Neigung> matches = new ArrayList<>();
+        for (Neigung neigung : Neigung.values()) {
+            if (neigung.getBezeichnung().toLowerCase().startsWith(normalizedPrefix)) {
+                matches.add(neigung);
             }
         }
         if (matches.size() == 1) {
@@ -1213,7 +1213,7 @@ public class AdminService implements AdminServiceInterface {
         } else if (entity instanceof Wahlvortrag wv && !updated.istPflicht) {
             wv.setWiederholbar(updated.wiederholbar);
             wv.setMaxWiederholungen(updated.maxWiederholungen);
-            wv.setVeranlagungen(updated.veranlagungen);
+            wv.setNeigungen(updated.neigungen);
 
             VortragVerfuegbarkeit vv = VortragVerfuegbarkeit.findById(vvIdL(updated.id, veranstaltungId));
             if (null == vv) {

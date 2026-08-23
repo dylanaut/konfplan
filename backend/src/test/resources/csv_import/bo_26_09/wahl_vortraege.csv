@@ -1,4 +1,4 @@
-istPflicht;Titel;Referent_LoginName;wahlSlots;Inhalt;wiederholbar;maxWiederholungen;Pflichtgruppe;Pflichtraum;Pflichtslot;Ausstattung;Veranlagungen
+istPflicht;Titel;Referent_LoginName;wahlSlots;Inhalt;wiederholbar;maxWiederholungen;Pflichtgruppe;Pflichtraum;Pflichtslot;Ausstattung;Neigungen
 false;Analysieren, Programmieren, Elektrisieren;jk-manuel_janzen;[1,2,3,4,5,6,7,8,9,10,11,12];Elektroniker fürBetriebstechnik, Fachinformatiker Anwendungsentwicklung, Fachinformatiker Systemintegration;true;5;;;;Beamer;technisch|wissenschaftlich
 false;Organisieren, Strukturieren, Kommunizieren;jk-mareike_mueller;[1,2,3,4,5,6,7,8,9,10,11,12];Industriekaufleute, Fachkraft für Lagerlogistik;true;5;;;;Beamer;organisatorisch|kaufmännisch
 false;Weltweit für Durchblick sorgen;jk-jan_novak;[1,2,3,4,5,6,7,8,9,10,11,12];Industriemechaniker, FachkraftMetalltechnik, Werkzeugmechaniker, Technischer Produktdesigner, Zerspanungsmechaniker;true;5;;;;Beamer;handwerklich|technisch

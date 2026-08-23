@@ -1,4 +1,4 @@
-istPflicht;Titel;Referent_LoginName;wahlSlots;Inhalt;wiederholbar;maxWiederholungen;Pflichtgruppe;Pflichtraum;Pflichtslot;Ausstattung;Veranlagungen
+istPflicht;Titel;Referent_LoginName;wahlSlots;Inhalt;wiederholbar;maxWiederholungen;Pflichtgruppe;Pflichtraum;Pflichtslot;Ausstattung;Neigungen
 false;Rechtsanwalt / Jura Studium / Studium Wirtschaftsrecht ;stephan.arens;1,2,3,4;Rechtsanwalt / Jura Studium / Studium Wirtschaftsrecht ;true;2;;;;Beamer;rechtlich|kaufmännisch
 false;Entwicklungszusammenarbeit ;martin.schaefer;1,2,3,4;Entwicklungszusammenarbeit ;true;2;;;;Beamer;sozial|organisatorisch
 false;Luft- und Raumfahrtingenieur;anke.pagels.kerp;1,2,3,4;Luft- und Raumfahrtingenieur;true;2;;;;Beamer;technisch|wissenschaftlich

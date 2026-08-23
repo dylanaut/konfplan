@@ -1,6 +1,6 @@
 package kreyj.konfplan.persistence;
 
-public enum Veranlagung {
+public enum Neigung {
     SOZIAL("sozial",
             "Interesse an Tätigkeiten mit und für Menschen, z.B. in Beratung, Pflege oder Erziehung."),
     ORGANISATORISCH("organisatorisch",
@@ -29,7 +29,7 @@ public enum Veranlagung {
     private final String bezeichnung;
     private final String beschreibung;
 
-    Veranlagung(String bezeichnung, String beschreibung) {
+    Neigung(String bezeichnung, String beschreibung) {
         this.bezeichnung = bezeichnung;
         this.beschreibung = beschreibung;
     }

@@ -114,11 +114,11 @@
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Veranlagungen (welche Veranlagungen adressiert dieser Vortrag inhaltlich?)</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Neigungen (welche Neigungen adressiert dieser Vortrag inhaltlich?)</label>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto p-2 bg-white border rounded-lg">
-              <div v-for="veranlagung in veranlagungStore.veranlagungen" :key="veranlagung.name" class="flex items-center gap-2 text-xs" :title="veranlagung.beschreibung">
-                <input :id="`vortrag-veranlagung-${veranlagung.name}`" type="checkbox" :value="veranlagung.name" v-model="form.veranlagungen" class="h-4 w-4 rounded" />
-                <label :for="`vortrag-veranlagung-${veranlagung.name}`" class="font-medium text-gray-800">{{ veranlagung.bezeichnung }}</label>
+              <div v-for="neigung in neigungStore.neigungen" :key="neigung.name" class="flex items-center gap-2 text-xs" :title="neigung.beschreibung">
+                <input :id="`vortrag-neigung-${neigung.name}`" type="checkbox" :value="neigung.name" v-model="form.neigungen" class="h-4 w-4 rounded" />
+                <label :for="`vortrag-neigung-${neigung.name}`" class="font-medium text-gray-800">{{ neigung.bezeichnung }}</label>
               </div>
             </div>
           </div>
@@ -135,10 +135,10 @@
 
 <script setup>
 import { reactive, watch, ref } from 'vue';
-import { useVeranlagungStore } from '../stores/veranlagung';
+import { useNeigungStore } from '../stores/neigung';
 
-const veranlagungStore = useVeranlagungStore();
-veranlagungStore.fetchVeranlagungen();
+const neigungStore = useNeigungStore();
+neigungStore.fetchNeigungen();
 
 const ABSCHLUSSTYPEN = [
     'Berufsreife',
@@ -174,7 +174,7 @@ const form = reactive({
   pflichtgruppe: '',
   wiederholbar: false,
   maxWiederholungen: 1,
-  veranlagungen: [],
+  neigungen: [],
 });
 
 watch(
@@ -192,7 +192,7 @@ watch(
       form.pflichtgruppe = val?.pflichtgruppe ?? '';
       form.wiederholbar = val?.wiederholbar ?? false;
       form.maxWiederholungen = val?.maxWiederholungen ?? 1;
-      form.veranlagungen = val?.veranlagungen ? [...val.veranlagungen] : [];
+      form.neigungen = val?.neigungen ? [...val.neigungen] : [];
       selectedWahlslotIds.value = val?.wahlslots?.map(s => s.id) ?? [];
     },
     { immediate: true }
@@ -221,7 +221,7 @@ const save = () => {
   } else {
     payload.wahlslots = [];
     payload.wiederholbar = false;
-    payload.veranlagungen = [];
+    payload.neigungen = [];
     payload.pflichtraum = props.raeume.find(r => r.id === form.pflichtraum.id);
     payload.pflichtslot = props.slots.find(s => s.id === form.pflichtslot.id);
   }

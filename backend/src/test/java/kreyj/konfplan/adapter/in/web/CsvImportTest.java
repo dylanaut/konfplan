@@ -18,7 +18,7 @@ import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
-import kreyj.konfplan.persistence.Veranlagung;
+import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import org.junit.jupiter.api.BeforeEach;
@@ -314,10 +314,10 @@ class CsvImportTest extends DatabaseCleaner {
 
     @Test
     @TestHTTPEndpoint(VeranstaltungResource.class)
-    void testImportVortraege_mitVeranlagungen() {
-        String wvTitel = "Vortrag mit Veranlagungen";
+    void testImportVortraege_mitNeigungen() {
+        String wvTitel = "Vortrag mit Neigungen";
         String csv = "istPflicht;Titel;Referent_LoginName;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;" +
-            "Pflichtslot;Ausstattung;Veranlagungen\n" +
+            "Pflichtslot;Ausstattung;Neigungen\n" +
             "false;" + wvTitel + ";vortrag;Wahlinhalt;;true;2;;;Beamer;sozial|technisch\n";
 
         given()
@@ -328,17 +328,17 @@ class CsvImportTest extends DatabaseCleaner {
 
         Wahlvortrag wv = Wahlvortrag.find("titel", wvTitel).firstResult();
         assertThat(wv).describedAs("Wahlvortrag '" + wvTitel + "' sollte importiert worden sein").isNotNull();
-        assertThat(wv.getVeranlagungen()).describedAs("Wahlvortrag '" +
-            wvTitel + "' sollte sozial und technisch als Veranlagungen haben").containsExactlyInAnyOrder(Veranlagung.SOZIAL, Veranlagung.TECHNISCH);
+        assertThat(wv.getNeigungen()).describedAs("Wahlvortrag '" +
+            wvTitel + "' sollte sozial und technisch als Neigungen haben").containsExactlyInAnyOrder(Neigung.SOZIAL, Neigung.TECHNISCH);
     }
 
 
     @Test
     @TestHTTPEndpoint(VeranstaltungResource.class)
-    void testImportVortraege_ohneVeranlagungen_bleibtLeer() {
-        String wvTitel = "Vortrag ohne Veranlagungen";
+    void testImportVortraege_ohneNeigungen_bleibtLeer() {
+        String wvTitel = "Vortrag ohne Neigungen";
         String csv = "istPflicht;Titel;Referent_LoginName;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;" +
-            "Pflichtslot;Ausstattung;Veranlagungen\n" +
+            "Pflichtslot;Ausstattung;Neigungen\n" +
             "false;" + wvTitel + ";vortrag;Wahlinhalt;;true;2;;;Beamer;\n";
 
         given()
@@ -349,7 +349,7 @@ class CsvImportTest extends DatabaseCleaner {
 
         Wahlvortrag wv = Wahlvortrag.find("titel", wvTitel).firstResult();
         assertThat(wv).describedAs("Wahlvortrag '" + wvTitel + "' sollte importiert worden sein").isNotNull();
-        assertThat(wv.getVeranlagungen()).describedAs("Veranlagungen dürfen beim CSV-Import leer bleiben").isEmpty();
+        assertThat(wv.getNeigungen()).describedAs("Neigungen dürfen beim CSV-Import leer bleiben").isEmpty();
     }
 
 

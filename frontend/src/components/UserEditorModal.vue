@@ -74,11 +74,11 @@
         </div>
 
         <div v-if="form.role === 'TEILNEHMER'" class="md:col-span-2 bg-amber-50 p-4 rounded-lg">
-          <h3 class="text-xs font-bold text-amber-700 uppercase tracking-wider mb-3">Veranlagungen</h3>
+          <h3 class="text-xs font-bold text-amber-700 uppercase tracking-wider mb-3">Neigungen</h3>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-            <div v-for="veranlagung in veranlagungStore.veranlagungen" :key="veranlagung.name" class="flex items-center gap-2 bg-white p-2 rounded-md border" :title="veranlagung.beschreibung">
-              <input :id="`veranlagung-${veranlagung.name}`" type="checkbox" :value="veranlagung.name" v-model="form.veranlagungen" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300">
-              <label :for="`veranlagung-${veranlagung.name}`" class="text-sm font-medium text-gray-700">{{ veranlagung.bezeichnung }}</label>
+            <div v-for="neigung in neigungStore.neigungen" :key="neigung.name" class="flex items-center gap-2 bg-white p-2 rounded-md border" :title="neigung.beschreibung">
+              <input :id="`neigung-${neigung.name}`" type="checkbox" :value="neigung.name" v-model="form.neigungen" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300">
+              <label :for="`neigung-${neigung.name}`" class="text-sm font-medium text-gray-700">{{ neigung.bezeichnung }}</label>
             </div>
           </div>
         </div>
@@ -102,7 +102,7 @@
 <script setup>
 import { reactive, watch } from 'vue';
 import { useGroupStore } from '../stores/group';
-import { useVeranlagungStore } from '../stores/veranlagung';
+import { useNeigungStore } from '../stores/neigung';
 
 const props = defineProps({
   isVisible: { type: Boolean, required: true },
@@ -112,8 +112,8 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'save']);
 const groupStore = useGroupStore();
-const veranlagungStore = useVeranlagungStore();
-veranlagungStore.fetchVeranlagungen();
+const neigungStore = useNeigungStore();
+neigungStore.fetchNeigungen();
 
 const form = reactive({
   id: null,
@@ -125,7 +125,7 @@ const form = reactive({
   isActive: true,
   jobRole: '',
   gruppen: [],
-  veranlagungen: [],
+  neigungen: [],
   version: null,
 });
 
@@ -151,7 +151,7 @@ watch(
       form.isActive = val?.isActive ?? true;
       form.jobRole = val?.jobRole ?? '';
       form.gruppen = val?.gruppen ? [...val.gruppen] : [];
-      form.veranlagungen = val?.veranlagungen ? [...val.veranlagungen] : [];
+      form.neigungen = val?.neigungen ? [...val.neigungen] : [];
     },
     { immediate: true, deep: false }
 );

@@ -7,7 +7,7 @@ import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Teilnehmer;
-import kreyj.konfplan.persistence.Veranlagung;
+import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import org.jboss.logging.Logger;
@@ -201,14 +201,14 @@ public class AuffuellungService {
             }
         }
 
-        // Tier 2: Kandidat teilt mindestens eine Veranlagung mit einem priorisierten Vortrag.
-        List<Veranlagung> praeferierteVeranlagungen = eigenePrioritaeten.stream()
-            .flatMap(p -> p.getVortrag().getVeranlagungen().stream())
+        // Tier 2: Kandidat teilt mindestens eine Neigung mit einem priorisierten Vortrag.
+        List<Neigung> praeferierteNeigungen = eigenePrioritaeten.stream()
+            .flatMap(p -> p.getVortrag().getNeigungen().stream())
             .distinct()
             .toList();
-        for (Veranlagung veranlagung : praeferierteVeranlagungen) {
+        for (Neigung neigung : praeferierteNeigungen) {
             List<Instanz> treffer = eligibleKandidaten.stream()
-                .filter(k -> wahlvortragByOid.get(wvOids[k.wvIdx()]).getVeranlagungen().contains(veranlagung))
+                .filter(k -> wahlvortragByOid.get(wvOids[k.wvIdx()]).getNeigungen().contains(neigung))
                 .toList();
             if (!treffer.isEmpty()) {
                 return treffer.get(ThreadLocalRandom.current().nextInt(treffer.size()));
