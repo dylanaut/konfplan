@@ -68,7 +68,8 @@ public class KeycloakUserProvisioningService {
                 nutzer.setKeycloakId(findExistingKeycloakId(nutzer));
             } else if (response.getStatus() != 201) {
                 throw new KeycloakProvisioningException(
-                    "Keycloak-User für '" + nutzer.getLoginName() + "' konnte nicht angelegt werden (Status " + response.getStatus() + ").");
+                    "Keycloak-User für '" + nutzer.getLoginName() + "' konnte nicht angelegt werden (Status "
+                        + response.getStatus() + "): " + response.readEntity(String.class));
             } else {
                 String keycloakId = response.getLocation().getPath().replaceAll(".*/([^/]+)$", "$1");
                 nutzer.setKeycloakId(keycloakId);
