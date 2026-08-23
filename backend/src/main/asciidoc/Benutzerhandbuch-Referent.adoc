@@ -148,8 +148,8 @@ sowie der Speichern-Button werden deaktiviert/ausgeblendet (nur Ansicht + Abbrec
 | Mehrzeiliges Textfeld (2 Zeilen), Platzhalter "z.B. Beamer, Whiteboard,
   Starkstromanschluss...".
 
-| Veranlagungen
-| Mehrere Checkboxen (welche beruflichen Veranlagungen/Interessensfelder der Vortrag inhaltlich
+| Neigungen
+| Mehrere Checkboxen (welche beruflichen Neigungen/Interessensfelder der Vortrag inhaltlich
   anspricht), jede mit Tooltip-Beschreibung; Mehrfachauswahl möglich.
 |===
 

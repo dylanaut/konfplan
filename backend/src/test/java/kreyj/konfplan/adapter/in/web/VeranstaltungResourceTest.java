@@ -12,7 +12,7 @@ import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Admin;
-import kreyj.konfplan.persistence.Veranlagung;
+import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
@@ -239,8 +239,8 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
 
 
     @Test
-    void testWahlvortrag_VeranlagungenRoundTripAndReplace() {
-        final String referentEmail = "veranlagungen-referent@test.de";
+    void testWahlvortrag_NeigungenRoundTripAndReplace() {
+        final String referentEmail = "neigungen-referent@test.de";
         NutzerDto refDto = NutzerDto.referent(referentEmail, "Referent", "Test");
         refDto.loginName = referentEmail;
         NutzerDto referent =
@@ -254,8 +254,8 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
                         .statusCode(OK.getStatusCode())
                         .extract().as(NutzerDto.class);
 
-        VortragDto wvDto = new VortragDto(false, "Vortrag mit Veranlagungen", "Inhalt", referent.id, testVid);
-        wvDto.veranlagungen = Set.of(Veranlagung.SOZIAL, Veranlagung.ORGANISATORISCH);
+        VortragDto wvDto = new VortragDto(false, "Vortrag mit Neigungen", "Inhalt", referent.id, testVid);
+        wvDto.neigungen = Set.of(Neigung.SOZIAL, Neigung.ORGANISATORISCH);
 
         VortragDto created =
                 given().contentType(ContentType.JSON)
@@ -265,10 +265,10 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
                         .statusCode(CREATED.getStatusCode())
                         .extract().as(VortragDto.class);
 
-        assertThat(created.veranlagungen).containsExactlyInAnyOrder(Veranlagung.SOZIAL, Veranlagung.ORGANISATORISCH);
+        assertThat(created.neigungen).containsExactlyInAnyOrder(Neigung.SOZIAL, Neigung.ORGANISATORISCH);
 
         // Update mit anderer Auswahl muss die vorherige vollstaendig ersetzen (Checkbox-UI).
-        created.veranlagungen = Set.of(Veranlagung.TECHNISCH);
+        created.neigungen = Set.of(Neigung.TECHNISCH);
         VortragDto updated =
                 given().contentType(ContentType.JSON)
                         .body(created)
@@ -277,7 +277,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
                         .statusCode(OK.getStatusCode())
                         .extract().as(VortragDto.class);
 
-        assertThat(updated.veranlagungen).containsExactly(Veranlagung.TECHNISCH);
+        assertThat(updated.neigungen).containsExactly(Neigung.TECHNISCH);
     }
 
 

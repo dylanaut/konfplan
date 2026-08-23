@@ -413,8 +413,8 @@ image::21-vortrag-editor-modal-pflichtvortrag.png[Dialog Vortrag, Typ Pflichtvor
 | Checkbox-Liste aller Zeit-Slots (Mehrfachauswahl), legt fest, in welchen Slots dieser Vortrag
   angeboten werden kann.
 
-| Veranlagungen
-| Checkbox-Liste aller definierten Veranlagungen mit Tooltip-Beschreibung (Mehrfachauswahl,
+| Neigungen
+| Checkbox-Liste aller definierten Neigungen mit Tooltip-Beschreibung (Mehrfachauswahl,
   inhaltliche Verschlagwortung des Vortrags für den Planungsalgorithmus).
 |===
 

@@ -61,12 +61,12 @@ zweispaltiges Formular:
 | Gruppen
 | Textfeld, schreibgeschützt, kommagetrennte Liste der Gruppen des Teilnehmers.
 
-| Meine Veranlagungen
-| Checkbox-Raster (2–3 Spalten), eine Checkbox pro definierter Veranlagung, jede mit Label und
+| Meine Neigungen
+| Checkbox-Raster (2–3 Spalten), eine Checkbox pro definierter Neigung, jede mit Label und
   Tooltip (Beschreibung beim Hovern). Einzig editierbares Feld dieses Abschnitts.
 |===
 
-Button **Speichern** (unten rechts) – speichert die angehakten Veranlagungen; zeigt danach eine
+Button **Speichern** (unten rechts) – speichert die angehakten Neigungen; zeigt danach eine
 Erfolgs- bzw. Fehlermeldung. Kein "ungespeichert"-Hinweis/Dirty-State für dieses Formular – der
 Speichern-Button ist immer aktiv, unabhängig davon, ob sich etwas geändert hat.
 
@@ -119,8 +119,8 @@ Vorträge verfügbar."
 
 **Legende-Tabelle** oben: eine Zeile pro Wahlvortrag (alphabetisch nach Titel sortiert,
 durchnummeriert), zeigt Nummer, "Titel bei Referentenname", ein "Pflicht"-Badge falls es ein
-Pflichtvortrag ist, sowie pro definierter Veranlagung eine Spalte mit "X", falls der Vortrag
-diese Veranlagung anspricht (Spaltenköpfe sind vertikal gedreht beschriftet).
+Pflichtvortrag ist, sowie pro definierter Neigung eine Spalte mit "X", falls der Vortrag
+diese Neigung anspricht (Spaltenköpfe sind vertikal gedreht beschriftet).
 
 Hinweistext: "Nummern entsprechen der Legende oben. 10 = höchste Priorität, 1 = niedrigste,
 leer/0 = kein Interesse." Button **Meine Prioritäten speichern** (oben rechts) – nur aktiv, wenn

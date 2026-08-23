@@ -32,8 +32,8 @@ public abstract class DatabaseCleaner {
         Prioritaet.deleteAll();
         // @ElementCollection-Tabellen auf Subklassen (Wahlvortrag/Teilnehmer) werden bei einem
         // Bulk-Delete auf der Basisklasse nicht automatisch mitgeloescht.
-        Panache.getEntityManager().createNativeQuery("delete from wahlvortrag_veranlagungen").executeUpdate();
-        Panache.getEntityManager().createNativeQuery("delete from teilnehmer_veranlagungen").executeUpdate();
+        Panache.getEntityManager().createNativeQuery("delete from wahlvortrag_neigungen").executeUpdate();
+        Panache.getEntityManager().createNativeQuery("delete from teilnehmer_neigungen").executeUpdate();
         Vortrag.deleteAll();
         Nutzer.deleteAll();
         Slot.deleteAll();

@@ -232,14 +232,14 @@ import { ref, onMounted, computed, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api/axios';
 import { useAuthStore } from '../stores/auth';
-import { useVeranlagungStore } from '../stores/veranlagung';
+import { useNeigungStore } from '../stores/neigung';
 import ReferentVortragEditorModal from '../components/ReferentVortragEditorModal.vue';
 import { User as UserIcon, FileText as FileTextIcon, Calendar as CalendarIcon, Save as SaveIcon, Plus as PlusIcon, Edit as EditIcon, Trash2 as Trash2Icon, ListChecks as ListChecksIcon, Check as CheckIcon, X as XIcon, CalendarCheck as CalendarCheckIcon, Printer as PrinterIcon, Download as DownloadIcon, CalendarPlus, Mail as MailIcon } from '@lucide/vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
-const veranlagungStore = useVeranlagungStore();
-veranlagungStore.fetchVeranlagungen();
+const neigungStore = useNeigungStore();
+neigungStore.fetchNeigungen();
 
 const referent = ref({
   id: null,
@@ -382,7 +382,7 @@ const addNewTalk = () => {
     inhalt: '',
     ausstattung: '',
     wiederholbar: false,
-    veranlagungen: [],
+    neigungen: [],
     verfuegIds: [],
     veranstaltungId: availableEvent.id
   };
