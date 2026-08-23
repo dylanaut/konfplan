@@ -1,84 +1,104 @@
 {
-  "realm": "konfplan",
-  "enabled": true,
-  "sslRequired": "external",
-  "registrationAllowed": false,
-  "resetPasswordAllowed": true,
-  "requiredActions": [
-    {
-      "alias": "UPDATE_PASSWORD",
-      "name": "Update Password",
-      "providerId": "UPDATE_PASSWORD",
-      "enabled": true,
-      "defaultAction": true,
-      "priority": 57,
-      "config": {}
-    }
-  ],
-  "smtpServer": {
-    "host": "__MAILER_HOST__",
-    "port": "__MAILER_PORT__",
-    "from": "juergenkrey@yahoo.de",
-    "auth": "__MAILER_AUTH__",
-    "starttls": "__MAILER_STARTTLS__",
-    "user": "__BREVO_SMTP_USER__",
-    "password": "__BREVO_SMTP_PASSWORD__"
-  },
-  "roles": {
-    "realm": [
-      { "name": "ADMIN", "description": "Administrator/Organisator" },
-      { "name": "REFERENT", "description": "Referent (Vortragender)" },
-      { "name": "TEILNEHMER", "description": "Teilnehmer" }
+    "realm": "konfplan",
+    "enabled": true,
+    "internationalizationEnabled": true,
+    "supportedLocales": [
+        "de",
+        "en"
+    ],
+    "defaultLocale": "de",
+    "sslRequired": "external",
+    "registrationAllowed": false,
+    "resetPasswordAllowed": true,
+    "requiredActions": [
+        {
+            "alias": "UPDATE_PASSWORD",
+            "name": "Update Password",
+            "providerId": "UPDATE_PASSWORD",
+            "enabled": true,
+            "defaultAction": true,
+            "priority": 57,
+            "config": {}
+        }
+    ],
+    "smtpServer": {
+        "host": "__MAILER_HOST__",
+        "port": "__MAILER_PORT__",
+        "from": "juergenkrey@yahoo.de",
+        "auth": "__MAILER_AUTH__",
+        "starttls": "__MAILER_STARTTLS__",
+        "user": "__BREVO_SMTP_USER__",
+        "password": "__BREVO_SMTP_PASSWORD__"
+    },
+    "roles": {
+        "realm": [
+            {
+                "name": "ADMIN",
+                "description": "Administrator/Organisator"
+            },
+            {
+                "name": "REFERENT",
+                "description": "Referent (Vortragender)"
+            },
+            {
+                "name": "TEILNEHMER",
+                "description": "Teilnehmer"
+            }
+        ]
+    },
+    "clients": [
+        {
+            "clientId": "konfplan-frontend",
+            "enabled": true,
+            "publicClient": true,
+            "protocol": "openid-connect",
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": true,
+            "serviceAccountsEnabled": false,
+            "redirectUris": [
+                "__APP_PUBLIC_URL__/*"
+            ],
+            "webOrigins": [
+                "__APP_PUBLIC_URL__"
+            ],
+            "attributes": {
+                "pkce.code.challenge.method": "S256"
+            }
+        },
+        {
+            "clientId": "konfplan-backend",
+            "enabled": true,
+            "bearerOnly": true,
+            "publicClient": false,
+            "protocol": "openid-connect",
+            "standardFlowEnabled": false,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false
+        },
+        {
+            "clientId": "konfplan-admin-cli",
+            "enabled": true,
+            "publicClient": false,
+            "protocol": "openid-connect",
+            "standardFlowEnabled": false,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": true,
+            "secret": "__ADMIN_CLI_SECRET__"
+        }
+    ],
+    "users": [
+        {
+            "username": "service-account-konfplan-admin-cli",
+            "enabled": true,
+            "serviceAccountClientId": "konfplan-admin-cli",
+            "clientRoles": {
+                "realm-management": [
+                    "manage-users",
+                    "view-users",
+                    "view-realm",
+                    "manage-realm"
+                ]
+            }
+        }
     ]
-  },
-  "clients": [
-    {
-      "clientId": "konfplan-frontend",
-      "enabled": true,
-      "publicClient": true,
-      "protocol": "openid-connect",
-      "standardFlowEnabled": true,
-      "directAccessGrantsEnabled": true,
-      "serviceAccountsEnabled": false,
-      "redirectUris": [
-        "__APP_PUBLIC_URL__/*"
-      ],
-      "webOrigins": [
-        "__APP_PUBLIC_URL__"
-      ],
-      "attributes": {
-        "pkce.code.challenge.method": "S256"
-      }
-    },
-    {
-      "clientId": "konfplan-backend",
-      "enabled": true,
-      "bearerOnly": true,
-      "publicClient": false,
-      "protocol": "openid-connect",
-      "standardFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": false
-    },
-    {
-      "clientId": "konfplan-admin-cli",
-      "enabled": true,
-      "publicClient": false,
-      "protocol": "openid-connect",
-      "standardFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": true,
-      "secret": "__ADMIN_CLI_SECRET__"
-    }
-  ],
-  "users": [
-    {
-      "username": "service-account-konfplan-admin-cli",
-      "enabled": true,
-      "serviceAccountClientId": "konfplan-admin-cli",
-      "clientRoles": {
-        "realm-management": ["manage-users", "view-users", "view-realm", "manage-realm"]
-      }
-    }
-  ]
 }
