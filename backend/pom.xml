@@ -34,7 +34,7 @@
     <maven-pmd-plugin.version>3.28.0</maven-pmd-plugin.version>
     <plantuml-generator-maven-plugin.version>3.0.1</plantuml-generator-maven-plugin.version>
     <jackson-in-quarkus.version>2.22.2</jackson-in-quarkus.version>
-    <spotbugs-annotations.version>4.10.3</spotbugs-annotations.version>
+    <spotbugs-annotations.version>4.10.4</spotbugs-annotations.version>
   </properties>
 
   <dependencies>
