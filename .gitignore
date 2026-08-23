@@ -69,3 +69,4 @@ build/
 /backend/node_modules/
 /backend/logs/
 /backend/result_log.txt
+/backend/laufband.txt
