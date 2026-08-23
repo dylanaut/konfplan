@@ -358,7 +358,7 @@ const visibleTabs = computed(() => {
     'veranstaltungen', 'veranstaltungImport', 'slots',
     'planung', 'ergebnisse',
     'protokoll'];
-  return ['organisatoren', 'gebaeude',
+  return ['organisatoren', 'gebaeude', 'referenten',
     'veranstaltungen', 'veranstaltungImport',
     'protokoll'];
 });
