@@ -444,7 +444,7 @@ const savePriorities = async () => {
     prioWert: priorities.value[talkId].prioWert
   }));
   try {
-    await api.post('/api/teilnehmer/prios', payload);
+    await api.post('/api/prios', payload);
     changedPriorities.value.clear();
     alert('Prioritäten erfolgreich gespeichert!');
   } catch (error) {
