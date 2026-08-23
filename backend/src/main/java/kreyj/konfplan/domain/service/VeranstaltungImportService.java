@@ -200,7 +200,7 @@ public class VeranstaltungImportService implements VeranstaltungImportServiceInt
             throw new CsvImportException(veranstaltungenCsv,
                 "veranstaltungen.csv muss genau eine gültige Veranstaltung enthalten (gefunden: " + created.size() + ").");
         }
-        Veranstaltung veranstaltung = created.get(0);
+        Veranstaltung veranstaltung = created.getFirst();
         Long vid = veranstaltung.getId();
 
         // 4. Slots (Pflicht)
@@ -316,8 +316,8 @@ public class VeranstaltungImportService implements VeranstaltungImportServiceInt
 
         try (Stream<Path> entries = Files.list(extractedDir)) {
             List<Path> topLevel = entries.toList();
-            if (topLevel.size() == 1 && Files.isDirectory(topLevel.get(0))) {
-                return topLevel.get(0);
+            if (topLevel.size() == 1 && Files.isDirectory(topLevel.getFirst())) {
+                return topLevel.getFirst();
             }
         }
         return extractedDir;

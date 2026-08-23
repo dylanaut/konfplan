@@ -126,7 +126,7 @@ public class DevDataInitService {
 
                 importierteVeranstaltungen.add(vid);
             } catch (Exception e) {
-                LOG.error("Fehler beim Laden von " + dataSet, e);
+                LOG.error("Fehler beim Laden von DataSet '" + dataSet + "'", e);
             }
         }
 
