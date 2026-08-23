@@ -30,7 +30,7 @@
     <surefire-plugin.version>3.5.6</surefire-plugin.version>
     <hibernate-maven-plugin.version>7.4.5.Final</hibernate-maven-plugin.version>
     <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
-    <spotbugs-maven-plugin.version>${spotbugs-annotations.version}.0</spotbugs-maven-plugin.version>
+    <spotbugs-maven-plugin.version>4.10.4.0</spotbugs-maven-plugin.version>
     <maven-pmd-plugin.version>3.28.0</maven-pmd-plugin.version>
     <plantuml-generator-maven-plugin.version>3.0.1</plantuml-generator-maven-plugin.version>
     <jackson-in-quarkus.version>2.22.1</jackson-in-quarkus.version>
