@@ -64,6 +64,11 @@
         </div>
 
         <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Maximale Anzahl Prioritäten (optional)</label>
+          <input v-model.number="form.maxPrioritaeten" type="number" min="1" class="input-field" placeholder="unbeschränkt" />
+        </div>
+
+        <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Logo URL (optional)</label>
           <input v-model="form.logo" type="text" class="input-field" placeholder="https://..." />
         </div>
@@ -102,6 +107,7 @@ const form = reactive({
   endetAm: '',
   deadlineReferenten: '',
   deadlineTeilnehmer: '',
+  maxPrioritaeten: null,
   logo: '',
   logo_link: '',
   organisatorIds: [],
@@ -116,6 +122,7 @@ watchEffect(() => {
   form.endetAm = val?.endetAm ? val.endetAm.slice(0, 16) : '';
   form.deadlineReferenten = val?.deadlineReferenten ? val.deadlineReferenten.slice(0, 16) : '';
   form.deadlineTeilnehmer = val?.deadlineTeilnehmer ? val.deadlineTeilnehmer.slice(0, 16) : '';
+  form.maxPrioritaeten = val?.maxPrioritaeten ?? null;
   form.logo = val?.logo ?? '';
   form.logo_link = val?.logo_link ?? '';
   form.organisatorIds = val?.organisatorIds ?? [];
@@ -125,7 +132,9 @@ watchEffect(() => {
 
 const save = () => {
   const gebaeude = selectedGebaeudeIds.value.map(id => ({ id }));
-  emit('save', { ...form, gebaeude });
+  // leeres Zahlenfeld liefert bei v-model.number einen leeren String statt null
+  const maxPrioritaeten = form.maxPrioritaeten === '' ? null : form.maxPrioritaeten;
+  emit('save', { ...form, maxPrioritaeten, gebaeude });
 };
 </script>
 

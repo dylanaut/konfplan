@@ -84,6 +84,7 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
 
         v.setLogo(dto.getLogo());
         v.setLogo_link(dto.getLogo_link());
+        v.setMaxPrioritaeten(dto.getMaxPrioritaeten());
 
         // Gebäude zuweisen
         if (dto.getGebaeude() != null) {
@@ -202,6 +203,8 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
                     parseCsvDate(csvDto.deadlineReferenten, csvDto.name, "Deadline_Referenten"), veranstaltung.getBeginntAm(), 7));
                 veranstaltung.setDeadlineTeilnehmer(smartDeadLine(
                     parseCsvDate(csvDto.deadlineTeilnehmer, csvDto.name, "Deadline_Teilnehmer"), veranstaltung.getBeginntAm(), 3));
+
+                veranstaltung.setMaxPrioritaeten(csvDto.maxPrioritaeten);
 
                 veranstaltung.setLogo(csvDto.logo);
                 veranstaltung.setLogo_link(csvDto.logo_link);

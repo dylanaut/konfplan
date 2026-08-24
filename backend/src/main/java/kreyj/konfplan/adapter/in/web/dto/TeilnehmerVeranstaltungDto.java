@@ -12,6 +12,7 @@ public class TeilnehmerVeranstaltungDto {
     public LocalDateTime beginntAm;
     public LocalDateTime endetAm;
     public LocalDateTime deadlineTeilnehmer;
+    public Integer maxPrioritaeten;
     public boolean planErstellt;
     public String logo;
     public String logo_link;

@@ -64,6 +64,9 @@ public class Veranstaltung extends VersionedEntity {
 
     private String logo_link;
 
+    /** Obergrenze für die Anzahl der von einem Teilnehmer vergebbaren (nicht-null) Prioritäten; null = unbeschränkt. */
+    private Integer maxPrioritaeten;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "veranstaltung_gruppen", joinColumns = @JoinColumn(name = "veranstaltung_id"))
     @Column(name = "gruppen")

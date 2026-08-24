@@ -152,6 +152,25 @@ class CsvImportTest extends DatabaseCleaner {
 
 
     @Test
+    @TestHTTPEndpoint(VeranstaltungResource.class)
+    void testImportVeranstaltungenMitMaxPrioritaeten() {
+        String csv = "Name;Beginn;Ende;Max_Prioritaeten;Organisatoren_LoginNames;Gebaeude_Namen;Logo;Logo_link\n" +
+            "CSV Event MaxPrio;2026-10-01 07:00;2026-10-01 17:00;3;admin;RKS_LINZ;assets/RKS_Logo.png;https://realschuleplus-linz.de/home/home.html";
+
+        given()
+            .multiPart("file", "veranstaltungen.csv", csv.getBytes())
+            .when().post("/import")
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body(containsString("1 Veranstaltung(en) angelegt"));
+
+        Veranstaltung v = Veranstaltung.find("name", "CSV Event MaxPrio").firstResult();
+        assertThat(v).isNotNull();
+        assertThat(v.getMaxPrioritaeten()).isEqualTo(3);
+    }
+
+
+    @Test
     void testImportGebaeudeMitRaeumen() {
         final String gebaeudeName = "Altbau";
         String csv = "Name;Typ;Strasse;Hausnummer;PLZ;Ort;Räume\n" +

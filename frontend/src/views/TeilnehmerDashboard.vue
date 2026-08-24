@@ -176,8 +176,14 @@
 
                 <h4 class="font-bold text-sm mb-2">Meine Prioritäten</h4>
                 <p class="text-[10px] text-gray-500 mb-2">Nummern entsprechen der Legende oben. 10 = höchste Priorität, 1 = niedrigste, leer/0 = kein Interesse.</p>
-                 <div class="flex justify-end mb-4">
-                  <button @click="savePriorities()" :disabled="isDeadlinePassed(event.deadlineTeilnehmer) || changedPriorities.size === 0" class="btn-save-all">
+                <div class="flex justify-end items-center gap-3 mb-4">
+                  <p v-if="event.maxPrioritaeten" class="text-xs font-bold"
+                     :class="assignedPrioritaetenCount > event.maxPrioritaeten ? 'text-red-600' : 'text-gray-500'">
+                    {{ assignedPrioritaetenCount }} / {{ event.maxPrioritaeten }} Prioritäten vergeben
+                  </p>
+                  <button @click="savePriorities()"
+                          :disabled="isDeadlinePassed(event.deadlineTeilnehmer) || changedPriorities.size === 0 || (event.maxPrioritaeten && assignedPrioritaetenCount > event.maxPrioritaeten)"
+                          class="btn-save-all">
                     <SaveAllIcon class="w-3.5 h-3.5"/>
                     Meine Prioritäten speichern
                   </button>
@@ -295,6 +301,10 @@ const prioritaetenChunks = computed(() => {
     chunks.push(nummeredVortraege.value.slice(i, i + PRIORITAETEN_SPALTEN_PRO_TABELLE));
   }
   return chunks;
+});
+
+const assignedPrioritaetenCount = computed(() => {
+  return Object.values(priorities.value).filter(p => p.prioWert > 0).length;
 });
 
 const pflichtSlotIds = computed(() => {
