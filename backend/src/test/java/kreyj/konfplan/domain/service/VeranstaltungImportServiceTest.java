@@ -159,6 +159,35 @@ class VeranstaltungImportServiceTest extends DatabaseCleaner {
     }
 
 
+    // Regression: macOS' "Ordner komprimieren" (Finder bzw. `ditto --sequesterRsrc`) legt neben
+    // dem eigentlichen Ordner einen __MACOSX-Metadatenordner an, sobald irgendeine Datei ein
+    // Extended Attribute hat (z.B. das Quarantaene-Flag heruntergeladener Dateien - in der Praxis
+    // sehr haeufig). Das entpackte Wurzelverzeichnis hat dann zwei Unterordner statt einem; ohne
+    // Sonderbehandlung wuerde determineEffectiveRoot() faelschlich nicht abzusteigen versuchen.
+    @Test
+    void importFromZip_unwrapsSingleTopLevelFolderIgnoringMacosMetadata(@TempDir Path tempDir) throws Exception {
+        Path zip = tempDir.resolve("mac-zipped-valid-event.zip");
+        try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zip));
+             var files = Files.list(validEventDir())) {
+            for (Path file : files.filter(Files::isRegularFile).toList()) {
+                String fileName = file.getFileName().toString();
+                zos.putNextEntry(new ZipEntry("valid-event/" + fileName));
+                Files.copy(file, zos);
+                zos.closeEntry();
+
+                zos.putNextEntry(new ZipEntry("__MACOSX/valid-event/._" + fileName));
+                zos.write(new byte[]{0}); // Inhalt irrelevant, nur die Existenz des Eintrags zaehlt
+                zos.closeEntry();
+            }
+        }
+
+        VeranstaltungDto result = veranstaltungImportService.importFromZip(zip);
+
+        assertThat(result).isNotNull();
+        assertThat(result.id).isNotNull();
+    }
+
+
     @Test
     void importFromZip_rejectsZipMissingMandatoryFiles(@TempDir Path tempDir) throws Exception {
         Path zip = tempDir.resolve("incomplete-event.zip");
