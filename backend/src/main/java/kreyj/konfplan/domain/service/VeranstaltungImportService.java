@@ -306,7 +306,9 @@ public class VeranstaltungImportService implements VeranstaltungImportServiceInt
     /**
      * Falls das entpackte Verzeichnis keine der bekannten CSV-Dateien direkt enthält, aber genau
      * ein Unterverzeichnis (typischer Fall: das ZIP wurde aus einem einzelnen Ordner erstellt),
-     * wird eine Ebene tiefer abgestiegen.
+     * wird eine Ebene tiefer abgestiegen. Von macOS beim "Ordner komprimieren" beigelegte
+     * Metadaten (__MACOSX-Ordner, .DS_Store) werden dabei ignoriert - sonst zaehlt das
+     * Wurzelverzeichnis faelschlich als "mehr als ein Unterordner" und die Erkennung schlaegt fehl.
      */
     private Path determineEffectiveRoot(Path extractedDir) throws IOException {
         boolean hasKnownFileDirectly = ALL_KNOWN_FILES.stream().anyMatch(f -> Files.exists(extractedDir.resolve(f)));
@@ -315,12 +317,18 @@ public class VeranstaltungImportService implements VeranstaltungImportServiceInt
         }
 
         try (Stream<Path> entries = Files.list(extractedDir)) {
-            List<Path> topLevel = entries.toList();
+            List<Path> topLevel = entries.filter(p -> !isIgnorableZipArtifact(p)).toList();
             if (topLevel.size() == 1 && Files.isDirectory(topLevel.getFirst())) {
                 return topLevel.getFirst();
             }
         }
         return extractedDir;
+    }
+
+
+    private boolean isIgnorableZipArtifact(Path p) {
+        String name = p.getFileName().toString();
+        return "__MACOSX".equals(name) || ".DS_Store".equals(name);
     }
 
 
