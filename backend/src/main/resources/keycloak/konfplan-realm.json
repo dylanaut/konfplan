@@ -7,6 +7,7 @@
   "internationalizationEnabled": true,
   "supportedLocales": ["de"],
   "defaultLocale": "de",
+  "actionTokenGeneratedByUserLifespan": 600,
   "roles": {
     "realm": [
       { "name": "ADMIN", "description": "Administrator/Organisator" },

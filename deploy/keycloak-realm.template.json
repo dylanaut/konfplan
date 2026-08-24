@@ -10,6 +10,7 @@
     "sslRequired": "external",
     "registrationAllowed": false,
     "resetPasswordAllowed": true,
+    "actionTokenGeneratedByUserLifespan": 600,
     "requiredActions": [
         {
             "alias": "UPDATE_PASSWORD",

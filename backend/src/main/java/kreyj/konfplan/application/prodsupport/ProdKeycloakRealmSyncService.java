@@ -32,6 +32,7 @@ public class ProdKeycloakRealmSyncService {
 
     private static final String UPDATE_PASSWORD_ALIAS = "UPDATE_PASSWORD";
     private static final String LOGIN_TEXTS_LOCALE = "de";
+    private static final int ACTION_TOKEN_LIFESPAN_SECONDS = 600;
 
     @Inject
     Keycloak keycloak;
@@ -78,6 +79,12 @@ public class ProdKeycloakRealmSyncService {
         } catch (Exception e) {
             Log.warn("Konnte die Keycloak-Login-Texte nicht synchronisieren.", e);
         }
+
+        try {
+            syncActionTokenLifespan(realmResource);
+        } catch (Exception e) {
+            Log.warn("Konnte die Gueltigkeitsdauer des Passwort-Reset-Links nicht synchronisieren.", e);
+        }
     }
 
 
@@ -89,6 +96,20 @@ public class ProdKeycloakRealmSyncService {
         realmResource.localization()
             .createOrUpdateRealmLocalizationTexts(LOGIN_TEXTS_LOCALE, Map.of("doForgotPassword", "Erstanmeldung / Passwort vergessen"));
         Log.info("Keycloak-Login-Text 'doForgotPassword' synchronisiert.");
+    }
+
+
+    /**
+     * Begrenzt die Gueltigkeitsdauer nutzer-initiierter Action-Tokens (u.a. der
+     * Passwort-Reset-Link) auf 10 Minuten statt Keycloaks Default von 5 Minuten. Keycloaks
+     * Standard-Mailtext rendert die tatsaechlich konfigurierte Lebensdauer automatisch mit ein,
+     * kein zusaetzlicher Theme-Eingriff noetig.
+     */
+    private void syncActionTokenLifespan(RealmResource realmResource) {
+        RealmRepresentation realmRepresentation = realmResource.toRepresentation();
+        realmRepresentation.setActionTokenGeneratedByUserLifespan(ACTION_TOKEN_LIFESPAN_SECONDS);
+        realmResource.update(realmRepresentation);
+        Log.infof("Gueltigkeitsdauer des Passwort-Reset-Links auf %d Sekunden synchronisiert.", ACTION_TOKEN_LIFESPAN_SECONDS);
     }
 
 
