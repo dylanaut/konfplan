@@ -10,7 +10,7 @@
         <div class="mt-2 flex items-center gap-3">
           <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Aktive Veranstaltung:</label>
           <select v-model="selectedVid" @change="handleVeranstaltungChange"
-                  class="input-field max-w-md border-indigo-200 focus:ring-indigo-500 py-1 text-xs pr-12">
+                  class="input-field max-w-md border-indigo-200 focus:ring-indigo-500 py-1 text-xs !pr-12">
             <option :value="null">-- Bitte wählen / Keine Auswahl --</option>
             <option v-for="v in veranstaltungen" :key="v.id" :value="v.id">
               {{ v.name }} ({{ formatDate(v.beginntAm) }})
