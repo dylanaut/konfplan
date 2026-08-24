@@ -107,6 +107,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
                 dto.beginntAm = e.getBeginntAm();
                 dto.endetAm = e.getEndetAm();
                 dto.deadlineTeilnehmer = e.getDeadlineTeilnehmer();
+                dto.maxPrioritaeten = e.getMaxPrioritaeten();
                 dto.planErstellt = Planungsergebnis.count("veranstaltung", e) > 0;
                 dto.logo = e.getLogo();
                 dto.logo_link = e.getLogo_link();

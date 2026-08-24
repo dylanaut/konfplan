@@ -141,4 +141,24 @@ class TeilnehmerVortraegeUndPrioritaetenTest extends DatabaseCleaner {
             .then().statusCode(200)
             .body("'" + wahlvortrag.getId() + "'", org.hamcrest.Matchers.equalTo(7));
     }
+
+
+    @Test
+    @TestSecurity(user = "alex.alfa", roles = "TEILNEHMER")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "alex.alfa")})
+    void speichernDerPrioritaeten_ueberschreitetKonfiguriertesMaximum_shouldFehlschlagen() {
+        QuarkusTransaction.requiringNew().run(() -> {
+            Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+            veranstaltung.setMaxPrioritaeten(1);
+        });
+
+        Vortrag wv1 = (Vortrag) Vortrag.find("titel", "Traumberuf Informatiker?").firstResult();
+        Vortrag wv2 = (Vortrag) Vortrag.find("titel", "Mechatroniker").firstResult();
+
+        given()
+            .contentType("application/json")
+            .body("[{\"vortragId\": " + wv1.getId() + ", \"prioWert\": 5}, {\"vortragId\": " + wv2.getId() + ", \"prioWert\": 3}]")
+            .when().post("/api/prios")
+            .then().statusCode(400);
+    }
 }

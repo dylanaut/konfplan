@@ -36,12 +36,13 @@ public class PrioritaetService implements PrioritaetServiceInterface {
             throw new WebApplicationException("Nutzer ist kein Teilnehmer", BAD_REQUEST.getStatusCode());
         }
 
-        // Deadline Check
+        // Deadline Check und Ermittlung der Veranstaltung (fuer die Maximal-Prioritaeten-Pruefung)
+        Veranstaltung veranstaltung = null;
         if (!requests.isEmpty()) {
             Wahlvortrag v1 = Wahlvortrag.findById(requests.getFirst().vortragId);
             if (v1 != null) {
-                Veranstaltung v = v1.getVeranstaltung();
-                if (v.getDeadlineTeilnehmer() != null && v.getDeadlineTeilnehmer().isBefore(LocalDateTime.now())) {
+                veranstaltung = v1.getVeranstaltung();
+                if (veranstaltung.getDeadlineTeilnehmer() != null && veranstaltung.getDeadlineTeilnehmer().isBefore(LocalDateTime.now())) {
                     throw new WebApplicationException("Die Deadline für Teilnehmer für diese Veranstaltung ist bereits abgelaufen.", FORBIDDEN.getStatusCode());
                 }
             }
@@ -64,10 +65,19 @@ public class PrioritaetService implements PrioritaetServiceInterface {
             throw new WebApplicationException("Jede Priorität darf nur einmal vergeben werden", BAD_REQUEST.getStatusCode());
         }
 
-        // 3. Bestehende Prioritäten des Users löschen (Einfacher Update-Weg)
+        // 3. Validierung: konfigurierte Obergrenze fuer die Anzahl vergebener Prioritaeten
+        if (veranstaltung != null && veranstaltung.getMaxPrioritaeten() != null) {
+            long anzahlVergeben = requests.stream().filter(r -> r.prioWert > PRIO_MIN).count();
+            if (anzahlVergeben > veranstaltung.getMaxPrioritaeten()) {
+                throw new WebApplicationException("Es dürfen höchstens " + veranstaltung.getMaxPrioritaeten()
+                    + " Prioritäten vergeben werden", BAD_REQUEST.getStatusCode());
+            }
+        }
+
+        // 4. Bestehende Prioritäten des Users löschen (Einfacher Update-Weg)
         Prioritaet.delete("teilnehmer", teilnehmer);
 
-        // 4. Neue Prioritäten speichern
+        // 5. Neue Prioritäten speichern
         for (VortragPrioDto req : requests) {
             Wahlvortrag vortrag = Wahlvortrag.findById(req.vortragId);
             if (vortrag != null && req.prioWert > PRIO_MIN) {

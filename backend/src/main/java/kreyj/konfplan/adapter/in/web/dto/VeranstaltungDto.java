@@ -27,6 +27,7 @@ public class VeranstaltungDto extends AbstractVersionedDto {
 
     private String logo;
     private String logo_link;
+    private Integer maxPrioritaeten;
     private List<Long> organisatorIds = new ArrayList<>();
     private List<String> organisatorNamen = new ArrayList<>();
     private List<OrganisatorDto> organisatoren = new ArrayList<>();
@@ -88,6 +89,7 @@ public class VeranstaltungDto extends AbstractVersionedDto {
         dto.setDeadlineTeilnehmer(v.getDeadlineTeilnehmer());
         dto.setLogo(v.getLogo());
         dto.setLogo_link(v.getLogo_link());
+        dto.setMaxPrioritaeten(v.getMaxPrioritaeten());
 
         // Organisatoren filtern und hinzufügen
         if (v.getNutzer() != null) {
