@@ -218,7 +218,7 @@
                                  v-model.number="getPriority(talk.id).prioWert"
                                  @input="markPrioChanged(talk.id)"
                                  :disabled="isDeadlinePassed(event.deadlineTeilnehmer) || talk.istPflicht"
-                                 class="w-10 text-center border rounded py-0.5 text-[10px] focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 disabled:bg-gray-200"/>
+                                 class="prio-input w-10 text-center border rounded py-0.5 text-[10px] focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 disabled:bg-gray-200"/>
                         </td>
                       </tr>
                     </tbody>
@@ -511,6 +511,16 @@ const formatTime = (d) => new Date(d).toLocaleTimeString('de-DE', { hour: '2-dig
 }
 .animate-fade-in {
   animation: fadeIn 0.3s ease-in-out;
+}
+/* Die schmale Prioritäts-Zelle hat keinen Platz für die nativen Spinner-Pfeile - ohne
+   dieses Ausblenden verdrängen sie die eingegebene Zahl vollständig aus der Zelle. */
+.prio-input::-webkit-outer-spin-button,
+.prio-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.prio-input[type=number] {
+  -moz-appearance: textfield;
 }
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
