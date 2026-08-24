@@ -133,6 +133,7 @@
                      @openInviteModal="openInviteModal"
                      @saveParticipantPriorities="saveParticipantPriorities"
                      @saveAllParticipantPriorities="saveAllParticipantPriorities"
+                     @openPasswordResetModal="openPasswordResetModal"
       />
 
       <ReferentenTab v-if="activeTab === 'referenten' && selectedVid"

@@ -31,6 +31,7 @@ import java.util.Map;
 public class ProdKeycloakRealmSyncService {
 
     private static final String UPDATE_PASSWORD_ALIAS = "UPDATE_PASSWORD";
+    private static final String LOGIN_TEXTS_LOCALE = "de";
 
     @Inject
     Keycloak keycloak;
@@ -71,6 +72,23 @@ public class ProdKeycloakRealmSyncService {
         } catch (Exception e) {
             Log.warn("Konnte die UPDATE_PASSWORD-RequiredAction nicht synchronisieren.", e);
         }
+
+        try {
+            syncLoginTexts(realmResource);
+        } catch (Exception e) {
+            Log.warn("Konnte die Keycloak-Login-Texte nicht synchronisieren.", e);
+        }
+    }
+
+
+    /**
+     * Ueberschreibt den Text des nativen "Passwort vergessen"-Links, damit er auch die
+     * allererste Anmeldung (kein Start-Passwort mehr, siehe #237) abdeckt.
+     */
+    private void syncLoginTexts(RealmResource realmResource) {
+        realmResource.localization()
+            .createOrUpdateRealmLocalizationTexts(LOGIN_TEXTS_LOCALE, Map.of("doForgotPassword", "Erstanmeldung / Passwort vergessen"));
+        Log.info("Keycloak-Login-Text 'doForgotPassword' synchronisiert.");
     }
 
 

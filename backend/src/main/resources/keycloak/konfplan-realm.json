@@ -4,6 +4,9 @@
   "sslRequired": "none",
   "registrationAllowed": false,
   "resetPasswordAllowed": true,
+  "internationalizationEnabled": true,
+  "supportedLocales": ["de"],
+  "defaultLocale": "de",
   "roles": {
     "realm": [
       { "name": "ADMIN", "description": "Administrator/Organisator" },

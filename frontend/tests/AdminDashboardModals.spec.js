@@ -488,6 +488,31 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
       expect(dialog.message()).toContain('Passwort erfolgreich zurückgesetzt');
       await dialog.accept();
     });
+
+    // Teilnehmer haben nicht zwangsläufig eine E-Mail-Adresse und kennen nur ihren LoginNamen -
+    // der Reset-Weg (kein Anmeldelink, kein E-Mail-Versand) muss daher auch im Teilnehmer-Tab
+    // verfügbar sein, nicht nur im Organisatoren-Tab.
+    test('ist auch im Teilnehmer-Tab verfügbar und setzt das Passwort ohne E-Mail-Versand zurück', async ({ page }) => {
+      await gotoTab(page, 'Teilnehmer');
+      await page.getByText('Verfügbarkeiten verwalten').click();
+      await page.locator('button[title="Passwort zurücksetzen"]').first().click();
+
+      await expect(page.getByText('Passwort zurücksetzen')).toBeVisible();
+      await expect(page.locator('span.font-bold', { hasText: 'Tom Teilnehmer' })).toBeVisible();
+
+      await page.locator('input[type="password"]').fill('einNeuesPasswort123');
+      const resetBtn = page.locator('button.btn-primary', { hasText: 'Zurücksetzen' });
+
+      const [request, dialog] = await Promise.all([
+        page.waitForRequest(req => /\/api\/admin\/nutzer\/\d+\/reset-password$/.test(req.url()) && req.method() === 'POST'),
+        page.waitForEvent('dialog'),
+        resetBtn.click()
+      ]);
+      expect(request.url()).toContain('/nutzer/300/reset-password');
+      expect(request.postDataJSON()).toEqual({ newPassword: 'einNeuesPasswort123' });
+      expect(dialog.message()).toContain('Passwort erfolgreich zurückgesetzt');
+      await dialog.accept();
+    });
   });
 
   test.describe('CSV-Import-Ergebnis-Modal', () => {
