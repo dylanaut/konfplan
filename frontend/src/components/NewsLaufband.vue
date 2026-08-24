@@ -46,7 +46,7 @@ onUnmounted(() => {
 .laufband {
   width: 100%;
   max-width: 28rem;
-  height: 2.25rem;
+  height: 2.75rem;
   margin: 0 auto;
   overflow: hidden;
   white-space: nowrap;
@@ -69,7 +69,7 @@ onUnmounted(() => {
   padding-right: 3rem;
   color: #4338ca;
   font-weight: 500;
-  font-size: 0.875rem;
+  font-size: 1.25rem;
 }
 
 @keyframes laufband-scroll {
