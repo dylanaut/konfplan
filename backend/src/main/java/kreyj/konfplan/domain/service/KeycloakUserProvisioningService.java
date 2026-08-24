@@ -131,15 +131,30 @@ public class KeycloakUserProvisioningService {
     }
 
 
+    /**
+     * Setzt das Passwort eines Nutzers durch einen Admin zurueck. Wie bei {@link #createUser}
+     * ist das neue Passwort in Prod nur temporaer gueltig - da der Admin es kennt, muss der
+     * Nutzer es beim naechsten Login zwingend selbst aendern (in Dev/Test bleibt es dauerhaft
+     * gueltig, Komfort fuer wiederholte Testlaeufe).
+     */
     public void resetPassword(Nutzer nutzer, String newPassword) {
         if (null == nutzer.getKeycloakId()) {
             throw new KeycloakProvisioningException("Nutzer '" + nutzer.getLoginName() + "' hat keinen Keycloak-Account.");
         }
+        boolean temporary = !launchMode.isDevOrTest();
         CredentialRepresentation cred = new CredentialRepresentation();
         cred.setType(CredentialRepresentation.PASSWORD);
         cred.setValue(newPassword);
-        cred.setTemporary(false);
-        keycloak.realm(realm).users().get(nutzer.getKeycloakId()).resetPassword(cred);
+        cred.setTemporary(temporary);
+
+        var userResource = keycloak.realm(realm).users().get(nutzer.getKeycloakId());
+        userResource.resetPassword(cred);
+
+        if (temporary) {
+            UserRepresentation kcUser = userResource.toRepresentation();
+            kcUser.setRequiredActions(List.of("UPDATE_PASSWORD"));
+            userResource.update(kcUser);
+        }
     }
 
 
