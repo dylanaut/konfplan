@@ -14,8 +14,10 @@ import org.keycloak.admin.client.resource.RoleScopeResource;
 import org.keycloak.admin.client.resource.RolesResource;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 
@@ -23,6 +25,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class KeycloakUserProvisioningServiceTest {
@@ -131,5 +135,47 @@ class KeycloakUserProvisioningServiceTest {
         service.createUser(admin, "irrelevant");
 
         assertThat(admin.getKeycloakId()).isEqualTo("new-id-789");
+    }
+
+
+    @Test
+    void resetPassword_ausserhalbVonDevTest_erzwingtPasswortAenderungBeimNaechstenLogin() {
+        service = new KeycloakUserProvisioningService(LaunchMode.NORMAL);
+        service.keycloak = mock(Keycloak.class);
+        when(service.keycloak.realm(REALM)).thenReturn(realmResource);
+        service.realm = REALM;
+
+        UserResource userResource = mock(UserResource.class);
+        when(usersResource.get("kc-id-1")).thenReturn(userResource);
+        UserRepresentation kcUser = new UserRepresentation();
+        when(userResource.toRepresentation()).thenReturn(kcUser);
+
+        Admin admin = admin();
+        admin.setKeycloakId("kc-id-1");
+        service.resetPassword(admin, "neuesPasswort123");
+
+        ArgumentCaptor<CredentialRepresentation> credCaptor = ArgumentCaptor.forClass(CredentialRepresentation.class);
+        verify(userResource).resetPassword(credCaptor.capture());
+        assertThat(credCaptor.getValue().isTemporary()).isTrue();
+
+        assertThat(kcUser.getRequiredActions()).containsExactly("UPDATE_PASSWORD");
+        verify(userResource).update(kcUser);
+    }
+
+
+    @Test
+    void resetPassword_inDevTest_bleibtPasswortDauerhaftGueltig() {
+        UserResource userResource = mock(UserResource.class);
+        when(usersResource.get("kc-id-1")).thenReturn(userResource);
+
+        Admin admin = admin();
+        admin.setKeycloakId("kc-id-1");
+        service.resetPassword(admin, "neuesPasswort123");
+
+        ArgumentCaptor<CredentialRepresentation> credCaptor = ArgumentCaptor.forClass(CredentialRepresentation.class);
+        verify(userResource).resetPassword(credCaptor.capture());
+        assertThat(credCaptor.getValue().isTemporary()).isFalse();
+
+        verify(userResource, never()).update(any(UserRepresentation.class));
     }
 }
