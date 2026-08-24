@@ -40,11 +40,13 @@ public class KeycloakUserProvisioningService {
 
     /**
      * Legt den Keycloak-User zu einem gerade lokal angelegten {@link Nutzer} an, weist ihm die
-     * zur Rolle passende Realm-Rolle zu und setzt {@code nutzer.keycloakId}. In Dev/Test bleibt
-     * das Passwort dauerhaft gueltig (Komfort fuer wiederholte Testlaeufe); in Prod ist es
-     * temporaer - Keycloak erzwingt beim ersten Login eine Aenderung.
+     * zur Rolle passende Realm-Rolle zu und setzt {@code nutzer.keycloakId}. In Prod wird bewusst
+     * KEIN Start-Passwort vergeben - es gibt niemanden, der es dem Nutzer mitteilen koennte. Der
+     * Nutzer setzt sein erstes Passwort stattdessen selbst ueber Keycloaks "Passwort vergessen"
+     * (Realm-Einstellung {@code resetPasswordAllowed}). In Dev/Test bleibt zur Bequemlichkeit fuer
+     * wiederholte Testlaeufe ein festes, dauerhaft gueltiges Passwort gesetzt.
      */
-    public void createUser(Nutzer nutzer, String password) {
+    public void createUser(Nutzer nutzer) {
         UserRepresentation kcUser = new UserRepresentation();
         kcUser.setUsername(nutzer.getLoginName());
         kcUser.setEmail(nutzer.getEmail());
@@ -53,14 +55,12 @@ public class KeycloakUserProvisioningService {
         kcUser.setLastName(nutzer.getLastName());
         kcUser.setEnabled(nutzer.isActive());
 
-        boolean temporary = !launchMode.isDevOrTest();
-        CredentialRepresentation cred = new CredentialRepresentation();
-        cred.setType(CredentialRepresentation.PASSWORD);
-        cred.setValue(password);
-        cred.setTemporary(temporary);
-        kcUser.setCredentials(List.of(cred));
-        if (temporary) {
-            kcUser.setRequiredActions(List.of("UPDATE_PASSWORD"));
+        if (launchMode.isDevOrTest()) {
+            CredentialRepresentation cred = new CredentialRepresentation();
+            cred.setType(CredentialRepresentation.PASSWORD);
+            cred.setValue("konfplan");
+            cred.setTemporary(false);
+            kcUser.setCredentials(List.of(cred));
         }
 
         try (Response response = keycloak.realm(realm).users().create(kcUser)) {

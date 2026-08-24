@@ -2,7 +2,6 @@ package kreyj.konfplan.domain.service;
 
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
-import io.quarkus.runtime.LaunchMode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
@@ -66,7 +65,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -89,15 +87,13 @@ public class AdminService implements AdminServiceInterface {
 
     private final MailService mailService;
     private final ProtokollService protokollService;
-    private final LaunchMode launchMode;
     private final KeycloakUserProvisioningService keycloakUserProvisioningService;
 
 
-    public AdminService(MailService mailService, ProtokollService protokollService, LaunchMode launchMode,
+    public AdminService(MailService mailService, ProtokollService protokollService,
                         KeycloakUserProvisioningService keycloakUserProvisioningService) {
         this.mailService = mailService;
         this.protokollService = protokollService;
-        this.launchMode = launchMode;
         this.keycloakUserProvisioningService = keycloakUserProvisioningService;
     }
 
@@ -175,8 +171,7 @@ public class AdminService implements AdminServiceInterface {
         nutzer.setLastName(dto.lastName);
         nutzer.setActive(dto.isActive);
 
-        String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
-        keycloakUserProvisioningService.createUser(nutzer, tempPassword);
+        keycloakUserProvisioningService.createUser(nutzer);
 
         if (nutzer instanceof Referent r) {
             r.setJobRole(dto.jobRole);
@@ -562,8 +557,7 @@ public class AdminService implements AdminServiceInterface {
                     a.setEmail(dto.email.trim().toLowerCase());
                     a.setFirstName(dto.vorname);
                     a.setLastName(dto.nachname);
-                    String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
-                    keycloakUserProvisioningService.createUser(a, tempPassword);
+                    keycloakUserProvisioningService.createUser(a);
                     a.persistAndFlush();
                     count++;
                     protokollService.log(ProtokollKategorie.NUTZER, "Organisator importiert", "Organisator '" + loginName + "' via CSV importiert.", a.getId());

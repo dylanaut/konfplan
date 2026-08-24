@@ -32,10 +32,10 @@ Mailto-Link an den Entwickler) und der **LOGOUT**-Button.
 
 [NOTE]
 ====
-Bei der allerersten Anmeldung eines neu angelegten Kontos (egal ob per CSV-Import, über den
-Dialog "+ Neu" oder per Einladung angelegt) legen Sie ein eigenes,
-neues Passwort fest, bevor die Anwendung nutzbar ist. Das beim Anlegen vergebene
-Start-/Einladungspasswort gilt also nur für diesen ersten Login.
+Für ein neu angelegtes Konto (egal ob per CSV-Import, über den Dialog "+ Neu" oder per Einladung
+angelegt) ist noch kein Passwort hinterlegt. Der Nutzer klickt auf der Anmeldeseite auf
+**"Passwort vergessen?"** und gibt seine E-Mail-Adresse ein - er erhält eine E-Mail mit einem
+Link, über den er einmalig sein eigenes Passwort festlegt.
 ====
 
 == Tab "Veranstaltungen"

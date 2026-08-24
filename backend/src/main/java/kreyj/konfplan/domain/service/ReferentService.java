@@ -1,7 +1,6 @@
 package kreyj.konfplan.domain.service;
 
 import com.opencsv.bean.CsvToBeanBuilder;
-import io.quarkus.runtime.LaunchMode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
@@ -39,7 +38,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 
 import static kreyj.konfplan.persistence.VortragVerfuegbarkeitId.vvIdL;
 
@@ -50,15 +48,13 @@ public class ReferentService implements ReferentServiceInterface {
     private final MailService mailService;
 
     private final ProtokollService protokollService;
-    private LaunchMode launchMode;
     private final KeycloakUserProvisioningService keycloakUserProvisioningService;
 
 
-    public ReferentService(MailService mailService, ProtokollService protokollService, LaunchMode launchMode,
+    public ReferentService(MailService mailService, ProtokollService protokollService,
                            KeycloakUserProvisioningService keycloakUserProvisioningService) {
         this.mailService = mailService;
         this.protokollService = protokollService;
-        this.launchMode = launchMode;
         this.keycloakUserProvisioningService = keycloakUserProvisioningService;
     }
 
@@ -457,8 +453,7 @@ public class ReferentService implements ReferentServiceInterface {
                 ref.setOrganisation(dto.organisation);
 
                 if (null == existingNutzer) {
-                    String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
-                    keycloakUserProvisioningService.createUser(ref, tempPassword);
+                    keycloakUserProvisioningService.createUser(ref);
                 }
                 ref.persistAndFlush();
                 ref.addVeranstaltung(veranstaltung);

@@ -90,7 +90,7 @@ class KeycloakUserProvisioningServiceTest {
         stubRoleAssignment("existing-id-123");
 
         Admin admin = admin();
-        service.createUser(admin, "irrelevant");
+        service.createUser(admin);
 
         assertThat(admin.getKeycloakId()).isEqualTo("existing-id-123");
     }
@@ -107,7 +107,7 @@ class KeycloakUserProvisioningServiceTest {
         stubRoleAssignment("existing-id-456");
 
         Admin admin = admin();
-        service.createUser(admin, "irrelevant");
+        service.createUser(admin);
 
         assertThat(admin.getKeycloakId()).isEqualTo("existing-id-456");
     }
@@ -119,7 +119,7 @@ class KeycloakUserProvisioningServiceTest {
         when(usersResource.searchByUsername("kathrin.jessen", true)).thenReturn(List.of());
         when(usersResource.searchByEmail("kathrin.jessen@rks-linz.de", true)).thenReturn(List.of());
 
-        assertThatThrownBy(() -> service.createUser(admin(), "irrelevant"))
+        assertThatThrownBy(() -> service.createUser(admin()))
             .isInstanceOf(KeycloakProvisioningException.class)
             .hasMessageContaining("409");
     }
@@ -132,9 +132,45 @@ class KeycloakUserProvisioningServiceTest {
         stubRoleAssignment("new-id-789");
 
         Admin admin = admin();
-        service.createUser(admin, "irrelevant");
+        service.createUser(admin);
 
         assertThat(admin.getKeycloakId()).isEqualTo("new-id-789");
+    }
+
+
+    @Test
+    void createUser_inDevTest_vergibtFestesPasswortZurTestbequemlichkeit() {
+        when(usersResource.create(any(UserRepresentation.class)))
+            .thenReturn(Response.created(java.net.URI.create("http://keycloak/admin/realms/konfplan/users/new-id-1")).build());
+        stubRoleAssignment("new-id-1");
+
+        service.createUser(admin());
+
+        ArgumentCaptor<UserRepresentation> userCaptor = ArgumentCaptor.forClass(UserRepresentation.class);
+        verify(usersResource).create(userCaptor.capture());
+        List<CredentialRepresentation> credentials = userCaptor.getValue().getCredentials();
+        assertThat(credentials).hasSize(1);
+        assertThat(credentials.getFirst().getValue()).isEqualTo("konfplan");
+        assertThat(credentials.getFirst().isTemporary()).isFalse();
+    }
+
+
+    @Test
+    void createUser_ausserhalbVonDevTest_vergibtKeinStartPasswort() {
+        service = new KeycloakUserProvisioningService(LaunchMode.NORMAL);
+        service.keycloak = mock(Keycloak.class);
+        when(service.keycloak.realm(REALM)).thenReturn(realmResource);
+        service.realm = REALM;
+
+        when(usersResource.create(any(UserRepresentation.class)))
+            .thenReturn(Response.created(java.net.URI.create("http://keycloak/admin/realms/konfplan/users/new-id-2")).build());
+        stubRoleAssignment("new-id-2");
+
+        service.createUser(admin());
+
+        ArgumentCaptor<UserRepresentation> userCaptor = ArgumentCaptor.forClass(UserRepresentation.class);
+        verify(usersResource).create(userCaptor.capture());
+        assertThat(userCaptor.getValue().getCredentials()).isNull();
     }
 
 
