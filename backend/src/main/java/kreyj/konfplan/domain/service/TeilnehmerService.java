@@ -2,7 +2,6 @@ package kreyj.konfplan.domain.service;
 
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
-import io.quarkus.runtime.LaunchMode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
@@ -42,7 +41,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
@@ -54,15 +52,13 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
 
     private final ProtokollService protokollService;
     private final MailService mailService;
-    private final LaunchMode launchMode;
     private final KeycloakUserProvisioningService keycloakUserProvisioningService;
 
 
-    public TeilnehmerService(ProtokollService protokollService, MailService mailService, LaunchMode launchMode,
+    public TeilnehmerService(ProtokollService protokollService, MailService mailService,
                              KeycloakUserProvisioningService keycloakUserProvisioningService) {
         this.protokollService = protokollService;
         this.mailService = mailService;
-        this.launchMode = launchMode;
         this.keycloakUserProvisioningService = keycloakUserProvisioningService;
     }
 
@@ -175,8 +171,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
 
         user.assignLoginName(loginName);
         user.addVeranstaltung(v);
-        String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
-        keycloakUserProvisioningService.createUser(user, tempPassword);
+        keycloakUserProvisioningService.createUser(user);
 
         user.persistAndFlush();
         protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer erstellt", "Teilnehmer " + user.getEmail() + " für Veranstaltung " + v.getName() + " erstellt.", user.getId(), veranstaltungId);
@@ -244,8 +239,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
                         }
                     }
 
-                    String tempPassword = (launchMode.isDevOrTest() ? "konfplan" : UUID.randomUUID().toString());
-                    keycloakUserProvisioningService.createUser(tn, tempPassword);
+                    keycloakUserProvisioningService.createUser(tn);
 
                     tn.persistAndFlush();
                     tn.addVeranstaltung(v);

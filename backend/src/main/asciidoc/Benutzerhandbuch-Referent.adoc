@@ -28,9 +28,9 @@ Version, Build-Datum, Git-Commit, Mailto-Link an den Entwickler) und der **LOGOU
 
 [NOTE]
 ====
-Bei der allerersten Anmeldung legen Sie ein eigenes, neues Passwort
-fest, bevor die Anwendung nutzbar ist. Das vom Organisator vergebene
-Start-/Einladungspasswort gilt also nur für diesen ersten Login.
+Für Ihr Konto ist noch kein Passwort hinterlegt. Klicken Sie auf der Anmeldeseite auf
+**"Passwort vergessen?"** und geben Sie Ihre E-Mail-Adresse ein - Sie erhalten eine E-Mail mit
+einem Link, über den Sie einmalig Ihr eigenes Passwort festlegen.
 ====
 
 == Persönliches Profil

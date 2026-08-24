@@ -283,7 +283,7 @@ public class AdminServiceTest {
 
         assertThat(anzahl).isEqualTo(0);
         assertThat(Nutzer.findByLoginName("kathrin.jessen")).isNull();
-        verify(keycloakUserProvisioningService, never()).createUser(any(), any());
+        verify(keycloakUserProvisioningService, never()).createUser(any());
 
         Files.deleteIfExists(csv);
     }
