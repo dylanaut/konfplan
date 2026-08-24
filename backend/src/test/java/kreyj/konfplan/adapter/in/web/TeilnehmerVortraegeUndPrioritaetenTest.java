@@ -122,4 +122,23 @@ class TeilnehmerVortraegeUndPrioritaetenTest extends DatabaseCleaner {
             .then().statusCode(200)
             .body("size()", org.hamcrest.Matchers.greaterThan(0));
     }
+
+
+    @Test
+    @TestSecurity(user = "alex.alfa", roles = "TEILNEHMER")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "alex.alfa")})
+    void speichernDerPrioritaeten_ueberDenVonDerUiVerwendetenPfad_shouldPersistieren() {
+        Vortrag wahlvortrag = (Vortrag) Vortrag.find("titel", "Traumberuf Informatiker?").firstResult();
+
+        given()
+            .contentType("application/json")
+            .body("[{\"vortragId\": " + wahlvortrag.getId() + ", \"prioWert\": 7}]")
+            .when().post("/api/prios")
+            .then().statusCode(200);
+
+        given()
+            .when().get("/api/prios/{vid}", vid)
+            .then().statusCode(200)
+            .body("'" + wahlvortrag.getId() + "'", org.hamcrest.Matchers.equalTo(7));
+    }
 }
