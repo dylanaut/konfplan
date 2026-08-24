@@ -514,7 +514,12 @@ Unabhängig vom Anbieter:
 . Client-ID + Client-Secret in Keycloak unter *Identity Providers → Add provider → [Anbieter]* eintragen
 . Der Login-Button erscheint automatisch auf der Keycloak-Login-Seite
 
-Keycloak bietet vorgefertigte Provider-Typen für: Google, Facebook, GitHub, GitLab, Bitbucket, Microsoft, LinkedIn, Instagram, Twitter/X, PayPal, Stack Overflow.
+Keycloak bietet vorgefertigte Provider-Typen für: Google, Facebook, GitHub, GitLab, Bitbucket, Microsoft, LinkedIn, Twitter/X, PayPal, Stack Overflow.
+
+[NOTE]
+====
+Korrektur (gegen das tatsächlich von KonfPlan genutzte Keycloak 26.7.0 verifiziert, siehe <<konfplan-social-login>>): *Instagram ist entgegen einer früheren Version dieser Doku KEIN eigener, vorgefertigter Provider-Typ.* Ein Aufruf von `GET /admin/realms/{realm}/identity-provider/providers/instagram` liefert `400 Bad Request`. Instagram-Login für Drittanbieter-Apps läuft ausschließlich über die Meta-Plattform - technisch anbietbar ist nur der Facebook-Provider.
+====
 
 ==== Unterschiede im Detail
 
@@ -528,7 +533,11 @@ Registrierung im *Azure Portal* unter "App registrations". Sinnvoll, falls die Z
 
 ===== Instagram
 
-Läuft technisch über die Meta-Plattform (gleiches Developer-Portal wie Facebook) – kein eigenständiger "Instagram Login" mehr getrennt von Facebook/Meta. In der Praxis wird meist nur der *Facebook-Provider* angeboten, da viele Instagram-Nutzer ohnehin ihr Meta-Konto nutzen.
+Läuft technisch über die Meta-Plattform (gleiches Developer-Portal wie Facebook) – kein eigenständiger "Instagram Login" mehr getrennt von Facebook/Meta, und (siehe Korrekturhinweis oben) auch kein eigener Keycloak-Provider-Typ. Anbietbar ist nur der *Facebook-Provider*, da Instagram-Nutzer ohnehin ihr Meta-Konto nutzen.
+
+===== YouTube
+
+Kein eigenständiger Login - ein YouTube-Konto *ist* ein Google-Konto. Ein YouTube-Nutzer meldet sich über den ganz normalen *Google*-Provider an, ein separater "YouTube"-Provider existiert nicht und wäre auch inhaltlich dasselbe Konto.
 
 ===== GitHub / GitLab
 
@@ -664,3 +673,86 @@ NOTE: Genauso unkompliziert wie GitHub, ebenfalls kein Review-Prozess.
 | Community-Extension nötig, kostenpflichtiges Developer-Konto, abweichender OIDC-Flow
 | jährliche Entwickler-Mitgliedschaft
 |===
+
+---
+
+[[konfplan-social-login]]
+== Frage 7: Konkrete Umsetzung für KonfPlan
+
+[quote]
+____
+für Teilnehmer/Referenten/Organisatoren sollen sich mit Google, Microsoft und Facebook anmelden können - wie geht das konkret in KonfPlan?
+____
+
+=== Antwort
+
+Die obigen Fragen 1-6 gehen von einer *eigenen* Nutzerverwaltung mit *eigener* Registrierung aus. KonfPlans tatsächliche Architektur ist einfacher, aber auch strenger:
+
+* Keycloak ist bereits der *alleinige* Identity Provider - die App spricht nie direkt mit Google/Facebook/Microsoft, sondern immer nur mit Keycloaks einem OIDC-Endpoint. Social Login lässt sich daher komplett in der *Keycloak-Admin-Konsole* konfigurieren, *ohne jede Code-Änderung* an KonfPlan.
+* Der Realm hat `registrationAllowed: false` - Nutzer entstehen ausschließlich durch einen Organisator (CSV-Import, Dialog "+ Neu", Einladung), nie durch Selbstregistrierung. Das muss bei der Social-Login-Konfiguration bewusst erhalten bleiben (siehe Warnhinweis unten).
+
+==== Welche Anbieter sind tatsächlich nutzbar?
+
+Gegen das von KonfPlan genutzte Keycloak 26.7.0 verifiziert (`GET /admin/realms/{realm}/identity-provider/providers/{id}`):
+
+[cols="1,3", options="header"]
+|===
+| Anbieter | Status
+
+| Google
+| ✅ eingebauter Provider-Typ `google`
+
+| Microsoft
+| ✅ eingebauter Provider-Typ `microsoft`
+
+| Facebook
+| ✅ eingebauter Provider-Typ `facebook`
+
+| YouTube
+| kein eigener Login nötig/möglich - ein YouTube-Konto ist ein Google-Konto, bereits durch "Google" abgedeckt
+
+| Instagram
+| ❌ kein eingebauter Provider-Typ (siehe Korrektur in Frage 5) - nur über den Facebook-Provider erreichbar
+|===
+
+==== Schritt 1: App bei jedem Anbieter registrieren
+
+Redirect-URI-Muster für KonfPlan (Keycloak läuft unter `KC_HTTP_RELATIVE_PATH=/auth`, siehe `deploy/docker-compose.yml`, daher *mit* `/auth`-Präfix, anders als die generischen Beispiele in Frage 3/6 oben):
+
+----
+https://<APP_HOSTNAME>/auth/realms/konfplan/broker/<alias>/endpoint
+----
+
+Für die Neuwied-Installation z.B.:
+
+----
+https://rks-konfplan.kreisschulen-neuwied.de/auth/realms/konfplan/broker/google/endpoint
+https://rks-konfplan.kreisschulen-neuwied.de/auth/realms/konfplan/broker/microsoft/endpoint
+https://rks-konfplan.kreisschulen-neuwied.de/auth/realms/konfplan/broker/facebook/endpoint
+----
+
+Registrierung sonst wie in Frage 6 beschrieben (Google Cloud Console / Microsoft Entra Admin Center / Meta for Developers) - liefert jeweils Client-ID + Client-Secret.
+
+==== Schritt 2: Identity Provider in Keycloak anlegen
+
+Admin-Konsole → Realm `konfplan` → *Identity Providers → Add provider → [Google/Microsoft/Facebook]* → Client-ID + Secret eintragen, Alias wie oben in der Redirect-URI verwendet (`google`/`microsoft`/`facebook`). Der Login-Button erscheint danach automatisch auf der (bereits lokalisierten) Keycloak-Login-Seite - keine weitere Aktion in KonfPlan selbst nötig.
+
+[WARNING]
+====
+*Kritischer Schritt, sonst wird `registrationAllowed: false` unterlaufen:* Keycloaks Standard-"First Broker Login"-Flow enthält den Schritt *"Create User If Unique"* (`idp-create-user-if-unique`, `ALTERNATIVE`-Anforderung neben "Handle Existing Account"). Ohne Anpassung würde sich *jeder* mit einem Google/Microsoft/Facebook-Konto, dessen E-Mail noch nicht in Keycloak existiert, automatisch einen *neuen* Keycloak-Account anlegen können - ohne Rolle, ohne Verknüpfung zu einem `Nutzer`/einer Veranstaltung in KonfPlan. Das umgeht die Organisator-Provisionierung komplett.
+====
+
+==== Schritt 3: First-Broker-Login-Flow einschränken (pro Provider)
+
+Ziel: Social Login funktioniert nur als *zusätzliche* Anmeldeoption für Personen, die der Organisator *bereits* angelegt hat (Verknüpfung über die E-Mail-Adresse) - nicht als Weg zur Selbstregistrierung.
+
+. *Authentication → Flows* → bestehenden Flow *"first broker login"* duplizieren (Kopieren-Icon), z.B. als `konfplan first broker login` benennen.
+. Im kopierten Flow den Schritt *"Create User If Unique"* auf *Disabled* setzen, sodass nur noch *"Handle Existing Account"* (→ "Confirm link existing account") übrig bleibt.
+. *Identity Providers → [Google/Microsoft/Facebook] → Advanced* → *First Login Flow* auf den neuen `konfplan first broker login`-Flow umstellen. Für jeden der drei Provider wiederholen.
+
+Ergebnis: Meldet sich jemand über Google/Microsoft/Facebook mit einer E-Mail an, die *keinem* bestehenden `Nutzer` entspricht, bricht der Login mit einer Fehlermeldung ab, statt einen verwaisten Account anzulegen. Meldet sich jemand mit einer E-Mail an, die einem bestehenden Organisator/Referenten/Teilnehmer entspricht, wird der Social-Account mit dem bestehenden Keycloak-Account verknüpft und die Person landet ganz normal (mit ihrer bestehenden Rolle) in der App.
+
+[TIP]
+====
+Test empfiehlt sich zunächst in einer lokalen Docker-Compose-Umgebung (`deploy/`) statt direkt in Prod, da Google/Microsoft/Facebook jeweils eine *öffentlich erreichbare* Redirect-URI mit gültigem Zertifikat verlangen - eine reine `localhost`-Testumgebung eignet sich dafür nicht ohne Weiteres (Tunneling-Tool wie `ngrok` o.ä. nötig, falls doch lokal getestet werden soll).
+====
