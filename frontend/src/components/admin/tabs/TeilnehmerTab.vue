@@ -236,6 +236,9 @@
                 <button @click="emit('openInviteModal', u)" class="text-indigo-600 ml-3" title="Einladen">
                   <MailIcon class="w-3.5 h-3.5 inline"/>
                 </button>
+                <button @click="emit('openPasswordResetModal', u)" class="text-indigo-600 ml-3" title="Passwort zurücksetzen">
+                  <KeyIcon class="w-3.5 h-3.5 inline"/>
+                </button>
                 <button @click="emit('openUserModal', u)" class="text-indigo-600 ml-3" title="Bearbeiten">
                   <PencilIcon class="w-3.5 h-3.5 inline"/>
                 </button>
@@ -269,6 +272,7 @@ import {
   ChevronUp as ChevronUpIcon,
   FileText as FileTextIcon,
   Info as InfoIcon,
+  KeyRound as KeyIcon,
   Mail as MailIcon,
   Pencil as PencilIcon,
   Save as SaveIcon,
@@ -298,7 +302,7 @@ const emit = defineEmits([
   'triggerUpload', 'openUserModal', 'deleteUser', 'toggleParticipantActive',
   'batchDeactivateParticipants', 'batchDeleteParticipants', 'batchEmailParticipants',
   'openInviteModal', 'saveParticipantPriorities',
-  'saveAllParticipantPriorities'
+  'saveAllParticipantPriorities', 'openPasswordResetModal'
 ]);
 
 const availabilityStore = useAvailabilityStore();
