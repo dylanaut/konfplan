@@ -116,6 +116,11 @@ services:
       QUARKUS_MAILER_HOST: ${MAILER_HOST:-mailpit}
       QUARKUS_MAILER_PORT: ${MAILER_PORT:-1025}
       QUARKUS_MAILER_START_TLS: ${MAILER_START_TLS:-DISABLED}
+      # App und Keycloak liegen hinter Caddy (einzige Domain, siehe Caddyfile). Ohne diese vier
+      # Einstellungen vertraut Quarkus den X-Forwarded-*-Headern nicht und erkennt Schema/Host/IP
+      # der ursprünglichen Anfrage nicht korrekt - das äußert sich nicht als offensichtlicher
+      # Fehler, sondern als schwer diagnostizierbarer Folgefehler (in der Praxis beobachtet: eine
+      # Keycloak-Required-Action wie "Update Password" griff beim Login nicht).
       QUARKUS_HTTP_PROXY_PROXY_ADDRESS_FORWARDING: "true"
       QUARKUS_HTTP_PROXY_ALLOW_X_FORWARDED: "true"
       QUARKUS_HTTP_PROXY_ALLOW_FORWARDED: "true"
