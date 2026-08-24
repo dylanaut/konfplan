@@ -126,6 +126,7 @@ Pro Datei/Ordner wird **genau eine** Veranstaltung erwartet.
 | `Organisatoren_Emails` | ja | Komma-getrennte Liste von E-Mails aus `organisatoren.csv`. Muss bereits als Admin existieren.
 | `Gruppen` | nein | Pipe-getrennte Liste, z.B. `8a\|8b\|9a`. Das sind die Klassen/Gruppen, denen später Teilnehmer und Pflichtvorträge zugeordnet werden.
 | `Gebaeude_Namen` | nein | Pipe-getrennte Liste von Namen aus `gebaeude.csv`.
+| `Max_Prioritaeten` | nein | Obergrenze für die Anzahl der von einem Teilnehmer insgesamt vergebbaren Prioritäten. Leer = unbeschränkt.
 | `Logo` | nein | Bild-URL fürs Dashboard.
 | `Logo_link` | nein | Ziel-URL, wenn auf das Logo geklickt wird.
 |===

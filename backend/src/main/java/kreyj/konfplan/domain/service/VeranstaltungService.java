@@ -204,6 +204,8 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
                 veranstaltung.setDeadlineTeilnehmer(smartDeadLine(
                     parseCsvDate(csvDto.deadlineTeilnehmer, csvDto.name, "Deadline_Teilnehmer"), veranstaltung.getBeginntAm(), 3));
 
+                veranstaltung.setMaxPrioritaeten(csvDto.maxPrioritaeten);
+
                 veranstaltung.setLogo(csvDto.logo);
                 veranstaltung.setLogo_link(csvDto.logo_link);
 

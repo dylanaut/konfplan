@@ -18,6 +18,9 @@ public class VeranstaltungCsvDto {
     @CsvBindByName(column = "Deadline_Teilnehmer") // Format: yyyy-MM-dd HH:mm; falls leer: Beginn - 3 Tage
     public String deadlineTeilnehmer;
 
+    @CsvBindByName(column = "Max_Prioritaeten") // Obergrenze fuer die Anzahl vergebbarer Prioritaeten; leer = unbeschraenkt
+    public Integer maxPrioritaeten;
+
     @CsvBindByName(column = "Logo")
     public String logo;
 
