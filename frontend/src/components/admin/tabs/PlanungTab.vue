@@ -48,18 +48,7 @@
             Planerstellung
             <HelpTooltip label="Planerstellung" text="Startet die automatische Zuteilung von Teilnehmern zu Wahlvorträgen per MiniZinc-Solver. Prüfe vorher in der Übersicht oben, ob alle Voraussetzungen (Prioritäten, Räume, Zeit-Slots) erfüllt sind."/>
           </h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 bg-white/10 p-3 rounded-xl border border-white/10">
-            <div>
-              <label class="flex items-center gap-1 text-[9px] uppercase font-bold text-indigo-300 mb-0.5">
-                MiniZinc Solver
-                <HelpTooltip label="MiniZinc Solver" text="Welche Solver-Engine die Berechnung durchführt. Google OR-Tools (cp-sat) ist die empfohlene Standardeinstellung."/>
-              </label>
-              <select v-model="solverConfig.solver" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1">
-                <option value="cp-sat">Google OR-Tools</option>
-                <option value="Gecode">Gecode</option>
-                <option value="coinbc">COIN-BC</option>
-              </select>
-            </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 bg-white/10 p-3 rounded-xl border border-white/10">
             <div>
               <label class="flex items-center gap-1 text-[9px] uppercase font-bold text-indigo-300 mb-0.5">
                 Timeout (Sek.)
@@ -168,7 +157,6 @@ const onErgebnisFileSelected = (event) => {
 };
 
 const solverConfig = reactive({
-  solver: 'cp-sat',
   timeout: 120,
   maxInstanzen: 2,
   numThreads: 4,
