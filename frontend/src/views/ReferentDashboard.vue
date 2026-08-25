@@ -172,9 +172,9 @@
           <div class="flex justify-between items-start mb-4">
              <div class="flex items-center gap-3">
                <a v-if="event.logo && event.logo_link" :href="event.logo_link" target="_blank" rel="noopener noreferrer">
-                 <EventLogo :src="event.logo" :alt="event.name" img-class="h-10 w-auto object-contain" />
+                 <EventLogo :src="event.logo" :alt="event.name" img-class="h-16 w-auto object-contain" />
                </a>
-               <EventLogo v-else-if="event.logo" :src="event.logo" :alt="event.name" img-class="h-10 w-auto object-contain" />
+               <EventLogo v-else-if="event.logo" :src="event.logo" :alt="event.name" img-class="h-16 w-auto object-contain" />
                <div>
                  <h3 class="font-bold text-lg text-gray-800">{{ event.name }}</h3>
                  <p class="text-sm text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
