@@ -68,6 +68,7 @@ public class PlanErstellungService {
     public static final String LINE_SEP = System.lineSeparator();
     private static final Logger LOG = Logger.getLogger(PlanErstellungService.class);
     private static final String MZN_MODEL_FILE = "konfplan.mzn";
+    private static final String MZN_SOLVER = "cp-sat";
     private static final DateTimeFormatter WEEKDAY_TIME_FORMAT = DateTimeFormatter.ofPattern("EE,HH:mm");
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -609,7 +610,7 @@ public class PlanErstellungService {
 
     private @NonNull ProcessBuilder getProcessBuilder(Path modelPath, Path dznPath, SolverConfig solverConfig) {
         List<String> command = new ArrayList<>(Arrays.asList(
-            miniZincPath, "--solver", solverConfig.getSolver(),
+            miniZincPath, "--solver", MZN_SOLVER,
             "--solver-time-limit", String.valueOf(solverConfig.getTimeout() * 1000),
             "--parallel", String.valueOf(solverConfig.getNumThreads())
         ));

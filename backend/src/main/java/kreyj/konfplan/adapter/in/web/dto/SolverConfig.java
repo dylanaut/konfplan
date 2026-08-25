@@ -14,7 +14,6 @@ import lombok.Setter;
 @Setter
 @Embeddable
 public class SolverConfig {
-    private String solver;
     private int timeout = 120; // in Sekunden
     private int numThreads = 4; // Anzahl paralleler Threads
     private int maxInstanzen = 2; // Maximale Anzahl der Instanzen pro Wahlvortrag
@@ -24,9 +23,9 @@ public class SolverConfig {
 
 
     public SolverConfig(int timeout, int numThreads, int maxInstanzen) {
-        this("cp-sat", timeout, numThreads, maxInstanzen, true, 0, 0);
+        this(timeout, numThreads, maxInstanzen, true, 0, 0);
     }
     public SolverConfig(int timeout, int numThreads, int maxInstanzen, boolean auffuellen) {
-        this("cp-sat", timeout, numThreads, maxInstanzen, auffuellen, 0, 0);
+        this(timeout, numThreads, maxInstanzen, auffuellen, 0, 0);
     }
 }
