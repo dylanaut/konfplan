@@ -9,7 +9,7 @@
           <!-- EVENT CONTEXT UI -->
           <div v-if="eventContext.selectedEvent" class="flex items-center gap-3 border-l border-indigo-500 pl-4 animate-fade-in overflow-hidden">
             <a v-if="eventContext.selectedEvent.logo_link" :href="eventContext.selectedEvent.logo_link" target="_blank" rel="noopener noreferrer" class="shrink-0 hover:opacity-80 transition-opacity">
-              <img v-if="eventContext.selectedEvent.logo" :src="eventContext.selectedEvent.logo" class="h-8 w-auto object-contain bg-white/10 rounded p-1" :alt="eventContext.selectedEvent.name" />
+              <EventLogo :src="eventContext.selectedEvent.logo" :alt="eventContext.selectedEvent.name" img-class="h-8 w-auto object-contain bg-white/10 rounded p-1" />
             </a>
             <div class="flex flex-col min-w-0">
               <span class="font-black text-xs uppercase tracking-tighter truncate">{{ eventContext.selectedEvent.name }}</span>
@@ -57,6 +57,7 @@ import { useInactivityLogout } from './composables/useInactivityLogout';
 import { Menu as MenuIcon } from '@lucide/vue';
 import { formatZeitraum } from './utils/veranstaltungFormat';
 import InfoPanel from './components/InfoPanel.vue';
+import EventLogo from './components/EventLogo.vue';
 
 const auth = useAuthStore();
 const eventContext = useEventContextStore();

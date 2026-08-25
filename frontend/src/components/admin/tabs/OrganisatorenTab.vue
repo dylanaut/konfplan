@@ -26,13 +26,13 @@
             <span class="block font-normal text-gray-400">{{ a.loginName }}</span>
           </td>
           <td class="px-4 py-2 text-right space-x-3">
-            <button @click="emit('openUserModal', a)" class="text-indigo-600" title="Bearbeiten">
+            <button @click="emit('openUserModal', a)" class="text-indigo-600" title="Bearbeiten" aria-label="Bearbeiten">
               <PencilIcon class="w-3.5 h-3.5 inline"/>
             </button>
-            <button @click="emit('openPasswordResetModal', a)" class="text-indigo-600" title="Passwort zurücksetzen">
+            <button @click="emit('openPasswordResetModal', a)" class="text-indigo-600" title="Passwort zurücksetzen" aria-label="Passwort zurücksetzen">
               <KeyIcon class="w-3.5 h-3.5 inline"/>
             </button>
-            <button @click="emit('deleteUser', a.id)" class="text-red-600">
+            <button @click="emit('deleteUser', a.id)" class="text-red-600" title="Löschen" aria-label="Löschen">
               <Trash2Icon class="w-3.5 h-3.5 inline"/>
             </button>
           </td>

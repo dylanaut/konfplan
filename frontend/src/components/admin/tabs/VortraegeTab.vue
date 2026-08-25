@@ -34,10 +34,10 @@
             <span v-else class="text-[10px] text-gray-400">Nein</span>
           </td>
           <td class="px-4 py-2 text-right">
-            <button @click="emit('openVortragEditor', v)" class="text-indigo-600" title="Bearbeiten">
+            <button @click="emit('openVortragEditor', v)" class="text-indigo-600" title="Bearbeiten" aria-label="Bearbeiten">
               <PencilIcon class="w-3.5 h-3.5 inline"/>
             </button>
-            <button @click="emit('deleteVortrag', v.id)" class="text-red-600 ml-3">
+            <button @click="emit('deleteVortrag', v.id)" class="text-red-600 ml-3" title="Löschen" aria-label="Löschen">
               <Trash2Icon class="w-3.5 h-3.5 inline"/>
             </button>
           </td>
