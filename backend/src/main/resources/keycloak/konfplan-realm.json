@@ -8,6 +8,9 @@
   "supportedLocales": ["de"],
   "defaultLocale": "de",
   "actionTokenGeneratedByUserLifespan": 600,
+  "eventsEnabled": true,
+  "enabledEventTypes": ["LOGIN_ERROR"],
+  "eventsExpiration": 2592000,
   "roles": {
     "realm": [
       { "name": "ADMIN", "description": "Administrator/Organisator" },
@@ -63,7 +66,7 @@
       "enabled": true,
       "serviceAccountClientId": "konfplan-admin-cli",
       "clientRoles": {
-        "realm-management": ["manage-users", "view-users", "view-realm", "manage-realm"]
+        "realm-management": ["manage-users", "view-users", "view-realm", "manage-realm", "view-events"]
       }
     }
   ]

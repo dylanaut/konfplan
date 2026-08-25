@@ -11,6 +11,9 @@
     "registrationAllowed": false,
     "resetPasswordAllowed": true,
     "actionTokenGeneratedByUserLifespan": 600,
+    "eventsEnabled": true,
+    "enabledEventTypes": ["LOGIN_ERROR"],
+    "eventsExpiration": 2592000,
     "requiredActions": [
         {
             "alias": "UPDATE_PASSWORD",
@@ -97,7 +100,8 @@
                     "manage-users",
                     "view-users",
                     "view-realm",
-                    "manage-realm"
+                    "manage-realm",
+                    "view-events"
                 ]
             }
         }

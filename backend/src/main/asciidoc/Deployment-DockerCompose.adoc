@@ -259,6 +259,15 @@ Klassischer `pg_dump`/Volume-Snapshot reicht für einen Kleinbetrieb.
 exportiert den aktuellen (durch Admin-UI-Änderungen ggf. abweichenden) Realm-Zustand - nützlich vor größeren Änderungen, ersetzt aber kein DB-Backup.
 * **Secrets**: `deploy/secrets/` ist der einzige Ort, an dem die Passwörter existieren - bei einem Server-Wechsel/Wiederherstellung müssen sie mitgesichert werden (z.B. verschlüsselt, getrennt von einem reinen DB-Backup).
 
+== Monitoring / Metriken
+
+KonfPlan exponiert Prometheus-Metriken (Ressourcenverbrauch, Online-Nutzer, Verweilzeit, fehlgeschlagene Logins nach Rolle) unter `/q/metrics` auf einem eigenen **Management-Port (9001)**, getrennt vom öffentlichen App-Port (9000) - siehe `Monitoring-Grafana.adoc` für die vollständige Metrik-Referenz und Beispiel-Queries.
+
+[WARNING]
+====
+Port 9001 darf **nicht** über Caddy/eine Cloud-Firewall öffentlich geroutet werden - er liefert unauthentifiziert JVM-interne Details sowie Nutzungszahlen. Prometheus muss ihn intern erreichen (z.B. im selben Docker-Netzwerk, per SSH-Tunnel, oder über ein separates internes Netzwerk-Interface) statt über die öffentliche Domain.
+====
+
 == Troubleshooting
 
 * **Keycloak startet, aber `/realms/konfplan/...` liefert 404**: Realm-Import schlägt bei bereits existierendem Realm mit gleichem Namen aber abweichendem Inhalt NICHT automatisch neu an - `--import-realm` überspringt existierende Realms.

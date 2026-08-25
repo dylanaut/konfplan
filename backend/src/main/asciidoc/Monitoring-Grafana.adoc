@@ -1,0 +1,85 @@
+= KonfPlan: Monitoring mit Prometheus/Grafana
+:toc:
+
+== Überblick
+
+KonfPlan exponiert Metriken im Prometheus-Textformat unter `/q/metrics` - auf einem eigenen
+**Management-Port (9001)**, getrennt vom öffentlichen App-Port (9000). Prometheus/Grafana selbst
+sind nicht Teil des `deploy/`-Stacks - Betrieb und Netzwerkanbindung liegen beim Nutzer.
+
+[WARNING]
+====
+Port 9001 nicht öffentlich routen (siehe `Deployment-DockerCompose.adoc` -> "Monitoring /
+Metriken"). Der Endpunkt ist unauthentifiziert und liefert sowohl JVM-interne Details als auch
+Nutzungszahlen.
+====
+
+Kommt automatisch mit `quarkus-micrometer-registry-prometheus` (keine eigene Instrumentierung
+nötig):
+
+* JVM-Speicher (`jvm_memory_used_bytes`, `jvm_memory_max_bytes` je Heap-/Non-Heap-Bereich), GC-Pausen (`jvm_gc_pause_seconds`), Thread-Anzahl (`jvm_threads_live_threads`)
+* HTTP-Request-Metriken (`http_server_requests_seconds_count`/`_sum`, nach Pfad/Methode/Status)
+* DB-Connection-Pool (Agroal, `agroal_active_count`, `agroal_available_count`)
+
+== Custom-Metriken (KonfPlan-spezifisch)
+
+[cols="2,1,3", options="header"]
+|===
+| Metrik | Typ | Bedeutung
+
+| `konfplan_users_online{role}`
+| Gauge
+| Anzahl Nutzer mit Backend-Aktivität innerhalb der letzten 5 Minuten, gruppiert nach `role` (`ADMIN`/`REFERENT`/`TEILNEHMER`). Aktualisiert bei jedem authentifizierten Request (`UserActivityTrackingFilter`), rein In-Memory - kein DB-Zugriff im Hot-Path.
+
+| `konfplan_session_duration_seconds{role}`
+| Timer (`_count`, `_sum`, `_max`)
+| Verweilzeit eines Nutzers im System: Zeit zwischen erster und letzter Aktivität eines zusammenhängenden Besuchs (Besuch gilt nach 5 Minuten Inaktivität als abgeschlossen). Durchschnitt = `_sum / _count`.
+
+| `konfplan_login_failures_total{role}`
+| Counter
+| Fehlgeschlagene Anmeldeversuche, gruppiert nach Rolle. Rolle `UNKNOWN`, wenn der eingegebene Benutzername keinem existierenden `Nutzer` entspricht. Gespeist aus Keycloaks Realm-Events (`LOGIN_ERROR`), gepollt einmal pro Minute - siehe <<datenquelle>>.
+|===
+
+[[datenquelle]]
+== Woher die Daten kommen
+
+* **Online-Nutzer/Verweilzeit**: rein im KonfPlan-Backend selbst gemessen (`UserActivityTracker`), bewusst NICHT anhand der Keycloak-Session-Laufzeit (die bleibt auch bei Inaktivität "eingeloggt" und würde die Verweilzeit verfälschen).
+* **Fehlgeschlagene Logins**: passieren bei Keycloak, nie im Backend selbst - Keycloak lehnt falsche Zugangsdaten ab, bevor die App ein Token sieht. `FailedLoginMetricsPoller` fragt daher periodisch Keycloaks Realm-Events ab (`GET /admin/realms/{realm}/events?type=LOGIN_ERROR`), löst den Benutzernamen zur KonfPlan-Rolle auf und zählt es als Metrik. Dafür müssen Realm-Events aktiviert sein (`eventsEnabled`, `enabledEventTypes: ["LOGIN_ERROR"]`, `eventsExpiration` für automatisches Aufräumen) und der Admin-CLI-Service-Account braucht die Client-Rolle `view-events` auf `realm-management` - beides wird sowohl für Neuanlagen (Realm-JSON) als auch für bestehende Deployments (`ProdKeycloakRealmSyncService`, idempotent bei jedem Start) sichergestellt.
+
+== Beispiel-PromQL-Queries für Grafana
+
+Online-Nutzer aktuell, nach Rolle:
+[source]
+----
+konfplan_users_online
+----
+
+Peak an Online-Nutzern der letzten 24 Stunden (Peaks werden bewusst nicht serverseitig berechnet - Grafana kann das aus der Zeitreihe ableiten):
+[source]
+----
+max_over_time(konfplan_users_online[24h])
+----
+
+Durchschnittliche Verweilzeit (Minuten) über das letzte Stunden, nach Rolle:
+[source]
+----
+rate(konfplan_session_duration_seconds_sum[1h]) / rate(konfplan_session_duration_seconds_count[1h]) / 60
+----
+
+Fehlgeschlagene Logins pro Stunde, nach Rolle:
+[source]
+----
+increase(konfplan_login_failures_total[1h])
+----
+
+Belegung des DB-Connection-Pools:
+[source]
+----
+agroal_active_count / (agroal_active_count + agroal_available_count)
+----
+
+== Bekannte Stolperfallen (per Live-Test gegen Keycloak 26.7.0 verifiziert)
+
+* Keycloaks `GET /admin/realms/{realm}/events`-Endpunkt akzeptiert für den `direction`-Parameter nur klein geschriebene Werte (`asc`/`desc`) - `ASC`/`DESC` liefert `400 Bad Request`, obwohl der Java-Admin-Client dafür einen ungeprüften `String`-Parameter anbietet.
+* `dateFrom`/`dateTo` können sowohl als Datum (`yyyy-MM-dd`) als auch als Unix-Zeitstempel in Millisekunden übergeben werden - beide Formate werden akzeptiert.
+* Ohne die Client-Rolle `view-events` (siehe oben) liefert derselbe Endpunkt `403 Forbidden`, nicht `401` - leicht mit einem generellen Auth-Problem zu verwechseln.
