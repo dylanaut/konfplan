@@ -268,6 +268,30 @@ KonfPlan exponiert Prometheus-Metriken (Ressourcenverbrauch, Online-Nutzer, Verw
 Port 9001 darf **nicht** über Caddy/eine Cloud-Firewall öffentlich geroutet werden - er liefert unauthentifiziert JVM-interne Details sowie Nutzungszahlen. Prometheus muss ihn intern erreichen (z.B. im selben Docker-Netzwerk, per SSH-Tunnel, oder über ein separates internes Netzwerk-Interface) statt über die öffentliche Domain.
 ====
 
+== Ausgehende Server-IP überwachen (Brevo-Allowlist)
+
+Cloud-Server ohne feste IP-Adresse können ihre ausgehende IP ändern (z.B. nach einem Server-Wechsel oder -Neuaufbau). Brevo blockt den SMTP-Zugang dann mit `525 5.7.1 Unauthorized IP address` in den `keycloak`-Logs, bis die neue IP manuell unter *SMTP & API → Authorized IPs* auf https://app.brevo.com nachgetragen wird - **kein KonfPlan-/Code-Problem**, rein eine Brevo-Kontoeinstellung. Brevo bietet dafür keine API zur automatischen Pflege der Liste, nur die Web-Oberfläche.
+
+`deploy/check-outbound-ip.sh` erkennt eine solche Änderung frühzeitig und schickt eine Push-Benachrichtigung über https://ntfy.sh[ntfy.sh] - bewusst unabhängig von Brevo/SMTP, damit die Meldung auch ankommt, wenn genau die IP-Änderung gerade den Mailversand blockiert.
+
+Einrichtung:
+
+. Einen zufälligen, nicht erratbaren Topic-Namen wählen (ntfy.sh-Themen sind ohne Zusatzauthentifizierung öffentlich lesbar für jeden, der den Namen kennt) und in der ntfy-App/-Website abonnieren.
+. In `deploy/.env` eintragen: `NTFY_TOPIC=<dein-topic-name>`
+. Cron-Eintrag auf dem Server (alle 30 Minuten reicht):
++
+[source,bash]
+----
+*/30 * * * * /pfad/zu/deploy/check-outbound-ip.sh >> /var/log/konfplan-ip-check.log 2>&1
+----
+
+Bei einer Meldung: die im Push-Text genannte neue IP in Brevo nachtragen - danach funktioniert der Mailversand wieder ohne Neustart von irgendetwas.
+
+[NOTE]
+====
+Die dauerhafte Lösung ist eine feste IP-Adresse für den Server (bei Hetzner Cloud z.B. eine https://docs.hetzner.com/cloud/floating-ips/overview/[Floating IP]) - dann entfällt das Problem komplett. Das erfordert ggf. zusätzliche Routing-Konfiguration, damit ausgehender Traffic tatsächlich über die Floating IP läuft, und ist nicht Teil dieses Skripts.
+====
+
 == Troubleshooting
 
 * **Keycloak startet, aber `/realms/konfplan/...` liefert 404**: Realm-Import schlägt bei bereits existierendem Realm mit gleichem Namen aber abweichendem Inhalt NICHT automatisch neu an - `--import-realm` überspringt existierende Realms.
