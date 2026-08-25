@@ -1,0 +1,13 @@
+# Laedt Dashboard-JSON-Dateien aus ./grafana/dashboards automatisch beim Start.
+
+apiVersion: 1
+
+providers:
+  - name: konfplan
+    orgId: 1
+    folder: ""
+    type: file
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/dashboards

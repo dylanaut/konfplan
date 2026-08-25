@@ -4,8 +4,7 @@
 == Überblick
 
 KonfPlan exponiert Metriken im Prometheus-Textformat unter `/q/metrics` - auf einem eigenen
-**Management-Port (9001)**, getrennt vom öffentlichen App-Port (9000). Prometheus/Grafana selbst
-sind nicht Teil des `deploy/`-Stacks - Betrieb und Netzwerkanbindung liegen beim Nutzer.
+**Management-Port (9001)**, getrennt vom öffentlichen App-Port (9000).
 
 [WARNING]
 ====
@@ -13,6 +12,40 @@ Port 9001 nicht öffentlich routen (siehe `Deployment-DockerCompose.adoc` -> "Mo
 Metriken"). Der Endpunkt ist unauthentifiziert und liefert sowohl JVM-interne Details als auch
 Nutzungszahlen.
 ====
+
+== Grafisch darstellen bei reinem SSH-Zugriff (Profil "monitoring")
+
+Für einen Cloud-Server, der nur per SSH erreichbar ist, laufen Prometheus + Grafana als
+zusätzliche Services im selben `docker-compose.yml`-Stack (`deploy/prometheus.yml`,
+`deploy/grafana/`):
+
+* Prometheus erreicht `app:9001` über das interne Docker-Netzwerk - Port 9001 wird dafür
+  **nicht** auf den Host oder das Internet gemappt.
+* Grafana ist wie `app`/`mailpit` nur an `127.0.0.1` gebunden (Variable `GRAFANA_PORT_BINDING`
+  in `.env`, Standard `127.0.0.1:3000:3000`) - Zugriff ausschließlich per SSH-Tunnel, nie
+  öffentlich über Caddy geroutet.
+* Die Prometheus-Datenquelle und ein vorkonfiguriertes Dashboard ("KonfPlan Übersicht", alle
+  Metriken aus diesem Dokument) werden beim Start automatisch provisioniert - kein manuelles
+  Einrichten in der Grafana-UI nötig.
+
+[source,bash]
+----
+# Auf dem Server (zusätzlich zu den ohnehin laufenden Profilen, z.B. "public"):
+docker compose --profile public --profile monitoring up -d
+
+# Lokal: Tunnel zu Grafana aufbauen, dann im eigenen Browser öffnen
+ssh -L 3000:127.0.0.1:3000 user@server
+# -> http://localhost:3000 im lokalen Browser
+----
+
+Erster Login: `admin` / `admin` - Grafana erzwingt beim ersten Login eine Passwortänderung.
+
+Für einen schnellen Check ohne Grafana reicht auch ein direkter Blick auf die Rohdaten:
+[source,bash]
+----
+ssh user@server
+cd /pfad/zu/deploy && docker compose exec app curl -s http://localhost:9001/q/metrics | grep konfplan_
+----
 
 Kommt automatisch mit `quarkus-micrometer-registry-prometheus` (keine eigene Instrumentierung
 nötig):
@@ -83,3 +116,4 @@ agroal_active_count / (agroal_active_count + agroal_available_count)
 * Keycloaks `GET /admin/realms/{realm}/events`-Endpunkt akzeptiert für den `direction`-Parameter nur klein geschriebene Werte (`asc`/`desc`) - `ASC`/`DESC` liefert `400 Bad Request`, obwohl der Java-Admin-Client dafür einen ungeprüften `String`-Parameter anbietet.
 * `dateFrom`/`dateTo` können sowohl als Datum (`yyyy-MM-dd`) als auch als Unix-Zeitstempel in Millisekunden übergeben werden - beide Formate werden akzeptiert.
 * Ohne die Client-Rolle `view-events` (siehe oben) liefert derselbe Endpunkt `403 Forbidden`, nicht `401` - leicht mit einem generellen Auth-Problem zu verwechseln.
+* In `quarkus:dev` liefert `/q/metrics` `400 Bad Request`, wenn der `Host`-Header nicht auf `localhost`/`127.0.0.1` lautet (z.B. beim Testen mit einem eigenen Prometheus-Container gegen `host.docker.internal:9001`) - Ursache ist Quarkus' `LocalHostOnlyFilter` (Paket `quarkus-vertx-http-dev`), eine reine Dev-Mode-Schutzmaßnahme gegen DNS-Rebinding. Im gepackten/Prod-Image (kein `-dev`-Artefakt auf dem Klassenpfad) tritt das nicht auf - für lokale Tests gegen `quarkus:dev` daher `localhost`/`127.0.0.1` als Scrape-Ziel verwenden, nicht `host.docker.internal`.

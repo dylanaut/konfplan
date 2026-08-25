@@ -14,6 +14,10 @@
 #                    Let's Encrypt, Ports 80/443 öffentlich gebunden).
 #   mailpit        - zusätzlich Mailpit statt echtem SMTP (z.B. Brevo) - für Staging/Tests ohne
 #                    echten Mailversand.
+#   monitoring     - zusätzlich Prometheus+Grafana zur Visualisierung der App-Metriken
+#                    (siehe Monitoring-Grafana.adoc). Beide nur an 127.0.0.1 gebunden - Zugriff
+#                    bei einem reinen SSH-verwalteten Server per Tunnel (siehe Doku), nie
+#                    öffentlich über Caddy geroutet.
 #
 # Passwörter kommen NIE aus dieser Datei oder aus .env, sondern aus Docker-Compose-File-Secrets
 # (secrets/*.txt, von bootstrap.sh serverseitig generiert, siehe Deployment.adoc).
@@ -32,6 +36,8 @@ volumes:
   postgres-data:
   caddy-data:
   caddy-config:
+  prometheus-data:
+  grafana-data:
 
 services:
 
@@ -151,6 +157,34 @@ services:
     ports:
       - "127.0.0.1:8025:8025"
     profiles: ["mailpit"]
+
+  prometheus:
+    image: prom/prometheus:v3.9.1
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT_BINDING:-127.0.0.1:9090:9090}"
+    profiles: ["monitoring"]
+
+  grafana:
+    image: grafana/grafana-oss:13.0.2
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      # Erster Login: admin / admin - Grafana selbst erzwingt eine Passwortaenderung beim ersten
+      # Login. Kein eigenes Docker-Secret, da Grafana ausschliesslich per 127.0.0.1-Bindung +
+      # SSH-Tunnel erreichbar ist (siehe Monitoring-Grafana.adoc), nie oeffentlich exponiert.
+      GF_SERVER_ROOT_URL: http://localhost:3000
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT_BINDING:-127.0.0.1:3000:3000}"
+    profiles: ["monitoring"]
 
   caddy:
     image: caddy:2

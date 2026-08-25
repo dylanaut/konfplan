@@ -1,0 +1,12 @@
+# Scrape-Konfiguration fuer Prometheus (Profil "monitoring", siehe docker-compose.yml).
+# Erreicht den "app"-Service ueber das interne Docker-Netzwerk auf dem Management-Port (9001) -
+# der wird dafuer nicht auf den Host oder das Internet gemappt (siehe Monitoring-Grafana.adoc).
+
+global:
+  scrape_interval: 30s
+
+scrape_configs:
+  - job_name: konfplan
+    metrics_path: /q/metrics
+    static_configs:
+      - targets: ["app:9001"]
