@@ -20,6 +20,11 @@
             <MailIcon class="w-3.5 h-3.5"/>
             E-Mail
           </button>
+          <button @click="emit('batchGeneratePasswordsPdf', selectedParticipantIds)"
+                  class="text-xs text-emerald-600 hover:underline font-bold flex items-center gap-1">
+            <FileLockIcon class="w-3.5 h-3.5"/>
+            Passwörter (PDF)
+          </button>
           <button @click="selectAllFilteredParticipants"
                   v-if="selectedParticipantIds.length < filteredParticipants.length"
                   class="text-[9px] bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded hover:bg-indigo-300 ml-2 font-black">
@@ -270,6 +275,7 @@ import {
   CheckSquare as CheckSquareIcon,
   ChevronDown as ChevronDownIcon,
   ChevronUp as ChevronUpIcon,
+  FileLock as FileLockIcon,
   FileText as FileTextIcon,
   Info as InfoIcon,
   KeyRound as KeyIcon,
@@ -301,6 +307,7 @@ const props = defineProps({
 const emit = defineEmits([
   'triggerUpload', 'openUserModal', 'deleteUser', 'toggleParticipantActive',
   'batchDeactivateParticipants', 'batchDeleteParticipants', 'batchEmailParticipants',
+  'batchGeneratePasswordsPdf',
   'openInviteModal', 'saveParticipantPriorities',
   'saveAllParticipantPriorities', 'openPasswordResetModal'
 ]);
