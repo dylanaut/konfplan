@@ -45,18 +45,18 @@
             <input type="checkbox" :checked="availabilityStore.isUserAvailable(u.id, slot.id)" @change="availabilityStore.toggleUserAvailability(u.id, slot.id)" :disabled="isEventFinished" class="rounded text-indigo-600 focus:ring-indigo-500 h-3 w-3" />
           </td>
           <td v-if="planErstellt" class="px-4 py-2 text-center">
-            <button @click="openReferentPlan(u)" class="text-indigo-600 hover:text-indigo-800" title="Belegungsplan anzeigen">
+            <button @click="openReferentPlan(u)" class="text-indigo-600 hover:text-indigo-800" title="Belegungsplan anzeigen" aria-label="Belegungsplan anzeigen">
               <FileTextIcon class="w-4 h-4 inline"/>
             </button>
           </td>
           <td class="px-4 py-2 text-right">
-            <button @click="emit('openUserModal', u)" class="text-indigo-600 ml-3" title="Bearbeiten">
+            <button @click="emit('openUserModal', u)" class="text-indigo-600 ml-3" title="Bearbeiten" aria-label="Bearbeiten">
               <PencilIcon class="w-3.5 h-3.5 inline"/>
             </button>
-            <button @click="emit('openInviteModal', u)" class="text-indigo-600 ml-3" title="Einladen">
+            <button @click="emit('openInviteModal', u)" class="text-indigo-600 ml-3" title="Einladen" aria-label="Einladen">
               <MailIcon class="w-3.5 h-3.5 inline"/>
             </button>
-            <button @click="emit('deleteUser', u.id)" class="text-red-600 ml-3">
+            <button @click="emit('deleteUser', u.id)" class="text-red-600 ml-3" title="Löschen" aria-label="Löschen">
               <Trash2Icon class="w-3.5 h-3.5 inline"/>
             </button>
           </td>

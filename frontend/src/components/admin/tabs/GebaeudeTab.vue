@@ -31,10 +31,10 @@
             <td class="px-4 py-2">{{ g.ort }}</td>
             <td class="px-4 py-2">{{ g.typ }}</td>
             <td class="px-4 py-2 text-right">
-              <button @click="emit('openGebaeudeEditor', g)" class="text-indigo-600" title="Gebäude bearbeiten">
+              <button @click="emit('openGebaeudeEditor', g)" class="text-indigo-600" title="Gebäude bearbeiten" aria-label="Gebäude bearbeiten">
                 <PencilIcon class="w-3.5 h-3.5 inline"/>
               </button>
-              <button @click="emit('deleteGebaeude', g)" class="text-red-600 ml-3" title="Gebäude löschen">
+              <button @click="emit('deleteGebaeude', g)" class="text-red-600 ml-3" title="Gebäude löschen" aria-label="Gebäude löschen">
                 <Trash2Icon class="w-3.5 h-3.5 inline"/>
               </button>
               <button @click="emit('openRaumEditor', null, g.id)" class="btn-primary text-xs py-1 px-3 ml-3" title="Raum hinzufügen">+ Raum</button>
@@ -59,10 +59,10 @@
                     <td class="px-4 py-2 text-center">{{ r.kapazitaet }}</td>
                     <td class="px-4 py-2">{{ r.etage || '-' }}</td>
                     <td class="px-4 py-2 text-right">
-                      <button @click="emit('openRaumEditor', r, g.id)" class="text-indigo-600" title="Raum bearbeiten">
+                      <button @click="emit('openRaumEditor', r, g.id)" class="text-indigo-600" title="Raum bearbeiten" aria-label="Raum bearbeiten">
                         <PencilIcon class="w-3.5 h-3.5 inline"/>
                       </button>
-                      <button @click="emit('deleteRaum', r, g.id)" class="text-red-600 ml-3" title="Raum löschen">
+                      <button @click="emit('deleteRaum', r, g.id)" class="text-red-600 ml-3" title="Raum löschen" aria-label="Raum löschen">
                         <Trash2Icon class="w-3.5 h-3.5 inline"/>
                       </button>
                     </td>

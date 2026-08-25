@@ -172,9 +172,9 @@
           <div class="flex justify-between items-start mb-4">
              <div class="flex items-center gap-3">
                <a v-if="event.logo && event.logo_link" :href="event.logo_link" target="_blank" rel="noopener noreferrer">
-                 <img :src="event.logo" :alt="event.name" class="h-10 w-auto object-contain" />
+                 <EventLogo :src="event.logo" :alt="event.name" img-class="h-10 w-auto object-contain" />
                </a>
-               <img v-else-if="event.logo" :src="event.logo" :alt="event.name" class="h-10 w-auto object-contain" />
+               <EventLogo v-else-if="event.logo" :src="event.logo" :alt="event.name" img-class="h-10 w-auto object-contain" />
                <div>
                  <h3 class="font-bold text-lg text-gray-800">{{ event.name }}</h3>
                  <p class="text-sm text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
@@ -234,6 +234,7 @@ import api from '../api/axios';
 import { useAuthStore } from '../stores/auth';
 import { useNeigungStore } from '../stores/neigung';
 import ReferentVortragEditorModal from '../components/ReferentVortragEditorModal.vue';
+import EventLogo from '../components/EventLogo.vue';
 import { User as UserIcon, FileText as FileTextIcon, Calendar as CalendarIcon, Save as SaveIcon, Plus as PlusIcon, Edit as EditIcon, Trash2 as Trash2Icon, ListChecks as ListChecksIcon, Check as CheckIcon, X as XIcon, CalendarCheck as CalendarCheckIcon, Printer as PrinterIcon, Download as DownloadIcon, CalendarPlus, Mail as MailIcon } from '@lucide/vue';
 
 const router = useRouter();

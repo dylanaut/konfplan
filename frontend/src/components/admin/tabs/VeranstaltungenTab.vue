@@ -30,10 +30,10 @@
             <td class="px-4 py-2">{{ formatDate(v.beginntAm) }}</td>
             <td class="px-4 py-2 text-right space-x-2">
               <button @click="emit('selectVeranstaltung', v.id)" class="text-indigo-600 font-bold hover:underline">Wählen</button>
-              <button @click="emit('openVeranstaltungEditor', v)" class="text-gray-600" title="Bearbeiten">
+              <button @click="emit('openVeranstaltungEditor', v)" class="text-gray-600" title="Bearbeiten" aria-label="Bearbeiten">
                 <PencilIcon class="w-3.5 h-3.5 inline"/>
               </button>
-              <button @click="emit('deleteVeranstaltung', v.id)" class="text-red-600">
+              <button @click="emit('deleteVeranstaltung', v.id)" class="text-red-600" title="Löschen" aria-label="Löschen">
                 <Trash2Icon class="w-3.5 h-3.5 inline"/>
               </button>
             </td>
@@ -131,7 +131,7 @@
                           <td class="px-3 py-1.5 font-semibold text-gray-800" :title="part.loginName">{{ part.firstName }} {{ part.lastName }}</td>
                           <td class="px-3 py-1.5 text-gray-600">{{ part.gruppen.join(', ') }}</td>
                           <td class="px-3 py-1.5 text-right">
-                            <button @click="emit('openUserModal', part)" class="text-indigo-600" title="Bearbeiten">
+                            <button @click="emit('openUserModal', part)" class="text-indigo-600" title="Bearbeiten" aria-label="Bearbeiten">
                               <PencilIcon class="w-3.5 h-3.5 inline"/>
                             </button>
                           </td>

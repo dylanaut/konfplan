@@ -22,10 +22,10 @@
           <td class="px-4 py-2 font-bold">{{ formatDateTime(s.startTime) }} - {{ formatTime(s.endTime) }}</td>
           <td class="px-4 py-2">{{ s.description }}</td>
           <td class="px-4 py-2 text-right space-x-3">
-            <button @click="emit('openSlotEditor', s)" class="text-indigo-600" title="Bearbeiten">
+            <button @click="emit('openSlotEditor', s)" class="text-indigo-600" title="Bearbeiten" aria-label="Bearbeiten">
               <PencilIcon class="w-3.5 h-3.5 inline"/>
             </button>
-            <button @click="emit('deleteSlot', s.id)" class="text-red-600">
+            <button @click="emit('deleteSlot', s.id)" class="text-red-600" title="Löschen" aria-label="Löschen">
               <Trash2Icon class="w-3.5 h-3.5 inline"/>
             </button>
           </td>

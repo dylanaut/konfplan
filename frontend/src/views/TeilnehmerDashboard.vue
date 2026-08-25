@@ -73,9 +73,9 @@
           <div class="p-4 flex justify-between items-center bg-gray-50">
             <div class="flex items-center gap-3">
               <a v-if="event.logo && event.logo_link" :href="event.logo_link" target="_blank" rel="noopener noreferrer">
-                <img :src="event.logo" :alt="event.name" class="h-10 w-auto object-contain" />
+                <EventLogo :src="event.logo" :alt="event.name" img-class="h-10 w-auto object-contain" />
               </a>
-              <img v-else-if="event.logo" :src="event.logo" :alt="event.name" class="h-10 w-auto object-contain" />
+              <EventLogo v-else-if="event.logo" :src="event.logo" :alt="event.name" img-class="h-10 w-auto object-contain" />
               <div>
                 <h3 class="font-bold text-lg text-gray-800">{{ event.name }}</h3>
                 <p class="text-xs text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
@@ -241,6 +241,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api/axios';
 import { useNeigungStore } from '../stores/neigung';
+import EventLogo from '../components/EventLogo.vue';
 import {
   User as UserIcon,
   CalendarCheck as CalendarCheckIcon,
