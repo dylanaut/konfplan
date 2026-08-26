@@ -290,7 +290,10 @@ public class AdminService implements AdminServiceInterface {
             r.setOrganisation(dto.organisation);
         } else if (nutzer instanceof Teilnehmer t) {
             if (null != dto.gruppen) {
-                dto.gruppen.forEach(t::addGruppe);
+                // Voller Ersatz statt nur Hinzufuegen - sonst bleiben im Modal abgewaehlte
+                // Gruppen unveraendert bestehen (siehe Bugreport: Gruppenzugehoerigkeit liess
+                // sich ueber den Bearbeiten-Dialog nicht mehr entfernen).
+                t.setGruppen(dto.gruppen);
             }
             if (null != dto.neigungen) {
                 t.setNeigungen(dto.neigungen);

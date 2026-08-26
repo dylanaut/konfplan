@@ -254,13 +254,38 @@ public class AdminServiceTest {
         assertThat(updated.getNeigungen()).containsExactlyInAnyOrder(Neigung.KREATIV, Neigung.MEDIZINISCH);
 
         // Ein zweites Update mit anderer Auswahl muss die vorherige Auswahl vollstaendig ersetzen
-        // (Checkbox-UI: ein Entfernen einzelner Werte muss moeglich sein, anders als bei gruppen).
+        // (Checkbox-UI: ein Entfernen einzelner Werte muss moeglich sein).
         NutzerDto dto2 = NutzerDto.from(Teilnehmer.findById(tnId));
         dto2.neigungen = Set.of(Neigung.TECHNISCH);
         adminService.updateUser(tnId, dto2, null);
 
         Teilnehmer updated2 = Teilnehmer.findById(tnId);
         assertThat(updated2.getNeigungen()).containsExactly(Neigung.TECHNISCH);
+    }
+
+
+    @Test
+    @Transactional
+    public void testUpdateUser_TeilnehmerGruppen_ReplacesExistingSet() {
+        Teilnehmer tn = Teilnehmer.findById(tnId);
+        tn.addGruppe("Gruppe A");
+        tn.addGruppe("Gruppe B");
+
+        // Bearbeiten-Dialog: "Gruppe B" wird abgewaehlt, "Gruppe C" wird neu angehakt.
+        NutzerDto dto = NutzerDto.from(tn);
+        dto.gruppen = List.of("Gruppe A", "Gruppe C");
+        adminService.updateUser(tnId, dto, null);
+
+        Teilnehmer updated = Teilnehmer.findById(tnId);
+        assertThat(updated.getGruppen()).containsExactlyInAnyOrder("Gruppe A", "Gruppe C");
+
+        // Alle Haken entfernen muss ebenfalls moeglich sein, nicht nur Hinzufuegen.
+        NutzerDto dto2 = NutzerDto.from(Teilnehmer.findById(tnId));
+        dto2.gruppen = List.of();
+        adminService.updateUser(tnId, dto2, null);
+
+        Teilnehmer updated2 = Teilnehmer.findById(tnId);
+        assertThat(updated2.getGruppen()).isEmpty();
     }
 
 
