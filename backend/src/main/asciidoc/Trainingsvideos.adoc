@@ -1,4 +1,4 @@
-= KonfPlan: Trainingsvideoa
+= KonfPlan: Trainingsvideos
 :konfplan-version: (Version wird beim Build gesetzt)
 :toc: left
 :toc-title: Inhalt
