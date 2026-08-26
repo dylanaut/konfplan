@@ -132,29 +132,27 @@ public class KeycloakUserProvisioningService {
 
 
     /**
-     * Setzt das Passwort eines Nutzers durch einen Admin zurueck. Wie bei {@link #createUser}
-     * ist das neue Passwort in Prod nur temporaer gueltig - da der Admin es kennt, muss der
-     * Nutzer es beim naechsten Login zwingend selbst aendern (in Dev/Test bleibt es dauerhaft
-     * gueltig, Komfort fuer wiederholte Testlaeufe).
+     * Setzt das Passwort eines Nutzers durch einen Admin zurueck. Das neue Passwort ist immer nur
+     * temporaer gueltig - da der Admin es kennt (Einzel-Reset oder Bulk-ZIP-Report), muss der
+     * Nutzer es beim naechsten Login zwingend selbst aendern. Anders als bei {@link #createUser}
+     * gibt es hier bewusst KEINEN Dev/Test-Sonderfall: der erzwungene Passwortwechsel ist der
+     * eigentliche Zweck dieser Aktion und soll auch lokal testbar sein.
      */
     public void resetPassword(Nutzer nutzer, String newPassword) {
         if (null == nutzer.getKeycloakId()) {
             throw new KeycloakProvisioningException("Nutzer '" + nutzer.getLoginName() + "' hat keinen Keycloak-Account.");
         }
-        boolean temporary = !launchMode.isDevOrTest();
         CredentialRepresentation cred = new CredentialRepresentation();
         cred.setType(CredentialRepresentation.PASSWORD);
         cred.setValue(newPassword);
-        cred.setTemporary(temporary);
+        cred.setTemporary(true);
 
         var userResource = keycloak.realm(realm).users().get(nutzer.getKeycloakId());
         userResource.resetPassword(cred);
 
-        if (temporary) {
-            UserRepresentation kcUser = userResource.toRepresentation();
-            kcUser.setRequiredActions(List.of("UPDATE_PASSWORD"));
-            userResource.update(kcUser);
-        }
+        UserRepresentation kcUser = userResource.toRepresentation();
+        kcUser.setRequiredActions(List.of("UPDATE_PASSWORD"));
+        userResource.update(kcUser);
     }
 
 

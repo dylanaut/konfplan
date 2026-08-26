@@ -25,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -175,12 +174,10 @@ class KeycloakUserProvisioningServiceTest {
 
 
     @Test
-    void resetPassword_ausserhalbVonDevTest_erzwingtPasswortAenderungBeimNaechstenLogin() {
-        service = new KeycloakUserProvisioningService(LaunchMode.NORMAL);
-        service.keycloak = mock(Keycloak.class);
-        when(service.keycloak.realm(REALM)).thenReturn(realmResource);
-        service.realm = REALM;
-
+    void resetPassword_erzwingtPasswortAenderungBeimNaechstenLogin() {
+        // Kein Dev/Test-Sonderfall mehr: der erzwungene Passwortwechsel ist der eigentliche Zweck
+        // eines Admin-Resets und muss deshalb auch in Dev/Test greifen (service aus @BeforeEach
+        // laeuft bewusst mit LaunchMode.TEST).
         UserResource userResource = mock(UserResource.class);
         when(usersResource.get("kc-id-1")).thenReturn(userResource);
         UserRepresentation kcUser = new UserRepresentation();
@@ -196,22 +193,5 @@ class KeycloakUserProvisioningServiceTest {
 
         assertThat(kcUser.getRequiredActions()).containsExactly("UPDATE_PASSWORD");
         verify(userResource).update(kcUser);
-    }
-
-
-    @Test
-    void resetPassword_inDevTest_bleibtPasswortDauerhaftGueltig() {
-        UserResource userResource = mock(UserResource.class);
-        when(usersResource.get("kc-id-1")).thenReturn(userResource);
-
-        Admin admin = admin();
-        admin.setKeycloakId("kc-id-1");
-        service.resetPassword(admin, "neuesPasswort123");
-
-        ArgumentCaptor<CredentialRepresentation> credCaptor = ArgumentCaptor.forClass(CredentialRepresentation.class);
-        verify(userResource).resetPassword(credCaptor.capture());
-        assertThat(credCaptor.getValue().isTemporary()).isFalse();
-
-        verify(userResource, never()).update(any(UserRepresentation.class));
     }
 }
