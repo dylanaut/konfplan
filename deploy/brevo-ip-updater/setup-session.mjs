@@ -4,6 +4,10 @@
 // Brevo dieses "Geraet" (= diese gespeicherte Sitzung) als vertrauenswuerdig, weitere Logins
 // ueber update-ip.mjs brauchen den Code nicht mehr.
 //
+// Voraussetzung (einmalig): node_modules in diesen Ordner installieren - das Playwright-Image
+// bringt nur den Browser mit, nicht das npm-Paket selbst:
+//   docker run --rm -v "$(pwd):/work" -w /work mcr.microsoft.com/playwright:v1.62.1-noble npm install
+//
 // Aufruf (einmalig, manuell, NICHT per Cron):
 //   docker run --rm -it -v "$(pwd):/work" -w /work \
 //     -e BREVO_LOGIN_EMAIL=... -e BREVO_LOGIN_PASSWORD=... \

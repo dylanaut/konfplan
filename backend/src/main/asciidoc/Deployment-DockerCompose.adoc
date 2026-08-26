@@ -305,11 +305,17 @@ Einrichtung:
 
 . In `deploy/.env`: `BREVO_LOGIN_EMAIL=<login>`
 . Passwort ablegen: `echo '<passwort>' > deploy/secrets/brevo_login_password.txt && chmod 644 deploy/secrets/brevo_login_password.txt`
-. Einmaliges, interaktives Setup (Docker, da Playwright einen eigenen Chromium mitbringt):
+. Einmalig `node_modules` in den gemounteten Ordner installieren (das Playwright-Docker-Image bringt nur den Browser mit, nicht das npm-Paket selbst - der Ordner ist auf den Host gemountet, daher bleibt das dauerhaft erhalten):
 +
 [source,bash]
 ----
 cd deploy/brevo-ip-updater
+docker run --rm -v "$(pwd):/work" -w /work mcr.microsoft.com/playwright:v1.62.1-noble npm install
+----
+. Einmaliges, interaktives Setup:
++
+[source,bash]
+----
 docker run --rm -it -v "$(pwd):/work" -w /work \
   -e BREVO_LOGIN_EMAIL=<login> -e BREVO_LOGIN_PASSWORD=<passwort> \
   mcr.microsoft.com/playwright:v1.62.1-noble node setup-session.mjs
