@@ -21,12 +21,12 @@ import kreyj.konfplan.adapter.in.web.dto.ImportResultDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
-import kreyj.konfplan.adapter.in.web.dto.TeilnehmerPasswortPdfRequestDto;
+import kreyj.konfplan.adapter.in.web.dto.TeilnehmerPasswortZipRequestDto;
 import kreyj.konfplan.application.port.in.AdminServiceInterface;
 import kreyj.konfplan.domain.service.MailService;
 import kreyj.konfplan.domain.service.PrioritaetService;
-import kreyj.konfplan.domain.service.TeilnehmerPasswortPdfResult;
-import kreyj.konfplan.domain.service.TeilnehmerPasswortPdfService;
+import kreyj.konfplan.domain.service.TeilnehmerPasswortZipResult;
+import kreyj.konfplan.domain.service.TeilnehmerPasswortZipService;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
@@ -57,15 +57,15 @@ public class AdminResource {
 
     private final MailService mailService;
 
-    private final TeilnehmerPasswortPdfService teilnehmerPasswortPdfService;
+    private final TeilnehmerPasswortZipService teilnehmerPasswortZipService;
 
 
     public AdminResource(AdminServiceInterface adminService, PrioritaetService prioritaetService, MailService mailService,
-                          TeilnehmerPasswortPdfService teilnehmerPasswortPdfService) {
+                          TeilnehmerPasswortZipService teilnehmerPasswortZipService) {
         this.adminService = adminService;
         this.prioritaetService = prioritaetService;
         this.mailService = mailService;
-        this.teilnehmerPasswortPdfService = teilnehmerPasswortPdfService;
+        this.teilnehmerPasswortZipService = teilnehmerPasswortZipService;
     }
 
 
@@ -144,18 +144,19 @@ public class AdminResource {
 
 
     @POST
-    @Path("/veranstaltungen/{vid}/teilnehmer/passwoerter/pdf")
-    @Produces({MediaType.APPLICATION_JSON, "application/pdf"})
+    @Path("/veranstaltungen/{vid}/teilnehmer/passwoerter/zip")
+    @Produces({MediaType.APPLICATION_JSON, "application/zip"})
     @Operation(summary = "Temporäre Passwörter für Teilnehmer erzeugen",
         description = "Setzt für die ausgewählten Teilnehmer ein neues temporäres Passwort in Keycloak "
-            + "und erzeugt ein passwortverschlüsseltes PDF mit Login-Namen und Passwörtern.")
-    public Response generateTeilnehmerPasswortPdf(@PathParam("vid") Long vid,
-                                                    @RequestBody(description = "Ausgewählte Teilnehmer-IDs und das PDF-Öffnungspasswort")
-                                                    TeilnehmerPasswortPdfRequestDto dto) {
-        TeilnehmerPasswortPdfResult result = teilnehmerPasswortPdfService.resetPasswordsAndGeneratePdf(vid, dto.nutzerIds, dto.pdfPassword);
-        Response.ResponseBuilder builder = Response.ok(result.pdf())
-            .type("application/pdf")
-            .header("Content-Disposition", "attachment; filename=\"teilnehmer_passwoerter_" + vid + ".pdf\"");
+            + "und erzeugt eine passwortverschlüsselte ZIP-Datei mit einer CSV-Tabelle der Login-Namen, "
+            + "Passwörter und Gruppen.")
+    public Response generateTeilnehmerPasswortZip(@PathParam("vid") Long vid,
+                                                    @RequestBody(description = "Ausgewählte Teilnehmer-IDs und das ZIP-Öffnungspasswort")
+                                                    TeilnehmerPasswortZipRequestDto dto) {
+        TeilnehmerPasswortZipResult result = teilnehmerPasswortZipService.resetPasswordsAndGenerateZip(vid, dto.nutzerIds, dto.zipPassword);
+        Response.ResponseBuilder builder = Response.ok(result.zip())
+            .type("application/zip")
+            .header("Content-Disposition", "attachment; filename=\"teilnehmer_passwoerter_" + vid + ".zip\"");
         if (!result.failedLoginNames().isEmpty()) {
             builder.header("X-KonfPlan-Failed-Teilnehmer", String.join(",", result.failedLoginNames()));
         }
