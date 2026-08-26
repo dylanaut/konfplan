@@ -36,15 +36,15 @@
         </div>
 
         <h5 class="mt-4">Ihre Prioritäten</h5>
-        <table class="table table-bordered table-sm prio-tabelle">
+        <table v-for="(chunk, chunkIndex) in legendeChunks" :key="chunkIndex" class="table table-bordered table-sm prio-tabelle">
           <thead>
             <tr>
-              <th v-for="eintrag in reportData.legende" :key="eintrag.nummer" scope="col">{{ eintrag.nummer }}</th>
+              <th v-for="eintrag in chunk" :key="eintrag.nummer" scope="col">{{ eintrag.nummer }}</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td v-for="eintrag in reportData.legende" :key="eintrag.nummer"></td>
+              <td v-for="eintrag in chunk" :key="eintrag.nummer"></td>
             </tr>
           </tbody>
         </table>
@@ -62,15 +62,26 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
+
+const SPALTEN_PRO_ZEILE = 30;
 
 const route = useRoute();
 const reportData = ref({ veranstaltung: {}, legende: [], teilnehmer: [] });
 const loading = ref(true);
 const error = ref(null);
+
+const legendeChunks = computed(() => {
+  const legende = reportData.value.legende;
+  const chunks = [];
+  for (let i = 0; i < legende.length; i += SPALTEN_PRO_ZEILE) {
+    chunks.push(legende.slice(i, i + SPALTEN_PRO_ZEILE));
+  }
+  return chunks;
+});
 
 const handlePrint = () => window.print();
 
