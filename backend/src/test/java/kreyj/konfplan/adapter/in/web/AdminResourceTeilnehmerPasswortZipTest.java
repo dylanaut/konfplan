@@ -138,7 +138,7 @@ class AdminResourceTeilnehmerPasswortZipTest extends DatabaseCleaner {
         assertThat(rows).hasSize(3);
 
         String[] zeile1 = rows.stream().filter(r -> r[1].equals("zip.teilnehmer1")).findFirst().orElseThrow();
-        assertThat(zeile1[0]).isEqualTo("Erika Musterfrau");
+        assertThat(zeile1[0]).isEqualTo("Musterfrau, Erika");
         assertThat(zeile1[2]).isNotBlank();
         assertThat(zeile1).contains("AG Technik", "Klasse 7a");
 

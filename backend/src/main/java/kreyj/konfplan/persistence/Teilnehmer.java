@@ -13,6 +13,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -78,6 +79,14 @@ public class Teilnehmer extends Nutzer {
             return;
         }
         gruppen.remove(gruppe);
+    }
+
+
+    public void setGruppen(Collection<String> neueGruppen) {
+        gruppen.clear();
+        if (null != neueGruppen) {
+            neueGruppen.forEach(this::addGruppe);
+        }
     }
 
 
