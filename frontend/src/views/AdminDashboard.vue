@@ -130,7 +130,7 @@
                      @batchDeactivateParticipants="batchDeactivateParticipants"
                      @batchDeleteParticipants="batchDeleteParticipants"
                      @batchEmailParticipants="batchEmailParticipants"
-                     @batchGeneratePasswordsPdf="openGeneratePasswordsPdfModal"
+                     @batchGeneratePasswordsZip="openGeneratePasswordsZipModal"
                      @openInviteModal="openInviteModal"
                      @saveParticipantPriorities="saveParticipantPriorities"
                      @saveAllParticipantPriorities="saveAllParticipantPriorities"
@@ -216,8 +216,8 @@
                      @close="showInviteModal = false" @invite="handleInviteUser"/>
     <PasswordResetModal :isVisible="showPasswordResetModal" :nutzer="selectedUserForPasswordReset"
                      @close="showPasswordResetModal = false" @reset="handleResetPassword"/>
-    <GeneratePasswordsPdfModal :isVisible="showGeneratePasswordsPdfModal" :count="selectedIdsForPdf.length"
-                     @close="showGeneratePasswordsPdfModal = false" @generate="handleGeneratePasswordsPdf"/>
+    <GeneratePasswordsZipModal :isVisible="showGeneratePasswordsZipModal" :count="selectedIdsForZip.length"
+                     @close="showGeneratePasswordsZipModal = false" @generate="handleGeneratePasswordsZip"/>
 
     <!-- CSV Import Feedback Modal -->
     <div v-if="showCsvFeedbackModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -286,7 +286,7 @@ import EventSlotEditorModal from '../components/EventSlotEditorModal.vue';
 import GebaeudeEditorModal from '../components/GebaeudeEditorModal.vue';
 import InviteUserModal from '../components/InviteUserModal.vue';
 import PasswordResetModal from '../components/PasswordResetModal.vue';
-import GeneratePasswordsPdfModal from '../components/GeneratePasswordsPdfModal.vue';
+import GeneratePasswordsZipModal from '../components/GeneratePasswordsZipModal.vue';
 
 const eventContext = useEventContextStore();
 const availabilityStore = useAvailabilityStore();
@@ -341,8 +341,8 @@ const showInviteModal = ref(false);
 const selectedUserForInvite = ref(null);
 const showPasswordResetModal = ref(false);
 const selectedUserForPasswordReset = ref(null);
-const showGeneratePasswordsPdfModal = ref(false);
-const selectedIdsForPdf = ref([]);
+const showGeneratePasswordsZipModal = ref(false);
+const selectedIdsForZip = ref([]);
 
 const isOptimizing = ref(false);
 const planningPhase = ref(null);
@@ -812,36 +812,36 @@ const handleResetPassword = async ({userId, newPassword}) => {
   }
 };
 
-const openGeneratePasswordsPdfModal = (ids) => {
-  selectedIdsForPdf.value = ids;
-  showGeneratePasswordsPdfModal.value = true;
+const openGeneratePasswordsZipModal = (ids) => {
+  selectedIdsForZip.value = ids;
+  showGeneratePasswordsZipModal.value = true;
 };
-const handleGeneratePasswordsPdf = async (pdfPassword) => {
+const handleGeneratePasswordsZip = async (zipPassword) => {
   try {
     const response = await api.post(
-      `/api/admin/veranstaltungen/${selectedVid.value}/teilnehmer/passwoerter/pdf`,
-      { nutzerIds: selectedIdsForPdf.value, pdfPassword },
+      `/api/admin/veranstaltungen/${selectedVid.value}/teilnehmer/passwoerter/zip`,
+      { nutzerIds: selectedIdsForZip.value, zipPassword },
       { responseType: 'blob' }
     );
     const url = window.URL.createObjectURL(response.data);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `teilnehmer_passwoerter_${selectedVid.value}.pdf`;
+    link.download = `teilnehmer_passwoerter_${selectedVid.value}.zip`;
     link.click();
     window.URL.revokeObjectURL(url);
-    showGeneratePasswordsPdfModal.value = false;
+    showGeneratePasswordsZipModal.value = false;
 
     const failed = response.headers['x-konfplan-failed-teilnehmer'];
     if (failed) {
-      alert('PDF wurde erzeugt, aber für folgende Teilnehmer ist der Passwort-Reset fehlgeschlagen '
+      alert('ZIP wurde erzeugt, aber für folgende Teilnehmer ist der Passwort-Reset fehlgeschlagen '
           + '(bitte einzeln über "Passwort zurücksetzen" erneut versuchen):\n\n' + failed.split(',').join('\n'));
     }
   } catch (e) {
-    console.error('Fehler bei der Erzeugung der Passwort-PDF:', e);
+    console.error('Fehler bei der Erzeugung der Passwort-ZIP:', e);
     // responseType 'blob' liefert Fehlerantworten ebenfalls als Blob statt geparstem JSON.
     const body = e.response?.data instanceof Blob ? JSON.parse(await e.response.data.text()) : e.response?.data;
     const msg = body?.error || body?.message || e.message;
-    alert('PDF-Erzeugung nicht möglich:\n\n' + msg);
+    alert('ZIP-Erzeugung nicht möglich:\n\n' + msg);
   }
 };
 

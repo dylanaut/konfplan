@@ -20,10 +20,10 @@
             <MailIcon class="w-3.5 h-3.5"/>
             E-Mail
           </button>
-          <button @click="emit('batchGeneratePasswordsPdf', selectedParticipantIds)"
+          <button @click="emit('batchGeneratePasswordsZip', selectedParticipantIds)"
                   class="text-xs text-emerald-600 hover:underline font-bold flex items-center gap-1">
             <FileLockIcon class="w-3.5 h-3.5"/>
-            Passwörter (PDF)
+            Passwörter (ZIP)
           </button>
           <button @click="selectAllFilteredParticipants"
                   v-if="selectedParticipantIds.length < filteredParticipants.length"
@@ -307,7 +307,7 @@ const props = defineProps({
 const emit = defineEmits([
   'triggerUpload', 'openUserModal', 'deleteUser', 'toggleParticipantActive',
   'batchDeactivateParticipants', 'batchDeleteParticipants', 'batchEmailParticipants',
-  'batchGeneratePasswordsPdf',
+  'batchGeneratePasswordsZip',
   'openInviteModal', 'saveParticipantPriorities',
   'saveAllParticipantPriorities', 'openPasswordResetModal'
 ]);
