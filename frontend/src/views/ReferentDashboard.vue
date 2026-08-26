@@ -231,6 +231,7 @@
 import { ref, onMounted, computed, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api/axios';
+import { extractErrorMessage } from '../utils/errorMessage';
 import { useAuthStore } from '../stores/auth';
 import { useNeigungStore } from '../stores/neigung';
 import ReferentVortragEditorModal from '../components/ReferentVortragEditorModal.vue';
@@ -290,7 +291,7 @@ const saveProfile = async () => {
     alert("Profil gespeichert!");
   } catch (e) {
     console.error("Fehler beim Speichern des Profils:", e);
-    alert("Fehler beim Speichern: " + (e.response?.data?.message || e.message));
+    alert("Fehler beim Speichern: " + extractErrorMessage(e));
   }
 };
 
@@ -411,7 +412,7 @@ const handleSaveTalk = async (talk) => {
     await fetchEventsForRegistration();
   } catch (e) {
     console.error("Fehler beim Speichern des Vortrags:", e);
-    alert("Fehler beim Speichern: " + (e.response?.data?.message || e.message));
+    alert("Fehler beim Speichern: " + extractErrorMessage(e));
   }
 };
 

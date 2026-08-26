@@ -240,6 +240,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api/axios';
+import { extractErrorMessage } from '../utils/errorMessage';
 import { useNeigungStore } from '../stores/neigung';
 import EventLogo from '../components/EventLogo.vue';
 import {
@@ -347,7 +348,7 @@ const saveNeigungen = async () => {
     profile.value = response.data;
     alert('Neigungen erfolgreich gespeichert!');
   } catch (error) {
-    alert('Fehler beim Speichern der Neigungen: ' + (error.response?.data?.message || error.response?.data || error.message));
+    alert('Fehler beim Speichern der Neigungen: ' + extractErrorMessage(error));
   }
 };
 
@@ -382,7 +383,7 @@ const togglePriorities = async (eventId) => {
     activeAvailabilityEventId.value = null; // close other section
   } catch (error) {
     console.error("Fehler beim Laden der Prioritäten-Daten:", error);
-    alert('Fehler beim Laden der Vorträge & Prioritäten: ' + (error.response?.data?.message || error.message));
+    alert('Fehler beim Laden der Vorträge & Prioritäten: ' + extractErrorMessage(error));
   }
 };
 
@@ -430,7 +431,7 @@ const saveAvailabilities = async () => {
     alert('Verfügbarkeit erfolgreich gespeichert!');
   } catch (error) {
     console.error('Fehler beim Speichern der Verfügbarkeit:', error);
-    alert('Fehler: ' + (error.response?.data?.message || error.message));
+    alert('Fehler: ' + extractErrorMessage(error));
   }
 };
 
@@ -460,7 +461,7 @@ const savePriorities = async () => {
     alert('Prioritäten erfolgreich gespeichert!');
   } catch (error) {
     console.error('Fehler beim Speichern der Prioritäten:', error);
-    alert('Fehler: ' + (error.response?.data?.message || error.message));
+    alert('Fehler: ' + extractErrorMessage(error));
   }
 };
 

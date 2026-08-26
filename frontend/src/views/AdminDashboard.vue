@@ -253,6 +253,7 @@
 <script setup>
 import {computed, onMounted, onUnmounted, reactive, ref, nextTick} from 'vue';
 import api from '../api/axios';
+import { extractErrorMessage } from '../utils/errorMessage';
 import {useEventContextStore} from '../stores/eventContext';
 import {useAvailabilityStore} from '../stores/availability';
 import { useGroupStore } from '../stores/group';
@@ -715,7 +716,7 @@ const handleSaveUser = async (u) => {
     if (selectedVid.value) await loadData();
     else await refreshAdmins();
   } catch (e) {
-    alert("Fehler beim Speichern des Nutzers: " + (e.response?.data?.error || e.response?.data || e.message));
+    alert("Fehler beim Speichern des Nutzers: " + extractErrorMessage(e));
   }
 };
 const deleteUser = async (id) => {
@@ -808,7 +809,7 @@ const handleResetPassword = async ({userId, newPassword}) => {
     alert("Passwort erfolgreich zurückgesetzt!");
     showPasswordResetModal.value = false;
   } catch (e) {
-    alert("Fehler beim Zurücksetzen des Passworts: " + (e.response?.data?.error || e.response?.data || e.message));
+    alert("Fehler beim Zurücksetzen des Passworts: " + extractErrorMessage(e));
   }
 };
 
@@ -874,7 +875,7 @@ const handleSaveVortrag = async (v) => {
     await loadData();
   } catch (e) {
     console.error('Fehler beim Speichern des Vortrags:', e);
-    vortragModalError.value = e.response?.data?.message || e.message || 'Unbekannter Fehler beim Speichern des Vortrags.';
+    vortragModalError.value = extractErrorMessage(e, 'Unbekannter Fehler beim Speichern des Vortrags.');
   }
 };
 const deleteVortrag = async (id) => {
@@ -884,7 +885,7 @@ const deleteVortrag = async (id) => {
       await loadData();
     } catch (e) {
       console.error('Fehler beim Löschen des Vortrags:', e);
-      alert("Fehler beim Löschen des Vortrags: " + (e.response?.data?.message || e.message));
+      alert("Fehler beim Löschen des Vortrags: " + extractErrorMessage(e));
     }
   }
 };
@@ -974,7 +975,7 @@ const startPlanning = async (solverConfig) => {
     console.error('Fehler bei der Planerstellung:', e);
     isOptimizing.value = false;
     planningPhase.value = null;
-    planungsInkonsistenzen.value = e.response?.data?.error || e.response?.data?.message || e.message;
+    planungsInkonsistenzen.value = extractErrorMessage(e);
   }
 };
 
@@ -1048,7 +1049,7 @@ const importErgebnis = async (file) => {
     alert('Ergebnis wurde erfolgreich importiert.');
   } catch (e) {
     console.error('Fehler beim Import des Planungsergebnisses:', e);
-    alert('Import nicht möglich:\n\n' + (e.response?.data?.error || e.response?.data?.message || e.message));
+    alert('Import nicht möglich:\n\n' + extractErrorMessage(e));
   }
 };
 
