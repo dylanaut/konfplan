@@ -22,8 +22,11 @@ api.interceptors.request.use(async (config) => {
 
     try {
         await keycloak.updateToken(30);
-    } catch {
-        // Keine (mehr gueltige) Keycloak-Session - Fallback unten greift ggf. trotzdem.
+    } catch (e) {
+        // Keine (mehr gueltige) Keycloak-Session - Fallback unten greift ggf. trotzdem, aber ohne
+        // dieses Log war ein fehlgeschlagener Refresh in der Browser-Konsole unsichtbar und zeigte
+        // sich nur indirekt als 401 mit einem WARN im Backend-Log (Quarkus OidcProvider).
+        console.warn('Keycloak-Token-Refresh fehlgeschlagen, Request nutzt ggf. abgelaufenen Token:', e);
     }
     const token = keycloak.token ?? localStorage.getItem('token');
     if (token) {
