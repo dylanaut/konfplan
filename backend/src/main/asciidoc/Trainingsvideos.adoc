@@ -28,8 +28,6 @@ generieren.
 ====
 "Erstelle mir ein detailliertes Text-Skript für ein 2-minütiges Erklärvideo unserer Anwendung. Unterteile es in Tabellen-Form mit drei Spalten: 1. Sichtbare Aktion auf dem Bildschirm, 2. Gesprochener Text (Audiospur), 3. Wichtige Klick-Hinweise. Konzentriere dich auf den Kern-Workflow [Beispiel: Registrierung und Datenupload]."
 ====
-
-
 .Template für Erstellung eines Videos mit Playwright
 
 ====
@@ -50,10 +48,26 @@ Passwortvergabe, Anmeldung, Bearbeitung des Profils, evtl. Email, Eintrag der Ne
 Vergabe von Prioritäten].
 
 Word-Ergebnis siehe link:docx/KonfPlan_Erklaervideo_Teilnehmer_Skript.docx[hier]
+== Playwright
 
+Skript zur Videoerstellung angelegt unter frontend/scripts/record-teilnehmer-demo.mjs.
 
+.Aufruf:
+[source,bash]
+====
+cd frontend
+TEILNEHMER_LOGIN=maxi.muster TEILNEHMER_PASSWORD=konfplan node scripts/record-teilnehmer-demo.mjs
+====
 
+Falls das Testkonto ein temporäres Passwort hat (Zwangswechsel bei Keycloak), zusätzlich TEILNEHMER_NEW_PASSWORD=<neues-passwort> setzen — das Skript erkennt automatisch, ob dieser Schritt überhaupt erscheint.
 
+Was es macht (1:1 entlang des Word-Skripts): Startseite öffnen → „Anmelden" → Keycloak-Login (#username/#password) → optional Zwangs-Passwortwechsel (#password-new/#password-confirm) → Warten auf „Mein Profil" → zwei Neigungen ankreuzen + „Speichern" → „Meine Verfügbarkeit" aufklappen, zwei Slots ankreuzen + „Verfügbarkeit speichern"
+  → „Vorträge & Prioritäten" aufklappen, zwei Prioritätswerte (10/8) eintragen + „Meine Prioritäten speichern".
 
+Wichtige Details:
 
-
+*  Selektoren wie input[id^="profile-neigung-"] und input.prio-input sind wörtlich aus dem tatsächlichen TeilnehmerDashboard.vue-Markup übernommen, keine Vermutungen.
+*  page.on('dialog', ...) bestätigt automatisch alle alert()-Meldungen, die die App bei jedem Speichern auslöst — sonst bliebe das Skript hängen.
+*  Bei einem Fehler wird ein Screenshot (error-unexpected-*.png) gespeichert, wie bei den Brevo-Skripten aus dieser Session.
+*  Video landet unter ./videos/teilnehmer-demo.webm (Ordner wird von Playwright automatisch angelegt).
+*  BASE_URL ist mit http://localhost:9000 vorbelegt (dein Wunsch), mit ignoreHTTPSErrors: true für ein eventuell selbstsigniertes Zertifikat.
