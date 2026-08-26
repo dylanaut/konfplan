@@ -37,13 +37,28 @@ fi
 LAST_IP="$(cat "$STATE_FILE")"
 
 if [ "$CURRENT_IP" != "$LAST_IP" ]; then
+  BREVO_UPDATE_STATUS="nicht versucht (BREVO_LOGIN_EMAIL nicht gesetzt)"
+  if [ -n "${BREVO_LOGIN_EMAIL:-}" ]; then
+    BREVO_PASSWORD_FILE="$SCRIPT_DIR/secrets/brevo_login_password.txt"
+    if [ -f "$BREVO_PASSWORD_FILE" ] && docker run --rm \
+        -e BREVO_LOGIN_EMAIL="$BREVO_LOGIN_EMAIL" \
+        -e BREVO_LOGIN_PASSWORD="$(cat "$BREVO_PASSWORD_FILE")" \
+        -v "$SCRIPT_DIR/brevo-ip-updater:/work" -w /work \
+        mcr.microsoft.com/playwright:v1.62.1-noble \
+        node update-ip.mjs "$CURRENT_IP"; then
+      BREVO_UPDATE_STATUS="automatisch erfolgreich eingetragen"
+    else
+      BREVO_UPDATE_STATUS="automatische Eintragung FEHLGESCHLAGEN - manuell nachtragen: https://app.brevo.com/security/authorised_ips"
+    fi
+  fi
+
   curl -fsS \
     -H "Title: KonfPlan: Server-IP geändert" \
     -H "Priority: high" \
-    -d "Ausgehende IP hat sich von $LAST_IP auf $CURRENT_IP geändert. In Brevo unter SMTP & API -> Authorized IPs ergänzen: https://app.brevo.com" \
+    -d "Ausgehende IP hat sich von $LAST_IP auf $CURRENT_IP geändert. Brevo-Autorisierung: $BREVO_UPDATE_STATUS" \
     "https://ntfy.sh/$NTFY_TOPIC" > /dev/null
   echo "$CURRENT_IP" > "$STATE_FILE"
-  echo "$(date -Iseconds) IP-Aenderung erkannt und gemeldet: $LAST_IP -> $CURRENT_IP"
+  echo "$(date -Iseconds) IP-Aenderung erkannt und gemeldet: $LAST_IP -> $CURRENT_IP (Brevo: $BREVO_UPDATE_STATUS)"
 else
   echo "$(date -Iseconds) IP unveraendert: $CURRENT_IP"
 fi

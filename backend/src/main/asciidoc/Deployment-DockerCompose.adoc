@@ -285,12 +285,44 @@ Einrichtung:
 */30 * * * * /pfad/zu/deploy/check-outbound-ip.sh >> /var/log/konfplan-ip-check.log 2>&1
 ----
 
-Bei einer Meldung: die im Push-Text genannte neue IP in Brevo nachtragen - danach funktioniert der Mailversand wieder ohne Neustart von irgendetwas.
+Bei einer Meldung ohne automatische Brevo-Eintragung (siehe unten): die im Push-Text genannte neue IP in Brevo nachtragen - danach funktioniert der Mailversand wieder ohne Neustart von irgendetwas.
 
 [NOTE]
 ====
 Die dauerhafte Lösung ist eine feste IP-Adresse für den Server (bei Hetzner Cloud z.B. eine https://docs.hetzner.com/cloud/floating-ips/overview/[Floating IP]) - dann entfällt das Problem komplett. Das erfordert ggf. zusätzliche Routing-Konfiguration, damit ausgehender Traffic tatsächlich über die Floating IP läuft, und ist nicht Teil dieses Skripts.
 ====
+
+=== Optional: Brevo-Eintragung automatisieren (Playwright)
+
+Falls sich die IP häufig/täglich ändert, kann `deploy/check-outbound-ip.sh` die neue IP zusätzlich automatisch bei Brevo eintragen (per Playwright, da Brevo dafür keine API bietet - nur die Web-Oberfläche). Der erste Login von einem neuen "Gerät" verlangt bei Brevo einen per E-Mail zugestellten 6-stelligen Code; danach gilt das Gerät (= die gespeicherte Sitzung) als vertrauenswürdig.
+
+[WARNING]
+====
+Das erfordert das echte Brevo-Account-Passwort auf dem Server (nicht nur einen API-/SMTP-Schlüssel wie bisher) - eine größere Angriffsfläche. Die Login-/Formular-Interaktion wurde nach bestem Wissen aus der öffentlichen Brevo-Hilfe-Dokumentation entwickelt, aber mangels Testzugang nicht gegen einen echten Account verifiziert - beim ersten Einsatz mit einem Blick auf die bei Fehlern automatisch gespeicherten `error-*.png`-Screenshots nachjustieren.
+====
+
+Einrichtung:
+
+. In `deploy/.env`: `BREVO_LOGIN_EMAIL=<login>`
+. Passwort ablegen: `echo '<passwort>' > deploy/secrets/brevo_login_password.txt && chmod 644 deploy/secrets/brevo_login_password.txt`
+. Einmalig `node_modules` in den gemounteten Ordner installieren (das Playwright-Docker-Image bringt nur den Browser mit, nicht das npm-Paket selbst - der Ordner ist auf den Host gemountet, daher bleibt das dauerhaft erhalten):
++
+[source,bash]
+----
+cd deploy/brevo-ip-updater
+docker run --rm -v "$(pwd):/work" -w /work mcr.microsoft.com/playwright:v1.62.1-noble npm install
+----
+. Einmaliges, interaktives Setup:
++
+[source,bash]
+----
+docker run --rm -it -v "$(pwd):/work" -w /work \
+  -e BREVO_LOGIN_EMAIL=<login> -e BREVO_LOGIN_PASSWORD=<passwort> \
+  mcr.microsoft.com/playwright:v1.62.1-noble node setup-session.mjs
+----
+Fragt den per E-Mail zugestellten 6-stelligen Code interaktiv ab und speichert die resultierende Sitzung in `storage-state.json` (nicht committen, siehe `.gitignore`).
+
+Ab dann trägt `check-outbound-ip.sh` bei jeder erkannten IP-Änderung automatisch die neue IP ein (per `docker run` mit derselben gespeicherten Sitzung) und meldet Erfolg/Fehlschlag zusätzlich im ntfy-Push-Text. Schlägt die automatische Eintragung fehl (z.B. weil die gespeicherte Sitzung abgelaufen ist), bleibt die bisherige manuelle Nachtrage-Anleitung der Fallback - `setup-session.mjs` muss dann einmalig erneut ausgeführt werden.
 
 == Troubleshooting
 

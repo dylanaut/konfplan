@@ -62,6 +62,9 @@ build/
 /deploy/keycloak-realm.generated.json
 /deploy/data/
 /deploy/ip-monitor-state.txt
+/deploy/brevo-ip-updater/node_modules/
+/deploy/brevo-ip-updater/storage-state.json
+/deploy/brevo-ip-updater/error-*.png
 /backend/src/main/asciidoc/*.pdf
 
 ### Accidental root/backend npm artifacts (frontend/node_modules is the real one) ###
