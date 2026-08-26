@@ -105,6 +105,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
                 dto.deadlineTeilnehmer = e.getDeadlineTeilnehmer();
                 dto.maxPrioritaeten = e.getMaxPrioritaeten();
                 dto.planErstellt = Planungsergebnis.count("veranstaltung", e) > 0;
+                dto.teilnehmerAendernVerfuegbarkeit = e.isTeilnehmerAendernVerfuegbarkeit();
                 dto.logo = e.getLogo();
                 dto.logo_link = e.getLogo_link();
                 dto.organisatorNamen = e.organisatoren().stream().map(Admin::getFullName).toList();
@@ -409,6 +410,9 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         }
         if (veranstaltung.getDeadlineTeilnehmer() != null && veranstaltung.getDeadlineTeilnehmer().isBefore(LocalDateTime.now())) {
             throw new ForbiddenException("Die Deadline für Teilnehmer ist bereits abgelaufen.");
+        }
+        if (!veranstaltung.isTeilnehmerAendernVerfuegbarkeit()) {
+            throw new ForbiddenException("Teilnehmer dürfen ihre Verfügbarkeit für diese Veranstaltung nicht ändern.");
         }
         NutzerVerfuegbarkeit v = NutzerVerfuegbarkeit.findById(nvIdL(nutzer.getId(), veranstaltungId));
         if (null == v) {

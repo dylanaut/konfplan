@@ -14,6 +14,7 @@ public class TeilnehmerVeranstaltungDto {
     public LocalDateTime deadlineTeilnehmer;
     public Integer maxPrioritaeten;
     public boolean planErstellt;
+    public boolean teilnehmerAendernVerfuegbarkeit;
     public String logo;
     public String logo_link;
     public List<String> organisatorNamen;

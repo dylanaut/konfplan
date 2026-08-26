@@ -67,6 +67,9 @@ public class Veranstaltung extends VersionedEntity {
     /** Obergrenze für die Anzahl der von einem Teilnehmer vergebbaren (nicht-null) Prioritäten; null = unbeschränkt. */
     private Integer maxPrioritaeten;
 
+    /** Ob Teilnehmer ihre persönlichen Verfügbarkeiten im Teilnehmer-Dashboard selbst ändern dürfen. */
+    private boolean teilnehmerAendernVerfuegbarkeit = false;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "veranstaltung_gruppen", joinColumns = @JoinColumn(name = "veranstaltung_id"))
     @Column(name = "gruppen")

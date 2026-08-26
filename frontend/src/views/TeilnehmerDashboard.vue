@@ -100,41 +100,43 @@
           </div>
 
           <div class="flex flex-col">
-            <!-- Verfügbarkeiten Section -->
-            <button @click="toggleAvailability(event.id)" class="w-full flex items-center justify-between p-3 text-sm font-bold text-gray-700 border-t border-gray-200 hover:bg-gray-100 transition">
-              <span class="flex items-center gap-2"><CalendarIcon class="w-4 h-4"/>Meine Verfügbarkeit</span>
-              <ChevronDownIcon v-if="activeAvailabilityEventId !== event.id" class="w-5 h-5"/>
-              <ChevronUpIcon v-else class="w-5 h-5"/>
-            </button>
-            <div v-if="activeAvailabilityEventId === event.id" class="p-4 border-t border-gray-200 bg-white animate-fade-in">
-              <div class="flex justify-end mb-4">
-                <button @click="saveAvailabilities" :disabled="isDeadlinePassed(event.deadlineTeilnehmer) || !hasAvailabilityChanges" class="btn-save-all">
-                  <SaveAllIcon class="w-3.5 h-3.5"/>
-                  Verfügbarkeit speichern
-                </button>
-              </div>
-              <div class="flex space-x-4 overflow-x-auto pb-4">
-                <div v-for="(daySlots, day) in groupedSlots" :key="day" class="bg-gray-50 p-3 rounded-lg">
-                  <h4 class="font-bold text-sm mb-3 text-center">{{ day }}</h4>
-                  <table class="text-xs">
-                    <tbody>
-                      <tr>
-                        <td v-for="slot in daySlots" :key="slot.id" class="px-2 py-1 font-bold text-center">{{ formatTime(slot.startTime) }}</td>
-                      </tr>
-                      <tr>
-                        <td v-for="slot in daySlots" :key="slot.id"
-                            :class="['px-2 py-1 text-center', pflichtSlotIds.has(slot.id) ? 'bg-gray-200 rounded' : '']"
-                            :title="pflichtSlotIds.has(slot.id) ? 'Pflichtvortrag der eigenen Gruppe - Teilnahme verpflichtend' : ''">
-                          <input type="checkbox" v-model="availabilities[slot.id]"
-                                 :disabled="pflichtSlotIds.has(slot.id)"
-                                 class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded disabled:opacity-60 disabled:cursor-not-allowed">
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+            <!-- Verfügbarkeiten Section (nur wenn vom Organisator freigeschaltet) -->
+            <template v-if="event.teilnehmerAendernVerfuegbarkeit">
+              <button @click="toggleAvailability(event.id)" class="w-full flex items-center justify-between p-3 text-sm font-bold text-gray-700 border-t border-gray-200 hover:bg-gray-100 transition">
+                <span class="flex items-center gap-2"><CalendarIcon class="w-4 h-4"/>Meine Verfügbarkeit</span>
+                <ChevronDownIcon v-if="activeAvailabilityEventId !== event.id" class="w-5 h-5"/>
+                <ChevronUpIcon v-else class="w-5 h-5"/>
+              </button>
+              <div v-if="activeAvailabilityEventId === event.id" class="p-4 border-t border-gray-200 bg-white animate-fade-in">
+                <div class="flex justify-end mb-4">
+                  <button @click="saveAvailabilities" :disabled="isDeadlinePassed(event.deadlineTeilnehmer) || !hasAvailabilityChanges" class="btn-save-all">
+                    <SaveAllIcon class="w-3.5 h-3.5"/>
+                    Verfügbarkeit speichern
+                  </button>
+                </div>
+                <div class="flex space-x-4 overflow-x-auto pb-4">
+                  <div v-for="(daySlots, day) in groupedSlots" :key="day" class="bg-gray-50 p-3 rounded-lg">
+                    <h4 class="font-bold text-sm mb-3 text-center">{{ day }}</h4>
+                    <table class="text-xs">
+                      <tbody>
+                        <tr>
+                          <td v-for="slot in daySlots" :key="slot.id" class="px-2 py-1 font-bold text-center">{{ formatTime(slot.startTime) }}</td>
+                        </tr>
+                        <tr>
+                          <td v-for="slot in daySlots" :key="slot.id"
+                              :class="['px-2 py-1 text-center', pflichtSlotIds.has(slot.id) ? 'bg-gray-200 rounded' : '']"
+                              :title="pflichtSlotIds.has(slot.id) ? 'Pflichtvortrag der eigenen Gruppe - Teilnahme verpflichtend' : ''">
+                            <input type="checkbox" v-model="availabilities[slot.id]"
+                                   :disabled="pflichtSlotIds.has(slot.id)"
+                                   class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded disabled:opacity-60 disabled:cursor-not-allowed">
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
-            </div>
+            </template>
 
             <!-- Prioritäten Section -->
             <button @click="togglePriorities(event.id)" class="w-full flex items-center justify-between p-3 text-sm font-bold text-gray-700 border-t border-gray-200 hover:bg-gray-100 transition">
