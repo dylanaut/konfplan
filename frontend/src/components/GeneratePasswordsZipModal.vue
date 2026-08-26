@@ -10,20 +10,21 @@
 
       <p class="text-sm text-gray-600 mb-4">
         Für <span class="font-bold text-gray-900">{{ count }}</span> ausgewählte Teilnehmer werden neue temporäre
-        Passwörter gesetzt und in ein PDF geschrieben, das jeder Teilnehmer beim ersten Login verwenden kann.
+        Passwörter gesetzt und in eine passwortgeschützte ZIP-Datei (mit einer CSV-Tabelle darin) geschrieben, die
+        jeder Teilnehmer beim ersten Login verwenden kann.
       </p>
 
       <div class="space-y-4">
         <div>
-          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">PDF-Öffnungspasswort</label>
-          <input v-model="pdfPassword" type="password" class="input-field w-full" placeholder="Min. 8 Zeichen (nur ASCII empfohlen)" />
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">ZIP-Öffnungspasswort</label>
+          <input v-model="zipPassword" type="password" class="input-field w-full" placeholder="Min. 8 Zeichen (nur ASCII empfohlen)" />
         </div>
 
         <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100">
           <p class="text-[10px] text-indigo-700 leading-relaxed">
             <InfoIcon class="w-3 h-3 inline mr-1" />
-            Dieses Passwort schützt das PDF selbst (Öffnen), nicht das Teilnehmer-Login. Bitte sicher aufbewahren
-            und getrennt vom PDF an die Teilnehmer weitergeben, falls nötig.
+            Dieses Passwort schützt die ZIP-Datei selbst (Öffnen), nicht das Teilnehmer-Login. Bitte sicher
+            aufbewahren und getrennt von der ZIP-Datei an die Teilnehmer weitergeben, falls nötig.
           </p>
         </div>
       </div>
@@ -32,11 +33,11 @@
         <button @click="$emit('close')" class="btn-secondary flex-1">Abbrechen</button>
         <button
           @click="confirmGenerate"
-          :disabled="pdfPassword.length < 8 || isSubmitting"
+          :disabled="zipPassword.length < 8 || isSubmitting"
           class="btn-primary flex-1 flex items-center justify-center gap-2"
         >
           <LoaderIcon v-if="isSubmitting" class="w-4 h-4 animate-spin" />
-          PDF erzeugen
+          ZIP erzeugen
         </button>
       </div>
     </div>
@@ -54,18 +55,18 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'generate']);
 
-const pdfPassword = ref('');
+const zipPassword = ref('');
 const isSubmitting = ref(false);
 
 watch(() => props.isVisible, (visible) => {
-  if (visible) pdfPassword.value = '';
+  if (visible) zipPassword.value = '';
 });
 
 const confirmGenerate = async () => {
-  if (pdfPassword.value.length < 8) return;
+  if (zipPassword.value.length < 8) return;
   isSubmitting.value = true;
   try {
-    await emit('generate', pdfPassword.value);
+    await emit('generate', zipPassword.value);
   } finally {
     isSubmitting.value = false;
   }

@@ -5,17 +5,17 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import java.util.List;
 
 @RegisterForReflection
-public class TeilnehmerPasswortPdfRequestDto {
+public class TeilnehmerPasswortZipRequestDto {
     public List<Long> nutzerIds;
-    public String pdfPassword;
+    public String zipPassword;
 
 
-    public TeilnehmerPasswortPdfRequestDto() {
+    public TeilnehmerPasswortZipRequestDto() {
     }
 
 
-    public TeilnehmerPasswortPdfRequestDto(List<Long> nutzerIds, String pdfPassword) {
+    public TeilnehmerPasswortZipRequestDto(List<Long> nutzerIds, String zipPassword) {
         this.nutzerIds = nutzerIds;
-        this.pdfPassword = pdfPassword;
+        this.zipPassword = zipPassword;
     }
 }

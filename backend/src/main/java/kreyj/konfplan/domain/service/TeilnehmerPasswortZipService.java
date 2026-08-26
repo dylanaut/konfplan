@@ -1,7 +1,7 @@
 package kreyj.konfplan.domain.service;
 
-import io.quarkus.qute.Location;
-import io.quarkus.qute.Template;
+import com.opencsv.CSVWriterBuilder;
+import com.opencsv.ICSVWriter;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.domain.exception.BusinessException;
@@ -11,48 +11,51 @@ import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.util.PasswordGenerator;
 import org.jboss.logging.Logger;
 
-import java.time.LocalDateTime;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.TreeSet;
 
 /**
  * Erzeugt fuer eine ausgewaehlte Menge von Teilnehmern je ein neues temporaeres Passwort (setzt
  * dabei denselben Keycloak-Zwangswechsel-Mechanismus wie der bestehende Einzel-Reset, siehe
- * {@link KeycloakUserProvisioningService#resetPassword}) und fasst alle Login-Namen +
- * Passwoerter in einer passwortverschluesselten PDF-Tabelle zusammen. Die erzeugten Passwoerter
- * selbst werden nirgendwo persistiert oder geloggt - nur in der PDF und bei Keycloak.
+ * {@link KeycloakUserProvisioningService#resetPassword}) und fasst alle Login-Namen + Passwoerter
+ * in einer passwortverschluesselten ZIP-Datei mit einer CSV-Tabelle darin zusammen. Die erzeugten
+ * Passwoerter selbst werden nirgendwo persistiert oder geloggt - nur in der ZIP und bei Keycloak.
  */
 @ApplicationScoped
-public class TeilnehmerPasswortPdfService {
-    private static final Logger LOG = Logger.getLogger(TeilnehmerPasswortPdfService.class);
+public class TeilnehmerPasswortZipService {
+    private static final Logger LOG = Logger.getLogger(TeilnehmerPasswortZipService.class);
+    private static final byte[] UTF8_BOM = {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
+    private static final String CSV_DATEINAME = "teilnehmer_passwoerter.csv";
 
     private final KeycloakUserProvisioningService keycloakUserProvisioningService;
     private final ProtokollService protokollService;
-    private final PdfService pdfService;
-    private final Template teilnehmerPasswortReportTemplate;
+    private final ZipService zipService;
 
-    public TeilnehmerPasswortPdfService(KeycloakUserProvisioningService keycloakUserProvisioningService,
+    public TeilnehmerPasswortZipService(KeycloakUserProvisioningService keycloakUserProvisioningService,
                                          ProtokollService protokollService,
-                                         PdfService pdfService,
-                                         @Location("reports/teilnehmerPasswortReport") Template teilnehmerPasswortReportTemplate) {
+                                         ZipService zipService) {
         this.keycloakUserProvisioningService = keycloakUserProvisioningService;
         this.protokollService = protokollService;
-        this.pdfService = pdfService;
-        this.teilnehmerPasswortReportTemplate = teilnehmerPasswortReportTemplate;
+        this.zipService = zipService;
     }
 
 
-    private record Kandidat(String loginName, String fullName, Teilnehmer nutzer) {
+    private record Kandidat(String loginName, String fullName, List<String> gruppen, Teilnehmer nutzer) {
     }
 
 
-    private record ValidierungsErgebnis(String veranstaltungName, List<Kandidat> kandidaten) {
+    private record ReportZeile(String fullName, String loginName, String password, List<String> gruppen) {
     }
 
 
     @Transactional
-    protected ValidierungsErgebnis ladeUndValidiere(Long veranstaltungId, List<Long> nutzerIds) {
+    protected List<Kandidat> ladeUndValidiere(Long veranstaltungId, List<Long> nutzerIds) {
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
         if (null == veranstaltung) {
             throw new BusinessException("Veranstaltung nicht gefunden.");
@@ -67,34 +70,34 @@ public class TeilnehmerPasswortPdfService {
 
         List<Kandidat> ergebnis = new ArrayList<>();
         for (Teilnehmer t : teilnehmerListe) {
-            ergebnis.add(new Kandidat(t.getLoginName(), t.getFirstName() + " " + t.getLastName(), t));
+            // getGruppen() liefert ein Set ohne garantierte Reihenfolge - fuer positionsbasierte
+            // "Gruppe 1".."Gruppe N"-Spalten wird eine deterministische (alphabetische) Sortierung
+            // waehrend der noch offenen Session gelesen.
+            ergebnis.add(new Kandidat(t.getLoginName(), t.getFirstName() + " " + t.getLastName(),
+                new ArrayList<>(new TreeSet<>(t.getGruppen())), t));
         }
-        // Name waehrend der noch offenen Session lesen - t.getVeranstaltungen() ist eine Lazy-
-        // Collection, die nach Ende dieser @Transactional-Methode nicht mehr zugreifbar ist.
-        return new ValidierungsErgebnis(veranstaltung.getName(), ergebnis);
+        return ergebnis;
     }
 
 
-    public TeilnehmerPasswortPdfResult resetPasswordsAndGeneratePdf(Long veranstaltungId, List<Long> nutzerIds, String pdfPassword) {
+    public TeilnehmerPasswortZipResult resetPasswordsAndGenerateZip(Long veranstaltungId, List<Long> nutzerIds, String zipPassword) {
         if (null == nutzerIds || nutzerIds.isEmpty()) {
             throw new BusinessException("Es wurde kein Teilnehmer ausgewählt.");
         }
-        if (null == pdfPassword || pdfPassword.length() < 8) {
-            throw new BusinessException("Das PDF-Passwort muss mindestens 8 Zeichen lang sein.");
+        if (null == zipPassword || zipPassword.length() < 8) {
+            throw new BusinessException("Das ZIP-Passwort muss mindestens 8 Zeichen lang sein.");
         }
 
-        ValidierungsErgebnis validierung = ladeUndValidiere(veranstaltungId, nutzerIds);
-        List<Kandidat> kandidaten = validierung.kandidaten();
-        String veranstaltungName = validierung.veranstaltungName();
+        List<Kandidat> kandidaten = ladeUndValidiere(veranstaltungId, nutzerIds);
 
-        List<Map<String, String>> erfolgsZeilen = new ArrayList<>();
+        List<ReportZeile> erfolgsZeilen = new ArrayList<>();
         List<String> fehlgeschlagen = new ArrayList<>();
 
         for (Kandidat k : kandidaten) {
             String neuesPasswort = PasswordGenerator.generate();
             try {
                 keycloakUserProvisioningService.resetPassword(k.nutzer(), neuesPasswort);
-                erfolgsZeilen.add(Map.of("fullName", k.fullName(), "loginName", k.loginName(), "password", neuesPasswort));
+                erfolgsZeilen.add(new ReportZeile(k.fullName(), k.loginName(), neuesPasswort, k.gruppen()));
             } catch (Exception e) {
                 LOG.warn("Passwort-Reset für '" + k.loginName() + "' fehlgeschlagen: " + e.getMessage());
                 fehlgeschlagen.add(k.loginName());
@@ -106,25 +109,47 @@ public class TeilnehmerPasswortPdfService {
                 + String.join(", ", fehlgeschlagen));
         }
 
-        String html = teilnehmerPasswortReportTemplate
-            .data("veranstaltungName", veranstaltungName)
-            .data("erzeugtAm", LocalDateTime.now())
-            .data("eintraege", erfolgsZeilen)
-            .render();
-
-        byte[] pdf;
+        byte[] zip;
         try {
-            pdf = pdfService.renderEncryptedPdf(html, pdfPassword);
-        } catch (Exception e) {
-            throw new BusinessException("PDF-Erzeugung fehlgeschlagen: " + e.getMessage());
+            zip = zipService.encryptSingleEntry(CSV_DATEINAME, buildCsv(erfolgsZeilen), zipPassword);
+        } catch (IOException e) {
+            throw new BusinessException("ZIP-Erzeugung fehlgeschlagen: " + e.getMessage());
         }
 
         protokollService.log(ProtokollKategorie.SECURITY,
-            "Temporäre Passwörter per PDF erzeugt",
+            "Temporäre Passwörter per ZIP erzeugt",
             erfolgsZeilen.size() + " Teilnehmer erfolgreich zurückgesetzt"
                 + (fehlgeschlagen.isEmpty() ? "" : ("; fehlgeschlagen: " + String.join(", ", fehlgeschlagen))),
             null, veranstaltungId);
 
-        return new TeilnehmerPasswortPdfResult(pdf, fehlgeschlagen);
+        return new TeilnehmerPasswortZipResult(zip, fehlgeschlagen);
+    }
+
+
+    private byte[] buildCsv(List<ReportZeile> zeilen) throws IOException {
+        int maxGruppen = zeilen.stream().mapToInt(z -> z.gruppen().size()).max().orElse(0);
+
+        List<String> header = new ArrayList<>(List.of("Name", "Login", "Temporäres Passwort"));
+        for (int i = 1; i <= maxGruppen; i++) {
+            header.add("Gruppe " + i);
+        }
+
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            os.write(UTF8_BOM);
+            try (Writer writer = new OutputStreamWriter(os, StandardCharsets.UTF_8);
+                 ICSVWriter csvWriter = new CSVWriterBuilder(writer).withSeparator(';').build()) {
+                csvWriter.writeNext(header.toArray(new String[0]));
+                for (ReportZeile z : zeilen) {
+                    List<String> zeile = new ArrayList<>(List.of(z.fullName(), z.loginName(), z.password()));
+                    zeile.addAll(z.gruppen());
+                    while (zeile.size() < header.size()) {
+                        zeile.add("");
+                    }
+                    csvWriter.writeNext(zeile.toArray(new String[0]));
+                }
+                csvWriter.flush();
+            }
+            return os.toByteArray();
+        }
     }
 }
