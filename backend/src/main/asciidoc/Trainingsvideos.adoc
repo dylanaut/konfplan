@@ -1,0 +1,59 @@
+= KonfPlan: Trainingsvideoa
+:konfplan-version: (Version wird beim Build gesetzt)
+:toc: left
+:toc-title: Inhalt
+:toclevels: 3
+:icons: font
+:source-highlighter: rouge
+:sectnums:
+:imagesdir: videos
+
+Gilt für KonfPlan Version {konfplan-version}.
+
+== Aufgabe
+
+Wie erstelle ich eine Video, das die Nutzung der wichtigsten Funktionen adrstellt und erläutert?
+
+2 Schritte mit Claude Code:
+
+. Text-Skript erstellen (Konzeption)
+. Video erstellen (Produktion)
+
+.KI-Stimme (optional): Den Text aus dem Skript bei Tools wie https://elevenlabs.io/[ElevenLabs] hochladen, um eine
+professionelle Sprachspur zu
+generieren.
+
+.Template für Erstellung eines Text-Skript
+
+====
+"Erstelle mir ein detailliertes Text-Skript für ein 2-minütiges Erklärvideo unserer Anwendung. Unterteile es in Tabellen-Form mit drei Spalten: 1. Sichtbare Aktion auf dem Bildschirm, 2. Gesprochener Text (Audiospur), 3. Wichtige Klick-Hinweise. Konzentriere dich auf den Kern-Workflow [Beispiel: Registrierung und Datenupload]."
+====
+
+
+.Template für Erstellung eines Videos mit Playwright
+
+====
+"Schreibe mir ein Playwright-Skript in JavaScript/TypeScript, das meine lokale Web-Anwendung unter https://localhost:9000 öffnet.
+Das Skript soll folgende Schritte automatisch ausführen: [Schritt 1, Schritt 2, Schritt 3]. Nutze die Playwright-Option recordVideo, um die gesamte Interaktion als Video im Ordner './videos' zu speichern. Baue zwischen den Klicks künstliche Pausen (z.B. 1-2 Sekunden) ein, damit man dem Verlauf im Video gut folgen kann."
+====
+
+[NOTE]
+====
+Siehe auch die vorhandenen Benutzerhandbücher
+====
+
+=== Variante für Teilnehmer
+Erstelle mir ein detailliertes Text-Skript für ein 2-minütiges Erklärvideo unserer Anwendung aus Sicht eines Teilnehmers.
+
+Unterteile es in Tabellen-Form mit drei Spalten: 1. Sichtbare Aktion auf dem Bildschirm, 2. Gesprochener Text (Audiospur), 3. Wichtige Klick-Hinweise. Konzentriere dich auf den Kern-Workflow [Erstanmeldung,
+Passwortvergabe, Anmeldung, Bearbeitung des Profils, evtl. Email, Eintrag der Neigungen, Bearbeitung der Verfügbarkeit,
+Vergabe von Prioritäten].
+
+Word-Ergebnis siehe link:docx/KonfPlan_Erklaervideo_Teilnehmer_Skript.docx[hier]
+
+
+
+
+
+
+
