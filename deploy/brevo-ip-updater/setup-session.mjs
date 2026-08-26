@@ -45,18 +45,23 @@ try {
   console.log('Öffne Brevo-Login...');
   await page.goto('https://login.brevo.com', { waitUntil: 'networkidle' });
 
-  await page.fill('input[type="email"], input[name="email"]', EMAIL);
-  await page.click('button[type="submit"]');
-  await page.waitForTimeout(1500);
+  // Cookie-Banner wegklicken, falls vorhanden - kann sonst spaetere Klicks verdecken/blockieren.
+  await page.getByRole('button', { name: 'Reject All' }).click({ timeout: 5000 }).catch(() => {});
 
+  // E-Mail UND Passwort stehen auf Brevo auf derselben Seite (kein zweistufiger Login) -
+  // per Live-Test verifiziert (siehe error-unexpected-1787732195391.png).
+  await page.fill('input[type="email"], input[name="email"]', EMAIL);
   await page.fill('input[type="password"], input[name="password"]', PASSWORD);
-  await page.click('button[type="submit"]');
-  await page.waitForTimeout(2000);
+  await page.getByRole('button', { name: 'Log In' }).click();
+  await page.waitForTimeout(2500);
 
   // Geraeteverifizierung: Brevo verlangt beim ersten Login von einem neuen Geraet einen per
-  // E-Mail zugestellten 6-stelligen Code.
-  const codeFieldVisible = await page.locator('input[name="code"], input[autocomplete="one-time-code"]')
-    .first().isVisible().catch(() => false);
+  // E-Mail zugestellten 6-stelligen Code ("Verify your device"-Seite, Feld mit Placeholder
+  // "E.g. 172846", Button "Verify" - per Live-Test verifiziert).
+  const codeInput = page.locator(
+    'input[placeholder*="172846"], input[name="code"], input[autocomplete="one-time-code"]'
+  ).first();
+  const codeFieldVisible = await codeInput.isVisible({ timeout: 5000 }).catch(() => false);
 
   if (codeFieldVisible) {
     console.log('Geraeteverifizierung erforderlich - Code wurde per E-Mail an ' + EMAIL + ' geschickt.');
@@ -64,8 +69,8 @@ try {
     const code = await rl.question('Bitte den 6-stelligen Code eingeben: ');
     rl.close();
 
-    await page.fill('input[name="code"], input[autocomplete="one-time-code"]', code.trim());
-    await page.click('button[type="submit"]');
+    await codeInput.fill(code.trim());
+    await page.getByRole('button', { name: /^Verify$|Confirm|Submit|Log In/i }).click();
     await page.waitForTimeout(2000);
   } else {
     console.log('Keine Geraeteverifizierung angefordert (evtl. Selektor nicht gefunden - siehe Screenshot bei Problemen).');
