@@ -46,7 +46,7 @@ public class TeilnehmerPasswortZipService {
     }
 
 
-    private record Kandidat(String loginName, String fullName, List<String> gruppen, Teilnehmer nutzer) {
+    protected record Kandidat(String loginName, String fullName, List<String> gruppen, Teilnehmer nutzer) {
     }
 
 
@@ -73,7 +73,7 @@ public class TeilnehmerPasswortZipService {
             // getGruppen() liefert ein Set ohne garantierte Reihenfolge - fuer positionsbasierte
             // "Gruppe 1".."Gruppe N"-Spalten wird eine deterministische (alphabetische) Sortierung
             // waehrend der noch offenen Session gelesen.
-            ergebnis.add(new Kandidat(t.getLoginName(), t.getFirstName() + " " + t.getLastName(),
+            ergebnis.add(new Kandidat(t.getLoginName(), t.getLastName() + ", " + t.getFirstName(),
                 new ArrayList<>(new TreeSet<>(t.getGruppen())), t));
         }
         return ergebnis;
