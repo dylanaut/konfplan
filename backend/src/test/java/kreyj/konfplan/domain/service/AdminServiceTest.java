@@ -229,6 +229,25 @@ public class AdminServiceTest {
 
 
     @Test
+    public void testCreateUser_ZweiTeilnehmerOhneEmail_BeideErfolgreich() {
+        // Regression fuer #282: ein Leerstring statt null im email-Feld verletzte beim zweiten
+        // Nutzer ohne E-Mail-Adresse den DB-UNIQUE-Constraint (NULL ist davon ausgenommen, "" nicht).
+        NutzerDto ersterDto = new NutzerDto("TEILNEHMER", "", "Erster", "Teilnehmer", true);
+        ersterDto.loginName = "erster.ohne.email";
+        NutzerDto zweiterDto = new NutzerDto("TEILNEHMER", "", "Zweiter", "Teilnehmer", true);
+        zweiterDto.loginName = "zweiter.ohne.email";
+
+        NutzerDto ersterCreated = adminService.createUser(ersterDto, null);
+        NutzerDto zweiterCreated = adminService.createUser(zweiterDto, null);
+
+        assertThat(ersterCreated.email).isNull();
+        assertThat(zweiterCreated.email).isNull();
+        assertThat(Nutzer.<Nutzer>findById(ersterCreated.id).getEmail()).isNull();
+        assertThat(Nutzer.<Nutzer>findById(zweiterCreated.id).getEmail()).isNull();
+    }
+
+
+    @Test
     public void testCreateUser_TeilnehmerWithNeigungen_Succeeds() {
         NutzerDto dto = new NutzerDto("TEILNEHMER", "neu@example.com", "Neue", "Person", true);
         dto.loginName = "neue.person";

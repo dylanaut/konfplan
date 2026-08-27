@@ -166,7 +166,10 @@ public class AdminService implements AdminServiceInterface {
         }
 
         nutzer.assignLoginName(dto.loginName);
-        nutzer.setEmail(dto.email);
+        // Leerstring statt null wuerde beim naechsten Nutzer ohne E-Mail-Adresse am
+        // DB-Unique-Constraint auf email scheitern (NULL ist von UNIQUE ausgenommen, '' nicht -
+        // siehe #282).
+        nutzer.setEmail(StringUtils.isBlank(dto.email) ? null : dto.email);
         nutzer.setFirstName(dto.firstName);
         nutzer.setLastName(dto.lastName);
         nutzer.setActive(dto.isActive);
