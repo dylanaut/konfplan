@@ -53,9 +53,13 @@
         <!-- Rollenspezifische Felder: REFERENT -->
         <div v-if="form.role === 'REFERENT'" class="md:col-span-2 bg-blue-50 p-4 rounded-lg grid grid-cols-1 md:grid-cols-2 gap-4">
           <h3 class="md:col-span-2 text-xs font-bold text-blue-700 uppercase tracking-wider">Referenten-Profil</h3>
-          <div class="md:col-span-2">
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Job-Rolle / Position</label>
             <input v-model="form.jobRole" type="text" class="input-field" placeholder="z.B. Softwareentwickler, Manager..." />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Organisation</label>
+            <input v-model="form.organisation" type="text" class="input-field" placeholder="z.B. msg systems ag" />
           </div>
         </div>
 
@@ -124,6 +128,7 @@ const form = reactive({
   role: 'TEILNEHMER',
   isActive: true,
   jobRole: '',
+  organisation: '',
   gruppen: [],
   neigungen: [],
   version: null,
@@ -150,6 +155,7 @@ watch(
       form.role = val?.role ?? 'TEILNEHMER';
       form.isActive = val?.isActive ?? true;
       form.jobRole = val?.jobRole ?? '';
+      form.organisation = val?.organisation ?? '';
       form.gruppen = val?.gruppen ? [...val.gruppen] : [];
       form.neigungen = val?.neigungen ? [...val.neigungen] : [];
     },
