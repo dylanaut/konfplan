@@ -147,7 +147,13 @@ router.beforeEach((to, from, next) => {
     const requiredRole = to.meta?.role ?? null;
 
     if (requiresAuth && !authStore.isAuthenticated) {
-        authStore.login({ redirectUri: window.location.origin + to.fullPath });
+        // from.matched.length === 0 bedeutet: erste Navigation nach einem (Neu-)Laden der App,
+        // kein "davor" innerhalb der SPA - "nicht angemeldet" ist dort der Normalfall (z.B.
+        // direkt aufgerufener Link), keine abgelaufene Sitzung. Erst bei einer echten
+        // In-App-Navigation (u.a. Browser-Zurueck auf eine vorher schon besuchte Seite) ist der
+        // Hinweis auf eine abgelaufene/beendete Sitzung hilfreich statt verwirrend.
+        const cameFromWithinApp = from.matched.length > 0;
+        authStore.requireLogin(window.location.origin + to.fullPath, { silent: !cameFromWithinApp });
         return next(false);
     }
 

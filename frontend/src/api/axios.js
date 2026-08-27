@@ -1,5 +1,12 @@
 import axios from 'axios';
+import { useToast } from 'vue-toastification';
 import keycloak from '../keycloak';
+
+// useToast() statt useAuthStore()/requireLogin(), um keinen Zirkelimport zu erzeugen
+// (auth.js importiert bereits von hier). Erst im Interceptor selbst aufgeloest (nicht hier
+// auf Modulebene) - zu diesem fruehen Zeitpunkt (Import-Reihenfolge in main.js) ist das
+// Toast-Plugin noch nicht per app.use(Toast, ...) registriert.
+const toast = () => useToast();
 
 // In Produktion (Quinoa-Deployment: Frontend und Backend auf demselben Origin) muss die
 // baseURL relativ bleiben - ein hartcodierter 'http://localhost:9000'-Fallback wuerde im
@@ -55,6 +62,8 @@ api.interceptors.response.use(
         if (error.response?.status === 401) {
             localStorage.removeItem('token');
             localStorage.removeItem('role');
+            toast().info('Sitzung abgelaufen oder abgemeldet. Bitte erneut anmelden.',
+              { timeout: 5000, closeOnClick: true });
             keycloak.login();
         }
         return Promise.reject(error);

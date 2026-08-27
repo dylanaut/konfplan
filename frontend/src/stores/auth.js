@@ -38,6 +38,20 @@ export const useAuthStore = defineStore('auth', () => {
         keycloak.login(options);
     }
 
+    // Vom Router-Guard genutzt, wenn eine geschuetzte Route ohne (mehr) gueltiges Token
+    // aufgerufen wird - z.B. nach Browser-Zurueck auf eine Seite, die vor einem abgelaufenen
+    // Token/Logout besucht wurde. Ohne die Meldung wirkt der anschliessende Redirect zu Keycloak
+    // wie ein unerklaerter Sprung ("Pseudo-Undo") statt eines nachvollziehbaren Session-Endes.
+    // silent: true fuer die allererste Navigation nach einem Seiten-/App-Neuladen (kein
+    // "davor" innerhalb der SPA) - da ist "nicht angemeldet" der Normalfall, keine Ueberraschung.
+    function requireLogin(redirectUri, { silent = false } = {}) {
+        if (!silent) {
+            toast.info('Sitzung abgelaufen oder abgemeldet. Bitte erneut anmelden.',
+              { timeout: 5000, closeOnClick: true });
+        }
+        keycloak.login({ redirectUri });
+    }
+
     function logout({ reason } = {}) {
         // Eine ggf. laufende Planerstellung serverseitig abbrechen, bevor der Token
         // geloescht wird (der Endpoint ist ADMIN-only, danach fehlt die Berechtigung).
@@ -81,6 +95,7 @@ export const useAuthStore = defineStore('auth', () => {
         isSpeaker,
         isParticipant,
         login,
+        requireLogin,
         logout,
         setToken
     };
