@@ -373,9 +373,6 @@ Zeigt bei Speicherfehlern eine rote Fehlermeldung oberhalb des Formulars.
 | Auswahl (Kein Abschluss / Berufsreife / Mittlere Reife / Allgemeine Hochschulreife /
   Fachhochschulreife / Hochschulabschluss), optional.
 
-| Zielgruppe (Info-Text)
-| Freier Text (optional).
-
 | Referent
 | Auswahl aus allen Referenten, Pflichtfeld, bei Pflichtvorträgen gesperrt (Referent liegt dort
   implizit fest).

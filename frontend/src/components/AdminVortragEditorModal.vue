@@ -41,23 +41,17 @@
           </select>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Zielgruppe (Info-Text)</label>
-            <input v-model="form.zielgruppe" type="text" class="input-field" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Referent</label>
-            <select v-model="form.referent.id" class="input-field" required :disabled="form.vortrag_typ === 'PFLICHT'">
-              <option :value="null">Bitte wählen...</option>
-              <option v-for="r in referenten" :key="r.id" :value="r.id">
-                {{ r.firstName }} {{ r.lastName }}
-              </option>
-            </select>
-            <p v-if="form.vortrag_typ === 'PFLICHT'" class="text-[10px] text-gray-500 mt-1 italic">
-              Referent bei Pflichtvorträgen nicht änderbar.
-            </p>
-          </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Referent</label>
+          <select v-model="form.referentId" class="input-field" required :disabled="form.vortrag_typ === 'PFLICHT'">
+            <option :value="null">Bitte wählen...</option>
+            <option v-for="r in referenten" :key="r.id" :value="r.id">
+              {{ r.firstName }} {{ r.lastName }}
+            </option>
+          </select>
+          <p v-if="form.vortrag_typ === 'PFLICHT'" class="text-[10px] text-gray-500 mt-1 italic">
+            Referent bei Pflichtvorträgen nicht änderbar.
+          </p>
         </div>
 
         <!-- SPEZIFISCH: PFLICHTVORTRAG -->
@@ -66,7 +60,7 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="md:col-span-2">
               <label class="block text-sm font-medium text-gray-700 mb-1">Pflicht-Gruppe (Exakt)</label>
-              <select v-model="form.pflichtgruppe" class="input-field" required>
+              <select v-model="form.pflichtGruppe" class="input-field" required>
                 <option value="">-- Gruppe wählen --</option>
                 <option v-for="g in participantGroups" :key="g" :value="g">{{ g }}</option>
               </select>
@@ -76,14 +70,14 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Pflicht-Raum</label>
-              <select v-model="form.pflichtraum.id" class="input-field" required>
+              <select v-model="form.pflichtRaumId" class="input-field" required>
                 <option :value="null">-- Raum wählen --</option>
                 <option v-for="r in raeume" :key="r.id" :value="r.id">{{ r.name }} (Kap.: {{ r.kapazitaet }})</option>
               </select>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Pflicht-Slot</label>
-              <select v-model="form.pflichtslot.id" class="input-field" required>
+              <select v-model="form.pflichtSlotId" class="input-field" required>
                 <option :value="null">-- Slot wählen --</option>
                 <option v-for="s in slots" :key="s.id" :value="s.id">{{ formatSlot(s) }}</option>
               </select>
@@ -163,15 +157,17 @@ const selectedWahlslotIds = ref([]);
 
 const form = reactive({
   id: null,
+  version: null,
+  veranstaltungId: null,
   vortrag_typ: 'WAHL',
   titel: '',
   inhalt: '',
-  zielgruppe: '',
+  ausstattung: '',
   abschluss: null,
-  referent: { id: null },
-  pflichtraum: { id: null },
-  pflichtslot: { id: null },
-  pflichtgruppe: '',
+  referentId: null,
+  pflichtRaumId: null,
+  pflichtSlotId: null,
+  pflichtGruppe: '',
   wiederholbar: false,
   maxWiederholungen: 1,
   neigungen: [],
@@ -181,19 +177,21 @@ watch(
     () => props.vortrag,
     (val) => {
       form.id = val?.id ?? null;
-      form.vortrag_typ = val?.vortrag_typ ?? 'WAHL';
+      form.version = val?.version ?? null;
+      form.veranstaltungId = val?.veranstaltungId ?? null;
+      form.vortrag_typ = val?.istPflicht ? 'PFLICHT' : 'WAHL';
       form.titel = val?.titel ?? '';
       form.inhalt = val?.inhalt ?? '';
-      form.zielgruppe = val?.zielgruppe ?? '';
+      form.ausstattung = val?.ausstattung ?? '';
       form.abschluss = val?.abschluss ?? null;
-      form.referent.id = val?.referent?.id ?? null;
-      form.pflichtraum.id = val?.pflichtraum?.id ?? null;
-      form.pflichtslot.id = val?.pflichtslot?.id ?? null;
-      form.pflichtgruppe = val?.pflichtgruppe ?? '';
+      form.referentId = val?.referentId ?? null;
+      form.pflichtRaumId = val?.pflichtRaumId ?? null;
+      form.pflichtSlotId = val?.pflichtSlotId ?? null;
+      form.pflichtGruppe = val?.pflichtGruppe ?? '';
       form.wiederholbar = val?.wiederholbar ?? false;
       form.maxWiederholungen = val?.maxWiederholungen ?? 1;
       form.neigungen = val?.neigungen ? [...val.neigungen] : [];
-      selectedWahlslotIds.value = val?.wahlslots?.map(s => s.id) ?? [];
+      selectedWahlslotIds.value = val?.istPflicht ? [] : [...(val?.verfuegbareSlotIds ?? [])];
     },
     { immediate: true }
 );
@@ -212,18 +210,17 @@ const close = () => {
 };
 
 const save = () => {
-  const payload = { ...form };
+  const payload = { ...form, istPflicht: form.vortrag_typ === 'PFLICHT' };
+  delete payload.vortrag_typ;
   if (form.vortrag_typ === 'WAHL') {
-    payload.wahlslots = props.slots.filter(s => selectedWahlslotIds.value.includes(s.id));
-    payload.pflichtraum = null;
-    payload.pflichtslot = null;
-    payload.pflichtgruppe = null;
+    payload.verfuegbareSlotIds = [...selectedWahlslotIds.value];
+    payload.pflichtRaumId = null;
+    payload.pflichtSlotId = null;
+    payload.pflichtGruppe = null;
   } else {
-    payload.wahlslots = [];
+    payload.verfuegbareSlotIds = [];
     payload.wiederholbar = false;
     payload.neigungen = [];
-    payload.pflichtraum = props.raeume.find(r => r.id === form.pflichtraum.id);
-    payload.pflichtslot = props.slots.find(s => s.id === form.pflichtslot.id);
   }
   emit('save', payload);
 };
