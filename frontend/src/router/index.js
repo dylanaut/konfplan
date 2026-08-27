@@ -19,6 +19,7 @@ const AbstimmungsfragebogenAlle = () => import('../views/report/Abstimmungsfrage
 const LaufzettelAlleReferenten = () => import('../views/report/LaufzettelAlleReferenten.vue');
 const Stundenplan = () => import('../views/report/Stundenplan.vue');
 const Anwesenheiten = () => import('../views/report/Anwesenheiten.vue');
+const WahlvortraegeUebersicht = () => import('../views/report/WahlvortraegeUebersicht.vue');
 
 const routes = [
     {
@@ -128,6 +129,12 @@ const routes = [
         path: '/admin/veranstaltung/:vid/anwesenheiten',
         name: 'Anwesenheiten',
         component: Anwesenheiten,
+        meta: { requiresAuth: true, role: 'ADMIN' }
+    },
+    {
+        path: '/admin/veranstaltung/:vid/wahlvortraege-uebersicht',
+        name: 'WahlvortraegeUebersicht',
+        component: WahlvortraegeUebersicht,
         meta: { requiresAuth: true, role: 'ADMIN' }
     },
     {
