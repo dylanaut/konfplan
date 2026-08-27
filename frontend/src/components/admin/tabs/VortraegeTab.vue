@@ -10,6 +10,10 @@
           <UploadIcon class="w-3.5 h-3.5"/>
           Import
         </button>
+        <button @click="openWahlvortraegeUebersicht" class="btn-secondary flex items-center gap-2 text-xs py-1 px-3">
+          <PrinterIcon class="w-3.5 h-3.5"/>
+          Drucken
+        </button>
         <button @click="emit('openVortragEditor', null)" class="btn-primary text-xs py-1 px-3">+ Neu</button>
       </div>
     </div>
@@ -58,14 +62,18 @@
 
 <script setup>
 import { computed, reactive, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   ArrowUpDown as ArrowUpDownIcon,
   FileText as FileTextIcon,
   Pencil as PencilIcon,
+  Printer as PrinterIcon,
   Trash2 as Trash2Icon,
   Upload as UploadIcon
 } from '@lucide/vue';
 import PaginationControls from '../../PaginationControls.vue';
+
+const router = useRouter();
 
 const props = defineProps({
   vortraege: Array,
@@ -134,6 +142,12 @@ const filteredVortraege = computed(() => {
   return processList(list, filters.vortraege, sorts.vortraege);
 });
 const paginatedVortraege = computed(() => paginate(filteredVortraege.value, pages.vortraege));
+
+const openWahlvortraegeUebersicht = () => {
+  if (!props.selectedVid) return;
+  const route = router.resolve({ name: 'WahlvortraegeUebersicht', params: { vid: props.selectedVid } });
+  window.open(route.href, '_blank');
+};
 </script>
 
 <style scoped>
