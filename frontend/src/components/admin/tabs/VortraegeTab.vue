@@ -26,7 +26,10 @@
         </thead>
         <tbody class="divide-y divide-gray-100">
         <tr v-for="v in paginatedVortraege" :key="v.id" class="hover:bg-gray-50">
-          <td class="px-4 py-2 font-bold">{{ v.titel }}</td>
+          <td class="px-4 py-2">
+            <div class="font-bold">{{ v.titel }}</div>
+            <div v-if="v.inhalt" class="text-gray-500 font-normal mt-0.5 line-clamp-2">{{ v.inhalt }}</div>
+          </td>
           <td class="px-4 py-2">{{ v.referentName }}</td>
           <td class="px-4 py-2 text-gray-600">{{ v.referentOrganisation || '-' }}</td>
           <td class="px-4 py-2 text-center">
