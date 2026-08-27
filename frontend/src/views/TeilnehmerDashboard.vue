@@ -177,7 +177,6 @@
                               <ChevronUpIcon v-else class="w-3 h-3 text-gray-400 shrink-0"/>
                               <span class="font-semibold">{{ talk.titel }}</span>
                             </span>
-                            von {{ talk.referentName }}
                             <span v-if="talk.istPflicht" class="ml-1 text-white bg-blue-500 text-[9px] font-bold px-1.5 py-0.5 rounded-full">Pflicht</span>
                           </td>
                           <td v-for="neigung in neigungStore.neigungen" :key="neigung.name" class="px-1 py-1 text-center text-gray-500">
