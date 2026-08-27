@@ -205,7 +205,7 @@
                          @save="handleSaveGebaeude"/>
     <RaumEditorModal :isVisible="showRaumModal" :raum="selectedRaum" :slots="eventSlots" :gebaeude="gebaeude"
                      @close="showRaumModal = false" @save="handleSaveRaum"/>
-    <UserEditorModal :isVisible="showUserModal" :nutzer="selectedUser" :eventSlots="eventSlots"
+    <UserEditorModal :isVisible="showUserModal" :nutzer="selectedUser" :eventSlots="eventSlots" :fixedRole="newUserFixedRole"
                      @close="showUserModal = false" @save="handleSaveUser"/>
     <AdminVortragEditorModal :isVisible="showVortragModal" :vortrag="selectedVortrag" :referenten="referenten"
                              :raeume="filteredRaeume" :slots="eventSlots" :participantGroups="teilnehmerGruppen"
@@ -333,6 +333,9 @@ const showRaumModal = ref(false);
 const selectedRaum = ref(null);
 const showUserModal = ref(false);
 const selectedUser = ref(null);
+// Rolle beim Neuanlegen, falls durch den aufrufenden Tab (Referenten/Teilnehmer/Organisatoren)
+// bereits eindeutig vorgegeben - dann muss/darf sie im Modal nicht mehr ausgewaehlt werden.
+const newUserFixedRole = ref(null);
 const showVortragModal = ref(false);
 const selectedVortrag = ref(null);
 const vortragModalError = ref('');
@@ -688,6 +691,7 @@ const deleteRaum = async (r) => {
 };
 
 const openUserModal = (u) => {
+  newUserFixedRole.value = u?.id ? null : (u?.role || null);
   selectedUser.value = u?.id ? {...u} : {
     firstName: '',
     lastName: '',
