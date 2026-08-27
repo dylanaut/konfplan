@@ -76,6 +76,19 @@ rohe Cgroup-Pfade (`id="/docker"` usw.) statt einzelner Container mit Namen/Labe
 verifiziert.
 ====
 
+[WARNING]
+====
+Mindestens **cAdvisor v0.54.0** verwenden (aktuell gepinnt: `ghcr.io/google/cadvisor:v0.60.5` -
+ab v0.53.0 zog das Image von `gcr.io/cadvisor/cadvisor` zu `ghcr.io/google/cadvisor` um). Mit
+v0.49.1 lieferte `/metrics` auf Docker-Setups mit dem neueren containerd-Snapshotter (`docker
+info` zeigt dann `Storage Driver: overlayfs` / `driver-type: io.containerd.snapshotter.v1` -
+inzwischen der Standard bei aktuellem Docker Engine, z.B. 29.x) trotz erfolgreich registrierter
+Docker-Factory **keine** Container-Metriken: die Layer-ID-Aufloesung scheiterte für jeden
+Container ("failed to identify the read-write layer ID"), `/metrics` zeigte nur rohe
+Root-Cgroups. Bekannter, gefixter cAdvisor-Bug (google/cadvisor#3643, #3860 - Fix in PR #3709,
+ausgeliefert ab v0.54.0). Per Live-Test auf Docker 29.7.2 verifiziert.
+====
+
 == Custom-Metriken (KonfPlan-spezifisch)
 
 [cols="2,1,3", options="header"]

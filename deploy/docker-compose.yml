@@ -188,7 +188,15 @@ services:
   # dafuer keine Prometheus-Metriken, cAdvisor liest sie direkt aus den Docker-/Cgroup-Daten des
   # Hosts. Nur lesende Mounts, kein "privileged" - reicht fuer Start-/Laufzeit-Metriken.
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    # Ab v0.53.0 zog das Image von gcr.io/cadvisor/cadvisor zu ghcr.io/google/cadvisor um (siehe
+    # cAdvisor-README). v0.49.1 lieferte auf Docker-Setups mit dem neueren containerd-Snapshotter
+    # (Storage Driver "overlayfs", driver-type "io.containerd.snapshotter.v1" - inzwischen der
+    # Standard bei aktuellem Docker Engine) ueberhaupt keine Container-Metriken: die Docker-Factory
+    # meldete sich zwar erfolgreich an, aber die Layer-ID-Aufloesung schlug fuer JEDEN Container
+    # fehl ("failed to identify the read-write layer ID"), wodurch /metrics nur rohe Root-Cgroups
+    # zeigte statt einzelner Container mit Namen/Labels - bekannter, gefixter cAdvisor-Bug
+    # (google/cadvisor#3643/#3860, Fix in PR #3709, ausgeliefert ab v0.54.0). Mind. v0.54.0 nutzen.
+    image: ghcr.io/google/cadvisor:v0.60.5
     restart: unless-stopped
     volumes:
       - /:/rootfs:ro
