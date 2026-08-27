@@ -8,7 +8,7 @@
     >
       <div class="flex items-center justify-between mb-6">
         <h2 id="user-editor-modal-title" class="text-xl font-bold text-gray-900">
-          {{ nutzer?.id ? 'Nutzer bearbeiten' : 'Neuen Nutzer anlegen' }}
+          {{ modalTitle }}
         </h2>
         <button class="text-gray-500 hover:text-gray-700" aria-label="Dialog schließen" @click="$emit('close')">✕</button>
       </div>
@@ -41,9 +41,9 @@
           </p>
         </div>
 
-        <div class="md:col-span-2">
+        <div v-if="!roleLocked" class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-1">Rolle</label>
-          <select v-model="form.role" class="input-field" required :disabled="!!nutzer?.id">
+          <select v-model="form.role" class="input-field" required>
             <option value="TEILNEHMER">Teilnehmer</option>
             <option value="REFERENT">Referent</option>
             <option value="ADMIN">Administrator</option>
@@ -100,20 +100,35 @@
 </template>
 
 <script setup>
-import { reactive, watch } from 'vue';
+import { reactive, computed, watch } from 'vue';
 import { useGroupStore } from '../stores/group';
 import { useNeigungStore } from '../stores/neigung';
+
+const ROLLEN_NAMEN = { TEILNEHMER: 'Teilnehmer', REFERENT: 'Referent', ADMIN: 'Administrator' };
 
 const props = defineProps({
   isVisible: { type: Boolean, required: true },
   nutzer: { type: Object, default: null },
-  selectedVid: { type: Number, default: null }
+  selectedVid: { type: Number, default: null },
+  // Rolle beim Neuanlegen, falls durch den aufrufenden Tab bereits eindeutig vorgegeben (z.B.
+  // "+ Neu" im Referenten-Tab) - dann entfaellt die Rollenauswahl, analog zum Bearbeiten-Fall
+  // (dort ist die Rolle einer bestehenden Person ohnehin nie mehr aenderbar).
+  fixedRole: { type: String, default: null }
 });
 
 const emit = defineEmits(['close', 'save']);
 const groupStore = useGroupStore();
 const neigungStore = useNeigungStore();
 neigungStore.fetchNeigungen();
+
+const isEditing = computed(() => !!props.nutzer?.id);
+const roleLocked = computed(() => isEditing.value || !!props.fixedRole);
+const modalTitle = computed(() => {
+  const rollenName = ROLLEN_NAMEN[form.role] ?? 'Nutzer';
+  if (isEditing.value) return `${rollenName} bearbeiten`;
+  if (roleLocked.value) return `${rollenName} anlegen`;
+  return 'Neuen Nutzer anlegen';
+});
 
 const form = reactive({
   id: null,
