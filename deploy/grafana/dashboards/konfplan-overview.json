@@ -112,6 +112,26 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "id": 7,
+      "title": "Container-Uptime (Zeit seit letztem Start)",
+      "description": "Ein ploetzlicher Abfall auf nahe 0 markiert einen (Neu-)Start bzw. eine vorherige Downtime des jeweiligen Containers.",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "s" },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "time() - container_start_time_seconds{container_label_com_docker_compose_service=~\"app|keycloak|postgres\"}",
+          "legendFormat": "{{container_label_com_docker_compose_service}}",
+          "refId": "A"
+        }
+      ]
     }
   ]
 }

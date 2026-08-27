@@ -54,6 +54,28 @@ nötig):
 * HTTP-Request-Metriken (`http_server_requests_seconds_count`/`_sum`, nach Pfad/Methode/Status)
 * DB-Connection-Pool (Agroal, `agroal_active_count`, `agroal_available_count`)
 
+== Container-Uptime/-Restarts (cAdvisor)
+
+Docker Compose selbst liefert keine Prometheus-Metriken zu Container-Lebenszyklen (Uptime,
+Neustarts) - dafür läuft im Profil "monitoring" zusätzlich
+https://github.com/google/cadvisor[cAdvisor], das diese Daten direkt aus den
+Docker-/Cgroup-Informationen des Hosts liest und unter `container_start_time_seconds` (Startzeit
+seit Unix-Epoche, pro Container) exponiert. Panel "Container-Uptime (Zeit seit letztem Start)" im
+Dashboard zeigt `time() - container_start_time_seconds{...}` - ein plötzlicher Abfall auf nahe 0
+markiert einen (Neu-)Start.
+
+Nur lesende Mounts (`:ro`), kein `privileged: true` - reicht für Start-/Laufzeit-Metriken, nicht
+aber für alle von cAdvisor grundsätzlich unterstützten Metriken (z.B. manche Disk-I/O-Details).
+
+[NOTE]
+====
+Der Docker-Socket muss explizit gemountet werden (`/var/run/docker.sock:/var/run/docker.sock:ro`)
+- ein Mount des gesamten `/var/run`-Verzeichnisses reicht nicht: cAdvisors Docker-Integration
+registriert sich dann nicht ("Cannot connect to the Docker daemon"), und alle Metriken zeigen nur
+rohe Cgroup-Pfade (`id="/docker"` usw.) statt einzelner Container mit Namen/Labels - per Live-Test
+verifiziert.
+====
+
 == Custom-Metriken (KonfPlan-spezifisch)
 
 [cols="2,1,3", options="header"]
@@ -109,6 +131,12 @@ Belegung des DB-Connection-Pools:
 [source]
 ----
 agroal_active_count / (agroal_active_count + agroal_available_count)
+----
+
+Container-Uptime seit letztem (Neu-)Start, je Kern-Container:
+[source]
+----
+time() - container_start_time_seconds{container_label_com_docker_compose_service=~"app|keycloak|postgres"}
 ----
 
 == Bekannte Stolperfallen (per Live-Test gegen Keycloak 26.7.0 verifiziert)
