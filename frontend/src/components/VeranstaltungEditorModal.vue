@@ -68,6 +68,13 @@
           <input v-model.number="form.maxPrioritaeten" type="number" min="1" class="input-field" placeholder="unbeschränkt" />
         </div>
 
+        <div class="md:col-span-2 flex items-center gap-2">
+          <input id="teilnehmerAendernVerfuegbarkeit" type="checkbox" v-model="form.teilnehmerAendernVerfuegbarkeit" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+          <label for="teilnehmerAendernVerfuegbarkeit" class="text-sm text-gray-700">
+            Teilnehmer dürfen ihre persönliche Verfügbarkeit selbst ändern
+          </label>
+        </div>
+
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Logo URL (optional)</label>
           <input v-model="form.logo" type="text" class="input-field" placeholder="https://..." />
@@ -108,6 +115,7 @@ const form = reactive({
   deadlineReferenten: '',
   deadlineTeilnehmer: '',
   maxPrioritaeten: null,
+  teilnehmerAendernVerfuegbarkeit: false,
   logo: '',
   logo_link: '',
   organisatorIds: [],
@@ -123,6 +131,7 @@ watchEffect(() => {
   form.deadlineReferenten = val?.deadlineReferenten ? val.deadlineReferenten.slice(0, 16) : '';
   form.deadlineTeilnehmer = val?.deadlineTeilnehmer ? val.deadlineTeilnehmer.slice(0, 16) : '';
   form.maxPrioritaeten = val?.maxPrioritaeten ?? null;
+  form.teilnehmerAendernVerfuegbarkeit = val?.teilnehmerAendernVerfuegbarkeit ?? false;
   form.logo = val?.logo ?? '';
   form.logo_link = val?.logo_link ?? '';
   form.organisatorIds = val?.organisatorIds ?? [];

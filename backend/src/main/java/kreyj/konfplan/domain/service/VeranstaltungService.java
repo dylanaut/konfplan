@@ -85,6 +85,7 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
         v.setLogo(dto.getLogo());
         v.setLogo_link(dto.getLogo_link());
         v.setMaxPrioritaeten(dto.getMaxPrioritaeten());
+        v.setTeilnehmerAendernVerfuegbarkeit(dto.isTeilnehmerAendernVerfuegbarkeit());
 
         // Gebäude zuweisen
         if (dto.getGebaeude() != null) {
