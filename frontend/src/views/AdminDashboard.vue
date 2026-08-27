@@ -614,6 +614,7 @@ const handleSaveVeranstaltung = async (v) => {
     await refreshVeranstaltungen();
   } catch (e) {
     console.error('Fehler beim Speichern der Veranstaltung:', e);
+    alert('Fehler beim Speichern: ' + extractErrorMessage(e));
   }
 };
 const handleDatasetImported = async (dto) => {
@@ -849,14 +850,15 @@ const handleGeneratePasswordsZip = async (zipPassword) => {
 const openVortragEditor = (v) => {
   vortragModalError.value = '';
   selectedVortrag.value = v?.id ? {...v} : {
+    veranstaltungId: selectedVid.value,
     titel: '',
     inhalt: '',
     ausstattung: '',
-    referent: {id: null},
-    vortrag_typ: 'WAHL',
-    pflichtgruppe: '',
-    pflichtraum: {id: null},
-    pflichtslot: {id: null},
+    referentId: null,
+    istPflicht: false,
+    pflichtGruppe: '',
+    pflichtRaumId: null,
+    pflichtSlotId: null,
   };
   showVortragModal.value = true;
 };
@@ -902,6 +904,7 @@ const handleSaveSlot = async (s) => {
     await loadData();
   } catch (e) {
     console.error('Fehler beim Speichern des Slots:', e);
+    alert('Fehler beim Speichern: ' + extractErrorMessage(e));
   }
 };
 const deleteSlot = async (id) => {
