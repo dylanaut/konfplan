@@ -177,7 +177,7 @@
                 </div>
 
                 <h4 class="font-bold text-sm mb-2">Meine Prioritäten</h4>
-                <p class="text-[10px] text-gray-500 mb-2">Nummern entsprechen der Legende oben. 10 = höchste Priorität, 1 = niedrigste, leer/0 = kein Interesse.</p>
+                <p class="text-sm font-bold text-red-600 mb-2">Nummern entsprechen der Legende oben. 10 = höchste Priorität, 1 = niedrigste, leer/0 = kein Interesse.</p>
                 <div class="flex justify-end items-center gap-3 mb-4">
                   <p v-if="event.maxPrioritaeten" class="text-xs font-bold"
                      :class="assignedPrioritaetenCount > event.maxPrioritaeten ? 'text-red-600' : 'text-gray-500'">
