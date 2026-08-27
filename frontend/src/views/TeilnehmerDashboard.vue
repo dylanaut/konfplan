@@ -47,6 +47,7 @@
               <label :for="`profile-neigung-${neigung.name}`" class="text-sm font-medium text-gray-700">{{ neigung.bezeichnung }}</label>
             </div>
           </div>
+          <p class="text-xs text-gray-500 mt-2">Deine Neigungen können bei der Zuordnung zu weiteren Vorträgen berücksichtigt werden.</p>
           <div class="flex justify-end mt-4">
             <button @click="saveNeigungen" class="btn-primary">Speichern</button>
           </div>
@@ -154,8 +155,8 @@
                         <th class="px-2 py-1 text-left sticky left-0 bg-white">Vortrag</th>
                         <th v-for="neigung in neigungStore.neigungen" :key="neigung.name"
                             class="px-1 py-1 text-center align-bottom cursor-pointer select-none rounded-t"
-                            :class="highlightedNeigung === neigung.name ? 'bg-indigo-100' : 'hover:bg-gray-100'"
-                            :title="`${neigung.beschreibung} (klicken zum Hervorheben)`"
+                            :class="highlightedNeigungen.includes(neigung.name) ? 'bg-indigo-100' : 'hover:bg-gray-100'"
+                            :title="`${neigung.beschreibung} (klicken zum Hervorheben, Mehrfachauswahl möglich)`"
                             @click="toggleNeigungHighlight(neigung.name)">
                           <span class="inline-block whitespace-nowrap text-[9px] font-semibold text-indigo-700"
                                 style="writing-mode: vertical-rl; transform: rotate(180deg);">
@@ -167,10 +168,10 @@
                     <tbody>
                       <tr v-for="talk in nummeredVortraege" :key="talk.id"
                           class="border-t border-gray-100"
-                          :class="highlightedNeigung && (talk.neigungen || []).includes(highlightedNeigung) ? 'bg-yellow-100' : ''">
+                          :class="isTalkHighlighted(talk) ? 'bg-yellow-100' : ''">
                         <td class="px-2 py-1 text-right font-black text-indigo-600">{{ talk.nummer }}</td>
                         <td class="px-2 py-1">
-                          <span class="font-semibold">{{ talk.titel }}</span> bei {{ talk.referentName }}
+                          <span class="font-semibold">{{ talk.titel }}</span> von {{ talk.referentName }}
                           <span v-if="talk.istPflicht" class="ml-1 text-white bg-blue-500 text-[9px] font-bold px-1.5 py-0.5 rounded-full">Pflicht</span>
                         </td>
                         <td v-for="neigung in neigungStore.neigungen" :key="neigung.name" class="px-1 py-1 text-center text-gray-500">
@@ -200,7 +201,10 @@
                     <thead class="text-[9px] uppercase font-bold text-gray-500 bg-gray-50">
                       <tr>
                         <th class="py-2 px-2 text-left sticky left-0 bg-gray-50"></th>
-                        <th v-for="talk in chunk" :key="talk.id" class="py-2 px-1 text-center w-10 min-w-[40px]" :title="talk.titel">
+                        <th v-for="talk in chunk" :key="talk.id"
+                            class="py-2 px-1 text-center w-10 min-w-[40px] rounded"
+                            :class="isTalkHighlighted(talk) ? 'bg-yellow-100' : ''"
+                            :title="talk.titel">
                           {{ talk.nummer }}
                         </th>
                       </tr>
@@ -301,11 +305,21 @@ const nummeredVortraege = computed(() => {
   return sortedVortraege.value.map((v, index) => ({ ...v, nummer: index + 1 }));
 });
 
-// Klick auf eine Neigungs-Spaltenüberschrift in der Vortrags-Legende hebt alle Vorträge hervor,
-// die diese Neigung adressieren (erneuter Klick auf dieselbe Spalte hebt die Hervorhebung wieder auf).
-const highlightedNeigung = ref(null);
+// Klick auf eine oder mehrere Neigungs-Spaltenüberschriften in der Vortrags-Legende hebt alle
+// Vorträge hervor, die mindestens eine der ausgewählten Neigungen adressieren (erneuter Klick auf
+// eine bereits ausgewählte Spalte nimmt nur diese wieder aus der Auswahl).
+const highlightedNeigungen = ref([]);
 const toggleNeigungHighlight = (neigungName) => {
-  highlightedNeigung.value = highlightedNeigung.value === neigungName ? null : neigungName;
+  const index = highlightedNeigungen.value.indexOf(neigungName);
+  if (index === -1) {
+    highlightedNeigungen.value.push(neigungName);
+  } else {
+    highlightedNeigungen.value.splice(index, 1);
+  }
+};
+const isTalkHighlighted = (talk) => {
+  return highlightedNeigungen.value.length > 0
+      && (talk.neigungen || []).some((n) => highlightedNeigungen.value.includes(n));
 };
 
 // Bei vielen Vorträgen wird die Prioritäten-Tabelle in mehrere schmalere Tabellen
