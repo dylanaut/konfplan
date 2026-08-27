@@ -28,7 +28,7 @@
         <tr v-for="v in paginatedVortraege" :key="v.id" class="hover:bg-gray-50">
           <td class="px-4 py-2">
             <div class="font-bold">{{ v.titel }}</div>
-            <div v-if="v.inhalt" class="text-gray-500 font-normal mt-0.5" :class="inhaltLineClampClass(v.inhalt)">{{ v.inhalt }}</div>
+            <div v-if="v.inhalt" class="text-gray-500 font-normal mt-0.5 line-clamp-4">{{ v.inhalt }}</div>
           </td>
           <td class="px-4 py-2">{{ v.referentName }}</td>
           <td class="px-4 py-2 text-gray-600">{{ v.referentOrganisation || '-' }}</td>
@@ -134,19 +134,6 @@ const filteredVortraege = computed(() => {
   return processList(list, filters.vortraege, sorts.vortraege);
 });
 const paginatedVortraege = computed(() => paginate(filteredVortraege.value, pages.vortraege));
-
-// Literale Klassennamen (wichtig fuer Tailwinds JIT-Scan, der nur statische Strings im Quellcode
-// erkennt, keine zur Laufzeit zusammengesetzten). Die Box faellt bei kurzem Inhalt kleiner aus
-// statt immer die maximale Hoehe zu belegen, bei langem Inhalt wird auf 4 Zeilen begrenzt.
-const LINE_CLAMP_CLASSES = { 2: 'line-clamp-2', 3: 'line-clamp-3', 4: 'line-clamp-4' };
-// Grobe Schaetzung anhand der Zeichenzahl (kalibriert auf die Breite der Titel-Spalte) statt
-// exakter DOM-Vermessung - reicht fuer die gewuenschte 2/3/4-zeilige Abstufung.
-const ZEICHEN_PRO_ZEILE = 60;
-const inhaltLineClampClass = (inhalt) => {
-  const geschaetzteZeilen = Math.ceil(inhalt.length / ZEICHEN_PRO_ZEILE);
-  const zeilen = Math.min(4, Math.max(2, geschaetzteZeilen));
-  return LINE_CLAMP_CLASSES[zeilen];
-};
 </script>
 
 <style scoped>
