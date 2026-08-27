@@ -1,0 +1,25 @@
+alias ls='ls --color=auto'
+alias dir='dir --color=auto'
+alias vdir='vdir --color=auto'
+alias grep='grep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
+#
+alias ll='ls -l'
+alias la='ls -A'
+alias l='ls -CF'
+#
+alias ghcr_login='cat ~/.ssh/ghcr.pat |docker login ghcr.io -u dylanaut --password-stdin'
+#
+alias konf_pull='docker compose pull'
+alias konf_up='docker compose --profile public --profile monitoring up -d'
+alias konf_down='docker compose --profile public --profile monitoring down'
+#
+alias kc_log='docker compose logs keycloak --since 60m | grep -iE "mail|smtp|brevo"'
+alias konf_logs='docker compose logs app --tail 100'
+alias psql_logs='docker compose logs postgres --tail 100'
+#
+alias ipaddr='curl -s https://api.ipify.org'
+alias ediff0="emacs -nw --eval '(call-interactively \"ediff-files\")'"
+#
+alias bashrc='nano ~/.bashrc'
