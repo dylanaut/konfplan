@@ -166,18 +166,36 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="talk in nummeredVortraege" :key="talk.id"
-                          class="border-t border-gray-100"
-                          :class="isTalkHighlighted(talk) ? 'bg-yellow-100' : ''">
-                        <td class="px-2 py-1 text-right font-black text-indigo-600">{{ talk.nummer }}</td>
-                        <td class="px-2 py-1">
-                          <span class="font-semibold">{{ talk.titel }}</span> von {{ talk.referentName }}
-                          <span v-if="talk.istPflicht" class="ml-1 text-white bg-blue-500 text-[9px] font-bold px-1.5 py-0.5 rounded-full">Pflicht</span>
-                        </td>
-                        <td v-for="neigung in neigungStore.neigungen" :key="neigung.name" class="px-1 py-1 text-center text-gray-500">
-                          {{ (talk.neigungen || []).includes(neigung.name) ? 'X' : '' }}
-                        </td>
-                      </tr>
+                      <template v-for="talk in nummeredVortraege" :key="talk.id">
+                        <tr class="border-t border-gray-100 cursor-pointer"
+                            :class="isTalkHighlighted(talk) ? 'bg-yellow-100' : 'hover:bg-gray-50'"
+                            @click="toggleTalkExpanded(talk.id)">
+                          <td class="px-2 py-1 text-right font-black text-indigo-600">{{ talk.nummer }}</td>
+                          <td class="px-2 py-1">
+                            <span class="inline-flex items-center gap-1">
+                              <ChevronDownIcon v-if="!expandedTalkIds.has(talk.id)" class="w-3 h-3 text-gray-400 shrink-0"/>
+                              <ChevronUpIcon v-else class="w-3 h-3 text-gray-400 shrink-0"/>
+                              <span class="font-semibold">{{ talk.titel }}</span>
+                            </span>
+                            von {{ talk.referentName }}
+                            <span v-if="talk.istPflicht" class="ml-1 text-white bg-blue-500 text-[9px] font-bold px-1.5 py-0.5 rounded-full">Pflicht</span>
+                          </td>
+                          <td v-for="neigung in neigungStore.neigungen" :key="neigung.name" class="px-1 py-1 text-center text-gray-500">
+                            {{ (talk.neigungen || []).includes(neigung.name) ? 'X' : '' }}
+                          </td>
+                        </tr>
+                        <tr v-if="expandedTalkIds.has(talk.id)" class="bg-gray-50">
+                          <td></td>
+                          <td :colspan="1 + neigungStore.neigungen.length" class="px-2 py-2 text-gray-700">
+                            <p class="mb-1">
+                              <span class="font-semibold">{{ talk.referentName }}</span>
+                              <span v-if="talk.referentOrganisation" class="text-gray-500"> ({{ talk.referentOrganisation }})</span>
+                            </p>
+                            <p v-if="talk.inhalt" class="text-gray-600 whitespace-pre-wrap">{{ talk.inhalt }}</p>
+                            <p v-else class="text-gray-400 italic">Kein Inhalt hinterlegt.</p>
+                          </td>
+                        </tr>
+                      </template>
                     </tbody>
                   </table>
                 </div>
@@ -304,6 +322,19 @@ const sortedVortraege = computed(() => {
 const nummeredVortraege = computed(() => {
   return sortedVortraege.value.map((v, index) => ({ ...v, nummer: index + 1 }));
 });
+
+// Klick auf eine Vortrags-Zeile in der Legende klappt eine Detailzeile mit Referent,
+// dessen Organisation und dem Vortragsinhalt auf/zu.
+const expandedTalkIds = ref(new Set());
+const toggleTalkExpanded = (talkId) => {
+  if (expandedTalkIds.value.has(talkId)) {
+    expandedTalkIds.value.delete(talkId);
+  } else {
+    expandedTalkIds.value.add(talkId);
+  }
+  // Set-Mutationen sind für Vues Reaktivität nicht automatisch sichtbar - neue Referenz nötig.
+  expandedTalkIds.value = new Set(expandedTalkIds.value);
+};
 
 // Klick auf eine oder mehrere Neigungs-Spaltenüberschriften in der Vortrags-Legende hebt alle
 // Vorträge hervor, die mindestens eine der ausgewählten Neigungen adressieren (erneuter Klick auf
