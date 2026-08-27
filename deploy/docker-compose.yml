@@ -87,8 +87,8 @@ services:
       # Caddy (lokal/UTM) wird Keycloak stattdessen direkt per HTTP erreicht.
       KC_HTTP_ENABLED: "true"
       KC_PROXY_HEADERS: xforwarded
-      # Healthcheck unten fragt Keycloaks Management-Interface (eigener Port, unabhaengig von
-      # KC_HTTP_RELATIVE_PATH) ab - ohne diese Variable existiert /health/ready nicht.
+      # Healthcheck unten fragt Keycloaks Management-Interface ab - ohne diese Variable
+      # existiert der /health/ready-Endpunkt dort nicht.
       KC_HEALTH_ENABLED: "true"
     secrets:
       - db_password
@@ -112,11 +112,15 @@ services:
       # (beobachtet: ProdKeycloakRealmSyncService lief beim Boot gegen ein noch nicht erreichbares
       # Keycloak, "Connection refused" - einmalig ohne Retry, wodurch u.a. die view-events-Rolle
       # dauerhaft fehlte und der FailedLoginMetricsPoller seitdem mit 403 fehlschlug).
+      # KC_HTTP_RELATIVE_PATH (/auth) gilt live-verifiziert (Keycloak 26.5) auch fuer das
+      # Management-Interface, nicht nur fuer die Haupt-HTTP-Schnittstelle - ohne das
+      # "/auth"-Praefix hier liefert der Endpunkt 404 statt 200 (der Healthcheck lief deshalb
+      # dauerhaft ins "unhealthy", obwohl Keycloak selbst laengst fertig gestartet war).
       test:
         - CMD-SHELL
         - >
           exec 3<>/dev/tcp/127.0.0.1/9000 &&
-          printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          printf 'GET /auth/health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
           head -n 1 <&3 | grep -q "200"
       interval: 10s
       timeout: 5s
