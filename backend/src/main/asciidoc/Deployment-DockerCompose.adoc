@@ -239,6 +239,24 @@ Dieser Account existiert nur als Datenbankzeile, nicht in Keycloak - er muss ein
 angelegt werden (Login-Name muss mit `juergenkrey` übereinstimmen, Rolle `ADMIN`). +
 (Siehe Ubuntu-Frischinstallation.adoc, "Erster Login-Account")
 
+== Keycloak-Master-Realm: temporären Bootstrap-Admin ersetzen
+
+Getrennt vom Bestandsaccount oben (App-Ebene, Realm `konfplan`): Keycloak selbst legt beim allerersten Start im `master`-Realm einen Admin über `KC_BOOTSTRAP_ADMIN_USERNAME`/`KC_BOOTSTRAP_ADMIN_PASSWORD` an (`docker-compose.yml`, Username `admin`, Passwort aus `secrets/keycloak_admin_password.txt`). Dieser Account ist von Keycloak selbst als *temporär* markiert - nach dem ersten Login zeigt die Admin-Konsole einen Hinweis, stattdessen einen permanenten Admin anzulegen und den temporären zu löschen.
+
+Einrichtung:
+
+. Oben links im Realm-Selector auf **`master`** wechseln (nicht `konfplan`) - der Bootstrap-Admin lebt im master-Realm.
+. **Users** → **Add user** → eigenen Benutzernamen vergeben, **Enabled: On**, speichern.
+. Tab **Credentials** → **Set password** → Passwort setzen, Schalter **„Temporary"** dabei ausschalten (sonst erzwingt Keycloak beim nächsten Login eine Passwortänderung - ein anderes „temporär" als das Admin-Konto selbst, aber derselbe Begriff in der UI).
+. Tab **Role mapping** → **Assign role** → Filter „Filter by realm roles" → Rolle **`admin`** zuweisen (eingebaute Super-Admin-Rolle im master-Realm).
+. Ausloggen, mit dem neuen Nutzer neu einloggen und prüfen, dass der Hinweis weg ist und alles erreichbar bleibt.
+. Zurück zu **Users** im master-Realm, den ursprünglichen temporären Nutzer (Username `admin`) suchen und löschen.
+
+[NOTE]
+====
+`KC_BOOTSTRAP_ADMIN_USERNAME`/`_PASSWORD` können in `docker-compose.yml`/`secrets/` unverändert stehen bleiben - Keycloak wertet sie nach bisheriger Beobachtung nur beim allerersten Start aus, wenn im master-Realm noch kein Nutzer existiert. Nach dem Umstieg trotzdem einmal `docker compose restart keycloak` ausführen und in **Users** (master-Realm) prüfen, dass nicht erneut ein `admin`-Temp-Konto auftaucht.
+====
+
 == Persistenz über Neustarts hinweg
 
 Keycloak speichert seinen gesamten Zustand (Nutzer, Rollen-Zuweisungen, Client-Konfiguration) in seiner eigenen PostgreSQL-Datenbank (`KC_DB=postgres`, siehe `docker-compose.yml`) - nicht im Container selbst.
@@ -323,6 +341,28 @@ docker run --rm -it -v "$(pwd):/work" -w /work \
 Fragt den per E-Mail zugestellten 6-stelligen Code interaktiv ab und speichert die resultierende Sitzung in `storage-state.json` (nicht committen, siehe `.gitignore`).
 
 Ab dann trägt `check-outbound-ip.sh` bei jeder erkannten IP-Änderung automatisch die neue IP ein (per `docker run` mit derselben gespeicherten Sitzung) und meldet Erfolg/Fehlschlag zusätzlich im ntfy-Push-Text. Schlägt die automatische Eintragung fehl (z.B. weil die gespeicherte Sitzung abgelaufen ist), bleibt die bisherige manuelle Nachtrage-Anleitung der Fallback - `setup-session.mjs` muss dann einmalig erneut ausgeführt werden.
+
+== App-Log auf ERROR überwachen
+
+Der Stack hat keinen Alertmanager (siehe `Monitoring-Grafana.adoc`) - Prometheus/Grafana zeigen Fehler nur an, melden sie aber nicht aktiv. `deploy/error-log-notifier.sh` schließt diese Lücke für einen einzelnen, aber wichtigen Fall: Es läuft als Sidecar-Container, tailt live `docker logs -f` des `app`-Containers und schickt jede Zeile, die `ERROR` enthält, sofort per https://ntfy.sh[ntfy.sh] als Push-Benachrichtigung raus.
+
+[NOTE]
+====
+Log-Zeilen können Details wie Stacktraces, Benutzernamen oder interne Pfade enthalten und werden dabei an ntfy.sh (einen externen Dienst) übertragen. Wie bei der IP-Überwachung unten: unbedingt einen zufälligen, nicht erratbaren Topic-Namen wählen - ntfy.sh-Themen sind ohne Zusatzauthentifizierung öffentlich lesbar für jeden, der den Namen kennt.
+====
+
+Einrichtung:
+
+. Einen zufälligen, nicht erratbaren Topic-Namen wählen (unabhängig vom `NTFY_TOPIC` der IP-Überwachung) und in der ntfy-App/-Website abonnieren.
+. In `deploy/.env` eintragen: `NTFY_ERROR_TOPIC=<dein-topic-name>`
+. Profil `alerting` beim Hochfahren zusätzlich aktivieren:
++
+[source,bash]
+----
+docker compose --profile alerting [--profile public ...] up -d
+----
+
+Ohne gesetztes `NTFY_ERROR_TOPIC` bleibt der Container inaktiv (schläft, ohne zu senden) statt in eine Neustart-Schleife zu laufen. Bei einer Fehlerserie (z.B. Absturzschleife) wird höchstens alle 30 Sekunden eine Benachrichtigung geschickt, um ntfy/Handy nicht zu fluten - die unterdrückten Zeilen landen trotzdem im Log des `error-log-notifier`-Containers (`docker compose logs error-log-notifier`).
 
 == Troubleshooting
 

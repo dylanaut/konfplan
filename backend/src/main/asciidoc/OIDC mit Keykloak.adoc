@@ -301,3 +301,14 @@ Für dein Projekt würde der Link für den Google-Login so aussehen:
 *   `kc_idp_hint=google`: Dieser Parameter ist der Hinweis für Keycloak, sofort zum `google`-Provider weiterzuleiten.
 
 Wenn du nun `./mvnw quarkus:dev` startest, wird Keycloak mit den konfigurierten Identity Providern gestartet. Die Keycloak-Login-Seite wird automatisch Buttons für "Login with Google" und "Login with GitHub" anzeigen.
+
+=== Keycloak Admin UI öffnen (von lokal)
+
+Die Keycloak admin UI erreicht man https://URL_URL/auth.
+
+====
+User: admin
+PWD: aus secrets/keycloak_admin_password.txt
+====
+
+Danach zumindest oben links den Realm `konfplan` auswählen.

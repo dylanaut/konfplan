@@ -18,6 +18,9 @@
 #                    (siehe Monitoring-Grafana.adoc). Beide nur an 127.0.0.1 gebunden - Zugriff
 #                    bei einem reinen SSH-verwalteten Server per Tunnel (siehe Doku), nie
 #                    öffentlich über Caddy geroutet.
+#   alerting       - zusätzlich ein Sidecar, der das "app"-Log auf ERROR-Zeilen ueberwacht und
+#                    per ntfy.sh eine Push-Benachrichtigung schickt (siehe
+#                    Deployment-DockerCompose.adoc -> "App-Log auf ERROR ueberwachen").
 #
 # Passwörter kommen NIE aus dieser Datei oder aus .env, sondern aus Docker-Compose-File-Secrets
 # (secrets/*.txt, von bootstrap.sh serverseitig generiert, siehe Deployment.adoc).
@@ -238,6 +241,23 @@ services:
     ports:
       - "${GRAFANA_PORT_BINDING:-127.0.0.1:3000:3000}"
     profiles: ["monitoring"]
+
+  # Beobachtet "docker logs -f" des "app"-Containers laufend und meldet jede ERROR-Zeile per
+  # ntfy.sh (siehe deploy/error-log-notifier.sh) - Echtzeit-Alarm zusaetzlich zu Prometheus/
+  # Grafana, das im Stack keinen Alertmanager hat und daher selbst nichts meldet. Nur lesender
+  # Docker-Socket-Mount, kein "privileged" - reicht, um Logs eines anderen Containers zu lesen.
+  error-log-notifier:
+    image: docker:27-cli
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      NTFY_ERROR_TOPIC: ${NTFY_ERROR_TOPIC:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./error-log-notifier.sh:/usr/local/bin/error-log-notifier.sh:ro
+    entrypoint: ["/bin/sh", "/usr/local/bin/error-log-notifier.sh"]
+    profiles: ["alerting"]
 
   caddy:
     image: caddy:2
