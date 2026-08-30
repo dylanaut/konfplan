@@ -79,7 +79,14 @@ class UseCaseScanner {
             RolesAllowed classRoles = clazz.getAnnotation(RolesAllowed.class);
 
             List<EndpointInfo> endpoints = new ArrayList<>();
-            for (Method method : clazz.getDeclaredMethods()) {
+            // getDeclaredMethods() garantiert KEINE stabile Reihenfolge (kann sich zwischen JVM-
+            // Laeufen unterscheiden) - ohne den Sort weiter unten aendert sich bei jeder
+            // Regenerierung die Methodenreihenfolge, was Diffs unleserlich macht, obwohl sich
+            // inhaltlich nichts geaendert hat (live beobachtet: ein einzelner entfernter Endpunkt
+            // erzeugte sonst einen ueber 270 Zeilen langen Diff).
+            Method[] declaredMethods = clazz.getDeclaredMethods();
+            Arrays.sort(declaredMethods, Comparator.comparing(Method::getName));
+            for (Method method : declaredMethods) {
                 String httpMethod = getHttpMethod(method);
                 if (null == httpMethod) {
                     continue;

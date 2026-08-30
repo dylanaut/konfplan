@@ -5,7 +5,6 @@ import com.opencsv.bean.CsvToBeanBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
@@ -15,7 +14,6 @@ import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.OrganisatorDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerVeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
-import kreyj.konfplan.adapter.in.web.dto.VortragPrioDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.TeilnehmerCsvDto;
 import kreyj.konfplan.application.port.in.TeilnehmerServiceInterface;
 import kreyj.konfplan.persistence.Admin;
@@ -23,7 +21,6 @@ import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Planungsergebnis;
-import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -348,52 +345,6 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
 
         protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer aktualisiert", "Teilnehmer " + oldEmail + " (ID: " + tn.getId() + ") aktualisiert. Neue E-Mail: " + tn.getEmail() + ".", tn.getId(), veranstaltungId);
         return tn;
-    }
-
-
-    @Transactional
-    @Override
-    public void savePriorities(Long userId, Long veranstaltungId, List<VortragPrioDto> priorityDtos) {
-        Teilnehmer teilnehmer = Teilnehmer.findById(userId);
-        if (null == teilnehmer) {
-            protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung fehlgeschlagen", "Teilnehmer mit ID " + userId + " nicht gefunden.", null, veranstaltungId);
-            throw new NotFoundException("Teilnehmer mit ID " + userId + " nicht gefunden.");
-        }
-
-        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        if (null == veranstaltung) {
-            protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung fehlgeschlagen", "Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.", null, veranstaltungId);
-            throw new NotFoundException("Veranstaltung mit ID " + veranstaltungId + " nicht gefunden.");
-        }
-
-        if (LocalDateTime.now().isAfter(veranstaltung.getEndetAm())) {
-            protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung fehlgeschlagen", "Veranstaltung " + veranstaltung.getName() + " ist beendet. Nutzer: " + teilnehmer.getEmail() + ".", teilnehmer.getId(), veranstaltungId);
-            throw new ForbiddenException("Die Veranstaltung ist bereits beendet. Prioritäten können nicht mehr geändert werden.");
-        }
-
-        Prioritaet.delete("teilnehmer = ?1 and vortrag.veranstaltung = ?2", teilnehmer, veranstaltung);
-
-        for (VortragPrioDto dto : priorityDtos) {
-            if (dto.prioWert > 0) {
-                Wahlvortrag vortrag = Wahlvortrag.findById(dto.vortragId);
-                if (null == vortrag) {
-                    LOG.warn("Vortrag mit ID " + dto.vortragId + " für Priorität von Teilnehmer " + userId + " nicht gefunden. Überspringe.");
-                    protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung Warnung", "Vortrag " + dto.vortragId + " für Priorität von " + teilnehmer.getEmail() + " nicht gefunden.", teilnehmer.getId(), veranstaltungId);
-                    continue;
-                }
-                if (!vortrag.getVeranstaltung().getId().equals(veranstaltungId)) {
-                    protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten-Speicherung fehlgeschlagen", "Vortrag " + dto.vortragId + " gehört nicht zur Veranstaltung " + veranstaltungId + ". Nutzer: " + teilnehmer.getEmail() + ".", teilnehmer.getId(), veranstaltungId);
-                    throw new BadRequestException("Vortrag " + dto.vortragId + " gehört nicht zur Veranstaltung " + veranstaltungId);
-                }
-
-                Prioritaet prioritaet = new Prioritaet();
-                prioritaet.setTeilnehmer(teilnehmer);
-                prioritaet.setVortrag(vortrag);
-                prioritaet.setPrioWert(dto.prioWert);
-                prioritaet.persistAndFlush();
-            }
-        }
-        protokollService.log(ProtokollKategorie.NUTZER, "Prioritäten gespeichert", "Prioritäten für Teilnehmer " + teilnehmer.getEmail() + " in Veranstaltung " + veranstaltung.getName() + " gespeichert.", teilnehmer.getId(), veranstaltungId);
     }
 
 

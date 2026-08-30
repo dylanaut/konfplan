@@ -4,7 +4,6 @@ import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerVeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
-import kreyj.konfplan.adapter.in.web.dto.VortragPrioDto;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Teilnehmer;
 
@@ -35,8 +34,6 @@ public interface TeilnehmerServiceInterface {
     Teilnehmer updateTeilnehmerProfile(Teilnehmer teilnehmer, NutzerDto dto);
 
     Teilnehmer updateTeilnehmer(Long id, NutzerDto tnDto, Long veranstaltungId);
-
-    void savePriorities(Long userId, Long veranstaltungId, List<VortragPrioDto> priorityDtos);
 
     void updateVerfuegbarkeit(Long veranstaltungId, NutzerVerfuegbarkeitDto dto, String loginName);
 }
