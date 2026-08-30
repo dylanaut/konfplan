@@ -101,45 +101,7 @@
           </div>
 
           <div class="flex flex-col">
-            <!-- Verfügbarkeiten Section (nur wenn vom Organisator freigeschaltet) -->
-            <template v-if="event.teilnehmerAendernVerfuegbarkeit">
-              <button @click="toggleAvailability(event.id)" class="w-full flex items-center justify-between p-3 text-sm font-bold text-gray-700 border-t border-gray-200 hover:bg-gray-100 transition">
-                <span class="flex items-center gap-2"><CalendarIcon class="w-4 h-4"/>Meine Verfügbarkeit</span>
-                <ChevronDownIcon v-if="activeAvailabilityEventId !== event.id" class="w-5 h-5"/>
-                <ChevronUpIcon v-else class="w-5 h-5"/>
-              </button>
-              <div v-if="activeAvailabilityEventId === event.id" class="p-4 border-t border-gray-200 bg-white animate-fade-in">
-                <div class="flex justify-end mb-4">
-                  <button @click="saveAvailabilities" :disabled="isDeadlinePassed(event.deadlineTeilnehmer) || !hasAvailabilityChanges" class="btn-save-all">
-                    <SaveAllIcon class="w-3.5 h-3.5"/>
-                    Verfügbarkeit speichern
-                  </button>
-                </div>
-                <div class="flex space-x-4 overflow-x-auto pb-4">
-                  <div v-for="(daySlots, day) in groupedSlots" :key="day" class="bg-gray-50 p-3 rounded-lg">
-                    <h4 class="font-bold text-sm mb-3 text-center">{{ day }}</h4>
-                    <table class="text-xs">
-                      <tbody>
-                        <tr>
-                          <td v-for="slot in daySlots" :key="slot.id" class="px-2 py-1 font-bold text-center">{{ formatTime(slot.startTime) }}</td>
-                        </tr>
-                        <tr>
-                          <td v-for="slot in daySlots" :key="slot.id"
-                              :class="['px-2 py-1 text-center', pflichtSlotIds.has(slot.id) ? 'bg-gray-200 rounded' : '']"
-                              :title="pflichtSlotIds.has(slot.id) ? 'Pflichtvortrag der eigenen Gruppe - Teilnahme verpflichtend' : ''">
-                            <input type="checkbox" v-model="availabilities[slot.id]"
-                                   :disabled="pflichtSlotIds.has(slot.id)"
-                                   class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded disabled:opacity-60 disabled:cursor-not-allowed">
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </template>
-
-            <!-- Prioritäten Section -->
+            <!-- Prioritäten Section (immer zuerst, standardmäßig aufgeklappt) -->
             <button @click="togglePriorities(event.id)" class="w-full flex items-center justify-between p-3 text-sm font-bold text-gray-700 border-t border-gray-200 hover:bg-gray-100 transition">
                <span class="flex items-center gap-2"><StarIcon class="w-4 h-4"/>Vorträge & Prioritäten</span>
                <ChevronDownIcon v-if="activeEventId !== event.id" class="w-5 h-5"/>
@@ -257,6 +219,44 @@
                 <p>Für diese Veranstaltung sind noch keine Vorträge verfügbar.</p>
               </div>
             </div>
+
+            <!-- Verfügbarkeiten Section (nur wenn vom Organisator freigeschaltet) -->
+            <template v-if="event.teilnehmerAendernVerfuegbarkeit">
+              <button @click="toggleAvailability(event.id)" class="w-full flex items-center justify-between p-3 text-sm font-bold text-gray-700 border-t border-gray-200 hover:bg-gray-100 transition">
+                <span class="flex items-center gap-2"><CalendarIcon class="w-4 h-4"/>Meine Verfügbarkeit</span>
+                <ChevronDownIcon v-if="activeAvailabilityEventId !== event.id" class="w-5 h-5"/>
+                <ChevronUpIcon v-else class="w-5 h-5"/>
+              </button>
+              <div v-if="activeAvailabilityEventId === event.id" class="p-4 border-t border-gray-200 bg-white animate-fade-in">
+                <div class="flex justify-end mb-4">
+                  <button @click="saveAvailabilities" :disabled="isDeadlinePassed(event.deadlineTeilnehmer) || !hasAvailabilityChanges" class="btn-save-all">
+                    <SaveAllIcon class="w-3.5 h-3.5"/>
+                    Verfügbarkeit speichern
+                  </button>
+                </div>
+                <div class="flex space-x-4 overflow-x-auto pb-4">
+                  <div v-for="(daySlots, day) in groupedSlots" :key="day" class="bg-gray-50 p-3 rounded-lg">
+                    <h4 class="font-bold text-sm mb-3 text-center">{{ day }}</h4>
+                    <table class="text-xs">
+                      <tbody>
+                        <tr>
+                          <td v-for="slot in daySlots" :key="slot.id" class="px-2 py-1 font-bold text-center">{{ formatTime(slot.startTime) }}</td>
+                        </tr>
+                        <tr>
+                          <td v-for="slot in daySlots" :key="slot.id"
+                              :class="['px-2 py-1 text-center', pflichtSlotIds.has(slot.id) ? 'bg-gray-200 rounded' : '']"
+                              :title="pflichtSlotIds.has(slot.id) ? 'Pflichtvortrag der eigenen Gruppe - Teilnahme verpflichtend' : ''">
+                            <input type="checkbox" v-model="availabilities[slot.id]"
+                                   :disabled="pflichtSlotIds.has(slot.id)"
+                                   class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded disabled:opacity-60 disabled:cursor-not-allowed">
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </template>
           </div>
         </div>
       </div>
@@ -265,7 +265,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api/axios';
 import { extractErrorMessage } from '../utils/errorMessage';
@@ -339,6 +339,14 @@ const toggleTalkExpanded = (talkId) => {
 // Vorträge hervor, die mindestens eine der ausgewählten Neigungen adressieren (erneuter Klick auf
 // eine bereits ausgewählte Spalte nimmt nur diese wieder aus der Auswahl).
 const highlightedNeigungen = ref([]);
+// Jede Aenderung an "Meine Neigungen" (auch vor dem Speichern, z.B. beim An-/Abhaken einer
+// Checkbox) soll sich unmittelbar in der Legende und der Prio-Vergabe niederschlagen - daher ein
+// Watcher statt eines einmaligen Abgleichs nur beim Laden/Speichern. Manuelles Toggeln einzelner
+// Spalten (toggleNeigungHighlight unten) bleibt davon unberuehrt, solange sich profile.neigungen
+// nicht aendert.
+watch(() => profile.value.neigungen, (neigungen) => {
+  highlightedNeigungen.value = [...(neigungen || [])];
+}, { deep: true, immediate: true });
 const toggleNeigungHighlight = (neigungName) => {
   const index = highlightedNeigungen.value.indexOf(neigungName);
   if (index === -1) {
@@ -395,7 +403,6 @@ const fetchTeilnehmerProfile = async () => {
   try {
     const response = await api.get('/api/teilnehmer/profile');
     profile.value = response.data;
-    highlightedNeigungen.value = [...(profile.value.neigungen || [])];
   } catch (error) {
     console.error("Fehler beim Laden des Profils:", error);
   }
@@ -405,10 +412,6 @@ const saveNeigungen = async () => {
   try {
     const response = await api.put('/api/teilnehmer/profile', profile.value);
     profile.value = response.data;
-    // Seiteneffekt: die eigenen (gerade gespeicherten) Neigungen in der Vortrags-Legende der
-    // Prioritäten-Sektion vorbelegen/aktualisieren - manuelles Toggeln einzelner Spalten dort
-    // (toggleNeigungHighlight) bleibt davon unberuehrt moeglich.
-    highlightedNeigungen.value = [...(profile.value.neigungen || [])];
     alert('Neigungen erfolgreich gespeichert!');
   } catch (error) {
     alert('Fehler beim Speichern der Neigungen: ' + extractErrorMessage(error));
@@ -419,6 +422,11 @@ const fetchTeilnehmerVeranstaltungen = async () => {
   try {
     const response = await api.get('/api/teilnehmer/veranstaltungen');
     events.value = response.data;
+    // "Vorträge & Prioritäten" ist die wichtigste Section - beim ersten Laden fuer die erste
+    // Veranstaltung direkt aufgeklappt, statt einen manuellen Klick zu verlangen.
+    if (events.value.length > 0) {
+      await togglePriorities(events.value[0].id);
+    }
   } catch (error) {
     console.error("Fehler beim Laden der Veranstaltungen:", error);
   }
