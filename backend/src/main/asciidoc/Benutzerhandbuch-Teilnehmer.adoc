@@ -22,7 +22,8 @@ dem Demo-Datensatz "Karrierekompass Demo" (Login als Teilnehmer `alex.alfa`).
 Nach der Anmeldung über die Startseite öffnet sich eine einzige, zentrierte Seite (keine Tabs) mit dem
 KonfPlan-Logo oben, danach zwei Abschnitte untereinander: **Mein Profil** und **Meine
 Veranstaltungen**. Innerhalb jeder Veranstaltungskarte gibt es zwei auf-/zuklappbare
-Unterabschnitte: **Meine Verfügbarkeit** und **Vorträge & Prioritäten**.
+Unterabschnitte in dieser Reihenfolge: **Vorträge & Prioritäten** (für die erste Veranstaltung
+beim Laden bereits aufgeklappt) und **Meine Verfügbarkeit**.
 
 Oben in der Kopfzeile der Anwendung befinden sich rechts ein **Info**-Menüpunkt (Anwendungsname,
 Version, Build-Datum, Git-Commit, Mailto-Link an den Entwickler) und der **LOGOUT**-Button.
@@ -70,6 +71,14 @@ Button **Speichern** (unten rechts) – speichert die angehakten Neigungen; zeig
 Erfolgs- bzw. Fehlermeldung. Kein "ungespeichert"-Hinweis/Dirty-State für dieses Formular – der
 Speichern-Button ist immer aktiv, unabhängig davon, ob sich etwas geändert hat.
 
+[NOTE]
+====
+Jede angehakte/abgehakte Neigung wirkt sich **sofort** auf die Legende im Abschnitt "Vorträge &
+Prioritäten" aus – bereits beim Klicken der Checkbox, nicht erst nach dem Speichern (siehe
+<<_vortraege_prioritaeten>>). So lässt sich vorab ausprobieren, welche Wahlvorträge zu welcher
+Neigungs-Kombination passen, bevor man sich festlegt.
+====
+
 == Meine Veranstaltungen
 
 Falls der Teilnehmer für keine Veranstaltung angemeldet ist: Hinweistext "Sie sind für keine
@@ -88,39 +97,29 @@ Veranstaltungen angemeldet." Sonst eine Karte pro Veranstaltung mit:
 * Button **Laufzettel anzeigen** (nur sichtbar, wenn ein Plan erstellt wurde) – öffnet den
   Laufzettel-Report (siehe <<_report_laufzettel_teilnehmer>>).
 
-=== Meine Verfügbarkeit
-
-image::02-verfuegbarkeit.png[Meine Verfügbarkeit]
-
-Auf-/zuklappbar per Klick auf die Kopfzeile (Chevron-Icon zeigt den Zustand). Beim Aufklappen
-werden die Zeit-Slots der Veranstaltung geladen, nach Tag gruppiert als nebeneinander stehende
-Spalten-Blöcke dargestellt (ein Block pro Tag, Slots als Spalten innerhalb des Blocks mit
-Startzeit als Kopfzeile).
-
-Pro Slot eine **Checkbox** "verfügbar/nicht verfügbar". Slots, die zu einem Pflichtvortrag der
-eigenen Gruppe gehören, sind grau hinterlegt, ihre Checkbox ist deaktiviert und immer angehakt
-(Tooltip: "Pflichtvortrag der eigenen Gruppe - Teilnahme verpflichtend") – der Teilnehmer kann
-sich davon nicht abmelden.
-
-Button **Verfügbarkeit speichern** (oben rechts im Abschnitt) – nur aktiv, wenn sich seit dem
-letzten Speichern etwas geändert hat UND die Teilnehmer-Deadline noch nicht verstrichen ist.
-Speichert alle angehakten Slot-IDs; zeigt Erfolg/Fehler an.
-
-Öffnet man diesen Abschnitt, wird der Abschnitt "Vorträge & Prioritäten" automatisch zugeklappt
-(nur einer von beiden ist gleichzeitig offen).
-
+[[_vortraege_prioritaeten]]
 === Vorträge & Prioritäten
 
 image::03-vortraege-prioritaeten-legende.png[Vorträge & Prioritäten, Legende]
 
-Ebenfalls auf-/zuklappbar, schließt umgekehrt "Meine Verfügbarkeit". Falls für die Veranstaltung
-noch keine Wahlvorträge existieren: Hinweistext "Für diese Veranstaltung sind noch keine
-Vorträge verfügbar."
+Auf-/zuklappbar per Klick auf die Kopfzeile (Chevron-Icon zeigt den Zustand). Für die **erste**
+Veranstaltung in der Liste beim Laden der Seite bereits automatisch aufgeklappt, bei allen
+weiteren Veranstaltungen wie gewohnt zugeklappt. Falls für die Veranstaltung noch keine
+Wahlvorträge existieren: Hinweistext "Für diese Veranstaltung sind noch keine Vorträge
+verfügbar."
 
 **Legende-Tabelle** oben: eine Zeile pro Wahlvortrag (alphabetisch nach Titel sortiert,
 durchnummeriert), zeigt Nummer, "Titel bei Referentenname", ein "Pflicht"-Badge falls es ein
 Pflichtvortrag ist, sowie pro definierter Neigung eine Spalte mit "X", falls der Vortrag
 diese Neigung anspricht (Spaltenköpfe sind vertikal gedreht beschriftet).
+
+**Neigungen-Hervorhebung:** Spaltenköpfe sind anklickbar (Mehrfachauswahl möglich, erneuter Klick
+nimmt eine Spalte wieder aus der Auswahl) und heben alle Zeilen gelb hervor, die mindestens eine
+der ausgewählten Neigungen ansprechen – Klick auf eine Vortrags-Zeile klappt zusätzlich eine
+Detailzeile mit Referent, Organisation und Vortragsinhalt auf. Die eigenen, im Abschnitt "Mein
+Profil" angehakten Neigungen sind dabei bereits vorbelegt (direkt beim Laden der Seite bzw.
+sofort nach jeder Änderung dort, siehe oben) – man kann zusätzlich weitere Spalten anklicken, ohne
+diese Vorbelegung zu verlieren.
 
 Hinweistext: "Nummern entsprechen der Legende oben. 10 = höchste Priorität, 1 = niedrigste,
 leer/0 = kein Interesse." Button **Meine Prioritäten speichern** (oben rechts) – nur aktiv, wenn
@@ -138,10 +137,34 @@ aufgeteilt (nebeneinander liegende Vortragsnummern als Spaltenköpfe), mit drei 
 * **Priorität** – Zahlen-Eingabefeld pro Vortrag, Wertebereich 0–10 (0 = kein Interesse/
   ausgeschlossen, 1 = niedrigste, 10 = höchste Priorität). Für Pflichtvorträge deaktiviert (der
   Teilnehmer muss/kann daran nichts ändern), ebenso deaktiviert, wenn die Deadline verstrichen
-  ist.
+  ist. Die Spaltenköpfe der oben hervorgehobenen Vorträge sind auch hier gelb markiert.
 
 Die Priorität ist eine rein numerische Eingabe (kein Drag&Drop, keine Dropdown-Auswahl) – man
 tippt direkt die Zahl 0–10 in das kleine Eingabefeld unter der jeweiligen Vortragsnummer.
+
+Öffnet man den Abschnitt "Meine Verfügbarkeit" (siehe unten), wird dieser Abschnitt automatisch
+zugeklappt (nur einer von beiden ist gleichzeitig offen).
+
+=== Meine Verfügbarkeit
+
+image::02-verfuegbarkeit.png[Meine Verfügbarkeit]
+
+Auf-/zuklappbar per Klick auf die Kopfzeile (Chevron-Icon zeigt den Zustand), standardmäßig
+zugeklappt. Beim Aufklappen werden die Zeit-Slots der Veranstaltung geladen, nach Tag gruppiert
+als nebeneinander stehende Spalten-Blöcke dargestellt (ein Block pro Tag, Slots als Spalten
+innerhalb des Blocks mit Startzeit als Kopfzeile).
+
+Pro Slot eine **Checkbox** "verfügbar/nicht verfügbar". Slots, die zu einem Pflichtvortrag der
+eigenen Gruppe gehören, sind grau hinterlegt, ihre Checkbox ist deaktiviert und immer angehakt
+(Tooltip: "Pflichtvortrag der eigenen Gruppe - Teilnahme verpflichtend") – der Teilnehmer kann
+sich davon nicht abmelden.
+
+Button **Verfügbarkeit speichern** (oben rechts im Abschnitt) – nur aktiv, wenn sich seit dem
+letzten Speichern etwas geändert hat UND die Teilnehmer-Deadline noch nicht verstrichen ist.
+Speichert alle angehakten Slot-IDs; zeigt Erfolg/Fehler an.
+
+Öffnet man diesen Abschnitt, wird der Abschnitt "Vorträge & Prioritäten" automatisch zugeklappt
+(nur einer von beiden ist gleichzeitig offen).
 
 == Sonderzustände
 
