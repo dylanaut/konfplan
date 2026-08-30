@@ -189,7 +189,8 @@ test('Vollständiger Workflow: Veranstaltung -> Gebäude -> Slots -> Personen ->
   // 6. REFERENTEN ANLEGEN
   await gotoTab(page, 'Referenten');
   await page.getByRole('button', { name: '+ Neu', exact: true }).click();
-  await expect(page.locator('label:has-text("Rolle") + select')).toHaveValue('REFERENT');
+  // Rolle ist ueber den Referenten-Tab bereits fix vorgegeben - Rolle-Select entfaellt komplett.
+  await expect(page.getByText('Referent anlegen')).toBeVisible();
   await page.locator('label:has-text("Vorname") + input').fill('Max');
   await page.locator('label:has-text("Nachname") + input').fill('Referent');
   await page.locator('label:has-text("Anmeldename") + input').fill('max.referent');
@@ -208,7 +209,8 @@ test('Vollständiger Workflow: Veranstaltung -> Gebäude -> Slots -> Personen ->
   // 8. TEILNEHMER ANLEGEN
   await gotoTab(page, 'Teilnehmer');
   await page.getByRole('button', { name: '+ Neu', exact: true }).click();
-  await expect(page.locator('label:has-text("Rolle") + select')).toHaveValue('TEILNEHMER');
+  // Rolle ist ueber den Teilnehmer-Tab bereits fix vorgegeben - Rolle-Select entfaellt komplett.
+  await expect(page.getByText('Teilnehmer anlegen')).toBeVisible();
   await page.locator('label:has-text("Vorname") + input').fill('Tom');
   await page.locator('label:has-text("Nachname") + input').fill('Teilnehmer');
   await page.locator('label:has-text("Anmeldename") + input').fill('tom.teilnehmer');

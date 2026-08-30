@@ -12,7 +12,8 @@
   "raumplan": {
     "303": {
       "1": {
-        "vortrag": { "titel": "Grundlagen des Projektmanagements", "referent": { "firstName": "Tom", "lastName": "Weber" } }
+        "vortragTitel": "Grundlagen des Projektmanagements",
+        "referentName": "Tom Weber"
       }
     }
   }

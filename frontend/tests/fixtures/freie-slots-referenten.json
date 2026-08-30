@@ -3,16 +3,12 @@
     "id": 1,
     "name": "Berufsorientierungstag 2025"
   },
-  "referenten": [
+  "nutzer": [
     { "id": 202, "firstName": "Dr. Eva", "lastName": "Weiss" }
-  ],
-  "teilnehmer": [
-    { "id": 101, "firstName": "Max", "lastName": "Mustermann" }
   ],
   "freieSlots": {
     "202": [
       { "id": 1, "startTime": "2025-10-10T09:00:00", "endTime": "2025-10-10T10:00:00" }
-    ],
-    "101": []
+    ]
   }
 }

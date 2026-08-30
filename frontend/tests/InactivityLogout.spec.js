@@ -7,9 +7,12 @@ import { test, expect } from '@playwright/test';
  * deterministisch zu simulieren, statt real 30 Minuten zu warten.
  *
  * Läuft ohne echtes Backend: der ADMIN-Login wird per localStorage vorgetäuscht
- * (analog zu AdminDashboardModals.spec.js); alle API-Aufrufe der Admin-Seite selbst sind für
- * dieses Verhalten irrelevant und dürfen fehlschlagen (kein Backend nötig), solange die
- * authentifizierte Navigationsleiste (und damit App.vue) rendert.
+ * (analog zu AdminDashboardModals.spec.js). Die Admin-Seiten-APIs selbst sind für dieses
+ * Verhalten inhaltlich irrelevant, MÜSSEN aber trotzdem gemockt werden (nicht einfach real gegen
+ * das - hier nicht mitlaufende - Backend fehlschlagen lassen): ein echtes 401 loest ueber
+ * Axios' Response-Interceptor (api/axios.js) einen echten, nicht von Playwrights Fake-Clock
+ * erfassten keycloak.login()-Redirect aus, der nicht-deterministisch mit den
+ * Fake-Clock-Assertions unten um die Wette laeuft.
  */
 
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
@@ -19,6 +22,9 @@ async function loginAsAdmin(page) {
     localStorage.setItem('token', 'test-token');
     localStorage.setItem('role', 'ADMIN');
   });
+  // Pauschal leere Erfolgsantworten statt echter Backend-Aufrufe - Inhalt ist fuer diesen Test
+  // irrelevant, aber ein 401 darf hier unter keinen Umstaenden auftreten (siehe Kommentar oben).
+  await page.route('http://localhost:9000/api/**', route => route.fulfill({ status: 200, json: [] }));
   await page.goto('/admin');
   await expect(page.getByRole('button', { name: 'Logout' })).toBeVisible();
 }
