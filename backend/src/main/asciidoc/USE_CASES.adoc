@@ -1,0 +1,873 @@
+= Automatisch generierte UseCase Dokumentation
+:toc: left
+:sectnums:
+
+Per Reflection aus den `@Path`/`@GET`/.../`@RolesAllowed`-Annotationen der REST-Resource-
+Klassen erzeugt (siehe `UseCaseScanner.java`) - jeder Endpunkt ist ein UseCase-Knoten im
+Diagramm unten. Manuell gepflegte Querverweise, welches Benutzerhandbuch welchen UseCase
+beschreibt, finden sich in den Benutzerhandbüchern selbst (Admin/Referent/Teilnehmer) -
+diese Datei wird bei jedem Lauf komplett überschrieben, daher hier bewusst keine manuell
+gepflegten Inhalte. Neu erzeugen: siehe Kommentar am Kopf von `UseCaseScanner.java`.
+
+== UseCase Diagramm (PlantUML)
+
+[plantuml, usecase-gen, svg]
+----
+@startuml
+left to right direction
+actor "ADMIN" as ADMIN
+actor "PUBLIC" as PUBLIC
+actor "REFERENT" as REFERENT
+actor "TEILNEHMER" as TEILNEHMER
+package "KonfPlan API" {
+  (getAllUsers) as AdminResource_getAllUsers
+  (createUser) as AdminResource_createUser
+  (updateUser) as AdminResource_updateUser
+  (deleteUser) as AdminResource_deleteUser
+  (resetPassword) as AdminResource_resetPassword
+  (getGruppen) as AdminResource_getGruppen
+  (createGruppe) as AdminResource_createGruppe
+  (renameGruppe) as AdminResource_renameGruppe
+  (deleteGruppe) as AdminResource_deleteGruppe
+  (getUser) as AdminResource_getUser
+  (inviteUser) as AdminResource_inviteUser
+  (importAdmins) as AdminResource_importAdmins
+  (importPrioritaeten) as AdminResource_importPrioritaeten
+  (getVerfuegbarkeiten) as AdminResource_getVerfuegbarkeiten
+  (updateVerfuegbarkeit) as AdminResource_updateVerfuegbarkeit
+  (importTeilnehmerVerfuegbarkeiten) as AdminResource_importTeilnehmerVerfuegbarkeiten
+  (importReferentenVerfuegbarkeiten) as AdminResource_importReferentenVerfuegbarkeiten
+  (getRaumVerfuegbarkeiten) as AdminResource_getRaumVerfuegbarkeiten
+  (generateTeilnehmerPasswortZip) as AdminResource_generateTeilnehmerPasswortZip
+  (importRaumVerfuegbarkeiten) as AdminResource_importRaumVerfuegbarkeiten
+  (updateRaumVerfuegbarkeit) as AdminResource_updateRaumVerfuegbarkeit
+  (updateTeilnehmerPrioritaet) as AdminResource_updateTeilnehmerPrioritaet
+  (getInfo) as AppInfoResource_getInfo
+  (update) as GebaeudeResource_update
+  (delete) as GebaeudeResource_delete
+  (create) as GebaeudeResource_create
+  (getAll) as GebaeudeResource_getAll
+  (getOne) as GebaeudeResource_getOne
+  (importGebaeude) as GebaeudeResource_importGebaeude
+  (createRaum) as GebaeudeResource_createRaum
+  (updateRaum) as GebaeudeResource_updateRaum
+  (deleteRaum) as GebaeudeResource_deleteRaum
+  (getRaeumeByGebaeude) as GebaeudeResource_getRaeumeByGebaeude
+  (getNews) as LaufbandResource_getNews
+  (getAll) as NeigungResource_getAll
+  (startPlanung) as PlanungResource_startPlanung
+  (cancelPlanung) as PlanungResource_cancelPlanung
+  (exportDzn) as PlanungResource_exportDzn
+  (exportBundle) as PlanungResource_exportBundle
+  (importBundle) as PlanungResource_importBundle
+  (getStatus) as PlanungResource_getStatus
+  (getPrioritaeten) as PrioritaetenResource_getPrioritaeten
+  (updatePrioritaeten) as PrioritaetenResource_updatePrioritaeten
+  (getAllProtokollEntries) as ProtokollResource_getAllProtokollEntries
+  (updateProfile) as ReferentResource_updateProfile
+  (createVortrag) as ReferentResource_createVortrag
+  (updateVortrag) as ReferentResource_updateVortrag
+  (deleteVortrag) as ReferentResource_deleteVortrag
+  (getReferent) as ReferentResource_getReferent
+  (getMyPlan) as ReferentResource_getMyPlan
+  (getReferentenVortraege) as ReferentResource_getReferentenVortraege
+  (cloneTalkForEvent) as ReferentResource_cloneTalkForEvent
+  (getVerfuegbarkeiten) as ReferentResource_getVerfuegbarkeiten
+  (updateVerfuegbarkeit) as ReferentResource_updateVerfuegbarkeit
+  (meldeVortragFuerVeranstaltungAn) as ReferentResource_meldeVortragFuerVeranstaltungAn
+  (meldeVortragFuerVeranstaltungAb) as ReferentResource_meldeVortragFuerVeranstaltungAb
+  (getReferentVeranstaltungen) as ReferentResource_getReferentVeranstaltungen
+  (getAlleLaufzettelData) as ReportResource_getAlleLaufzettelData
+  (getStundenplanData) as ReportResource_getStundenplanData
+  (getPriosDashboardData) as ReportResource_getPriosDashboardData
+  (getAlleLaufzettelReferentenData) as ReportResource_getAlleLaufzettelReferentenData
+  (getLaufzettelTeilnehmerData) as ReportResource_getLaufzettelTeilnehmerData
+  (getLaufzettelReferentData) as ReportResource_getLaufzettelReferentData
+  (getRaumbelegungsplanData) as ReportResource_getRaumbelegungsplanData
+  (getUebersichtRaeumeData) as ReportResource_getUebersichtRaeumeData
+  (getAlleRaumschilderData) as ReportResource_getAlleRaumschilderData
+  (getFreieSlotsReferentenData) as ReportResource_getFreieSlotsReferentenData
+  (getFreieSlotsTeilnehmerData) as ReportResource_getFreieSlotsTeilnehmerData
+  (getAbstimmungsfragebogenData) as ReportResource_getAbstimmungsfragebogenData
+  (getTeilnehmerDashboardData) as ReportResource_getTeilnehmerDashboardData
+  (getAll) as SlotResource_getAll
+  (toggleActive) as TeilnehmerResource_toggleActive
+  (getTeilnehmer) as TeilnehmerResource_getTeilnehmer
+  (getPlan) as TeilnehmerResource_getPlan
+  (createTeilnehmer) as TeilnehmerResource_createTeilnehmer
+  (updateTeilnehmer) as TeilnehmerResource_updateTeilnehmer
+  (deleteTeilnehmer) as TeilnehmerResource_deleteTeilnehmer
+  (getTeilnehmerProfile) as TeilnehmerResource_getTeilnehmerProfile
+  (getMeineVortraege) as TeilnehmerResource_getMeineVortraege
+  (getVerfuegbarkeiten) as TeilnehmerResource_getVerfuegbarkeiten
+  (updateVerfuegbarkeit) as TeilnehmerResource_updateVerfuegbarkeit
+  (getAlleVeranstaltungsteilnehmer) as TeilnehmerResource_getAlleVeranstaltungsteilnehmer
+  (updateTeilnehmerProfile) as TeilnehmerResource_updateTeilnehmerProfile
+  (getTeilnehmerVeranstaltungen) as TeilnehmerResource_getTeilnehmerVeranstaltungen
+  (listDatasets) as VeranstaltungImportResource_listDatasets
+  (importDataset) as VeranstaltungImportResource_importDataset
+  (importZip) as VeranstaltungImportResource_importZip
+  (update) as VeranstaltungResource_update
+  (delete) as VeranstaltungResource_delete
+  (create) as VeranstaltungResource_create
+  (getAll) as VeranstaltungResource_getAll
+  (getOne) as VeranstaltungResource_getOne
+  (getSlots) as VeranstaltungResource_getSlots
+  (createVortrag) as VeranstaltungResource_createVortrag
+  (updateVortrag) as VeranstaltungResource_updateVortrag
+  (deleteVortrag) as VeranstaltungResource_deleteVortrag
+  (getVortraege) as VeranstaltungResource_getVortraege
+  (createSlot) as VeranstaltungResource_createSlot
+  (updateSlot) as VeranstaltungResource_updateSlot
+  (deleteSlot) as VeranstaltungResource_deleteSlot
+  (getStats) as VeranstaltungResource_getStats
+  (getGesamtplan) as VeranstaltungResource_getGesamtplan
+  (getNutzer) as VeranstaltungResource_getNutzer
+  (createNutzer) as VeranstaltungResource_createNutzer
+  (updateNutzer) as VeranstaltungResource_updateNutzer
+  (deleteNutzer) as VeranstaltungResource_deleteNutzer
+  (importSlots) as VeranstaltungResource_importSlots
+  (getDetaillierterPlan) as VeranstaltungResource_getDetaillierterPlan
+  (getPlanQualitaet) as VeranstaltungResource_getPlanQualitaet
+  (importVeranstaltungen) as VeranstaltungResource_importVeranstaltungen
+  (importReferenten) as VeranstaltungResource_importReferenten
+  (uploadTeilnehmerCsv) as VeranstaltungResource_uploadTeilnehmerCsv
+  (importVortraege) as VeranstaltungResource_importVortraege
+  (getRaumVerfuegbarkeiten) as VeranstaltungResource_getRaumVerfuegbarkeiten
+  (getVeranstaltungsVortrag) as VeranstaltungResource_getVeranstaltungsVortrag
+  (saveTeilnehmerPrioritaeten) as VeranstaltungResource_saveTeilnehmerPrioritaeten
+  (getAdminKalender) as KalenderResource_getAdminKalender
+  (getTeilnehmerKalender) as KalenderResource_getTeilnehmerKalender
+  (getReferentKalender) as KalenderResource_getReferentKalender
+}
+ADMIN --> AdminResource_getAllUsers
+ADMIN --> AdminResource_createUser
+ADMIN --> AdminResource_updateUser
+ADMIN --> AdminResource_deleteUser
+ADMIN --> AdminResource_resetPassword
+ADMIN --> AdminResource_getGruppen
+ADMIN --> AdminResource_createGruppe
+ADMIN --> AdminResource_renameGruppe
+ADMIN --> AdminResource_deleteGruppe
+ADMIN --> AdminResource_getUser
+ADMIN --> AdminResource_inviteUser
+ADMIN --> AdminResource_importAdmins
+ADMIN --> AdminResource_importPrioritaeten
+ADMIN --> AdminResource_getVerfuegbarkeiten
+ADMIN --> AdminResource_updateVerfuegbarkeit
+ADMIN --> AdminResource_importTeilnehmerVerfuegbarkeiten
+ADMIN --> AdminResource_importReferentenVerfuegbarkeiten
+ADMIN --> AdminResource_getRaumVerfuegbarkeiten
+ADMIN --> AdminResource_generateTeilnehmerPasswortZip
+ADMIN --> AdminResource_importRaumVerfuegbarkeiten
+ADMIN --> AdminResource_updateRaumVerfuegbarkeit
+ADMIN --> AdminResource_updateTeilnehmerPrioritaet
+ADMIN --> GebaeudeResource_update
+ADMIN --> GebaeudeResource_delete
+ADMIN --> GebaeudeResource_create
+ADMIN --> GebaeudeResource_getAll
+ADMIN --> GebaeudeResource_getOne
+ADMIN --> GebaeudeResource_importGebaeude
+ADMIN --> GebaeudeResource_createRaum
+ADMIN --> GebaeudeResource_updateRaum
+ADMIN --> GebaeudeResource_deleteRaum
+ADMIN --> GebaeudeResource_getRaeumeByGebaeude
+ADMIN --> NeigungResource_getAll
+ADMIN --> PlanungResource_startPlanung
+ADMIN --> PlanungResource_cancelPlanung
+ADMIN --> PlanungResource_exportDzn
+ADMIN --> PlanungResource_exportBundle
+ADMIN --> PlanungResource_importBundle
+ADMIN --> PlanungResource_getStatus
+ADMIN --> PrioritaetenResource_getPrioritaeten
+ADMIN --> PrioritaetenResource_updatePrioritaeten
+ADMIN --> ProtokollResource_getAllProtokollEntries
+ADMIN --> ReferentResource_updateProfile
+ADMIN --> ReferentResource_createVortrag
+ADMIN --> ReferentResource_updateVortrag
+ADMIN --> ReferentResource_deleteVortrag
+ADMIN --> ReferentResource_getReferent
+ADMIN --> ReferentResource_getMyPlan
+ADMIN --> ReferentResource_getReferentenVortraege
+ADMIN --> ReferentResource_cloneTalkForEvent
+ADMIN --> ReferentResource_getVerfuegbarkeiten
+ADMIN --> ReferentResource_updateVerfuegbarkeit
+ADMIN --> ReferentResource_meldeVortragFuerVeranstaltungAn
+ADMIN --> ReferentResource_meldeVortragFuerVeranstaltungAb
+ADMIN --> ReferentResource_getReferentVeranstaltungen
+ADMIN --> ReportResource_getAlleLaufzettelData
+ADMIN --> ReportResource_getStundenplanData
+ADMIN --> ReportResource_getPriosDashboardData
+ADMIN --> ReportResource_getAlleLaufzettelReferentenData
+ADMIN --> ReportResource_getLaufzettelTeilnehmerData
+ADMIN --> ReportResource_getLaufzettelReferentData
+ADMIN --> ReportResource_getRaumbelegungsplanData
+ADMIN --> ReportResource_getUebersichtRaeumeData
+ADMIN --> ReportResource_getAlleRaumschilderData
+ADMIN --> ReportResource_getFreieSlotsReferentenData
+ADMIN --> ReportResource_getFreieSlotsTeilnehmerData
+ADMIN --> ReportResource_getAbstimmungsfragebogenData
+ADMIN --> ReportResource_getTeilnehmerDashboardData
+ADMIN --> SlotResource_getAll
+ADMIN --> TeilnehmerResource_toggleActive
+ADMIN --> TeilnehmerResource_getTeilnehmer
+ADMIN --> TeilnehmerResource_createTeilnehmer
+ADMIN --> TeilnehmerResource_updateTeilnehmer
+ADMIN --> TeilnehmerResource_deleteTeilnehmer
+ADMIN --> TeilnehmerResource_getAlleVeranstaltungsteilnehmer
+ADMIN --> VeranstaltungImportResource_listDatasets
+ADMIN --> VeranstaltungImportResource_importDataset
+ADMIN --> VeranstaltungImportResource_importZip
+ADMIN --> VeranstaltungResource_update
+ADMIN --> VeranstaltungResource_delete
+ADMIN --> VeranstaltungResource_create
+ADMIN --> VeranstaltungResource_getAll
+ADMIN --> VeranstaltungResource_getOne
+ADMIN --> VeranstaltungResource_getSlots
+ADMIN --> VeranstaltungResource_createVortrag
+ADMIN --> VeranstaltungResource_updateVortrag
+ADMIN --> VeranstaltungResource_deleteVortrag
+ADMIN --> VeranstaltungResource_getVortraege
+ADMIN --> VeranstaltungResource_createSlot
+ADMIN --> VeranstaltungResource_updateSlot
+ADMIN --> VeranstaltungResource_deleteSlot
+ADMIN --> VeranstaltungResource_getStats
+ADMIN --> VeranstaltungResource_getGesamtplan
+ADMIN --> VeranstaltungResource_getNutzer
+ADMIN --> VeranstaltungResource_createNutzer
+ADMIN --> VeranstaltungResource_updateNutzer
+ADMIN --> VeranstaltungResource_deleteNutzer
+ADMIN --> VeranstaltungResource_importSlots
+ADMIN --> VeranstaltungResource_getDetaillierterPlan
+ADMIN --> VeranstaltungResource_getPlanQualitaet
+ADMIN --> VeranstaltungResource_importVeranstaltungen
+ADMIN --> VeranstaltungResource_importReferenten
+ADMIN --> VeranstaltungResource_uploadTeilnehmerCsv
+ADMIN --> VeranstaltungResource_importVortraege
+ADMIN --> VeranstaltungResource_getRaumVerfuegbarkeiten
+ADMIN --> VeranstaltungResource_getVeranstaltungsVortrag
+ADMIN --> VeranstaltungResource_saveTeilnehmerPrioritaeten
+ADMIN --> KalenderResource_getAdminKalender
+PUBLIC --> AppInfoResource_getInfo
+PUBLIC --> LaufbandResource_getNews
+REFERENT --> NeigungResource_getAll
+REFERENT --> ReferentResource_updateProfile
+REFERENT --> ReferentResource_createVortrag
+REFERENT --> ReferentResource_updateVortrag
+REFERENT --> ReferentResource_deleteVortrag
+REFERENT --> ReferentResource_getReferent
+REFERENT --> ReferentResource_getMyPlan
+REFERENT --> ReferentResource_getReferentenVortraege
+REFERENT --> ReferentResource_cloneTalkForEvent
+REFERENT --> ReferentResource_getVerfuegbarkeiten
+REFERENT --> ReferentResource_updateVerfuegbarkeit
+REFERENT --> ReferentResource_meldeVortragFuerVeranstaltungAn
+REFERENT --> ReferentResource_meldeVortragFuerVeranstaltungAb
+REFERENT --> ReferentResource_getReferentVeranstaltungen
+REFERENT --> ReportResource_getLaufzettelReferentData
+REFERENT --> SlotResource_getAll
+REFERENT --> VeranstaltungResource_getSlots
+REFERENT --> VeranstaltungResource_getVortraege
+REFERENT --> KalenderResource_getReferentKalender
+TEILNEHMER --> NeigungResource_getAll
+TEILNEHMER --> PrioritaetenResource_getPrioritaeten
+TEILNEHMER --> PrioritaetenResource_updatePrioritaeten
+TEILNEHMER --> ReportResource_getLaufzettelTeilnehmerData
+TEILNEHMER --> ReportResource_getTeilnehmerDashboardData
+TEILNEHMER --> SlotResource_getAll
+TEILNEHMER --> TeilnehmerResource_getPlan
+TEILNEHMER --> TeilnehmerResource_getTeilnehmerProfile
+TEILNEHMER --> TeilnehmerResource_getMeineVortraege
+TEILNEHMER --> TeilnehmerResource_getVerfuegbarkeiten
+TEILNEHMER --> TeilnehmerResource_updateVerfuegbarkeit
+TEILNEHMER --> TeilnehmerResource_updateTeilnehmerProfile
+TEILNEHMER --> TeilnehmerResource_getTeilnehmerVeranstaltungen
+TEILNEHMER --> VeranstaltungResource_getSlots
+TEILNEHMER --> VeranstaltungResource_getVortraege
+TEILNEHMER --> KalenderResource_getTeilnehmerKalender
+@enduml
+----
+
+== API Endpunkte & Rollen
+
+=== AdminResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getAllUsers
+| GET
+| `/api/admin/nutzer`
+| ADMIN
+| createUser
+| POST
+| `/api/admin/nutzer`
+| ADMIN
+| updateUser
+| PUT
+| `/api/admin/nutzer/{id}`
+| ADMIN
+| deleteUser
+| DELETE
+| `/api/admin/nutzer/{id}`
+| ADMIN
+| resetPassword
+| POST
+| `/api/admin/nutzer/{id}/reset-password`
+| ADMIN
+| getGruppen
+| GET
+| `/api/admin/veranstaltungen/{vid}/gruppen`
+| ADMIN
+| createGruppe
+| POST
+| `/api/admin/veranstaltungen/{vid}/gruppen`
+| ADMIN
+| renameGruppe
+| PUT
+| `/api/admin/veranstaltungen/{vid}/gruppen`
+| ADMIN
+| deleteGruppe
+| DELETE
+| `/api/admin/veranstaltungen/{vid}/gruppen/{gruppenName}`
+| ADMIN
+| getUser
+| GET
+| `/api/admin/nutzer/{id}`
+| ADMIN
+| inviteUser
+| POST
+| `/api/admin/nutzer/{userId}/einladen/{eventId}`
+| ADMIN
+| importAdmins
+| POST
+| `/api/admin/admins/import`
+| ADMIN
+| importPrioritaeten
+| POST
+| `/api/admin/veranstaltungen/{vid}/prioritaeten/import`
+| ADMIN
+| getVerfuegbarkeiten
+| GET
+| `/api/admin/veranstaltungen/{vid}/verfuegbarkeiten`
+| ADMIN
+| updateVerfuegbarkeit
+| POST
+| `/api/admin/veranstaltungen/{vid}/verfuegbarkeiten`
+| ADMIN
+| importTeilnehmerVerfuegbarkeiten
+| POST
+| `/api/admin/veranstaltungen/{vid}/teilnehmer/verfuegbarkeiten/import`
+| ADMIN
+| importReferentenVerfuegbarkeiten
+| POST
+| `/api/admin/veranstaltungen/{vid}/referenten/verfuegbarkeiten/import`
+| ADMIN
+| getRaumVerfuegbarkeiten
+| GET
+| `/api/admin/veranstaltungen/{vid}/raeume/verfuegbarkeiten`
+| ADMIN
+| generateTeilnehmerPasswortZip
+| POST
+| `/api/admin/veranstaltungen/{vid}/teilnehmer/passwoerter/zip`
+| ADMIN
+| importRaumVerfuegbarkeiten
+| POST
+| `/api/admin/veranstaltungen/{vid}/raeume/verfuegbarkeiten/import`
+| ADMIN
+| updateRaumVerfuegbarkeit
+| POST
+| `/api/admin/veranstaltungen/{vid}/raeume/verfuegbarkeiten`
+| ADMIN
+| updateTeilnehmerPrioritaet
+| PUT
+| `/api/admin/veranstaltungen/{vid}/teilnehmer/{tid}/priorities`
+| ADMIN
+|===
+
+=== AppInfoResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getInfo
+| GET
+| `/api/info`
+| PUBLIC
+|===
+
+=== GebaeudeResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| update
+| PUT
+| `/api/gebaeude/{id}`
+| ADMIN
+| delete
+| DELETE
+| `/api/gebaeude/{id}`
+| ADMIN
+| create
+| POST
+| `/api/gebaeude`
+| ADMIN
+| getAll
+| GET
+| `/api/gebaeude`
+| ADMIN
+| getOne
+| GET
+| `/api/gebaeude/{id}`
+| ADMIN
+| importGebaeude
+| POST
+| `/api/gebaeude/import`
+| ADMIN
+| createRaum
+| POST
+| `/api/gebaeude/{gid}/raeume`
+| ADMIN
+| updateRaum
+| PUT
+| `/api/gebaeude/{gid}/raeume/{rid}`
+| ADMIN
+| deleteRaum
+| DELETE
+| `/api/gebaeude/{gid}/raeume/{rid}`
+| ADMIN
+| getRaeumeByGebaeude
+| GET
+| `/api/gebaeude/{gid}/raeume`
+| ADMIN
+|===
+
+=== LaufbandResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getNews
+| GET
+| `/api/laufband`
+| PUBLIC
+|===
+
+=== NeigungResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getAll
+| GET
+| `/api/neigungen`
+| ADMIN, REFERENT, TEILNEHMER
+|===
+
+=== PlanungResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| startPlanung
+| POST
+| `/api/planungen/{vid}`
+| ADMIN
+| cancelPlanung
+| DELETE
+| `/api/planungen/`
+| ADMIN
+| exportDzn
+| POST
+| `/api/planungen/{vid}/dzn`
+| ADMIN
+| exportBundle
+| POST
+| `/api/planungen/{vid}/export`
+| ADMIN
+| importBundle
+| POST
+| `/api/planungen/{vid}/import`
+| ADMIN
+| getStatus
+| GET
+| `/api/planungen/status`
+| ADMIN
+|===
+
+=== PrioritaetenResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getPrioritaeten
+| GET
+| `/api/prios/{vid}`
+| TEILNEHMER, ADMIN
+| updatePrioritaeten
+| POST
+| `/api/prios`
+| TEILNEHMER, ADMIN
+|===
+
+=== ProtokollResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getAllProtokollEntries
+| GET
+| `/api/admin/protokolle`
+| ADMIN
+|===
+
+=== ReferentResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| updateProfile
+| PUT
+| `/api/referenten/profile`
+| ADMIN, REFERENT
+| createVortrag
+| POST
+| `/api/referenten/vortraege`
+| ADMIN, REFERENT
+| updateVortrag
+| PUT
+| `/api/referenten/vortraege/{vortragId}`
+| ADMIN, REFERENT
+| deleteVortrag
+| DELETE
+| `/api/referenten/vortraege/{vortragId}`
+| ADMIN, REFERENT
+| getReferent
+| GET
+| `/api/referenten/profile`
+| ADMIN, REFERENT
+| getMyPlan
+| GET
+| `/api/referenten/plaene`
+| ADMIN, REFERENT
+| getReferentenVortraege
+| GET
+| `/api/referenten/vortraege`
+| ADMIN, REFERENT
+| cloneTalkForEvent
+| POST
+| `/api/referenten/veranstaltungen/{targetEventId}/vortraege/{sourceVortragId}/clone`
+| ADMIN, REFERENT
+| getVerfuegbarkeiten
+| GET
+| `/api/referenten/veranstaltungen/{vid}/verfuegbarkeiten`
+| ADMIN, REFERENT
+| updateVerfuegbarkeit
+| POST
+| `/api/referenten/veranstaltungen/{vid}/verfuegbarkeiten`
+| ADMIN, REFERENT
+| meldeVortragFuerVeranstaltungAn
+| POST
+| `/api/referenten/veranstaltungen/{eventId}/vortraege/{vortragId}/register`
+| ADMIN, REFERENT
+| meldeVortragFuerVeranstaltungAb
+| DELETE
+| `/api/referenten/veranstaltungen/{eventId}/vortraege/{vortragId}/deregister`
+| ADMIN, REFERENT
+| getReferentVeranstaltungen
+| GET
+| `/api/referenten/veranstaltungen`
+| ADMIN, REFERENT
+|===
+
+=== ReportResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getAlleLaufzettelData
+| GET
+| `/api/reports/{vid}/laufzettel-alle-data`
+| ADMIN
+| getStundenplanData
+| GET
+| `/api/reports/{vid}/stundenplan-data`
+| ADMIN
+| getPriosDashboardData
+| GET
+| `/api/reports/{vid}/prios-dashboard-data`
+| ADMIN
+| getAlleLaufzettelReferentenData
+| GET
+| `/api/reports/{vid}/laufzettel-alle-referenten-data`
+| ADMIN
+| getLaufzettelTeilnehmerData
+| GET
+| `/api/reports/{vid}/teilnehmer/{tid}/laufzettel-data`
+| TEILNEHMER, ADMIN
+| getLaufzettelReferentData
+| GET
+| `/api/reports/{vid}/referent/{rid}/laufzettel-data`
+| REFERENT, ADMIN
+| getRaumbelegungsplanData
+| GET
+| `/api/reports/{vid}/raum/{rid}/belegungsplan-data`
+| ADMIN
+| getUebersichtRaeumeData
+| GET
+| `/api/reports/{vid}/raeume-data`
+| ADMIN
+| getAlleRaumschilderData
+| GET
+| `/api/reports/{vid}/raumschilder-data`
+| ADMIN
+| getFreieSlotsReferentenData
+| GET
+| `/api/reports/{vid}/freie-slots-referenten-data`
+| ADMIN
+| getFreieSlotsTeilnehmerData
+| GET
+| `/api/reports/{vid}/freie-slots-teilnehmer-data`
+| ADMIN
+| getAbstimmungsfragebogenData
+| GET
+| `/api/reports/{vid}/abstimmungsfragebogen-data`
+| ADMIN
+| getTeilnehmerDashboardData
+| GET
+| `/api/reports/{vid}/teilnehmer-dashboard-data`
+| ADMIN, TEILNEHMER
+|===
+
+=== SlotResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getAll
+| GET
+| `/api/slots`
+| ADMIN, REFERENT, TEILNEHMER
+|===
+
+=== TeilnehmerResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| toggleActive
+| PATCH
+| `/api/teilnehmer/{id}/toggle`
+| ADMIN
+| getTeilnehmer
+| GET
+| `/api/teilnehmer/{id}`
+| ADMIN
+| getPlan
+| GET
+| `/api/teilnehmer/veranstaltungen/{vid}/zuweisungen`
+| TEILNEHMER
+| createTeilnehmer
+| POST
+| `/api/teilnehmer`
+| ADMIN
+| updateTeilnehmer
+| PUT
+| `/api/teilnehmer/{id}`
+| ADMIN
+| deleteTeilnehmer
+| DELETE
+| `/api/teilnehmer/{id}`
+| ADMIN
+| getTeilnehmerProfile
+| GET
+| `/api/teilnehmer/profile`
+| TEILNEHMER
+| getMeineVortraege
+| GET
+| `/api/teilnehmer/veranstaltungen/{vid}/vortraege`
+| TEILNEHMER
+| getVerfuegbarkeiten
+| GET
+| `/api/teilnehmer/veranstaltungen/{vid}/verfuegbarkeiten`
+| TEILNEHMER
+| updateVerfuegbarkeit
+| POST
+| `/api/teilnehmer/veranstaltungen/{vid}/verfuegbarkeiten`
+| TEILNEHMER
+| getAlleVeranstaltungsteilnehmer
+| GET
+| `/api/teilnehmer`
+| ADMIN
+| updateTeilnehmerProfile
+| PUT
+| `/api/teilnehmer/profile`
+| TEILNEHMER
+| getTeilnehmerVeranstaltungen
+| GET
+| `/api/teilnehmer/veranstaltungen`
+| TEILNEHMER
+|===
+
+=== VeranstaltungImportResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| listDatasets
+| GET
+| `/api/admin/veranstaltung-import/datasets`
+| ADMIN
+| importDataset
+| POST
+| `/api/admin/veranstaltung-import/datasets/{name}/import`
+| ADMIN
+| importZip
+| POST
+| `/api/admin/veranstaltung-import/upload`
+| ADMIN
+|===
+
+=== VeranstaltungResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| update
+| PUT
+| `/api/veranstaltungen/{id}`
+| ADMIN
+| delete
+| DELETE
+| `/api/veranstaltungen/{id}`
+| ADMIN
+| create
+| POST
+| `/api/veranstaltungen`
+| ADMIN
+| getAll
+| GET
+| `/api/veranstaltungen`
+| ADMIN
+| getOne
+| GET
+| `/api/veranstaltungen/{vid}`
+| ADMIN
+| getSlots
+| GET
+| `/api/veranstaltungen/{vid}/slots`
+| ADMIN, TEILNEHMER, REFERENT
+| createVortrag
+| POST
+| `/api/veranstaltungen/{vid}/vortraege`
+| ADMIN
+| updateVortrag
+| PUT
+| `/api/veranstaltungen/{vid}/vortraege/{vortragId}`
+| ADMIN
+| deleteVortrag
+| DELETE
+| `/api/veranstaltungen/{vid}/vortraege/{id}`
+| ADMIN
+| getVortraege
+| GET
+| `/api/veranstaltungen/{vid}/vortraege`
+| ADMIN, TEILNEHMER, REFERENT
+| createSlot
+| POST
+| `/api/veranstaltungen/{vid}/slots`
+| ADMIN
+| updateSlot
+| PUT
+| `/api/veranstaltungen/{vid}/slots/{id}`
+| ADMIN
+| deleteSlot
+| DELETE
+| `/api/veranstaltungen/{vid}/slots/{id}`
+| ADMIN
+| getStats
+| GET
+| `/api/veranstaltungen/{vid}/stats`
+| ADMIN
+| getGesamtplan
+| GET
+| `/api/veranstaltungen/{vid}/plan`
+| ADMIN
+| getNutzer
+| GET
+| `/api/veranstaltungen/{vid}/nutzer`
+| ADMIN
+| createNutzer
+| POST
+| `/api/veranstaltungen/{vid}/nutzer`
+| ADMIN
+| updateNutzer
+| PUT
+| `/api/veranstaltungen/{vid}/nutzer/{id}`
+| ADMIN
+| deleteNutzer
+| DELETE
+| `/api/veranstaltungen/{vid}/nutzer/{id}`
+| ADMIN
+| importSlots
+| POST
+| `/api/veranstaltungen/{vid}/slots/import`
+| ADMIN
+| getDetaillierterPlan
+| GET
+| `/api/veranstaltungen/{vid}/plan/details`
+| ADMIN
+| getPlanQualitaet
+| GET
+| `/api/veranstaltungen/{vid}/plan/qualitaet`
+| ADMIN
+| importVeranstaltungen
+| POST
+| `/api/veranstaltungen/import`
+| ADMIN
+| importReferenten
+| POST
+| `/api/veranstaltungen/{vid}/referenten/import`
+| ADMIN
+| uploadTeilnehmerCsv
+| POST
+| `/api/veranstaltungen/{vid}/teilnehmer/import`
+| ADMIN
+| importVortraege
+| POST
+| `/api/veranstaltungen/{vid}/vortraege/import`
+| ADMIN
+| getRaumVerfuegbarkeiten
+| GET
+| `/api/veranstaltungen/{vid}/raum-verfuegbarkeiten`
+| ADMIN
+| getVeranstaltungsVortrag
+| GET
+| `/api/veranstaltungen/{vid}/vortraege/{tid}`
+| ADMIN
+| saveTeilnehmerPrioritaeten
+| PUT
+| `/api/veranstaltungen/{vid}/teilnehmer/{userId}/prioritaeten`
+| ADMIN
+|===
+
+=== KalenderResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getAdminKalender
+| GET
+| `/api/kalender/admin/{veranstaltungId}`
+| ADMIN
+| getTeilnehmerKalender
+| GET
+| `/api/kalender/teilnehmer/{veranstaltungId}`
+| TEILNEHMER
+| getReferentKalender
+| GET
+| `/api/kalender/referent/{veranstaltungId}`
+| REFERENT
+|===
+
