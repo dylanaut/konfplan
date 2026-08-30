@@ -27,8 +27,10 @@ sichtbar: **Teilnehmer**, **Referenten**, **Vorträge**, **Zeit-Slots**, **Plane
 **Ergebnisse**.
 
 Oben in der Kopfzeile der Anwendung (auf jeder Seite sichtbar) befinden sich rechts ein
-**Info**-Menüpunkt (zeigt Anwendungsname, Version, Build-Datum, Git-Commit sowie einen
-Mailto-Link an den Entwickler) und der **LOGOUT**-Button.
+**Info**-Menüpunkt (zeigt Anwendungsname, Version, Build-Datum, Git-Commit, einen Mailto-Link an
+den Entwickler sowie einen Abschnitt **Benutzerhandbücher** mit Download-Links auf die
+PDF-Handbücher für Admin, Referent und Teilnehmer – auch dieses Handbuch selbst ist von dort
+herunterladbar) und der **LOGOUT**-Button.
 
 [NOTE]
 ====
@@ -282,8 +284,23 @@ Zeit-Slot-Verfügbarkeit.
 **Batch-Aktionsleiste** (erscheint, sobald mindestens ein Teilnehmer per Checkbox markiert ist):
 zeigt die Anzahl Ausgewählter; Textlinks **Deaktivieren** (Bestätigung "X Teilnehmer
 deaktivieren?"), **Löschen** (Bestätigung "X Teilnehmer endgültig löschen?"), **E-Mail** (öffnet
-den lokalen E-Mail-Client mit allen ausgewählten Adressen als BCC); Button **ALLE X AUSWÄHLEN**,
-um alle gefilterten Teilnehmer zu markieren.
+den lokalen E-Mail-Client mit allen ausgewählten Adressen als BCC), **Passwörter (ZIP)** (öffnet
+den Dialog <<_dialog_temporaere_passwoerter_erzeugen>>); Button **ALLE X AUSWÄHLEN**, um alle
+gefilterten Teilnehmer zu markieren.
+
+[[_dialog_temporaere_passwoerter_erzeugen]]
+=== Dialog: Temporäre Passwörter erzeugen
+
+image::40-generate-passwords-zip-modal.png[Dialog Temporäre Passwörter erzeugen]
+
+Setzt für alle ausgewählten Teilnehmer ein neues temporäres Passwort und schreibt sie gesammelt
+als CSV-Tabelle in eine ZIP-Datei. Feld **ZIP-Öffnungspasswort** (Pflichtfeld, mindestens 8
+Zeichen – Button **ZIP erzeugen** bleibt bis dahin deaktiviert) schützt nur die ZIP-Datei selbst
+beim Öffnen, nicht die Teilnehmer-Logins; laut Hinweistext im Dialog getrennt von der ZIP-Datei
+aufbewahren/weitergeben. Nach Erzeugung startet der Download automatisch; schlägt der
+Passwort-Reset für einzelne Teilnehmer fehl, erscheint trotzdem die ZIP mit den übrigen
+Teilnehmern, zusätzlich eine Meldung mit den Namen der fehlgeschlagenen Teilnehmer (dafür pro
+Person einzeln über **Passwort zurücksetzen** erneut versuchen).
 
 === Wahl-Prioritäten verwalten
 
@@ -532,6 +549,8 @@ Anlaufstelle zum Öffnen aller Berichte/Reports (jeweils in einem neuen Browser-
   (siehe <<_report_abstimmungsfragebogen>>).
 * **Belegungsplan** – eingebetteter Stundenplan, sobald ein Plan existiert; sonst Hinweis "Kein
   Planungsergebnis vorhanden. Bitte erstellen Sie zuerst einen Plan im Tab „Planerstellung“."
+  Zusätzlich Button **Termine exportieren** (Kalender-Icon) – lädt eine .ics-Kalenderdatei mit
+  allen geplanten Terminen der Veranstaltung herunter.
 * Abschnitt **Planqualität** (nur mit vorhandenem Plan): 4 Kennzahlen – Güte, Zuweisungen,
   Raumwechsel, Status.
 * Abschnitt **Berichte** (nur mit vorhandenem Plan) – je ein Eintrag mit Button **Anzeigen**,

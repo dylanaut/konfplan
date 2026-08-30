@@ -24,11 +24,15 @@ von oben nach unten fünf Abschnitte zeigt: **Persönliches Profil**, **Mein Zei
 Verfügbarkeit** (pro Veranstaltung), **Meine Vorträge** und **Meine Veranstaltungsanmeldungen**.
 
 Oben in der Kopfzeile der Anwendung befinden sich rechts ein **Info**-Menüpunkt (Anwendungsname,
-Version, Build-Datum, Git-Commit, Mailto-Link an den Entwickler) und der **LOGOUT**-Button.
+Version, Build-Datum, Git-Commit, Mailto-Link an den Entwickler, sowie ein Abschnitt
+**Benutzerhandbücher** mit Download-Links auf die PDF-Handbücher für Admin, Referent und
+Teilnehmer – auch dieses Handbuch selbst ist von dort herunterladbar) und der
+**LOGOUT**-Button.
 
 [NOTE]
 ====
-Für Ihr Konto ist noch kein Passwort hinterlegt. Klicken Sie auf der Anmeldeseite auf
+Für Ihr Konto ist noch kein Passwort hinterlegt. Login und Passwort-Vergabe laufen über die
+Keycloak-gehostete Anmeldeseite (nicht über eine eigene KonfPlan-Seite): Klicken Sie dort auf
 **"Passwort vergessen?"** und geben Sie Ihre E-Mail-Adresse ein - Sie erhalten eine E-Mail mit
 einem Link, über den Sie einmalig Ihr eigenes Passwort festlegen.
 ====
@@ -45,7 +49,7 @@ Button sichtbar.
 |===
 | Feld | Bedeutung
 
-| Anmeldename
+| Anmeldename (nicht änderbar)
 | Textfeld, dauerhaft ausgegraut/nicht änderbar – der Login-Name ist fest vergeben.
 
 | Vorname
@@ -117,7 +121,9 @@ Aktionen:
 * **Bearbeiten** (bzw. **Ansehen**, falls die Deadline für diesen Vortrag abgelaufen ist – dann
   ist der Dialog nur lesbar) – öffnet den Vortrags-Dialog (siehe unten).
 * **Löschen** (nur sichtbar, wenn die Deadline noch nicht abgelaufen ist) – fragt vorher über
-  einen Bestätigungsdialog "Sind Sie sicher?" nach.
+  einen Bestätigungsdialog "Sind Sie sicher?" nach. Liegt die zugehörige Veranstaltung bereits
+  in der Vergangenheit, erscheint statt des Bestätigungsdialogs die Meldung "Vorträge für
+  vergangene Veranstaltungen können nicht gelöscht werden." und der Vortrag bleibt erhalten.
 
 === Dialog: Vortrag anlegen/bearbeiten
 
@@ -165,9 +171,11 @@ image::06-veranstaltungsanmeldungen.png[Meine Veranstaltungsanmeldungen]
 
 Hat der Referent keine Veranstaltungen, erscheint der Hinweis "Es sind keine Veranstaltungen
 verfügbar oder Sie haben sich noch nicht angemeldet." Pro Veranstaltung eine Karte mit
-optionalem Logo (falls hinterlegt, anklickbar/verlinkt), Name, Datumsspanne, den Organisatoren
-als Mailto-Links (unterstrichen, mit Briefumschlag-Icon, öffnet das E-Mail-Programm mit
-vorausgefülltem Betreff) und – falls gesetzt – der Referenten-Deadline.
+optionalem Logo, Name, Datumsspanne, den Organisatoren als Mailto-Links (unterstrichen, mit
+Briefumschlag-Icon, öffnet das E-Mail-Programm mit vorausgefülltem Betreff) und – falls gesetzt –
+der Referenten-Deadline. Das Logo ist nur dann anklickbar/verlinkt, wenn zusätzlich zum Logo auch
+ein Link dafür hinterlegt ist – ist nur das Logo, aber kein Link gesetzt, wird es unverlinkt
+angezeigt.
 
 Rechts oben ein Status-Badge: **Abgelaufen** (rot, Deadline vorbei), **Vergangen** (grau,
 Veranstaltung liegt in der Vergangenheit) oder **Offen** (grün).
@@ -179,7 +187,10 @@ als Bestätigung ab). Außerdem, sofern Deadline nicht abgelaufen und Veranstalt
 Vorträge, die der Referent bereits für ANDERE Veranstaltungen angelegt hat und die für diese
 Veranstaltung noch nicht registriert sind, erscheinen ausgegraut mit Button **In dieses Event
 kopieren** (übernimmt den bestehenden Vortrag 1:1 für diese Veranstaltung, mit Erfolgsmeldung
-"Vortrag wurde erfolgreich kopiert.").
+"Vortrag wurde erfolgreich kopiert."). Die Prüfung "noch nicht registriert" erfolgt anhand des
+**Vortragstitels**, nicht anhand einer festen Vortrags-ID – zwei eigene Vorträge mit zufällig
+identischem Titel werden dabei als derselbe Vortrag behandelt (nur einer wird zum Kopieren
+angeboten).
 
 == Alle Buttons/Aktionen im Überblick
 
@@ -207,7 +218,8 @@ kopieren** (übernimmt den bestehenden Vortrag 1:1 für diese Veranstaltung, mit
 | Öffnet den Vortrags-Dialog mit den Daten des Vortrags.
 
 | Löschen
-| Bestätigungsdialog, dann endgültiges Löschen des Vortrags.
+| Bestätigungsdialog, dann endgültiges Löschen des Vortrags. Für Vorträge einer bereits
+  vergangenen Veranstaltung stattdessen eine Fehlermeldung statt des Bestätigungsdialogs.
 
 | Zurückziehen
 | Bestätigungsdialog, dann Abmelden des Vortrags von dieser Veranstaltung (der Vortrag selbst
