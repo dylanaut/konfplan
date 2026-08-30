@@ -287,8 +287,10 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
       await page.getByRole('button', { name: '+ Neu', exact: true }).click();
 
       await expect(page.getByRole('dialog')).toBeVisible();
-      await expect(page.getByText('Neuen Nutzer anlegen')).toBeVisible();
-      await expect(page.locator('label:has-text("Rolle") + select')).toHaveValue('TEILNEHMER');
+      // Rolle ist beim Anlegen ueber den Teilnehmer-Tab bereits fix vorgegeben (fixedRole) -
+      // Titel ist rollenspezifisch, das Rolle-Select entfaellt komplett (siehe UserEditorModal.vue).
+      await expect(page.getByText('Teilnehmer anlegen')).toBeVisible();
+      await expect(page.locator('label:has-text("Rolle") + select')).toHaveCount(0);
 
       await page.locator('label:has-text("Vorname") + input').fill('Lisa');
       await page.locator('label:has-text("Nachname") + input').fill('Lernend');
@@ -303,12 +305,14 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
       const payload = request.postDataJSON();
       expect(payload.email).toBe('lisa@test.de');
       expect(payload.gruppen).toContain('10a');
-      await expect(page.getByText('Neuen Nutzer anlegen')).toHaveCount(0);
+      await expect(page.getByText('Teilnehmer anlegen')).toHaveCount(0);
     });
 
     test('erstellt einen neuen Administrator', async ({ page }) => {
       await gotoTab(page, 'Organisatoren');
       await page.getByRole('button', { name: '+ Neu', exact: true }).click();
+      // Rolle ist auch hier ueber den Organisatoren-Tab bereits fix vorgegeben (fixedRole).
+      await expect(page.getByText('Administrator anlegen')).toBeVisible();
 
       await page.locator('label:has-text("Vorname") + input').fill('Otto');
       await page.locator('label:has-text("Nachname") + input').fill('Organisator');
@@ -320,16 +324,19 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
         page.getByRole('button', { name: 'Nutzer erstellen' }).click()
       ]);
       expect(request.postDataJSON().role).toBe('ADMIN');
-      await expect(page.getByText('Neuen Nutzer anlegen')).toHaveCount(0);
+      await expect(page.getByText('Administrator anlegen')).toHaveCount(0);
     });
 
     test('Rolle ist beim Bearbeiten deaktiviert und zeigt rollenspezifische Felder für Referenten', async ({ page }) => {
       await gotoTab(page, 'Referenten');
       await page.locator('button[title="Bearbeiten"]').first().click();
 
-      await expect(page.getByText('Nutzer bearbeiten')).toBeVisible();
+      // Beim Bearbeiten ist die Rolle nie mehr aenderbar - Titel ist rollenspezifisch, das
+      // Rolle-Select entfaellt komplett (roleLocked, siehe UserEditorModal.vue), statt nur
+      // deaktiviert zu sein.
+      await expect(page.getByText('Referent bearbeiten')).toBeVisible();
       await expect(page.locator('label:has-text("Vorname") + input')).toHaveValue('Rudi');
-      await expect(page.locator('label:has-text("Rolle") + select')).toBeDisabled();
+      await expect(page.locator('label:has-text("Rolle") + select')).toHaveCount(0);
       await expect(page.getByText('Referenten-Profil')).toBeVisible();
       await expect(page.locator('label:has-text("Job-Rolle") + input')).toHaveValue('Tester');
     });

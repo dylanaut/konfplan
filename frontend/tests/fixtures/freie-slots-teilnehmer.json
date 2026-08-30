@@ -1,0 +1,12 @@
+{
+  "veranstaltung": {
+    "id": 1,
+    "name": "Berufsorientierungstag 2025"
+  },
+  "nutzer": [
+    { "id": 101, "firstName": "Max", "lastName": "Mustermann" }
+  ],
+  "freieSlots": {
+    "101": []
+  }
+}
