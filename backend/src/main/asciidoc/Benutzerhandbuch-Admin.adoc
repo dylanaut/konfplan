@@ -323,12 +323,17 @@ Verwaltung der Referenten und ihrer Zeit-Slot-Verfügbarkeit für die aktive Ver
 
 * Kopfzeile: Suchfeld, Button **Import** (Referenten-CSV), Button **Verfügbarkeiten Import**
   (CSV), Button **Alle Änderungen speichern** (nur bei ungespeicherten Änderungen), Button
-  **+ Neu** (Rolle "REFERENT" vorbelegt).
+  **Alle per Mail (N)** – öffnet das Standard-Mailprogramm mit allen Referenten der
+  Veranstaltung, die eine E-Mail-Adresse hinterlegt haben, als BCC-Empfänger vorausgefüllt (die
+  Zahl in Klammern zeigt die Empfängeranzahl; deaktiviert, falls keiner der Referenten eine
+  E-Mail-Adresse hat), Button **+ Neu** (Rolle "REFERENT" vorbelegt).
 * **Tabelle** – Name (sortierbar, Anmeldename darunter), Organisation (sortierbar), je Zeit-Slot
   eine Verfügbarkeits-Checkbox, optional Spalte **Plan** (Dokument-Icon, öffnet den individuellen
   Laufzettel des Referenten, sobald ein Plan existiert), Aktionen (Stift **Bearbeiten**, Umschlag
   **Einladen**, Papierkorb **Löschen**).
 * Leerzustand: "Bitte Referenten erfassen."
+
+image::16-referenten-liste-toolbar.png[Referenten-Tab, Kopfzeile mit "Alle per Mail"-Button]
 
 === Dialog: Nutzer einladen
 
@@ -344,11 +349,14 @@ image::19-vortraege-liste.png[Vorträge-Liste]
 Verwaltung aller Vorträge (Wahl- und Pflichtvorträge) der aktiven Veranstaltung.
 
 * Kopfzeile: Suchfeld, Button **Import** (CSV, deaktiviert solange keine Zeit-Slots existieren),
-  Button **+ Neu**.
+  Button **Drucken** – öffnet den Report <<_report_wahlvortraege_uebersicht>> (Detailübersicht
+  aller Wahlvorträge) in einem neuen Tab, Button **+ Neu**.
 * **Tabelle** – Titel (sortierbar), Referent (sortierbar), Organisation (sortierbar), Pflicht
   (sortierbar, Badge "Ja"/"Nein"), Aktionen (Stift **Bearbeiten**, Papierkorb **Löschen** mit
   Bestätigung; Fehler beim Löschen werden als Meldung angezeigt).
 * Leerzustand: "Bitte Vorträge erfassen."
+
+image::19-vortraege-liste-toolbar.png[Vorträge-Tab, Kopfzeile mit "Drucken"-Button]
 
 === Dialog: Vortrag anlegen/bearbeiten
 
@@ -591,6 +599,17 @@ Zeigt, welche Referenten in welchen Slots noch frei/verfügbar sind.
 image::36-report-freie-slots-teilnehmer.png[Report Freie Slots Teilnehmer]
 
 Analog für Teilnehmer.
+
+[[_report_wahlvortraege_uebersicht]]
+=== Wahlvorträge-Übersicht
+
+image::39-report-wahlvortraege-uebersicht.png[Report Wahlvorträge-Übersicht]
+
+Detailübersicht aller Wahlvorträge (Titel, Referent mit Organisation, ggf. Abschluss,
+Neigungen-Badges, Inhalt), alphabetisch nach Titel sortiert und durchnummeriert – dieselbe
+Nummerierung wie die "Legende der Wahlvorträge" im Teilnehmer-Tab bzw. im Teilnehmer-Dashboard,
+damit sich beide Ansichten eindeutig zuordnen lassen. Anders als die übrigen Berichte nicht über
+den Tab "Ergebnisse" erreichbar, sondern über den **Drucken**-Button im Tab "Vorträge".
 
 === Weitere Reports (aktuell nicht per Button im Tab "Ergebnisse" verlinkt)
 
