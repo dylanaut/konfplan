@@ -3,12 +3,9 @@ package kreyj.konfplan.adapter.in.web;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
-import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
@@ -218,26 +215,6 @@ public class VeranstaltungResource {
         } catch (Exception e) {
             LOG.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
-        }
-    }
-
-
-    @PUT
-    @Path("/{vid}/teilnehmer/{userId}/prioritaeten")
-    @Operation(summary = "Prioritäten eines Teilnehmers speichern", description = "Speichert die Vortragsprioritäten für einen Teilnehmer in einer Veranstaltung.")
-    public Response saveTeilnehmerPrioritaeten(@PathParam("vid") Long vid, @PathParam("userId") Long userId, @RequestBody(description = "Liste der Prioritäten") List<VortragPrioDto> priorityDtos) {
-        try {
-            teilnehmerService.savePriorities(userId, vid, priorityDtos);
-            return Response.noContent().build();
-        } catch (NotFoundException e) {
-            return Response.status(NOT_FOUND).entity(e.getMessage()).build();
-        } catch (ForbiddenException e) {
-            return Response.status(Response.Status.FORBIDDEN).entity(e.getMessage()).build();
-        } catch (BadRequestException e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
-        } catch (Exception e) {
-            LOG.error("Fehler beim Speichern der Prioritäten für Teilnehmer " + userId + " in Veranstaltung " + vid, e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Fehler beim Speichern der Prioritäten: " + e.getMessage()).build();
         }
     }
 
