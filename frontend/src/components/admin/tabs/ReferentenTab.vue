@@ -18,6 +18,12 @@
           <SaveAllIcon class="w-3.5 h-3.5"/>
           Alle Änderungen speichern
         </button>
+        <button @click="openMailToAll" :disabled="referentsWithEmail.length === 0"
+                title="Öffnet dein Mailprogramm mit allen Referenten dieser Veranstaltung in BCC"
+                class="btn-secondary text-xs py-1 px-3 flex items-center gap-1">
+          <MailIcon class="w-3.5 h-3.5"/>
+          Alle per Mail ({{ referentsWithEmail.length }})
+        </button>
         <button @click="emit('openUserModal', {role: 'REFERENT'})" class="btn-primary text-xs py-1 px-3">+ Neu</button>
       </div>
     </div>
@@ -151,11 +157,21 @@ const toggleSort = (key, field) => {
   }
 };
 
-const filteredSpeakers = computed(() => {
-  const list = props.referenten.filter(r => r && r.veranstaltungIds && Array.isArray(r.veranstaltungIds) && r.veranstaltungIds.includes(props.selectedVid));
-  return processList(list, filters.referenten, sorts.referenten);
-});
+const speakersForEvent = computed(() =>
+  props.referenten.filter(r => r && r.veranstaltungIds && Array.isArray(r.veranstaltungIds) && r.veranstaltungIds.includes(props.selectedVid))
+);
+const filteredSpeakers = computed(() => processList(speakersForEvent.value, filters.referenten, sorts.referenten));
 const paginatedSpeakers = computed(() => paginate(filteredSpeakers.value, pages.referenten));
+
+// Unabhaengig vom Suchfeld oben - "alle Referenten der Veranstaltung" meint alle, nicht nur die
+// aktuell gefilterte Tabellenansicht.
+const referentsWithEmail = computed(() => speakersForEvent.value.filter(r => r.email));
+
+const openMailToAll = () => {
+  if (referentsWithEmail.value.length === 0) return;
+  const bcc = referentsWithEmail.value.map(r => encodeURIComponent(r.email)).join(',');
+  window.location.href = `mailto:?bcc=${bcc}`;
+};
 
 const formatTime = (t) => t ? new Date(t).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'}) : '';
 

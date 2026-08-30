@@ -21,8 +21,8 @@
 
       <p v-if="wahlvortraege.length === 0" class="text-muted">Keine Wahlvorträge vorhanden.</p>
 
-      <div v-for="vortrag in wahlvortraege" :key="vortrag.id" class="vortrag-eintrag mb-4 pb-3 border-bottom">
-        <h4 class="mb-1">{{ vortrag.titel }}</h4>
+      <div v-for="(vortrag, index) in wahlvortraege" :key="vortrag.id" class="vortrag-eintrag mb-4 pb-3 border-bottom">
+        <h4 class="mb-1">{{ index + 1 }}. {{ vortrag.titel }}</h4>
         <p class="text-muted mb-2">
           {{ vortrag.referentName }}
           <span v-if="vortrag.referentOrganisation">({{ vortrag.referentOrganisation }})</span>
@@ -61,7 +61,11 @@ const error = ref(null);
 
 const handlePrint = () => window.print();
 
-const wahlvortraege = computed(() => vortraege.value.filter((v) => !v.istPflicht));
+// Gleiche Sortierung wie die "Legende der Wahlvorträge" in TeilnehmerTab.vue/TeilnehmerDashboard.vue
+// (alphabetisch nach Titel) - nur so stimmen die dort angezeigten Nummern mit denen hier ueberein.
+const wahlvortraege = computed(() =>
+  vortraege.value.filter((v) => !v.istPflicht).sort((a, b) => a.titel.localeCompare(b.titel))
+);
 
 const neigungBezeichnung = (name) => {
   return neigungStore.neigungen.find((n) => n.name === name)?.bezeichnung ?? name;

@@ -395,6 +395,7 @@ const fetchTeilnehmerProfile = async () => {
   try {
     const response = await api.get('/api/teilnehmer/profile');
     profile.value = response.data;
+    highlightedNeigungen.value = [...(profile.value.neigungen || [])];
   } catch (error) {
     console.error("Fehler beim Laden des Profils:", error);
   }
@@ -404,6 +405,10 @@ const saveNeigungen = async () => {
   try {
     const response = await api.put('/api/teilnehmer/profile', profile.value);
     profile.value = response.data;
+    // Seiteneffekt: die eigenen (gerade gespeicherten) Neigungen in der Vortrags-Legende der
+    // Prioritäten-Sektion vorbelegen/aktualisieren - manuelles Toggeln einzelner Spalten dort
+    // (toggleNeigungHighlight) bleibt davon unberuehrt moeglich.
+    highlightedNeigungen.value = [...(profile.value.neigungen || [])];
     alert('Neigungen erfolgreich gespeichert!');
   } catch (error) {
     alert('Fehler beim Speichern der Neigungen: ' + extractErrorMessage(error));
