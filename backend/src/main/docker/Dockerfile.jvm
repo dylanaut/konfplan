@@ -87,7 +87,7 @@ ENV LANGUAGE='en_US:en'
 USER root
 RUN microdnf install -y gzip tar && microdnf clean all
 RUN curl -fsSL https://api.github.com/repos/MiniZinc/MiniZincIDE/releases/latest \
-        | grep -o '"browser_download_url": *"[^"]*bundle-linux-x86_64\.tgz"' \
+        | grep -o '"browser_download_url": *"[^"]*x86_64-linux-gnu\.tgz"' \
         | head -1 | cut -d '"' -f4 > /tmp/minizinc-url \
     && curl -fsSL -o /tmp/minizinc.tgz "$(cat /tmp/minizinc-url)" \
     && mkdir -p /opt/minizinc \
