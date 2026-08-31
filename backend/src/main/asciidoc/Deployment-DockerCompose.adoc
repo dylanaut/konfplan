@@ -310,6 +310,17 @@ Bei einer Meldung ohne automatische Brevo-Eintragung (siehe unten): die im Push-
 Die dauerhafte Lösung ist eine feste IP-Adresse für den Server (bei Hetzner Cloud z.B. eine https://docs.hetzner.com/cloud/floating-ips/overview/[Floating IP]) - dann entfällt das Problem komplett. Das erfordert ggf. zusätzliche Routing-Konfiguration, damit ausgehender Traffic tatsächlich über die Floating IP läuft, und ist nicht Teil dieses Skripts.
 ====
 
+=== Zusätzliche Brevo-Warn-E-Mail bei neuer IP
+
+Getrennt von der oben beschriebenen Allowlist blockiert: Brevo verschickt bei jedem SMTP-Zugriff von einer bislang unbekannten IP zusätzlich eine Sicherheits-Warn-E-Mail ("Neue IP überprüfen") an die im Account hinterlegte Adresse - auch dann, wenn die neue IP anschließend erfolgreich (manuell oder automatisiert) eingetragen wurde. Das ist eine separate Kontoeinstellung, keine Fehlfunktion.
+
+Abschalten: entweder direkt über den Link **"Die Prüfung von IP-Adressen stoppen"** am Ende der Warn-E-Mail, oder im Brevo-Dashboard unter Account-Einstellungen → Sicherheit/„Security" (Login-Aktivität/IP-Prüfung deaktivieren).
+
+[NOTE]
+====
+Das ist die einzige Warnung, falls der SMTP-Schlüssel jemals tatsächlich von einer fremden, nicht autorisierten IP genutzt wird - mit deaktivierter Prüfung fällt dieser Hinweis komplett weg. Da der eigentliche Auslöser die fehlende feste IP des Servers ist, ist die oben genannte feste/Floating-IP die sauberere Lösung: sie beseitigt gleichzeitig die Allowlist-Pflege UND diese Warn-E-Mail an der Wurzel, statt nur die Benachrichtigung abzuschalten.
+====
+
 === Optional: Brevo-Eintragung automatisieren (Playwright)
 
 Falls sich die IP häufig/täglich ändert, kann `deploy/check-outbound-ip.sh` die neue IP zusätzlich automatisch bei Brevo eintragen (per Playwright, da Brevo dafür keine API bietet - nur die Web-Oberfläche). Der erste Login von einem neuen "Gerät" verlangt bei Brevo einen per E-Mail zugestellten 6-stelligen Code; danach gilt das Gerät (= die gespeicherte Sitzung) als vertrauenswürdig.
