@@ -38,10 +38,21 @@ jobs:
         run: ./mvnw --batch-mode clean install -DskipTests -Pbuild-user-manuals
 
       - name: Install MiniZinc
+        env:
+          # GitHub-Runner teilen sich IP-Adressen - das unauthentifizierte Rate-Limit fuer
+          # api.github.com (60 Anfragen/Stunde PRO IP) kann dadurch von anderen Workflows/Kunden
+          # aufgebraucht sein. Mit dem automatisch bereitgestellten GITHUB_TOKEN steigt das Limit
+          # auf 5000/Stunde, gebunden an diesen Workflow-Lauf statt an die Runner-IP.
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          ASSET_URL=$(curl -fsSL https://api.github.com/repos/MiniZinc/MiniZincIDE/releases/latest \
-            | grep -o '"browser_download_url": *"[^"]*bundle-linux-x86_64\.tgz"' \
+          # Matcht sowohl das alte ("...-bundle-linux-x86_64.tgz", vor MiniZinc 2.10) als auch das
+          # aktuelle Namensschema ("...-x86_64-linux-gnu.tgz", ab 2.10.1) - live beobachtet: CI
+          # schlug fehl, weil MiniZinc das Release-Asset umbenannt hat und das alte, zu enge
+          # Pattern dadurch ins Leere lief (nicht am Rate-Limit gescheitert - der identische
+          # curl-Aufruf lief vom lokalen Rechner aus anstandslos durch, nur eben ohne Treffer).
+          ASSET_URL=$(curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" https://api.github.com/repos/MiniZinc/MiniZincIDE/releases/latest \
+            | grep -oE '"browser_download_url": *"[^"]*(x86_64-linux-gnu|bundle-linux-x86_64)\.tgz"' \
             | head -1 | cut -d '"' -f4)
           if [[ -z "$ASSET_URL" ]]; then
             echo "Konnte keinen passenden MiniZinc-Linux-Release-Asset ermitteln." >&2
