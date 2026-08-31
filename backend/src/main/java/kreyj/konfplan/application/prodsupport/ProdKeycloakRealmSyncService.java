@@ -36,7 +36,7 @@ public class ProdKeycloakRealmSyncService {
 
     private static final String UPDATE_PASSWORD_ALIAS = "UPDATE_PASSWORD";
     private static final String LOGIN_TEXTS_LOCALE = "de";
-    private static final int ACTION_TOKEN_LIFESPAN_SECONDS = 600;
+    private static final int ACTION_TOKEN_LIFESPAN_SECONDS = 60 * 60 * 36;
     private static final long FAILED_LOGIN_EVENTS_EXPIRATION_SECONDS = 60L * 60 * 24 * 30;
     private static final String REALM_MANAGEMENT_CLIENT_ID = "realm-management";
     private static final String VIEW_EVENTS_ROLE = "view-events";
@@ -117,7 +117,7 @@ public class ProdKeycloakRealmSyncService {
 
     /**
      * Begrenzt die Gueltigkeitsdauer nutzer-initiierter Action-Tokens (u.a. der
-     * Passwort-Reset-Link) auf 10 Minuten statt Keycloaks Default von 5 Minuten. Keycloaks
+     * Passwort-Reset-Link) auf 36 Stunden statt Keycloaks Default von 5 Minuten. Keycloaks
      * Standard-Mailtext rendert die tatsaechlich konfigurierte Lebensdauer automatisch mit ein,
      * kein zusaetzlicher Theme-Eingriff noetig.
      */
@@ -130,18 +130,19 @@ public class ProdKeycloakRealmSyncService {
 
 
     /**
-     * Aktiviert die Aufzeichnung von LOGIN_ERROR-Realm-Events, Basis fuer
-     * {@link kreyj.konfplan.infrastructure.observability.FailedLoginMetricsPoller}. Bewusst nur
-     * dieser eine Event-Typ statt aller Events, um Keycloaks Event-Speicher klein zu halten;
-     * eventsExpiration sorgt zusaetzlich fuer automatisches Aufraeumen.
+     * Aktiviert die Aufzeichnung von LOGIN_ERROR- und SEND_RESET_PASSWORD_ERROR-Realm-Events,
+     * Basis fuer {@link kreyj.konfplan.infrastructure.observability.FailedLoginMetricsPoller} bzw.
+     * {@link kreyj.konfplan.infrastructure.observability.EmailDeliveryFailureAlertPoller}. Bewusst
+     * nur diese beiden Event-Typen statt aller Events, um Keycloaks Event-Speicher klein zu
+     * halten; eventsExpiration sorgt zusaetzlich fuer automatisches Aufraeumen.
      */
     private void syncFailedLoginEventsConfig(RealmResource realmResource) {
         RealmRepresentation realmRepresentation = realmResource.toRepresentation();
         realmRepresentation.setEventsEnabled(true);
-        realmRepresentation.setEnabledEventTypes(List.of("LOGIN_ERROR"));
+        realmRepresentation.setEnabledEventTypes(List.of("LOGIN_ERROR", "SEND_RESET_PASSWORD_ERROR"));
         realmRepresentation.setEventsExpiration(FAILED_LOGIN_EVENTS_EXPIRATION_SECONDS);
         realmResource.update(realmRepresentation);
-        Log.info("Keycloak-Realm-Events fuer LOGIN_ERROR synchronisiert.");
+        Log.info("Keycloak-Realm-Events fuer LOGIN_ERROR und SEND_RESET_PASSWORD_ERROR synchronisiert.");
 
         grantViewEventsToAdminCliServiceAccount(realmResource);
     }

@@ -362,6 +362,13 @@ Der Stack hat keinen Alertmanager (siehe `Monitoring-Grafana.adoc`) - Prometheus
 Log-Zeilen können Details wie Stacktraces, Benutzernamen oder interne Pfade enthalten und werden dabei an ntfy.sh (einen externen Dienst) übertragen. Wie bei der IP-Überwachung unten: unbedingt einen zufälligen, nicht erratbaren Topic-Namen wählen - ntfy.sh-Themen sind ohne Zusatzauthentifizierung öffentlich lesbar für jeden, der den Namen kennt.
 ====
 
+Ein fehlgeschlagener Mailversand (z.B. eine Brevo-IP-Sperre) passiert innerhalb Keycloaks eigenem
+SMTP-Client und würde ohne Weiteres nur im `keycloak`-Container-Log auftauchen, das dieser Watcher
+nicht überwacht. `EmailDeliveryFailureAlertPoller` (Java, im `app`-Container) pollt daher periodisch
+Keycloaks `SEND_RESET_PASSWORD_ERROR`-Realm-Events und spiegelt jeden neuen Fehler als ERROR-Zeile
+ins App-Log - dadurch erfasst derselbe `error-log-notifier`-Watcher auch fehlgeschlagene
+Passwort-Reset-/Erstanmeldung-Mails, ohne den Keycloak-Container zusätzlich überwachen zu müssen.
+
 Einrichtung:
 
 . Einen zufälligen, nicht erratbaren Topic-Namen wählen (unabhängig vom `NTFY_TOPIC` der IP-Überwachung) und in der ntfy-App/-Website abonnieren.
@@ -383,4 +390,4 @@ Für einen erzwungenen Reimport das Postgres-Volume der `keycloak`-Datenbank lee
 ggf. zusätzlich `ufw`).
 * **App kann Keycloak nicht erreichen**: `KC_SERVER_URL`/`KEYCLOAK_INTERNAL_URL` muss auf den Compose-Service-Namen zeigen (`http://keycloak:8080/auth`, mit Pfad `/auth`), nicht auf `localhost` - beide Container laufen im selben Compose-Netzwerk und erreichen sich über den Service-Namen.
 * **Subtile Folgefehler, die sich nicht wie ein offensichtlicher Bug anfühlen** (z.B. eine Keycloak-Required-Action wie "Update Password" greift beim Login nicht, obwohl Realm- und User-Konfiguration nachweislich korrekt sind): prüfen, ob die vier `QUARKUS_HTTP_PROXY_*`-Einstellungen im `app`-Service gesetzt sind (siehe `docker-compose.yml`). Ohne sie vertraut Quarkus den `X-Forwarded-*`-Headern von Caddy nicht.
-* **App-Log zeigt beim Start `Konnte ... nicht synchronisieren.: ... Connection refused: keycloak/...`** (z.B. gefolgt von dauerhaften `403`-Warnungen des `FailedLoginMetricsPoller`, siehe Monitoring-Grafana.adoc): `app` ist hochgefahren, bevor Keycloaks HTTP-Port tatsächlich erreichbar war - `ProdKeycloakRealmSyncService` läuft beim Start nur einmal, ohne Retry. Der `keycloak`-Service hat dafür einen Healthcheck (`/health/ready` auf dem Management-Port 9000), auf den `app` per `depends_on: ... condition: service_healthy` wartet - sollte das trotzdem auftreten (z.B. sehr langsamer erster Realm-Import), reicht ein `docker compose restart app`, sobald Keycloak vollständig oben ist.
+* **App-Log zeigt beim Start `Konnte ... nicht synchronisieren.: ... Connection refused: keycloak/...`** (z.B. gefolgt von dauerhaften `403`-Warnungen des `FailedLoginMetricsPoller` bzw. `EmailDeliveryFailureAlertPoller`, siehe Monitoring-Grafana.adoc): `app` ist hochgefahren, bevor Keycloaks HTTP-Port tatsächlich erreichbar war - `ProdKeycloakRealmSyncService` läuft beim Start nur einmal, ohne Retry. Der `keycloak`-Service hat dafür einen Healthcheck (`/health/ready` auf dem Management-Port 9000), auf den `app` per `depends_on: ... condition: service_healthy` wartet - sollte das trotzdem auftreten (z.B. sehr langsamer erster Realm-Import), reicht ein `docker compose restart app`, sobald Keycloak vollständig oben ist.
