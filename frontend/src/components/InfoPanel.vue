@@ -36,12 +36,19 @@
         </a>
       </div>
     </div>
+
+    <div class="mt-3 pt-3 border-t border-gray-200">
+      <button @click="emit('open-feedback')"
+              class="flex items-center gap-1.5 text-xs text-indigo-600 hover:underline">
+        <MessageSquarePlusIcon class="w-3.5 h-3.5 shrink-0"/> Verbesserungsvorschlag einreichen
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { FileText as FileTextIcon } from '@lucide/vue';
+import { FileText as FileTextIcon, MessageSquarePlus as MessageSquarePlusIcon } from '@lucide/vue';
 import api from '../api/axios';
 
 // In Produktion (Quinoa) teilen sich Frontend und Backend einen Origin - relative Links reichen.
@@ -55,7 +62,7 @@ const handbuecher = [
   { datei: 'Benutzerhandbuch-Teilnehmer.pdf', label: 'Für Teilnehmer' },
 ];
 
-const emit = defineEmits(['close']);
+const emit = defineEmits(['close', 'open-feedback']);
 
 const info = ref(null);
 const loading = ref(true);
