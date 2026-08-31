@@ -44,6 +44,8 @@ const totalPages = computed(() => Math.ceil(props.totalItems / props.pageSize));
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .btn-secondary {
   @apply bg-white text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 font-bold border border-gray-200 transition shadow-sm cursor-pointer disabled:opacity-50;
 }

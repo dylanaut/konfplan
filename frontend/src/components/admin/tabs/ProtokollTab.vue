@@ -283,6 +283,8 @@ const getKategorieClass = (kat) => {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .input-field {
   @apply rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:ring-2 focus:ring-indigo-500 bg-white;
 }
