@@ -24,9 +24,10 @@ von oben nach unten fünf Abschnitte zeigt: **Persönliches Profil**, **Mein Zei
 Verfügbarkeit** (pro Veranstaltung), **Meine Vorträge** und **Meine Veranstaltungsanmeldungen**.
 
 Oben in der Kopfzeile der Anwendung befinden sich rechts ein **Info**-Menüpunkt (Anwendungsname,
-Version, Build-Datum, Git-Commit, Mailto-Link an den Entwickler, sowie ein Abschnitt
+Version, Build-Datum, Git-Commit, Mailto-Link an den Entwickler, ein Abschnitt
 **Benutzerhandbücher** mit Download-Links auf die PDF-Handbücher für Admin, Referent und
-Teilnehmer – auch dieses Handbuch selbst ist von dort herunterladbar) und der
+Teilnehmer – auch dieses Handbuch selbst ist von dort herunterladbar – sowie ein Link
+**Verbesserungsvorschlag einreichen**, siehe <<_verbesserungsvorschlag_einreichen>>) und der
 **LOGOUT**-Button.
 
 [NOTE]
@@ -36,6 +37,17 @@ Keycloak-gehostete Anmeldeseite (nicht über eine eigene KonfPlan-Seite): Klicke
 **"Passwort vergessen?"** und geben Sie Ihre E-Mail-Adresse ein - Sie erhalten eine E-Mail mit
 einem Link, über den Sie einmalig Ihr eigenes Passwort festlegen.
 ====
+
+[[_verbesserungsvorschlag_einreichen]]
+=== Verbesserungsvorschlag einreichen
+
+Der Link **Verbesserungsvorschlag einreichen** im Info-Menü öffnet einen Dialog mit den
+Pflichtfeldern **Titel** und **Beschreibung** (Freitext) sowie den Buttons **Abbrechen** und
+**Absenden**. Nach erfolgreichem Absenden zeigt der Dialog die Meldung "Vielen Dank! Ihr Vorschlag
+wurde übermittelt." mit einem Button **Schließen**; schlägt das Absenden fehl, erscheint
+stattdessen eine rote Fehlermeldung und das Formular bleibt zur erneuten Eingabe bestehen. Der
+Vorschlag wird zusammen mit dem eigenen Namen und der eigenen Rolle gespeichert und ist für
+Administratoren im Admin-Bereich einsehbar.
 
 == Persönliches Profil
 

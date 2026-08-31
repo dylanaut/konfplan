@@ -21,16 +21,17 @@ Demo-Datensatz "Karrierekompass Demo" (Login als Organisatorin `kathrin.jessen`)
 
 Nach der Anmeldung über die Startseite öffnet sich der Admin-Bereich mit einer horizontalen
 Tab-Navigation. Solange noch keine Veranstaltung ausgewählt ist, stehen nur die Tabs
-**Organisatoren**, **Gebäude**, **Veranstaltungen**, **Verzeichnis-Import** und **Protokoll** zur
-Verfügung - alle anderen Tabs benötigen eine ausgewählte Veranstaltung und sind erst danach
-sichtbar: **Teilnehmer**, **Referenten**, **Vorträge**, **Zeit-Slots**, **Planerstellung** und
-**Ergebnisse**.
+**Organisatoren**, **Gebäude**, **Veranstaltungen**, **Verzeichnis-Import**, **Protokoll** und
+**Feedback** zur Verfügung - alle anderen Tabs benötigen eine ausgewählte Veranstaltung und sind
+erst danach sichtbar: **Teilnehmer**, **Referenten**, **Vorträge**, **Zeit-Slots**,
+**Planerstellung** und **Ergebnisse**.
 
 Oben in der Kopfzeile der Anwendung (auf jeder Seite sichtbar) befinden sich rechts ein
 **Info**-Menüpunkt (zeigt Anwendungsname, Version, Build-Datum, Git-Commit, einen Mailto-Link an
-den Entwickler sowie einen Abschnitt **Benutzerhandbücher** mit Download-Links auf die
-PDF-Handbücher für Admin, Referent und Teilnehmer – auch dieses Handbuch selbst ist von dort
-herunterladbar) und der **LOGOUT**-Button.
+den Entwickler, einen Abschnitt **Benutzerhandbücher** mit Download-Links auf die PDF-Handbücher
+für Admin, Referent und Teilnehmer – auch dieses Handbuch selbst ist von dort herunterladbar –
+sowie einen Link **Verbesserungsvorschlag einreichen**, siehe
+<<_verbesserungsvorschlag_einreichen>>) und der **LOGOUT**-Button.
 
 [NOTE]
 ====
@@ -39,6 +40,17 @@ angelegt) ist noch kein Passwort hinterlegt. Der Nutzer klickt auf der Anmeldese
 **"Passwort vergessen?"** und gibt seine E-Mail-Adresse ein - er erhält eine E-Mail mit einem
 Link, über den er einmalig sein eigenes Passwort festlegt.
 ====
+
+[[_verbesserungsvorschlag_einreichen]]
+=== Verbesserungsvorschlag einreichen
+
+Der Link **Verbesserungsvorschlag einreichen** im Info-Menü öffnet einen Dialog mit den
+Pflichtfeldern **Titel** und **Beschreibung** (Freitext) sowie den Buttons **Abbrechen** und
+**Absenden**. Nach erfolgreichem Absenden zeigt der Dialog die Meldung "Vielen Dank! Ihr Vorschlag
+wurde übermittelt." mit einem Button **Schließen**; schlägt das Absenden fehl, erscheint
+stattdessen eine rote Fehlermeldung und das Formular bleibt zur erneuten Eingabe bestehen. Der
+Vorschlag wird zusammen mit dem eigenen Namen und der eigenen Rolle gespeichert und ist im Tab
+**Feedback** einsehbar (siehe <<_tab_feedback>>).
 
 == Tab "Veranstaltungen"
 
@@ -661,3 +673,20 @@ Nutzeränderungen, Planungen etc.), mit Filter- und CSV-Exportfunktion.
   Veranstaltung, Kategorie (farbiges Badge), Ereignis, Details (gekürzt mit Tooltip für
   Volltext), Ref-ID.
 * Leerzustand: "Keine Einträge gefunden, die den Filtern entsprechen."
+
+[[_tab_feedback]]
+== Tab "Feedback"
+
+Übersicht aller von Nutzern eingereichten Verbesserungsvorschläge (siehe
+<<_verbesserungsvorschlag_einreichen>>), veranstaltungsunabhängig für alle eingehenden Vorschläge.
+
+* **Status-Filter** – Auswahl **Alle** / **Offen** / **Erledigt**, filtert die Tabelle.
+* **Tabelle** (Spalten: Titel & Beschreibung, Von, Am, Status, Aktionen):
+** **Titel & Beschreibung** – Titel fett, Beschreibung darunter als Fließtext.
+** **Von** – Name des Erstellers, dahinter in Klammern dessen Rolle (ADMIN/REFERENT/TEILNEHMER).
+** **Am** – Zeitpunkt der Einreichung.
+** **Status** – farbiges Badge, gelb "Offen" bzw. grün "Erledigt".
+** **Aktionen** – Link **Als erledigt markieren** (bzw. **Als offen markieren**, je nach aktuellem
+   Status) schaltet den Status um; Link **Löschen** entfernt den Vorschlag nach Bestätigung
+   ("Löschen?") endgültig.
+* Leerzustand: "Keine Verbesserungsvorschläge gefunden."
