@@ -136,6 +136,8 @@ onMounted(loadDatasets);
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .btn-primary { @apply rounded-lg bg-indigo-600 px-3 py-1.5 text-white font-bold hover:bg-indigo-700 transition shadow-sm border-none cursor-pointer disabled:opacity-50; }
 .btn-secondary { @apply bg-white text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 font-bold border border-gray-200 transition shadow-sm cursor-pointer disabled:opacity-50; }
 .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }

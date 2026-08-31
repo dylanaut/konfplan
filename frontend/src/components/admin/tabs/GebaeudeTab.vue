@@ -294,6 +294,8 @@ const paginatedGebaeude = computed(() => paginate(filteredGebaeude.value, pages.
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .btn-primary { @apply rounded-lg bg-indigo-600 px-3 py-1.5 text-white font-bold hover:bg-indigo-700 transition shadow-sm border-none cursor-pointer disabled:opacity-50; }
 .btn-save-all { @apply bg-orange-500 text-white text-[10px] px-3 py-1 rounded-md shadow-sm transition-all flex items-center gap-2 hover:bg-orange-600 disabled:opacity-50; }
 .btn-secondary { @apply bg-white text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50 font-bold border border-gray-200 transition shadow-sm cursor-pointer disabled:opacity-50; }

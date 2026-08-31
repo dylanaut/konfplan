@@ -1140,6 +1140,8 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('de-DE') : '';
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .btn-primary {
   @apply rounded-lg bg-indigo-600 px-3 py-1.5 text-white font-bold hover:bg-indigo-700 transition shadow-sm border-none cursor-pointer disabled:opacity-50;
 }
