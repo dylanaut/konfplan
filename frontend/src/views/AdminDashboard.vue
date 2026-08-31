@@ -46,7 +46,7 @@
     </div>
 
     <!-- START-ZUSTAND (Empty State) -->
-    <div v-if="!selectedVid && !['veranstaltungen', 'veranstaltungImport', 'gebaeude', 'organisatoren', 'protokoll'].includes(activeTab)"
+    <div v-if="!selectedVid && !['veranstaltungen', 'veranstaltungImport', 'gebaeude', 'organisatoren', 'protokoll', 'feedback'].includes(activeTab)"
          class="bg-indigo-50 p-8 rounded-2xl text-center border-2 border-dashed border-indigo-200 animate-fade-in">
       <div class="text-indigo-400 mb-3 flex justify-center">
         <CalendarIcon class="w-10 h-10"/>
@@ -192,6 +192,12 @@
                     :protokolle="protokolle"
                     :veranstaltungen="veranstaltungen"
       />
+
+      <FeedbackTab v-if="activeTab === 'feedback'"
+                   :vorschlaege="feedback"
+                   @toggleStatus="toggleFeedbackStatus"
+                   @delete="deleteFeedback"
+      />
     </div>
 
     <!-- Global File Input -->
@@ -277,6 +283,7 @@ import VortraegeTab from '../components/admin/tabs/VortraegeTab.vue';
 import SlotsTab from '../components/admin/tabs/SlotsTab.vue';
 import PlanungTab from '../components/admin/tabs/PlanungTab.vue';
 import ProtokollTab from '../components/admin/tabs/ProtokollTab.vue';
+import FeedbackTab from '../components/admin/tabs/FeedbackTab.vue';
 
 // Import Modals
 import AdminVortragEditorModal from '../components/AdminVortragEditorModal.vue';
@@ -304,7 +311,8 @@ const tabLabels = {
   slots: 'Zeit-Slots',
   planung: 'Planerstellung',
   ergebnisse: 'Ergebnisse',
-  protokoll: 'Protokoll'
+  protokoll: 'Protokoll',
+  feedback: 'Feedback'
 };
 
 // State
@@ -318,6 +326,7 @@ const eventSlots = ref([]);
 const belegungsplan = ref([]);
 const qualitaet = ref({});
 const protokolle = ref([]);
+const feedback = ref([]);
 const participantPriorities = ref({});
 const originalParticipantPriorities = ref({});
 const changedPriorities = ref(new Set());
@@ -368,10 +377,10 @@ const visibleTabs = computed(() => {
     'teilnehmer', 'referenten', 'vortraege',
     'veranstaltungen', 'veranstaltungImport', 'slots',
     'planung', 'ergebnisse',
-    'protokoll'];
+    'protokoll', 'feedback'];
   return ['organisatoren', 'gebaeude', 'referenten',
     'veranstaltungen', 'veranstaltungImport',
-    'protokoll'];
+    'protokoll', 'feedback'];
 });
 
 const futureEvents = computed(() => {
@@ -512,6 +521,38 @@ const refreshProtokolle = async () => {
   }
 };
 
+const refreshFeedback = async () => {
+  try {
+    const res = await api.get('/api/verbesserungsvorschlaege');
+    feedback.value = res.data;
+  } catch (e) {
+    console.error('Fehler beim Laden der Verbesserungsvorschläge:', e);
+  }
+};
+
+const toggleFeedbackStatus = async (vorschlag) => {
+  const neuerStatus = vorschlag.status === 'ERLEDIGT' ? 'OFFEN' : 'ERLEDIGT';
+  try {
+    await api.put(`/api/verbesserungsvorschlaege/${vorschlag.id}/status`, `"${neuerStatus}"`, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    await refreshFeedback();
+  } catch (e) {
+    console.error('Fehler beim Ändern des Status:', e);
+  }
+};
+
+const deleteFeedback = async (vorschlag) => {
+  if (confirm("Löschen?")) {
+    try {
+      await api.delete(`/api/verbesserungsvorschlaege/${vorschlag.id}`);
+      await refreshFeedback();
+    } catch (e) {
+      console.error('Fehler beim Löschen des Verbesserungsvorschlags:', e);
+    }
+  }
+};
+
 // Gebäude-Anzeige im Gebäude-Tab: bei ausgewählter Veranstaltung nur deren Gebäude, sonst alle.
 const gebaeudeFuerGebaeudeTab = computed(() => {
   if (!selectedVid.value || !eventContext.selectedEvent) return gebaeude.value;
@@ -548,6 +589,9 @@ const handleTabClick = (tab) => {
   activeTab.value = tab;
   if (tab === 'protokoll') {
     refreshProtokolle();
+  }
+  if (tab === 'feedback') {
+    refreshFeedback();
   }
 };
 
@@ -592,6 +636,7 @@ const loadData = async () => {
     changedPriorities.value.clear();
 
     if (activeTab.value === 'protokoll') refreshProtokolle();
+    if (activeTab.value === 'feedback') refreshFeedback();
 
   } catch (err) {
     console.error('Fehler beim Laden der Veranstaltungsdaten:', err);

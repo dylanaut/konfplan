@@ -14,6 +14,7 @@ import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Verbesserungsvorschlag;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -50,6 +51,7 @@ public class AdminServiceTest {
         // @ElementCollection-Tabelle auf der Subklasse Teilnehmer wird bei einem Bulk-Delete auf
         // Nutzer nicht automatisch mitgeloescht.
         io.quarkus.hibernate.orm.panache.Panache.getEntityManager().createNativeQuery("delete from teilnehmer_neigungen").executeUpdate();
+        Verbesserungsvorschlag.deleteAll();
         Nutzer.deleteAll();
         Veranstaltung.deleteAll();
 
