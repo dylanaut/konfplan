@@ -8,6 +8,7 @@
   "supportedLocales": ["de"],
   "defaultLocale": "de",
   "actionTokenGeneratedByUserLifespan": 129600,
+  "passwordPolicy": "length(8) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1)",
   "eventsEnabled": true,
   "enabledEventTypes": ["LOGIN_ERROR", "SEND_RESET_PASSWORD_ERROR"],
   "eventsExpiration": 2592000,

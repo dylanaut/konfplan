@@ -36,6 +36,7 @@ public class ProdKeycloakRealmSyncService {
 
     private static final String UPDATE_PASSWORD_ALIAS = "UPDATE_PASSWORD";
     private static final String LOGIN_TEXTS_LOCALE = "de";
+    private static final String PASSWORD_POLICY = "length(8) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1)";
     private static final int ACTION_TOKEN_LIFESPAN_SECONDS = 60 * 60 * 36;
     private static final long FAILED_LOGIN_EVENTS_EXPIRATION_SECONDS = 60L * 60 * 24 * 30;
     private static final String REALM_MANAGEMENT_CLIENT_ID = "realm-management";
@@ -101,6 +102,12 @@ public class ProdKeycloakRealmSyncService {
         } catch (Exception e) {
             Log.warn("Konnte die Realm-Events-Konfiguration fuer fehlgeschlagene Anmeldungen nicht synchronisieren.", e);
         }
+
+        try {
+            syncPasswordPolicy(realmResource);
+        } catch (Exception e) {
+            Log.warn("Konnte die Passwort-Policy nicht synchronisieren.", e);
+        }
     }
 
 
@@ -126,6 +133,21 @@ public class ProdKeycloakRealmSyncService {
         realmRepresentation.setActionTokenGeneratedByUserLifespan(ACTION_TOKEN_LIFESPAN_SECONDS);
         realmResource.update(realmRepresentation);
         Log.infof("Gueltigkeitsdauer des Passwort-Reset-Links auf %d Sekunden synchronisiert.", ACTION_TOKEN_LIFESPAN_SECONDS);
+    }
+
+
+    /**
+     * Erzwingt eine Mindest-Passwortstaerke (Laenge 8, je mind. 1 Gross-/Kleinbuchstabe, 1 Ziffer,
+     * 1 Sonderzeichen) fuer jedes neu gesetzte Passwort - egal ob per Selbst-Reset ueber den
+     * "Erstanmeldung / Passwort vergessen"-Link oder durch einen Admin im KonfPlan-Adminbereich
+     * (beide Wege laufen ueber Keycloaks Credential-API, die die Realm-Policy serverseitig prueft).
+     * Wirkt NICHT rueckwirkend auf bereits gesetzte Passwoerter - nur beim naechsten Setzen.
+     */
+    private void syncPasswordPolicy(RealmResource realmResource) {
+        RealmRepresentation realmRepresentation = realmResource.toRepresentation();
+        realmRepresentation.setPasswordPolicy(PASSWORD_POLICY);
+        realmResource.update(realmRepresentation);
+        Log.infof("Passwort-Policy synchronisiert: %s", PASSWORD_POLICY);
     }
 
 

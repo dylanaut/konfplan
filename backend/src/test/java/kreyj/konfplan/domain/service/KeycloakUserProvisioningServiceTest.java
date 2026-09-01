@@ -149,7 +149,7 @@ class KeycloakUserProvisioningServiceTest {
         verify(usersResource).create(userCaptor.capture());
         List<CredentialRepresentation> credentials = userCaptor.getValue().getCredentials();
         assertThat(credentials).hasSize(1);
-        assertThat(credentials.getFirst().getValue()).isEqualTo("konfplan");
+        assertThat(credentials.getFirst().getValue()).isEqualTo("Konfplan1!");
         assertThat(credentials.getFirst().isTemporary()).isFalse();
     }
 

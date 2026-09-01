@@ -58,7 +58,7 @@ public class KeycloakUserProvisioningService {
         if (launchMode.isDevOrTest()) {
             CredentialRepresentation cred = new CredentialRepresentation();
             cred.setType(CredentialRepresentation.PASSWORD);
-            cred.setValue("konfplan");
+            cred.setValue("Konfplan1!");
             cred.setTemporary(false);
             kcUser.setCredentials(List.of(cred));
         }
@@ -148,7 +148,13 @@ public class KeycloakUserProvisioningService {
         cred.setTemporary(true);
 
         var userResource = keycloak.realm(realm).users().get(nutzer.getKeycloakId());
-        userResource.resetPassword(cred);
+        try {
+            userResource.resetPassword(cred);
+        } catch (jakarta.ws.rs.WebApplicationException e) {
+            throw new KeycloakProvisioningException(
+                "Das neue Passwort erfüllt nicht die Mindestanforderungen (mind. 8 Zeichen, davon je "
+                    + "mindestens ein Großbuchstabe, ein Kleinbuchstabe, eine Ziffer und ein Sonderzeichen).", e);
+        }
 
         UserRepresentation kcUser = userResource.toRepresentation();
         kcUser.setRequiredActions(List.of("UPDATE_PASSWORD"));

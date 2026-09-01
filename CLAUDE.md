@@ -120,7 +120,8 @@ views/*.vue           # Top-level page components routed by Vue Router
 - **CSV import:** Slot indices are 1-based.
 - **Code style:** `.editorconfig` at root — 4 spaces for Java/XML, 2 spaces for JS/TS/Vue.
 - **Identity/passwords live in Keycloak**, not in the database — `Nutzer` only carries a `keycloakId` link. `KeycloakUserProvisioningService` (`domain/service`) is the sole caller of the Keycloak Admin REST Client (used from `AdminService`/`TeilnehmerService`/`ReferentService` on every create/update/delete/reset-password).
-- **Default password** on user create/import: `konfplan` (non-temporary) in dev/test mode, a random UUID (temporary, forces a Keycloak-side password change on first login) in prod.
+- **Default password** on user create/import: `Konfplan1!` (non-temporary) in dev/test mode, a random UUID (temporary, forces a Keycloak-side password change on first login) in prod.
+- **Password policy** (Keycloak realm-level, applies to every newly-set password — self-service reset and admin-set alike, but not retroactively to existing passwords): min. 8 characters, at least one uppercase, one lowercase, one digit, one special character.
 
 ## Full-Stack Feature Slice Checklist (Data Model Changes)
 

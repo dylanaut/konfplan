@@ -56,7 +56,7 @@ Skript zur Videoerstellung angelegt unter frontend/scripts/record-teilnehmer-dem
 [source,bash]
 ====
 cd frontend
-TEILNEHMER_LOGIN=maxi.muster TEILNEHMER_PASSWORD=konfplan node scripts/record-teilnehmer-demo.mjs
+TEILNEHMER_LOGIN=maxi.muster TEILNEHMER_PASSWORD=Konfplan1! node scripts/record-teilnehmer-demo.mjs
 ====
 
 Falls das Testkonto ein temporäres Passwort hat (Zwangswechsel bei Keycloak), zusätzlich TEILNEHMER_NEW_PASSWORD=<neues-passwort> setzen — das Skript erkennt automatisch, ob dieser Schritt überhaupt erscheint.

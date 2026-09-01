@@ -35,7 +35,9 @@ Teilnehmer – auch dieses Handbuch selbst ist von dort herunterladbar – sowie
 Für Ihr Konto ist noch kein Passwort hinterlegt. Login und Passwort-Vergabe laufen über die
 Keycloak-gehostete Anmeldeseite (nicht über eine eigene KonfPlan-Seite): Klicken Sie dort auf
 **"Passwort vergessen?"** und geben Sie Ihre E-Mail-Adresse ein - Sie erhalten eine E-Mail mit
-einem Link, über den Sie einmalig Ihr eigenes Passwort festlegen.
+einem Link, über den Sie einmalig Ihr eigenes Passwort festlegen. Das neue Passwort muss mind. 8
+Zeichen lang sein und je mindestens einen Groß-/Kleinbuchstaben, eine Ziffer und ein Sonderzeichen
+enthalten.
 ====
 
 [[_verbesserungsvorschlag_einreichen]]

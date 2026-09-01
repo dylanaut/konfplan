@@ -17,7 +17,18 @@
       <div class="space-y-4">
         <div>
           <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Neues Passwort</label>
-          <input v-model="newPassword" type="password" class="input-field w-full" placeholder="Min. 8 Zeichen" />
+          <div class="relative">
+            <input v-model="newPassword" :type="showPassword ? 'text' : 'password'" class="input-field w-full pr-10" placeholder="Min. 8 Zeichen" />
+            <button type="button" @click="showPassword = !showPassword"
+                    class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    :aria-label="showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'">
+              <EyeOffIcon v-if="showPassword" class="w-4 h-4" />
+              <EyeIcon v-else class="w-4 h-4" />
+            </button>
+          </div>
+          <p class="text-[10px] mt-1" :class="newPassword.length === 0 ? 'text-gray-400' : isPasswordCompliant ? 'text-green-600' : 'text-red-600'">
+            Mind. 8 Zeichen, je mind. ein Groß-/Kleinbuchstabe, eine Ziffer und ein Sonderzeichen.
+          </p>
         </div>
 
         <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100">
@@ -32,7 +43,7 @@
         <button @click="$emit('close')" class="btn-secondary flex-1">Abbrechen</button>
         <button
           @click="confirmReset"
-          :disabled="newPassword.length < 8 || isSubmitting"
+          :disabled="!isPasswordCompliant || isSubmitting"
           class="btn-primary flex-1 flex items-center justify-center gap-2"
         >
           <LoaderIcon v-if="isSubmitting" class="w-4 h-4 animate-spin" />
@@ -44,8 +55,8 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
-import { X as XIcon, Info as InfoIcon, Loader as LoaderIcon } from '@lucide/vue';
+import { ref, computed, watch } from 'vue';
+import { X as XIcon, Info as InfoIcon, Loader as LoaderIcon, Eye as EyeIcon, EyeOff as EyeOffIcon } from '@lucide/vue';
 
 const props = defineProps({
   isVisible: Boolean,
@@ -56,13 +67,22 @@ const emit = defineEmits(['close', 'reset']);
 
 const newPassword = ref('');
 const isSubmitting = ref(false);
+const showPassword = ref(false);
+
+const isPasswordCompliant = computed(() => {
+  const pw = newPassword.value;
+  return pw.length >= 8 && /[A-Z]/.test(pw) && /[a-z]/.test(pw) && /[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw);
+});
 
 watch(() => props.isVisible, (visible) => {
-  if (visible) newPassword.value = '';
+  if (visible) {
+    newPassword.value = '';
+    showPassword.value = false;
+  }
 });
 
 const confirmReset = async () => {
-  if (newPassword.value.length < 8) return;
+  if (!isPasswordCompliant.value) return;
   isSubmitting.value = true;
   try {
     await emit('reset', { userId: props.nutzer.id, newPassword: newPassword.value });

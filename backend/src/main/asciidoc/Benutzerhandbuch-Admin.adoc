@@ -38,7 +38,9 @@ sowie einen Link **Verbesserungsvorschlag einreichen**, siehe
 Für ein neu angelegtes Konto (egal ob per CSV-Import, über den Dialog "+ Neu" oder per Einladung
 angelegt) ist noch kein Passwort hinterlegt. Der Nutzer klickt auf der Anmeldeseite auf
 **"Passwort vergessen?"** und gibt seine E-Mail-Adresse ein - er erhält eine E-Mail mit einem
-Link, über den er einmalig sein eigenes Passwort festlegt.
+Link, über den er einmalig sein eigenes Passwort festlegt. Das neue Passwort muss mind. 8 Zeichen
+lang sein und je mindestens einen Groß-/Kleinbuchstaben, eine Ziffer und ein Sonderzeichen
+enthalten.
 ====
 
 [[_verbesserungsvorschlag_einreichen]]
@@ -281,7 +283,11 @@ image::17-user-editor-modal-referent.png[Dialog Neuer Referent]
 
 image::12-password-reset-modal.png[Dialog Passwort zurücksetzen]
 
-Setzt das Passwort des Nutzers zurück. Buttons: Abbrechen / Zurücksetzen.
+Setzt das Passwort des Nutzers zurück. Das neue Passwort muss mind. 8 Zeichen lang sein und je
+mindestens einen Groß-/Kleinbuchstaben, eine Ziffer und ein Sonderzeichen enthalten (Hinweistext
+unter dem Feld färbt sich rot/grün je nachdem, ob die Anforderungen aktuell erfüllt sind); der
+Button **Zurücksetzen** bleibt bis dahin deaktiviert. Ein Augen-Icon im Feld blendet die Eingabe
+ein-/aus. Buttons: Abbrechen / Zurücksetzen.
 
 == Tab "Teilnehmer"
 

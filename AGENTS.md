@@ -134,7 +134,8 @@ views/*.vue           # Top-Level-Seiten-Komponenten geroutet von Vue Router
 - CSV-Import von Verfügbarkeiten erfolgt über 1-basierte Slot-Indizes.
 - **Code-Stil:** `.editorconfig` im Root-Verzeichnis — 4 Leerzeichen für Java/XML, 2 für JS/TS/Vue.
 - **Identität/Passwörter liegen in Keycloak**, nicht in der Datenbank — `Nutzer` trägt nur `keycloakId` als Verknüpfung. `KeycloakUserProvisioningService` (`domain/service`) ist die einzige Stelle, die den Keycloak Admin REST Client aufruft.
-- **Standard-Passwort** bei Nutzer-Erstellung/Import: `konfplan` (nicht temporär) im Dev/Test-Modus, ein zufälliges UUID-Passwort (temporär, erzwingt Keycloak-seitig eine Änderung beim ersten Login) in Produktion.
+- **Standard-Passwort** bei Nutzer-Erstellung/Import: `Konfplan1!` (nicht temporär) im Dev/Test-Modus, ein zufälliges UUID-Passwort (temporär, erzwingt Keycloak-seitig eine Änderung beim ersten Login) in Produktion.
+- **Passwort-Policy** (Keycloak-Realm-Ebene, gilt für jedes neu gesetzte Passwort — Selbst-Reset wie Admin-gesetzt, nicht rückwirkend auf bestehende Passwörter): mind. 8 Zeichen, je mind. ein Groß-/Kleinbuchstabe, eine Ziffer, ein Sonderzeichen.
 
 ## Bekannte Besonderheiten & Infrastruktur-Notizen
 
