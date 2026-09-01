@@ -26,6 +26,13 @@ import java.util.List;
 public class EmailDeliveryFailureAlertPoller {
 
     private static final String SEND_RESET_PASSWORD_ERROR_EVENT_TYPE = "SEND_RESET_PASSWORD_ERROR";
+    // Keycloaks org.keycloak.events.Errors - exakte Werte per Live-Test gegen Keycloak 26.7.1
+    // verifiziert (ResetCredentialEmail-Authenticator): "invalid_email" wird gesetzt, wenn der
+    // Nutzer schlicht keine (gueltige) E-Mail-Adresse hinterlegt hat - kein SMTP-/Brevo-Problem,
+    // sondern ein Datenproblem, das nur ueber den Admin-Dialog "Passwort zuruecksetzen" behebbar
+    // ist. "email_send_failed" ist der tatsaechliche SMTP-Fehlerfall (z.B. Brevo-IP-Sperre).
+    private static final String ERROR_INVALID_EMAIL = "invalid_email";
+    private static final String ERROR_EMAIL_SEND_FAILED = "email_send_failed";
 
     @Inject
     Keycloak keycloak;
@@ -52,10 +59,24 @@ public class EmailDeliveryFailureAlertPoller {
 
         for (EventRepresentation event : events) {
             String username = null == event.getDetails() ? null : event.getDetails().get("username");
-            Log.errorf("Keycloak konnte eine Passwort-Reset-/Erstanmeldung-Mail nicht versenden (Nutzer: %s, Fehler: %s) - vermutlich ein SMTP-Problem (z.B. Brevo-IP-Sperre).",
-                null == username ? "unbekannt" : username, event.getError());
+            Log.error(beschreibung(null == username ? "unbekannt" : username, event.getError()));
         }
 
         lastPolledAtMillis = dateTo;
+    }
+
+    private String beschreibung(String username, String fehlerCode) {
+        if (ERROR_INVALID_EMAIL.equals(fehlerCode)) {
+            return "Keycloak konnte keine Passwort-Reset-/Erstanmeldung-Mail an '" + username
+                + "' senden: Der Nutzer hat keine (gültige) E-Mail-Adresse hinterlegt - kein SMTP-Problem, "
+                + "der Selbst-Reset ist fuer diesen Nutzer ein Dead-End. Passwort ueber den Admin-Dialog "
+                + "'Passwort zuruecksetzen' vergeben.";
+        }
+        if (ERROR_EMAIL_SEND_FAILED.equals(fehlerCode)) {
+            return "Keycloak konnte eine Passwort-Reset-/Erstanmeldung-Mail an '" + username
+                + "' nicht versenden - vermutlich ein SMTP-Problem (z.B. Brevo-IP-Sperre).";
+        }
+        return "Keycloak konnte eine Passwort-Reset-/Erstanmeldung-Mail an '" + username
+            + "' nicht versenden (Fehler: " + fehlerCode + ").";
     }
 }
