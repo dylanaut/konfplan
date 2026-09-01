@@ -180,9 +180,15 @@ curl -s https://konfplan.<deine-domain>/auth/realms/konfplan/.well-known/openid-
 
 == Update / Redeploy
 
+WARNING: `IMAGE_TAG` in `.env` steht immer auf einer konkreten, getaggten Release-Version (siehe
+GitHub Releases), NIE auf `latest` - `latest` folgt jedem Push auf `main`, also potenziell
+unfertigem/ungetestetem Stand. Vor jedem Update erst `IMAGE_TAG` auf die neue Release-Version
+setzen, dann erst pullen.
+
 [source,bash]
 ----
-docker compose pull app          # neues Image von ghcr.io
+# In .env: IMAGE_TAG auf die neue Release-Version setzen, z.B. IMAGE_TAG=1.3.0
+docker compose pull app          # zieht genau diese Version von ghcr.io
 docker compose up -d app         # nur die App neu starten, DB/Keycloak laufen weiter
 ----
 
@@ -230,7 +236,7 @@ Auf dem Server ebenfalls `IMAGE_TAG=local-test` in `.env` setzen, aber `docker c
 **ohne vorheriges `docker compose pull`** aufrufen - sonst versucht Compose, `local-test` von
 `ghcr.io` zu ziehen und schlägt fehl, da der Tag dort nicht existiert.
 
-WARNING: In beiden Fällen danach `IMAGE_TAG` wieder auf `latest` zurückstellen, sonst bleibt der Server dauerhaft auf dem manuell gebauten Stand und bekommt keine künftigen CI-Releases mehr.
+WARNING: In beiden Fällen danach `IMAGE_TAG` wieder auf die zuletzt regulär released Version zurückstellen (NIE auf `latest`, siehe oben) - sonst bleibt der Server dauerhaft auf dem manuell gebauten Stand.
 
 == Der eine echte Bestandsaccount
 

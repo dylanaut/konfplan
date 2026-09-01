@@ -153,6 +153,8 @@ Remote is **GitHub** (`github.com/dylanaut/konfplan`, private), authenticated vi
 - Only stage files related to the current task; leave unrelated working-tree changes out of the commit.
 - `gh pr create --fill --draft`, `gh pr merge --squash --delete-branch`, `gh issue create` work from the terminal.
 - Dependabot (`.github/dependabot.yml`) opens PRs weekly for outdated Maven/npm/GitHub Actions dependencies — review and merge (or close) regularly.
+- Verify the current branch with `git branch --show-current` before the first commit of a change set.
+- After merging a PR, verify the change is actually present on `main` (`git log main --oneline | head`, `git grep <new-symbol> main`) and report the merge commit.
 
 ## Infrastructure Notes
 
@@ -163,52 +165,28 @@ Remote is **GitHub** (`github.com/dylanaut/konfplan`, private), authenticated vi
 - **Room conflict checks** are cross-event (a room booked in one Veranstaltung blocks it in another).
 - **Vite** is configured to produce a `manifest.json` used by Quarkus Quinoa to embed frontend assets.
 - **DB scripts:** `db/ensure_prod_db.sh` and `db/ensure_prod_infra.sh` for local PostgreSQL/Mailpit setup (Docker-based, dev/test use). Production `.deb` packaging lives under `packaging/debian/` (see its `README.md`).
+- **Never operate production on a snapshot/floating image.** `deploy/.env`'s `IMAGE_TAG` must always be pinned to a specific tagged release (e.g. `1.3.0`, matching the GHCR tag without the `v` prefix — see GitHub Releases), never left on `latest` (which follows every push to `main`, i.e. potentially unfinished/untested work). Bump `IMAGE_TAG` explicitly after each new release before pulling.
 
-Add as a new top-level '## Git & Branch Workflow' section near the top of CLAUDE.md, since version_control was the #1 goal across sessions.\n\n## Git & Branch Workflow
-- Never commit directly to `main`. For every task: create a GitHub issue, then a feature branch named `feature/<issue-number>-<slug>`, then open a PR when green.
-- Before committing, run `git status` and `git diff --cached` and confirm ONLY the files related to the current task are staged. Never commit pre-existing staged files.
-- Verify the current branch with `git branch --show-current` before the first commit of a change set.
-- After merging a PR, verify the change is actually present on `main` (`git log main --oneline | head`, `git grep <new-symbol> main`) and report the merge commit.
-Add a '## Worktrees & Environment Truth' section under any existing Environment/Setup heading.\n\n## Worktrees & Environment Truth
+## Worktrees & Environment Truth
+
 - This repo is often used with git worktrees. Before claiming a config/file state, check the USER'S actual checkout path, not just the current worktree. Ask which checkout/branch they are running if unsure.
 - Dev database is Postgres, database name `quarkus` (not `default`). Confirm with `\l` / `psql -c '\conninfo'` before writing DB-aware code.
 - Never assume a config is correct across branches — grep the target branch explicitly (`git show <branch>:src/main/resources/application.properties`).
-Add under a '## Testing' or '## Definition of Done' section.\n\n## Build & Verify Before Push
-- Java/Quarkus: run `./mvnw -q verify` (all 115+ tests) and the frontend build (`npm run build`) before every commit; do not push red.
-- CI runs SpotBugs and a Dockerfile lint — run these locally before pushing to avoid pipeline failures.
+- When reporting on the contents/state of a config file, prefix the answer with the absolute file path and the branch it came from, especially if multiple worktrees or branches exist.
+
+## Build & Verify Before Push
+
+- Java/Quarkus: run `./mvnw -q verify` (or `test`) and the frontend build (`npm run build`) before every commit; do not push red.
+- CI runs SpotBugs as part of the Maven build — check its findings locally before pushing to avoid pipeline noise.
 - Verify runtime behaviour against the running dev backend (or Playwright for UI changes) before declaring a task done.
-Add near the top of CLAUDE.md as general working agreements.\n\n## Scope Discipline
-- Change only what was asked. If a fix appears to require touching unrelated files (e.g. .mzn model inputs, Docker scaffolding), stop and ask first.
+
+## Scope Discipline
+
+- Change only what was asked. If a fix appears to require touching unrelated files (e.g. `.mzn` model inputs, Docker scaffolding), stop and ask first.
 - Prefer the smallest diff that solves the reported problem; propose larger refactors as a separate issue.
-Add a '## Documentation' section listing the doc files that must be kept in sync.\n\n## Documentation
-- User-facing docs are AsciiDoc (`docs/*.adoc`). When a deployment, Keycloak, or packaging behaviour changes, update the Ubuntu/Windows install guide in the same PR.
 
-Before any git operation in this repo, always first run and show me: `git branch --show-current`, `git status --short`, `git worktree list`, and `git log --oneline -3`. Then state in one sentence which branch you will commit to and exactly which files you will stage. Wait for my confirmation if anything unrelated to the current task is staged.
+## Documentation
 
-Whenever you report on the contents or state of a config file, always prefix the answer with the absolute file path and the branch it came from. If multiple worktrees or branches exist, check all of them and show me the differences before drawing any conclusion.
-
-Use a subagent to investigate this deployment failure end to end: read the container logs, systemd units, ufw/iptables rules, and the Keycloak + app config. Do not change anything. Come back with a ranked list of hypotheses, the evidence for each, and the single cheapest command that would confirm or eliminate the top one.
-
-Create a reusable workflow for me. First, read our recent 20 merged PRs with `gh pr list --state merged` and `git log` to infer our exact conventions: branch naming, commit message style, PR description format, test commands, and CI checks. Then write two files:
-
-1. `CLAUDE.md` (or append to it) documenting: the repo layout, backend/frontend build+test commands, Flyway migration rules, and hard git rules — always `git status` and verify staged files before committing, always confirm the current branch matches the intended feature branch, never force-push shared branches, and always verify the target DB/schema name before running DB-dependent code.
-
-2. `.claude/commands/ship-issue.md` — a slash command taking an issue number that: (a) fetches the issue with `gh issue view`, (b) writes an implementation plan and asks me to approve it, (c) creates the feature branch, (d) implements backend + frontend changes, (e) runs the full test suite and frontend build, (f) self-reviews `git diff` against the issue acceptance criteria and fixes anything questionable, (g) pushes and opens a draft PR, (h) polls CI with `gh pr checks --watch` and fixes SpotBugs/Dockerfile/lint failures autonomously, (i) marks the PR ready only when everything is green, and reports a summary.
-
-After writing them, run `/ship-issue` on the oldest open issue as a live test and tell me where the workflow was ambiguous.
-
-I want to work on 3 independent issues in parallel using git worktrees and subagents.
-
-Setup: for each issue, create a dedicated worktree under `../worktrees/<branch-name>` with `git worktree add`. Then launch one subagent per issue. Give every subagent these non-negotiable rules: (1) you may only read, edit, and run commands inside YOUR assigned worktree path — never assume the main checkout reflects your branch, and never inspect another worktree; (2) before touching config or database code, print the resolved config file from your own worktree and confirm the actual datasource/schema name rather than assuming; (3) run the full backend test suite and frontend build inside your worktree before reporting done; (4) commit and push your branch and open a draft PR.
-
-Ask me which 3 issues to pick, confirm they don't touch overlapping files, then run all three subagents concurrently. When all finish, act as coordinator: rebase each branch on latest main, resolve conflicts, re-run the full suite on the integrated result, and give me a merge order with a one-paragraph risk note per PR. Finally clean up the worktrees.
-
-Build me an autonomous deploy-and-verify agent as `.claude/commands/deploy-verify.md`.
-
-First, mine our AsciiDoc deployment guide, git history, and any incident notes for every deployment failure we've hit — Keycloak/OIDC container startup ordering, private GHCR registry auth, Docker Hub network blocking, leftover ufw/iptables rules, TLS redirect loops, secrets-file permissions causing crash-loops, single-domain /auth reverse-proxy config, Flyway migration mismatches. Turn each into a named, checkable hypothesis with the exact diagnostic command and the exact fix.
-
-The command should then: (1) deploy the current build to the target environment, (2) tail service logs and container status until the app is up or clearly failed, (3) on failure, walk the hypothesis list in order of likelihood, running the diagnostic command for each and reporting evidence before concluding, (4) explicitly classify the root cause as APP-BUG (fix the code, commit, redeploy, loop) or INFRA-BLOCKER (stop and give me an exact remediation checklist with commands to run), (5) once up, run Playwright smoke tests against the live URL covering login via Keycloak, loading a report, and one import flow, (6) loop up to 3 times, then produce a final report.
-
-Write the command, then dry-run it against our dev environment and show me the hypothesis list you generated so I can correct anything wrong.
+- User-facing docs are AsciiDoc (`backend/src/main/asciidoc/*.adoc`). When a deployment, Keycloak, or packaging behaviour changes, update the relevant guide (e.g. `Deployment-DockerCompose.adoc`, `Ubuntu-Frischinstallation.adoc`) in the same PR.
 
 
