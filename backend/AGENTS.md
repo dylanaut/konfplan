@@ -66,9 +66,12 @@ kreyj/konfplan/
   anspricht - `createUser`/`updateUser`/`resetPassword`/`deleteUser`, eingebunden in
   `AdminService`, `TeilnehmerService`, `ReferentService` an jeder Stelle, die früher direkt einen
   `passwordHash` gesetzt hat.
-- Passwort-Konvention beim Anlegen: `konfplan` (nicht-temporär) in Dev/Test, eine zufällige UUID
+- Passwort-Konvention beim Anlegen: `Konfplan1!` (nicht-temporär) in Dev/Test, eine zufällige UUID
   (`temporary=true`, `requiredActions=["UPDATE_PASSWORD"]`) in Prod - Keycloak erzwingt dort eine
   Passwortänderung beim ersten Login.
+- Passwort-Policy (Keycloak-Realm-Ebene, `ProdKeycloakRealmSyncService`/`konfplan-realm.json`):
+  mind. 8 Zeichen, je mind. ein Groß-/Kleinbuchstabe, eine Ziffer, ein Sonderzeichen - gilt für
+  jedes neu gesetzte Passwort, nicht rückwirkend.
 
 ### Admin-Konten ohne E-Mail (Lockout-Schutz)
 

@@ -15,7 +15,7 @@ object TeilnehmerScenario {
   // Use circular strategy so users are reused during long tests.
   // Die Zugangsdaten (loginName/password) stammen aus dem karrierekompass-linz-2026
   // Dev-Datensatz (backend/src/test/resources/csv_import/karrierekompass-linz-2026/teilnehmer.csv);
-  // Standard-Passwort aller CSV-importierten Nutzer im Dev/Test-Modus ist "konfplan"
+  // Standard-Passwort aller CSV-importierten Nutzer im Dev/Test-Modus ist "Konfplan1!"
   // (TeilnehmerService.importFromCsv - im PROD-Profil waere es stattdessen ein
   // zufaelliges UUID-Passwort, das hier also nicht funktionieren wuerde).
   // Zum Testen muss das Backend mit diesem Datensatz geladen sein, z.B. via

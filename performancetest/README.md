@@ -45,7 +45,7 @@ This module contains the Gatling performance tests for the KonfPlan application.
 The test uses the `src/test/resources/TeilnehmerFeeder.csv` file for test data. The file contains the following columns:
 
 -   `loginName` - matches the `LoginName` column of `backend/src/test/resources/csv_import/karrierekompass-linz-2026/teilnehmer.csv`
--   `password` - the default password for CSV-imported users when running in dev/test mode, `konfplan` (see `TeilnehmerService.importFromCsv`; production imports get a random UUID password instead, so this feeder only works against a `quarkus:dev` instance)
+-   `password` - the default password for CSV-imported users when running in dev/test mode, `Konfplan1!` (see `TeilnehmerService.importFromCsv`; production imports get a random UUID password instead, so this feeder only works against a `quarkus:dev` instance)
 
 The test will pick users from this file to simulate login, viewing talks/priorities/personal
 plan, and updating priorities.
