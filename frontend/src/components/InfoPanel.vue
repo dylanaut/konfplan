@@ -29,7 +29,7 @@
     <div class="mt-3 pt-3 border-t border-gray-200">
       <p class="text-[10px] uppercase font-bold text-gray-400 mb-1.5">Benutzerhandbücher</p>
       <div class="space-y-1">
-        <a v-for="hb in handbuecher" :key="hb.datei"
+        <a v-for="hb in sichtbareHandbuecher" :key="hb.datei"
            :href="`${apiBase}/handbuecher/${hb.datei}`" target="_blank"
            class="flex items-center gap-1.5 text-xs text-indigo-600 hover:underline">
           <FileTextIcon class="w-3.5 h-3.5 shrink-0"/> {{ hb.label }}
@@ -50,6 +50,9 @@
 import { ref, computed, onMounted } from 'vue';
 import { FileText as FileTextIcon, MessageSquarePlus as MessageSquarePlusIcon } from '@lucide/vue';
 import api from '../api/axios';
+import { useAuthStore } from '../stores/auth';
+
+const auth = useAuthStore();
 
 // In Produktion (Quinoa) teilen sich Frontend und Backend einen Origin - relative Links reichen.
 // Im lokalen Dev-Betrieb laufen Frontend (:5173) und Backend (:9000) auf getrennten Origins,
@@ -61,6 +64,14 @@ const handbuecher = [
   { datei: 'Benutzerhandbuch-Referent.pdf', label: 'Für Referenten' },
   { datei: 'Benutzerhandbuch-Teilnehmer.pdf', label: 'Für Teilnehmer' },
 ];
+
+// Teilnehmer und Referenten sehen nur ihr eigenes Handbuch; Admins (bzw. jede andere/unbekannte
+// Rolle) sehen weiterhin alle drei.
+const sichtbareHandbuecher = computed(() => {
+  if (auth.isParticipant) return handbuecher.filter(hb => hb.datei === 'Benutzerhandbuch-Teilnehmer.pdf');
+  if (auth.isSpeaker) return handbuecher.filter(hb => hb.datei === 'Benutzerhandbuch-Referent.pdf');
+  return handbuecher;
+});
 
 const emit = defineEmits(['close', 'open-feedback']);
 

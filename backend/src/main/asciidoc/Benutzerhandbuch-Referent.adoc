@@ -25,8 +25,9 @@ Verfügbarkeit** (pro Veranstaltung), **Meine Vorträge** und **Meine Veranstalt
 
 Oben in der Kopfzeile der Anwendung befinden sich rechts ein **Info**-Menüpunkt (Anwendungsname,
 Version, Build-Datum, Git-Commit, Mailto-Link an den Entwickler, ein Abschnitt
-**Benutzerhandbücher** mit Download-Links auf die PDF-Handbücher für Admin, Referent und
-Teilnehmer – auch dieses Handbuch selbst ist von dort herunterladbar – sowie ein Link
+**Benutzerhandbücher** mit einem Download-Link auf das eigene PDF-Handbuch (Referenten sehen dort
+nur dieses Handbuch, nicht die für Admin/Teilnehmer – auch dieses Handbuch selbst ist von dort
+herunterladbar) sowie ein Link
 **Verbesserungsvorschlag einreichen**, siehe <<_verbesserungsvorschlag_einreichen>>) und der
 **LOGOUT**-Button.
 

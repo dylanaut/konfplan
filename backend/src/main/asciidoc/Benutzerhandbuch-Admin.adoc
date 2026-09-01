@@ -29,8 +29,9 @@ erst danach sichtbar: **Teilnehmer**, **Referenten**, **Vorträge**, **Zeit-Slot
 Oben in der Kopfzeile der Anwendung (auf jeder Seite sichtbar) befinden sich rechts ein
 **Info**-Menüpunkt (zeigt Anwendungsname, Version, Build-Datum, Git-Commit, einen Mailto-Link an
 den Entwickler, einen Abschnitt **Benutzerhandbücher** mit Download-Links auf die PDF-Handbücher
-für Admin, Referent und Teilnehmer – auch dieses Handbuch selbst ist von dort herunterladbar –
-sowie einen Link **Verbesserungsvorschlag einreichen**, siehe
+für Admin, Referent und Teilnehmer (nur Admins sehen alle drei – Referenten und Teilnehmer sehen
+im selben Menü jeweils nur ihr eigenes Handbuch) – auch dieses Handbuch selbst ist von dort
+herunterladbar – sowie einen Link **Verbesserungsvorschlag einreichen**, siehe
 <<_verbesserungsvorschlag_einreichen>>) und der **LOGOUT**-Button.
 
 [NOTE]
