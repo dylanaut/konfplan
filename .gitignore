@@ -65,6 +65,7 @@ build/
 /deploy/brevo-ip-updater/node_modules/
 /deploy/brevo-ip-updater/storage-state.json
 /deploy/brevo-ip-updater/error-*.png
+/deploy/brevo-ip-updater/last-run.log
 /backend/src/main/asciidoc/*.pdf
 
 ### Accidental root/backend npm artifacts (frontend/node_modules is the real one) ###

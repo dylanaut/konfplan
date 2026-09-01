@@ -32,16 +32,22 @@ if (!EMAIL || !PASSWORD) {
 }
 
 async function saveErrorScreenshot(page, label) {
+  if (!page) {
+    return;
+  }
   const path = `./error-${label}-${Date.now()}.png`;
   await page.screenshot({ path }).catch(() => {});
   console.error(`Screenshot gespeichert: ${path}`);
 }
 
-const browser = await chromium.launch({ headless: true });
-const context = await browser.newContext();
-const page = await context.newPage();
+let browser;
+let page;
 
 try {
+  browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext();
+  page = await context.newPage();
+
   console.log('Öffne Brevo-Login...');
   await page.goto('https://login.brevo.com', { waitUntil: 'networkidle' });
 
@@ -89,5 +95,7 @@ try {
   console.error('Setup fehlgeschlagen:', e.message);
   process.exit(1);
 } finally {
-  await browser.close();
+  if (browser) {
+    await browser.close();
+  }
 }
