@@ -115,8 +115,11 @@
             </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-            <tr v-for="u in paginatedParticipants" :key="'prio-'+u.id" class="hover:bg-gray-50">
-              <td class="px-4 py-2 font-bold sticky left-0 bg-white hover:bg-gray-50 z-10 border-r border-gray-100">
+            <tr v-for="u in paginatedParticipants" :key="'prio-'+u.id"
+                :class="['hover:bg-gray-50', hasNoPriorities(u.id) ? 'bg-amber-50/60' : '']"
+                :title="hasNoPriorities(u.id) ? 'Keine einzige Priorität vergeben' : ''">
+              <td class="px-4 py-2 font-bold sticky left-0 z-10 border-r border-gray-100"
+                  :class="hasNoPriorities(u.id) ? 'bg-amber-50/60 hover:bg-gray-50' : 'bg-white hover:bg-gray-50'">
                 <div class="flex items-center justify-between gap-2">
                   <span :class="isPrioChanged(u.id) ? 'text-orange-600' : 'text-gray-900'" class="truncate"
                         :title="u.firstName + ' ' + u.lastName">
@@ -459,6 +462,14 @@ const markPrioChanged = (userId) => {
 };
 
 const isPrioChanged = (userId) => props.changedPriorities.has(userId);
+
+// Der Server liefert je Teilnehmer nur tatsaechlich vergebene (prioWert > 0) Prioritaeten - ein
+// leerer bzw. komplett auf 0 stehender Eintrag bedeutet also "noch keine einzige Priorität
+// vergeben".
+const hasNoPriorities = (userId) => {
+  const prios = props.participantPriorities[userId];
+  return !prios || !Object.values(prios).some(p => p.prioWert > 0);
+};
 
 const formatTime = (t) => t ? new Date(t).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'}) : '';
 
