@@ -56,37 +56,64 @@ public class PrioritaetService implements PrioritaetServiceInterface {
                 + PRIO_MIN + " und " + PRIO_MAX + " liegen", BAD_REQUEST.getStatusCode());
         }
 
-        // 2. Validierung: Keine doppelten Prioritäten (Ranking-Check)
-        long uniquePriorities = requests.stream()
-            .map(r -> r.prioWert) // Hier umbenannt
-            .distinct()
-            .count();
-        if (uniquePriorities < requests.size()) {
+        // Der Client sendet bewusst nur die seit dem letzten Speichern geaenderten Eintraege
+        // (Delta), keinen Snapshot des gesamten Zustands (siehe TeilnehmerDashboard.vue
+        // changedPriorities) - Duplikat- und Obergrenzen-Pruefung muessen deshalb den sich
+        // ERGEBENDEN Gesamtzustand betrachten (bestehende, nicht im Request enthaltene
+        // Prioritaeten bleiben unveraendert bestehen), nicht nur die im Request enthaltenen
+        // Eintraege isoliert.
+        Map<Long, Integer> ergebnisZustand = new HashMap<>();
+        if (veranstaltung != null) {
+            Long veranstaltungId = veranstaltung.getId();
+            Prioritaet.<Prioritaet>list("teilnehmer = ?1", teilnehmer).stream()
+                .filter(p -> p.getVortrag().getVeranstaltung().getId().equals(veranstaltungId))
+                .forEach(p -> ergebnisZustand.put(p.getVortrag().getId(), p.getPrioWert()));
+        }
+        for (VortragPrioDto req : requests) {
+            if (req.prioWert > PRIO_MIN) {
+                ergebnisZustand.put(req.vortragId, req.prioWert);
+            } else {
+                ergebnisZustand.remove(req.vortragId);
+            }
+        }
+
+        // 2. Validierung: Keine doppelten Prioritäten (Ranking-Check) im resultierenden
+        // Gesamtzustand. PRIO_MIN (0 = "kein Interesse") ist kein Rangplatz und taucht in
+        // ergebnisZustand nie auf (siehe oben) - nur echte Rangwerte muessen eindeutig sein.
+        long uniqueRaenge = ergebnisZustand.values().stream().distinct().count();
+        if (uniqueRaenge < ergebnisZustand.size()) {
             throw new WebApplicationException("Jede Priorität darf nur einmal vergeben werden", BAD_REQUEST.getStatusCode());
         }
 
-        // 3. Validierung: konfigurierte Obergrenze fuer die Anzahl vergebener Prioritaeten
-        if (veranstaltung != null && veranstaltung.getMaxPrioritaeten() != null) {
-            long anzahlVergeben = requests.stream().filter(r -> r.prioWert > PRIO_MIN).count();
-            if (anzahlVergeben > veranstaltung.getMaxPrioritaeten()) {
-                throw new WebApplicationException("Es dürfen höchstens " + veranstaltung.getMaxPrioritaeten()
-                    + " Prioritäten vergeben werden", BAD_REQUEST.getStatusCode());
-            }
+        // 3. Validierung: konfigurierte Obergrenze fuer die Anzahl vergebener Prioritaeten im
+        // resultierenden Gesamtzustand
+        if (veranstaltung != null && veranstaltung.getMaxPrioritaeten() != null
+            && ergebnisZustand.size() > veranstaltung.getMaxPrioritaeten()) {
+            throw new WebApplicationException("Es dürfen höchstens " + veranstaltung.getMaxPrioritaeten()
+                + " Prioritäten vergeben werden", BAD_REQUEST.getStatusCode());
         }
 
-        // 4. Bestehende Prioritäten des Users löschen (Einfacher Update-Weg)
-        Prioritaet.delete("teilnehmer", teilnehmer);
-
-        // 5. Neue Prioritäten speichern
+        // 4. Upsert je Eintrag: nur die im Request enthaltenen Vortraege werden veraendert, alle
+        // anderen bestehenden Prioritaeten des Teilnehmers bleiben unangetastet.
         for (VortragPrioDto req : requests) {
             Wahlvortrag vortrag = Wahlvortrag.findById(req.vortragId);
-            if (vortrag != null && req.prioWert > PRIO_MIN) {
-                Prioritaet entity = new Prioritaet();
-                entity.setTeilnehmer(teilnehmer);
-                entity.setVortrag(vortrag);
-                entity.setPrioWert(req.prioWert);
-                entity.persistAndFlush();
+            if (vortrag == null) {
+                continue;
             }
+            Prioritaet p = Prioritaet.find("teilnehmer = ?1 and vortrag = ?2", teilnehmer, vortrag).firstResult();
+            if (req.prioWert == PRIO_MIN) {
+                if (p != null) {
+                    p.delete();
+                }
+                continue;
+            }
+            if (null == p) {
+                p = new Prioritaet();
+                p.setTeilnehmer(teilnehmer);
+                p.setVortrag(vortrag);
+            }
+            p.setPrioWert(req.prioWert);
+            p.persistAndFlush();
         }
     }
 

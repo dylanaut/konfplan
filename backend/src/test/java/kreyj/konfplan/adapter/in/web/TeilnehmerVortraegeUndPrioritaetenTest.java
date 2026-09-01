@@ -15,6 +15,7 @@ import kreyj.konfplan.domain.service.ReferentService;
 import kreyj.konfplan.domain.service.TeilnehmerService;
 import kreyj.konfplan.domain.service.VeranstaltungService;
 import kreyj.konfplan.persistence.Planungsergebnis;
+import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
@@ -140,6 +141,100 @@ class TeilnehmerVortraegeUndPrioritaetenTest extends DatabaseCleaner {
             .when().get("/api/prios/{vid}", vid)
             .then().statusCode(200)
             .body("'" + wahlvortrag.getId() + "'", org.hamcrest.Matchers.equalTo(7));
+    }
+
+
+    @Test
+    @TestSecurity(user = "alex.alfa", roles = "TEILNEHMER")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "alex.alfa")})
+    void speichernDerPrioritaeten_zweiSeparateSpeicherAufrufe_beideBleibenErhalten() {
+        // Reproduziert den gemeldeten Bug: Teilnehmer speichert Prio fuer Vortrag A, dann in
+        // einem SEPARATEN Request nur Prio fuer Vortrag B (so sendet die UI es tatsaechlich -
+        // TeilnehmerDashboard.vue schickt nur die seit dem letzten Speichern geaenderten
+        // Eintraege, nicht den gesamten Zustand). A darf durch den zweiten Aufruf nicht verloren
+        // gehen.
+        Vortrag wv1 = (Vortrag) Vortrag.find("titel", "Traumberuf Informatiker?").firstResult();
+        Vortrag wv2 = (Vortrag) Vortrag.find("titel", "Mechatroniker").firstResult();
+
+        given()
+            .contentType("application/json")
+            .body("[{\"vortragId\": " + wv1.getId() + ", \"prioWert\": 7}]")
+            .when().post("/api/prios")
+            .then().statusCode(200);
+
+        given()
+            .contentType("application/json")
+            .body("[{\"vortragId\": " + wv2.getId() + ", \"prioWert\": 4}]")
+            .when().post("/api/prios")
+            .then().statusCode(200);
+
+        given()
+            .when().get("/api/prios/{vid}", vid)
+            .then().statusCode(200)
+            .body("'" + wv1.getId() + "'", org.hamcrest.Matchers.equalTo(7))
+            .body("'" + wv2.getId() + "'", org.hamcrest.Matchers.equalTo(4));
+    }
+
+
+    @Test
+    @TestSecurity(user = "alex.alfa", roles = "TEILNEHMER")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "alex.alfa")})
+    void speichernDerPrioritaeten_mehrereVortraegeAufKeinInteresse_shouldSucceed() {
+        Vortrag wv1 = (Vortrag) Vortrag.find("titel", "Traumberuf Informatiker?").firstResult();
+        Vortrag wv2 = (Vortrag) Vortrag.find("titel", "Mechatroniker").firstResult();
+
+        given()
+            .contentType("application/json")
+            .body("[{\"vortragId\": " + wv1.getId() + ", \"prioWert\": 0}, {\"vortragId\": " + wv2.getId() + ", \"prioWert\": 0}]")
+            .when().post("/api/prios")
+            .then().statusCode(200);
+    }
+
+
+    @Test
+    @TestSecurity(user = "alex.alfa", roles = "TEILNEHMER")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "alex.alfa")})
+    void speichernDerPrioritaeten_derselbeRangZweimalVergeben_shouldFehlschlagen() {
+        Vortrag wv1 = (Vortrag) Vortrag.find("titel", "Traumberuf Informatiker?").firstResult();
+        Vortrag wv2 = (Vortrag) Vortrag.find("titel", "Mechatroniker").firstResult();
+
+        given()
+            .contentType("application/json")
+            .body("[{\"vortragId\": " + wv1.getId() + ", \"prioWert\": 5}, {\"vortragId\": " + wv2.getId() + ", \"prioWert\": 5}]")
+            .when().post("/api/prios")
+            .then().statusCode(400);
+    }
+
+
+    @Test
+    @TestSecurity(user = "alex.alfa", roles = "TEILNEHMER")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "alex.alfa")})
+    void speichernDerPrioritaeten_ueberschreitetMaximumUeberZweiSeparateAufrufe_shouldFehlschlagen() {
+        // Die Obergrenze muss den bereits bestehenden (aus einem frueheren Aufruf gespeicherten)
+        // Bestand mitzaehlen, nicht nur die im aktuellen Request enthaltenen Eintraege.
+        QuarkusTransaction.requiringNew().run(() -> {
+            Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+            veranstaltung.setMaxPrioritaeten(1);
+            // alex.alfa hat aus tn_prios.csv bereits zwei Prioritaeten vorbelegt - fuer diesen
+            // Test auf einen sauberen Ausgangszustand zuruecksetzen.
+            Teilnehmer alexAlfa = (Teilnehmer) Teilnehmer.find("loginName", "alex.alfa").firstResult();
+            Prioritaet.delete("teilnehmer", alexAlfa);
+        });
+
+        Vortrag wv1 = (Vortrag) Vortrag.find("titel", "Traumberuf Informatiker?").firstResult();
+        Vortrag wv2 = (Vortrag) Vortrag.find("titel", "Mechatroniker").firstResult();
+
+        given()
+            .contentType("application/json")
+            .body("[{\"vortragId\": " + wv1.getId() + ", \"prioWert\": 5}]")
+            .when().post("/api/prios")
+            .then().statusCode(200);
+
+        given()
+            .contentType("application/json")
+            .body("[{\"vortragId\": " + wv2.getId() + ", \"prioWert\": 3}]")
+            .when().post("/api/prios")
+            .then().statusCode(400);
     }
 
 
