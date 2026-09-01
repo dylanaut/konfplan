@@ -27,16 +27,22 @@ if (!fs.existsSync(STORAGE_STATE_PATH)) {
 }
 
 async function saveErrorScreenshot(page, label) {
+  if (!page) {
+    return;
+  }
   const path = `./error-${label}-${Date.now()}.png`;
   await page.screenshot({ path }).catch(() => {});
   console.error(`Screenshot gespeichert: ${path}`);
 }
 
-const browser = await chromium.launch({ headless: true });
-const context = await browser.newContext({ storageState: STORAGE_STATE_PATH });
-const page = await context.newPage();
+let browser;
+let page;
 
 try {
+  browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ storageState: STORAGE_STATE_PATH });
+  page = await context.newPage();
+
   await page.goto(AUTHORIZED_IPS_URL, { waitUntil: 'networkidle' });
 
   if (page.url().includes('login')) {
@@ -65,5 +71,7 @@ try {
   console.error('Update fehlgeschlagen:', e.message);
   process.exit(1);
 } finally {
-  await browser.close();
+  if (browser) {
+    await browser.close();
+  }
 }

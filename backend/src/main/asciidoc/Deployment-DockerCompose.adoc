@@ -353,6 +353,8 @@ Fragt den per E-Mail zugestellten 6-stelligen Code interaktiv ab und speichert d
 
 Ab dann trägt `check-outbound-ip.sh` bei jeder erkannten IP-Änderung automatisch die neue IP ein (per `docker run` mit derselben gespeicherten Sitzung) und meldet Erfolg/Fehlschlag zusätzlich im ntfy-Push-Text. Schlägt die automatische Eintragung fehl (z.B. weil die gespeicherte Sitzung abgelaufen ist), bleibt die bisherige manuelle Nachtrage-Anleitung der Fallback - `setup-session.mjs` muss dann einmalig erneut ausgeführt werden.
 
+Die vollständige Konsolen-Ausgabe des Playwright-Skripts (`update-ip.mjs`) landet bei jedem Lauf - Erfolg wie Fehlschlag - zusätzlich in `deploy/brevo-ip-updater/last-run.log`, unabhängig davon, wohin der äußere Cron-Aufruf selbst umgeleitet ist. Bei einem gemeldeten Fehlschlag zuerst dort nachsehen (die ntfy-Meldung nennt den Pfad); ergänzend können bei bestimmten Fehlern `error-*.png`-Screenshots im selben Verzeichnis liegen.
+
 == App-Log auf ERROR überwachen
 
 Der Stack hat keinen Alertmanager (siehe `Monitoring-Grafana.adoc`) - Prometheus/Grafana zeigen Fehler nur an, melden sie aber nicht aktiv. `deploy/error-log-notifier.sh` schließt diese Lücke für einen einzelnen, aber wichtigen Fall: Es läuft als Sidecar-Container, tailt live `docker logs -f` des `app`-Containers und schickt jede Zeile, die `ERROR` enthält, sofort per https://ntfy.sh[ntfy.sh] als Push-Benachrichtigung raus.

@@ -40,15 +40,26 @@ if [ "$CURRENT_IP" != "$LAST_IP" ]; then
   BREVO_UPDATE_STATUS="nicht versucht (BREVO_LOGIN_EMAIL nicht gesetzt)"
   if [ -n "${BREVO_LOGIN_EMAIL:-}" ]; then
     BREVO_PASSWORD_FILE="$SCRIPT_DIR/secrets/brevo_login_password.txt"
-    if [ -f "$BREVO_PASSWORD_FILE" ] && docker run --rm \
+    BREVO_UPDATER_LOG="$SCRIPT_DIR/brevo-ip-updater/last-run.log"
+    if [ -f "$BREVO_PASSWORD_FILE" ]; then
+      # Ausgabe zusaetzlich in eine feste Datei im gemounteten Volume schreiben - unabhaengig
+      # davon, ob/wohin der aeussere Cron-Aufruf selbst umgeleitet wird, ist so nach jedem Lauf
+      # (Erfolg oder Fehlschlag) die Playwright-/Node-Ausgabe an einem festen Ort nachvollziehbar.
+      set +e
+      docker run --rm \
         -e BREVO_LOGIN_EMAIL="$BREVO_LOGIN_EMAIL" \
         -e BREVO_LOGIN_PASSWORD="$(cat "$BREVO_PASSWORD_FILE")" \
         -v "$SCRIPT_DIR/brevo-ip-updater:/work" -w /work \
         mcr.microsoft.com/playwright:v1.62.1-noble \
-        node update-ip.mjs "$CURRENT_IP"; then
-      BREVO_UPDATE_STATUS="automatisch erfolgreich eingetragen"
-    else
-      BREVO_UPDATE_STATUS="automatische Eintragung FEHLGESCHLAGEN - manuell nachtragen: https://app.brevo.com/security/authorised_ips"
+        node update-ip.mjs "$CURRENT_IP" > "$BREVO_UPDATER_LOG" 2>&1
+      BREVO_EXIT_CODE=$?
+      set -e
+      cat "$BREVO_UPDATER_LOG"
+      if [ "$BREVO_EXIT_CODE" -eq 0 ]; then
+        BREVO_UPDATE_STATUS="automatisch erfolgreich eingetragen"
+      else
+        BREVO_UPDATE_STATUS="automatische Eintragung FEHLGESCHLAGEN (Log: $BREVO_UPDATER_LOG) - manuell nachtragen: https://app.brevo.com/security/authorised_ips"
+      fi
     fi
   fi
 
