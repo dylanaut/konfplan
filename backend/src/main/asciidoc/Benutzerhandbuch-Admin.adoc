@@ -349,7 +349,8 @@ Auf-/zuklappbarer Abschnitt (Screenshot oben), standardmäßig aufgeklappt.
 * **Prioritäten-Matrix** – Zeilen = Teilnehmer (Name, Gruppen), Spalten = Wahlvorträge
   (nummeriert entsprechend Legende); Zelle = Zahlenfeld 0–10 für die Priorität. Bei
   ungespeicherter Änderung erscheint neben dem Namen ein oranger **SAVE**-Button für genau diesen
-  Teilnehmer.
+  Teilnehmer. Zeilen von Teilnehmern, die noch keine einzige Priorität vergeben haben, sind dezent
+  gelblich hinterlegt (Tooltip beim Hovern über die Zeile).
 
 === Verfügbarkeiten verwalten
 
