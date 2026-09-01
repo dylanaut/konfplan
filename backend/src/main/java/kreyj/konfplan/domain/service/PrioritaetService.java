@@ -77,15 +77,7 @@ public class PrioritaetService implements PrioritaetServiceInterface {
             }
         }
 
-        // 2. Validierung: Keine doppelten Prioritäten (Ranking-Check) im resultierenden
-        // Gesamtzustand. PRIO_MIN (0 = "kein Interesse") ist kein Rangplatz und taucht in
-        // ergebnisZustand nie auf (siehe oben) - nur echte Rangwerte muessen eindeutig sein.
-        long uniqueRaenge = ergebnisZustand.values().stream().distinct().count();
-        if (uniqueRaenge < ergebnisZustand.size()) {
-            throw new WebApplicationException("Jede Priorität darf nur einmal vergeben werden", BAD_REQUEST.getStatusCode());
-        }
-
-        // 3. Validierung: konfigurierte Obergrenze fuer die Anzahl vergebener Prioritaeten im
+        // 2. Validierung: konfigurierte Obergrenze fuer die Anzahl vergebener Prioritaeten im
         // resultierenden Gesamtzustand
         if (veranstaltung != null && veranstaltung.getMaxPrioritaeten() != null
             && ergebnisZustand.size() > veranstaltung.getMaxPrioritaeten()) {
@@ -93,7 +85,7 @@ public class PrioritaetService implements PrioritaetServiceInterface {
                 + " Prioritäten vergeben werden", BAD_REQUEST.getStatusCode());
         }
 
-        // 4. Upsert je Eintrag: nur die im Request enthaltenen Vortraege werden veraendert, alle
+        // 3. Upsert je Eintrag: nur die im Request enthaltenen Vortraege werden veraendert, alle
         // anderen bestehenden Prioritaeten des Teilnehmers bleiben unangetastet.
         for (VortragPrioDto req : requests) {
             Wahlvortrag vortrag = Wahlvortrag.findById(req.vortragId);

@@ -194,7 +194,9 @@ class TeilnehmerVortraegeUndPrioritaetenTest extends DatabaseCleaner {
     @Test
     @TestSecurity(user = "alex.alfa", roles = "TEILNEHMER")
     @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "alex.alfa")})
-    void speichernDerPrioritaeten_derselbeRangZweimalVergeben_shouldFehlschlagen() {
+    void speichernDerPrioritaeten_derselbeRangZweimalVergeben_shouldSucceed() {
+        // Die Eindeutigkeits-Pruefung fuer Rangwerte wurde bewusst entfernt - mehrere Vortraege
+        // duerfen denselben Rang erhalten.
         Vortrag wv1 = (Vortrag) Vortrag.find("titel", "Traumberuf Informatiker?").firstResult();
         Vortrag wv2 = (Vortrag) Vortrag.find("titel", "Mechatroniker").firstResult();
 
@@ -202,7 +204,7 @@ class TeilnehmerVortraegeUndPrioritaetenTest extends DatabaseCleaner {
             .contentType("application/json")
             .body("[{\"vortragId\": " + wv1.getId() + ", \"prioWert\": 5}, {\"vortragId\": " + wv2.getId() + ", \"prioWert\": 5}]")
             .when().post("/api/prios")
-            .then().statusCode(400);
+            .then().statusCode(200);
     }
 
 
