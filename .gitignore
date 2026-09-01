@@ -75,3 +75,4 @@ build/
 /backend/logs/
 /backend/result_log.txt
 /backend/laufband.txt
+/deploy/brevo-ip-updater/package-lock.json
