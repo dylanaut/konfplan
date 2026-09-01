@@ -119,7 +119,7 @@ Nutzer können die Änderung ihres Kennworts per Email anfordern, insbesondere b
 == Ansprechpartner
 
 .Technische Anwendung
-Jürgen Krey, juergenkrey@yahoo.de
+Jürgen Krey, konfplan@yahoo.com
 
 .Fachliche Betreuung
 Kathrin Jessen, kathrin.jessen@rks-linz.de

@@ -22,7 +22,7 @@ public class DemoMailResource {
                         "Test-E-Mail von Quarkus",
                         "Dies ist eine Test-E-Mail, gesendet von Ihrer Quarkus-Anwendung.")
                 .setFrom("juergenkrey@yahoo.de")
-                .setReplyTo("scalanaut@gmail.com"));
+                .setReplyTo("konfplan@yahoo.com"));
 
         return "Test-E-Mail gesendet!";
     }

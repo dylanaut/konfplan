@@ -28,7 +28,7 @@
     "smtpServer": {
         "host": "__MAILER_HOST__",
         "port": "__MAILER_PORT__",
-        "from": "juergenkrey@yahoo.de",
+        "from": "konfplan@yahoo.com",
         "auth": "__MAILER_AUTH__",
         "starttls": "__MAILER_STARTTLS__",
         "user": "__BREVO_SMTP_USER__",

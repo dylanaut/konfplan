@@ -10,7 +10,7 @@ echo "Password-Länge: ${#SMTP_PASSWORD} Zeichen"
 # Body-Zeile als (ungueltige) Header-Fortsetzung interpretiert, was viele Empfangsserver
 # (z.B. Gmail) veranlasst, die Nachricht kommentarlos zu verwerfen statt sie zuzustellen.
 cat > /tmp/testmail.txt <<MAIL
-From: juergenkrey@yahoo.de
+From: konfplan@yahoo.com
 To: scalanaut@gmail.com
 Subject: Brevo SMTP Test
 Date: $(date -R)
@@ -23,7 +23,7 @@ MAIL
 # 3. Direkt gegen Brevo senden (identische Verbindung wie Keycloak/Quarkus)
 curl --url 'smtp://smtp-relay.brevo.com:587' \
 --ssl-reqd \
---mail-from 'juergenkrey@yahoo.de' \
+--mail-from 'konfplan@yahoo.com' \
 --mail-rcpt 'scalanaut@gmail.com' \
 --user "$SMTP_USER:$SMTP_PASSWORD" \
 --upload-file /tmp/testmail.txt \

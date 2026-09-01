@@ -22,8 +22,8 @@
       </div>
     </dl>
 
-    <a href="mailto:konfplan@yahoo.de" class="block mt-3 text-xs text-indigo-600 hover:underline">
-      konfplan@yahoo.de
+    <a href="mailto:konfplan@yahoo.com" class="block mt-3 text-xs text-indigo-600 hover:underline">
+      konfplan@yahoo.com
     </a>
 
     <div class="mt-3 pt-3 border-t border-gray-200">
