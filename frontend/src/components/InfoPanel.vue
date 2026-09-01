@@ -22,8 +22,8 @@
       </div>
     </dl>
 
-    <a href="mailto:juergenkrey@yahoo.de" class="block mt-3 text-xs text-indigo-600 hover:underline">
-      juergenkrey@yahoo.de
+    <a href="mailto:konfplan@yahoo.de" class="block mt-3 text-xs text-indigo-600 hover:underline">
+      konfplan@yahoo.de
     </a>
 
     <div class="mt-3 pt-3 border-t border-gray-200">
@@ -40,7 +40,7 @@
     <div class="mt-3 pt-3 border-t border-gray-200">
       <button @click="emit('open-feedback')"
               class="flex items-center gap-1.5 text-xs text-indigo-600 hover:underline">
-        <MessageSquarePlusIcon class="w-3.5 h-3.5 shrink-0"/> Verbesserungsvorschlag einreichen
+        <MessageSquarePlusIcon class="w-3.5 h-3.5 shrink-0"/>Was geht besser?
       </button>
     </div>
   </div>

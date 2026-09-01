@@ -371,6 +371,13 @@ Keycloaks `SEND_RESET_PASSWORD_ERROR`-Realm-Events und spiegelt jeden neuen Fehl
 ins App-Log - dadurch erfasst derselbe `error-log-notifier`-Watcher auch fehlgeschlagene
 Passwort-Reset-/Erstanmeldung-Mails, ohne den Keycloak-Container zusätzlich überwachen zu müssen.
 
+Die Log-Zeile unterscheidet dabei zwei Ursachen anhand Keycloaks eigenem Fehlercode (per
+Live-Test gegen Keycloak 26.7.1 verifiziert): `invalid_email` bedeutet, der betroffene Nutzer hat
+schlicht keine (gültige) E-Mail-Adresse hinterlegt - kein SMTP-Problem, der Selbst-Reset ist für
+diesen Nutzer ein Dead-End, das Passwort muss über den Admin-Dialog "Passwort zurücksetzen"
+vergeben werden. `email_send_failed` ist dagegen der tatsächliche SMTP-Fehlerfall (z.B.
+Brevo-IP-Sperre).
+
 Einrichtung:
 
 . Einen zufälligen, nicht erratbaren Topic-Namen wählen (unabhängig vom `NTFY_TOPIC` der IP-Überwachung) und in der ntfy-App/-Website abonnieren.
