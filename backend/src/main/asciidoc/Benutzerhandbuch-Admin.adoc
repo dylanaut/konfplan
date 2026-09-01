@@ -54,6 +54,22 @@ stattdessen eine rote Fehlermeldung und das Formular bleibt zur erneuten Eingabe
 Vorschlag wird zusammen mit dem eigenen Namen und der eigenen Rolle gespeichert und ist im Tab
 **Feedback** einsehbar (siehe <<_tab_feedback>>).
 
+=== Dialog: Wartung ankündigen
+
+Button **Wartung ankündigen** (oben rechts im Seitenkopf, auf jeder Admin-Seite sichtbar) öffnet
+einen Dialog mit den Feldern **Wartung beginnt** und **Anwendung wieder verfügbar ab** (jeweils
+Datum + Uhrzeit) sowie den Buttons **Abbrechen** und **Speichern**; ist bereits eine Ankündigung
+aktiv, sind die Felder damit vorbelegt und ein zusätzlicher Button **Löschen** entfernt die
+Ankündigung wieder. Der Endzeitpunkt muss nach dem Startzeitpunkt liegen, sonst erscheint eine
+Fehlermeldung.
+
+Nach dem Speichern sehen alle eingeloggten Nutzer (Admin, Referent, Teilnehmer) oben auf jeder
+Seite ein gelbes Hinweisbanner - vor Beginn mit einem Countdown bis zum Start, während des
+Wartungsfensters mit einem Countdown bis zur voraussichtlichen Wiederverfügbarkeit. Die Anzeige
+aktualisiert sich spätestens alle 60 Sekunden automatisch (Polling, kein sofortiges Push) und
+verschwindet von selbst, sobald der angekündigte Endzeitpunkt erreicht ist - ein manuelles Löschen
+ist danach nicht nötig.
+
 == Tab "Veranstaltungen"
 
 image::01-veranstaltungen-liste.png[Veranstaltungen-Liste]

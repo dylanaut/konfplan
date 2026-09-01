@@ -1,5 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50" id="app">
+    <MaintenanceBanner v-if="auth.isAuthenticated" />
     <!-- Navigation -->
     <nav v-if="auth.isAuthenticated" class="bg-indigo-600 text-white p-4 shadow-lg sticky top-0 z-50 no-print">
       <div class="container mx-auto flex justify-between items-center">

@@ -18,6 +18,10 @@
           </select>
         </div>
       </div>
+      <button @click="showMaintenanceModal = true" class="btn-secondary flex items-center gap-2 text-xs py-1.5 shrink-0">
+        <AlertTriangleIcon class="w-3.5 h-3.5" />
+        Wartung ankündigen
+      </button>
     </div>
 
     <!-- Tab-Navigation -->
@@ -224,6 +228,7 @@
                      @close="showPasswordResetModal = false" @reset="handleResetPassword"/>
     <GeneratePasswordsZipModal :isVisible="showGeneratePasswordsZipModal" :count="selectedIdsForZip.length"
                      @close="showGeneratePasswordsZipModal = false" @generate="handleGeneratePasswordsZip"/>
+    <MaintenanceAnnouncementModal :isVisible="showMaintenanceModal" @close="showMaintenanceModal = false"/>
 
     <!-- CSV Import Feedback Modal -->
     <div v-if="showCsvFeedbackModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -295,6 +300,7 @@ import GebaeudeEditorModal from '../components/GebaeudeEditorModal.vue';
 import InviteUserModal from '../components/InviteUserModal.vue';
 import PasswordResetModal from '../components/PasswordResetModal.vue';
 import GeneratePasswordsZipModal from '../components/GeneratePasswordsZipModal.vue';
+import MaintenanceAnnouncementModal from '../components/MaintenanceAnnouncementModal.vue';
 
 const eventContext = useEventContextStore();
 const availabilityStore = useAvailabilityStore();
@@ -355,6 +361,7 @@ const selectedUserForInvite = ref(null);
 const showPasswordResetModal = ref(false);
 const selectedUserForPasswordReset = ref(null);
 const showGeneratePasswordsZipModal = ref(false);
+const showMaintenanceModal = ref(false);
 const selectedIdsForZip = ref([]);
 
 const isOptimizing = ref(false);

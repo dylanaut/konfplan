@@ -17,6 +17,7 @@ import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Verbesserungsvorschlag;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
+import kreyj.konfplan.persistence.Wartungshinweis;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -32,6 +33,7 @@ public abstract class DatabaseCleaner {
         VortragVerfuegbarkeit.deleteAll();
         Prioritaet.deleteAll();
         Verbesserungsvorschlag.deleteAll();
+        Wartungshinweis.deleteAll();
         // @ElementCollection-Tabellen auf Subklassen (Wahlvortrag/Teilnehmer) werden bei einem
         // Bulk-Delete auf der Basisklasse nicht automatisch mitgeloescht.
         Panache.getEntityManager().createNativeQuery("delete from wahlvortrag_neigungen").executeUpdate();
