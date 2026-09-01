@@ -38,6 +38,7 @@ LAST_IP="$(cat "$STATE_FILE")"
 
 if [ "$CURRENT_IP" != "$LAST_IP" ]; then
   BREVO_UPDATE_STATUS="nicht versucht (BREVO_LOGIN_EMAIL nicht gesetzt)"
+  BREVO_LOG_EXCERPT=""
   if [ -n "${BREVO_LOGIN_EMAIL:-}" ]; then
     BREVO_PASSWORD_FILE="$SCRIPT_DIR/secrets/brevo_login_password.txt"
     BREVO_UPDATER_LOG="$SCRIPT_DIR/brevo-ip-updater/last-run.log"
@@ -59,6 +60,13 @@ if [ "$CURRENT_IP" != "$LAST_IP" ]; then
         BREVO_UPDATE_STATUS="automatisch erfolgreich eingetragen"
       else
         BREVO_UPDATE_STATUS="automatische Eintragung FEHLGESCHLAGEN (Log: $BREVO_UPDATER_LOG) - manuell nachtragen: https://app.brevo.com/security/authorised_ips"
+        # ntfy.sh begrenzt den Nachrichtentext auf 4096 Byte - per Byte statt Zeilenanzahl
+        # kappen, damit ein ungewoehnlich langer Playwright-Stacktrace den Push nicht komplett
+        # verschluckt (Server lehnt zu lange Nachrichten sonst ab).
+        BREVO_LOG_EXCERPT="
+
+Playwright-Log (Ende):
+$(tail -c 2000 "$BREVO_UPDATER_LOG")"
       fi
     fi
   fi
@@ -66,7 +74,7 @@ if [ "$CURRENT_IP" != "$LAST_IP" ]; then
   curl -fsS \
     -H "Title: KonfPlan: Server-IP geändert" \
     -H "Priority: high" \
-    -d "Ausgehende IP hat sich von $LAST_IP auf $CURRENT_IP geändert. Brevo-Autorisierung: $BREVO_UPDATE_STATUS" \
+    -d "Ausgehende IP hat sich von $LAST_IP auf $CURRENT_IP geändert. Brevo-Autorisierung: $BREVO_UPDATE_STATUS$BREVO_LOG_EXCERPT" \
     "https://ntfy.sh/$NTFY_TOPIC" > /dev/null
   echo "$CURRENT_IP" > "$STATE_FILE"
   echo "$(date -Iseconds) IP-Aenderung erkannt und gemeldet: $LAST_IP -> $CURRENT_IP (Brevo: $BREVO_UPDATE_STATUS)"
