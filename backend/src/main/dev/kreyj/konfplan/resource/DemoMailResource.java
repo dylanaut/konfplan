@@ -21,8 +21,8 @@ public class DemoMailResource {
         mailer.send(Mail.withText("test_recipient@example.com",
                         "Test-E-Mail von Quarkus",
                         "Dies ist eine Test-E-Mail, gesendet von Ihrer Quarkus-Anwendung.")
-                .setFrom("juergenkrey@yahoo.de")
-                .setReplyTo("konfplan@yahoo.com"));
+                .setFrom("kontakt@konfplan.de")
+                .setReplyTo("kontakt@konfplan.de"));
 
         return "Test-E-Mail gesendet!";
     }

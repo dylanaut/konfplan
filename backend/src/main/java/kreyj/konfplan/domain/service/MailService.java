@@ -28,7 +28,7 @@ public class MailService {
 
     @SuppressWarnings("CdiInjectionPointsInspection")
     public MailService(
-        @ConfigProperty(name = "app.mail.admin", defaultValue = "konfplan@yahoo.com")
+        @ConfigProperty(name = "app.mail.admin", defaultValue = "kontakt@konfplan.de")
         String adminEmail,
         Mailer mailer,
         @Location("email/registrationConfirmation")
