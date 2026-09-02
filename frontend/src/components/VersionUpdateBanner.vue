@@ -24,6 +24,13 @@ const fetchInfo = async () => {
     const res = await api.get('/api/info');
     if (null === baseline.value) {
       baseline.value = kennung(res.data);
+      // SNAPSHOT-Versionen wechseln bei jedem Dev-/Staging-Rebuild ihren gitCommit, ohne dass
+      // sich die Versionsnummer aendert - der Hinweis waere dort bei jedem Redeploy staendig zu
+      // sehen. Echte Produktions-Deployments pinnen IMAGE_TAG immer auf einen echten Release
+      // (nie ein SNAPSHOT), betrifft also nur Dev/Staging.
+      if (res.data?.version?.endsWith('-SNAPSHOT')) {
+        clearInterval(pollTimer);
+      }
       return;
     }
     if (kennung(res.data) !== baseline.value) {
