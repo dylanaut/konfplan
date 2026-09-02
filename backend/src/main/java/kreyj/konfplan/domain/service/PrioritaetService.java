@@ -11,6 +11,7 @@ import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
+import kreyj.konfplan.util.TemplateExtensions;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -49,11 +50,19 @@ public class PrioritaetService implements PrioritaetServiceInterface {
         }
 
         // 1. Validierung: Nur Werte 1-10 erlaubt
-        boolean invalidRange = requests.stream()
-            .anyMatch(r -> r.prioWert < PRIO_MIN || r.prioWert > PRIO_MAX);
-        if (invalidRange) {
-            throw new WebApplicationException("Priorität muss zwischen "
-                + PRIO_MIN + " und " + PRIO_MAX + " liegen", BAD_REQUEST.getStatusCode());
+        List<VortragPrioDto> invalidRanges = requests.stream()
+            .filter(r -> r.prioWert < PRIO_MIN || r.prioWert > PRIO_MAX)
+            .toList();
+        if (!invalidRanges.isEmpty()) {
+            String invalids = invalidRanges.stream().map(req -> {
+                    Wahlvortrag vortrag = Wahlvortrag.findById(req.vortragId);
+                    return (vortrag != null ? TemplateExtensions.truncTo(vortrag.getTitel()) :
+                        "Vortrag<???>") + " → " + req.prioWert;
+                }
+            ).collect(Collectors.joining("; "));
+            throw new WebApplicationException("Prioritäten liegen nicht zwischen "
+                + PRIO_MIN + " und " + PRIO_MAX + ": "
+                + invalids, BAD_REQUEST.getStatusCode());
         }
 
         // Der Client sendet bewusst nur die seit dem letzten Speichern geaenderten Eintraege

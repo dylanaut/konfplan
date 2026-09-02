@@ -46,7 +46,7 @@ Sehr geehrte$SALUT $LASTNAME,
 wir haben den KonfPlan Emailversand zertifiziert, damit Sie und andere Referenten
 zukünftig ihre originären Mailadressen verwenden können.
 
-Bitte seien Sie so freundlich und bestätigen Sie den Erhalt dieser Testmail.
+Bitte unterstützen Sie uns und bestätigen den Erhalt dieser Testmail.
 
 Mit freundlichen Grüßen,
   Jürgen Krey und Kathrin Jessen
