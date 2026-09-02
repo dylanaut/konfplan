@@ -43,8 +43,10 @@ Content-Type: text/plain; charset=UTF-8
 
 Sehr geehrte$SALUT $LASTNAME,
 
-dies ein Test zur Zustellung einer KonfPlan-Email an ihre E-Mailadresse.
+wir haben den KonfPlan Emailversand zertifiziert, damit Sie und andere Referenten
+zukünftig ihre originären Mailadressen verwenden können.
 
+Bitte seien Sie so freundlich und bestätigen Sie den Erhalt dieser Testmail.
 
 Mit freundlichen Grüßen,
   Jürgen Krey und Kathrin Jessen
