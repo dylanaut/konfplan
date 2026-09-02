@@ -65,6 +65,24 @@ chmod 644 secrets/brevo_smtp_password.txt
 `bootstrap.sh` warnt, falls `BREVO_SMTP_USER` gesetzt, die Secret-Datei aber noch leer ist.
 Alternative ohne echten Brevo-Account: Profil `mailpit` statt `BREVO_SMTP_USER` nutzen (kein echter Versand, Test-Postfach unter `http://localhost:8025`) - dann bleibt die leere Platzhalter-Datei einfach unbenutzt.
 
+=== Absender-Domain bei Brevo authentifizieren (SPF/DKIM/DMARC)
+
+[WARNING]
+====
+Der Absender **muss** eine Domain sein, über deren DNS du verfügst (hier: `konfplan.de`) - **niemals** eine Freemail-Adresse (`@gmail.com`, `@yahoo.com`, `@yahoo.de`, `@outlook.com`, ...). Freemail-Anbieter veröffentlichen eine strikte `DMARC`-Policy `p=reject` für ihre eigene Domain (per `dig TXT _dmarc.yahoo.com` nachprüfbar). Brevo kann diese Domains nicht authentifizieren, da es keinen DNS-Zugriff darauf hat (weder SPF- noch DKIM-Alignment möglich) - jeder Empfänger, der DMARC durchsetzt (z.B. Sophos Email, Microsoft 365 Defender, viele Hochschul-/Behörden-Mailgateways), lehnt solche Mails deshalb konsequent ab. Das ist keine Brevo-/KonfPlan-Fehlkonfiguration, sondern von den Freemail-Anbietern selbst so vorgeschrieben.
+====
+
+Einmalige Einrichtung, sobald `konfplan.de` DNS-seitig verwaltbar ist:
+
+. In Brevo einloggen → *Absender, Domains & dedizierte IPs* (https://app.brevo.com/senders/domain/list) → *Eine Domain hinzufügen* → `konfplan.de` eintragen.
+. Brevo zeigt daraufhin drei DNS-Records an, die beim Domain-Registrar von `konfplan.de` einzutragen sind:
+  * Ein `TXT`-Record zur Domain-Inhaberschafts-Bestätigung ("Brevo-Code").
+  * Zwei `TXT`/`CNAME`-Records für DKIM (Signatur-Schlüssel).
+  * Optional, aber empfohlen: ein `TXT`-Record für eine eigene DMARC-Policy unter `_dmarc.konfplan.de` (Brevo schlägt i.d.R. `v=DMARC1; p=none;` für den Start vor - das eigene DMARC-Monitoring, nicht zu verwechseln mit der oben beschriebenen Freemail-Problematik).
+. Nach Eintragung der Records (DNS-Propagation kann bis zu 24-48h dauern) in Brevo auf *Authentifizieren* klicken - erst nach grünem Haken ("Authentifiziert") sendet Brevo mit voller SPF-/DKIM-Abdeckung für `konfplan.de`.
+. Absenderadresse in KonfPlan auf eine `@konfplan.de`-Adresse setzen (siehe `%prod.quarkus.mailer.from` in `application.properties`, `smtpServer.from` in `keycloak-realm.template.json`, `app.mail.admin` in `MailService`) - **erst nachdem** die Domain in Brevo als authentifiziert markiert ist, sonst verschlechtert sich die Zustellbarkeit eher (neue, komplett unauthentifizierte Domain) statt sich zu verbessern.
+. Zustellbarkeit gegen die zuvor blockierenden Domains mit `deploy/sendmail-test.sh <empfaenger-adresse>` verifizieren.
+
 In `docker-compose.yml` werden die Secrets per `secrets:`-Block eingebunden und dort, wo das Image selbst kein `_FILE`-Suffix unterstützt (Keycloak, App), per überschriebenem `command` aus
 `/run/secrets/*` gelesen und vor dem eigentlichen Start exportiert.
 PostgreSQL unterstützt
