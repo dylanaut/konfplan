@@ -333,8 +333,10 @@ Falls sich die IP häufig/täglich ändert, kann `deploy/check-outbound-ip.sh` d
 
 [WARNING]
 ====
-Das erfordert das echte Brevo-Account-Passwort auf dem Server (nicht nur einen API-/SMTP-Schlüssel wie bisher) - eine größere Angriffsfläche. Die Login-/Formular-Interaktion wurde nach bestem Wissen aus der öffentlichen Brevo-Hilfe-Dokumentation entwickelt, aber mangels Testzugang nicht gegen einen echten Account verifiziert - beim ersten Einsatz mit einem Blick auf die bei Fehlern automatisch gespeicherten `error-*.png`-Screenshots nachjustieren.
+Das erfordert das echte Brevo-Account-Passwort auf dem Server (nicht nur einen API-/SMTP-Schlüssel wie bisher) - eine größere Angriffsfläche.
 ====
+
+Per Live-Test verifiziert: die Brevo-„Security"-Seite (Authorized IPs) blieb bei `update-ip.mjs` reproduzierbar in einem Lade-Skeleton hängen, obwohl dieselbe Sitzung in einem normalen Browser einwandfrei funktionierte - ohne jedes CAPTCHA-/Bot-Erkennungsskript im DOM. `setup-session.mjs` besucht die Zielseite deshalb seit der Behebung einmal VOR dem Speichern der Sitzung (vermutlich noetig, um clientseitigen Init-State in `localStorage` zu erzeugen, der von `storageState()` erfasst wird - `sessionStorage`/IndexedDB dagegen nicht). `update-ip.mjs` setzt zusätzlich `navigator.webdriver` clientseitig zurück und das Chromium-Flag `--disable-blink-features=AutomationControlled`. Sollte das nach einem Brevo-seitigen UI-Update erneut fehlschlagen: `error-*.html` (vollständiges DOM zum Fehlerzeitpunkt) neben `error-*.png` prüfen - aussagekräftiger als der Screenshot allein bei dauerhaften Lade-Skeletons.
 
 Einrichtung:
 

@@ -25,6 +25,7 @@ import { stdin as input, stdout as output } from 'node:process';
 const EMAIL = process.env.BREVO_LOGIN_EMAIL;
 const PASSWORD = process.env.BREVO_LOGIN_PASSWORD;
 const STORAGE_STATE_PATH = './storage-state.json';
+const AUTHORIZED_IPS_URL = 'https://app.brevo.com/security/authorised_ips';
 
 if (!EMAIL || !PASSWORD) {
   console.error('BREVO_LOGIN_EMAIL/BREVO_LOGIN_PASSWORD nicht gesetzt.');
@@ -49,7 +50,11 @@ try {
   page = await context.newPage();
 
   console.log('Öffne Brevo-Login...');
-  await page.goto('https://login.brevo.com', { waitUntil: 'networkidle' });
+  // 'networkidle' faellt bei SPAs mit dauerhaften Verbindungen (Websocket/Long-Polling) leicht
+  // auf den Navigations-Timeout durch, OHNE dass die Login-Seite ueberhaupt fertig gerendert
+  // sein muss (siehe dieselbe Korrektur in update-ip.mjs) - 'domcontentloaded' reicht hier, da
+  // die folgenden Schritte ohnehin auf konkrete Formularfelder warten.
+  await page.goto('https://login.brevo.com', { waitUntil: 'domcontentloaded', timeout: 30000 });
 
   // Cookie-Banner wegklicken, falls vorhanden - kann sonst spaetere Klicks verdecken/blockieren.
   await page.getByRole('button', { name: 'Reject All' }).click({ timeout: 5000 }).catch(() => {});
@@ -87,6 +92,18 @@ try {
     console.error('Login scheint nicht abgeschlossen zu sein (noch auf der Login-Seite). Bitte Screenshot pruefen.');
     process.exit(1);
   }
+
+  // Vor dem Speichern einmal die eigentliche Ziel-Seite besuchen: update-ip.mjs haengt dort
+  // reproduzierbar in einem Lade-Skeleton (siehe error-unexpected-1788334300621.html), obwohl
+  // dieselbe Sitzung in einem normalen Browser funktioniert. storageState() erfasst Cookies UND
+  // localStorage, aber NICHT sessionStorage/IndexedDB - falls Brevo dort beim ersten echten
+  // Besuch noetigen Init-State in localStorage ablegt, wird er so mitgespeichert. Falls die
+  // fehlende Initialisierung stattdessen ueber sessionStorage/IndexedDB laeuft, hilft das nicht.
+  console.log('Besuche Authorized-IPs-Seite einmal vor dem Speichern der Sitzung...');
+  await page.goto(AUTHORIZED_IPS_URL, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(e => {
+    console.log(`Besuch der Authorized-IPs-Seite fehlgeschlagen (${e.message}) - Sitzung wird trotzdem gespeichert.`);
+  });
+  await page.waitForTimeout(3000);
 
   await context.storageState({ path: STORAGE_STATE_PATH });
   console.log(`Sitzung gespeichert in ${STORAGE_STATE_PATH}. update-ip.mjs kann diese jetzt ohne erneute Geraeteverifizierung nutzen.`);
