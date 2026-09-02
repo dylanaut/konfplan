@@ -69,6 +69,8 @@ Playwright-Log (Ende):
 $(tail -c 2000 "$BREVO_UPDATER_LOG")"
       fi
     fi
+  else
+      BREVO_UPDATE_STATUS="BREVO_LOGIN_PASSWORD nicht gefunden - Datei fehlt ($BREVO_PASSWORD_FILE)"
   fi
 
   curl -fsS \

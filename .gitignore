@@ -65,6 +65,11 @@ build/
 /deploy/brevo-ip-updater/node_modules/
 /deploy/brevo-ip-updater/storage-state.json
 /deploy/brevo-ip-updater/error-*.png
+/deploy/brevo-ip-updater/error-*.html
+# Faellt an, falls update-ip.mjs/setup-session.mjs versehentlich mit Arbeitsverzeichnis
+# deploy/ statt deploy/brevo-ip-updater/ aufgerufen wird (Skript-Pfade sind relativ zu cwd).
+/deploy/error-*.png
+/deploy/error-*.html
 /deploy/brevo-ip-updater/last-run.log
 /backend/src/main/asciidoc/*.pdf
 
