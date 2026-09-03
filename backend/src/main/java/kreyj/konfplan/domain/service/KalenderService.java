@@ -23,7 +23,7 @@ public class KalenderService {
     PlanService planService;
 
 
-    public Calendar generateAdminCalendar(Veranstaltung veranstaltung) {
+    public Calendar generateOrganisatorCalendar(Veranstaltung veranstaltung) {
         List<ZuweisungDto> zuweisungen = planService.getGesamtplan(veranstaltung);
         return createCalendarFromZuweisungen(zuweisungen);
     }

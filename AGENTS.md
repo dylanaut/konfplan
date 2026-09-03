@@ -2,7 +2,7 @@
 
 ## Projektübersicht
 
-Der **KonfPlan** ist eine Webanwendung zur Planung und Verwaltung von Veranstaltungen mit Vorträgen (z. B. Schulungstage). Er unterstützt drei Nutzerrollen: Admin, Referent und Teilnehmer. Ein zentrales Feature ist die automatische PlanErstellung der Teilnehmerzuweisung zu Wahlvorträgen via **MiniZinc**.
+Der **KonfPlan** ist eine Webanwendung zur Planung und Verwaltung von Veranstaltungen mit Vorträgen (z. B. Schulungstage). Er unterstützt vier Nutzerrollen: Organisator, Administrator (ein Organisator mit zwei exklusiven Rechten - Wartungshinweis ankündigen und Verzeichnis-Import durchführen; Java-seitig `Administrator extends Organisator`, erbt also alle Organisator-Rechte), Referent und Teilnehmer. Ein zentrales Feature ist die automatische PlanErstellung der Teilnehmerzuweisung zu Wahlvorträgen via **MiniZinc**.
 
 ## Struktur
 
@@ -40,10 +40,10 @@ cd frontend && npm run build
 cd backend && ../mvnw test
 
 # Einzelne Test-Klasse
-cd backend && ../mvnw test -Dtest=AdminServiceTest
+cd backend && ../mvnw test -Dtest=OrganisatorServiceTest
 
 # Einzelne Test-Methode
-cd backend && ../mvnw test -Dtest=AdminServiceTest#methodName
+cd backend && ../mvnw test -Dtest=OrganisatorServiceTest#methodName
 
 # Playwright E2E-Tests
 cd frontend && npx playwright test
@@ -79,7 +79,7 @@ adapter/
 │   ├── exception/    # CustomExceptionMapper
 │   └── service/      # (Legacy-Standort, bevorzugt application/service)
 application/
-├── port/in/          # Use-Case-Schnittstellen (z.B. AdminServiceInterface)
+├── port/in/          # Use-Case-Schnittstellen (z.B. OrganisatorServiceInterface)
 ├── port/out/         # Repository/External-System-Schnittstellen
 └── service/          # Business-Logik implementiert die in-ports
 domain/               # JPA/Panache-Entitäten (dienen als Domain-Objekte)
@@ -98,7 +98,7 @@ Struktur unter `frontend/src/`:
 api/axios.js          # Zentrale Axios-Instanz; haengt/erneuert das Keycloak-Token je Request
 keycloak.js           # keycloak-js-Client-Instanz (Authorization Code Flow)
 components/
-├── admin/tabs/       # Tab-Komponenten für Admin-Dashboard
+├── organisator/tabs/ # Tab-Komponenten für Organisator-Dashboard
 └── *.vue             # Gemeinsame UI-Komponenten (Modals, Buttons, Pagination)
 router/index.js       # Route-Definitionen und Navigation Guards (Redirect zu Keycloak-Login)
 stores/
@@ -111,7 +111,7 @@ views/*.vue           # Top-Level-Seiten-Komponenten geroutet von Vue Router
 ## Domänenmodell (Kurzübersicht)
 
 - **Veranstaltung** – Zentrale Entität; hat EventSlots, Gebäude, Nutzer; besitzt Deadlines für Referenten/Teilnehmer.
-- **Nutzer** (SINGLE_TABLE) → Admin | Referent | Teilnehmer
+- **Nutzer** (SINGLE_TABLE) → Organisator | Administrator (extends Organisator) | Referent | Teilnehmer
 - **Vortrag** (SINGLE_TABLE) → Pflichtvortrag | Wahlvortrag; hat optional einen `AbschlussTyp`.
 - **AbschlussTyp** - Enum für den mit einem Vortrag assoziierten Schulabschluss.
 - **Neigung** - Enum fachlicher/beruflicher Ausrichtungen; Teilnehmer und Wahlvortrag können jeweils mehrere zuordnen.
@@ -129,13 +129,13 @@ views/*.vue           # Top-Level-Seiten-Komponenten geroutet von Vue Router
 - Datenbankfelder: Public Fields (kein Lombok), kein privater Getter/Setter-Boilerplate außer wo nötig.
 - Datum/Zeit: `LocalDateTime` mit Custom `LocalDateTimeConverter`.
 - Fehlerbehandlung: `CustomExceptionMapper` mappt Exceptions auf HTTP-Responses.
-- **REST-API:** Alle Endpunkte unter `/api/...`; Security via `@RolesAllowed` (`ADMIN`, `REFERENT`, `TEILNEHMER`) oder `@Authenticated`.
+- **REST-API:** Alle Endpunkte unter `/api/...`; Security via `@RolesAllowed` (`ORGANISATOR`, `ADMINISTRATOR`, `REFERENT`, `TEILNEHMER`) oder `@Authenticated`.
 - **DTOs leben im Web-Adapter** (`adapter/in/rest`), werden nie in die Service-Schicht weitergegeben.
 - CSV-Import von Verfügbarkeiten erfolgt über 1-basierte Slot-Indizes.
 - **Code-Stil:** `.editorconfig` im Root-Verzeichnis — 4 Leerzeichen für Java/XML, 2 für JS/TS/Vue.
 - **Identität/Passwörter liegen in Keycloak**, nicht in der Datenbank — `Nutzer` trägt nur `keycloakId` als Verknüpfung. `KeycloakUserProvisioningService` (`domain/service`) ist die einzige Stelle, die den Keycloak Admin REST Client aufruft.
 - **Standard-Passwort** bei Nutzer-Erstellung/Import: `Konfplan1!` (nicht temporär) im Dev/Test-Modus, ein zufälliges UUID-Passwort (temporär, erzwingt Keycloak-seitig eine Änderung beim ersten Login) in Produktion.
-- **Passwort-Policy** (Keycloak-Realm-Ebene, gilt für jedes neu gesetzte Passwort — Selbst-Reset wie Admin-gesetzt, nicht rückwirkend auf bestehende Passwörter): mind. 8 Zeichen, je mind. ein Groß-/Kleinbuchstabe, eine Ziffer, ein Sonderzeichen.
+- **Passwort-Policy** (Keycloak-Realm-Ebene, gilt für jedes neu gesetzte Passwort — Selbst-Reset wie Organisator-gesetzt, nicht rückwirkend auf bestehende Passwörter): mind. 8 Zeichen, je mind. ein Groß-/Kleinbuchstabe, eine Ziffer, ein Sonderzeichen.
 
 ## Bekannte Besonderheiten & Infrastruktur-Notizen
 
@@ -179,7 +179,7 @@ Wenn eine Änderung am Datenmodell als "Full-Stack-Feature-Slice" angefordert wi
     *   **Mapper-Logik aktualisieren:** Die Methoden, die Entitäten in DTOs umwandeln, anpassen, um das neue Feld zu berücksichtigen (z.B. in `ReferentService.mapVortragToDto`).
 
 3.  **Service- & Business-Logik (Backend):**
-    *   **Importer anpassen:** Falls es einen CSV-Importer gibt, die Logik erweitern (z.B. in `AdminService.importVortraegeFromCsv`).
+    *   **Importer anpassen:** Falls es einen CSV-Importer gibt, die Logik erweitern (z.B. in `OrganisatorService.importVortraegeFromCsv`).
     *   **Erstellungs-/Update-Logik:** Die `create...`- und `update...`-Methoden in den relevanten Services anpassen.
 
 4.  **Test-Schicht (Backend):**
@@ -188,5 +188,5 @@ Wenn eine Änderung am Datenmodell als "Full-Stack-Feature-Slice" angefordert wi
 
 5.  **Präsentations-Schicht (Frontend):**
     *   **Anzeige-Komponenten:** Vue-Komponenten, die die Daten anzeigen (z.B. `VortraegeTab.vue`), erweitern.
-    *   **Bearbeitungs-Komponenten:** Vue-Komponenten, die zum Erstellen oder Bearbeiten verwendet werden (z.B. `AdminVortragEditorModal.vue`), um ein neues Eingabefeld erweitern.
+    *   **Bearbeitungs-Komponenten:** Vue-Komponenten, die zum Erstellen oder Bearbeiten verwendet werden (z.B. `OrganisatorVortragEditorModal.vue`), um ein neues Eingabefeld erweitern.
     *   **Daten-Handling im Frontend:** Das reaktive `form`-Objekt und die `save`-Methoden im Frontend anpassen.

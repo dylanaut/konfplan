@@ -85,7 +85,7 @@ Im Native Mode gibt es keine DevServices mehr. PostgreSQL, Keycloak (Authentifiz
 
 Es startet idempotent (per Docker-Label wiedererkennbar) einen `postgres:18`-, einen `quay.io/keycloak/keycloak`- und einen `axllent/mailpit`-Container (lokaler Ersatz für den echten Brevo-SMTP-Server aus Abschnitt 4) und gibt am Ende den passenden `export`-Block für den Runner-Start aus.
 
-Der Keycloak-Realm-Import wird dabei aus derselben zentralen Vorlage (`deploy/keycloak-realm.template.json`) gerendert, die auch das Docker-Compose- und das `.deb`-Verfahren nutzen - `konfplan-frontend`/`konfplan-backend`/`konfplan-admin-cli`-Clients und die Rollen `ADMIN`/`REFERENT`/`TEILNEHMER` sind danach identisch zu den anderen Betriebsarten vorhanden. Ohne laufenden Keycloak startet die Anwendung nicht (OIDC-Verbindungsaufbau schlägt fehl).
+Der Keycloak-Realm-Import wird dabei aus derselben zentralen Vorlage (`deploy/keycloak-realm.template.json`) gerendert, die auch das Docker-Compose- und das `.deb`-Verfahren nutzen - `konfplan-frontend`/`konfplan-backend`/`konfplan-admin-cli`-Clients und die Rollen `ORGANISATOR`/`ADMINISTRATOR`/`REFERENT`/`TEILNEHMER` sind danach identisch zu den anderen Betriebsarten vorhanden. Ohne laufenden Keycloak startet die Anwendung nicht (OIDC-Verbindungsaufbau schlägt fehl).
 
 Belegt Port 8080 bereits einen anderen lokalen Dienst, kann der Keycloak-Port des Skripts per Umgebungsvariable verschoben werden: `KEYCLOAK_PORT=8180 ./db/ensure_prod_infra.sh`.
 ====

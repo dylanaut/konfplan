@@ -97,7 +97,7 @@ ausgeliefert ab v0.54.0). Per Live-Test auf Docker 29.7.2 verifiziert.
 
 | `konfplan_users_online{role}`
 | Gauge
-| Anzahl Nutzer mit Backend-Aktivität innerhalb der letzten 5 Minuten, gruppiert nach `role` (`ADMIN`/`REFERENT`/`TEILNEHMER`). Aktualisiert bei jedem authentifizierten Request (`UserActivityTrackingFilter`), rein In-Memory - kein DB-Zugriff im Hot-Path.
+| Anzahl Nutzer mit Backend-Aktivität innerhalb der letzten 5 Minuten, gruppiert nach `role` (`ORGANISATOR`/`ADMINISTRATOR`/`REFERENT`/`TEILNEHMER`). Aktualisiert bei jedem authentifizierten Request (`UserActivityTrackingFilter`), rein In-Memory - kein DB-Zugriff im Hot-Path.
 
 | `konfplan_session_duration_seconds{role}`
 | Timer (`_count`, `_sum`, `_max`)

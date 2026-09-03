@@ -203,10 +203,12 @@ docker compose logs app -f   # sollte jetzt sauber hochfahren
 
 === Erster Login-Account
 
-Der DB-seitige Bootstrap-Admin (`juergenkrey`, aus `V2__data.sql`) existiert nur als Datenbankzeile,
-nicht in Keycloak. Er muss **einmalig manuell** über die Keycloak-Admin-Konsole angelegt werden:
-Login-Name muss exakt `juergenkrey` lauten, Rolle `ADMIN` zuweisen. Erst danach ist ein Login in der
-App als Admin möglich.
+Der DB-seitige Bootstrap-Organisator (`juergenkrey`, aus `V2__data.sql`, per Flyway-Migration
+`V14__rename_admin_role_zu_organisator.sql` bereits zu Rolle `ORGANISATOR` migriert) existiert nur
+als Datenbankzeile, nicht in Keycloak. Er muss **einmalig manuell** über die
+Keycloak-Admin-Konsole angelegt werden: Login-Name muss exakt `juergenkrey` lauten, Rolle
+`ADMINISTRATOR` zuweisen (befördert ihn zum echten Administrator - siehe Rollenmodell in
+CLAUDE.md). Erst danach ist ein Login in der App als Administrator möglich.
 
 Das geht statt per Web-UI auch komplett per Kommandozeile über das in Keycloak eingebaute
 `kcadm.sh`:
@@ -231,15 +233,16 @@ docker compose exec keycloak /opt/keycloak/bin/kcadm.sh create users -r konfplan
 docker compose exec keycloak /opt/keycloak/bin/kcadm.sh set-password -r konfplan \
   --username juergenkrey --new-password "<dein-passwort>" --temporary=false
 
-# 4. Realm-Rolle ADMIN zuweisen
+# 4. Realm-Rolle ADMINISTRATOR zuweisen
 docker compose exec keycloak /opt/keycloak/bin/kcadm.sh add-roles -r konfplan \
-  --uusername juergenkrey --rolename ADMIN
+  --uusername juergenkrey --rolename ADMINISTRATOR
 ----
 
 Das Passwort aus Schritt 3 ist das künftige Login-Passwort für die App - der `password_hash` in
 `V2__data.sql` ist irrelevant, da Zugangsdaten ausschließlich in Keycloak liegen (siehe CLAUDE.md:
 "Identity/passwords live in Keycloak, not in the database"). Die DB-Zeile dient nur dazu, den
-Login-Namen `juergenkrey` beim ersten Login mit dem bestehenden `ADMIN`-Datensatz zu verknüpfen.
+Login-Namen `juergenkrey` beim ersten Login mit dem bestehenden Organisator-Datensatz zu
+verknüpfen.
 
 === Smoke-Test
 

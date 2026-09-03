@@ -35,16 +35,16 @@ public class KalenderResource {
 
 
     @GET
-    @Path("/admin/{veranstaltungId}")
+    @Path("/organisator/{veranstaltungId}")
     @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Produces("text/calendar")
     @Transactional
-    public Response getAdminKalender(@PathParam("veranstaltungId") Long veranstaltungId) {
+    public Response getOrganisatorKalender(@PathParam("veranstaltungId") Long veranstaltungId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).entity("Veranstaltung nicht gefunden").build();
         }
-        Calendar calendar = kalenderService.generateAdminCalendar(veranstaltung);
+        Calendar calendar = kalenderService.generateOrganisatorCalendar(veranstaltung);
         return Response.ok(calendar.toString())
             .header("Content-Disposition", "attachment; filename=\"KonfPlan_" +
                 truncTo(veranstaltung.getName(), 15)

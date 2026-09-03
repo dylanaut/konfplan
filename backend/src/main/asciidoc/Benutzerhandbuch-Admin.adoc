@@ -12,24 +12,27 @@ Gilt für KonfPlan Version {konfplan-version}.
 
 [NOTE]
 ====
-Dieses Handbuch beschreibt den Admin-Bereich von KonfPlan (Rolle `ADMIN`, auch "Organisator" genannt)
-Feld für Feld: jede Seite (Tab), jeder Dialog und jede Aktion. Screenshots stammen aus dem
-Demo-Datensatz "Karrierekompass Demo" (Login als Organisatorin `kathrin.jessen`).
+Dieses Handbuch beschreibt den Organisator-Bereich von KonfPlan (Rollen `ORGANISATOR` und
+`ADMINISTRATOR` - ein Administrator hat dieselben Rechte wie ein Organisator, zusätzlich
+exklusiv das Ankündigen einer Wartung und den Verzeichnis-Import, siehe unten) Feld für Feld:
+jede Seite (Tab), jeder Dialog und jede Aktion. Screenshots stammen aus dem Demo-Datensatz
+"Karrierekompass Demo" (Login als Organisatorin `kathrin.jessen`).
 ====
 
 == Anmeldung und Grundaufbau
 
-Nach der Anmeldung über die Startseite öffnet sich der Admin-Bereich mit einer horizontalen
+Nach der Anmeldung über die Startseite öffnet sich der Organisator-Bereich mit einer
 Tab-Navigation. Solange noch keine Veranstaltung ausgewählt ist, stehen nur die Tabs
-**Organisatoren**, **Gebäude**, **Veranstaltungen**, **Verzeichnis-Import**, **Protokoll** und
-**Feedback** zur Verfügung - alle anderen Tabs benötigen eine ausgewählte Veranstaltung und sind
-erst danach sichtbar: **Teilnehmer**, **Referenten**, **Vorträge**, **Zeit-Slots**,
-**Planerstellung** und **Ergebnisse**.
+**Organisatoren**, **Gebäude**, **Veranstaltungen**, **Protokoll** und **Feedback** zur
+Verfügung - alle anderen Tabs benötigen eine ausgewählte Veranstaltung und sind erst danach
+sichtbar: **Teilnehmer**, **Referenten**, **Vorträge**, **Zeit-Slots**, **Planerstellung** und
+**Ergebnisse**. Der Tab **Verzeichnis-Import** ist unabhängig von einer ausgewählten
+Veranstaltung, aber exklusiv für Administratoren sichtbar - Organisatoren sehen ihn nicht.
 
 Oben in der Kopfzeile der Anwendung (auf jeder Seite sichtbar) befinden sich rechts ein
 **Info**-Menüpunkt (zeigt Anwendungsname, Version, Build-Datum, Git-Commit, einen Mailto-Link an
 den Entwickler, einen Abschnitt **Benutzerhandbücher** mit Download-Links auf die PDF-Handbücher
-für Admin, Referent und Teilnehmer (nur Admins sehen alle drei – Referenten und Teilnehmer sehen
+für Organisatoren, Referenten und Teilnehmer (nur Organisatoren/Administratoren sehen alle drei – Referenten und Teilnehmer sehen
 im selben Menü jeweils nur ihr eigenes Handbuch) – auch dieses Handbuch selbst ist von dort
 herunterladbar – sowie einen Link **Verbesserungsvorschlag einreichen**, siehe
 <<_verbesserungsvorschlag_einreichen>>) und der **LOGOUT**-Button.
@@ -57,14 +60,15 @@ Vorschlag wird zusammen mit dem eigenen Namen und der eigenen Rolle gespeichert 
 
 === Dialog: Wartung ankündigen
 
-Button **Wartung ankündigen** (oben rechts im Seitenkopf, auf jeder Admin-Seite sichtbar) öffnet
-einen Dialog mit den Feldern **Wartung beginnt** und **Anwendung wieder verfügbar ab** (jeweils
-Datum + Uhrzeit) sowie den Buttons **Abbrechen** und **Speichern**; ist bereits eine Ankündigung
-aktiv, sind die Felder damit vorbelegt und ein zusätzlicher Button **Löschen** entfernt die
-Ankündigung wieder. Der Endzeitpunkt muss nach dem Startzeitpunkt liegen, sonst erscheint eine
-Fehlermeldung.
+Button **Wartung ankündigen** (oben rechts im Seitenkopf, auf jeder Organisator-Seite sichtbar -
+aber exklusiv für Administratoren; Organisatoren sehen diesen Button nicht) öffnet einen Dialog
+mit den Feldern **Wartung beginnt** und **Anwendung wieder verfügbar ab** (jeweils Datum +
+Uhrzeit) sowie den Buttons **Abbrechen** und **Speichern**; ist bereits eine Ankündigung aktiv,
+sind die Felder damit vorbelegt und ein zusätzlicher Button **Löschen** entfernt die Ankündigung
+wieder. Der Endzeitpunkt muss nach dem Startzeitpunkt liegen, sonst erscheint eine Fehlermeldung.
 
-Nach dem Speichern sehen alle eingeloggten Nutzer (Admin, Referent, Teilnehmer) oben auf jeder
+Nach dem Speichern sehen alle eingeloggten Nutzer (Organisator, Administrator, Referent,
+Teilnehmer) oben auf jeder
 Seite ein gelbes Hinweisbanner - vor Beginn mit einem Countdown bis zum Start, während des
 Wartungsfensters mit einem Countdown bis zur voraussichtlichen Wiederverfügbarkeit. Die Anzeige
 aktualisiert sich spätestens alle 60 Sekunden automatisch (Polling, kein sofortiges Push) und
@@ -138,9 +142,10 @@ Titel je nach Kontext "Veranstaltung bearbeiten" (siehe <<_dialog_veranstaltung_
 | Deadline für Teilnehmer
 | Datum + Uhrzeit, analog für Teilnehmer.
 
-| Organisatoren (Admins)
-| Checkbox-Liste aller Administratoren (Mehrfachauswahl); mindestens einer ist Pflicht – der
-  Speichern-Button bleibt sonst deaktiviert. Leerhinweis, falls noch keine Admins existieren.
+| Organisatoren
+| Checkbox-Liste aller Organisatoren/Administratoren (Mehrfachauswahl); mindestens einer ist
+  Pflicht – der Speichern-Button bleibt sonst deaktiviert. Leerhinweis, falls noch keine
+  Organisatoren existieren.
 
 | Zugehörige Gebäude
 | Checkbox-Liste aller Gebäude (Mehrfachauswahl, optional).
@@ -159,6 +164,13 @@ Organisator gewählt ist).
 image::04-veranstaltung-editor-modal-bearbeiten.png[Dialog Veranstaltung bearbeiten, vorbefüllt]
 
 == Tab "Verzeichnis-Import"
+
+[NOTE]
+====
+Dieser Tab ist exklusiv für die Rolle `ADMINISTRATOR` sichtbar - Organisatoren sehen ihn nicht
+und erhalten bei einem direkten Aufruf des zugrundeliegenden Endpunkts eine Fehlermeldung
+(HTTP 403).
+====
 
 image::05-verzeichnis-import.png[Verzeichnis-Import]
 
@@ -277,18 +289,21 @@ Zeit-Slots existieren.
 
 image::10-organisatoren-liste.png[Organisatoren-Liste]
 
-Verwaltung der Admin-Konten (Organisatoren), unabhängig von einer bestimmten Veranstaltung.
+Verwaltung der Organisator-/Administrator-Konten, unabhängig von einer bestimmten Veranstaltung.
 
 * Suchfeld "Suchen...", Button **Import** (CSV), Button **+ Neu** (öffnet den Nutzer-Editor mit
-  Rolle "ADMIN" vorbelegt, siehe unten).
+  Rolle "ORGANISATOR" vorbelegt, siehe unten - neue Konten werden hier immer als Organisator
+  angelegt, nie direkt als Administrator).
 * **Tabelle** (Name (Vor-/Nachname, sortierbar, darunter grau der Anmeldename), Aktionen):
   Stift-Icon **Bearbeiten**, Schlüssel-Icon **Passwort zurücksetzen** (öffnet den
   Passwort-Reset-Dialog), Papierkorb-Icon **Löschen** (Bestätigung "Löschen?").
 
 === Dialog: Nutzer anlegen/bearbeiten
 
-Derselbe Dialog wird für alle drei Rollen (Admin, Referent, Teilnehmer) verwendet, je nach Rolle
-mit leicht unterschiedlichen Feldern.
+Derselbe Dialog wird für alle Rollen (Organisator, Administrator, Referent, Teilnehmer) verwendet,
+je nach Rolle mit leicht unterschiedlichen Feldern. Bei einem bereits bestehenden
+Organisator-/Administrator-Konto ist die Rolle zwischen "Organisator" und "Administrator"
+umschaltbar - bei allen anderen Rollen sowie beim Neuanlegen bleibt sie fix.
 
 image::11-user-editor-modal-admin.png[Dialog Neuer Organisator]
 
@@ -707,7 +722,7 @@ Nutzeränderungen, Planungen etc.), mit Filter- und CSV-Exportfunktion.
 * **Status-Filter** – Auswahl **Alle** / **Offen** / **Erledigt**, filtert die Tabelle.
 * **Tabelle** (Spalten: Titel & Beschreibung, Von, Am, Status, Aktionen):
 ** **Titel & Beschreibung** – Titel fett, Beschreibung darunter als Fließtext.
-** **Von** – Name des Erstellers, dahinter in Klammern dessen Rolle (ADMIN/REFERENT/TEILNEHMER).
+** **Von** – Name des Erstellers, dahinter in Klammern dessen Rolle (ORGANISATOR/ADMINISTRATOR/REFERENT/TEILNEHMER).
 ** **Am** – Zeitpunkt der Einreichung.
 ** **Status** – farbiges Badge, gelb "Offen" bzw. grün "Erledigt".
 ** **Aktionen** – Link **Als erledigt markieren** (bzw. **Als offen markieren**, je nach aktuellem

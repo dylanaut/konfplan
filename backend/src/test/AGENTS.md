@@ -32,7 +32,7 @@ src/test/
 
 ```java
 @QuarkusTest
-@TestSecurity(nutzer = "admin@test.de", roles = "ADMIN") // Authentifizierung simulieren
+@TestSecurity(nutzer = "admin@test.de", roles = "ORGANISATOR") // Authentifizierung simulieren
 class MeineResourceTest {
 
     Long testVid;  // ID der Test-Veranstaltung
@@ -120,8 +120,9 @@ given()
 
 ## Verfügbare Rollen für `@TestSecurity`
 
-| Wert         | Rolle         |
-|--------------|---------------|
-| `"ADMIN"`    | Admin-Zugriff |
-| `"REFERENT"` | Referent      |
-| `"TEILNEHMER"` | Teilnehmer  |
+| Wert             | Rolle                                             |
+|------------------|----------------------------------------------------|
+| `"ORGANISATOR"`  | Organisator-Zugriff                               |
+| `"ADMINISTRATOR"`| Wie Organisator, zusätzlich Wartung/Verzeichnis-Import |
+| `"REFERENT"`     | Referent                                          |
+| `"TEILNEHMER"`   | Teilnehmer                                        |

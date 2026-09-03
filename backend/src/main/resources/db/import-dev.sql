@@ -1,4 +1,4 @@
--- SUPER ADMIN
+-- SUPER ORGANISATOR
 -- juergenkrey/juergenkrey@yahoo.de wird jetzt ueber organisatoren.csv im "medium"-Dataset
 -- importiert (siehe DevDataInitService) - dabei entsteht auch das Keycloak-Gegenstueck.
 -- Ein zusaetzlicher roher SQL-Insert hier wuerde mit demselben login_name kollidieren

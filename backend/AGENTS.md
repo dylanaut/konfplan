@@ -29,7 +29,7 @@ kreyj/konfplan/
 ### Komponenten im Detail
 
 *   **`application` (Der Hexagon):**
-    *   **`port.in`:** Definiert die Schnittstellen der Anwendungslogik (Use Cases). Beispiel: `AdminServiceInterface`. Sie beschreiben, *was* die Anwendung kann.
+    *   **`port.in`:** Definiert die Schnittstellen der Anwendungslogik (Use Cases). Beispiel: `OrganisatorServiceInterface`. Sie beschreiben, *was* die Anwendung kann.
     *   **`port.out`:** Definiert die Schnittstellen, die der Kern benötigt, um mit externen Systemen zu kommunizieren (z.B. Datenbank). Beispiel: `NutzerRepositoryPort` (hypothetisch).
     *   **`service`:** Implementiert die `in`-Ports. Hier befindet sich die reine Geschäftslogik, frei von technologischen Details wie HTTP oder JPA.
 
@@ -39,14 +39,16 @@ kreyj/konfplan/
 
 *   **`adapter` (Die Außenwelt):**
     *   **`adapter/in/web`:** Der REST-Adapter.
-        *   Die `resource`-Klassen (`AdminResource`) nehmen HTTP-Anfragen entgegen, validieren sie und rufen die entsprechenden Methoden auf den **eingehenden Ports** (`AdminServiceInterface`) auf.
+        *   Die `resource`-Klassen (`OrganisatorResource`) nehmen HTTP-Anfragen entgegen, validieren sie und rufen die entsprechenden Methoden auf den **eingehenden Ports** (`OrganisatorServiceInterface`) auf.
         *   **DTOs (`dto`-Paket hier):** Data Transfer Objects sind Teil des Web-Adapters. Sie definieren den "Vertrag" der REST-API und werden niemals an die `service`-Schicht weitergegeben. Die `resource`-Klasse ist für die Umwandlung zwischen DTO und Domänenobjekt verantwortlich.
     *   **`adapter/out/persistence`:** Der Persistenz-Adapter. Implementiert die `out`-Ports und enthält die konkrete Logik zum Speichern und Laden von Daten mittels Panache.
     *   **`adapter/out/minizinc`:** Der `PlanErstellungService` agiert als Adapter, der die Anwendungsdaten in ein für MiniZinc verständliches Format übersetzt und den externen Prozess aufruft.
 
 ## Security
 
-- Rollen: `ADMIN`, `REFERENT`, `TEILNEHMER`.
+- Rollen: `ORGANISATOR`, `ADMINISTRATOR` (hat dieselben Rechte wie `ORGANISATOR`, zusätzlich
+  exklusiv Wartungshinweis und Verzeichnis-Import - Java-seitig `Administrator extends
+  Organisator`), `REFERENT`, `TEILNEHMER`.
 - Alle Endpunkte im `web`-Adapter werden mit `@RolesAllowed` oder `@Authenticated` abgesichert.
 - Identität liegt komplett bei **Keycloak**: Login, Passwörter und Passwort-Reset laufen über
   Keycloaks gehostete Login-Seite bzw. Account-Console, nicht mehr über einen eigenen Endpunkt.
@@ -64,8 +66,8 @@ kreyj/konfplan/
 
 - Einzige Stelle, die den Keycloak Admin REST Client (`quarkus-keycloak-admin-rest-client`)
   anspricht - `createUser`/`updateUser`/`resetPassword`/`deleteUser`, eingebunden in
-  `AdminService`, `TeilnehmerService`, `ReferentService` an jeder Stelle, die früher direkt einen
-  `passwordHash` gesetzt hat.
+  `OrganisatorService`, `TeilnehmerService`, `ReferentService` an jeder Stelle, die früher direkt
+  einen `passwordHash` gesetzt hat.
 - Passwort-Konvention beim Anlegen: `Konfplan1!` (nicht-temporär) in Dev/Test, eine zufällige UUID
   (`temporary=true`, `requiredActions=["UPDATE_PASSWORD"]`) in Prod - Keycloak erzwingt dort eine
   Passwortänderung beim ersten Login.
@@ -73,18 +75,18 @@ kreyj/konfplan/
   mind. 8 Zeichen, je mind. ein Groß-/Kleinbuchstabe, eine Ziffer, ein Sonderzeichen - gilt für
   jedes neu gesetzte Passwort, nicht rückwirkend.
 
-### Admin-Konten ohne E-Mail (Lockout-Schutz)
+### Organisator-Konten ohne E-Mail (Lockout-Schutz)
 
 - Keycloaks Passwort-Reset-Flow braucht eine E-Mail-Adresse (der Reset-Link wird dorthin
-  verschickt). Für `REFERENT`/`TEILNEHMER` gibt es einen übergeordneten `ADMIN`, der das Passwort
-  notfalls per Admin-REST-API zurücksetzen kann - für `ADMIN`-Konten selbst gibt es keine
-  übergeordnete Instanz. Ein `ADMIN` ohne E-Mail wäre bei einem vergessenen Passwort
-  **permanent** ausgesperrt.
-- **Prävention:** `AdminService#createUser` und `#updateUser` lehnen es ab (`BusinessException` /
-  `UpdateNutzerException`), eine `Admin`-E-Mail-Adresse leer zu setzen oder ein Admin-Konto ohne
-  E-Mail anzulegen.
-- **Recovery (Rettungsweg für bereits bestehende Konten ohne E-Mail):** `AdminService#resetPassword`
-  (`POST /api/admin/nutzer/{id}/reset-password`) setzt das Passwort eines beliebigen Nutzers direkt
-  in Keycloak, ohne E-Mail-Bestätigung - ein anderer `ADMIN` kann damit ein ausgesperrtes
-  Admin-Konto wiederherstellen. Voraussetzung ist, dass mindestens ein zweiter Admin noch Zugriff
-  hat.
+  verschickt). Für `REFERENT`/`TEILNEHMER` gibt es einen übergeordneten `ORGANISATOR`/
+  `ADMINISTRATOR`, der das Passwort notfalls per Organisator-REST-API zurücksetzen kann - für
+  `ORGANISATOR`/`ADMINISTRATOR`-Konten selbst gibt es keine übergeordnete Instanz. Ein solches
+  Konto ohne E-Mail wäre bei einem vergessenen Passwort **permanent** ausgesperrt.
+- **Prävention:** `OrganisatorService#createUser` und `#updateUser` lehnen es ab
+  (`BusinessException` / `UpdateNutzerException`), die E-Mail-Adresse eines `Organisator`- (bzw.
+  `Administrator`-)Kontos leer zu setzen oder ein solches Konto ohne E-Mail anzulegen.
+- **Recovery (Rettungsweg für bereits bestehende Konten ohne E-Mail):**
+  `OrganisatorService#resetPassword` (`POST /api/organisator/nutzer/{id}/reset-password`) setzt
+  das Passwort eines beliebigen Nutzers direkt in Keycloak, ohne E-Mail-Bestätigung - ein anderer
+  Organisator/Administrator kann damit ein ausgesperrtes Konto wiederherstellen. Voraussetzung
+  ist, dass mindestens ein zweiter Organisator/Administrator noch Zugriff hat.

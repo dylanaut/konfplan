@@ -41,7 +41,7 @@ class OnboardingStatusResourceTest extends DatabaseCleaner {
     @TestSecurity(user = "admin", roles = "ORGANISATOR")
     void getOnboardingStatus_teilnehmerHatSortierteGruppen_adminHatKeine() {
         given()
-            .when().get("/api/admin/onboarding-status")
+            .when().get("/api/organisator/onboarding-status")
             .then().statusCode(200)
             .body("find { it.loginName == 'gruppen.teilnehmer' }.gruppen", equalTo(List.of("Anton", "Zebra")))
             .body("find { it.loginName == 'ohne.gruppen.admin' }.gruppen", empty())
@@ -53,7 +53,7 @@ class OnboardingStatusResourceTest extends DatabaseCleaner {
     @TestSecurity(user = "teilnehmer", roles = "TEILNEHMER")
     void getOnboardingStatus_alsNichtAdmin_verboten() {
         given()
-            .when().get("/api/admin/onboarding-status")
+            .when().get("/api/organisator/onboarding-status")
             .then().statusCode(403);
     }
 }

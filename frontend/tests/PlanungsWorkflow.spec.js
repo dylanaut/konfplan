@@ -22,13 +22,13 @@ let nutzer;
 let vortraege;
 let slots;
 
-const ADMIN = { id: 1, firstName: 'Anna', lastName: 'Admin', email: 'admin@test.de', role: 'ORGANISATOR', isActive: true };
+const ORGANISATOR_USER = { id: 1, firstName: 'Anna', lastName: 'Admin', email: 'admin@test.de', role: 'ORGANISATOR', isActive: true };
 
 function resetState() {
   nextId = 1000;
   veranstaltungen = [];
   gebaeude = [];
-  nutzer = [ADMIN];
+  nutzer = [ORGANISATOR_USER];
   vortraege = [];
   slots = [];
 }
@@ -138,7 +138,7 @@ test('Vollständiger Workflow: Veranstaltung -> Gebäude -> Slots -> Personen ->
   await page.getByRole('button', { name: '+ Neu', exact: true }).click();
   await page.locator('label:has-text("Name der Veranstaltung") + input').fill('Test Event 2025');
   await page.locator('label:has-text("Beginnt am") + input').fill('2025-05-20T09:00');
-  await page.getByLabel(`${ADMIN.firstName} ${ADMIN.lastName}`).check();
+  await page.getByLabel(`${ORGANISATOR_USER.firstName} ${ORGANISATOR_USER.lastName}`).check();
   await page.getByRole('button', { name: 'Speichern' }).click();
   await expect(page.locator('td:has-text("Test Event 2025")')).toBeVisible();
 
