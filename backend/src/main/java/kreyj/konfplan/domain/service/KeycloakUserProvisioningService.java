@@ -195,4 +195,25 @@ public class KeycloakUserProvisioningService {
         RoleRepresentation role = keycloak.realm(realm).roles().get(roleName).toRepresentation();
         keycloak.realm(realm).users().get(keycloakId).roles().realmLevel().add(List.of(role));
     }
+
+
+    /**
+     * Wechselt die Keycloak-Realm-Rolle eines Nutzers (entfernt die alte, weist die neue zu) -
+     * fuer die Organisator&lt;-&gt;Administrator-Umstufung im Organisatoren-Tab. Anders als
+     * {@link #assignRealmRole} (nur additiv, fuer die Erstanlage) muss hier zwingend auch die
+     * alte Rolle entfernt werden, sonst haette der Nutzer in Keycloak am Ende beide Rollen
+     * gleichzeitig, obwohl die App bewusst kein Composite-Rollen-Modell nutzt.
+     */
+    public void changeRealmRole(Nutzer nutzer, String oldRoleName, String newRoleName) {
+        if (null == nutzer.getKeycloakId()) {
+            throw new KeycloakProvisioningException("Nutzer '" + nutzer.getLoginName() + "' hat keinen Keycloak-Account.");
+        }
+        var rolesResource = keycloak.realm(realm).roles();
+        RoleRepresentation oldRole = rolesResource.get(oldRoleName).toRepresentation();
+        RoleRepresentation newRole = rolesResource.get(newRoleName).toRepresentation();
+
+        var userRoles = keycloak.realm(realm).users().get(nutzer.getKeycloakId()).roles().realmLevel();
+        userRoles.remove(List.of(oldRole));
+        userRoles.add(List.of(newRole));
+    }
 }

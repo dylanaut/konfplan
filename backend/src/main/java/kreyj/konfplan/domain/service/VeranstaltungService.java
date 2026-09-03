@@ -8,6 +8,7 @@ import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.VeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.VeranstaltungCsvDto;
 import kreyj.konfplan.application.port.in.VeranstaltungServiceInterface;
+import kreyj.konfplan.domain.exception.VeranstaltungException;
 import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Nutzer;
@@ -112,6 +113,12 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
                     v.addNutzer(a);
                 }
             }
+        }
+
+        // Gilt unabhaengig davon, ob organisatorIds im Request-Body ueberhaupt vorkam: eine
+        // Veranstaltung ohne jeden Organisator waere fuer niemanden mehr verwaltbar (Deadlock).
+        if (v.organisatoren().isEmpty()) {
+            throw new VeranstaltungException("Veranstaltung muss mindestens eine/n Organisator/in haben.");
         }
 
         if (null == dto.id) {

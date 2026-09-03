@@ -10,6 +10,8 @@ import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.domain.exception.CreateVortragException;
 import kreyj.konfplan.domain.exception.UpdateNutzerException;
 import kreyj.konfplan.domain.exception.UpdateVortragException;
+import kreyj.konfplan.persistence.Administrator;
+import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Nutzer;
@@ -328,5 +330,130 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         verify(keycloakUserProvisioningService, never()).createUser(any());
 
         Files.deleteIfExists(csv);
+    }
+
+
+    private Administrator persistedAdministrator(String loginName) {
+        Administrator administrator = new Administrator();
+        administrator.assignLoginName(loginName);
+        administrator.setEmail(loginName + "@example.com");
+        administrator.persist();
+        return administrator;
+    }
+
+
+    @Test
+    @Transactional
+    public void changeRole_organisatorZuAdministrator_succeeds() {
+        NutzerDto updated = organisatorService.changeRole(testUserId, "ADMINISTRATOR");
+
+        assertThat(updated.role).isEqualTo("ADMINISTRATOR");
+        assertThat(Nutzer.<Nutzer>findById(testUserId)).isInstanceOf(Administrator.class);
+    }
+
+
+    @Test
+    @Transactional
+    public void changeRole_letzterAdministratorHerabstufen_wirdAbgelehnt() {
+        Administrator admin = persistedAdministrator("einziger.admin");
+
+        assertThatExceptionOfType(UpdateNutzerException.class)
+            .isThrownBy(() -> organisatorService.changeRole(admin.getId(), "ORGANISATOR"));
+
+        assertThat(Nutzer.<Nutzer>findById(admin.getId())).isInstanceOf(Administrator.class);
+    }
+
+
+    @Test
+    @Transactional
+    public void changeRole_administratorHerabstufenMitZweitemAdmin_succeeds() {
+        Administrator admin1 = persistedAdministrator("admin.eins");
+        persistedAdministrator("admin.zwei");
+
+        NutzerDto updated = organisatorService.changeRole(admin1.getId(), "ORGANISATOR");
+
+        assertThat(updated.role).isEqualTo("ORGANISATOR");
+        Nutzer reloaded = Nutzer.findById(admin1.getId());
+        assertThat(reloaded).isNotInstanceOf(Administrator.class);
+        assertThat(reloaded).isInstanceOf(Organisator.class);
+    }
+
+
+    @Test
+    @Transactional
+    public void deleteUser_letzterAdministrator_wirdAbgelehnt() {
+        Administrator admin = persistedAdministrator("letzter.admin");
+
+        assertThatExceptionOfType(BusinessException.class)
+            .isThrownBy(() -> organisatorService.deleteUser(admin.getId()));
+
+        assertThat(Nutzer.<Nutzer>findById(admin.getId())).isNotNull();
+    }
+
+
+    @Test
+    @Transactional
+    public void deleteUser_administratorMitZweitemAdmin_succeeds() {
+        Administrator admin1 = persistedAdministrator("admin.a");
+        persistedAdministrator("admin.b");
+
+        boolean deleted = organisatorService.deleteUser(admin1.getId());
+
+        assertThat(deleted).isTrue();
+        assertThat(Nutzer.<Nutzer>findById(admin1.getId())).isNull();
+    }
+
+
+    @Test
+    @Transactional
+    public void deleteUser_einzigerOrganisatorEinerVeranstaltung_wirdAbgelehnt() {
+        Organisator organisator = Nutzer.findById(testUserId);
+        Veranstaltung v = Veranstaltung.findById(veranstaltung.getId());
+        organisator.addVeranstaltung(v);
+        v.persistAndFlush();
+
+        assertThatExceptionOfType(BusinessException.class)
+            .isThrownBy(() -> organisatorService.deleteUser(testUserId));
+
+        assertThat(Nutzer.<Nutzer>findById(testUserId)).isNotNull();
+    }
+
+
+    @Test
+    @Transactional
+    public void deleteUser_organisatorMitZweitemOrganisatorDerVeranstaltung_succeeds() {
+        Organisator organisator = Nutzer.findById(testUserId);
+        Veranstaltung v = Veranstaltung.findById(veranstaltung.getId());
+        organisator.addVeranstaltung(v);
+        Organisator zweiterOrganisator = new Organisator();
+        zweiterOrganisator.assignLoginName("zweiter.organisator");
+        zweiterOrganisator.setEmail("zweiter.organisator@example.com");
+        zweiterOrganisator.persist();
+        zweiterOrganisator.addVeranstaltung(v);
+        v.persistAndFlush();
+
+        boolean deleted = organisatorService.deleteUser(testUserId);
+
+        assertThat(deleted).isTrue();
+        assertThat(Nutzer.<Nutzer>findById(testUserId)).isNull();
+    }
+
+
+    @Test
+    @Transactional
+    public void updateUser_entferntEinzigenOrganisatorAusVeranstaltung_wirdAbgelehnt() {
+        Organisator organisator = Nutzer.findById(testUserId);
+        Veranstaltung v = Veranstaltung.findById(veranstaltung.getId());
+        organisator.addVeranstaltung(v);
+        v.persistAndFlush();
+
+        NutzerDto dto = NutzerDto.from(organisator);
+
+        assertThatExceptionOfType(UpdateNutzerException.class)
+            .isThrownBy(() -> organisatorService.updateUser(testUserId, dto, List.of()));
+
+        assertThat(Nutzer.<Organisator>findById(testUserId).getVeranstaltungen())
+            .extracting(IdEntity::getId)
+            .contains(v.getId());
     }
 }

@@ -767,6 +767,14 @@ const handleSaveUser = async (u) => {
   else return;
 
   try {
+    // Rollenwechsel (Organisator <-> Administrator) läuft über einen eigenen Endpunkt: die Rolle
+    // ist serverseitig die JPA-Diskriminatorspalte und kann nicht wie die übrigen Felder per
+    // normalem Update geändert werden (siehe OrganisatorService#changeRole).
+    const originalRole = selectedUser.value?.role;
+    if (u.id && originalRole && originalRole !== u.role
+        && (originalRole === 'ORGANISATOR' || originalRole === 'ADMINISTRATOR')) {
+      await api.put(`/api/organisator/nutzer/${u.id}/rolle`, { role: u.role });
+    }
     if (u.id) await api.put(`${endpoint}/${u.id}`, u);
     else await api.post(endpoint, u);
     showUserModal.value = false;
@@ -797,7 +805,7 @@ const deleteUser = async (id) => {
       if (selectedVid.value) await loadData();
       else await refreshAdmins();
     } catch (e) {
-      console.error('Fehler beim Löschen des Nutzers:', e);
+      alert("Fehler beim Löschen des Nutzers: " + extractErrorMessage(e));
     }
   }
 };
