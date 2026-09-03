@@ -15,7 +15,7 @@ import java.util.Comparator;
 import java.util.List;
 
 @Path("/api/neigungen")
-@RolesAllowed({"ADMIN", "REFERENT", "TEILNEHMER"})
+@RolesAllowed({"ORGANISATOR", "ADMINISTRATOR", "REFERENT", "TEILNEHMER"})
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "Neigungen", description = "Auflistung der verfügbaren Neigungen (fachliche/berufliche Ausrichtungen)")
 public class NeigungResource {

@@ -53,13 +53,13 @@ public class VeranstaltungImportService implements VeranstaltungImportServiceInt
     String basePath;
 
     private final GebaeudeService gebaeudeService;
-    private final AdminService adminService;
+    private final OrganisatorService adminService;
     private final VeranstaltungService veranstaltungService;
     private final ReferentService referentService;
     private final TeilnehmerService teilnehmerService;
 
 
-    public VeranstaltungImportService(GebaeudeService gebaeudeService, AdminService adminService,
+    public VeranstaltungImportService(GebaeudeService gebaeudeService, OrganisatorService adminService,
                                       VeranstaltungService veranstaltungService, ReferentService referentService,
                                       TeilnehmerService teilnehmerService) {
         this.gebaeudeService = gebaeudeService;
@@ -190,8 +190,8 @@ public class VeranstaltungImportService implements VeranstaltungImportServiceInt
 
         // 2. Organisatoren (Pflicht)
         Path organisatorenCsv = dir.resolve("organisatoren.csv");
-        int anzahlAdmins = adminService.importAdminsFromCsv(organisatorenCsv);
-        requirePositive(organisatorenCsv, anzahlAdmins, "organisatoren.csv enthielt keine gültigen Admin-Zeilen.");
+        int anzahlOrganisatoren = adminService.importOrganisatorenFromCsv(organisatorenCsv);
+        requirePositive(organisatorenCsv, anzahlOrganisatoren, "organisatoren.csv enthielt keine gültigen Organisator-Zeilen.");
 
         // 3. Veranstaltung (Pflicht, genau eine Zeile)
         Path veranstaltungenCsv = dir.resolve("veranstaltungen.csv");

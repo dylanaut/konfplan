@@ -16,13 +16,13 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.VortragPrioDto;
-import kreyj.konfplan.adapter.in.web.dto.AdminPasswordResetDto;
+import kreyj.konfplan.adapter.in.web.dto.OrganisatorPasswordResetDto;
 import kreyj.konfplan.adapter.in.web.dto.ImportResultDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerPasswortZipRequestDto;
-import kreyj.konfplan.application.port.in.AdminServiceInterface;
+import kreyj.konfplan.application.port.in.OrganisatorServiceInterface;
 import kreyj.konfplan.domain.service.MailService;
 import kreyj.konfplan.domain.service.PrioritaetService;
 import kreyj.konfplan.domain.service.TeilnehmerPasswortZipResult;
@@ -44,14 +44,14 @@ import java.util.List;
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvIdL;
 
-@Path("/api/admin")
-@RolesAllowed("ADMIN")
+@Path("/api/organisator")
+@RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@Tag(name = "Admin", description = "Administrative Endpunkte für die Nutzer- und Veranstaltungsverwaltung")
-public class AdminResource {
+@Tag(name = "Organisator", description = "Administrative Endpunkte für die Nutzer- und Veranstaltungsverwaltung")
+public class OrganisatorResource {
 
-    private final AdminServiceInterface adminService;
+    private final OrganisatorServiceInterface organisatorService;
 
     private final PrioritaetService prioritaetService;
 
@@ -60,9 +60,9 @@ public class AdminResource {
     private final TeilnehmerPasswortZipService teilnehmerPasswortZipService;
 
 
-    public AdminResource(AdminServiceInterface adminService, PrioritaetService prioritaetService, MailService mailService,
+    public OrganisatorResource(OrganisatorServiceInterface organisatorService, PrioritaetService prioritaetService, MailService mailService,
                           TeilnehmerPasswortZipService teilnehmerPasswortZipService) {
-        this.adminService = adminService;
+        this.organisatorService = organisatorService;
         this.prioritaetService = prioritaetService;
         this.mailService = mailService;
         this.teilnehmerPasswortZipService = teilnehmerPasswortZipService;
@@ -71,9 +71,9 @@ public class AdminResource {
 
     @GET
     @Path("/nutzer")
-    @Operation(summary = "Alle Nutzer abrufen", description = "Gibt eine Liste aller Nutzer (Admins, Referenten, Teilnehmer) zurück.")
+    @Operation(summary = "Alle Nutzer abrufen", description = "Gibt eine Liste aller Nutzer (Organisatoren, Referenten, Teilnehmer) zurück.")
     public List<NutzerDto> getAllUsers() {
-        return adminService.getAllUsers();
+        return organisatorService.getAllUsers();
     }
 
 
@@ -81,7 +81,7 @@ public class AdminResource {
     @Path("/nutzer")
     @Operation(summary = "Neuen Nutzer erstellen", description = "Erstellt einen neuen Nutzer und sendet eine Bestätigungs-E-Mail.")
     public NutzerDto createUser(@RequestBody(description = "Die Daten des neuen Nutzers") NutzerDto dto) {
-        NutzerDto createdNutzerDto = adminService.createUser(dto, dto.veranstaltungIds);
+        NutzerDto createdNutzerDto = organisatorService.createUser(dto, dto.veranstaltungIds);
         // E-Mail nach erfolgreicher Erstellung senden
         Nutzer createdNutzer = Nutzer.findById(createdNutzerDto.id);
         if (null != createdNutzer) {
@@ -96,7 +96,7 @@ public class AdminResource {
     @Transactional
     @Operation(summary = "Einen Nutzer abrufen", description = "Ruft einen einzelnen Nutzer anhand seiner ID ab.")
     public Response getUser(@PathParam("id") Long id) {
-        Nutzer nutzer = adminService.findNutzer(id);
+        Nutzer nutzer = organisatorService.findNutzer(id);
 
         if (null == nutzer) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -111,7 +111,7 @@ public class AdminResource {
     @Operation(summary = "Nutzer aktualisieren", description = "Aktualisiert die Daten eines Nutzers.")
     public Response updateUser(@PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Nutzerdaten") NutzerDto dto) {
         try {
-            NutzerDto updateUser = adminService.updateUser(id, dto, dto.veranstaltungIds);
+            NutzerDto updateUser = organisatorService.updateUser(id, dto, dto.veranstaltungIds);
             return Response.ok().entity(updateUser).build();
         } catch (Exception e) {
             return Response.status(Response.Status.CONFLICT).entity(e.getMessage()).build();
@@ -126,7 +126,7 @@ public class AdminResource {
         Nutzer nutzerToDelete = Nutzer.findById(id); // Nutzer vor dem Löschen abrufen
 
         if (null != nutzerToDelete) {
-            adminService.deleteUser(id);
+            organisatorService.deleteUser(id);
         }
     }
 
@@ -134,8 +134,8 @@ public class AdminResource {
     @POST
     @Path("/nutzer/{id}/reset-password")
     @Operation(summary = "Passwort eines Nutzers zurücksetzen", description = "Setzt das Passwort eines beliebigen Nutzers direkt - Rettungsweg für Konten ohne (funktionierende) E-Mail-Adresse, die den Self-Service-Reset nicht nutzen können.")
-    public Response resetPassword(@PathParam("id") Long id, @RequestBody(description = "Das neue Passwort") AdminPasswordResetDto dto) {
-        boolean reset = adminService.resetPassword(id, dto.newPassword);
+    public Response resetPassword(@PathParam("id") Long id, @RequestBody(description = "Das neue Passwort") OrganisatorPasswordResetDto dto) {
+        boolean reset = organisatorService.resetPassword(id, dto.newPassword);
         if (!reset) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
@@ -169,7 +169,7 @@ public class AdminResource {
     @Operation(summary = "Nutzer zu Veranstaltung einladen", description = "Fügt einen Nutzer zu einer Veranstaltung hinzu.")
     public Response inviteUser(@PathParam("userId") Long userId, @PathParam("eventId") Long eventId) {
         try {
-            adminService.inviteUserToEvent(userId, eventId);
+            organisatorService.inviteUserToEvent(userId, eventId);
             return Response.ok("Nutzer erfolgreich eingeladen.").build();
         } catch (IllegalArgumentException e) {
             Log.error(e.getMessage(), e);
@@ -179,13 +179,13 @@ public class AdminResource {
 
 
     @POST
-    @Path("/admins/import")
+    @Path("/organisatoren/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @Operation(summary = "Admins importieren", description = "Importiert eine Liste von Admins aus einer CSV-Datei.")
-    public Response importAdmins(@RestForm("file") FileUpload file) {
+    @Operation(summary = "Organisatoren importieren", description = "Importiert eine Liste von Organisatoren aus einer CSV-Datei.")
+    public Response importOrganisatoren(@RestForm("file") FileUpload file) {
         try {
-            int count = adminService.importAdminsFromCsv(file.uploadedFile().toFile().toPath());
-            return Response.ok("Import erfolgreich: " + count + " Admins angelegt.").build();
+            int count = organisatorService.importOrganisatorenFromCsv(file.uploadedFile().toFile().toPath());
+            return Response.ok("Import erfolgreich: " + count + " Organisatoren angelegt.").build();
         } catch (Exception e) {
             Log.error(e.getMessage(), e);
             return Response.status(Response.Status.BAD_REQUEST).entity("Fehler: " + e.getMessage()).build();
@@ -199,7 +199,7 @@ public class AdminResource {
     @Operation(summary = "Prioritäten importieren", description = "Importiert Teilnehmer-Prioritäten für eine Veranstaltung aus einer CSV-Datei.")
     public Response importPrioritaeten(@PathParam("vid") Long vid, @RestForm("file") FileUpload file) {
         try {
-            int count = adminService.importTeilnehmerWvPriosFromCsv(file.uploadedFile().toFile().toPath(), vid);
+            int count = organisatorService.importTeilnehmerWvPriosFromCsv(file.uploadedFile().toFile().toPath(), vid);
             return Response.ok("Import erfolgreich: " + count + " Prioritäten importiert/aktualisiert.").build();
         } catch (Exception e) {
             Log.error(e.getMessage(), e);
@@ -214,7 +214,7 @@ public class AdminResource {
     @Operation(summary = "Teilnehmer-Verfügbarkeiten importieren", description = "Importiert Teilnehmer-Verfügbarkeiten für eine Veranstaltung aus einer CSV-Datei.")
     public Response importTeilnehmerVerfuegbarkeiten(@PathParam("vid") Long vid, @RestForm("file") FileUpload file) {
         try {
-            ImportResultDto result = adminService.importNutzerVerfuegbarkeitenFromCsv(file.uploadedFile().toFile().toPath(), Teilnehmer.class, vid);
+            ImportResultDto result = organisatorService.importNutzerVerfuegbarkeitenFromCsv(file.uploadedFile().toFile().toPath(), Teilnehmer.class, vid);
             return Response.ok(result).build();
         } catch (Exception e) {
             Log.error(e.getMessage(), e);
@@ -229,7 +229,7 @@ public class AdminResource {
     @Operation(summary = "Referenten-Verfügbarkeiten importieren", description = "Importiert Referenten-Verfügbarkeiten für eine Veranstaltung aus einer CSV-Datei.")
     public Response importReferentenVerfuegbarkeiten(@PathParam("vid") Long vid, @RestForm("file") FileUpload file) {
         try {
-            ImportResultDto result = adminService.importNutzerVerfuegbarkeitenFromCsv(file.uploadedFile().toFile().toPath(), Referent.class, vid);
+            ImportResultDto result = organisatorService.importNutzerVerfuegbarkeitenFromCsv(file.uploadedFile().toFile().toPath(), Referent.class, vid);
             return Response.ok(result).build();
         } catch (Exception e) {
             Log.error(e.getMessage(), e);
@@ -244,7 +244,7 @@ public class AdminResource {
     @Operation(summary = "Raum-Verfügbarkeiten importieren", description = "Importiert Raum-Verfügbarkeiten für eine Veranstaltung aus einer CSV-Datei.")
     public Response importRaumVerfuegbarkeiten(@PathParam("vid") Long vid, @RestForm("file") FileUpload file) {
         try {
-            ImportResultDto result = adminService.importRaumVerfuegbarkeitenFromCsv(file.uploadedFile().toFile().toPath(), vid);
+            ImportResultDto result = organisatorService.importRaumVerfuegbarkeitenFromCsv(file.uploadedFile().toFile().toPath(), vid);
             return Response.ok(result).build();
         } catch (Exception e) {
             Log.error(e.getMessage(), e);
@@ -285,7 +285,7 @@ public class AdminResource {
     @Path("/veranstaltungen/{vid}/raeume/verfuegbarkeiten")
     @Operation(summary = "Raum-Verfügbarkeiten abrufen", description = "Ruft die Verfügbarkeiten (Belegungen) aller Räume für eine Veranstaltung ab.")
     public List<RaumVerfuegbarkeitDto> getRaumVerfuegbarkeiten(@PathParam("vid") Long vid) {
-        return adminService.getRaumVerfuegbarkeiten(vid);
+        return organisatorService.getRaumVerfuegbarkeiten(vid);
     }
 
 
@@ -350,7 +350,7 @@ public class AdminResource {
     @Operation(summary = "Alle Gruppen einer Veranstaltung abrufen")
     public Response getGruppen(@PathParam("vid") Long vid) {
         try {
-            return Response.ok(adminService.getGruppen(vid)).build();
+            return Response.ok(organisatorService.getGruppen(vid)).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.NOT_FOUND).entity(e.getMessage()).build();
         }
@@ -362,7 +362,7 @@ public class AdminResource {
     @Operation(summary = "Eine neue Gruppe zu einer Veranstaltung hinzufügen")
     public Response createGruppe(@PathParam("vid") Long vid, @RequestBody(description = "Der Name der neuen Gruppe") String gruppenName) {
         try {
-            adminService.createGruppe(vid, gruppenName);
+            organisatorService.createGruppe(vid, gruppenName);
             return Response.status(Response.Status.CREATED).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
@@ -375,7 +375,7 @@ public class AdminResource {
     @Operation(summary = "Eine Gruppe umbenennen")
     public Response renameGruppe(@PathParam("vid") Long vid, @QueryParam("alterName") String alterName, @QueryParam("neuerName") String neuerName) {
         try {
-            adminService.renameGruppe(vid, alterName, neuerName);
+            organisatorService.renameGruppe(vid, alterName, neuerName);
             return Response.noContent().build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
@@ -388,7 +388,7 @@ public class AdminResource {
     @Operation(summary = "Eine Gruppe aus einer Veranstaltung löschen")
     public Response deleteGruppe(@PathParam("vid") Long vid, @PathParam("gruppenName") String gruppenName) {
         try {
-            adminService.deleteGruppe(vid, gruppenName);
+            organisatorService.deleteGruppe(vid, gruppenName);
             return Response.noContent().build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();

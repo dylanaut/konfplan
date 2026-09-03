@@ -276,10 +276,10 @@ public class Veranstaltung extends VersionedEntity {
 
 
     @NotEmpty(message = "Veranstaltung muss mindestens eine/n Organisator/in haben")
-    public List<Admin> organisatoren() {
+    public List<Organisator> organisatoren() {
         return nutzer.stream()
-                .filter(u -> u instanceof Admin)
-                .map(u -> (Admin) u)
+                .filter(u -> u instanceof Organisator)
+                .map(u -> (Organisator) u)
                 .toList();
     }
 

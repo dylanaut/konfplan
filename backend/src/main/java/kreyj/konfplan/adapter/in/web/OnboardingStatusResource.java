@@ -13,7 +13,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import java.util.List;
 
 @Path("/api/admin/onboarding-status")
-@RolesAllowed("ADMIN")
+@RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "Onboarding-Status", description = "Übersicht, welche Nutzer noch kein echtes eigenes Passwort vergeben haben")
 public class OnboardingStatusResource {

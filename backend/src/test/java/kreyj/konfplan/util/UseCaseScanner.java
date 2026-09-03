@@ -7,7 +7,7 @@ import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
-import kreyj.konfplan.adapter.in.web.AdminResource;
+import kreyj.konfplan.adapter.in.web.OrganisatorResource;
 import kreyj.konfplan.adapter.rest.KalenderResource;
 
 import java.io.File;
@@ -40,10 +40,10 @@ class UseCaseScanner {
 
     // KalenderResource liegt bewusst/versehentlich in einem eigenen Package (adapter.rest statt
     // adapter.in.web wie alle anderen Resource-Klassen) - ohne diesen zweiten Eintrag fehlt sie
-    // in der generierten Dokumentation komplett (live verifiziert: mit nur AdminResource.class
+    // in der generierten Dokumentation komplett (live verifiziert: mit nur OrganisatorResource.class
     // als Package-Anker tauchten ihre 3 Endpunkte im Output nicht auf).
     private static final List<String> BASE_PACKAGES = List.of(
-            AdminResource.class.getPackage().getName(),
+            OrganisatorResource.class.getPackage().getName(),
             KalenderResource.class.getPackage().getName()
     );
 
@@ -62,7 +62,7 @@ class UseCaseScanner {
         adoc.append("Per Reflection aus den `@Path`/`@GET`/.../`@RolesAllowed`-Annotationen der REST-Resource-\n");
         adoc.append("Klassen erzeugt (siehe `UseCaseScanner.java`) - jeder Endpunkt ist ein UseCase-Knoten im\n");
         adoc.append("Diagramm unten. Manuell gepflegte Querverweise, welches Benutzerhandbuch welchen UseCase\n");
-        adoc.append("beschreibt, finden sich in den Benutzerhandbüchern selbst (Admin/Referent/Teilnehmer) -\n");
+        adoc.append("beschreibt, finden sich in den Benutzerhandbüchern selbst (Organisator/Referent/Teilnehmer) -\n");
         adoc.append("diese Datei wird bei jedem Lauf komplett überschrieben, daher hier bewusst keine manuell\n");
         adoc.append("gepflegten Inhalte. Neu erzeugen: siehe Kommentar am Kopf von `UseCaseScanner.java`.\n\n");
 

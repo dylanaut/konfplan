@@ -9,7 +9,7 @@ import io.quarkus.test.security.TestSecurity;
 import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.Nutzer;
@@ -51,7 +51,7 @@ class NutzerPersistenceTest extends DatabaseCleaner {
         g.setTyp(Gebaeudetyp.SCHULE);
         g.persist();
 
-        Admin admin = new Admin();
+        Organisator admin = new Organisator();
         admin.assignLoginName("organisator");
         admin.setEmail("organisator@test.de");
         admin.persist();
@@ -69,7 +69,7 @@ class NutzerPersistenceTest extends DatabaseCleaner {
 
 
     @Test
-    @TestSecurity(user = "admin@test.de", roles = "ADMIN")
+    @TestSecurity(user = "admin@test.de", roles = "ORGANISATOR")
     void testVeranstaltungPresent() {
         given()
                 .when().get("/{vid}", testVid)
@@ -81,7 +81,7 @@ class NutzerPersistenceTest extends DatabaseCleaner {
 
 
     @Test
-    @TestSecurity(user = "admin@test.de", roles = "ADMIN")
+    @TestSecurity(user = "admin@test.de", roles = "ORGANISATOR")
     void testPersistReferentHierarchical() {
         String json = """
                 {
@@ -110,7 +110,7 @@ class NutzerPersistenceTest extends DatabaseCleaner {
 
 
     @Test
-    @TestSecurity(user = "admin@test.de", roles = "ADMIN")
+    @TestSecurity(user = "admin@test.de", roles = "ORGANISATOR")
     void testPersistTeilnehmerHierarchical() {
         String json = """
                 {

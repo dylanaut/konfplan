@@ -5,7 +5,7 @@ import io.quarkus.mailer.MailTemplate;
 import io.quarkus.mailer.Mailer;
 import io.quarkus.qute.Location;
 import jakarta.enterprise.context.ApplicationScoped;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -50,7 +50,7 @@ public class MailService {
     }
 
 
-    public void sendVortragsRegistrierung(Admin organisator, Veranstaltung v, Referent referent, Vortrag vortrag, boolean isAdded) {
+    public void sendVortragsRegistrierung(Organisator organisator, Veranstaltung v, Referent referent, Vortrag vortrag, boolean isAdded) {
         if (organisator.getEmail() == null) {
             return;
         }
@@ -164,7 +164,7 @@ public class MailService {
 
     private String senderEmail(Veranstaltung v) {
         return v.organisatoren().stream()
-            .map(Admin::getEmail)
+            .map(Organisator::getEmail)
             .filter(Objects::nonNull)
             .findFirst()
             .orElse(adminEmail);

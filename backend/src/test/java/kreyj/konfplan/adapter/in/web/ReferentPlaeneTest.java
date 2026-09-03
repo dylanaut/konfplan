@@ -9,7 +9,7 @@ import io.quarkus.test.security.oidc.Claim;
 import io.quarkus.test.security.oidc.OidcSecurity;
 import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import jakarta.inject.Inject;
-import kreyj.konfplan.domain.service.AdminService;
+import kreyj.konfplan.domain.service.OrganisatorService;
 import kreyj.konfplan.domain.service.GebaeudeService;
 import kreyj.konfplan.domain.service.ReferentService;
 import kreyj.konfplan.domain.service.TeilnehmerService;
@@ -44,7 +44,7 @@ class ReferentPlaeneTest extends DatabaseCleaner {
     @Inject
     GebaeudeService gebaeudeService;
     @Inject
-    AdminService adminService;
+    OrganisatorService adminService;
     @Inject
     VeranstaltungService veranstaltungService;
     @Inject
@@ -61,7 +61,7 @@ class ReferentPlaeneTest extends DatabaseCleaner {
         Path basePath = Paths.get("src/test/resources/csv_import/medium");
 
         gebaeudeService.importGebaeudeWithRaeumeFromCsv(basePath.resolve("gebaeude.csv"));
-        adminService.importAdminsFromCsv(basePath.resolve("organisatoren.csv"));
+        adminService.importOrganisatorenFromCsv(basePath.resolve("organisatoren.csv"));
         veranstaltungService.importFromCsv(basePath.resolve("veranstaltungen.csv"));
 
         Veranstaltung event = QuarkusTransaction.requiringNew().call(() ->

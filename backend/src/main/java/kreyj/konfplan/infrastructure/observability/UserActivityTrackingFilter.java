@@ -21,7 +21,7 @@ import java.util.List;
 @Priority(Priorities.AUTHENTICATION + 100)
 public class UserActivityTrackingFilter implements ContainerRequestFilter {
 
-    private static final List<String> ROLES = List.of("ADMIN", "REFERENT", "TEILNEHMER");
+    private static final List<String> ROLES = List.of("ORGANISATOR", "ADMINISTRATOR", "REFERENT", "TEILNEHMER");
 
     @Inject
     UserActivityTracker tracker;

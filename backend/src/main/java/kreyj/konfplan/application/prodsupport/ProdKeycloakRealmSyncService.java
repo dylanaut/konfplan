@@ -10,6 +10,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.AuthenticationManagementResource;
 import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.admin.client.resource.RoleResource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RequiredActionProviderRepresentation;
@@ -41,6 +42,12 @@ public class ProdKeycloakRealmSyncService {
     private static final long FAILED_LOGIN_EVENTS_EXPIRATION_SECONDS = 60L * 60 * 24 * 30;
     private static final String REALM_MANAGEMENT_CLIENT_ID = "realm-management";
     private static final String VIEW_EVENTS_ROLE = "view-events";
+    private static final String LEGACY_ADMIN_ROLE = "ADMIN";
+    private static final String ORGANISATOR_ROLE = "ORGANISATOR";
+    private static final String ORGANISATOR_ROLE_DESCRIPTION = "Organisator";
+    private static final String ADMINISTRATOR_ROLE = "ADMINISTRATOR";
+    private static final String ADMINISTRATOR_ROLE_DESCRIPTION =
+        "Administrator (Organisator mit exklusiven Rechten für Wartungshinweis und Verzeichnis-Import)";
 
     @Inject
     Keycloak keycloak;
@@ -72,6 +79,12 @@ public class ProdKeycloakRealmSyncService {
 
     void onStart(@Observes StartupEvent event) {
         RealmResource realmResource = keycloak.realm(realm);
+
+        try {
+            syncRoles(realmResource);
+        } catch (Exception e) {
+            Log.warn("Konnte die Keycloak-Realm-Rollen (ORGANISATOR/ADMINISTRATOR) nicht synchronisieren.", e);
+        }
 
         try {
             syncSmtpServer(realmResource);
@@ -139,7 +152,7 @@ public class ProdKeycloakRealmSyncService {
     /**
      * Erzwingt eine Mindest-Passwortstaerke (Laenge 8, je mind. 1 Gross-/Kleinbuchstabe, 1 Ziffer,
      * 1 Sonderzeichen) fuer jedes neu gesetzte Passwort - egal ob per Selbst-Reset ueber den
-     * "Erstanmeldung / Passwort vergessen"-Link oder durch einen Admin im KonfPlan-Adminbereich
+     * "Erstanmeldung / Passwort vergessen"-Link oder durch einen Organisator im KonfPlan-Organisatorbereich
      * (beide Wege laufen ueber Keycloaks Credential-API, die die Realm-Policy serverseitig prueft).
      * Wirkt NICHT rueckwirkend auf bereits gesetzte Passwoerter - nur beim naechsten Setzen.
      */
@@ -197,6 +210,37 @@ public class ProdKeycloakRealmSyncService {
             .roles().clientLevel(realmManagementClient.getId())
             .add(List.of(viewEventsRole));
         Log.infof("Service-Account-Rolle '%s' (%s) zugewiesen.", VIEW_EVENTS_ROLE, REALM_MANAGEMENT_CLIENT_ID);
+    }
+
+
+    /**
+     * Benennt die Realm-Rolle {@code ADMIN} bei bereits bestehenden Deployments idempotent in
+     * {@code ORGANISATOR} um (Keycloak referenziert Rollen intern ueber ihre ID, nicht ueber den
+     * Namen - bestehende Nutzer-Rollenzuweisungen bleiben dadurch erhalten) und legt die neue
+     * Rolle {@code ADMINISTRATOR} an, falls sie noch nicht existiert. Auf frisch importierten
+     * Realms ist beides bereits ueber {@code deploy/keycloak-realm.template.json} korrekt, hier
+     * greift nur der Rename-Zweig nicht (kein {@code ADMIN} mehr vorhanden).
+     */
+    private void syncRoles(RealmResource realmResource) {
+        List<String> roleNames = realmResource.roles().list().stream().map(RoleRepresentation::getName).toList();
+
+        if (roleNames.contains(LEGACY_ADMIN_ROLE) && !roleNames.contains(ORGANISATOR_ROLE)) {
+            RoleResource legacyAdminRole = realmResource.roles().get(LEGACY_ADMIN_ROLE);
+            RoleRepresentation legacyAdminRep = legacyAdminRole.toRepresentation();
+            legacyAdminRep.setName(ORGANISATOR_ROLE);
+            legacyAdminRep.setDescription(ORGANISATOR_ROLE_DESCRIPTION);
+            legacyAdminRole.update(legacyAdminRep);
+            Log.infof("Keycloak-Realm-Rolle '%s' zu '%s' umbenannt (bestehende Nutzer-Zuweisungen bleiben erhalten).", LEGACY_ADMIN_ROLE, ORGANISATOR_ROLE);
+            roleNames = realmResource.roles().list().stream().map(RoleRepresentation::getName).toList();
+        }
+
+        if (!roleNames.contains(ADMINISTRATOR_ROLE)) {
+            RoleRepresentation administratorRole = new RoleRepresentation();
+            administratorRole.setName(ADMINISTRATOR_ROLE);
+            administratorRole.setDescription(ADMINISTRATOR_ROLE_DESCRIPTION);
+            realmResource.roles().create(administratorRole);
+            Log.infof("Keycloak-Realm-Rolle '%s' angelegt.", ADMINISTRATOR_ROLE);
+        }
     }
 
 

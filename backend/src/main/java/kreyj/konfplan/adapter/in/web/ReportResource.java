@@ -52,7 +52,7 @@ public class ReportResource {
     @GET
     @Path("/{vid}/laufzettel-alle-data")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für alle Laufzettel (JSON)")
     public Response getAlleLaufzettelData(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
@@ -70,7 +70,7 @@ public class ReportResource {
     @GET
     @Path("/{vid}/laufzettel-alle-referenten-data")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für alle Laufzettel der Referenten (JSON)")
     public Response getAlleLaufzettelReferentenData(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
@@ -88,7 +88,7 @@ public class ReportResource {
     @GET
     @Path("/{vid}/teilnehmer/{tid}/laufzettel-data")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"TEILNEHMER", "ADMIN"})
+    @RolesAllowed({"TEILNEHMER", "ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für Teilnehmer-Laufzettel (JSON)")
     public Response getLaufzettelTeilnehmerData(@PathParam("vid") Long vid, @PathParam("tid") Long tid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
@@ -96,7 +96,7 @@ public class ReportResource {
         if (null == teilnehmer || null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        if (!jwt.getGroups().contains("ADMIN") && !teilnehmer.getLoginName().equals(jwt.getName())) {
+        if (!(jwt.getGroups().contains("ORGANISATOR") || jwt.getGroups().contains("ADMINISTRATOR")) && !teilnehmer.getLoginName().equals(jwt.getName())) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
         List<ZuweisungDto> plan = planService.getPlanFuerTeilnehmer(teilnehmer, veranstaltung);
@@ -107,7 +107,7 @@ public class ReportResource {
     @GET
     @Path("/{vid}/referent/{rid}/laufzettel-data")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"REFERENT", "ADMIN"})
+    @RolesAllowed({"REFERENT", "ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für Referenten-Laufzettel (JSON)")
     public Response getLaufzettelReferentData(@PathParam("vid") Long vid, @PathParam("rid") Long refId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
@@ -115,7 +115,7 @@ public class ReportResource {
         if (null == referent || null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        if (!jwt.getGroups().contains("ADMIN") && !referent.getLoginName().equals(jwt.getName())) {
+        if (!(jwt.getGroups().contains("ORGANISATOR") || jwt.getGroups().contains("ADMINISTRATOR")) && !referent.getLoginName().equals(jwt.getName())) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
         List<ReferentVortragDto> plan = planService.getPlanFuerReferent(referent, veranstaltung);
@@ -126,7 +126,7 @@ public class ReportResource {
     @GET
     @Path("/{vid}/raum/{rid}/belegungsplan-data")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für Raumbelegungsplan (JSON)")
     public Response getRaumbelegungsplanData(@PathParam("vid") Long vid, @PathParam("rid") Long rid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
@@ -142,7 +142,7 @@ public class ReportResource {
     @GET
     @Path("/{vid}/raeume-data")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für Übersicht aller Räume (JSON)")
     public Response getUebersichtRaeumeData(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
@@ -156,7 +156,7 @@ public class ReportResource {
     @GET
     @Path("/{vid}/raumschilder-data")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für alle Raumschilder (JSON)")
     public Response getAlleRaumschilderData(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
@@ -173,7 +173,7 @@ public class ReportResource {
     @GET
     @Path("/{vid}/freie-slots-referenten-data")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für freie Slots der Referenten (JSON)")
     public Response getFreieSlotsReferentenData(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
@@ -189,7 +189,7 @@ public class ReportResource {
     @GET
     @Path("/{vid}/freie-slots-teilnehmer-data")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Transactional
     @Operation(summary = "Daten für freie Slots der Teilnehmer (JSON)")
     public Response getFreieSlotsTeilnehmerData(@PathParam("vid") Long vid) {
@@ -206,7 +206,7 @@ public class ReportResource {
     @GET
     @Path("/{vid}/abstimmungsfragebogen-data")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für Abstimmungsfragebögen aller Teilnehmer (JSON)")
     public Response getAbstimmungsfragebogenData(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
@@ -220,8 +220,8 @@ public class ReportResource {
     @GET
     @Path("/{vid}/stundenplan-data")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed("ADMIN")
-    @Operation(summary = "Daten für Admin-Dashboard / Tab ErgebnisVue")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
+    @Operation(summary = "Daten für Organisator-Dashboard / Tab ErgebnisVue")
     public Response getStundenplanData(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (null == veranstaltung) {
@@ -234,7 +234,7 @@ public class ReportResource {
     @GET
     @Path("/{vid}/teilnehmer-dashboard-data")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"ADMIN", "TEILNEHMER"})
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR", "TEILNEHMER"})
     @Operation(summary = "Daten für Teilnehmer-Dashboard / Tab ErgebnisVue")
     public Response getTeilnehmerDashboardData(@PathParam("vid") Long vid) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
@@ -248,7 +248,7 @@ public class ReportResource {
     @GET
     @Path("/{vid}/prios-dashboard-data")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für Prioritäten-Dashboard / Tab ErgebnisVue")
     @Transactional
     public Response getPriosDashboardData(@PathParam("vid") Long vid) {

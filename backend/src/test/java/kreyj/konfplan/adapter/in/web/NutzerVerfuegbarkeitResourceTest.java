@@ -57,7 +57,7 @@ class NutzerVerfuegbarkeitResourceTest extends DatabaseCleaner {
 
 
     @Test
-    @TestSecurity(user = "admin@test.de", roles = "ADMIN")
+    @TestSecurity(user = "admin@test.de", roles = "ORGANISATOR")
     void testVerfuegbarkeitCreatedOnAddNutzer() {
         String jsonReferent = """
                 {

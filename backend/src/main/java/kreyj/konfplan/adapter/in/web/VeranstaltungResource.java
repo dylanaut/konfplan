@@ -14,7 +14,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.*;
-import kreyj.konfplan.application.port.in.AdminServiceInterface;
+import kreyj.konfplan.application.port.in.OrganisatorServiceInterface;
 import kreyj.konfplan.application.port.in.ReferentServiceInterface;
 import kreyj.konfplan.application.port.in.TeilnehmerServiceInterface;
 import kreyj.konfplan.application.port.in.VeranstaltungServiceInterface;
@@ -35,7 +35,7 @@ import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 import static kreyj.konfplan.adapter.in.web.dto.SlotDto.from;
 
 @Path("/api/veranstaltungen")
-@RolesAllowed("ADMIN")
+@RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "Veranstaltungen", description = "Zentrale Endpunkte für die Verwaltung von Veranstaltungen und deren Inhalten")
@@ -44,12 +44,12 @@ public class VeranstaltungResource {
     private static final Logger LOG = Logger.getLogger(VeranstaltungResource.class);
 
     private final VeranstaltungServiceInterface veranstaltungService;
-    private final AdminServiceInterface adminService;
+    private final OrganisatorServiceInterface adminService;
     private final ReferentServiceInterface referentService;
     private final TeilnehmerServiceInterface teilnehmerService;
     private final PlanService planService;
 
-    public VeranstaltungResource(VeranstaltungServiceInterface veranstaltungService, AdminServiceInterface adminService, ReferentServiceInterface referentService,
+    public VeranstaltungResource(VeranstaltungServiceInterface veranstaltungService, OrganisatorServiceInterface adminService, ReferentServiceInterface referentService,
                                  TeilnehmerServiceInterface teilnehmerService, PlanService planService) {
         this.veranstaltungService = veranstaltungService;
         this.adminService = adminService;
@@ -144,7 +144,7 @@ public class VeranstaltungResource {
 
     @GET
     @Path("/{vid}/nutzer")
-    @Operation(summary = "Nutzer einer Veranstaltung abrufen", description = "Ruft alle Nutzer (Admins, Referenten, Teilnehmer) einer Veranstaltung ab.")
+    @Operation(summary = "Nutzer einer Veranstaltung abrufen", description = "Ruft alle Nutzer (Organisatoren, Referenten, Teilnehmer) einer Veranstaltung ab.")
     public List<NutzerDto> getNutzer(@PathParam("vid") Long vid) {
         return adminService.getAllUsers(vid);
     }
@@ -220,7 +220,7 @@ public class VeranstaltungResource {
 
 
     @GET
-    @RolesAllowed({"ADMIN", "TEILNEHMER", "REFERENT"})
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR", "TEILNEHMER", "REFERENT"})
     @Path("/{vid}/vortraege")
     @Operation(summary = "Vorträge einer Veranstaltung abrufen", description = "Ruft alle Vorträge ab, die zu einer Veranstaltung gehören.")
     public List<VortragDto> getVortraege(@PathParam("vid") Long vid) {
@@ -303,7 +303,7 @@ public class VeranstaltungResource {
 
 
     @GET
-    @RolesAllowed({"ADMIN", "TEILNEHMER", "REFERENT"})
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR", "TEILNEHMER", "REFERENT"})
     @Path("/{vid}/slots")
     @Operation(summary = "Slots einer Veranstaltung abrufen", description = "Ruft alle Zeit-Slots ab, die zu einer Veranstaltung gehören.")
     public List<SlotDto> getSlots(@PathParam("vid") Long vid) {

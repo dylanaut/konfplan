@@ -40,7 +40,7 @@ import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 
 @Path("/api/teilnehmer")
-@RolesAllowed({"ADMIN", "TEILNEHMER"})
+@RolesAllowed({"ORGANISATOR", "ADMINISTRATOR", "TEILNEHMER"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "Teilnehmer", description = "Endpunkte zur Verwaltung von Teilnehmern, deren Plänen und Prioritäten")
@@ -58,12 +58,12 @@ public class TeilnehmerResource {
 
 
     // -------------------------------------------------------------------
-    // ADMIN Endpunkte
+    // ORGANISATOR/ADMINISTRATOR Endpunkte
     // -------------------------------------------------------------------
 
 
     @GET
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Alle Teilnehmer einer Veranstaltung abrufen")
     public Response getAlleVeranstaltungsteilnehmer(@QueryParam("vid") Long vid) {
         List<Teilnehmer> alleTeilnehmer = teilnehmerService.findAll(vid);
@@ -73,7 +73,7 @@ public class TeilnehmerResource {
 
     @GET
     @Path("/{id}")
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Einen Teilnehmer abrufen")
     public Response getTeilnehmer(@PathParam("id") Long id) {
         Nutzer nutzer = teilnehmerService.findById(id);
@@ -86,7 +86,7 @@ public class TeilnehmerResource {
 
     @POST
     @Transactional
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Neuen Teilnehmer erstellen")
     public Response createTeilnehmer(@RequestBody(description = "Der zu erstellende Teilnehmer") Teilnehmer user, @QueryParam("vid") Long vid) {
         Teilnehmer created = teilnehmerService.createTeilnehmer(user, vid);
@@ -97,7 +97,7 @@ public class TeilnehmerResource {
     @PUT
     @Path("/{id}")
     @Transactional
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Teilnehmer aktualisieren")
     public Response updateTeilnehmer(@PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Teilnehmerdaten") NutzerDto user, @QueryParam("vid") Long vid) {
         try {
@@ -114,7 +114,7 @@ public class TeilnehmerResource {
 
     @DELETE
     @Path("/{id}")
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Teilnehmer löschen")
     public Response deleteTeilnehmer(@PathParam("id") Long id) {
         Nutzer nutzer = teilnehmerService.findById(id);
@@ -128,7 +128,7 @@ public class TeilnehmerResource {
 
     @PATCH
     @Path("/{id}/toggle")
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Aktivierungsstatus umschalten")
     public Response toggleActive(@PathParam("id") Long id) {
         Nutzer byId = teilnehmerService.findById(id);

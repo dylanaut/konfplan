@@ -67,7 +67,7 @@ class ReportResourceTest {
 
 
     @Test
-    @TestSecurity(user = "testAdmin", roles = "ADMIN")
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
     void getLaufzettelTeilnehmerData_asAdmin_shouldSucceed() {
         PanacheMock.mock(Teilnehmer.class);
         PanacheMock.mock(Veranstaltung.class);
@@ -114,7 +114,7 @@ class ReportResourceTest {
 
 
     @Test
-    @TestSecurity(user = "testAdmin", roles = "ADMIN")
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
     void getLaufzettelReferentData_asAdmin_shouldSucceed() {
         PanacheMock.mock(Referent.class);
         PanacheMock.mock(Veranstaltung.class);
@@ -163,7 +163,7 @@ class ReportResourceTest {
 
 
     @Test
-    @TestSecurity(user = "testAdmin", roles = "ADMIN")
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
     void getAlleLaufzettelReferentenData_asAdmin_shouldSucceed() {
         PanacheMock.mock(Veranstaltung.class);
         Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
@@ -176,11 +176,11 @@ class ReportResourceTest {
     }
 
 
-    // --- Admin-Reports ---
+    // --- Organisator-Reports ---
 
 
     @Test
-    @TestSecurity(user = "testAdmin", roles = "ADMIN")
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
     void getUebersichtRaeumeData_asAdmin_shouldSucceed() {
         PanacheMock.mock(Veranstaltung.class);
         Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
@@ -205,7 +205,7 @@ class ReportResourceTest {
 
 
     @Test
-    @TestSecurity(user = "testAdmin", roles = "ADMIN")
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
     void getAlleRaumschilderData_asAdmin_shouldSucceed() {
         PanacheMock.mock(Veranstaltung.class);
         Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
@@ -220,7 +220,7 @@ class ReportResourceTest {
 
 
     @Test
-    @TestSecurity(user = "testAdmin", roles = "ADMIN")
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
     void getFreieSlotsReferentenData_asAdmin_shouldSucceed() {
         PanacheMock.mock(Veranstaltung.class);
         Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
@@ -235,7 +235,7 @@ class ReportResourceTest {
 
 
     @Test
-    @TestSecurity(user = "testAdmin", roles = "ADMIN")
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
     void getFreieSlotsTeilnehmerData_asAdmin_shouldSucceed() {
         PanacheMock.mock(Veranstaltung.class);
         Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
@@ -253,7 +253,7 @@ class ReportResourceTest {
 
 
     @Test
-    @TestSecurity(user = "testAdmin", roles = "ADMIN")
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
     void getTeilnehmerDashboardData_asAdmin_shouldSucceed() {
         // Regression: dieser Endpoint loeste den Aufrufer frueher fälschlich per
         // TeilnehmerService.findByLoginName() auf und lieferte fuer Admins (die keine

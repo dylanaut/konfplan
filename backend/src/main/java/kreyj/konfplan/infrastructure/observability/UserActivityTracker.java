@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class UserActivityTracker {
 
     static final Duration ONLINE_TIMEOUT = Duration.ofMinutes(5);
-    private static final List<String> ROLES = List.of("ADMIN", "REFERENT", "TEILNEHMER");
+    private static final List<String> ROLES = List.of("ORGANISATOR", "ADMINISTRATOR", "REFERENT", "TEILNEHMER");
 
     private final Map<String, Visit> visitsBySubject = new ConcurrentHashMap<>();
 

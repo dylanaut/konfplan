@@ -39,7 +39,7 @@ import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 
 @Path("/api/referenten")
-@RolesAllowed({"ADMIN", "REFERENT"})
+@RolesAllowed({"ORGANISATOR", "ADMINISTRATOR", "REFERENT"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "Referenten", description = "Endpunkte für Referenten zur Verwaltung ihres Profils und ihrer Vorträge")

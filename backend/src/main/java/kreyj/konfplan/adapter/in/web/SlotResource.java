@@ -13,7 +13,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import java.util.List;
 
 @Path("/api/slots")
-@RolesAllowed({"ADMIN", "REFERENT", "TEILNEHMER"})
+@RolesAllowed({"ORGANISATOR", "ADMINISTRATOR", "REFERENT", "TEILNEHMER"})
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "Slots", description = "Verwaltung von Zeit-Slots")
 public class SlotResource {

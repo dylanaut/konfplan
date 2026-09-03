@@ -11,12 +11,12 @@ import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.SlotDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragStatDto;
-import kreyj.konfplan.adapter.in.web.dto.csv.AdminCsvDto;
+import kreyj.konfplan.adapter.in.web.dto.csv.OrganisatorCsvDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.NutzerVerfuegbarkeitCsvDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.RaumVerfuegbarkeitCsvDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.SlotCsvDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.VortragCsvDto;
-import kreyj.konfplan.application.port.in.AdminServiceInterface;
+import kreyj.konfplan.application.port.in.OrganisatorServiceInterface;
 import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.domain.exception.CreateSlotException;
 import kreyj.konfplan.domain.exception.CreateVortragException;
@@ -26,7 +26,6 @@ import kreyj.konfplan.domain.exception.EntityNotFoundException;
 import kreyj.konfplan.domain.exception.UpdateNutzerException;
 import kreyj.konfplan.domain.exception.UpdateVortragException;
 import kreyj.konfplan.domain.exception.VeranstaltungException;
-import kreyj.konfplan.persistence.Admin;
 import kreyj.konfplan.persistence.AbschlussTyp;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.IdEntity;
@@ -41,6 +40,7 @@ import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Neigung;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import kreyj.konfplan.persistence.VortragVerfuegbarkeit;
@@ -78,8 +78,8 @@ import static kreyj.konfplan.util.DateHelper.DATE_FORMAT;
 import static org.apache.commons.collections4.SetUtils.difference;
 
 @ApplicationScoped
-public class AdminService implements AdminServiceInterface {
-    private static final Logger LOG = Logger.getLogger(AdminService.class);
+public class OrganisatorService implements OrganisatorServiceInterface {
+    private static final Logger LOG = Logger.getLogger(OrganisatorService.class);
     public static final String CSV_PRIO_HEADER = "Teilnehmer LoginName;Prioritäten";
     public static final String PV_FAIL_MESSAGE = ". Pflichtvortrag kann nicht erstellt werden.";
     public static final String LEGENDE_TOKEN = "# Legende:";
@@ -90,7 +90,7 @@ public class AdminService implements AdminServiceInterface {
     private final KeycloakUserProvisioningService keycloakUserProvisioningService;
 
 
-    public AdminService(MailService mailService, ProtokollService protokollService,
+    public OrganisatorService(MailService mailService, ProtokollService protokollService,
                         KeycloakUserProvisioningService keycloakUserProvisioningService) {
         this.mailService = mailService;
         this.protokollService = protokollService;
@@ -120,10 +120,10 @@ public class AdminService implements AdminServiceInterface {
     @Transactional
     @Override
     public List<NutzerDto> getAllUsers(Long veranstaltungId) {
-        List<Nutzer> admins = Nutzer.list("role = 'ADMIN'");
+        List<? extends Nutzer> organisatoren = Organisator.listAll();
         List<Nutzer> vNutzers = Nutzer.find("SELECT u FROM Nutzer u JOIN u.veranstaltungen v WHERE v.id = ?1", veranstaltungId).list();
 
-        return Stream.concat(admins.stream(), vNutzers.stream())
+        return Stream.concat(organisatoren.stream(), vNutzers.stream())
             .distinct()
             .map(NutzerDto::from)
             .toList();
@@ -146,14 +146,14 @@ public class AdminService implements AdminServiceInterface {
         } else if ("TEILNEHMER".equals(dto.role)) {
             nutzer = new Teilnehmer();
         } else {
-            nutzer = new Admin();
+            nutzer = new Organisator();
         }
 
-        // Ohne E-Mail-Adresse ist Passwort-Reset über Keycloak unmöglich - für Admins fatal,
-        // da es (anders als bei Referent/Teilnehmer) keine übergeordnete Instanz gibt, die das
-        // Konto sonst wiederherstellen könnte.
-        if (nutzer instanceof Admin && StringUtils.isBlank(dto.email)) {
-            throw new BusinessException("Administrator-Konten benötigen zwingend eine E-Mail-Adresse (sonst ist bei einem vergessenen Passwort keine Wiederherstellung möglich).");
+        // Ohne E-Mail-Adresse ist Passwort-Reset über Keycloak unmöglich - für Organisatoren
+        // fatal, da es (anders als bei Referent/Teilnehmer) keine übergeordnete Instanz gibt,
+        // die das Konto sonst wiederherstellen könnte.
+        if (nutzer instanceof Organisator && StringUtils.isBlank(dto.email)) {
+            throw new BusinessException("Organisator-Konten benötigen zwingend eine E-Mail-Adresse (sonst ist bei einem vergessenen Passwort keine Wiederherstellung möglich).");
         }
 
         // Vor dem Keycloak-Aufruf prüfen (statt den DB-Unique-Constraint bzw. Keycloaks eigene
@@ -234,16 +234,16 @@ public class AdminService implements AdminServiceInterface {
             throw new OptimisticLockException("Der Nutzer wurde zwischenzeitlich von Dritten geändert. Bitte aktualisieren Sie die Daten und versuchen Sie es erneut.");
         }
 
-        // Admin-getriebene E-Mail-Änderung wird direkt übernommen (keine Bestätigung nötig -
+        // Organisator-getriebene E-Mail-Änderung wird direkt übernommen (keine Bestätigung nötig -
         // anders als bei einer Self-Service-Änderung, die es nicht mehr gibt: das läuft jetzt
         // über Keycloaks Account-Console).
         String oldEmail = nutzer.getEmail();
         if (!Objects.equals(oldEmail, dto.email)) {
             if (StringUtils.isBlank(dto.email)) {
-                // Siehe createUser: ein Admin-Konto ohne E-Mail-Adresse ist bei einem
+                // Siehe createUser: ein Organisator-Konto ohne E-Mail-Adresse ist bei einem
                 // vergessenen Passwort unwiederbringlich verloren.
-                if (nutzer instanceof Admin) {
-                    throw new UpdateNutzerException("Administrator-Konten benötigen zwingend eine E-Mail-Adresse (sonst ist bei einem vergessenen Passwort keine Wiederherstellung möglich).");
+                if (nutzer instanceof Organisator) {
+                    throw new UpdateNutzerException("Organisator-Konten benötigen zwingend eine E-Mail-Adresse (sonst ist bei einem vergessenen Passwort keine Wiederherstellung möglich).");
                 }
                 nutzer.setEmail(null);
                 protokollService.log(ProtokollKategorie.NUTZER, "E-Mail-Adresse entfernt",
@@ -392,8 +392,8 @@ public class AdminService implements AdminServiceInterface {
         }
 
         keycloakUserProvisioningService.resetPassword(nutzer, newPassword);
-        protokollService.log(ProtokollKategorie.SECURITY, "Passwort durch Administrator zurückgesetzt",
-            "Passwort für Nutzer '" + nutzer.getLoginName() + "' wurde durch einen Administrator zurückgesetzt.", nutzer.getId());
+        protokollService.log(ProtokollKategorie.SECURITY, "Passwort durch Organisator zurückgesetzt",
+            "Passwort für Nutzer '" + nutzer.getLoginName() + "' wurde durch einen Organisator zurückgesetzt.", nutzer.getId());
         return true;
     }
 
@@ -527,38 +527,38 @@ public class AdminService implements AdminServiceInterface {
 
     @Transactional
     @Override
-    public int importAdminsFromCsv(Path csvFilePath) throws Exception {
+    public int importOrganisatorenFromCsv(Path csvFilePath) throws Exception {
         int count = 0;
         try (Reader reader = CsvHelper.openCsvReader(csvFilePath)) {
-            CsvToBean<AdminCsvDto> csvToBean = new CsvToBeanBuilder<AdminCsvDto>(reader)
-                .withType(AdminCsvDto.class)
+            CsvToBean<OrganisatorCsvDto> csvToBean = new CsvToBeanBuilder<OrganisatorCsvDto>(reader)
+                .withType(OrganisatorCsvDto.class)
                 .withSeparator(';')
                 .withFilter(line -> line.length > 0 && !line[0].startsWith("#"))
                 .withIgnoreLeadingWhiteSpace(true)
                 .withThrowExceptions(false)
                 .build();
 
-            List<AdminCsvDto> beans = csvToBean.parse();
+            List<OrganisatorCsvDto> beans = csvToBean.parse();
 
             csvToBean.getCapturedExceptions().forEach(e ->
                 LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage())
             );
 
-            for (AdminCsvDto dto : beans) {
+            for (OrganisatorCsvDto dto : beans) {
                 if (StringUtils.isBlank(dto.loginName)) {
-                    LOG.warn("Admin-Zeile übersprungen: loginName fehlt.");
+                    LOG.warn("Organisator-Zeile übersprungen: loginName fehlt.");
                     continue;
                 }
-                // Siehe createUser/updateUser: ein Admin-Konto ohne E-Mail-Adresse ist bei
+                // Siehe createUser/updateUser: ein Organisator-Konto ohne E-Mail-Adresse ist bei
                 // einem vergessenen Passwort unwiederbringlich verloren.
                 if (StringUtils.isBlank(dto.email)) {
-                    LOG.warn("Admin-Zeile übersprungen: E-Mail-Adresse fehlt (loginName: " + dto.loginName + ").");
+                    LOG.warn("Organisator-Zeile übersprungen: E-Mail-Adresse fehlt (loginName: " + dto.loginName + ").");
                     continue;
                 }
                 String loginName = dto.loginName.trim().toLowerCase();
                 Nutzer vorhandenerNutzer = Nutzer.findByLoginNameOrEmail(loginName, dto.email);
                 if (null == vorhandenerNutzer) {
-                    Admin a = new Admin();
+                    Organisator a = new Organisator();
                     a.assignLoginName(loginName);
                     a.setEmail(dto.email.trim().toLowerCase());
                     a.setFirstName(dto.vorname);
@@ -1450,7 +1450,7 @@ public class AdminService implements AdminServiceInterface {
         protokollService.log(ProtokollKategorie.VERANSTALTUNG, "Gruppe gelöscht", "Gruppe '" + gruppenName + "' aus Veranstaltung '" + veranstaltung.getName() + "' entfernt.", veranstaltungId, veranstaltungId);
     }
 
-    // ... am Ende der AdminService.java Klasse ...
+    // ... am Ende der OrganisatorService.java Klasse ...
 
 
     @Transactional

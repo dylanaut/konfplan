@@ -5,7 +5,7 @@ import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
-import kreyj.konfplan.domain.service.AdminService;
+import kreyj.konfplan.domain.service.OrganisatorService;
 import kreyj.konfplan.domain.service.GebaeudeService;
 import kreyj.konfplan.domain.service.ReferentService;
 import kreyj.konfplan.domain.service.TeilnehmerService;
@@ -41,7 +41,7 @@ public class DevDataInitService {
 
     private final TeilnehmerService teilnehmerService;
 
-    private final AdminService adminService;
+    private final OrganisatorService adminService;
 
     private final VeranstaltungService veranstaltungService;
 
@@ -52,7 +52,7 @@ public class DevDataInitService {
 
     @SuppressWarnings("CdiInjectionPointsInspection")
     public DevDataInitService(AgroalDataSource datasource, TeilnehmerService teilnehmerService,
-                              AdminService adminService, VeranstaltungService veranstaltungService,
+                              OrganisatorService adminService, VeranstaltungService veranstaltungService,
                               GebaeudeService gebaeudeService, ReferentService referentService) {
         this.datasource = datasource;
         this.teilnehmerService = teilnehmerService;
@@ -86,8 +86,8 @@ public class DevDataInitService {
                 // 1. Gebäude & Räume
                 gebaeudeService.importGebaeudeWithRaeumeFromCsv(basePath.resolve("gebaeude.csv"));
 
-                // 2. Organisatoren (Admins)
-                adminService.importAdminsFromCsv(basePath.resolve("organisatoren.csv"));
+                // 2. Organisatoren
+                adminService.importOrganisatorenFromCsv(basePath.resolve("organisatoren.csv"));
 
                 // 3. Veranstaltungen
                 int anzahlVeranstaltungen = veranstaltungService.importFromCsv(basePath.resolve("veranstaltungen.csv"));

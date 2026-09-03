@@ -12,7 +12,7 @@ import kreyj.konfplan.adapter.in.web.dto.ReferentVeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.ReferentCsvDto;
 import kreyj.konfplan.application.port.in.ReferentServiceInterface;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Pflichtvortrag;
@@ -133,7 +133,7 @@ public class ReferentService implements ReferentServiceInterface {
             dto.planErstellt = Planungsergebnis.count("veranstaltung", e) > 0; // Prüfen, ob ein Ergebnis existiert
             dto.logo = e.getLogo();
             dto.logo_link = e.getLogo_link();
-            dto.organisatorNamen = e.organisatoren().stream().map(Admin::getFullName).toList();
+            dto.organisatorNamen = e.organisatoren().stream().map(Organisator::getFullName).toList();
             dto.organisatoren = e.organisatoren().stream().map(OrganisatorDto::from).toList();
             return dto;
         }).sorted(Comparator.comparing(e -> e.beginntAm)).toList();
@@ -285,7 +285,7 @@ public class ReferentService implements ReferentServiceInterface {
             // Wahl-Slots werden nicht kopiert, da sie veranstaltungsspezifisch sind.
             zielVortrag = nw;
         } else if (quellVortrag instanceof Pflichtvortrag) {
-            // Pflichtvorträge können nicht von Referenten geklont werden, da sie eine Admin-Konfiguration erfordern (Slots, Räume, Gruppen).
+            // Pflichtvorträge können nicht von Referenten geklont werden, da sie eine Organisator-Konfiguration erfordern (Slots, Räume, Gruppen).
             throw new WebApplicationException("Pflichtvorträge können nicht von Referenten geklont werden.", Response.Status.BAD_REQUEST);
         } else {
             throw new WebApplicationException("Unbekannter Vortragstyp.", Response.Status.INTERNAL_SERVER_ERROR);

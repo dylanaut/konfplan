@@ -37,7 +37,8 @@ import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
 @DiscriminatorColumn(name = "role", discriminatorType = DiscriminatorType.STRING)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "role", visible = true)
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = Admin.class, name = "ADMIN"),
+    @JsonSubTypes.Type(value = Organisator.class, name = "ORGANISATOR"),
+    @JsonSubTypes.Type(value = Administrator.class, name = "ADMINISTRATOR"),
     @JsonSubTypes.Type(value = Referent.class, name = "REFERENT"),
     @JsonSubTypes.Type(value = Teilnehmer.class, name = "TEILNEHMER")
 })

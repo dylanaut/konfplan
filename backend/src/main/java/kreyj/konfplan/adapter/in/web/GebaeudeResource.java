@@ -27,7 +27,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import java.util.List;
 
 @Path("/api/gebaeude")
-@RolesAllowed("ADMIN")
+@RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "Gebäude & Räume", description = "Verwaltung von Gebäuden und den zugehörigen Räumen")

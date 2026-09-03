@@ -5,7 +5,7 @@ import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Teilnehmer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +30,7 @@ class OnboardingStatusResourceTest extends DatabaseCleaner {
         t.setGruppen(List.of("Zebra", "Anton"));
         t.persist();
 
-        Admin a = new Admin();
+        Organisator a = new Organisator();
         a.assignLoginName("ohne.gruppen.admin");
         a.setEmail("ohne.gruppen.admin@test.de");
         a.persist();
@@ -38,7 +38,7 @@ class OnboardingStatusResourceTest extends DatabaseCleaner {
 
 
     @Test
-    @TestSecurity(user = "admin", roles = "ADMIN")
+    @TestSecurity(user = "admin", roles = "ORGANISATOR")
     void getOnboardingStatus_teilnehmerHatSortierteGruppen_adminHatKeine() {
         given()
             .when().get("/api/admin/onboarding-status")

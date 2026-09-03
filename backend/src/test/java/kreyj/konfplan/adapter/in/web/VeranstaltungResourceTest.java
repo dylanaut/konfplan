@@ -11,7 +11,7 @@ import io.quarkus.test.security.TestSecurity;
 import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Referent;
@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
-@TestSecurity(user = "admin@test.de", roles = "ADMIN")
+@TestSecurity(user = "admin@test.de", roles = "ORGANISATOR")
 @QuarkusTestResource(H2DatabaseTestResource.class)
 @TestHTTPEndpoint(VeranstaltungResource.class)
 class VeranstaltungResourceTest extends DatabaseCleaner {
@@ -45,7 +45,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
     KeycloakUserProvisioningService keycloakUserProvisioningService;
 
     @TestHTTPResource
-    @TestHTTPEndpoint(AdminResource.class)
+    @TestHTTPEndpoint(OrganisatorResource.class)
     URL adminEndpoint;
 
     Long testVid;
@@ -54,7 +54,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
     @BeforeEach
     @Transactional
     void setup() {
-        Admin admin = new Admin();
+        Organisator admin = new Organisator();
         admin.assignLoginName("admintest");
         admin.setEmail("admin@test.de");
         admin.persist();
@@ -178,7 +178,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
                         .statusCode(CREATED.getStatusCode())
                         .extract().as(VortragDto.class);
 
-        // 2. Admin (via @TestSecurity) fetches vortrag data
+        // 2. Organisator (via @TestSecurity) fetches vortrag data
         Long vortragId = w.id;
         VortragDto adminFetchedVortrag = given()
                 .when()
@@ -198,8 +198,8 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
         // Ensure versions are the same initially
         assertThat(referentFetchedVortrag.version).isEqualTo(adminFetchedVortrag.version);
 
-        // 4. Admin updates vortrag title (successful, increments version)
-        adminFetchedVortrag.titel = "Admin Updated Vortrag Titel";
+        // 4. Organisator updates vortrag title (successful, increments version)
+        adminFetchedVortrag.titel = "Organisator Updated Vortrag Titel";
 
         VortragDto adminUpdate =
                 given().contentType(ContentType.JSON)
@@ -211,7 +211,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
                         .statusCode(OK.getStatusCode())
                         .extract().as(VortragDto.class);
 
-        assertThat(adminUpdate.titel).isEqualTo("Admin Updated Vortrag Titel");
+        assertThat(adminUpdate.titel).isEqualTo("Organisator Updated Vortrag Titel");
         assertThat(adminUpdate.version).isEqualTo(adminFetchedVortrag.version + 1);
 
         // 5. Zweite Session versucht Update mit veralteter Version (muss CONFLICT liefern)
@@ -224,7 +224,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
                 .then()
                 .statusCode(CONFLICT.getStatusCode()); // Expect conflict
 
-        // 6. Verify data integrity: only Admin's changes should be present
+        // 6. Verify data integrity: only Organisator's changes should be present
         VortragDto finalVortrag = given().when()
                 .get("/{vid}/vortraege/{vortragId}", testVid, vortragId)
                 .then()
@@ -338,14 +338,14 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
             .statusCode(OK.getStatusCode())
             .extract().body().jsonPath().getList(".", VeranstaltungDto.class);
 
-        // 2. Admin 1 (via @TestSecurity) fetches veranstaltung data
+        // 2. Organisator 1 (via @TestSecurity) fetches veranstaltung data
         VeranstaltungDto admin1FetchedVeranstaltung = given()
             .when().get("/{id}", vId)
             .then()
             .statusCode(OK.getStatusCode())
             .extract().as(VeranstaltungDto.class);
 
-        // 3. Zweite Session fetcht veranstaltung data vor Admin 1's Update
+        // 3. Zweite Session fetcht veranstaltung data vor Organisator 1's Update
         VeranstaltungDto admin2FetchedVeranstaltung = given()
             .when().get("/{id}", vId)
             .then()
@@ -356,7 +356,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
         assertThat(admin1FetchedVeranstaltung.version).isEqualTo(admin2FetchedVeranstaltung.version);
         assertThat(admin1FetchedVeranstaltung.version).isNotNull();
 
-        // 4. Admin 1 updates veranstaltung name (successful, increments version)
+        // 4. Organisator 1 updates veranstaltung name (successful, increments version)
         admin1FetchedVeranstaltung.setName("Admin1 Updated Event Name");
         VeranstaltungDto updatedVDto = given()
             .contentType(ContentType.JSON)
@@ -380,7 +380,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
             .then()
             .statusCode(CONFLICT.getStatusCode());
 
-        // 6. Verify data integrity: only Admin 1's changes should be present
+        // 6. Verify data integrity: only Organisator 1's changes should be present
         VeranstaltungDto finalVeranstaltung = given()
             .when().get("/{id}", vId)
             .then()
@@ -389,7 +389,7 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
 
         assertThat(finalVeranstaltung.getName()).isEqualTo("Admin1 Updated Event Name");
         assertThat(finalVeranstaltung.version)
-            .describedAs("Version should be the one after Admin 1's update")
+            .describedAs("Version should be the one after Organisator 1's update")
             .isEqualTo(admin1FetchedVeranstaltung.version + 1);
     }
 }

@@ -15,7 +15,7 @@ import kreyj.konfplan.adapter.in.web.dto.VortragStatDto;
 import java.nio.file.Path;
 import java.util.List;
 
-public interface AdminServiceInterface {
+public interface OrganisatorServiceInterface {
 
     List<NutzerDto> getAllUsers();
 
@@ -43,7 +43,7 @@ public interface AdminServiceInterface {
 
     Vortrag createVortrag(VortragDto vortragDto);
 
-    int importAdminsFromCsv(Path csvFilePath) throws Exception;
+    int importOrganisatorenFromCsv(Path csvFilePath) throws Exception;
 
     int importVortraegeFromCsv(Path csvFilePath, Long veranstaltungId);
 

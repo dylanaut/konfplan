@@ -3,7 +3,7 @@ package kreyj.konfplan.domain.service;
 import io.quarkus.runtime.LaunchMode;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.domain.exception.KeycloakProvisioningException;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Organisator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.keycloak.admin.client.Keycloak;
@@ -51,8 +51,8 @@ class KeycloakUserProvisioningServiceTest {
     }
 
 
-    private Admin admin() {
-        Admin admin = new Admin();
+    private Organisator admin() {
+        Organisator admin = new Organisator();
         admin.assignLoginName("kathrin.jessen");
         admin.setEmail("kathrin.jessen@rks-linz.de");
         admin.setFirstName("Kathrin");
@@ -65,9 +65,9 @@ class KeycloakUserProvisioningServiceTest {
         RolesResource rolesResource = mock(RolesResource.class);
         RoleResource roleResource = mock(RoleResource.class);
         when(realmResource.roles()).thenReturn(rolesResource);
-        when(rolesResource.get("ADMIN")).thenReturn(roleResource);
+        when(rolesResource.get("ORGANISATOR")).thenReturn(roleResource);
         RoleRepresentation role = new RoleRepresentation();
-        role.setName("ADMIN");
+        role.setName("ORGANISATOR");
         when(roleResource.toRepresentation()).thenReturn(role);
 
         UserResource userResource = mock(UserResource.class);
@@ -88,7 +88,7 @@ class KeycloakUserProvisioningServiceTest {
         when(usersResource.searchByUsername("kathrin.jessen", true)).thenReturn(List.of(bestehender));
         stubRoleAssignment("existing-id-123");
 
-        Admin admin = admin();
+        Organisator admin = admin();
         service.createUser(admin);
 
         assertThat(admin.getKeycloakId()).isEqualTo("existing-id-123");
@@ -105,7 +105,7 @@ class KeycloakUserProvisioningServiceTest {
         when(usersResource.searchByEmail("kathrin.jessen@rks-linz.de", true)).thenReturn(List.of(bestehender));
         stubRoleAssignment("existing-id-456");
 
-        Admin admin = admin();
+        Organisator admin = admin();
         service.createUser(admin);
 
         assertThat(admin.getKeycloakId()).isEqualTo("existing-id-456");
@@ -130,7 +130,7 @@ class KeycloakUserProvisioningServiceTest {
             .thenReturn(Response.created(java.net.URI.create("http://keycloak/admin/realms/konfplan/users/new-id-789")).build());
         stubRoleAssignment("new-id-789");
 
-        Admin admin = admin();
+        Organisator admin = admin();
         service.createUser(admin);
 
         assertThat(admin.getKeycloakId()).isEqualTo("new-id-789");
@@ -176,14 +176,14 @@ class KeycloakUserProvisioningServiceTest {
     @Test
     void resetPassword_erzwingtPasswortAenderungBeimNaechstenLogin() {
         // Kein Dev/Test-Sonderfall mehr: der erzwungene Passwortwechsel ist der eigentliche Zweck
-        // eines Admin-Resets und muss deshalb auch in Dev/Test greifen (service aus @BeforeEach
+        // eines Organisator-Resets und muss deshalb auch in Dev/Test greifen (service aus @BeforeEach
         // laeuft bewusst mit LaunchMode.TEST).
         UserResource userResource = mock(UserResource.class);
         when(usersResource.get("kc-id-1")).thenReturn(userResource);
         UserRepresentation kcUser = new UserRepresentation();
         when(userResource.toRepresentation()).thenReturn(kcUser);
 
-        Admin admin = admin();
+        Organisator admin = admin();
         admin.setKeycloakId("kc-id-1");
         service.resetPassword(admin, "neuesPasswort123");
 
@@ -198,7 +198,7 @@ class KeycloakUserProvisioningServiceTest {
 
     @Test
     void hatEchtesPasswort_ohneKeycloakId_liefertFalse() {
-        Admin admin = admin();
+        Organisator admin = admin();
         assertThat(service.hatEchtesPasswort(admin)).isFalse();
     }
 
@@ -211,7 +211,7 @@ class KeycloakUserProvisioningServiceTest {
         kcUser.setRequiredActions(List.of("UPDATE_PASSWORD"));
         when(userResource.toRepresentation()).thenReturn(kcUser);
 
-        Admin admin = admin();
+        Organisator admin = admin();
         admin.setKeycloakId("kc-id-1");
 
         assertThat(service.hatEchtesPasswort(admin)).isFalse();
@@ -226,7 +226,7 @@ class KeycloakUserProvisioningServiceTest {
         when(userResource.toRepresentation()).thenReturn(kcUser);
         when(userResource.credentials()).thenReturn(List.of());
 
-        Admin admin = admin();
+        Organisator admin = admin();
         admin.setKeycloakId("kc-id-1");
 
         assertThat(service.hatEchtesPasswort(admin)).isFalse();
@@ -241,7 +241,7 @@ class KeycloakUserProvisioningServiceTest {
         when(userResource.toRepresentation()).thenReturn(kcUser);
         when(userResource.credentials()).thenReturn(List.of(new CredentialRepresentation()));
 
-        Admin admin = admin();
+        Organisator admin = admin();
         admin.setKeycloakId("kc-id-1");
 
         assertThat(service.hatEchtesPasswort(admin)).isTrue();

@@ -9,7 +9,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Pflichtvortrag;
@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.containsString;
 
 @QuarkusTest
-@TestSecurity(user = "admin@test.de", roles = "ADMIN")
+@TestSecurity(user = "admin@test.de", roles = "ORGANISATOR")
 @QuarkusTestResource(H2DatabaseTestResource.class)
 @TestHTTPEndpoint(VeranstaltungResource.class)
 class CsvFileImportTest extends DatabaseCleaner {
@@ -46,7 +46,7 @@ class CsvFileImportTest extends DatabaseCleaner {
     URL gebaeudeEndpoint;
 
     @TestHTTPResource
-    @TestHTTPEndpoint(AdminResource.class)
+    @TestHTTPEndpoint(OrganisatorResource.class)
     URL adminEndpoint;
 
     Long testVid;
@@ -56,7 +56,7 @@ class CsvFileImportTest extends DatabaseCleaner {
     @BeforeEach
     @Transactional
     void setupTransactional() {
-        Admin admin = new Admin();
+        Organisator admin = new Organisator();
         admin.assignLoginName("admintest");
         admin.setEmail("admin@test.de");
         admin.persist();
@@ -75,13 +75,13 @@ class CsvFileImportTest extends DatabaseCleaner {
         // import Veranstalter
         given()
             .baseUri(adminEndpoint.toString())
-            .basePath("/admins/import")
+            .basePath("/organisatoren/import")
             .multiPart("file", getCsvFile("organisatoren.csv"))
             .when().post()
             .then()
             .statusCode(OK.getStatusCode());
 
-        Admin organisator = (Admin) Nutzer.findByEmail("test.admin@rks-linz.de");
+        Organisator organisator = (Organisator) Nutzer.findByEmail("test.admin@rks-linz.de");
         assertThat(organisator).isNotNull();
         assertThat("Admin").isEqualTo(organisator.getFirstName());
         orgEmail = organisator.getEmail();

@@ -11,7 +11,7 @@ import io.quarkus.test.security.TestSecurity;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerPasswortZipRequestDto;
 import kreyj.konfplan.domain.exception.KeycloakProvisioningException;
 import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import net.lingala.zip4j.ZipFile;
@@ -38,10 +38,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 
 @QuarkusTest
-@TestSecurity(user = "admin@example.com", roles = "ADMIN")
+@TestSecurity(user = "admin@example.com", roles = "ORGANISATOR")
 @QuarkusTestResource(H2DatabaseTestResource.class)
-@TestHTTPEndpoint(AdminResource.class)
-class AdminResourceTeilnehmerPasswortZipTest extends DatabaseCleaner {
+@TestHTTPEndpoint(OrganisatorResource.class)
+class OrganisatorResourceTeilnehmerPasswortZipTest extends DatabaseCleaner {
 
     @InjectMock
     KeycloakUserProvisioningService keycloakUserProvisioningService;
@@ -54,7 +54,7 @@ class AdminResourceTeilnehmerPasswortZipTest extends DatabaseCleaner {
     @BeforeEach
     void setup() {
         QuarkusTransaction.requiringNew().run(() -> {
-            Admin admin = new Admin();
+            Organisator admin = new Organisator();
             admin.assignLoginName("admin@example.com");
             admin.setEmail("admin@example.com");
             admin.persist();

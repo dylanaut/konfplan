@@ -1,7 +1,7 @@
 package kreyj.konfplan.adapter.in.web.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Organisator;
 import lombok.NoArgsConstructor;
 
 @RegisterForReflection
@@ -11,7 +11,7 @@ public class OrganisatorDto {
     public String name;
     public String email;
 
-    public static OrganisatorDto from(Admin admin) {
+    public static OrganisatorDto from(Organisator admin) {
         OrganisatorDto dto = new OrganisatorDto();
         dto.id = admin.getId();
         dto.name = admin.getFullName();

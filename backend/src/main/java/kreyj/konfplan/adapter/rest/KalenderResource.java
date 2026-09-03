@@ -36,7 +36,7 @@ public class KalenderResource {
 
     @GET
     @Path("/admin/{veranstaltungId}")
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Produces("text/calendar")
     @Transactional
     public Response getAdminKalender(@PathParam("veranstaltungId") Long veranstaltungId) {

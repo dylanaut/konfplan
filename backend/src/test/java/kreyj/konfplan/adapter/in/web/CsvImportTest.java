@@ -10,7 +10,7 @@ import io.quarkus.test.security.TestSecurity;
 import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.AbschlussTyp;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.Nutzer;
@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.containsString;
 
 @QuarkusTest
-@TestSecurity(user = "admin@test.de", roles = "ADMIN")
+@TestSecurity(user = "admin@test.de", roles = "ORGANISATOR")
 @QuarkusTestResource(H2DatabaseTestResource.class)
 class CsvImportTest extends DatabaseCleaner {
 
@@ -45,7 +45,7 @@ class CsvImportTest extends DatabaseCleaner {
     URL gebaeudeEndpoint;
 
     @TestHTTPResource
-    @TestHTTPEndpoint(AdminResource.class)
+    @TestHTTPEndpoint(OrganisatorResource.class)
     URL adminEndpoint;
 
     Long testVid;
@@ -54,7 +54,7 @@ class CsvImportTest extends DatabaseCleaner {
     @BeforeEach
     @Transactional
     void setup() {
-        Admin admin = new Admin();
+        Organisator admin = new Organisator();
         admin.assignLoginName("admin");
         admin.setEmail("admin@test.de");
         admin.persist();
@@ -95,7 +95,7 @@ class CsvImportTest extends DatabaseCleaner {
     }
 
 
-    private Long setupVeranstaltung(Admin admin, List<Gebaeude> gebaeudeList) {
+    private Long setupVeranstaltung(Organisator admin, List<Gebaeude> gebaeudeList) {
         Veranstaltung v = new Veranstaltung();
         v.setName("Basis Event " + System.currentTimeMillis());
         v.setBeginntAm(LocalDateTime.of(2025, 10, 10, 9, 0));
@@ -198,13 +198,13 @@ class CsvImportTest extends DatabaseCleaner {
 
         given()
             .baseUri(adminEndpoint.toString())
-            .basePath("/admins/import")
+            .basePath("/organisatoren/import")
             .multiPart("file", "veranstalter.csv", csv.getBytes())
             .when().post()
             .then()
             .statusCode(OK.getStatusCode());
 
-        Admin organisator = (Admin) Nutzer.findByEmail(adminEmail);
+        Organisator organisator = (Organisator) Nutzer.findByEmail(adminEmail);
         assertThat(organisator).isNotNull();
         assertThat(organisator.getFirstName()).isEqualTo("Kathrin");
     }

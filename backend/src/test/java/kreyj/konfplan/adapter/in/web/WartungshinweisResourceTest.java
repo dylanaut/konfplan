@@ -40,7 +40,7 @@ class WartungshinweisResourceTest extends DatabaseCleaner {
     @Test
     @TestSecurity(user = "tom.teilnehmer", roles = "TEILNEHMER")
     @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "tom.teilnehmer")})
-    void setzen_istNurFuerAdminErlaubt() {
+    void setzen_istNurFuerAdministratorErlaubt() {
         given()
             .contentType(ContentType.JSON)
             .body("{\"startZeitpunkt\": \"2026-01-01T10:00:00\", \"endeZeitpunkt\": \"2026-01-01T10:30:00\"}")
@@ -50,8 +50,20 @@ class WartungshinweisResourceTest extends DatabaseCleaner {
     }
 
     @Test
-    @TestSecurity(user = "anna.admin", roles = "ADMIN")
-    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "anna.admin")})
+    @TestSecurity(user = "otto.organisator", roles = "ORGANISATOR")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "otto.organisator")})
+    void setzen_alsOrganisatorOhneAdministratorRolle_wirdAbgelehnt() {
+        given()
+            .contentType(ContentType.JSON)
+            .body("{\"startZeitpunkt\": \"2026-01-01T10:00:00\", \"endeZeitpunkt\": \"2026-01-01T10:30:00\"}")
+            .when().put()
+            .then()
+            .statusCode(FORBIDDEN.getStatusCode());
+    }
+
+    @Test
+    @TestSecurity(user = "anna.administrator", roles = "ADMINISTRATOR")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "anna.administrator")})
     void setzen_undWiederAbrufen_liefertGesetzteZeiten() {
         LocalDateTime start = LocalDateTime.now().plusMinutes(10);
         LocalDateTime ende = LocalDateTime.now().plusMinutes(40);
@@ -72,8 +84,8 @@ class WartungshinweisResourceTest extends DatabaseCleaner {
     }
 
     @Test
-    @TestSecurity(user = "anna.admin", roles = "ADMIN")
-    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "anna.admin")})
+    @TestSecurity(user = "anna.administrator", roles = "ADMINISTRATOR")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "anna.administrator")})
     void setzen_bereitsAbgelaufen_liefertBeimAbrufenLeereFelder() {
         LocalDateTime start = LocalDateTime.now().minusHours(2);
         LocalDateTime ende = LocalDateTime.now().minusHours(1);
@@ -94,8 +106,8 @@ class WartungshinweisResourceTest extends DatabaseCleaner {
     }
 
     @Test
-    @TestSecurity(user = "anna.admin", roles = "ADMIN")
-    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "anna.admin")})
+    @TestSecurity(user = "anna.administrator", roles = "ADMINISTRATOR")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "anna.administrator")})
     void setzen_endeVorStart_wirdAbgelehnt() {
         LocalDateTime start = LocalDateTime.now().plusMinutes(30);
         LocalDateTime ende = LocalDateTime.now().plusMinutes(10);
@@ -109,8 +121,8 @@ class WartungshinweisResourceTest extends DatabaseCleaner {
     }
 
     @Test
-    @TestSecurity(user = "anna.admin", roles = "ADMIN")
-    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "anna.admin")})
+    @TestSecurity(user = "anna.administrator", roles = "ADMINISTRATOR")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "anna.administrator")})
     void loeschen_entferntDieAnkuendigung() {
         LocalDateTime start = LocalDateTime.now().plusMinutes(10);
         LocalDateTime ende = LocalDateTime.now().plusMinutes(40);

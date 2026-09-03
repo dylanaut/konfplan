@@ -2,7 +2,7 @@ package kreyj.konfplan.adapter.in.web.dto.csv;
 
 import com.opencsv.bean.CsvBindByName;
 
-public class AdminCsvDto {
+public class OrganisatorCsvDto {
     @CsvBindByName(column = "Vorname", required = true)
     public String vorname;
 

@@ -29,7 +29,7 @@ public class EmailDeliveryFailureAlertPoller {
     // Keycloaks org.keycloak.events.Errors - exakte Werte per Live-Test gegen Keycloak 26.7.1
     // verifiziert (ResetCredentialEmail-Authenticator): "invalid_email" wird gesetzt, wenn der
     // Nutzer schlicht keine (gueltige) E-Mail-Adresse hinterlegt hat - kein SMTP-/Brevo-Problem,
-    // sondern ein Datenproblem, das nur ueber den Admin-Dialog "Passwort zuruecksetzen" behebbar
+    // sondern ein Datenproblem, das nur ueber den Organisator-Dialog "Passwort zuruecksetzen" behebbar
     // ist. "email_send_failed" ist der tatsaechliche SMTP-Fehlerfall (z.B. Brevo-IP-Sperre).
     private static final String ERROR_INVALID_EMAIL = "invalid_email";
     private static final String ERROR_EMAIL_SEND_FAILED = "email_send_failed";
@@ -69,7 +69,7 @@ public class EmailDeliveryFailureAlertPoller {
         if (ERROR_INVALID_EMAIL.equals(fehlerCode)) {
             return "Keycloak konnte keine Passwort-Reset-/Erstanmeldung-Mail an '" + username
                 + "' senden: Der Nutzer hat keine (gültige) E-Mail-Adresse hinterlegt - kein SMTP-Problem, "
-                + "der Selbst-Reset ist fuer diesen Nutzer ein Dead-End. Passwort ueber den Admin-Dialog "
+                + "der Selbst-Reset ist fuer diesen Nutzer ein Dead-End. Passwort ueber den Organisator-Dialog "
                 + "'Passwort zuruecksetzen' vergeben.";
         }
         if (ERROR_EMAIL_SEND_FAILED.equals(fehlerCode)) {
