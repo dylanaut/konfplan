@@ -24,54 +24,48 @@
       </button>
     </div>
 
-    <!-- Tab-Navigation -->
-    <div class="border-b border-gray-200 no-print">
-      <nav class="-mb-px flex space-x-6 overflow-x-auto">
-        <button v-for="tab in visibleTabs" :key="tab"
-                @click="handleTabClick(tab)"
-                :class="[activeTab === tab ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300', 'whitespace-nowrap py-3 px-1 border-b-2 font-medium text-xs capitalize']">
-          {{ tabLabels[tab] || tab }}
-        </button>
-      </nav>
-    </div>
+    <div class="flex gap-4 items-start">
+      <AdminSidebarNav :activeTab="activeTab" :visibleTabs="visibleTabs" :tabLabels="tabLabels"
+                       @tab-click="handleTabClick" class="shrink-0"/>
 
-    <!-- Planerstellung: Inkonsistenzen (bleibt bis "Verstanden" auch über Tab-Wechsel sichtbar) -->
-    <div v-if="planungsInkonsistenzen" class="bg-red-50 border border-red-200 rounded-xl p-4 animate-fade-in no-print">
-      <div class="flex items-start justify-between gap-4">
-        <div class="flex items-start gap-2 min-w-0">
-          <AlertTriangleIcon class="w-5 h-5 shrink-0 mt-0.5 text-red-600"/>
-          <pre class="whitespace-pre-wrap font-sans text-xs text-red-800">{{ planungsInkonsistenzen }}</pre>
+      <div class="flex-1 min-w-0 space-y-6">
+        <!-- Planerstellung: Inkonsistenzen (bleibt bis "Verstanden" auch über Tab-Wechsel sichtbar) -->
+        <div v-if="planungsInkonsistenzen" class="bg-red-50 border border-red-200 rounded-xl p-4 animate-fade-in no-print">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex items-start gap-2 min-w-0">
+              <AlertTriangleIcon class="w-5 h-5 shrink-0 mt-0.5 text-red-600"/>
+              <pre class="whitespace-pre-wrap font-sans text-xs text-red-800">{{ planungsInkonsistenzen }}</pre>
+            </div>
+            <button @click="planungsInkonsistenzen = null"
+                    class="shrink-0 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg font-bold text-xs">
+              Verstanden
+            </button>
+          </div>
         </div>
-        <button @click="planungsInkonsistenzen = null"
-                class="shrink-0 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg font-bold text-xs">
-          Verstanden
-        </button>
-      </div>
-    </div>
 
-    <!-- START-ZUSTAND (Empty State) -->
-    <div v-if="!selectedVid && !['veranstaltungen', 'veranstaltungImport', 'gebaeude', 'organisatoren', 'protokoll', 'feedback'].includes(activeTab)"
-         class="bg-indigo-50 p-8 rounded-2xl text-center border-2 border-dashed border-indigo-200 animate-fade-in">
-      <div class="text-indigo-400 mb-3 flex justify-center">
-        <CalendarIcon class="w-10 h-10"/>
-      </div>
-      <h2 class="text-lg font-bold text-indigo-900">Keine Veranstaltung ausgewählt</h2>
-      <p class="text-xs text-indigo-600 mt-1 mb-5">Bitte wählen Sie oben eine Veranstaltung aus oder legen Sie eine neue an.</p>
-      <div class="flex justify-center gap-3">
-        <button @click="activeTab = 'veranstaltungen'"
-                class="bg-white text-indigo-700 px-4 py-2 rounded-xl font-bold border border-indigo-200 shadow-sm text-xs">Zu
-          den Veranstaltungen
-        </button>
-        <button @click="openVeranstaltungEditor(null)" class="btn-primary flex items-center gap-2 text-xs">
-          <PlusCircleIcon class="w-4 h-4"/>
-          Neu anlegen
-        </button>
-      </div>
-    </div>
+        <!-- START-ZUSTAND (Empty State) -->
+        <div v-if="!selectedVid && !['veranstaltungen', 'veranstaltungImport', 'gebaeude', 'organisatoren', 'protokoll', 'feedback', 'onboarding'].includes(activeTab)"
+             class="bg-indigo-50 p-8 rounded-2xl text-center border-2 border-dashed border-indigo-200 animate-fade-in">
+          <div class="text-indigo-400 mb-3 flex justify-center">
+            <CalendarIcon class="w-10 h-10"/>
+          </div>
+          <h2 class="text-lg font-bold text-indigo-900">Keine Veranstaltung ausgewählt</h2>
+          <p class="text-xs text-indigo-600 mt-1 mb-5">Bitte wählen Sie oben eine Veranstaltung aus oder legen Sie eine neue an.</p>
+          <div class="flex justify-center gap-3">
+            <button @click="activeTab = 'veranstaltungen'"
+                    class="bg-white text-indigo-700 px-4 py-2 rounded-xl font-bold border border-indigo-200 shadow-sm text-xs">Zu
+              den Veranstaltungen
+            </button>
+            <button @click="openVeranstaltungEditor(null)" class="btn-primary flex items-center gap-2 text-xs">
+              <PlusCircleIcon class="w-4 h-4"/>
+              Neu anlegen
+            </button>
+          </div>
+        </div>
 
-    <!-- TABS CONTENT -->
-    <div :key="activeTab">
-      <ErgebnisseTab v-if="activeTab === 'ergebnisse' && selectedVid"
+        <!-- TABS CONTENT -->
+        <div :key="activeTab">
+          <ErgebnisseTab v-if="activeTab === 'ergebnisse' && selectedVid"
                      :belegungsPlan="belegungsplan"
                      :qualitaet="qualitaet"
                      :eventSlots="eventSlots"
@@ -202,6 +196,10 @@
                    @toggleStatus="toggleFeedbackStatus"
                    @delete="deleteFeedback"
       />
+
+          <OnboardingTab v-if="activeTab === 'onboarding'"/>
+        </div>
+      </div>
     </div>
 
     <!-- Global File Input -->
@@ -289,6 +287,8 @@ import SlotsTab from '../components/admin/tabs/SlotsTab.vue';
 import PlanungTab from '../components/admin/tabs/PlanungTab.vue';
 import ProtokollTab from '../components/admin/tabs/ProtokollTab.vue';
 import FeedbackTab from '../components/admin/tabs/FeedbackTab.vue';
+import OnboardingTab from '../components/admin/tabs/OnboardingTab.vue';
+import AdminSidebarNav from '../components/admin/AdminSidebarNav.vue';
 
 // Import Modals
 import AdminVortragEditorModal from '../components/AdminVortragEditorModal.vue';
@@ -318,7 +318,8 @@ const tabLabels = {
   planung: 'Planerstellung',
   ergebnisse: 'Ergebnisse',
   protokoll: 'Protokoll',
-  feedback: 'Feedback'
+  feedback: 'Feedback',
+  onboarding: 'Onboarding-Status'
 };
 
 // State
@@ -384,10 +385,10 @@ const visibleTabs = computed(() => {
     'teilnehmer', 'referenten', 'vortraege',
     'veranstaltungen', 'veranstaltungImport', 'slots',
     'planung', 'ergebnisse',
-    'protokoll', 'feedback'];
+    'protokoll', 'feedback', 'onboarding'];
   return ['organisatoren', 'gebaeude', 'referenten',
     'veranstaltungen', 'veranstaltungImport',
-    'protokoll', 'feedback'];
+    'protokoll', 'feedback', 'onboarding'];
 });
 
 const futureEvents = computed(() => {

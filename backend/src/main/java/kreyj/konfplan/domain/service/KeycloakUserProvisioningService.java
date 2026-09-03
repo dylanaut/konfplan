@@ -162,6 +162,27 @@ public class KeycloakUserProvisioningService {
     }
 
 
+    /**
+     * Prueft, ob der Nutzer bereits ein eigenes, endgueltiges Passwort vergeben hat - nicht nur
+     * irgendein Passwort, sondern eines OHNE noch ausstehende {@code UPDATE_PASSWORD}-Required-
+     * Action (die bei einem Admin-Reset oder der Prod-Konvention "kein Start-Passwort" gesetzt
+     * bleibt, bis der Nutzer sich selbst ein neues Passwort gibt). "Kein Credential vorhanden"
+     * (frisch angelegter Prod-Nutzer, der noch nie "Passwort vergessen" genutzt hat) zaehlt
+     * ebenfalls als "kein echtes Passwort".
+     */
+    public boolean hatEchtesPasswort(Nutzer nutzer) {
+        if (null == nutzer.getKeycloakId()) {
+            return false;
+        }
+        var userResource = keycloak.realm(realm).users().get(nutzer.getKeycloakId());
+        UserRepresentation kcUser = userResource.toRepresentation();
+        if (kcUser.getRequiredActions() != null && kcUser.getRequiredActions().contains("UPDATE_PASSWORD")) {
+            return false;
+        }
+        return !userResource.credentials().isEmpty();
+    }
+
+
     public void deleteUser(Nutzer nutzer) {
         if (null == nutzer.getKeycloakId()) {
             return;

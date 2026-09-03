@@ -194,4 +194,56 @@ class KeycloakUserProvisioningServiceTest {
         assertThat(kcUser.getRequiredActions()).containsExactly("UPDATE_PASSWORD");
         verify(userResource).update(kcUser);
     }
+
+
+    @Test
+    void hatEchtesPasswort_ohneKeycloakId_liefertFalse() {
+        Admin admin = admin();
+        assertThat(service.hatEchtesPasswort(admin)).isFalse();
+    }
+
+
+    @Test
+    void hatEchtesPasswort_ausstehendeUpdatePasswordAction_liefertFalse() {
+        UserResource userResource = mock(UserResource.class);
+        when(usersResource.get("kc-id-1")).thenReturn(userResource);
+        UserRepresentation kcUser = new UserRepresentation();
+        kcUser.setRequiredActions(List.of("UPDATE_PASSWORD"));
+        when(userResource.toRepresentation()).thenReturn(kcUser);
+
+        Admin admin = admin();
+        admin.setKeycloakId("kc-id-1");
+
+        assertThat(service.hatEchtesPasswort(admin)).isFalse();
+    }
+
+
+    @Test
+    void hatEchtesPasswort_keineRequiredActionAberKeineCredentials_liefertFalse() {
+        UserResource userResource = mock(UserResource.class);
+        when(usersResource.get("kc-id-1")).thenReturn(userResource);
+        UserRepresentation kcUser = new UserRepresentation();
+        when(userResource.toRepresentation()).thenReturn(kcUser);
+        when(userResource.credentials()).thenReturn(List.of());
+
+        Admin admin = admin();
+        admin.setKeycloakId("kc-id-1");
+
+        assertThat(service.hatEchtesPasswort(admin)).isFalse();
+    }
+
+
+    @Test
+    void hatEchtesPasswort_keineRequiredActionUndCredentialVorhanden_liefertTrue() {
+        UserResource userResource = mock(UserResource.class);
+        when(usersResource.get("kc-id-1")).thenReturn(userResource);
+        UserRepresentation kcUser = new UserRepresentation();
+        when(userResource.toRepresentation()).thenReturn(kcUser);
+        when(userResource.credentials()).thenReturn(List.of(new CredentialRepresentation()));
+
+        Admin admin = admin();
+        admin.setKeycloakId("kc-id-1");
+
+        assertThat(service.hatEchtesPasswort(admin)).isTrue();
+    }
 }

@@ -102,7 +102,7 @@
                 Name
               </th>
               <th @click="toggleSort('teilnehmer', 'gruppen')"
-                  class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold w-32 border-r border-gray-100">
+                  class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold sticky left-48 bg-gray-50 z-10 w-32 border-r border-gray-100">
                 Gruppen
                 <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/>
               </th>
@@ -134,7 +134,8 @@
                   </button>
                 </div>
               </td>
-              <td class="px-4 py-2 text-gray-500 border-r border-gray-100">{{ (u.gruppen || []).slice().sort().join(', ') }}</td>
+              <td class="px-4 py-2 text-gray-500 sticky left-48 z-10 border-r border-gray-100"
+                  :class="hasNoPriorities(u.id) ? 'bg-amber-50/60 hover:bg-gray-50' : 'bg-white hover:bg-gray-50'">{{ (u.gruppen || []).slice().sort().join(', ') }}</td>
               <td v-for="vortrag in sortedWahlvortraege" :key="'prio-'+u.id+'-'+vortrag.id"
                   class="px-1 py-1 text-center border-r border-gray-50">
                 <input type="number" min="0" max="10"
