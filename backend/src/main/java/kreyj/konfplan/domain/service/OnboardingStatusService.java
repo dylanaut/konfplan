@@ -4,6 +4,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import kreyj.konfplan.adapter.in.web.dto.OnboardingStatusDto;
 import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.util.StringHelper;
 
 import java.util.List;
 
@@ -24,7 +26,15 @@ public class OnboardingStatusService {
                 nutzer.getLoginName(),
                 nutzer.getRole(),
                 nutzer.getEmail(),
+                gruppenVon(nutzer),
                 keycloakUserProvisioningService.hatEchtesPasswort(nutzer)))
             .toList();
+    }
+
+    private List<String> gruppenVon(Nutzer nutzer) {
+        if (!(nutzer instanceof Teilnehmer teilnehmer)) {
+            return List.of();
+        }
+        return teilnehmer.getGruppen().stream().sorted(StringHelper.NUM_OR_ALPHA_COMPARATOR).toList();
     }
 }
