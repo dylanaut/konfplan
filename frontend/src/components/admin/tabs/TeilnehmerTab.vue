@@ -119,7 +119,7 @@
                 :class="['hover:bg-gray-50', hasNoPriorities(u.id) ? 'bg-amber-50/60' : '']"
                 :title="hasNoPriorities(u.id) ? 'Keine einzige Priorität vergeben' : ''">
               <td class="px-4 py-2 font-bold sticky left-0 z-10 border-r border-gray-100"
-                  :class="hasNoPriorities(u.id) ? 'bg-amber-50/60 hover:bg-gray-50' : 'bg-white hover:bg-gray-50'">
+                  :class="hasNoPriorities(u.id) ? 'bg-amber-100 hover:bg-gray-50' : 'bg-white hover:bg-gray-50'">
                 <div class="flex items-center justify-between gap-2">
                   <span :class="isPrioChanged(u.id) ? 'text-orange-600' : 'text-gray-900'" class="truncate"
                         :title="u.firstName + ' ' + u.lastName">
@@ -135,7 +135,7 @@
                 </div>
               </td>
               <td class="px-4 py-2 text-gray-500 sticky left-48 z-10 border-r border-gray-100"
-                  :class="hasNoPriorities(u.id) ? 'bg-amber-50/60 hover:bg-gray-50' : 'bg-white hover:bg-gray-50'">{{ (u.gruppen || []).slice().sort().join(', ') }}</td>
+                  :class="hasNoPriorities(u.id) ? 'bg-amber-100 hover:bg-gray-50' : 'bg-white hover:bg-gray-50'">{{ (u.gruppen || []).slice().sort().join(', ') }}</td>
               <td v-for="vortrag in sortedWahlvortraege" :key="'prio-'+u.id+'-'+vortrag.id"
                   class="px-1 py-1 text-center border-r border-gray-50">
                 <input type="number" min="0" max="10"
