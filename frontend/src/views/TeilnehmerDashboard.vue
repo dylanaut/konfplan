@@ -168,8 +168,11 @@
                      :class="assignedPrioritaetenCount > event.maxPrioritaeten ? 'text-red-600' : 'text-gray-500'">
                     {{ assignedPrioritaetenCount }} / {{ event.maxPrioritaeten }} Prioritäten vergeben
                   </p>
+                  <p v-if="hasInvalidPriorities" class="text-xs font-bold text-red-600">
+                    Bitte ungültige Prioritäten korrigieren (0-10, ganzzahlig).
+                  </p>
                   <button @click="savePriorities()"
-                          :disabled="isDeadlinePassed(event.deadlineTeilnehmer) || changedPriorities.size === 0 || (event.maxPrioritaeten && assignedPrioritaetenCount > event.maxPrioritaeten)"
+                          :disabled="isDeadlinePassed(event.deadlineTeilnehmer) || changedPriorities.size === 0 || hasInvalidPriorities || (event.maxPrioritaeten && assignedPrioritaetenCount > event.maxPrioritaeten)"
                           class="btn-save-all">
                     <SaveAllIcon class="w-3.5 h-3.5"/>
                     Meine Prioritäten speichern
@@ -204,11 +207,13 @@
                       <tr>
                         <td class="px-2 py-1 text-left font-bold text-gray-600 sticky left-0 bg-white">Priorität</td>
                         <td v-for="talk in chunk" :key="'prio-'+talk.id" class="px-1 py-1 text-center">
-                          <input type="number" min="0" max="10"
+                          <input type="number" min="0" max="10" step="1"
                                  v-model.number="getPriority(talk.id).prioWert"
                                  @input="markPrioChanged(talk.id)"
                                  :disabled="isDeadlinePassed(event.deadlineTeilnehmer) || talk.istPflicht"
-                                 class="prio-input w-10 text-center border rounded py-0.5 text-[10px] focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 disabled:bg-gray-200"/>
+                                 :title="isPrioInvalid(talk.id) ? `Ungültiger Wert - muss eine ganze Zahl zwischen ${PRIO_MIN} und ${PRIO_MAX} sein` : ''"
+                                 :class="isPrioInvalid(talk.id) ? '!border-red-500 bg-red-50 focus:!ring-red-500 focus:!border-red-500' : '!border-gray-300 focus:!ring-indigo-500 focus:!border-indigo-500'"
+                                 class="prio-input w-10 text-center border rounded py-0.5 text-[10px] disabled:bg-gray-200"/>
                         </td>
                       </tr>
                     </tbody>
@@ -369,6 +374,24 @@ const prioritaetenChunks = computed(() => {
     chunks.push(nummeredVortraege.value.slice(i, i + PRIORITAETEN_SPALTEN_PRO_TABELLE));
   }
   return chunks;
+});
+
+// Muss mit Prioritaet.PRIO_MIN/PRIO_MAX im Backend uebereinstimmen (PrioritaetService lehnt
+// Werte ausserhalb dieses Intervalls ab) - Pruefung hier verhindert, dass ungueltige Werte
+// (leer, Dezimalzahl, ausserhalb des Intervalls) ueberhaupt erst zum Server geschickt werden.
+const PRIO_MIN = 0;
+const PRIO_MAX = 10;
+
+const isPrioInvalid = (talkId) => {
+  const value = priorities.value[talkId]?.prioWert;
+  if (typeof value !== 'number' || Number.isNaN(value) || !Number.isInteger(value)) {
+    return true;
+  }
+  return value < PRIO_MIN || value > PRIO_MAX;
+};
+
+const hasInvalidPriorities = computed(() => {
+  return Object.keys(priorities.value).some(talkId => isPrioInvalid(talkId));
 });
 
 const assignedPrioritaetenCount = computed(() => {
