@@ -17,12 +17,14 @@
         <div v-if="collapsed || openGroups[group.name]" class="space-y-0.5">
           <button v-for="tab in tabsOf(group)" :key="tab"
                   @click="emit('tab-click', tab)"
-                  :title="collapsed ? (tabLabels[tab] || tab) : ''"
+                  :title="tabLabels[tab] || tab"
                   :class="[
                     activeTab === tab ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700',
-                    'w-full text-left px-2 py-1.5 rounded-lg text-xs transition truncate'
+                    collapsed ? 'justify-center' : '',
+                    'w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition truncate'
                   ]">
-            {{ collapsed ? (tabLabels[tab] || tab).slice(0, 2) : (tabLabels[tab] || tab) }}
+            <component :is="tabIcons[tab]" class="w-3.5 h-3.5 shrink-0"/>
+            <span v-if="!collapsed" class="truncate">{{ tabLabels[tab] || tab }}</span>
           </button>
         </div>
       </div>
@@ -37,7 +39,36 @@ import {
   ChevronUp as ChevronUpIcon,
   PanelLeftClose as PanelLeftCloseIcon,
   PanelLeftOpen as PanelLeftOpenIcon,
+  Calendar as CalendarIcon,
+  FolderInput as FolderInputIcon,
+  Building2 as Building2Icon,
+  Users as UsersIcon,
+  User as UserIcon,
+  Presentation as PresentationIcon,
+  BookOpen as BookOpenIcon,
+  Clock as ClockIcon,
+  CalendarClock as CalendarClockIcon,
+  ClipboardCheck as ClipboardCheckIcon,
+  ScrollText as ScrollTextIcon,
+  MessageSquare as MessageSquareIcon,
+  KeyRound as KeyRoundIcon,
 } from '@lucide/vue';
+
+const tabIcons = {
+  veranstaltungen: CalendarIcon,
+  veranstaltungImport: FolderInputIcon,
+  gebaeude: Building2Icon,
+  organisatoren: UsersIcon,
+  teilnehmer: UserIcon,
+  referenten: PresentationIcon,
+  vortraege: BookOpenIcon,
+  slots: ClockIcon,
+  planung: CalendarClockIcon,
+  ergebnisse: ClipboardCheckIcon,
+  protokoll: ScrollTextIcon,
+  feedback: MessageSquareIcon,
+  onboarding: KeyRoundIcon,
+};
 
 const props = defineProps({
   activeTab: { type: String, required: true },
