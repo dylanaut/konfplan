@@ -1,0 +1,7 @@
+Release Notes 1.11.0
+Released: 2026-09-03
+
+Changes:
+- Prepare next development iteration (1.10.1-SNAPSHOT) (#409)
+- Version-Reload-Hinweis, Onboarding-Status Gruppen/Suche/Sortierung, Sticky-Spalten-Nachbesserung (#411)
+- Release 1.11.0 (#413)

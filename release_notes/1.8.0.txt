@@ -1,0 +1,7 @@
+Release Notes 1.8.0
+Released: 2026-09-02
+
+Changes:
+- Prepare next development iteration (1.7.1-SNAPSHOT) (#390)
+- Frontend: Hinweis auf neue App-Version bei offener Sitzung (#392)
+- Release 1.8.0 (#394)

@@ -1,0 +1,7 @@
+Release Notes 1.4.1
+Released: 2026-09-01
+
+Changes:
+- Prepare next development iteration (1.4.1-SNAPSHOT) (#365)
+- Serverseitiges Logging fuer rohe WebApplicationException-basierte Fehlerantworten (#367)
+- Release 1.4.1 (#369)

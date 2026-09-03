@@ -1,0 +1,7 @@
+Release Notes 1.10.0
+Released: 2026-09-03
+
+Changes:
+- Prepare next development iteration (1.9.1-SNAPSHOT) (#403)
+- AdminDashboard: Sidebar-Navigation, Onboarding-Status-Tab, Sticky-Spalten-Fix (#405)
+- Release 1.10.0 (#407)

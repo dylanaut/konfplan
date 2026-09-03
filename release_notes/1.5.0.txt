@@ -1,0 +1,7 @@
+Release Notes 1.5.0
+Released: 2026-09-01
+
+Changes:
+- Prepare next development iteration (1.4.2-SNAPSHOT) (#371)
+- Prioritäten: Eindeutigkeits-Pruefung entfernt + Validierungstexte erreichen die UI (#373)
+- Release 1.5.0 (#375)

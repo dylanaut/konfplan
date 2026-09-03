@@ -1,0 +1,6 @@
+Release Notes 1.13.0
+Released: 2026-09-03
+
+Changes:
+- Fix Raum/Gebäude speichern: LazyInitializationException statt Erfolg (#424) (#425)
+- Release 1.13.0 (#427)

@@ -1,0 +1,9 @@
+Release Notes 1.14.0
+Released: 2026-09-03
+
+Changes:
+- Prepare next development iteration (1.13.1-SNAPSHOT) (#428)
+- Letzter Administrator/Organisator darf nicht gelöscht oder herabgestuft werden (#430)
+- Logout bei ungespeicherten Änderungen abbrechbar machen (#432)
+- Tote Zeit-Slot-Auswahl im Raum-Editor entfernen, Handbuch aktualisieren (#434)
+- Release 1.14.0 (#435)

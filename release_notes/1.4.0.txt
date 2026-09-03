@@ -1,0 +1,9 @@
+Release Notes 1.4.0
+Released: 2026-09-01
+
+Changes:
+- Prepare next development iteration (1.3.1-SNAPSHOT) (#355)
+- Produktion: IMAGE_TAG immer auf Release-Version pinnen, nie auf 'latest' (#357)
+- Log-Zeile bei fehlgeschlagener JWT-Verifizierung: LoginName ergänzen (#359)
+- TeilnehmerTab: Teilnehmer ohne vergebene Priorität dezent hervorheben (#361)
+- Release 1.4.0 (#363)
