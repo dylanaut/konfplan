@@ -246,4 +246,68 @@ class KeycloakUserProvisioningServiceTest {
 
         assertThat(service.hatEchtesPasswort(admin)).isTrue();
     }
+
+
+    private RoleScopeResource stubUserRoleScope(String keycloakId) {
+        UserResource userResource = mock(UserResource.class);
+        RoleMappingResource roleMappingResource = mock(RoleMappingResource.class);
+        RoleScopeResource roleScopeResource = mock(RoleScopeResource.class);
+        when(usersResource.get(keycloakId)).thenReturn(userResource);
+        when(userResource.roles()).thenReturn(roleMappingResource);
+        when(roleMappingResource.realmLevel()).thenReturn(roleScopeResource);
+        return roleScopeResource;
+    }
+
+
+    private RoleRepresentation stubRole(RolesResource rolesResource, String roleName) {
+        RoleResource roleResource = mock(RoleResource.class);
+        when(rolesResource.get(roleName)).thenReturn(roleResource);
+        RoleRepresentation role = new RoleRepresentation();
+        role.setName(roleName);
+        when(roleResource.toRepresentation()).thenReturn(role);
+        return role;
+    }
+
+
+    @Test
+    void changeRealmRole_mitBestehendemKeycloakAccount_entferntAlteUndWeistNeueRolleZu() {
+        Organisator admin = admin();
+        admin.setKeycloakId("kc-id-1");
+
+        RolesResource rolesResource = mock(RolesResource.class);
+        when(realmResource.roles()).thenReturn(rolesResource);
+        RoleRepresentation organisatorRole = stubRole(rolesResource, "ORGANISATOR");
+        RoleRepresentation administratorRole = stubRole(rolesResource, "ADMINISTRATOR");
+        RoleScopeResource roleScopeResource = stubUserRoleScope("kc-id-1");
+
+        service.changeRealmRole(admin, "ORGANISATOR", "ADMINISTRATOR");
+
+        verify(roleScopeResource).remove(List.of(organisatorRole));
+        verify(roleScopeResource).add(List.of(administratorRole));
+    }
+
+
+    @Test
+    void changeRealmRole_ohneKeycloakAccount_legtIhnNachUndWechseltDanachDieRolle() {
+        // Selbstheilung: z.B. Altdaten aus der Zeit vor der Keycloak-Integration oder nach einem
+        // lokalen Neustart der (ephemeren) Keycloak-Dev-Services - die persistente lokale DB
+        // fuehrt den Nutzer weiterhin, Keycloak kennt ihn aber nicht (mehr).
+        Organisator admin = admin();
+        assertThat(admin.getKeycloakId()).isNull();
+
+        when(usersResource.create(any(UserRepresentation.class)))
+            .thenReturn(Response.created(java.net.URI.create("http://keycloak/admin/realms/konfplan/users/nachgelegt-1")).build());
+
+        RolesResource rolesResource = mock(RolesResource.class);
+        when(realmResource.roles()).thenReturn(rolesResource);
+        RoleRepresentation organisatorRole = stubRole(rolesResource, "ORGANISATOR");
+        RoleRepresentation administratorRole = stubRole(rolesResource, "ADMINISTRATOR");
+        RoleScopeResource roleScopeResource = stubUserRoleScope("nachgelegt-1");
+
+        service.changeRealmRole(admin, "ORGANISATOR", "ADMINISTRATOR");
+
+        assertThat(admin.getKeycloakId()).isEqualTo("nachgelegt-1");
+        verify(roleScopeResource).remove(List.of(organisatorRole));
+        verify(roleScopeResource).add(List.of(administratorRole));
+    }
 }
