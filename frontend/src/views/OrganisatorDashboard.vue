@@ -267,6 +267,7 @@ import {useEventContextStore} from '../stores/eventContext';
 import {useAvailabilityStore} from '../stores/availability';
 import { useGroupStore } from '../stores/group';
 import { useAuthStore } from '../stores/auth';
+import { useUnsavedChangesStore } from '../stores/unsavedChanges';
 import {
   AlertTriangle as AlertTriangleIcon,
   Calendar as CalendarIcon,
@@ -305,6 +306,7 @@ import MaintenanceAnnouncementModal from '../components/MaintenanceAnnouncementM
 
 const eventContext = useEventContextStore();
 const availabilityStore = useAvailabilityStore();
+const unsavedChanges = useUnsavedChangesStore();
 const groupStore = useGroupStore();
 const auth = useAuthStore();
 
@@ -490,12 +492,17 @@ onMounted(async () => {
   await refreshGebaeude();
   await refreshAdmins();
   if (selectedVid.value) handleVeranstaltungChange();
+  unsavedChanges.registerDirtyCheck(() => availabilityStore.hasDirtyAvailabilities()
+      || changedPriorities.value.size > 0
+      || [showVeranstaltungModal, showGebaeudeModal, showRaumModal, showUserModal, showVortragModal,
+          showSlotModal, showInviteModal, showPasswordResetModal, showMaintenanceModal].some(m => m.value));
 });
 
 onUnmounted(() => {
   if (pollingInterval) {
     clearInterval(pollingInterval);
   }
+  unsavedChanges.clearDirtyCheck();
 });
 
 const refreshVeranstaltungen = async () => {

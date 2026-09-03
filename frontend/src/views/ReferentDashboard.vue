@@ -228,12 +228,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, reactive } from 'vue';
+import { ref, onMounted, onUnmounted, computed, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api/axios';
 import { extractErrorMessage } from '../utils/errorMessage';
 import { useAuthStore } from '../stores/auth';
 import { useNeigungStore } from '../stores/neigung';
+import { useUnsavedChangesStore } from '../stores/unsavedChanges';
 import ReferentVortragEditorModal from '../components/ReferentVortragEditorModal.vue';
 import EventLogo from '../components/EventLogo.vue';
 import { User as UserIcon, FileText as FileTextIcon, Calendar as CalendarIcon, Save as SaveIcon, Plus as PlusIcon, Edit as EditIcon, Trash2 as Trash2Icon, ListChecks as ListChecksIcon, Check as CheckIcon, X as XIcon, CalendarCheck as CalendarCheckIcon, Printer as PrinterIcon, Download as DownloadIcon, CalendarPlus, Mail as MailIcon } from '@lucide/vue';
@@ -263,11 +264,18 @@ const events = ref([]);
 // Neue State für Verfügbarkeiten pro Event
 const eventverfuegIds = reactive({}); // Key: eventId, Value: Array von slotIds
 
+const unsavedChanges = useUnsavedChangesStore();
+
 onMounted(async () => {
   await fetchReferentData();
   await fetchAllSlots();
   await fetchReferentenVortraege();
   await fetchEventsForRegistration();
+  unsavedChanges.registerDirtyCheck(() => isProfileDirty.value || showTalkModal.value);
+});
+
+onUnmounted(() => {
+  unsavedChanges.clearDirtyCheck();
 });
 
 const fetchReferentData = async () => {

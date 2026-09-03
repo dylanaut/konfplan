@@ -270,11 +270,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api/axios';
 import { extractErrorMessage } from '../utils/errorMessage';
 import { useNeigungStore } from '../stores/neigung';
+import { useUnsavedChangesStore } from '../stores/unsavedChanges';
 import EventLogo from '../components/EventLogo.vue';
 import {
   User as UserIcon,
@@ -318,6 +319,8 @@ neigungStore.fetchNeigungen();
 const hasAvailabilityChanges = computed(() => {
   return JSON.stringify(availabilities.value) !== JSON.stringify(initialAvailabilities.value);
 });
+
+const unsavedChanges = useUnsavedChangesStore();
 
 const sortedVortraege = computed(() => {
   return [...vortraege.value].sort((a, b) => a.titel.localeCompare(b.titel));
@@ -420,6 +423,11 @@ const groupedSlots = computed(() => {
 onMounted(async () => {
   await fetchTeilnehmerProfile();
   await fetchTeilnehmerVeranstaltungen();
+  unsavedChanges.registerDirtyCheck(() => hasAvailabilityChanges.value || changedPriorities.value.size > 0);
+});
+
+onUnmounted(() => {
+  unsavedChanges.clearDirtyCheck();
 });
 
 const fetchTeilnehmerProfile = async () => {
