@@ -449,6 +449,26 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
     });
   });
 
+  test.describe('Vortrag-Anmeldungen (Wahlvortrag)', () => {
+    test('öffnet die Anmeldungen-Übersicht eines Wahlvortrags in einem neuen Tab', async ({ page, context }) => {
+      await gotoTab(page, 'Vorträge');
+
+      const [popup] = await Promise.all([
+        context.waitForEvent('page'),
+        page.locator('tr', { hasText: 'Wahlvortrag Test' }).locator('button[title="Angemeldete Teilnehmer"]').click()
+      ]);
+      await popup.waitForLoadState();
+
+      expect(popup.url()).toContain(`/organisator/veranstaltung/${VID}/vortrag/400/anmeldungen`);
+    });
+
+    test('zeigt kein Anmeldungen-Icon bei einem Pflichtvortrag', async ({ page }) => {
+      await gotoTab(page, 'Vorträge');
+
+      await expect(page.locator('tr', { hasText: 'Pflichtvortrag Test' }).locator('button[title="Angemeldete Teilnehmer"]')).toHaveCount(0);
+    });
+  });
+
   test.describe('Zeit-Slot-Editor-Modal', () => {
     test('erstellt einen neuen Zeit-Slot', async ({ page }) => {
       await gotoTab(page, 'Zeit-Slots');

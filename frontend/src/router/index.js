@@ -20,6 +20,7 @@ const LaufzettelAlleReferenten = () => import('../views/report/LaufzettelAlleRef
 const Stundenplan = () => import('../views/report/Stundenplan.vue');
 const Anwesenheiten = () => import('../views/report/Anwesenheiten.vue');
 const WahlvortraegeUebersicht = () => import('../views/report/WahlvortraegeUebersicht.vue');
+const VortragAnmeldungen = () => import('../views/report/VortragAnmeldungen.vue');
 
 const routes = [
     {
@@ -135,6 +136,12 @@ const routes = [
         path: '/organisator/veranstaltung/:vid/wahlvortraege-uebersicht',
         name: 'WahlvortraegeUebersicht',
         component: WahlvortraegeUebersicht,
+        meta: { requiresAuth: true, role: 'ORGANISATOR' }
+    },
+    {
+        path: '/organisator/veranstaltung/:vid/vortrag/:vortragId/anmeldungen',
+        name: 'VortragAnmeldungen',
+        component: VortragAnmeldungen,
         meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {

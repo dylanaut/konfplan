@@ -1,5 +1,6 @@
 package kreyj.konfplan.adapter.in.web;
 
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.panache.mock.PanacheMock;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -12,16 +13,20 @@ import kreyj.konfplan.adapter.in.web.ReportResource;
 import kreyj.konfplan.adapter.in.web.dto.templating.TeilnehmerReport;
 import kreyj.konfplan.domain.service.DashboardService;
 import kreyj.konfplan.domain.service.PlanService;
+import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Wahlvortrag;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
 import static org.mockito.ArgumentMatchers.any;
 
 /**
@@ -294,5 +299,89 @@ class ReportResourceTest {
                 .when().get("1/teilnehmer-dashboard-data")
                 .then()
                 .statusCode(403);
+    }
+
+
+    // --- Vortrag-Anmeldungen (Prioritäten je Wahlvortrag) ---
+    // Läuft bewusst gegen echte H2-Persistenz statt PanacheMock: die eigentliche HQL-Query
+    // (vortrag.id = ?1 and prioWert > 0 order by ...) soll real ausgeführt werden.
+
+
+    @Test
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
+    void getVortragAnmeldungenData_asAdmin_liefertNurPositivePrioritaetenAbsteigendSortiert() {
+        Long[] ids = new Long[2];
+        QuarkusTransaction.requiringNew().run(() -> {
+            Veranstaltung v = new Veranstaltung();
+            v.setName("Anmeldungen-Test-Event");
+            v.setBeginntAm(LocalDateTime.now());
+            v.persist();
+
+            Referent referent = new Referent();
+            referent.assignLoginName("anmeldungen-referent");
+            referent.setEmail("anmeldungen-referent@test.de");
+            referent.persist();
+
+            Wahlvortrag wv = new Wahlvortrag();
+            wv.setTitel("Testvortrag");
+            wv.setVeranstaltung(v);
+            wv.setReferent(referent);
+            wv.persist();
+
+            Teilnehmer t1 = new Teilnehmer();
+            t1.assignLoginName("teilnehmer.eins");
+            t1.setEmail("teilnehmer.eins@test.de");
+            t1.persist();
+
+            Teilnehmer t2 = new Teilnehmer();
+            t2.assignLoginName("teilnehmer.zwei");
+            t2.setEmail("teilnehmer.zwei@test.de");
+            t2.persist();
+
+            Teilnehmer ohnePraeferenz = new Teilnehmer();
+            ohnePraeferenz.assignLoginName("teilnehmer.drei");
+            ohnePraeferenz.setEmail("teilnehmer.drei@test.de");
+            ohnePraeferenz.persist();
+
+            new Prioritaet(t1, wv, 5).persist();
+            new Prioritaet(t2, wv, 8).persist();
+            // prioWert 0 = "keine Präferenz" - darf nicht als Anmeldung erscheinen.
+            new Prioritaet(ohnePraeferenz, wv, 0).persist();
+
+            ids[0] = v.getId();
+            ids[1] = wv.getId();
+        });
+
+        given()
+                .when().get(ids[0] + "/vortrag/" + ids[1] + "/anmeldungen-data")
+                .then()
+                .statusCode(200)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("vortragTitel", is("Testvortrag"))
+                .body("anmeldungen.size()", is(2))
+                .body("anmeldungen[0].loginName", is("teilnehmer.zwei"))
+                .body("anmeldungen[0].prioWert", is(8))
+                .body("anmeldungen[1].loginName", is("teilnehmer.eins"))
+                .body("anmeldungen[1].prioWert", is(5));
+    }
+
+
+    @Test
+    @TestSecurity(user = "testReferent", roles = "REFERENT")
+    void getVortragAnmeldungenData_asWrongRole_shouldBeForbidden() {
+        given()
+                .when().get("1/vortrag/1/anmeldungen-data")
+                .then()
+                .statusCode(403);
+    }
+
+
+    @Test
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
+    void getVortragAnmeldungenData_unbekannterVortrag_shouldReturn404() {
+        given()
+                .when().get("1/vortrag/999999/anmeldungen-data")
+                .then()
+                .statusCode(404);
     }
 }

@@ -41,7 +41,10 @@
             <span v-else class="text-[10px] text-gray-400">Nein</span>
           </td>
           <td class="px-4 py-2 text-right">
-            <button @click="emit('openVortragEditor', v)" class="text-indigo-600" title="Bearbeiten" aria-label="Bearbeiten">
+            <button v-if="!v.istPflicht" @click="openAnmeldungen(v)" class="text-emerald-600" title="Angemeldete Teilnehmer" aria-label="Angemeldete Teilnehmer">
+              <UserCheckIcon class="w-3.5 h-3.5 inline"/>
+            </button>
+            <button @click="emit('openVortragEditor', v)" class="text-indigo-600 ml-3" title="Bearbeiten" aria-label="Bearbeiten">
               <PencilIcon class="w-3.5 h-3.5 inline"/>
             </button>
             <button @click="emit('deleteVortrag', v.id)" class="text-red-600 ml-3" title="Löschen" aria-label="Löschen">
@@ -69,6 +72,7 @@ import {
   Pencil as PencilIcon,
   Printer as PrinterIcon,
   Trash2 as Trash2Icon,
+  UserCheck as UserCheckIcon,
   Upload as UploadIcon
 } from '@lucide/vue';
 import PaginationControls from '../../PaginationControls.vue';
@@ -146,6 +150,12 @@ const paginatedVortraege = computed(() => paginate(filteredVortraege.value, page
 const openWahlvortraegeUebersicht = () => {
   if (!props.selectedVid) return;
   const route = router.resolve({ name: 'WahlvortraegeUebersicht', params: { vid: props.selectedVid } });
+  window.open(route.href, '_blank');
+};
+
+const openAnmeldungen = (v) => {
+  if (!props.selectedVid) return;
+  const route = router.resolve({ name: 'VortragAnmeldungen', params: { vid: props.selectedVid, vortragId: v.id } });
   window.open(route.href, '_blank');
 };
 </script>
