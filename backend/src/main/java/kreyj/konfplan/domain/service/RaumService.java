@@ -46,8 +46,12 @@ public class RaumService {
         }
 
         if (r.getId() == null) {
-            r.persistAndFlush();
+            // gebaeude.addRaum(r) muss vor dem Persistieren laufen: r.gebaeude zeigt sonst noch auf
+            // das aus dem Request-Body deserialisierte, detached Gebaeude-Stub-Objekt (nur id
+            // gesetzt, version = null), was Hibernate beim Insert mit einer
+            // PropertyValueException/"uninitialized version value" ablehnt.
             gebaeude.addRaum(r);
+            r.persistAndFlush();
             gebaeude.persistAndFlush();
             protokollService.log(ProtokollKategorie.RAUM, "Raum erstellt", "Raum '" + r.getName() + "' im Gebäude '" + gebaeude.getName() + "' erstellt.", r.getId());
             return r;

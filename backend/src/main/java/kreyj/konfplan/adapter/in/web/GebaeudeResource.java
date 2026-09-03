@@ -1,6 +1,7 @@
 package kreyj.konfplan.adapter.in.web;
 
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
@@ -68,24 +69,27 @@ public class GebaeudeResource {
 
     @GET
     @Path("/{id}")
+    @Transactional
     @Operation(summary = "Ein Gebäude abrufen", description = "Ruft ein einzelnes Gebäude anhand seiner ID ab.")
     public Response getOne(@PathParam("id") Long id) {
         Gebaeude g = gebaeudeService.findById(id);
         if (null == g) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(g).build();
+        return Response.ok(GebaeudeSimpleDto.from(g)).build();
     }
 
     @POST
+    @Transactional
     @Operation(summary = "Neues Gebäude erstellen", description = "Erstellt ein neues Gebäude.")
     public Response create(@RequestBody(description = "Das zu erstellende Gebäude") Gebaeude g) {
         Gebaeude saved = gebaeudeService.save(g);
-        return Response.status(Response.Status.CREATED).entity(saved).build();
+        return Response.status(Response.Status.CREATED).entity(GebaeudeSimpleDto.from(saved)).build();
     }
 
     @PUT
     @Path("/{id}")
+    @Transactional
     @Operation(summary = "Gebäude aktualisieren", description = "Aktualisiert ein bestehendes Gebäude.")
     public Response update(@PathParam("id") Long id, @RequestBody(description = "Die aktualisierten Gebäudedaten") Gebaeude g) {
         g.setId(id);
@@ -93,7 +97,7 @@ public class GebaeudeResource {
         if (null == updated) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(updated).build();
+        return Response.ok(GebaeudeSimpleDto.from(updated)).build();
     }
 
     @DELETE
@@ -118,11 +122,12 @@ public class GebaeudeResource {
 
     @POST
     @Path("/{gid}/raeume")
+    @Transactional
     @Operation(summary = "Neuen Raum in einem Gebäude erstellen", description = "Erstellt einen neuen Raum innerhalb eines Gebäudes.")
     public Response createRaum(@PathParam("gid") Long gid, @RequestBody(description = "Der zu erstellende Raum") Raum r) {
         try {
             Raum saved = raumService.save(r, gid);
-            return Response.status(Response.Status.CREATED).entity(saved).build();
+            return Response.status(Response.Status.CREATED).entity(RaumDto.from(saved)).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
@@ -130,6 +135,7 @@ public class GebaeudeResource {
 
     @PUT
     @Path("/{gid}/raeume/{rid}")
+    @Transactional
     @Operation(summary = "Raum aktualisieren", description = "Aktualisiert einen bestehenden Raum.")
     public Response updateRaum(@PathParam("gid") Long gid, @PathParam("rid") Long rid, @RequestBody(description = "Die aktualisierten Raumdaten") Raum r) {
         r.setId(rid);
@@ -138,7 +144,7 @@ public class GebaeudeResource {
             if (null == saved) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
-            return Response.ok(saved).build();
+            return Response.ok(RaumDto.from(saved)).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
