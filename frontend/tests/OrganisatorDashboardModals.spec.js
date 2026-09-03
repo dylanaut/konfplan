@@ -725,4 +725,60 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
       await expect(page.locator('td:has-text("Admin")')).toBeVisible();
     });
   });
+
+  test.describe('Logout mit ungespeicherten Änderungen', () => {
+    // Editor-Modals (VeranstaltungEditorModal etc.) sind volle Overlays (fixed inset-0 z-50) und
+    // blockieren dadurch auch den Logout-Button in der Nav - man kann also gar nicht erst mit
+    // offenem Modal auf Logout klicken. Die Raum-Verfügbarkeits-Matrix im Gebäude-Tab ist dagegen
+    // ein realistischer, tatsächlich erreichbarer Weg zu ungespeicherten Änderungen bei
+    // weiterhin klickbarem Logout-Button (availabilityStore.hasDirtyAvailabilities()).
+    async function toggleRoomAvailability(page) {
+      // Die Standard-Fixture liefert eine leere Raum-Verfügbarkeitsliste (kein Raum ist einer
+      // Veranstaltung zugeordnet) - für diese Tests wird Raum A als der Veranstaltung zugehörig
+      // und in Slot 1 verfügbar gemockt, damit die Matrix überhaupt eine Checkbox zeigt.
+      await page.route(`http://localhost:9000/api/organisator/veranstaltungen/${VID}/raeume/verfuegbarkeiten`, route =>
+        route.fulfill({ status: 200, json: [{ raumId: 20, verfuegbareSlotIds: [500] }] }));
+      // Die Verfügbarkeiten wurden beim initialen Auswählen in gotoAdminWithEvent() (siehe
+      // beforeEach) bereits mit der alten (leeren) Fixture geladen - ab-/wiederauswählen erzwingt
+      // ein Neuladen, das den obigen Override greifen lässt.
+      const select = page.locator('select').first();
+      await select.selectOption({ index: 0 });
+      await select.selectOption({ index: 1 });
+
+      await gotoTab(page, 'Gebäude');
+      await page.getByText('Raum-Verfügbarkeiten verwalten').click();
+      await page.locator('table').last().locator('input[type="checkbox"]').first().click();
+    }
+
+    test('fragt vor dem Logout nach, wenn eine Raum-Verfügbarkeit geändert aber nicht gespeichert wurde, und bricht bei Abbrechen ab', async ({ page }) => {
+      await toggleRoomAvailability(page);
+
+      const dialogMessage = await new Promise(resolve => {
+        page.once('dialog', dialog => {
+          resolve(dialog.message());
+          dialog.dismiss();
+        });
+        page.getByRole('button', { name: 'Logout' }).click();
+      });
+
+      expect(dialogMessage).toContain('ungespeicherte Änderungen');
+      // Abbrechen des Dialogs: Nutzer bleibt angemeldet.
+      await expect(page).toHaveURL(/\/organisator$/);
+    });
+
+    test('meldet nach Bestätigen des Dialogs trotz ungespeicherter Raum-Verfügbarkeit ab', async ({ page }) => {
+      await toggleRoomAvailability(page);
+
+      page.once('dialog', dialog => dialog.accept());
+      await page.getByRole('button', { name: 'Logout' }).click();
+
+      await expect(page).toHaveURL(/\/$/);
+    });
+
+    test('meldet ohne jede offene Änderung sofort ohne Rückfrage ab', async ({ page }) => {
+      await page.getByRole('button', { name: 'Logout' }).click();
+
+      await expect(page).toHaveURL(/\/$/);
+    });
+  });
 });

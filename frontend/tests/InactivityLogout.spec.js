@@ -67,4 +67,24 @@ test.describe('Inactivity-Auto-Logout', () => {
     await page.clock.fastForward(10000);
     await expect(page).toHaveURL(/\/$/);
   });
+
+  test('wird durch ungespeicherte Änderungen nicht blockiert (kein Bestätigungsdialog)', async ({ page }) => {
+    // Der manuelle Logout-Button fragt bei ungespeicherten Änderungen nach (siehe
+    // stores/unsavedChanges.js + OrganisatorDashboardModals.spec.js "Logout mit ungespeicherten
+    // Änderungen") - der automatische Inaktivitäts-Logout ruft auth.logout() aber direkt auf und
+    // muss daher immer durchlaufen, ohne auf eine Antwort auf einen Dialog zu warten, den niemand
+    // mehr beantwortet.
+    let dialogAppeared = false;
+    page.on('dialog', () => { dialogAppeared = true; });
+
+    await page.clock.install();
+    await loginAsAdmin(page);
+    await page.getByRole('button', { name: '+ Neu', exact: true }).first().click();
+    await expect(page.getByText('Neue Veranstaltung anlegen')).toBeVisible();
+
+    await page.clock.fastForward(INACTIVITY_TIMEOUT_MS + 1000);
+
+    await expect(page).toHaveURL(/\/$/);
+    expect(dialogAppeared).toBe(false);
+  });
 });
