@@ -211,7 +211,7 @@
                               @save="handleSaveVeranstaltung"/>
     <GebaeudeEditorModal :isVisible="showGebaeudeModal" :gebaeude="selectedGebaeude" @close="showGebaeudeModal = false"
                          @save="handleSaveGebaeude"/>
-    <RaumEditorModal :isVisible="showRaumModal" :raum="selectedRaum" :slots="eventSlots" :gebaeude="gebaeude"
+    <RaumEditorModal :isVisible="showRaumModal" :raum="selectedRaum" :gebaeude="gebaeude"
                      @close="showRaumModal = false" @save="handleSaveRaum"/>
     <UserEditorModal :isVisible="showUserModal" :nutzer="selectedUser" :eventSlots="eventSlots" :fixedRole="newUserFixedRole"
                      @close="showUserModal = false" @save="handleSaveUser"/>

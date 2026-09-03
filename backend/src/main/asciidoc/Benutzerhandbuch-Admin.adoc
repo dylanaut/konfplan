@@ -35,7 +35,11 @@ den Entwickler, einen Abschnitt **Benutzerhandbücher** mit Download-Links auf d
 für Organisatoren, Referenten und Teilnehmer (nur Organisatoren/Administratoren sehen alle drei – Referenten und Teilnehmer sehen
 im selben Menü jeweils nur ihr eigenes Handbuch) – auch dieses Handbuch selbst ist von dort
 herunterladbar – sowie einen Link **Verbesserungsvorschlag einreichen**, siehe
-<<_verbesserungsvorschlag_einreichen>>) und der **LOGOUT**-Button.
+<<_verbesserungsvorschlag_einreichen>>) und der **LOGOUT**-Button. Liegen in der aktuellen
+Ansicht ungespeicherte Änderungen vor (z.B. ein noch nicht gespeicherter Bearbeiten-Dialog oder
+nicht gespeicherte Verfügbarkeiten/Prioritäten), fragt ein Bestätigungsdialog vor dem Abmelden
+nach; bei Abbruch bleibt man angemeldet. Ohne ungespeicherte Änderungen erfolgt der Logout sofort
+ohne Rückfrage.
 
 [NOTE]
 ====
@@ -145,7 +149,9 @@ Titel je nach Kontext "Veranstaltung bearbeiten" (siehe <<_dialog_veranstaltung_
 | Organisatoren
 | Checkbox-Liste aller Organisatoren/Administratoren (Mehrfachauswahl); mindestens einer ist
   Pflicht – der Speichern-Button bleibt sonst deaktiviert. Leerhinweis, falls noch keine
-  Organisatoren existieren.
+  Organisatoren existieren. Diese Regel gilt dauerhaft, nicht nur beim Anlegen: der letzte
+  verbleibende Organisator einer Veranstaltung kann weder aus ihr entfernt noch gelöscht werden
+  (siehe <<_tab_organisatoren>>).
 
 | Zugehörige Gebäude
 | Checkbox-Liste aller Gebäude (Mehrfachauswahl, optional).
@@ -260,10 +266,6 @@ image::08-raum-editor-modal.png[Dialog Raum hinzufügen]
 
 | Etage (optional)
 | Text.
-
-| Verfügbare Zeit-Slots
-| Checkbox-Liste aller Zeit-Slots der Veranstaltung (Mehrfachauswahl), Anzeige als
-  "Bezeichnung: Start – Ende".
 |===
 
 Buttons: Abbrechen / Speichern.
@@ -285,11 +287,21 @@ Zeit-Slots existieren.
   Checkboxen sind gesperrt, wenn die Veranstaltung beendet ist.
 * Leerzustand: "Für diese Veranstaltung sind keine Räume zugeordnet."
 
+[[_tab_organisatoren]]
 == Tab "Organisatoren"
 
 image::10-organisatoren-liste.png[Organisatoren-Liste]
 
 Verwaltung der Organisator-/Administrator-Konten, unabhängig von einer bestimmten Veranstaltung.
+
+[NOTE]
+====
+Im System muss immer mindestens ein Administrator vorhanden sein: der letzte verbleibende
+Administrator kann weder zu Organisator herabgestuft (Dialog "Nutzer bearbeiten") noch gelöscht
+werden - ein entsprechender Versuch wird mit einer Fehlermeldung abgelehnt. Ebenso kann ein
+Organisator/Administrator nicht gelöscht werden, solange er der einzige Organisator einer
+Veranstaltung ist (siehe <<_dialog_veranstaltung_bearbeiten>>).
+====
 
 * Suchfeld "Suchen...", Button **Import** (CSV), Button **+ Neu** (öffnet den Nutzer-Editor mit
   Rolle "ORGANISATOR" vorbelegt, siehe unten - neue Konten werden hier immer als Organisator
