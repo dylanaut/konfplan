@@ -323,12 +323,20 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
         final Long[] vIdArray = {0L};
 
         QuarkusTransaction.requiringNew().run(() -> {
+            Organisator organisator = new Organisator();
+            organisator.assignLoginName("opt-lock-organisator" + System.nanoTime());
+            organisator.setEmail(organisator.getLoginName() + "@test.de");
+            organisator.persist();
+
             Veranstaltung v = new Veranstaltung();
             v.setName("Original Event Name");
             v.setBeginntAm(LocalDateTime.now().plusDays(1));
             v.setEndetAm(LocalDateTime.now().plusDays(2));
             v.persist();
             vIdArray[0] = v.getId();
+
+            organisator.addVeranstaltung(v);
+            organisator.persist();
         });
         Long vId = vIdArray[0];
 

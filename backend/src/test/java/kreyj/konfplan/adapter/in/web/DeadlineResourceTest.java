@@ -9,6 +9,7 @@ import io.quarkus.test.security.oidc.Claim;
 import io.quarkus.test.security.oidc.OidcSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -48,6 +49,13 @@ class DeadlineResourceTest extends DatabaseCleaner {
         v.setDeadlineTeilnehmer(LocalDateTime.now().minusDays(1));
         v.persist();
         pastEventId = v.getId();
+
+        // Organisator (jede Veranstaltung braucht mindestens einen)
+        Organisator organisator = new Organisator();
+        organisator.assignLoginName("organisator@test.de");
+        organisator.setEmail("organisator@test.de");
+        organisator.persist();
+        organisator.addVeranstaltung(v);
 
         // Referent
         Referent r = new Referent();

@@ -21,6 +21,7 @@ import kreyj.konfplan.adapter.in.web.dto.ImportResultDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
+import kreyj.konfplan.adapter.in.web.dto.RoleChangeDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerPasswortZipRequestDto;
 import kreyj.konfplan.application.port.in.OrganisatorServiceInterface;
 import kreyj.konfplan.domain.service.MailService;
@@ -128,6 +129,14 @@ public class OrganisatorResource {
         if (null != nutzerToDelete) {
             organisatorService.deleteUser(id);
         }
+    }
+
+
+    @PUT
+    @Path("/nutzer/{id}/rolle")
+    @Operation(summary = "Rolle eines Organisators/Administrators ändern", description = "Stuft einen bestehenden Organisator zu Administrator um oder umgekehrt.")
+    public NutzerDto changeRole(@PathParam("id") Long id, @RequestBody(description = "Die neue Rolle (ORGANISATOR oder ADMINISTRATOR)") RoleChangeDto dto) {
+        return organisatorService.changeRole(id, dto.role);
     }
 
 

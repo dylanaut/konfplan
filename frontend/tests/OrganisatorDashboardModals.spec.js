@@ -107,6 +107,9 @@ async function mockAdminApis(page) {
       if (method === 'PUT') return json(body());
       if (method === 'DELETE') return noContent();
     }
+    if (/^\/api\/organisator\/nutzer\/\d+\/rolle$/.test(path) && method === 'PUT') {
+      return json(body());
+    }
     if (/^\/api\/organisator\/nutzer\/\d+\/einladen\/\d+$/.test(path) && method === 'POST') {
       return json({});
     }
@@ -328,6 +331,49 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
       ]);
       expect(request.postDataJSON().role).toBe('ORGANISATOR');
       await expect(page.getByText('Organisator anlegen')).toHaveCount(0);
+    });
+
+    test('befördert einen Organisator zu Administrator über den eigenen Rollen-Wechsel-Endpunkt', async ({ page }) => {
+      await gotoTab(page, 'Organisatoren');
+      await page.locator('button[title="Bearbeiten"]').first().click();
+
+      await expect(page.getByText('Organisator bearbeiten')).toBeVisible();
+      const roleSelect = page.locator('label:has-text("Rolle") + select');
+      await expect(roleSelect).toHaveValue('ORGANISATOR');
+      await roleSelect.selectOption('ADMINISTRATOR');
+
+      const [rolleRequest] = await Promise.all([
+        page.waitForRequest(req => /\/api\/organisator\/nutzer\/100\/rolle$/.test(req.url()) && req.method() === 'PUT'),
+        page.getByRole('button', { name: 'Änderungen speichern' }).click()
+      ]);
+      expect(rolleRequest.postDataJSON().role).toBe('ADMINISTRATOR');
+      await expect(page.getByText('Organisator bearbeiten')).toHaveCount(0);
+    });
+
+    test('zeigt eine Fehlermeldung und ändert nichts, wenn die Rollen-Umstufung serverseitig abgelehnt wird (z.B. letzter Administrator)', async ({ page }) => {
+      await page.route('http://localhost:9000/api/organisator/nutzer/100/rolle', async (route) => {
+        return route.fulfill({ status: 400, json: { error: 'Der letzte Administrator kann nicht herabgestuft werden - es muss immer mindestens ein Administrator vorhanden sein.' } });
+      });
+
+      await gotoTab(page, 'Organisatoren');
+      await page.locator('button[title="Bearbeiten"]').first().click();
+      const roleSelect = page.locator('label:has-text("Rolle") + select');
+      await roleSelect.selectOption('ADMINISTRATOR');
+
+      const dialogMessage = await new Promise(resolve => {
+        page.once('dialog', dialog => {
+          resolve(dialog.message());
+          dialog.accept();
+        });
+        page.getByRole('button', { name: 'Änderungen speichern' }).click();
+      });
+
+      expect(dialogMessage).toContain('Der letzte Administrator kann nicht herabgestuft werden');
+      // Modal bleibt offen, da handleSaveUser bei einem Fehler showUserModal nicht schließt
+      // (der Titel zeigt bereits "Administrator bearbeiten", da form.role reaktiv sofort auf die
+      // Select-Auswahl reagiert, unabhängig vom - hier gescheiterten - Speichern-Ergebnis).
+      await expect(page.getByRole('dialog')).toBeVisible();
+      await expect(page.getByText('Administrator bearbeiten')).toBeVisible();
     });
 
     test('Rolle ist beim Bearbeiten deaktiviert und zeigt rollenspezifische Felder für Referenten', async ({ page }) => {
@@ -652,6 +698,31 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
         page.locator('tbody tr').first().locator('button.text-red-600').click()
       ]);
       expect(request.method()).toBe('DELETE');
+    });
+
+    test('zeigt eine Fehlermeldung, wenn das Löschen eines Organisators serverseitig abgelehnt wird (z.B. letzter Administrator)', async ({ page }) => {
+      await page.route('http://localhost:9000/api/organisator/nutzer/100', async (route) => {
+        if (route.request().method() === 'DELETE') {
+          return route.fulfill({ status: 400, json: { error: 'Der letzte Administrator kann nicht gelöscht werden - es muss immer mindestens ein Administrator vorhanden sein.' } });
+        }
+        return route.fallback();
+      });
+
+      await gotoTab(page, 'Organisatoren');
+
+      const dialogMessages = [];
+      page.on('dialog', dialog => {
+        dialogMessages.push(dialog.message());
+        dialog.accept();
+      });
+      await page.locator('button[title="Löschen"]').first().click();
+      await page.waitForTimeout(300);
+
+      expect(dialogMessages).toHaveLength(2);
+      expect(dialogMessages[0]).toBe('Löschen?');
+      expect(dialogMessages[1]).toContain('Der letzte Administrator kann nicht gelöscht werden');
+      // Nutzer bleibt in der Liste, da das Löschen serverseitig abgelehnt wurde.
+      await expect(page.locator('td:has-text("Admin")')).toBeVisible();
     });
   });
 });

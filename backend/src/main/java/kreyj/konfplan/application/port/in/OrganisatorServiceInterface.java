@@ -27,6 +27,8 @@ public interface OrganisatorServiceInterface {
 
     NutzerDto updateUser(Long id, NutzerDto dto, List<Long> vUpdateIds);
 
+    NutzerDto changeRole(Long id, String newRole);
+
     void inviteUserToEvent(Long nutzerId, Long veranstaltungId);
 
     boolean deleteUser(Long id);

@@ -2,6 +2,7 @@ package kreyj.konfplan.domain.service;
 
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
+import io.quarkus.hibernate.orm.panache.Panache;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
@@ -39,6 +40,7 @@ import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Administrator;
 import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -273,6 +275,10 @@ public class OrganisatorService implements OrganisatorServiceInterface {
             for (Long toRemove : toRemoves) {
                 Veranstaltung v = Veranstaltung.findById(toRemove);
                 if (null != v) {
+                    if (nutzer instanceof Organisator && v.organisatoren().size() == 1 && v.organisatoren().contains(nutzer)) {
+                        throw new UpdateNutzerException("Nutzer ist der/die einzige Organisator/in der Veranstaltung '"
+                            + v.getName() + "' und kann nicht daraus entfernt werden.");
+                    }
                     nutzer.removeVeranstaltung(v);
                 }
             }
@@ -322,6 +328,52 @@ public class OrganisatorService implements OrganisatorServiceInterface {
     }
 
 
+    /**
+     * Stuft einen bestehenden Organisator zu Administrator um oder umgekehrt. Laeuft bewusst in
+     * einer eigenen, isolierten Transaktion statt als Teil von {@link #updateUser}: die Rolle ist
+     * die JPA-Diskriminatorspalte (SINGLE_TABLE-Vererbung, updatable=false) und kann daher nicht
+     * ueber einen normalen Setter geaendert werden, sondern nur per gezieltem natives UPDATE +
+     * anschliessendem Session-Clear - das darf sich nicht mit anderen, im selben Aufruf noch
+     * verwalteten Entities (z.B. aus der vUpdateIds-Verarbeitung) ueberschneiden.
+     */
+    @Transactional
+    @Override
+    public NutzerDto changeRole(Long id, String newRole) {
+        Nutzer nutzer = Nutzer.findById(id);
+        if (null == nutzer) {
+            throw new EntityNotFoundException(Nutzer.class, "Nutzer nicht gefunden.");
+        }
+        if (!(nutzer instanceof Organisator)) {
+            throw new UpdateNutzerException("Nur Organisatoren/Administratoren können umgestuft werden.");
+        }
+        if (!"ORGANISATOR".equals(newRole) && !"ADMINISTRATOR".equals(newRole)) {
+            throw new UpdateNutzerException("Ungültige Zielrolle: " + newRole);
+        }
+
+        String oldRole = nutzer.getRole();
+        if (oldRole.equals(newRole)) {
+            return NutzerDto.from(nutzer);
+        }
+        if ("ORGANISATOR".equals(newRole) && Administrator.count() <= 1) {
+            throw new UpdateNutzerException("Der letzte Administrator kann nicht herabgestuft werden - es muss immer mindestens ein Administrator vorhanden sein.");
+        }
+
+        keycloakUserProvisioningService.changeRealmRole(nutzer, oldRole, newRole);
+
+        Panache.getEntityManager()
+            .createNativeQuery("UPDATE nutzer SET role = ?1 WHERE id = ?2")
+            .setParameter(1, newRole)
+            .setParameter(2, id)
+            .executeUpdate();
+        Panache.getEntityManager().clear();
+
+        Nutzer updated = Nutzer.findById(id);
+        protokollService.log(ProtokollKategorie.NUTZER, "Rolle geändert",
+            "Nutzer '" + updated.getLoginName() + "' von '" + oldRole + "' zu '" + newRole + "' umgestuft.", id);
+        return NutzerDto.from(updated);
+    }
+
+
     @Transactional
     @Override
     public void inviteUserToEvent(Long nutzerId, Long veranstaltungId) {
@@ -360,6 +412,20 @@ public class OrganisatorService implements OrganisatorServiceInterface {
     public boolean deleteUser(Long id) {
         Nutzer nutzer = Nutzer.findById(id);
         if (nutzer != null) {
+            if (nutzer instanceof Administrator && Administrator.count() <= 1) {
+                throw new BusinessException("Der letzte Administrator kann nicht gelöscht werden - es muss immer mindestens ein Administrator vorhanden sein.");
+            }
+            if (nutzer instanceof Organisator) {
+                List<String> soleOrganizerEventNames = nutzer.getVeranstaltungen().stream()
+                    .filter(v -> v.organisatoren().size() == 1 && v.organisatoren().contains(nutzer))
+                    .map(Veranstaltung::getName)
+                    .toList();
+                if (!soleOrganizerEventNames.isEmpty()) {
+                    throw new BusinessException("Nutzer ist der/die einzige Organisator/in folgender Veranstaltung(en) und kann nicht gelöscht werden: "
+                        + String.join(", ", soleOrganizerEventNames));
+                }
+            }
+
             // Send user deletion notification email BEFORE deleting the user
             mailService.sendUserDeletionNotification(nutzer);
 
