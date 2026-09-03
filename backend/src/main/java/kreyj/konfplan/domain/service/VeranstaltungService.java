@@ -8,7 +8,7 @@ import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.VeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.VeranstaltungCsvDto;
 import kreyj.konfplan.application.port.in.VeranstaltungServiceInterface;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.ProtokollKategorie;
@@ -99,15 +99,15 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
 
         // Organisatoren zuweisen
         if (CollectionUtils.isNotEmpty(dto.getOrganisatorIds())) {
-            // alte Admins entfernen und neue zufügen
+            // alte Organisatoren entfernen und neue zufügen
             ArrayList<Nutzer> alteNutzer = new ArrayList<>(v.getNutzer());
             alteNutzer.stream()
-                .filter(u -> u instanceof Admin)
+                .filter(u -> u instanceof Organisator)
                 .forEach(v::removeNutzer);
             for (Long adminId : dto.getOrganisatorIds()) {
-                Admin a = Admin.findById(adminId);
+                Organisator a = Organisator.findById(adminId);
                 if (null == a) {
-                    LOG.warn("Unbekannter Admin mit ID " + adminId + " beim Aktualisieren der Veranstaltung '" + v.getName() + "'.");
+                    LOG.warn("Unbekannter Organisator mit ID " + adminId + " beim Aktualisieren der Veranstaltung '" + v.getName() + "'.");
                 } else {
                     v.addNutzer(a);
                 }
@@ -229,13 +229,13 @@ public class VeranstaltungService implements VeranstaltungServiceInterface {
 
                 String[] organisatorenLoginNames = StringUtils.split(csvDto.organisatorenLoginNames, ",");
                 for (String organisatorenLoginName : organisatorenLoginNames) {
-                    Nutzer admin = Nutzer.findByLoginName(organisatorenLoginName.trim());
+                    Nutzer organisator = Nutzer.findByLoginName(organisatorenLoginName.trim());
 
-                    if (admin instanceof Admin) {
-                        // Admin verknüpfen
-                        admin.addVeranstaltung(veranstaltung);
+                    if (organisator instanceof Organisator) {
+                        // Organisator verknüpfen
+                        organisator.addVeranstaltung(veranstaltung);
                     } else {
-                        LOG.warn("Veranstaltung '" + csvDto.name + "' übersprungen: Organisator (Admin) mit loginName " + organisatorenLoginName + " nicht gefunden.");
+                        LOG.warn("Veranstaltung '" + csvDto.name + "' übersprungen: Organisator mit loginName " + organisatorenLoginName + " nicht gefunden.");
                     }
                 }
 

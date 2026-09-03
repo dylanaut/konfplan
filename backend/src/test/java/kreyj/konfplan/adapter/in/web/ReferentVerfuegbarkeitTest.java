@@ -7,7 +7,7 @@ import io.quarkus.test.security.TestSecurity;
 import io.quarkus.test.security.oidc.Claim;
 import io.quarkus.test.security.oidc.OidcSecurity;
 import jakarta.inject.Inject;
-import kreyj.konfplan.domain.service.AdminService;
+import kreyj.konfplan.domain.service.OrganisatorService;
 import kreyj.konfplan.domain.service.GebaeudeService;
 import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import kreyj.konfplan.domain.service.ReferentService;
@@ -40,7 +40,7 @@ class ReferentVerfuegbarkeitTest extends DatabaseCleaner {
     @Inject
     GebaeudeService gebaeudeService;
     @Inject
-    AdminService adminService;
+    OrganisatorService adminService;
     @Inject
     VeranstaltungService veranstaltungService;
     @Inject
@@ -55,7 +55,7 @@ class ReferentVerfuegbarkeitTest extends DatabaseCleaner {
         Path basePath = Paths.get("src/test/resources/csv_import/medium");
 
         gebaeudeService.importGebaeudeWithRaeumeFromCsv(basePath.resolve("gebaeude.csv"));
-        adminService.importAdminsFromCsv(basePath.resolve("organisatoren.csv"));
+        adminService.importOrganisatorenFromCsv(basePath.resolve("organisatoren.csv"));
         veranstaltungService.importFromCsv(basePath.resolve("veranstaltungen.csv"));
 
         Veranstaltung event = QuarkusTransaction.requiringNew().call(() ->

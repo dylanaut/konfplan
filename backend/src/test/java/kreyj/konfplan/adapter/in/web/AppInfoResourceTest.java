@@ -12,7 +12,7 @@ import static org.hamcrest.Matchers.notNullValue;
 class AppInfoResourceTest extends DatabaseCleaner {
 
     @Test
-    @TestSecurity(user = "irgendein.nutzer", roles = "ADMIN")
+    @TestSecurity(user = "irgendein.nutzer", roles = "ORGANISATOR")
     void getInfo_liefertAppNameUndVersion() {
         given()
             .when().get("/api/info")

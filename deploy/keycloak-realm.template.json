@@ -37,8 +37,12 @@
     "roles": {
         "realm": [
             {
-                "name": "ADMIN",
-                "description": "Administrator/Organisator"
+                "name": "ORGANISATOR",
+                "description": "Organisator"
+            },
+            {
+                "name": "ADMINISTRATOR",
+                "description": "Administrator (Organisator mit exklusiven Rechten für Wartungshinweis und Verzeichnis-Import)"
             },
             {
                 "name": "REFERENT",

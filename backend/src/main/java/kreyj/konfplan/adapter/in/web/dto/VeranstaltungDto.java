@@ -1,7 +1,7 @@
 package kreyj.konfplan.adapter.in.web.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.util.StringHelper;
 import lombok.Getter;
@@ -96,11 +96,11 @@ public class VeranstaltungDto extends AbstractVersionedDto {
         // Organisatoren filtern und hinzufügen
         if (v.getNutzer() != null) {
             v.getNutzer().stream()
-                .filter(u -> u instanceof Admin)
+                .filter(u -> u instanceof Organisator)
                 .forEach(u -> {
                     dto.getOrganisatorIds().add(u.getId());
                     dto.getOrganisatorNamen().add(u.getFullName());
-                    dto.getOrganisatoren().add(OrganisatorDto.from((Admin) u));
+                    dto.getOrganisatoren().add(OrganisatorDto.from((Organisator) u));
                 });
         }
 

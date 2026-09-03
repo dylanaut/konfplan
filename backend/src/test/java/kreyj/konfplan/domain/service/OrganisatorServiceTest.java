@@ -4,17 +4,17 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.adapter.in.web.DatabaseCleaner;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.domain.exception.CreateVortragException;
 import kreyj.konfplan.domain.exception.UpdateNutzerException;
 import kreyj.konfplan.domain.exception.UpdateVortragException;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
-import kreyj.konfplan.persistence.Verbesserungsvorschlag;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,10 +32,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @QuarkusTest
-public class AdminServiceTest {
+public class OrganisatorServiceTest extends DatabaseCleaner {
 
     @Inject
-    AdminService adminService;
+    OrganisatorService organisatorService;
 
     @InjectMock
     KeycloakUserProvisioningService keycloakUserProvisioningService;
@@ -47,16 +47,12 @@ public class AdminServiceTest {
     @BeforeEach
     @Transactional
     public void setUp() {
-        // Clean up existing data to avoid conflicts
-        // @ElementCollection-Tabelle auf der Subklasse Teilnehmer wird bei einem Bulk-Delete auf
-        // Nutzer nicht automatisch mitgeloescht.
-        io.quarkus.hibernate.orm.panache.Panache.getEntityManager().createNativeQuery("delete from teilnehmer_neigungen").executeUpdate();
-        Verbesserungsvorschlag.deleteAll();
-        Nutzer.deleteAll();
-        Veranstaltung.deleteAll();
+        // Aufraeumen erledigt DatabaseCleaner.cleanDatabase() (laeuft als Superklassen-@BeforeEach
+        // bereits vor dieser Methode) - u.a. wichtig, damit Vortrag-Zeilen mit einem
+        // referent_id-FK auf Nutzer vor dessen Loeschung entfernt sind.
 
         // Create a test user
-        Nutzer user = new Admin();
+        Nutzer user = new Organisator();
         user.assignLoginName("testexample");
         user.setEmail("test@example.com");
         user.setFirstName("Test");
@@ -85,8 +81,8 @@ public class AdminServiceTest {
 
     @Test
     public void testCreateAndGetGruppen() {
-        adminService.createGruppe(veranstaltung.getId(), "Gruppe A");
-        List<String> gruppen = adminService.getGruppen(veranstaltung.getId());
+        organisatorService.createGruppe(veranstaltung.getId(), "Gruppe A");
+        List<String> gruppen = organisatorService.getGruppen(veranstaltung.getId());
         assertThat(gruppen.contains("Gruppe A")).isTrue();
         assertThat(gruppen.size()).isEqualTo(1);
     }
@@ -94,21 +90,21 @@ public class AdminServiceTest {
     @Test
     @Transactional
     public void testCreateGruppe_DuplicateName_ThrowsException() {
-        adminService.createGruppe(veranstaltung.getId(), "Gruppe A");
-        assertThatExceptionOfType(CreateVortragException.class).isThrownBy(() -> adminService.createGruppe(veranstaltung.getId(), "Gruppe A"));
+        organisatorService.createGruppe(veranstaltung.getId(), "Gruppe A");
+        assertThatExceptionOfType(CreateVortragException.class).isThrownBy(() -> organisatorService.createGruppe(veranstaltung.getId(), "Gruppe A"));
     }
 
     @Test
     @Transactional
     public void testRenameGruppe() {
         // Setup
-        adminService.createGruppe(veranstaltung.getId(), "Gruppe A");
+        organisatorService.createGruppe(veranstaltung.getId(), "Gruppe A");
         Teilnehmer tn = Teilnehmer.findById(tnId);
         tn.addGruppe("Gruppe A");
         tn.persist();
 
         // Rename
-        adminService.renameGruppe(veranstaltung.getId(), "Gruppe A", "Gruppe B");
+        organisatorService.renameGruppe(veranstaltung.getId(), "Gruppe A", "Gruppe B");
 
         // Verify
         Veranstaltung updatedVeranstaltung = Veranstaltung.findById(veranstaltung.getId());
@@ -122,9 +118,9 @@ public class AdminServiceTest {
 
     @Test
     public void testRenameGruppe_ToExistingName_ThrowsException() {
-        adminService.createGruppe(veranstaltung.getId(), "Gruppe A");
-        adminService.createGruppe(veranstaltung.getId(), "Gruppe B");
-        assertThatExceptionOfType(UpdateVortragException.class).isThrownBy(() -> adminService.renameGruppe(veranstaltung.getId(), "Gruppe A", "Gruppe B"));
+        organisatorService.createGruppe(veranstaltung.getId(), "Gruppe A");
+        organisatorService.createGruppe(veranstaltung.getId(), "Gruppe B");
+        assertThatExceptionOfType(UpdateVortragException.class).isThrownBy(() -> organisatorService.renameGruppe(veranstaltung.getId(), "Gruppe A", "Gruppe B"));
     }
 
     @Test
@@ -132,11 +128,11 @@ public class AdminServiceTest {
     public void testDeleteGruppe() {
         // Setup
         Teilnehmer tn = Teilnehmer.findById(tnId);
-        adminService.createGruppe(veranstaltung.getId(), "Gruppe A");
+        organisatorService.createGruppe(veranstaltung.getId(), "Gruppe A");
         tn.addGruppe("Gruppe A");
 
         // Delete
-        adminService.deleteGruppe(veranstaltung.getId(), "Gruppe A");
+        organisatorService.deleteGruppe(veranstaltung.getId(), "Gruppe A");
 
         // Verify
         Veranstaltung updatedVeranstaltung = Veranstaltung.findById(veranstaltung.getId());
@@ -152,7 +148,7 @@ public class AdminServiceTest {
         // Setup
         Teilnehmer tn = Teilnehmer.findById(tnId);
 
-        adminService.createGruppe(veranstaltung.getId(), "Gruppe A");
+        organisatorService.createGruppe(veranstaltung.getId(), "Gruppe A");
         tn.addGruppe("Gruppe A");
 //        tn.persist();
 
@@ -167,39 +163,39 @@ public class AdminServiceTest {
     }
 
 
-    // Regression: ein Admin-Konto ohne E-Mail-Adresse kann sich bei vergessenem Passwort nicht
+    // Regression: ein Organisator-Konto ohne E-Mail-Adresse kann sich bei vergessenem Passwort nicht
     // selbst wiederherstellen (Keycloaks Passwort-Reset braucht eine E-Mail-Adresse) und es gab
     // bislang auch keinen anderen Weg (siehe testResetPassword_* unten für den Rettungsweg).
     @Test
-    public void testCreateUser_AdminWithoutEmail_ThrowsException() {
-        NutzerDto dto = new NutzerDto("ADMIN", null, "Ohne", "Email", true);
+    public void testCreateUser_OrganisatorWithoutEmail_ThrowsException() {
+        NutzerDto dto = new NutzerDto("ORGANISATOR", null, "Ohne", "Email", true);
         dto.loginName = "ohne.email";
 
         assertThatExceptionOfType(BusinessException.class)
-            .isThrownBy(() -> adminService.createUser(dto, null));
+            .isThrownBy(() -> organisatorService.createUser(dto, null));
 
         assertThat(Nutzer.findByLoginName("ohne.email")).isNull();
     }
 
 
     @Test
-    public void testCreateUser_AdminWithEmail_Succeeds() {
-        NutzerDto dto = new NutzerDto("ADMIN", "mit.email@test.de", "Mit", "Email", true);
+    public void testCreateUser_OrganisatorWithEmail_Succeeds() {
+        NutzerDto dto = new NutzerDto("ORGANISATOR", "mit.email@test.de", "Mit", "Email", true);
         dto.loginName = "mit.email";
 
-        NutzerDto created = adminService.createUser(dto, null);
+        NutzerDto created = organisatorService.createUser(dto, null);
 
         assertThat(created.email).isEqualTo("mit.email@test.de");
     }
 
 
     @Test
-    public void testUpdateUser_RemovingAdminEmail_ThrowsException() {
+    public void testUpdateUser_RemovingOrganisatorEmail_ThrowsException() {
         NutzerDto dto = NutzerDto.from(Nutzer.findById(testUserId));
         dto.email = null;
 
         assertThatExceptionOfType(UpdateNutzerException.class)
-            .isThrownBy(() -> adminService.updateUser(testUserId, dto, null));
+            .isThrownBy(() -> organisatorService.updateUser(testUserId, dto, null));
 
         assertThat(Nutzer.<Nutzer>findById(testUserId).getEmail()).isEqualTo("test@example.com");
     }
@@ -207,7 +203,7 @@ public class AdminServiceTest {
 
     @Test
     public void testResetPassword_Success() {
-        boolean result = adminService.resetPassword(testUserId, "einNeuesPasswort123");
+        boolean result = organisatorService.resetPassword(testUserId, "einNeuesPasswort123");
 
         assertThat(result).isTrue();
         Nutzer updated = Nutzer.findById(testUserId);
@@ -217,7 +213,7 @@ public class AdminServiceTest {
 
     @Test
     public void testResetPassword_UnknownUser_ReturnsFalse() {
-        boolean result = adminService.resetPassword(-1L, "einNeuesPasswort123");
+        boolean result = organisatorService.resetPassword(-1L, "einNeuesPasswort123");
 
         assertThat(result).isFalse();
     }
@@ -226,7 +222,7 @@ public class AdminServiceTest {
     @Test
     public void testResetPassword_PasswordTooShort_ThrowsException() {
         assertThatExceptionOfType(BusinessException.class)
-            .isThrownBy(() -> adminService.resetPassword(testUserId, "kurz"));
+            .isThrownBy(() -> organisatorService.resetPassword(testUserId, "kurz"));
     }
 
 
@@ -239,8 +235,8 @@ public class AdminServiceTest {
         NutzerDto zweiterDto = new NutzerDto("TEILNEHMER", "", "Zweiter", "Teilnehmer", true);
         zweiterDto.loginName = "zweiter.ohne.email";
 
-        NutzerDto ersterCreated = adminService.createUser(ersterDto, null);
-        NutzerDto zweiterCreated = adminService.createUser(zweiterDto, null);
+        NutzerDto ersterCreated = organisatorService.createUser(ersterDto, null);
+        NutzerDto zweiterCreated = organisatorService.createUser(zweiterDto, null);
 
         assertThat(ersterCreated.email).isNull();
         assertThat(zweiterCreated.email).isNull();
@@ -255,7 +251,7 @@ public class AdminServiceTest {
         dto.loginName = "neue.person";
         dto.neigungen = Set.of(Neigung.SOZIAL, Neigung.WISSENSCHAFTLICH);
 
-        NutzerDto created = adminService.createUser(dto, null);
+        NutzerDto created = organisatorService.createUser(dto, null);
 
         assertThat(created.neigungen).containsExactlyInAnyOrder(Neigung.SOZIAL, Neigung.WISSENSCHAFTLICH);
         Teilnehmer persisted = Teilnehmer.findById(created.id);
@@ -269,7 +265,7 @@ public class AdminServiceTest {
         Teilnehmer tn = Teilnehmer.findById(tnId);
         NutzerDto dto = NutzerDto.from(tn);
         dto.neigungen = Set.of(Neigung.KREATIV, Neigung.MEDIZINISCH);
-        adminService.updateUser(tnId, dto, null);
+        organisatorService.updateUser(tnId, dto, null);
 
         Teilnehmer updated = Teilnehmer.findById(tnId);
         assertThat(updated.getNeigungen()).containsExactlyInAnyOrder(Neigung.KREATIV, Neigung.MEDIZINISCH);
@@ -278,7 +274,7 @@ public class AdminServiceTest {
         // (Checkbox-UI: ein Entfernen einzelner Werte muss moeglich sein).
         NutzerDto dto2 = NutzerDto.from(Teilnehmer.findById(tnId));
         dto2.neigungen = Set.of(Neigung.TECHNISCH);
-        adminService.updateUser(tnId, dto2, null);
+        organisatorService.updateUser(tnId, dto2, null);
 
         Teilnehmer updated2 = Teilnehmer.findById(tnId);
         assertThat(updated2.getNeigungen()).containsExactly(Neigung.TECHNISCH);
@@ -295,7 +291,7 @@ public class AdminServiceTest {
         // Bearbeiten-Dialog: "Gruppe B" wird abgewaehlt, "Gruppe C" wird neu angehakt.
         NutzerDto dto = NutzerDto.from(tn);
         dto.gruppen = List.of("Gruppe A", "Gruppe C");
-        adminService.updateUser(tnId, dto, null);
+        organisatorService.updateUser(tnId, dto, null);
 
         Teilnehmer updated = Teilnehmer.findById(tnId);
         assertThat(updated.getGruppen()).containsExactlyInAnyOrder("Gruppe A", "Gruppe C");
@@ -303,7 +299,7 @@ public class AdminServiceTest {
         // Alle Haken entfernen muss ebenfalls moeglich sein, nicht nur Hinzufuegen.
         NutzerDto dto2 = NutzerDto.from(Teilnehmer.findById(tnId));
         dto2.gruppen = List.of();
-        adminService.updateUser(tnId, dto2, null);
+        organisatorService.updateUser(tnId, dto2, null);
 
         Teilnehmer updated2 = Teilnehmer.findById(tnId);
         assertThat(updated2.getGruppen()).isEmpty();
@@ -312,10 +308,10 @@ public class AdminServiceTest {
 
     @Test
     @Transactional
-    public void importAdminsFromCsv_ueberspringtWennEmailBereitsUnterAnderemLoginNameExistiert() throws Exception {
+    public void importOrganisatorenFromCsv_ueberspringtWennEmailBereitsUnterAnderemLoginNameExistiert() throws Exception {
         // Simuliert einen fruehreren, nur teilweise geglueckten Import: derselbe Mensch existiert
         // schon lokal, aber unter einem anderen loginName als im aktuellen CSV.
-        Admin bestehender = new Admin();
+        Organisator bestehender = new Organisator();
         bestehender.assignLoginName("k.jessen");
         bestehender.setEmail("kathrin.jessen@rks-linz.de");
         bestehender.setFirstName("Kathrin");
@@ -325,7 +321,7 @@ public class AdminServiceTest {
         Path csv = Files.createTempFile("organisatoren", ".csv");
         Files.writeString(csv, "Vorname;Nachname;LoginName;Email\nKathrin;Jessen;kathrin.jessen;kathrin.jessen@rks-linz.de\n");
 
-        int anzahl = adminService.importAdminsFromCsv(csv);
+        int anzahl = organisatorService.importOrganisatorenFromCsv(csv);
 
         assertThat(anzahl).isEqualTo(0);
         assertThat(Nutzer.findByLoginName("kathrin.jessen")).isNull();

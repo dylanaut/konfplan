@@ -77,8 +77,8 @@ const props = defineProps({
 });
 const emit = defineEmits(['tab-click']);
 
-// Gruppierung der Admin-Tabs - rein navigatorisch, unabhaengig von visibleTabs (welche Tabs
-// ueberhaupt zur Auswahl stehen haengt weiterhin von AdminDashboard.vue's Veranstaltungs-Logik ab).
+// Gruppierung der Organisator-Tabs - rein navigatorisch, unabhaengig von visibleTabs (welche Tabs
+// ueberhaupt zur Auswahl stehen haengt weiterhin von OrganisatorDashboard.vue's Veranstaltungs-Logik ab).
 const groups = [
   { name: 'Stammdaten', tabs: ['veranstaltungen', 'veranstaltungImport', 'gebaeude', 'organisatoren', 'teilnehmer', 'referenten', 'vortraege'] },
   { name: 'Planung', tabs: ['slots', 'planung', 'ergebnisse'] },

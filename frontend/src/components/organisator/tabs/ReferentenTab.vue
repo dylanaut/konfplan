@@ -7,7 +7,7 @@
         <button @click="emit('triggerUpload', `/api/veranstaltungen/${selectedVid}/referenten/import`)"
                 class="btn-secondary text-xs py-1 px-3">Import
         </button>
-        <button @click="emit('triggerUpload', `/api/admin/veranstaltungen/${selectedVid}/referenten/verfuegbarkeiten/import`)"
+        <button @click="emit('triggerUpload', `/api/organisator/veranstaltungen/${selectedVid}/referenten/verfuegbarkeiten/import`)"
                 class="btn-secondary text-xs py-1 px-3 flex items-center gap-1">
           <UploadIcon class="w-3.5 h-3.5"/>
           Verfügbarkeiten Import

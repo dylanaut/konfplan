@@ -86,7 +86,7 @@ public class PlanErstellungService {
     @Getter
     private volatile boolean planning;
     /**
-     * Welcher Teilschritt der Planerstellung gerade läuft. Der vom Admin konfigurierte
+     * Welcher Teilschritt der Planerstellung gerade läuft. Der vom Organisator konfigurierte
      * Timeout (siehe PlanungTab.vue) gilt ausschließlich für {@link Phase#BERECHNUNG} - die
      * DB-lastigen Phasen davor/danach sind über {@link #cancel()} nicht unterbrechbar, daher
      * blendet die UI den Abbrechen-Button außerhalb von BERECHNUNG als deaktiviert ein.
@@ -128,7 +128,7 @@ public class PlanErstellungService {
 
     /**
      * Bewusst NICHT {@code @Transactional}: der MiniZinc-Aufruf weiter unten blockiert bis zu
-     * {@code config.getTimeout()} Sekunden (vom Admin frei konfigurierbar, siehe PlanungTab.vue).
+     * {@code config.getTimeout()} Sekunden (vom Organisator frei konfigurierbar, siehe PlanungTab.vue).
      * Würde diese Methode als Ganzes in einer Transaktion laufen, reißt der JTA-Transaktions-
      * Timeout (60s Default, 3m in dev) bei längeren Solver-Läufen mitten im externen Prozess-Aufruf,
      * noch bevor das Ergebnis gespeichert werden kann ("ARJUNA016102: The transaction is not

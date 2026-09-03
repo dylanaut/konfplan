@@ -258,9 +258,9 @@ WARNING: In beiden Fällen danach `IMAGE_TAG` wieder auf die zuletzt regulär re
 
 == Der eine echte Bestandsaccount
 
-Anders als bei der Keycloak-Migration selbst (siehe `keycloak-migration.adoc` - dort gab es praktisch keine echten Bestandsnutzer) betrifft das bei einem *erstmaligen* Produktions-Deploy genau einen Fall: den Bootstrap-Admin aus `V2__data.sql` (`juergenkrey`).
+Anders als bei der Keycloak-Migration selbst (siehe `keycloak-migration.adoc` - dort gab es praktisch keine echten Bestandsnutzer) betrifft das bei einem *erstmaligen* Produktions-Deploy genau einen Fall: den Bootstrap-Organisator aus `V2__data.sql` (`juergenkrey`, per Flyway-Migration `V14__rename_admin_role_zu_organisator.sql` zu Rolle `ORGANISATOR` migriert).
 Dieser Account existiert nur als Datenbankzeile, nicht in Keycloak - er muss einmalig manuell über die Keycloak-Admin- Konsole
-angelegt werden (Login-Name muss mit `juergenkrey` übereinstimmen, Rolle `ADMIN`). +
+angelegt werden (Login-Name muss mit `juergenkrey` übereinstimmen, Rolle `ADMINISTRATOR` - befördert ihn zum echten Administrator). +
 (Siehe Ubuntu-Frischinstallation.adoc, "Erster Login-Account")
 
 == Keycloak-Master-Realm: temporären Bootstrap-Admin ersetzen

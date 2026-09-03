@@ -23,7 +23,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import java.util.List;
 
 @Path("/api/verbesserungsvorschlaege")
-@RolesAllowed({"ADMIN", "REFERENT", "TEILNEHMER"})
+@RolesAllowed({"ORGANISATOR", "ADMINISTRATOR", "REFERENT", "TEILNEHMER"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "Verbesserungsvorschlaege", description = "Endpunkte für Verbesserungsvorschläge von Nutzern an die Anwendung")
@@ -44,7 +44,7 @@ public class VerbesserungsvorschlagResource {
     }
 
     @GET
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Alle Verbesserungsvorschläge abrufen", description = "Listet alle eingereichten Verbesserungsvorschläge, neueste zuerst.")
     public List<VerbesserungsvorschlagDto> getAll() {
         return vorschlagService.listAll().stream().map(VerbesserungsvorschlagDto::from).toList();
@@ -52,7 +52,7 @@ public class VerbesserungsvorschlagResource {
 
     @PUT
     @Path("/{id}/status")
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Status eines Verbesserungsvorschlags ändern", description = "Markiert einen Vorschlag als offen oder erledigt.")
     public VerbesserungsvorschlagDto updateStatus(@PathParam("id") Long id, VorschlagStatus status) {
         return VerbesserungsvorschlagDto.from(vorschlagService.updateStatus(id, status));
@@ -60,7 +60,7 @@ public class VerbesserungsvorschlagResource {
 
     @DELETE
     @Path("/{id}")
-    @RolesAllowed("ADMIN")
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Verbesserungsvorschlag löschen", description = "Löscht einen Verbesserungsvorschlag endgültig.")
     public Response delete(@PathParam("id") Long id) {
         vorschlagService.delete(id);

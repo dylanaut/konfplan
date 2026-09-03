@@ -4,7 +4,7 @@ import { useAuthStore } from '../stores/auth';
 const Redirecting = () => import('../views/Redirecting.vue');
 const TeilnehmerDashboard = () => import('../views/TeilnehmerDashboard.vue');
 const ReferentDashboard = () => import('../views/ReferentDashboard.vue');
-const AdminDashboard = () => import('../views/AdminDashboard.vue');
+const OrganisatorDashboard = () => import('../views/OrganisatorDashboard.vue');
 const FreieSlotsReferenten = () => import('../views/report/FreieSlotsReferenten.vue');
 const LaufzettelTeilnehmer = () => import('../views/report/LaufzettelTeilnehmer.vue');
 const LaufzettelReferent = () => import('../views/report/LaufzettelReferent.vue');
@@ -41,52 +41,52 @@ const routes = [
         meta: { requiresAuth: true, role: 'REFERENT' }
     },
     {
-        path: '/admin',
-        name: 'Admin',
-        component: AdminDashboard,
-        meta: { requiresAuth: true, role: 'ADMIN' }
+        path: '/organisator',
+        name: 'Organisator',
+        component: OrganisatorDashboard,
+        meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {
-        path: '/admin/veranstaltung/:vid/freie-slots-referenten',
+        path: '/organisator/veranstaltung/:vid/freie-slots-referenten',
         name: 'FreieSlotsReferenten',
         component: FreieSlotsReferenten,
-        meta: { requiresAuth: true, role: 'ADMIN' }
+        meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {
         path: '/veranstaltung/:vid/teilnehmer/:tid/laufzettel',
         name: 'LaufzettelTeilnehmer',
         component: LaufzettelTeilnehmer,
-        meta: { requiresAuth: true } // Accessible by both ADMIN and TEILNEHMER
+        meta: { requiresAuth: true } // Accessible by both ORGANISATOR/ADMINISTRATOR and TEILNEHMER
     },
     {
         path: '/veranstaltung/:vid/referent/:rid/laufzettel',
         name: 'LaufzettelReferent',
         component: LaufzettelReferent,
-        meta: { requiresAuth: true } // Accessible by both ADMIN and REFERENT
+        meta: { requiresAuth: true } // Accessible by both ORGANISATOR/ADMINISTRATOR and REFERENT
     },
     {
         path: '/veranstaltung/:vid/raum/:rid/belegungsplan',
         name: 'Raumbelegungsplan',
         component: Raumbelegungsplan,
-        meta: { requiresAuth: true, role: 'ADMIN' }
+        meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {
-        path: '/admin/veranstaltung/:vid/uebersicht-raeume',
+        path: '/organisator/veranstaltung/:vid/uebersicht-raeume',
         name: 'UebersichtRaeume',
         component: UebersichtRaeume,
-        meta: { requiresAuth: true, role: 'ADMIN' }
+        meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {
-        path: '/admin/veranstaltung/:vid/raumschilder',
+        path: '/organisator/veranstaltung/:vid/raumschilder',
         name: 'Raumschilder',
         component: Raumschilder,
-        meta: { requiresAuth: true, role: 'ADMIN' }
+        meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {
-        path: '/admin/veranstaltung/:vid/freie-slots-teilnehmer',
+        path: '/organisator/veranstaltung/:vid/freie-slots-teilnehmer',
         name: 'FreieSlotsTeilnehmer',
         component: FreieSlotsTeilnehmer,
-        meta: { requiresAuth: true, role: 'ADMIN' }
+        meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {
         path: '/veranstaltung/:vid/dashboard/teilnehmer',
@@ -95,47 +95,47 @@ const routes = [
         meta: { requiresAuth: true }
     },
     {
-        path: '/admin/veranstaltung/:vid/dashboard/prios',
+        path: '/organisator/veranstaltung/:vid/dashboard/prios',
         name: 'Prioritaeten',
         component: Prioritaeten,
-        meta: { requiresAuth: true, role: 'ADMIN' }
+        meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {
-        path: '/admin/veranstaltung/:vid/laufzettel-alle',
+        path: '/organisator/veranstaltung/:vid/laufzettel-alle',
         name: 'LaufzettelAlle',
         component: LaufzettelAlle,
-        meta: { requiresAuth: true, role: 'ADMIN' }
+        meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {
-        path: '/admin/veranstaltung/:vid/laufzettel-alle-referenten',
+        path: '/organisator/veranstaltung/:vid/laufzettel-alle-referenten',
         name: 'LaufzettelAlleReferenten',
         component: LaufzettelAlleReferenten,
-        meta: { requiresAuth: true, role: 'ADMIN' }
+        meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {
-        path: '/admin/veranstaltung/:vid/abstimmungsfragebogen-alle',
+        path: '/organisator/veranstaltung/:vid/abstimmungsfragebogen-alle',
         name: 'AbstimmungsfragebogenAlle',
         component: AbstimmungsfragebogenAlle,
-        meta: { requiresAuth: true, role: 'ADMIN' }
+        meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {
-        path: '/admin/veranstaltung/:vid/stundenplan',
+        path: '/organisator/veranstaltung/:vid/stundenplan',
         name: 'Stundenplan',
         component: Stundenplan,
         props: true,
-        meta: { requiresAuth: true, role: 'ADMIN' }
+        meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {
-        path: '/admin/veranstaltung/:vid/anwesenheiten',
+        path: '/organisator/veranstaltung/:vid/anwesenheiten',
         name: 'Anwesenheiten',
         component: Anwesenheiten,
-        meta: { requiresAuth: true, role: 'ADMIN' }
+        meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {
-        path: '/admin/veranstaltung/:vid/wahlvortraege-uebersicht',
+        path: '/organisator/veranstaltung/:vid/wahlvortraege-uebersicht',
         name: 'WahlvortraegeUebersicht',
         component: WahlvortraegeUebersicht,
-        meta: { requiresAuth: true, role: 'ADMIN' }
+        meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {
         path: '/:pathMatch(.*)*',
@@ -147,6 +147,16 @@ const router = createRouter({
     history: createWebHistory(),
     routes
 });
+
+// ORGANISATOR-Routen sollen auch fuer ADMINISTRATOR zugaenglich sein (Administrator hat
+// dieselben Rechte, siehe stores/auth.js isOrganisator) - daher hier ueber die semantischen
+// Store-Getter statt per strikter String-Gleichheit auf authStore.userRole pruefen.
+const ROLE_CHECKS = {
+    ORGANISATOR: (authStore) => authStore.isOrganisator,
+    ADMINISTRATOR: (authStore) => authStore.isAdministrator,
+    REFERENT: (authStore) => authStore.isSpeaker,
+    TEILNEHMER: (authStore) => authStore.isParticipant
+};
 
 router.beforeEach((to, from, next) => {
     const authStore = useAuthStore();
@@ -164,7 +174,7 @@ router.beforeEach((to, from, next) => {
         return next(false);
     }
 
-    if (requiresAuth && requiredRole && authStore.userRole !== requiredRole) {
+    if (requiresAuth && requiredRole && !(ROLE_CHECKS[requiredRole]?.(authStore) ?? false)) {
         console.warn(`Zugriff verweigert: Rolle ${requiredRole} erforderlich.`);
         return next('/');
     }

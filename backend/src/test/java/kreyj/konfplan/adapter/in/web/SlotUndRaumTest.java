@@ -32,11 +32,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
-@TestSecurity(user = "admin@test.de", roles = "ADMIN")
+@TestSecurity(user = "admin@test.de", roles = "ORGANISATOR")
 @TestHTTPEndpoint(VeranstaltungResource.class)
 class SlotUndRaumTest extends DatabaseCleaner {
     @TestHTTPResource
-    @TestHTTPEndpoint(AdminResource.class)
+    @TestHTTPEndpoint(OrganisatorResource.class)
     URL adminEndpoint;
 
     Long v1_Id;

@@ -119,7 +119,7 @@ Wichtige Konfigurationen:
 
 === Security
 
-*   **Rollen:** `ADMIN`, `REFERENT`, `TEILNEHMER`.
+*   **Rollen:** `ORGANISATOR`, `ADMINISTRATOR` (Organisator mit exklusivem Zugriff auf Wartungshinweis und Verzeichnis-Import), `REFERENT`, `TEILNEHMER`.
 *   Alle Endpunkte mit `@RolesAllowed` oder `@Authenticated` absichern.
 *   Identität, Login und Passwörter liegen komplett bei Keycloak - kein eigenes JWT, kein
     lokaler Passwort-Hash mehr. `Nutzer` enthält nur noch `keycloakId` als Verknüpfung.

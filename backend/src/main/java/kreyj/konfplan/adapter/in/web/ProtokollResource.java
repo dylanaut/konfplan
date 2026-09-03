@@ -12,8 +12,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
 
-@Path("/api/admin/protokolle")
-@RolesAllowed("ADMIN")
+@Path("/api/organisator/protokolle")
+@RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "Protokoll", description = "Endpunkt zum Abrufen von Protokolleinträgen")
 public class ProtokollResource {

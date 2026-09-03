@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**KonfPlan** is a full-stack web application for planning and managing events with talks (e.g., school training days). It supports three user roles: Admin, Referent (speaker), and Teilnehmer (participant). A key feature is automatic scheduling of participants to optional talks via **MiniZinc** constraint solving.
+**KonfPlan** is a full-stack web application for planning and managing events with talks (e.g., school training days). It supports four user roles: Organisator, Administrator (an Organisator with two exclusive rights — announcing maintenance windows and running the directory import; `Administrator extends Organisator` in Java, so it inherits every Organisator permission), Referent (speaker), and Teilnehmer (participant). A key feature is automatic scheduling of participants to optional talks via **MiniZinc** constraint solving.
 
 ## Commands
 
@@ -31,10 +31,10 @@ cd frontend && npm run build
 cd backend && ../mvnw test
 
 # Run a single test class
-cd backend && ../mvnw test -Dtest=AdminServiceTest
+cd backend && ../mvnw test -Dtest=OrganisatorServiceTest
 
 # Run a single test method
-cd backend && ../mvnw test -Dtest=AdminServiceTest#methodName
+cd backend && ../mvnw test -Dtest=OrganisatorServiceTest#methodName
 ```
 
 Tests use **H2** in-memory database; production/dev uses **PostgreSQL**. Architecture conformance is enforced by ArchUnit tests in `backend/src/test/java/.../architecture/`.
@@ -68,7 +68,7 @@ adapter/
 │   ├── exception/    # CustomExceptionMapper
 │   └── service/      # (legacy location, prefer application/service)
 application/
-├── port/in/          # Use-case interfaces (e.g. AdminServiceInterface)
+├── port/in/          # Use-case interfaces (e.g. OrganisatorServiceInterface)
 ├── port/out/         # Repository/external-system interfaces
 └── service/          # Business logic implementing the in-ports
 domain/               # JPA/Panache entities (serve as domain objects)
@@ -82,7 +82,7 @@ util/                 # Utilities
 ### Domain Model
 
 - **Veranstaltung** – Central entity; owns EventSlots, rooms, users, and deadlines.
-- **Nutzer** (`SINGLE_TABLE` inheritance) → Admin | Referent | Teilnehmer
+- **Nutzer** (`SINGLE_TABLE` inheritance) → Organisator | Administrator (extends Organisator) | Referent | Teilnehmer
 - **Vortrag** (`SINGLE_TABLE` inheritance) → Pflichtvortrag | Wahlvortrag; optionally has an `AbschlussTyp`.
 - **AbschlussTyp** – Enum for the school-leaving qualification associated with a talk.
 - **Neigung** – Enum of professional/vocational aptitudes; Teilnehmer and Wahlvortrag can each have several.
@@ -100,7 +100,7 @@ All entities extend `VersionedEntity` (Panache Active Record, `Long id`, `@Versi
 api/axios.js          # Central Axios instance; attaches/refreshes the Keycloak token per request
 keycloak.js           # keycloak-js client instance (Authorization Code Flow)
 components/
-├── admin/tabs/       # Tab components for the Admin dashboard
+├── organisator/tabs/ # Tab components for the Organisator dashboard
 └── *.vue             # Shared UI components (modals, buttons, pagination)
 router/index.js       # Route definitions and navigation guards (redirect to Keycloak login)
 stores/
@@ -112,14 +112,14 @@ views/*.vue           # Top-level page components routed by Vue Router
 
 ## Key Conventions
 
-- **REST API:** All endpoints under `/api/...`, secured with `@RolesAllowed` (`ADMIN`, `REFERENT`, `TEILNEHMER`) or `@Authenticated`.
+- **REST API:** All endpoints under `/api/...`, secured with `@RolesAllowed` (`ORGANISATOR`, `ADMINISTRATOR`, `REFERENT`, `TEILNEHMER`) or `@Authenticated`.
 - **DTOs live in the web adapter** (`adapter/in/rest`), never passed to the service layer.
 - **No Lombok:** Public fields on JPA entities; getters/setters only where required.
 - **Dates:** `LocalDateTime` with a custom `LocalDateTimeConverter`.
 - **Polymorphism:** `@Inheritance(SINGLE_TABLE)` + Jackson `@JsonSubTypes` for Nutzer and Vortrag hierarchies.
 - **CSV import:** Slot indices are 1-based.
 - **Code style:** `.editorconfig` at root — 4 spaces for Java/XML, 2 spaces for JS/TS/Vue.
-- **Identity/passwords live in Keycloak**, not in the database — `Nutzer` only carries a `keycloakId` link. `KeycloakUserProvisioningService` (`domain/service`) is the sole caller of the Keycloak Admin REST Client (used from `AdminService`/`TeilnehmerService`/`ReferentService` on every create/update/delete/reset-password).
+- **Identity/passwords live in Keycloak**, not in the database — `Nutzer` only carries a `keycloakId` link. `KeycloakUserProvisioningService` (`domain/service`) is the sole caller of the Keycloak Admin REST Client (used from `OrganisatorService`/`TeilnehmerService`/`ReferentService` on every create/update/delete/reset-password).
 - **Default password** on user create/import: `Konfplan1!` (non-temporary) in dev/test mode, a random UUID (temporary, forces a Keycloak-side password change on first login) in prod.
 - **Password policy** (Keycloak realm-level, applies to every newly-set password — self-service reset and admin-set alike, but not retroactively to existing passwords): min. 8 characters, at least one uppercase, one lowercase, one digit, one special character.
 

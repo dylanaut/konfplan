@@ -9,7 +9,7 @@ import io.quarkus.test.security.TestSecurity;
 import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
@@ -38,7 +38,7 @@ class NutzerInheritanceTest extends DatabaseCleaner {
     @BeforeEach
     @Transactional
     void setup() {
-        Admin admin = new Admin();
+        Organisator admin = new Organisator();
         admin.assignLoginName("org");
         admin.setEmail("org@test.de");
         admin.persist();
@@ -55,7 +55,7 @@ class NutzerInheritanceTest extends DatabaseCleaner {
 
 
     @Test
-    @TestSecurity(user = "admin@test.de", roles = "ADMIN")
+    @TestSecurity(user = "admin@test.de", roles = "ORGANISATOR")
     public void testPersistReferentViaJson() {
         String json = """
                 {
@@ -84,7 +84,7 @@ class NutzerInheritanceTest extends DatabaseCleaner {
 
 
     @Test
-    @TestSecurity(user = "admin@test.de", roles = "ADMIN")
+    @TestSecurity(user = "admin@test.de", roles = "ORGANISATOR")
     public void testPersistTeilnehmerViaJson() {
         String json = """
                 {

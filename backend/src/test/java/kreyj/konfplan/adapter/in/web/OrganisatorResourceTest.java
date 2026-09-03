@@ -9,11 +9,11 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.adapter.in.web.dto.AdminPasswordResetDto;
+import kreyj.konfplan.adapter.in.web.dto.OrganisatorPasswordResetDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Referent;
@@ -46,10 +46,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
 @QuarkusTest
-@TestSecurity(user = "admin@example.com", roles = "ADMIN")
+@TestSecurity(user = "admin@example.com", roles = "ORGANISATOR")
 @QuarkusTestResource(H2DatabaseTestResource.class)
-@TestHTTPEndpoint(AdminResource.class)
-class AdminResourceTest extends DatabaseCleaner {
+@TestHTTPEndpoint(OrganisatorResource.class)
+class OrganisatorResourceTest extends DatabaseCleaner {
 
     @InjectMock
     KeycloakUserProvisioningService keycloakUserProvisioningService;
@@ -60,7 +60,7 @@ class AdminResourceTest extends DatabaseCleaner {
     @BeforeEach
     @Transactional
     void setup() {
-        Admin admin = new Admin();
+        Organisator admin = new Organisator();
         admin.assignLoginName("admin@example.com");
         admin.setEmail("admin@example.com");
         admin.persist();
@@ -72,7 +72,7 @@ class AdminResourceTest extends DatabaseCleaner {
     @Test
     void testGetAllUsersGlobal() {
         QuarkusTransaction.requiringNew().run(() -> {
-            Admin a = new Admin();
+            Organisator a = new Organisator();
             a.assignLoginName("admin1@example.com");
             a.setEmail("admin1@example.com");
             a.persist();
@@ -131,7 +131,7 @@ class AdminResourceTest extends DatabaseCleaner {
                 .statusCode(OK.getStatusCode())
                 .extract().as(NutzerDto.class);
 
-        // Admin-getriebene E-Mail-Aenderung wird direkt uebernommen (keine Bestaetigung mehr
+        // Organisator-getriebene E-Mail-Aenderung wird direkt uebernommen (keine Bestaetigung mehr
         // noetig - das Self-Service-Aequivalent laeuft jetzt ueber Keycloaks Account-Console).
         assertThat(updated.email).isEqualTo(newEmail);
 
@@ -156,7 +156,7 @@ class AdminResourceTest extends DatabaseCleaner {
 
         given()
             .contentType(ContentType.JSON)
-            .body(new AdminPasswordResetDto("einNeuesPasswort123"))
+            .body(new OrganisatorPasswordResetDto("einNeuesPasswort123"))
             .when().post("/nutzer/{id}/reset-password", created.id)
             .then()
             .statusCode(OK.getStatusCode());
@@ -170,7 +170,7 @@ class AdminResourceTest extends DatabaseCleaner {
     void testResetPassword_UnknownUser_ReturnsNotFound() {
         given()
             .contentType(ContentType.JSON)
-            .body(new AdminPasswordResetDto("einNeuesPasswort123"))
+            .body(new OrganisatorPasswordResetDto("einNeuesPasswort123"))
             .when().post("/nutzer/{id}/reset-password", -1L)
             .then()
             .statusCode(NOT_FOUND.getStatusCode());
@@ -178,8 +178,8 @@ class AdminResourceTest extends DatabaseCleaner {
 
 
     @Test
-    void testCreateUser_AdminWithoutEmail_IsRejected() {
-        NutzerDto dto = new NutzerDto("ADMIN", null, "Ohne", "Email", true);
+    void testCreateUser_OrganisatorWithoutEmail_IsRejected() {
+        NutzerDto dto = new NutzerDto("ORGANISATOR", null, "Ohne", "Email", true);
         dto.loginName = "ohne.email.rest";
 
         given().contentType(ContentType.JSON)
@@ -233,7 +233,7 @@ class AdminResourceTest extends DatabaseCleaner {
             v.persist();
             vIdArray[0] = v.getId();
 
-            Admin orga = Admin.findById(adminId);
+            Organisator orga = Organisator.findById(adminId);
             orga.addVeranstaltung(v);
         });
 
@@ -320,14 +320,14 @@ class AdminResourceTest extends DatabaseCleaner {
             tnId[0] = t.getId();
         });
 
-        // 2. Admin 1 fetches teilnehmer data (initial version)
+        // 2. Organisator 1 fetches teilnehmer data (initial version)
         NutzerDto adminFetchedUser1 = given()
             .when().get("/nutzer/{id}", tnId[0])
             .then()
             .statusCode(OK.getStatusCode())
             .extract().as(NutzerDto.class);
 
-        // 3. Admin 2 fetches the same participant again (simulating concurrent user/tab)
+        // 3. Organisator 2 fetches the same participant again (simulating concurrent user/tab)
         NutzerDto adminFetchedUser2 = given()
             .when().get("/nutzer/{id}", tnId[0])
             .then()

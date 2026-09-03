@@ -130,7 +130,7 @@ class DeadlineResourceTest extends DatabaseCleaner {
 
 
     @Test
-    @TestSecurity(user = "admin@test.de", roles = "ADMIN")
+    @TestSecurity(user = "admin@test.de", roles = "ORGANISATOR")
     @TestHTTPEndpoint(VeranstaltungResource.class)
     void testAdminCanStillEditEvenIfDeadlineExceeded() {
         VeranstaltungDto dto = new VeranstaltungDto();

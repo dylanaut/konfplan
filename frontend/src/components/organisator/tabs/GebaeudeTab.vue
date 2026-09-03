@@ -99,7 +99,7 @@
           </div>
         </div>
         <div class="flex items-center gap-2" @click.stop>
-          <button @click="emit('triggerUpload', `/api/admin/veranstaltungen/${selectedVid}/raeume/verfuegbarkeiten/import`)"
+          <button @click="emit('triggerUpload', `/api/organisator/veranstaltungen/${selectedVid}/raeume/verfuegbarkeiten/import`)"
                   class="btn-secondary text-xs py-1 px-2 flex items-center gap-1">
             <UploadIcon class="w-3.5 h-3.5"/>
             Verfügbarkeiten Import

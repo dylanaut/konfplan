@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Path("/api/planungen")
-@RolesAllowed("ADMIN")
+@RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "Planung", description = "Endpunkte zur Steuerung der Planerstellung")

@@ -6,8 +6,8 @@ import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.transaction.Transactional;
-import kreyj.konfplan.domain.service.AdminService;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.domain.service.OrganisatorService;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
@@ -24,9 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @QuarkusTest
-@TestSecurity(user = "admin@test.de", roles = "ADMIN")
+@TestSecurity(user = "admin@test.de", roles = "ORGANISATOR")
 @QuarkusTestResource(H2DatabaseTestResource.class)
-@TestHTTPEndpoint(AdminResource.class)
+@TestHTTPEndpoint(OrganisatorResource.class)
 class PrioritaetImportTest extends DatabaseCleaner {
 
     Long testVid;
@@ -38,7 +38,7 @@ class PrioritaetImportTest extends DatabaseCleaner {
     @BeforeEach
     @Transactional
     void setup() {
-        Admin admin = new Admin();
+        Organisator admin = new Organisator();
         admin.assignLoginName("admin@test.de");
         admin.setEmail("admin@test.de");
         admin.persist();
@@ -79,7 +79,7 @@ class PrioritaetImportTest extends DatabaseCleaner {
     @Test
     void testImportPrioritaeten() {
         String csv = String.format("# Legende: %d=%s # %d=%s\n", wv1Id, "Wahlvortrag 1", wv2Id, "Wahlvortrag 2") +
-                AdminService.CSV_PRIO_HEADER + "\n" +
+                OrganisatorService.CSV_PRIO_HEADER + "\n" +
                 String.format("teilnehmer1@test.de;%d :5,%d: 3 \n", wv1Id, wv2Id);
 
         given()

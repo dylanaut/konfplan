@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * E2E-Tests für die modalen Dialoge des AdminDashboards.
+ * E2E-Tests für die modalen Dialoge des OrganisatorDashboards.
  *
  * Diese Tests laufen komplett gegen gemockte APIs (page.route) und einen per
- * localStorage vorgetäuschten ADMIN-Login (kein echter Login, kein echter Backend-
+ * localStorage vorgetäuschten ORGANISATOR-Login (kein echter Login, kein echter Backend-
  * Aufruf nötig) - analog zum Muster in reports.spec.js. Das macht die Tests von
  * einem laufenden Quarkus-Backend unabhängig und damit CI-tauglich.
  *
@@ -42,7 +42,7 @@ const GEBAEUDE = [{
 }];
 
 const ALL_USERS = [
-  { id: 100, firstName: 'Anna', lastName: 'Admin', email: 'admin@test.de', role: 'ADMIN', isActive: true, veranstaltungIds: [VID] },
+  { id: 100, firstName: 'Anna', lastName: 'Admin', email: 'admin@test.de', role: 'ORGANISATOR', isActive: true, veranstaltungIds: [VID] },
   { id: 200, firstName: 'Rudi', lastName: 'Referent', email: 'ref@test.de', role: 'REFERENT', isActive: true, veranstaltungIds: [VID], organisation: 'TestOrg', jobRole: 'Tester', biography: 'Bio' },
   { id: 300, firstName: 'Tom', lastName: 'Teilnehmer', email: 'tn@test.de', role: 'TEILNEHMER', isActive: true, veranstaltungIds: [VID], gruppen: ['10a'], prioritaeten: [] }
 ];
@@ -62,7 +62,7 @@ const GRUPPEN = ['10a'];
 async function mockAdminApis(page) {
   await page.addInitScript(() => {
     localStorage.setItem('token', 'test-token');
-    localStorage.setItem('role', 'ADMIN');
+    localStorage.setItem('role', 'ORGANISATOR');
   });
 
   // Absolute Origin nötig: Axios ruft immer http://localhost:9000 auf (siehe api/axios.js),
@@ -99,18 +99,18 @@ async function mockAdminApis(page) {
       if (method === 'PUT') return json(body());
       if (method === 'DELETE') return noContent();
     }
-    if (path === '/api/admin/nutzer') {
+    if (path === '/api/organisator/nutzer') {
       if (method === 'GET') return json(ALL_USERS);
       if (method === 'POST') return json({ ...body(), id: 666 }, 201);
     }
-    if (/^\/api\/admin\/nutzer\/\d+$/.test(path)) {
+    if (/^\/api\/organisator\/nutzer\/\d+$/.test(path)) {
       if (method === 'PUT') return json(body());
       if (method === 'DELETE') return noContent();
     }
-    if (/^\/api\/admin\/nutzer\/\d+\/einladen\/\d+$/.test(path) && method === 'POST') {
+    if (/^\/api\/organisator\/nutzer\/\d+\/einladen\/\d+$/.test(path) && method === 'POST') {
       return json({});
     }
-    if (/^\/api\/admin\/nutzer\/\d+\/reset-password$/.test(path) && method === 'POST') {
+    if (/^\/api\/organisator\/nutzer\/\d+\/reset-password$/.test(path) && method === 'POST') {
       return json({});
     }
     if (path === `/api/veranstaltungen/${VID}/nutzer`) {
@@ -139,10 +139,10 @@ async function mockAdminApis(page) {
     }
     if (path === `/api/veranstaltungen/${VID}/plan/details`) return json([]);
     if (path === `/api/veranstaltungen/${VID}/plan/qualitaet`) return json({});
-    if (path === `/api/admin/veranstaltungen/${VID}/gruppen`) return json(GRUPPEN);
-    if (path === `/api/admin/veranstaltungen/${VID}/verfuegbarkeiten`) return json([]);
-    if (path === `/api/admin/veranstaltungen/${VID}/raeume/verfuegbarkeiten`) return json([]);
-    if (path === '/api/admin/protokolle') return json([]);
+    if (path === `/api/organisator/veranstaltungen/${VID}/gruppen`) return json(GRUPPEN);
+    if (path === `/api/organisator/veranstaltungen/${VID}/verfuegbarkeiten`) return json([]);
+    if (path === `/api/organisator/veranstaltungen/${VID}/raeume/verfuegbarkeiten`) return json([]);
+    if (path === '/api/organisator/protokolle') return json([]);
 
     // Sicherheitsnetz: unerwarteter/nicht gemockter Endpunkt - nicht hängen lassen.
     console.warn('[Test] Unmocked API call:', method, path);
@@ -150,10 +150,10 @@ async function mockAdminApis(page) {
   });
 }
 
-/** Navigiert zum Admin-Dashboard und wählt die Test-Veranstaltung aus, sodass alle Tabs sichtbar sind. */
+/** Navigiert zum Organisator-Dashboard und wählt die Test-Veranstaltung aus, sodass alle Tabs sichtbar sind. */
 async function gotoAdminWithEvent(page) {
-  await page.goto('/admin');
-  await expect(page.getByRole('heading', { name: 'Admin-Bereich' })).toBeVisible();
+  await page.goto('/organisator');
+  await expect(page.getByRole('heading', { name: 'Organisator-Bereich' })).toBeVisible();
   await page.locator('select').first().selectOption({ index: 1 });
   await expect(page.locator('select').first()).toHaveValue(String(VID));
 }
@@ -308,11 +308,14 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
       await expect(page.getByText('Teilnehmer anlegen')).toHaveCount(0);
     });
 
-    test('erstellt einen neuen Administrator', async ({ page }) => {
+    test('erstellt einen neuen Organisator', async ({ page }) => {
       await gotoTab(page, 'Organisatoren');
       await page.getByRole('button', { name: '+ Neu', exact: true }).click();
-      // Rolle ist auch hier ueber den Organisatoren-Tab bereits fix vorgegeben (fixedRole).
-      await expect(page.getByText('Administrator anlegen')).toBeVisible();
+      // Rolle ist auch hier ueber den Organisatoren-Tab bereits fix vorgegeben (fixedRole) - neue
+      // Nutzer werden hier immer als ORGANISATOR angelegt, nie direkt als ADMINISTRATOR (siehe
+      // UserEditorModal.vue: die Beförderung zu ADMINISTRATOR erfolgt erst nachträglich beim
+      // Bearbeiten eines bestehenden Organisators).
+      await expect(page.getByText('Organisator anlegen')).toBeVisible();
 
       await page.locator('label:has-text("Vorname") + input').fill('Otto');
       await page.locator('label:has-text("Nachname") + input').fill('Organisator');
@@ -320,11 +323,11 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
       await page.locator('label:has-text("E-Mail") + input').fill('otto@test.de');
 
       const [request] = await Promise.all([
-        page.waitForRequest(req => req.url().endsWith('/api/admin/nutzer') && req.method() === 'POST'),
+        page.waitForRequest(req => req.url().endsWith('/api/organisator/nutzer') && req.method() === 'POST'),
         page.getByRole('button', { name: 'Nutzer erstellen' }).click()
       ]);
-      expect(request.postDataJSON().role).toBe('ADMIN');
-      await expect(page.getByText('Administrator anlegen')).toHaveCount(0);
+      expect(request.postDataJSON().role).toBe('ORGANISATOR');
+      await expect(page.getByText('Organisator anlegen')).toHaveCount(0);
     });
 
     test('Rolle ist beim Bearbeiten deaktiviert und zeigt rollenspezifische Felder für Referenten', async ({ page }) => {
@@ -451,14 +454,14 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
       await expect(einladenBtn).toBeEnabled();
 
       const [request] = await Promise.all([
-        page.waitForRequest(req => /\/api\/admin\/nutzer\/\d+\/einladen\/\d+$/.test(req.url()) && req.method() === 'POST'),
+        page.waitForRequest(req => /\/api\/organisator\/nutzer\/\d+\/einladen\/\d+$/.test(req.url()) && req.method() === 'POST'),
         einladenBtn.click()
       ]);
       expect(request.url()).toContain(`/einladen/${VID}`);
     });
   });
 
-  // Regression #57/#58: Rettungsweg für Admin-Konten ohne (funktionierende) E-Mail-Adresse,
+  // Regression #57/#58: Rettungsweg für Organisator-Konten ohne (funktionierende) E-Mail-Adresse,
   // die sich sonst über "Passwort vergessen" nicht selbst wiederherstellen könnten.
   test.describe('Passwort-Reset-Modal', () => {
     test('öffnet mit leerem Feld und deaktiviertem Zurücksetzen-Button unter 8 Zeichen', async ({ page }) => {
@@ -481,17 +484,17 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
       await gotoTab(page, 'Organisatoren');
       await page.locator('button[title="Passwort zurücksetzen"]').first().click();
 
-      await page.locator('input[type="password"]').fill('einNeuesPasswort123');
+      await page.locator('input[type="password"]').fill('einNeuesPasswort123!');
       const resetBtn = page.locator('button.btn-primary', { hasText: 'Zurücksetzen' });
       await expect(resetBtn).toBeEnabled();
 
       const [request, dialog] = await Promise.all([
-        page.waitForRequest(req => /\/api\/admin\/nutzer\/\d+\/reset-password$/.test(req.url()) && req.method() === 'POST'),
+        page.waitForRequest(req => /\/api\/organisator\/nutzer\/\d+\/reset-password$/.test(req.url()) && req.method() === 'POST'),
         page.waitForEvent('dialog'),
         resetBtn.click()
       ]);
       expect(request.url()).toContain('/nutzer/100/reset-password');
-      expect(request.postDataJSON()).toEqual({ newPassword: 'einNeuesPasswort123' });
+      expect(request.postDataJSON()).toEqual({ newPassword: 'einNeuesPasswort123!' });
       expect(dialog.message()).toContain('Passwort erfolgreich zurückgesetzt');
       await dialog.accept();
     });
@@ -507,16 +510,16 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
       await expect(page.getByText('Passwort zurücksetzen')).toBeVisible();
       await expect(page.locator('span.font-bold', { hasText: 'Tom Teilnehmer' })).toBeVisible();
 
-      await page.locator('input[type="password"]').fill('einNeuesPasswort123');
+      await page.locator('input[type="password"]').fill('einNeuesPasswort123!');
       const resetBtn = page.locator('button.btn-primary', { hasText: 'Zurücksetzen' });
 
       const [request, dialog] = await Promise.all([
-        page.waitForRequest(req => /\/api\/admin\/nutzer\/\d+\/reset-password$/.test(req.url()) && req.method() === 'POST'),
+        page.waitForRequest(req => /\/api\/organisator\/nutzer\/\d+\/reset-password$/.test(req.url()) && req.method() === 'POST'),
         page.waitForEvent('dialog'),
         resetBtn.click()
       ]);
       expect(request.url()).toContain('/nutzer/300/reset-password');
-      expect(request.postDataJSON()).toEqual({ newPassword: 'einNeuesPasswort123' });
+      expect(request.postDataJSON()).toEqual({ newPassword: 'einNeuesPasswort123!' });
       expect(dialog.message()).toContain('Passwort erfolgreich zurückgesetzt');
       await dialog.accept();
     });
@@ -545,7 +548,7 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
     });
 
     test('zeigt gesammelte Fehlermeldungen an und bleibt offen bis manuell geschlossen', async ({ page }) => {
-      await page.route(`http://localhost:9000/api/admin/veranstaltungen/${VID}/teilnehmer/verfuegbarkeiten/import`, route =>
+      await page.route(`http://localhost:9000/api/organisator/veranstaltungen/${VID}/teilnehmer/verfuegbarkeiten/import`, route =>
         route.fulfill({
           status: 200,
           json: { anzahlErfolgreich: 0, fehler: ["Nutzer mit E-Mail 'unbekannt@test.de' nicht gefunden."] }
@@ -574,11 +577,11 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
     });
 
     // Regression #39: handleGlobalUpload rief nach loadData() zusätzlich refreshAdmins()
-    // auf, das users.value mit der reinen Admin-Liste überschrieb und damit gerade per CSV
+    // auf, das users.value mit der reinen Organisator-Liste überschrieb und damit gerade per CSV
     // importierte Referenten/Teilnehmer sofort wieder aus der Tabelle verschwinden ließ. Der
     // Mock unten simuliert genau diesen Zustandswechsel: erst nach dem Import liefert
     // GET .../nutzer den neuen Referenten - würde die App fälschlich noch refreshAdmins()
-    // (nur GET /api/admin/nutzer, ohne den neuen Referenten) danach aufrufen, bliebe die
+    // (nur GET /api/organisator/nutzer, ohne den neuen Referenten) danach aufrufen, bliebe die
     // Tabelle leer und der Test schlägt fehl.
     test('importierter Referent erscheint sofort in der Referenten-Tabelle, ohne dass die Veranstaltung neu ausgewählt werden muss', async ({ page }) => {
       let referentImported = false;

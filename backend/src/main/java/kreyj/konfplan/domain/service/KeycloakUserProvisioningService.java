@@ -114,7 +114,7 @@ public class KeycloakUserProvisioningService {
 
     /**
      * Synchronisiert Stammdaten (E-Mail, Name, aktiv/inaktiv) eines bereits provisionierten
-     * Nutzers nach einer Admin-getriebenen Aenderung. Anders als bei Self-Service-Aenderungen
+     * Nutzers nach einer Organisator-getriebenen Aenderung. Anders als bei Self-Service-Aenderungen
      * (die es nicht mehr gibt, siehe Keycloak Account-Console) ist hier keine Bestaetigung nötig.
      */
     public void updateUser(Nutzer nutzer) {
@@ -132,8 +132,8 @@ public class KeycloakUserProvisioningService {
 
 
     /**
-     * Setzt das Passwort eines Nutzers durch einen Admin zurueck. Das neue Passwort ist immer nur
-     * temporaer gueltig - da der Admin es kennt (Einzel-Reset oder Bulk-ZIP-Report), muss der
+     * Setzt das Passwort eines Nutzers durch einen Organisator zurueck. Das neue Passwort ist immer nur
+     * temporaer gueltig - da der Organisator es kennt (Einzel-Reset oder Bulk-ZIP-Report), muss der
      * Nutzer es beim naechsten Login zwingend selbst aendern. Anders als bei {@link #createUser}
      * gibt es hier bewusst KEINEN Dev/Test-Sonderfall: der erzwungene Passwortwechsel ist der
      * eigentliche Zweck dieser Aktion und soll auch lokal testbar sein.
@@ -165,7 +165,7 @@ public class KeycloakUserProvisioningService {
     /**
      * Prueft, ob der Nutzer bereits ein eigenes, endgueltiges Passwort vergeben hat - nicht nur
      * irgendein Passwort, sondern eines OHNE noch ausstehende {@code UPDATE_PASSWORD}-Required-
-     * Action (die bei einem Admin-Reset oder der Prod-Konvention "kein Start-Passwort" gesetzt
+     * Action (die bei einem Organisator-Reset oder der Prod-Konvention "kein Start-Passwort" gesetzt
      * bleibt, bis der Nutzer sich selbst ein neues Passwort gibt). "Kein Credential vorhanden"
      * (frisch angelegter Prod-Nutzer, der noch nie "Passwort vergessen" genutzt hat) zaehlt
      * ebenfalls als "kein echtes Passwort".

@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
  * E2E-Test für das Teilnehmer-Profil (TeilnehmerDashboard.vue): die E-Mail-Adresse ist nur
  * lesbar - Änderungen laufen seit der Keycloak-Migration über Keycloaks Account-Console, nicht
  * mehr über einen in-app-Dialog. Läuft komplett gegen gemockte APIs (page.route) und einen per
- * localStorage vorgetäuschten TEILNEHMER-Login, analog zu AdminDashboardModals.spec.js.
+ * localStorage vorgetäuschten TEILNEHMER-Login, analog zu OrganisatorDashboardModals.spec.js.
  *
  * Wichtig: die Axios-Basis-URL ist http://localhost:9000 (siehe api/axios.js), unabhängig
  * von der Playwright-baseURL (Vite-Dev-Server).

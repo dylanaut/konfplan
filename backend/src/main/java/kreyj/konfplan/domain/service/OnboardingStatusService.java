@@ -10,7 +10,7 @@ import kreyj.konfplan.util.StringHelper;
 import java.util.List;
 
 /**
- * Beantwortet "wer hat noch kein echtes eigenes Passwort vergeben" fuer den Admin-Onboarding-
+ * Beantwortet "wer hat noch kein echtes eigenes Passwort vergeben" fuer den Organisator-Onboarding-
  * Status-Tab - fragt dafuer {@link KeycloakUserProvisioningService} (einzige Stelle mit Zugriff
  * auf den Keycloak Admin REST Client) einmal je Nutzer ab.
  */

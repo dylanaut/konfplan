@@ -18,8 +18,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
 
-@Path("/api/admin/veranstaltung-import")
-@RolesAllowed("ADMIN")
+@Path("/api/administrator/veranstaltung-import")
+@RolesAllowed("ADMINISTRATOR")
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "VeranstaltungImport", description = "Bündelimport eines vollständigen CSV-Satzes zu einer neuen Veranstaltung aus einem Server-Verzeichnis")
 public class VeranstaltungImportResource {

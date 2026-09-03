@@ -6,7 +6,7 @@ import { useToast } from 'vue-toastification';
 import { useEventContextStore } from './eventContext';
 import keycloak from '../keycloak';
 
-const KNOWN_ROLES = ['ADMIN', 'REFERENT', 'TEILNEHMER'];
+const KNOWN_ROLES = ['ORGANISATOR', 'ADMINISTRATOR', 'REFERENT', 'TEILNEHMER'];
 
 export const useAuthStore = defineStore('auth', () => {
     const token = ref(localStorage.getItem('token') || null);
@@ -14,7 +14,11 @@ export const useAuthStore = defineStore('auth', () => {
     const toast = useToast();
 
     const isAuthenticated = computed(() => !!token.value);
-    const isAdmin = computed(() => userRole.value === 'ADMIN');
+    // Administrator hat dieselben Rechte wie Organisator (siehe Backend: Administrator extends
+    // Organisator) - das Frontend liest aber nur eine primaere Rolle aus dem Token, daher hier
+    // explizit beide Rollenwerte prüfen.
+    const isOrganisator = computed(() => userRole.value === 'ORGANISATOR' || userRole.value === 'ADMINISTRATOR');
+    const isAdministrator = computed(() => userRole.value === 'ADMINISTRATOR');
     const isSpeaker = computed(() => userRole.value === 'REFERENT');
     const isParticipant = computed(() => userRole.value === 'TEILNEHMER');
 
@@ -54,8 +58,8 @@ export const useAuthStore = defineStore('auth', () => {
 
     function logout({ reason } = {}) {
         // Eine ggf. laufende Planerstellung serverseitig abbrechen, bevor der Token
-        // geloescht wird (der Endpoint ist ADMIN-only, danach fehlt die Berechtigung).
-        if (isAdmin.value && token.value) {
+        // geloescht wird (der Endpoint ist ORGANISATOR/ADMINISTRATOR-only, danach fehlt die Berechtigung).
+        if (isOrganisator.value && token.value) {
             api.delete('/api/planungen', { headers: { Authorization: `Bearer ${token.value}` } })
                 .catch(() => {});
         }
@@ -91,7 +95,8 @@ export const useAuthStore = defineStore('auth', () => {
         token,
         userRole,
         isAuthenticated,
-        isAdmin,
+        isOrganisator,
+        isAdministrator,
         isSpeaker,
         isParticipant,
         login,

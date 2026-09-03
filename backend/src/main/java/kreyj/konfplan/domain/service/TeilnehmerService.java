@@ -16,7 +16,7 @@ import kreyj.konfplan.adapter.in.web.dto.TeilnehmerVeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.TeilnehmerCsvDto;
 import kreyj.konfplan.application.port.in.TeilnehmerServiceInterface;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Pflichtvortrag;
@@ -105,7 +105,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
                 dto.teilnehmerAendernVerfuegbarkeit = e.isTeilnehmerAendernVerfuegbarkeit();
                 dto.logo = e.getLogo();
                 dto.logo_link = e.getLogo_link();
-                dto.organisatorNamen = e.organisatoren().stream().map(Admin::getFullName).toList();
+                dto.organisatorNamen = e.organisatoren().stream().map(Organisator::getFullName).toList();
                 dto.organisatoren = e.organisatoren().stream().map(OrganisatorDto::from).toList();
                 return dto;
             })

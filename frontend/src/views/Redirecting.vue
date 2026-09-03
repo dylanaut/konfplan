@@ -24,8 +24,8 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 onMounted(() => {
-  if (authStore.isAdmin) {
-    router.replace('/admin');
+  if (authStore.isOrganisator) {
+    router.replace('/organisator');
   } else if (authStore.isSpeaker) {
     router.replace('/referent');
   } else if (authStore.isParticipant) {

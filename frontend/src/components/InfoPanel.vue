@@ -60,13 +60,13 @@ const auth = useAuthStore();
 const apiBase = import.meta.env.VITE_API_URL || '';
 
 const handbuecher = [
-  { datei: 'Benutzerhandbuch-Admin.pdf', label: 'Für Administratoren' },
+  { datei: 'Benutzerhandbuch-Admin.pdf', label: 'Für Organisatoren' },
   { datei: 'Benutzerhandbuch-Referent.pdf', label: 'Für Referenten' },
   { datei: 'Benutzerhandbuch-Teilnehmer.pdf', label: 'Für Teilnehmer' },
 ];
 
-// Teilnehmer und Referenten sehen nur ihr eigenes Handbuch; Admins (bzw. jede andere/unbekannte
-// Rolle) sehen weiterhin alle drei.
+// Teilnehmer und Referenten sehen nur ihr eigenes Handbuch; Organisatoren/Administratoren
+// (bzw. jede andere/unbekannte Rolle) sehen weiterhin alle drei.
 const sichtbareHandbuecher = computed(() => {
   if (auth.isParticipant) return handbuecher.filter(hb => hb.datei === 'Benutzerhandbuch-Teilnehmer.pdf');
   if (auth.isSpeaker) return handbuecher.filter(hb => hb.datei === 'Benutzerhandbuch-Referent.pdf');

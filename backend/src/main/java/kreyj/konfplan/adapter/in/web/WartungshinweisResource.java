@@ -17,10 +17,10 @@ import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/api/wartungshinweis")
-@RolesAllowed({"ADMIN", "REFERENT", "TEILNEHMER"})
+@RolesAllowed({"ORGANISATOR", "ADMINISTRATOR", "REFERENT", "TEILNEHMER"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@Tag(name = "Wartungshinweis", description = "Admin-Ankündigung eines geplanten Wartungsfensters, von allen eingeloggten Nutzern abgerufen")
+@Tag(name = "Wartungshinweis", description = "Administrator-Ankündigung eines geplanten Wartungsfensters, von allen eingeloggten Nutzern abgerufen")
 public class WartungshinweisResource {
     private final WartungshinweisService wartungshinweisService;
 
@@ -36,7 +36,7 @@ public class WartungshinweisResource {
     }
 
     @PUT
-    @RolesAllowed("ADMIN")
+    @RolesAllowed("ADMINISTRATOR")
     @Operation(summary = "Wartungshinweis setzen", description = "Legt Start- und Endzeitpunkt des angekündigten Wartungsfensters fest (überschreibt eine bestehende Ankündigung).")
     public WartungshinweisDto setzen(@RequestBody(description = "Start- und Endzeitpunkt des Wartungsfensters") WartungshinweisDto dto) {
         Wartungshinweis w = wartungshinweisService.setzen(dto.startZeitpunkt, dto.endeZeitpunkt);
@@ -44,7 +44,7 @@ public class WartungshinweisResource {
     }
 
     @DELETE
-    @RolesAllowed("ADMIN")
+    @RolesAllowed("ADMINISTRATOR")
     @Operation(summary = "Wartungshinweis löschen", description = "Entfernt eine bestehende Ankündigung.")
     public Response loeschen() {
         wartungshinweisService.loeschen();

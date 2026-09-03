@@ -8,7 +8,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.MediaType;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.Pflichtvortrag;
@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @QuarkusTest
-@TestSecurity(user = "admin@example.com", roles = "ADMIN")
+@TestSecurity(user = "admin@example.com", roles = "ORGANISATOR")
 @QuarkusTestResource(H2DatabaseTestResource.class)
 @TestHTTPEndpoint(VeranstaltungResource.class)
 class PflichtvortragResourceTest extends DatabaseCleaner {
@@ -50,8 +50,8 @@ class PflichtvortragResourceTest extends DatabaseCleaner {
     @BeforeEach
     @Transactional
     void setup() {
-        // Setup Admin for @TestSecurity
-        Admin admin = new Admin();
+        // Setup Organisator for @TestSecurity
+        Organisator admin = new Organisator();
         admin.assignLoginName("adminexample");
         admin.setEmail("admin@example.com");
         admin.persist();

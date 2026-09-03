@@ -10,7 +10,7 @@ import io.quarkus.test.security.oidc.OidcSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.VerbesserungsvorschlagDto;
-import kreyj.konfplan.persistence.Admin;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Verbesserungsvorschlag;
@@ -44,11 +44,11 @@ class VerbesserungsvorschlagResourceTest extends DatabaseCleaner {
         t.setLastName("Teilnehmer");
         t.persist();
 
-        Admin a = new Admin();
+        Organisator a = new Organisator();
         a.assignLoginName("anna.admin");
         a.setEmail("anna@test.de");
         a.setFirstName("Anna");
-        a.setLastName("Admin");
+        a.setLastName("Organisator");
         a.persist();
     }
 
@@ -86,7 +86,7 @@ class VerbesserungsvorschlagResourceTest extends DatabaseCleaner {
     }
 
     @Test
-    @TestSecurity(user = "anna.admin", roles = "ADMIN")
+    @TestSecurity(user = "anna.admin", roles = "ORGANISATOR")
     @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "anna.admin")})
     void getAll_zeigtEingereichteVorschlaegeMitErstellerkontext() {
         erstelleVorschlagAlsTeilnehmer("Feature X", "Beschreibung");
@@ -101,7 +101,7 @@ class VerbesserungsvorschlagResourceTest extends DatabaseCleaner {
     }
 
     @Test
-    @TestSecurity(user = "anna.admin", roles = "ADMIN")
+    @TestSecurity(user = "anna.admin", roles = "ORGANISATOR")
     @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "anna.admin")})
     void updateStatus_markiertAlsErledigt() {
         Long id = erstelleVorschlagAlsTeilnehmer("Feature Y", "Beschreibung").getId();
@@ -118,7 +118,7 @@ class VerbesserungsvorschlagResourceTest extends DatabaseCleaner {
     }
 
     @Test
-    @TestSecurity(user = "anna.admin", roles = "ADMIN")
+    @TestSecurity(user = "anna.admin", roles = "ORGANISATOR")
     @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "anna.admin")})
     void delete_entferntDenVorschlagEndgueltig() {
         Long id = erstelleVorschlagAlsTeilnehmer("Feature Z", "Beschreibung").getId();
