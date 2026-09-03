@@ -1,0 +1,7 @@
+Release Notes 1.6.0
+Released: 2026-09-01
+
+Changes:
+- Prepare next development iteration (1.5.1-SNAPSHOT) (#377)
+- Fixed Email Sender: konfplan@yahoo.com
+- Release 1.6.0 (#379)

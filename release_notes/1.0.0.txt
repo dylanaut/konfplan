@@ -1,0 +1,119 @@
+Release Notes 1.0.0
+Released: 2026-08-17
+
+Changes:
+- Initial commit
+- Sync von main: GitHub Actions CI/CD einrichten, Docker-Build-Bugfixes
+- Sync von main: Deploy-Workflow getrennt
+- Sync von main: SpotBugs nicht mehr build-brechend
+- Sync von main: CLAUDE.md auf GitHub-Workflow umgestellt
+- MiniZinc ins JVM-Docker-Image installieren
+- Dockerfile.jvm: gzip/tar fehlten im UBI-Minimal-Image (MiniZinc-Extraktion schlug fehl)
+- Bump actions/download-artifact from 4 to 8 (#1)
+- Bump surefire-plugin.version from 3.5.5 to 3.5.6 (#2)
+- Bump docker/build-push-action from 6 to 7 (#3)
+- Bump actions/checkout from 4 to 7 (#5)
+- Bump actions/upload-artifact from 4 to 7 (#6)
+- Bump actions/setup-java from 4 to 5 (#7)
+- Bump quarkus-mailpit.version from 2.0.0 to 2.1.2 (#8)
+- Bump org.mnode.ical4j:ical4j from 4.2.5 to 4.3.0 (#9)
+- Bump io.quarkiverse.quinoa:quarkus-quinoa from 2.8.1 to 2.8.3 (#10)
+- Bump com.github.spotbugs:spotbugs-maven-plugin from 4.9.8.3 to 4.10.3.0 (#4)
+- Add Windows network access guide for local WLAN deployment
+- Fix invalid table markup in TeilnehmerDashboard.vue
+- Fix Vorträge & Prioritäten section not opening in TeilnehmerDashboard
+- PROD Doku erweitert
+- Enable Quinoa SPA routing fallback
+- Fix two 500 errors on TeilnehmerDashboard
+- Gray out mandatory Pflichtvortrag slots and fix Vorträge 403
+- typos in html texten
+- Migrate database layer from PostgreSQL to SQL Server (Azure SQL Edge) (#11)
+- Fix Teilnehmer-Zuordnungen 404 and clean up Stundenplan room display (#12)
+- Remove redundant id field shadowing AbstractIdDto.id (#13)
+- Fix Gebaeude assignment bug and clean up remaining SpotBugs findings (#14)
+- Add directory-based bulk CSV import for creating a new Veranstaltung (#15)
+- Debian-13-Pakete für KonfPlan, MSSQL und Mailpit (#26)
+- Fix konfplan-mssql volume permissions and missing DB creation (#28)
+- Derive CSV fixture loginNames from vorname.nachname instead of email (#32)
+- Switch production database back from MS SQL Server to PostgreSQL (#30)
+- Rebuild TeilnehmerSimulation.scala for the current REST API (#34)
+- Fix stale Playwright E2E tests to match current REST API and UI (#36)
+- Add export/download function for the generated MiniZinc .dzn data file (#38)
+- Fix handleSaveUser/deleteUser/handleGlobalUpload overwriting the merged user list (#40)
+- Add regression test for CSV import wiping the merged user list (#42)
+- Add IP-scoped rate limiting to the login endpoint (#44)
+- Add inactivity-based auto-logout to the frontend (#46)
+- Tune connection/thread pools and add a closed-workload load test for ~700 concurrent users (#48)
+- Fix connection pool warm-up: min-size alone doesn't pre-create connections (#50)
+- Fix Verzeichnis-Bündel-Import timing out in %prod for larger datasets (#52)
+- Add Teilnehmer self-service email-change flow (#54)
+- Fix public link flows breaking when a stale token sits in localStorage (#56)
+- Fix a failed login attempt clearing an unrelated, valid session (#58)
+- Fix admin accounts without email being permanently unrecoverable (#60)
+- Add IP-based rate limiting to forgot-password (#61) (#62)
+- Invalidate outstanding JWTs on password reset (#64)
+- Document the admin-lockout gap fix in backend/AGENTS.md (#65)
+- Add ZIP-upload variant for Veranstaltung bulk CSV import (#24)
+- Fix infinite loading spinner in Freie-Slots and Laufzettel reports (#67)
+- Show event logo, date range, and organizers in page headers (#73)
+- Fix report PDFs printing in grayscale instead of color (#71)
+- Fix missing first name/groups and organisation in Laufzettel-Alle reports (#75)
+- Add Anwesenheiten (attendance) report; fix broken UebersichtRaeume rendering (#77)
+- Scope printing the embedded Stundenplan to just the Vortragsplan (#79)
+- Rename Stundenplan ICS button to 'Termine exportieren' (#81)
+- Fix logout leaving the previous page visible instead of Login (#85)
+- Fix Pflichtvortrag missing from Zugeteilt column when not in solver result (#87)
+- Fix HTTP 500 viewing personal plan once a Planungsergebnis exists (#83)
+- csv updated
+- LOG.debug
+- Nutzerverwaltung nach Keycloak migrieren (Option A) (#89)
+- Docs: sync CLAUDE.md/AGENTS.md/asciidoc with the Keycloak migration (#91)
+- CI: Qodana-Linter-Version an Action-Version anpassen (#93)
+- Add Docker Compose deployment procedure for UTM (local) and Hetzner (#95)
+- Fix bootstrap.sh randomly generating the Brevo SMTP password (#97)
+- Bump org.asciidoctor:asciidoctorj-diagram from 3.2.0 to 3.2.1 (#16)
+- Bump org.apache.maven.plugins:maven-site-plugin from 3.21.0 to 3.22.0 (#17)
+- Bump docker/login-action from 3 to 4 (#18)
+- Bump gatling.version from 3.15.0 to 3.15.1 (#19)
+- Bump de.elnarion.maven:plantuml-generator-maven-plugin (#20)
+- Bump com.github.eirslett:frontend-maven-plugin from 2.0.0 to 2.0.2 (#21)
+- Bump actions/setup-java from 5 to 5.6.0 (#22)
+- Add konfplan-keycloak Debian package for the .deb/systemd install path (#99)
+- Add Keycloak to the local native-image test infra script and docs (#108)
+- Remove dead Quarkus-scaffolding Dockerfiles from backend/src/main/docker (#110)
+- Bump actions/setup-java from 5.6.0 to 5.7.0 (#106)
+- Bump actions/checkout from 4 to 7 (#100)
+- Bump com.github.librepdf:openpdf from 2.0.3 to 3.0.5 (#101)
+- Bump io.quarkiverse.quinoa:quarkus-quinoa from 2.8.3 to 2.8.4 (#102)
+- Bump quarkus.platform.version from 3.35.1 to 3.38.1 (#103)
+- Bump org.asciidoctor:asciidoctorj-pdf from 2.3.20 to 2.3.23 (#104)
+- Bump com.tngtech.archunit:archunit-junit5 from 1.4.2 to 1.5.0 (#105)
+- Add combined Ubuntu install guide for Docker Compose and .deb paths
+- Docs for deployment
+- Document gh CLI + PAT clone workflow for the private repo
+- Switch class diagram generation to PlantUML, tidy docs and .gitignore
+- Ignore accidental root/backend npm artifacts and log files
+- Document ghcr.io login and docker.io corporate-network troubleshooting
+- Refine docker.io troubleshooting: no generic proxy found on this network
+- Document the local-to-public (profile "public") migration path
+- Explain how to actually create the two DNS A records
+- Expand ufw port-opening steps with a lockout warning
+- Document ufw-free port opening and clean ufw removal
+- Add kcadm.sh command sequence for creating the bootstrap admin
+- Clarify the .deb packages have no CI/release automation
+- Document profile-symmetric teardown before switching to "public"
+- Add external reachability check for the public-profile deployment
+- Fix bootstrap.sh secret permissions to survive non-root containers
+- Add docker-compose override and docs for native-image cloud deploy
+- Fix Hibernate enhancement version mismatch and Keycloak dev-services realm import
+- Fix juergenkrey dev-admin login by provisioning via CSV instead of raw SQL
+- Surface duplicate loginName/email errors when creating an admin
+- Add printable Abstimmungsfragebogen report for all Teilnehmer
+- ObjectMapper mit reflection-free serializer (Blackbird)
+- Move prod Keycloak to a path prefix instead of its own subdomain
+- Add script to auto-generate unique LoginName values from names
+- ObjectMapper mit reflection-free serializer (Blackbird)
+- Add Neigungen (interests) to Teilnehmer and Wahlvortrag (#117)
+- Organisator-Namen als mailto-Link mit Veranstaltungsname als Betreff (#119)
+- Kommentar mit # in CSV Import Teilnehmer und Aula für Messe aktualisiert
+- Release 1.0.0 (#121)

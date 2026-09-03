@@ -1,0 +1,30 @@
+Release Notes 1.1.0
+Released: 2026-08-19
+
+Changes:
+- Prepare next development iteration (1.0.1-SNAPSHOT) (#122)
+- dockerfile: minizinc inclusion fixed updated doku install.sh fixed: DON'T apt-get docker.io
+- dockerfile: minizinc inclusion fixed
+- Bump io.gatling:gatling-maven-plugin from 4.11.0 to 4.21.10 (#111)
+- Bump com.opencsv:opencsv from 5.11.2 to 5.12.0 (#112)
+- Bump org.apache.maven:apache-maven from 3.9.12 to 3.9.16 (#113)
+- Bump nanoid from 3.3.12 to 3.3.18 in /frontend (#125)
+- Bump com.fasterxml.jackson.module:jackson-module-blackbird (#114)
+- Bump postcss from 8.5.15 to 8.5.26 in /frontend (#124)
+- Bump axios from 1.17.0 to 1.18.0 in /frontend (#123)
+- Bump tar from 7.5.16 to 7.5.22 in /frontend (#126)
+- Bump org.apache.maven.plugins:maven-resources-plugin from 3.0.0 to 3.5.0 (#115)
+- Fix production crash from writing to a read-only import.meta.env property (#132)
+- Export/Import von Planungsdaten für externe MiniZinc-Berechnung (#134)
+- Enum Neigung durch Veranlagung ersetzen, neues Attribut Abschluss auf Vortrag (#136)
+- neues kompass-demo dataset
+- Attribute slogan und biography aus Referent entfernen (#139)
+- Attribut berufsfeld aus Vortrag entfernen (#142)
+- Referenten-Verfügbarkeit: 403 beim Ändern von Slots beheben (#145)
+- CLAUDE.md-Workflowregeln ergänzen, generate_loginnames.py um DB-Abgleich erweitern
+- Vortragsbearbeitung als Modal, kein globaler Alles-speichern-Button mehr (#146)
+- Bump form-data from 4.0.5 to 4.0.6 in /frontend (#129)
+- Bump org.jsoup:jsoup from 1.15.3 to 1.23.1 in /backend (#128)
+- Bump brace-expansion in /frontend (#127)
+- Bump vite from 7.3.5 to 8.2.1 in /frontend (#137)
+- Merge pull request #148

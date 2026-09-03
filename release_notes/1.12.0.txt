@@ -1,0 +1,6 @@
+Release Notes 1.12.0
+Released: 2026-09-03
+
+Changes:
+- Rollenmodell: Admin -> Organisator umbenennen, neue Rolle Administrator (#422)
+- Release 1.12.0 (#423)

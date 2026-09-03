@@ -1,0 +1,7 @@
+Release Notes 1.11.1
+Released: 2026-09-03
+
+Changes:
+- Prepare next development iteration (1.11.1-SNAPSHOT) (#415)
+- TeilnehmerDashboard: Client-seitige Validierung der Prioritäts-Eingabe (#417)
+- Release 1.11.1 (#419)

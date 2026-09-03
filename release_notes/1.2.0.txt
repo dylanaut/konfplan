@@ -1,0 +1,19 @@
+Release Notes 1.2.0
+Released: 2026-08-19
+
+Changes:
+- Prepare next development iteration (1.1.1-SNAPSHOT) (#149)
+- added quarkus http env settings in docker-compose.yml
+- Info-Menüeintrag im Header, Rollen-Kürzel entfernt (#151)
+- Keycloak-SMTP für lokalen Dev-Modus mit Mailpit verdrahten (#155)
+- Mailpit-DevServices-Port fest auf 8025 pinnen (#153)
+- Offene-Punkte-Liste: Keycloak-SMTP-Punkt für Dev/Mailpit abhaken (#156)
+- Keycloak-Realm-SMTP für Prod-Deployment (Brevo/Mailpit) verdrahten (#158)
+- Prod-Realm: Update-Password als Default-Required-Action für neue Nutzer (#160)
+- PlanungTab: Export/Import-Buttons unter die Konfiguration verschieben (#162)
+- Planerstellung: Inkonsistenzen als persistentes Banner statt Alert (#164)
+- ReferentenTab (Admin): fehlenden Speichern-Button für Verfügbarkeiten ergänzen (#166)
+- Mailto-Links für Organisatoren mit Underline + Mailbox-Icon (#168)
+- Raumschilder-Report: veraltete verschachtelte vortrag-Referenz entfernen (#172)
+- SlotDto: Zeitangaben-Methoden zu Standard-Bean-Gettern umbenennen (#170)
+- Release 1.2.0 (#174)
