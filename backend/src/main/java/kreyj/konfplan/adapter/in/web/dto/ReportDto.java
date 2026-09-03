@@ -1,5 +1,6 @@
 package kreyj.konfplan.adapter.in.web.dto;
 
+import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -134,6 +135,28 @@ public class ReportDto {
                     .comparing((NutzerDto t) -> null == t.lastName ? "" : t.lastName, String.CASE_INSENSITIVE_ORDER)
                     .thenComparing(t -> null == t.firstName ? "" : t.firstName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
+        }
+    }
+
+    public static class VortragAnmeldungenDto {
+        public final VeranstaltungDto veranstaltung;
+        public final String vortragTitel;
+        public final List<AnmeldungDto> anmeldungen;
+
+        public VortragAnmeldungenDto(Veranstaltung veranstaltung, Wahlvortrag vortrag, List<Prioritaet> prioritaeten) {
+            this.veranstaltung = VeranstaltungDto.from(veranstaltung);
+            this.vortragTitel = vortrag.getTitel();
+            this.anmeldungen = prioritaeten.stream().map(AnmeldungDto::new).toList();
+        }
+    }
+
+    public static class AnmeldungDto {
+        public final String loginName;
+        public final int prioWert;
+
+        public AnmeldungDto(Prioritaet prioritaet) {
+            this.loginName = prioritaet.getTeilnehmer().getLoginName();
+            this.prioWert = prioritaet.getPrioWert();
         }
     }
 

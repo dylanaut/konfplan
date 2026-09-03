@@ -18,10 +18,13 @@ import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
 import kreyj.konfplan.domain.service.DashboardService;
 import kreyj.konfplan.domain.service.PlanService;
 import kreyj.konfplan.persistence.IdEntity;
+import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Vortrag;
+import kreyj.konfplan.persistence.Wahlvortrag;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
@@ -257,5 +260,24 @@ public class ReportResource {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         return Response.ok(dashboardService.getPrioReport(veranstaltung)).build();
+    }
+
+
+    @GET
+    @Path("/{vid}/vortrag/{vortragId}/anmeldungen-data")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
+    @Operation(summary = "Daten für die Anmeldungen-Übersicht eines Wahlvortrags (Teilnehmer + Priorität)")
+    public Response getVortragAnmeldungenData(@PathParam("vid") Long vid, @PathParam("vortragId") Long vortragId) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        Vortrag vortrag = Vortrag.findById(vortragId);
+        if (null == veranstaltung || !(vortrag instanceof Wahlvortrag wahlvortrag)
+            || !wahlvortrag.getVeranstaltung().getId().equals(vid)) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        // prioWert = 0 bedeutet "keine Präferenz", zaehlt also nicht als Bewerbung/Anmeldung.
+        List<Prioritaet> prioritaeten = Prioritaet.<Prioritaet>find(
+            "vortrag.id = ?1 and prioWert > 0 order by prioWert desc, teilnehmer.loginName", vortragId).list();
+        return Response.ok(new ReportDto.VortragAnmeldungenDto(veranstaltung, wahlvortrag, prioritaeten)).build();
     }
 }
