@@ -4,11 +4,11 @@
       <h2 class="text-lg font-bold text-gray-800">Organisatoren</h2>
       <div class="flex gap-2">
         <input v-model="filters.admins" placeholder="Suchen..." class="input-field text-xs py-1 px-2"/>
-        <button @click="emit('triggerUpload', '/api/admin/admins/import')" class="btn-secondary flex items-center gap-2 text-xs py-1 px-3">
+        <button @click="emit('triggerUpload', '/api/organisator/organisatoren/import')" class="btn-secondary flex items-center gap-2 text-xs py-1 px-3">
           <UploadIcon class="w-3.5 h-3.5"/>
           Import
         </button>
-        <button @click="emit('openUserModal', {role: 'ADMIN'})" class="btn-primary text-xs py-1 px-3">+ Neu</button>
+        <button @click="emit('openUserModal', {role: 'ORGANISATOR'})" class="btn-primary text-xs py-1 px-3">+ Neu</button>
       </div>
     </div>
     <div class="bg-white shadow rounded-xl overflow-hidden border border-gray-100">

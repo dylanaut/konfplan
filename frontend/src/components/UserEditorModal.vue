@@ -33,20 +33,27 @@
 
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-1">
-            E-Mail{{ form.role === 'ADMIN' ? ' (erforderlich für Administratoren)' : ' (optional)' }}
+            E-Mail{{ emailRequired ? ' (erforderlich für Organisatoren/Administratoren)' : ' (optional)' }}
           </label>
-          <input v-model="form.email" type="email" class="input-field" :required="form.role === 'ADMIN'" />
-          <p v-if="form.role === 'ADMIN'" class="text-xs text-gray-500 mt-1">
+          <input v-model="form.email" type="email" class="input-field" :required="emailRequired" />
+          <p v-if="emailRequired" class="text-xs text-gray-500 mt-1">
             Ohne E-Mail-Adresse kann ein vergessenes Passwort nicht selbst zurückgesetzt werden.
           </p>
         </div>
 
-        <div v-if="!roleLocked" class="md:col-span-2">
+        <div v-if="canToggleOrganisatorRole" class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Rolle</label>
+          <select v-model="form.role" class="input-field" required>
+            <option value="ORGANISATOR">Organisator</option>
+            <option value="ADMINISTRATOR">Administrator</option>
+          </select>
+        </div>
+        <div v-else-if="!roleLocked" class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-1">Rolle</label>
           <select v-model="form.role" class="input-field" required>
             <option value="TEILNEHMER">Teilnehmer</option>
             <option value="REFERENT">Referent</option>
-            <option value="ADMIN">Administrator</option>
+            <option value="ORGANISATOR">Organisator</option>
           </select>
         </div>
 
@@ -108,7 +115,7 @@ import { reactive, computed, watch } from 'vue';
 import { useGroupStore } from '../stores/group';
 import { useNeigungStore } from '../stores/neigung';
 
-const ROLLEN_NAMEN = { TEILNEHMER: 'Teilnehmer', REFERENT: 'Referent', ADMIN: 'Administrator' };
+const ROLLEN_NAMEN = { TEILNEHMER: 'Teilnehmer', REFERENT: 'Referent', ORGANISATOR: 'Organisator', ADMINISTRATOR: 'Administrator' };
 
 const props = defineProps({
   isVisible: { type: Boolean, required: true },
@@ -126,7 +133,12 @@ const neigungStore = useNeigungStore();
 neigungStore.fetchNeigungen();
 
 const isEditing = computed(() => !!props.nutzer?.id);
-const roleLocked = computed(() => isEditing.value || !!props.fixedRole);
+const emailRequired = computed(() => form.role === 'ORGANISATOR' || form.role === 'ADMINISTRATOR');
+// Bei bestehenden Organisatoren/Administratoren ist die Rolle nicht komplett fixiert, sondern
+// zwischen den beiden umschaltbar (siehe Organisatoren-Tab) - bei allen anderen bestehenden
+// Nutzern (Referent/Teilnehmer) sowie bei fixedRole-Neuanlagen bleibt sie weiterhin starr.
+const canToggleOrganisatorRole = computed(() => isEditing.value && emailRequired.value);
+const roleLocked = computed(() => (isEditing.value && !canToggleOrganisatorRole.value) || (!isEditing.value && !!props.fixedRole));
 const modalTitle = computed(() => {
   const rollenName = ROLLEN_NAMEN[form.role] ?? 'Nutzer';
   if (isEditing.value) return `${rollenName} bearbeiten`;

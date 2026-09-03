@@ -36,7 +36,7 @@
 
         <!-- Organisatoren Auswahl (Multi-Select) -->
         <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Organisatoren (Admins)</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Organisatoren</label>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-3 bg-gray-50 border rounded-lg">
             <div v-for="admin in admins" :key="admin.id" class="flex items-center gap-2">
               <input type="checkbox" :id="'admin-'+admin.id" :value="admin.id" v-model="form.organisatorIds" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
@@ -45,7 +45,7 @@
               </label>
             </div>
             <div v-if="admins.length === 0" class="text-xs text-gray-500 italic p-1">
-              Keine Administratoren gefunden. Legen Sie zuerst welche an.
+              Keine Organisatoren gefunden. Legen Sie zuerst welche an.
             </div>
           </div>
         </div>

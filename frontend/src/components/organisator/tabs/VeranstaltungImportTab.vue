@@ -85,7 +85,7 @@ const loadDatasets = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const res = await api.get('/api/admin/veranstaltung-import/datasets');
+    const res = await api.get('/api/organisator/veranstaltung-import/datasets');
     datasets.value = res.data;
   } catch (e) {
     error.value = 'Fehler beim Laden der Verzeichnisse: ' + (e.response?.data || e.message);
@@ -98,7 +98,7 @@ const doImport = async (name) => {
   importingName.value = name;
   error.value = '';
   try {
-    const res = await api.post(`/api/admin/veranstaltung-import/datasets/${encodeURIComponent(name)}/import`);
+    const res = await api.post(`/api/organisator/veranstaltung-import/datasets/${encodeURIComponent(name)}/import`);
     emit('imported', res.data);
     await loadDatasets();
   } catch (e) {
@@ -119,7 +119,7 @@ const uploadZip = async () => {
   try {
     const formData = new FormData();
     formData.append('file', zipFile.value);
-    const res = await api.post('/api/admin/veranstaltung-import/upload', formData, {
+    const res = await api.post('/api/organisator/veranstaltung-import/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     emit('imported', res.data);

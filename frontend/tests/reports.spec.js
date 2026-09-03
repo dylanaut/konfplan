@@ -18,7 +18,7 @@ test.describe('Report-Generierung', () => {
     // Die Route ist auth-geschützt: Login-Status vor dem Laden der Seite simulieren.
     await page.addInitScript(() => {
       localStorage.setItem('token', 'test-token');
-      localStorage.setItem('role', 'ADMIN');
+      localStorage.setItem('role', 'ORGANISATOR');
     });
 
     await page.route(apiUrl, async route => {
@@ -42,7 +42,7 @@ test.describe('Report-Generierung', () => {
     // Die Route ist auth-geschützt: Login-Status vor dem Laden der Seite simulieren.
     await page.addInitScript(() => {
       localStorage.setItem('token', 'test-token');
-      localStorage.setItem('role', 'ADMIN');
+      localStorage.setItem('role', 'ORGANISATOR');
     });
 
     await page.route(apiUrl, async route => {
@@ -66,7 +66,7 @@ test.describe('Report-Generierung', () => {
     // Die Route ist auth-geschützt: Login-Status vor dem Laden der Seite simulieren.
     await page.addInitScript(() => {
       localStorage.setItem('token', 'test-token');
-      localStorage.setItem('role', 'ADMIN');
+      localStorage.setItem('role', 'ORGANISATOR');
     });
 
     await page.route(apiUrl, async route => {
@@ -84,12 +84,12 @@ test.describe('Report-Generierung', () => {
     // Absolutes Glob, da die Axios-Basis-URL (http://localhost:9000) von der
     // Playwright-baseURL (Vite-Dev-Server) abweicht.
     const apiUrl = `**/api/reports/${veranstaltungId}/raeume-data`;
-    const routeUrl = `/admin/veranstaltung/${veranstaltungId}/uebersicht-raeume`;
+    const routeUrl = `/organisator/veranstaltung/${veranstaltungId}/uebersicht-raeume`;
 
-    // Die Route ist ADMIN-geschützt: Login-Status vor dem Laden der Seite simulieren.
+    // Die Route ist ORGANISATOR-geschützt: Login-Status vor dem Laden der Seite simulieren.
     await page.addInitScript(() => {
       localStorage.setItem('token', 'test-token');
-      localStorage.setItem('role', 'ADMIN');
+      localStorage.setItem('role', 'ORGANISATOR');
     });
 
     await page.route(apiUrl, async route => {
@@ -107,12 +107,12 @@ test.describe('Report-Generierung', () => {
     // Absolutes Glob, da die Axios-Basis-URL (http://localhost:9000) von der
     // Playwright-baseURL (Vite-Dev-Server) abweicht.
     const apiUrl = `**/api/reports/${veranstaltungId}/raumschilder-data`;
-    const routeUrl = `/admin/veranstaltung/${veranstaltungId}/raumschilder`;
+    const routeUrl = `/organisator/veranstaltung/${veranstaltungId}/raumschilder`;
 
-    // Die Route ist ADMIN-geschützt: Login-Status vor dem Laden der Seite simulieren.
+    // Die Route ist ORGANISATOR-geschützt: Login-Status vor dem Laden der Seite simulieren.
     await page.addInitScript(() => {
       localStorage.setItem('token', 'test-token');
-      localStorage.setItem('role', 'ADMIN');
+      localStorage.setItem('role', 'ORGANISATOR');
     });
 
     await page.route(apiUrl, async route => {
@@ -132,12 +132,12 @@ test.describe('Report-Generierung', () => {
     // Absolutes Glob, da die Axios-Basis-URL (http://localhost:9000) von der
     // Playwright-baseURL (Vite-Dev-Server) abweicht.
     const apiUrl = `**/api/reports/${veranstaltungId}/freie-slots-referenten-data`;
-    const routeUrl = `/admin/veranstaltung/${veranstaltungId}/freie-slots-referenten`;
+    const routeUrl = `/organisator/veranstaltung/${veranstaltungId}/freie-slots-referenten`;
 
-    // Die Route ist ADMIN-geschützt: Login-Status vor dem Laden der Seite simulieren.
+    // Die Route ist ORGANISATOR-geschützt: Login-Status vor dem Laden der Seite simulieren.
     await page.addInitScript(() => {
       localStorage.setItem('token', 'test-token');
-      localStorage.setItem('role', 'ADMIN');
+      localStorage.setItem('role', 'ORGANISATOR');
     });
 
     await page.route(apiUrl, async route => {
@@ -155,12 +155,12 @@ test.describe('Report-Generierung', () => {
     // Absolutes Glob, da die Axios-Basis-URL (http://localhost:9000) von der
     // Playwright-baseURL (Vite-Dev-Server) abweicht.
     const apiUrl = `**/api/reports/${veranstaltungId}/freie-slots-teilnehmer-data`;
-    const routeUrl = `/admin/veranstaltung/${veranstaltungId}/freie-slots-teilnehmer`;
+    const routeUrl = `/organisator/veranstaltung/${veranstaltungId}/freie-slots-teilnehmer`;
 
-    // Die Route ist ADMIN-geschützt: Login-Status vor dem Laden der Seite simulieren.
+    // Die Route ist ORGANISATOR-geschützt: Login-Status vor dem Laden der Seite simulieren.
     await page.addInitScript(() => {
       localStorage.setItem('token', 'test-token');
-      localStorage.setItem('role', 'ADMIN');
+      localStorage.setItem('role', 'ORGANISATOR');
     });
 
     await page.route(apiUrl, async route => {
@@ -178,12 +178,12 @@ test.describe('Report-Generierung', () => {
     // Absolutes Glob, da die Axios-Basis-URL (http://localhost:9000) von der
     // Playwright-baseURL (Vite-Dev-Server) abweicht.
     const apiUrl = `**/api/reports/${veranstaltungId}/stundenplan-data`;
-    const routeUrl = `/admin/veranstaltung/${veranstaltungId}/stundenplan`;
+    const routeUrl = `/organisator/veranstaltung/${veranstaltungId}/stundenplan`;
 
-    // Die Route ist ADMIN-geschützt: Login-Status vor dem Laden der Seite simulieren.
+    // Die Route ist ORGANISATOR-geschützt: Login-Status vor dem Laden der Seite simulieren.
     await page.addInitScript(() => {
       localStorage.setItem('token', 'test-token');
-      localStorage.setItem('role', 'ADMIN');
+      localStorage.setItem('role', 'ORGANISATOR');
     });
 
     await page.route(apiUrl, async route => {

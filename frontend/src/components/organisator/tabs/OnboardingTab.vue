@@ -3,7 +3,7 @@
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div>
         <h2 class="text-lg font-bold text-gray-900">Onboarding-Status</h2>
-        <p class="text-xs text-gray-500 mt-0.5">Nutzer, die noch kein echtes eigenes Passwort vergeben haben (weder selbst per "Passwort vergessen" noch nach einem Admin-Reset).</p>
+        <p class="text-xs text-gray-500 mt-0.5">Nutzer, die noch kein echtes eigenes Passwort vergeben haben (weder selbst per "Passwort vergessen" noch nach einem Organisator-Reset).</p>
       </div>
       <div class="flex items-center gap-3">
         <input v-model="filterText" placeholder="Suchen..." class="input-field text-xs py-1 px-2"/>
@@ -112,7 +112,7 @@ const load = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const res = await api.get('/api/admin/onboarding-status');
+    const res = await api.get('/api/organisator/onboarding-status');
     status.value = res.data;
   } catch (e) {
     error.value = 'Fehler beim Laden des Onboarding-Status: ' + extractErrorMessage(e);

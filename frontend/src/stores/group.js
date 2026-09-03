@@ -13,7 +13,7 @@ export const useGroupStore = defineStore('group', () => {
             return;
         }
         try {
-            const response = await api.get(`/api/admin/veranstaltungen/${veranstaltungId}/gruppen`);
+            const response = await api.get(`/api/organisator/veranstaltungen/${veranstaltungId}/gruppen`);
             gruppen.value = response.data;
         } catch (error) {
             toast.error('Gruppen konnten nicht geladen werden.');
@@ -23,7 +23,7 @@ export const useGroupStore = defineStore('group', () => {
 
     async function addGruppe(veranstaltungId, gruppenName) {
         try {
-            await api.post(`/api/admin/veranstaltungen/${veranstaltungId}/gruppen`, gruppenName, {
+            await api.post(`/api/organisator/veranstaltungen/${veranstaltungId}/gruppen`, gruppenName, {
                 headers: { 'Content-Type': 'text/plain' }
             });
             await fetchGruppen(veranstaltungId);
@@ -36,7 +36,7 @@ export const useGroupStore = defineStore('group', () => {
 
     async function renameGruppe(veranstaltungId, alterName, neuerName) {
         try {
-            await api.put(`/api/admin/veranstaltungen/${veranstaltungId}/gruppen`, null, {
+            await api.put(`/api/organisator/veranstaltungen/${veranstaltungId}/gruppen`, null, {
                 params: { alterName, neuerName }
             });
             await fetchGruppen(veranstaltungId);
@@ -49,7 +49,7 @@ export const useGroupStore = defineStore('group', () => {
 
     async function deleteGruppe(veranstaltungId, gruppenName) {
         try {
-            await api.delete(`/api/admin/veranstaltungen/${veranstaltungId}/gruppen/${gruppenName}`);
+            await api.delete(`/api/organisator/veranstaltungen/${veranstaltungId}/gruppen/${gruppenName}`);
             await fetchGruppen(veranstaltungId);
             toast.success(`Gruppe '${gruppenName}' gelöscht.`);
         } catch (error) {

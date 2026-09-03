@@ -60,7 +60,7 @@
           </div>
         </div>
         <div class="flex items-center gap-2" @click.stop>
-          <button @click="emit('triggerUpload', `/api/admin/veranstaltungen/${selectedVid}/prioritaeten/import`)"
+          <button @click="emit('triggerUpload', `/api/organisator/veranstaltungen/${selectedVid}/prioritaeten/import`)"
                   class="btn-secondary text-xs py-1 px-2 flex items-center gap-1">
             <UploadIcon class="w-3.5 h-3.5"/>
             Prio Import
@@ -168,7 +168,7 @@
           </div>
         </div>
         <div class="flex items-center gap-2" @click.stop>
-          <button @click="emit('triggerUpload', `/api/admin/veranstaltungen/${selectedVid}/teilnehmer/verfuegbarkeiten/import`)"
+          <button @click="emit('triggerUpload', `/api/organisator/veranstaltungen/${selectedVid}/teilnehmer/verfuegbarkeiten/import`)"
                   class="btn-secondary text-xs py-1 px-2 flex items-center gap-1">
             <UploadIcon class="w-3.5 h-3.5"/>
             Verfügbarkeiten Import

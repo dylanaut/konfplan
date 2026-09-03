@@ -6,7 +6,7 @@
         class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100 no-print">
       <div class="flex-1">
         <img class="h-12 w-auto mb-2" src="/logo/konfplan-light.svg" alt="Konfplan Logo"/>
-        <h1 class="text-xl font-bold text-gray-900">Admin-Bereich</h1>
+        <h1 class="text-xl font-bold text-gray-900">Organisator-Bereich</h1>
         <div class="mt-2 flex items-center gap-3">
           <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Aktive Veranstaltung:</label>
           <select v-model="selectedVid" @change="handleVeranstaltungChange"
@@ -18,14 +18,14 @@
           </select>
         </div>
       </div>
-      <button @click="showMaintenanceModal = true" class="btn-secondary flex items-center gap-2 text-xs py-1.5 shrink-0">
+      <button v-if="auth.isAdministrator" @click="showMaintenanceModal = true" class="btn-secondary flex items-center gap-2 text-xs py-1.5 shrink-0">
         <AlertTriangleIcon class="w-3.5 h-3.5" />
         Wartung ankündigen
       </button>
     </div>
 
     <div class="flex gap-4 items-start">
-      <AdminSidebarNav :activeTab="activeTab" :visibleTabs="visibleTabs" :tabLabels="tabLabels"
+      <OrganisatorSidebarNav :activeTab="activeTab" :visibleTabs="visibleTabs" :tabLabels="tabLabels"
                        @tab-click="handleTabClick" class="shrink-0"/>
 
       <div class="flex-1 min-w-0 space-y-6">
@@ -215,7 +215,7 @@
                      @close="showRaumModal = false" @save="handleSaveRaum"/>
     <UserEditorModal :isVisible="showUserModal" :nutzer="selectedUser" :eventSlots="eventSlots" :fixedRole="newUserFixedRole"
                      @close="showUserModal = false" @save="handleSaveUser"/>
-    <AdminVortragEditorModal :isVisible="showVortragModal" :vortrag="selectedVortrag" :referenten="referenten"
+    <OrganisatorVortragEditorModal :isVisible="showVortragModal" :vortrag="selectedVortrag" :referenten="referenten"
                              :raeume="filteredRaeume" :slots="eventSlots" :participantGroups="teilnehmerGruppen"
                              :error="vortragModalError" @close="closeVortragModal" @save="handleSaveVortrag"/>
     <EventSlotEditorModal :isVisible="showSlotModal" :slot="selectedSlot" @close="showSlotModal = false"
@@ -266,6 +266,7 @@ import { extractErrorMessage } from '../utils/errorMessage';
 import {useEventContextStore} from '../stores/eventContext';
 import {useAvailabilityStore} from '../stores/availability';
 import { useGroupStore } from '../stores/group';
+import { useAuthStore } from '../stores/auth';
 import {
   AlertTriangle as AlertTriangleIcon,
   Calendar as CalendarIcon,
@@ -275,23 +276,23 @@ import {
 } from '@lucide/vue';
 
 // Import Tab Components
-import ErgebnisseTab from '../components/admin/tabs/ErgebnisseTab.vue';
-import VeranstaltungenTab from '../components/admin/tabs/VeranstaltungenTab.vue';
-import VeranstaltungImportTab from '../components/admin/tabs/VeranstaltungImportTab.vue';
-import GebaeudeTab from '../components/admin/tabs/GebaeudeTab.vue';
-import OrganisatorenTab from '../components/admin/tabs/OrganisatorenTab.vue';
-import TeilnehmerTab from '../components/admin/tabs/TeilnehmerTab.vue';
-import ReferentenTab from '../components/admin/tabs/ReferentenTab.vue';
-import VortraegeTab from '../components/admin/tabs/VortraegeTab.vue';
-import SlotsTab from '../components/admin/tabs/SlotsTab.vue';
-import PlanungTab from '../components/admin/tabs/PlanungTab.vue';
-import ProtokollTab from '../components/admin/tabs/ProtokollTab.vue';
-import FeedbackTab from '../components/admin/tabs/FeedbackTab.vue';
-import OnboardingTab from '../components/admin/tabs/OnboardingTab.vue';
-import AdminSidebarNav from '../components/admin/AdminSidebarNav.vue';
+import ErgebnisseTab from '../components/organisator/tabs/ErgebnisseTab.vue';
+import VeranstaltungenTab from '../components/organisator/tabs/VeranstaltungenTab.vue';
+import VeranstaltungImportTab from '../components/organisator/tabs/VeranstaltungImportTab.vue';
+import GebaeudeTab from '../components/organisator/tabs/GebaeudeTab.vue';
+import OrganisatorenTab from '../components/organisator/tabs/OrganisatorenTab.vue';
+import TeilnehmerTab from '../components/organisator/tabs/TeilnehmerTab.vue';
+import ReferentenTab from '../components/organisator/tabs/ReferentenTab.vue';
+import VortraegeTab from '../components/organisator/tabs/VortraegeTab.vue';
+import SlotsTab from '../components/organisator/tabs/SlotsTab.vue';
+import PlanungTab from '../components/organisator/tabs/PlanungTab.vue';
+import ProtokollTab from '../components/organisator/tabs/ProtokollTab.vue';
+import FeedbackTab from '../components/organisator/tabs/FeedbackTab.vue';
+import OnboardingTab from '../components/organisator/tabs/OnboardingTab.vue';
+import OrganisatorSidebarNav from '../components/organisator/OrganisatorSidebarNav.vue';
 
 // Import Modals
-import AdminVortragEditorModal from '../components/AdminVortragEditorModal.vue';
+import OrganisatorVortragEditorModal from '../components/OrganisatorVortragEditorModal.vue';
 import UserEditorModal from '../components/UserEditorModal.vue';
 import VeranstaltungEditorModal from '../components/VeranstaltungEditorModal.vue';
 import RaumEditorModal from '../components/RaumEditorModal.vue';
@@ -305,6 +306,7 @@ import MaintenanceAnnouncementModal from '../components/MaintenanceAnnouncementM
 const eventContext = useEventContextStore();
 const availabilityStore = useAvailabilityStore();
 const groupStore = useGroupStore();
+const auth = useAuthStore();
 
 const tabLabels = {
   organisatoren: 'Organisatoren',
@@ -381,14 +383,15 @@ const csvFeedback = reactive({
 });
 
 const visibleTabs = computed(() => {
-  if (selectedVid.value) return ['organisatoren', 'gebaeude',
+  const tabs = selectedVid.value ? ['organisatoren', 'gebaeude',
     'teilnehmer', 'referenten', 'vortraege',
     'veranstaltungen', 'veranstaltungImport', 'slots',
     'planung', 'ergebnisse',
-    'protokoll', 'feedback', 'onboarding'];
-  return ['organisatoren', 'gebaeude', 'referenten',
+    'protokoll', 'feedback', 'onboarding'] : ['organisatoren', 'gebaeude', 'referenten',
     'veranstaltungen', 'veranstaltungImport',
     'protokoll', 'feedback', 'onboarding'];
+  // Verzeichnis-Import ist exklusiv fuer Administratoren (siehe VeranstaltungImportResource).
+  return auth.isAdministrator ? tabs : tabs.filter(t => t !== 'veranstaltungImport');
 });
 
 const futureEvents = computed(() => {
@@ -409,7 +412,7 @@ const isEventFinished = computed(() => {
 
 const planErstellt = computed(() => belegungsplan.value && belegungsplan.value.length > 0);
 
-const admins = computed(() => users.value.filter(u => u.role === 'ADMIN'));
+const admins = computed(() => users.value.filter(u => u.role === 'ORGANISATOR' || u.role === 'ADMINISTRATOR'));
 const referenten = computed(() => users.value.filter(u => u.role === 'REFERENT'));
 const teilnehmer = computed(() => users.value.filter(u => u.role === 'TEILNEHMER'));
 
@@ -513,16 +516,16 @@ const refreshGebaeude = async () => {
 };
 const refreshAdmins = async () => {
   try {
-    const res = await api.get('/api/admin/nutzer');
+    const res = await api.get('/api/organisator/nutzer');
     users.value = res.data;
   } catch (e) {
-    console.error('Fehler beim Laden der Administratoren:', e);
+    console.error('Fehler beim Laden der Organisatoren:', e);
   }
 };
 
 const refreshProtokolle = async () => {
   try {
-    const res = await api.get('/api/admin/protokolle');
+    const res = await api.get('/api/organisator/protokolle');
     protokolle.value = res.data;
   } catch (e) {
     console.error('Fehler beim Laden des Protokolls:', e);
@@ -613,7 +616,7 @@ const loadData = async () => {
       api.get(`${base}/slots`),
       api.get(`${base}/plan/details`),
       api.get(`${base}/plan/qualitaet`),
-      api.get('/api/admin/nutzer'),
+      api.get('/api/organisator/nutzer'),
       groupStore.fetchGruppen(selectedVid.value)
     ]);
 
@@ -757,9 +760,9 @@ const openUserModal = (u) => {
   showUserModal.value = true;
 };
 const handleSaveUser = async (u) => {
-  const isGlobalAdmin = u.role === 'ADMIN';
+  const isOrganisatorOrAdministrator = u.role === 'ORGANISATOR' || u.role === 'ADMINISTRATOR';
   let endpoint;
-  if (isGlobalAdmin) endpoint = `/api/admin/nutzer`;
+  if (isOrganisatorOrAdministrator) endpoint = `/api/organisator/nutzer`;
   else if (selectedVid.value) endpoint = `/api/veranstaltungen/${selectedVid.value}/nutzer`;
   else return;
 
@@ -767,10 +770,11 @@ const handleSaveUser = async (u) => {
     if (u.id) await api.put(`${endpoint}/${u.id}`, u);
     else await api.post(endpoint, u);
     showUserModal.value = false;
-    // loadData() liefert bei ausgewählter Veranstaltung bereits die korrekt aus Admin- und
+    // loadData() liefert bei ausgewählter Veranstaltung bereits die korrekt aus Organisator- und
     // Veranstaltungs-Nutzern zusammengeführte Liste; refreshAdmins() würde diese mit der reinen
-    // Admin-Liste überschreiben. Nur ohne ausgewählte Veranstaltung (z.B. globaler Admin ohne
-    // Veranstaltungsbezug) tut loadData() nichts, daher dort auf refreshAdmins() ausweichen.
+    // Organisatoren-Liste überschreiben. Nur ohne ausgewählte Veranstaltung (z.B. globaler
+    // Organisator/Administrator ohne Veranstaltungsbezug) tut loadData() nichts, daher dort auf
+    // refreshAdmins() ausweichen.
     if (selectedVid.value) await loadData();
     else await refreshAdmins();
   } catch (e) {
@@ -782,7 +786,7 @@ const deleteUser = async (id) => {
     try {
       const userToDelete = users.value.find(u => u.id === id);
       let endpoint;
-      if (userToDelete && userToDelete.role === 'ADMIN') endpoint = `/api/admin/nutzer/${id}`;
+      if (userToDelete && (userToDelete.role === 'ORGANISATOR' || userToDelete.role === 'ADMINISTRATOR')) endpoint = `/api/organisator/nutzer/${id}`;
       else if (selectedVid.value) endpoint = `/api/veranstaltungen/${selectedVid.value}/nutzer/${id}`;
       else return;
 
@@ -848,7 +852,7 @@ const openInviteModal = (u) => {
 };
 const handleInviteUser = async ({userId, eventId}) => {
   try {
-    await api.post(`/api/admin/nutzer/${userId}/einladen/${eventId}`);
+    await api.post(`/api/organisator/nutzer/${userId}/einladen/${eventId}`);
     alert("Einladung erfolgreich versendet!");
     showInviteModal.value = false;
     await loadData();
@@ -863,7 +867,7 @@ const openPasswordResetModal = (u) => {
 };
 const handleResetPassword = async ({userId, newPassword}) => {
   try {
-    await api.post(`/api/admin/nutzer/${userId}/reset-password`, {newPassword});
+    await api.post(`/api/organisator/nutzer/${userId}/reset-password`, {newPassword});
     alert("Passwort erfolgreich zurückgesetzt!");
     showPasswordResetModal.value = false;
   } catch (e) {
@@ -878,7 +882,7 @@ const openGeneratePasswordsZipModal = (ids) => {
 const handleGeneratePasswordsZip = async (zipPassword) => {
   try {
     const response = await api.post(
-      `/api/admin/veranstaltungen/${selectedVid.value}/teilnehmer/passwoerter/zip`,
+      `/api/organisator/veranstaltungen/${selectedVid.value}/teilnehmer/passwoerter/zip`,
       { nutzerIds: selectedIdsForZip.value, zipPassword },
       { responseType: 'blob' }
     );
@@ -1002,7 +1006,7 @@ const saveParticipantPriorities = async (userId) => {
   }
 
   try {
-    await api.put(`/api/admin/veranstaltungen/${selectedVid.value}/teilnehmer/${userId}/priorities`, changedPayload);
+    await api.put(`/api/organisator/veranstaltungen/${selectedVid.value}/teilnehmer/${userId}/priorities`, changedPayload);
     originalParticipantPriorities.value[userId] = JSON.parse(JSON.stringify(currentUserPrios));
     changedPriorities.value.delete(userId);
   } catch (e) {

@@ -210,7 +210,7 @@ const truncTo = (text, maxLen = 25) => {
 
 const downloadIcs = async () => {
   try {
-    const res = await api.get(`/api/kalender/admin/${props.vid}`, { responseType: 'blob' });
+    const res = await api.get(`/api/kalender/organisator/${props.vid}`, { responseType: 'blob' });
     const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/calendar' }));
     const link = document.createElement('a');
     link.href = url;

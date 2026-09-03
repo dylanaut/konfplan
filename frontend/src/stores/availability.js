@@ -11,8 +11,8 @@ export const useAvailabilityStore = defineStore('availability', () => {
 
     async function fetchAvailabilities(eventId) {
         const [userRes, roomRes] = await Promise.all([
-            api.get(`/api/admin/veranstaltungen/${eventId}/verfuegbarkeiten`),
-            api.get(`/api/admin/veranstaltungen/${eventId}/raeume/verfuegbarkeiten`)
+            api.get(`/api/organisator/veranstaltungen/${eventId}/verfuegbarkeiten`),
+            api.get(`/api/organisator/veranstaltungen/${eventId}/raeume/verfuegbarkeiten`)
         ]);
 
         userAvailabilities.value.clear();
@@ -65,7 +65,7 @@ export const useAvailabilityStore = defineStore('availability', () => {
                 veranstaltungId: eventId,
                 verfuegbareSlotIds: Array.from(userAvailabilities.value.get(userId) || [])
             };
-            userPromises.push(api.post(`/api/admin/veranstaltungen/${eventId}/verfuegbarkeiten`, payload));
+            userPromises.push(api.post(`/api/organisator/veranstaltungen/${eventId}/verfuegbarkeiten`, payload));
         }
 
         const roomPromises = [];
@@ -75,7 +75,7 @@ export const useAvailabilityStore = defineStore('availability', () => {
                 veranstaltungId: eventId,
                 verfuegbareSlotIds: Array.from(roomAvailabilities.value.get(roomId) || [])
             };
-            roomPromises.push(api.post(`/api/admin/veranstaltungen/${eventId}/raeume/verfuegbarkeiten`, payload));
+            roomPromises.push(api.post(`/api/organisator/veranstaltungen/${eventId}/raeume/verfuegbarkeiten`, payload));
         }
 
         await Promise.all([...userPromises, ...roomPromises]);

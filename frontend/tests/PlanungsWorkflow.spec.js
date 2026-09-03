@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * E2E-Test für den vollständigen Admin-Planungs-Workflow: Veranstaltung -> Gebäude ->
+ * E2E-Test für den vollständigen Organisator-Planungs-Workflow: Veranstaltung -> Gebäude ->
  * Slots -> Personen -> Vorträge.
  *
- * Läuft wie AdminDashboardModals.spec.js komplett gegen gemockte APIs (page.route) und
- * einen per localStorage vorgetäuschten ADMIN-Login - kein echter Login, kein laufendes
+ * Läuft wie OrganisatorDashboardModals.spec.js komplett gegen gemockte APIs (page.route) und
+ * einen per localStorage vorgetäuschten ORGANISATOR-Login - kein echter Login, kein laufendes
  * Backend nötig. Anders als die dortigen Einzeltests hält dieser Mock einen einfachen
  * In-Memory-Zustand (Arrays statt fixer Fixtures), damit z.B. ein neu angelegter Referent
  * anschließend im Vortrag-Dropdown auswählbar ist - der Test soll ja gerade die Verkettung
@@ -22,7 +22,7 @@ let nutzer;
 let vortraege;
 let slots;
 
-const ADMIN = { id: 1, firstName: 'Anna', lastName: 'Admin', email: 'admin@test.de', role: 'ADMIN', isActive: true };
+const ADMIN = { id: 1, firstName: 'Anna', lastName: 'Admin', email: 'admin@test.de', role: 'ORGANISATOR', isActive: true };
 
 function resetState() {
   nextId = 1000;
@@ -37,7 +37,7 @@ async function mockAdminApis(page) {
   resetState();
   await page.addInitScript(() => {
     localStorage.setItem('token', 'test-token');
-    localStorage.setItem('role', 'ADMIN');
+    localStorage.setItem('role', 'ORGANISATOR');
   });
 
   await page.route('http://localhost:9000/api/**', async (route) => {
@@ -110,12 +110,12 @@ async function mockAdminApis(page) {
         return json(s, 201);
       }
     }
-    if (path === '/api/admin/nutzer' && method === 'GET') return json(nutzer.filter((n) => n.role === 'ADMIN'));
+    if (path === '/api/organisator/nutzer' && method === 'GET') return json(nutzer.filter((n) => n.role === 'ORGANISATOR'));
     m = path.match(/^\/api\/veranstaltungen\/(\d+)\/plan\/(details|qualitaet)$/);
     if (m) return json(m[2] === 'details' ? [] : {});
-    if (/^\/api\/admin\/veranstaltungen\/\d+\/gruppen$/.test(path)) return json([]);
-    if (/^\/api\/admin\/veranstaltungen\/\d+\/verfuegbarkeiten$/.test(path)) return json([]);
-    if (/^\/api\/admin\/veranstaltungen\/\d+\/raeume\/verfuegbarkeiten$/.test(path)) return json([]);
+    if (/^\/api\/organisator\/veranstaltungen\/\d+\/gruppen$/.test(path)) return json([]);
+    if (/^\/api\/organisator\/veranstaltungen\/\d+\/verfuegbarkeiten$/.test(path)) return json([]);
+    if (/^\/api\/organisator\/veranstaltungen\/\d+\/raeume\/verfuegbarkeiten$/.test(path)) return json([]);
 
     console.warn('[Test] Unmocked API call:', method, path);
     return json({});
@@ -129,9 +129,9 @@ async function gotoTab(page, label) {
 test('Vollständiger Workflow: Veranstaltung -> Gebäude -> Slots -> Personen -> Vorträge', async ({ page }) => {
   await mockAdminApis(page);
 
-  // 1. ADMIN-BEREICH ÖFFNEN (Login ist per addInitScript vorgetäuscht, siehe mockAdminApis)
-  await page.goto('/admin');
-  await expect(page.getByRole('heading', { name: 'Admin-Bereich' })).toBeVisible();
+  // 1. ORGANISATOR-BEREICH ÖFFNEN (Login ist per addInitScript vorgetäuscht, siehe mockAdminApis)
+  await page.goto('/organisator');
+  await expect(page.getByRole('heading', { name: 'Organisator-Bereich' })).toBeVisible();
 
   // 2. VERANSTALTUNG ANLEGEN
   await gotoTab(page, 'Veranstaltungen');
@@ -221,7 +221,7 @@ test('Vollständiger Workflow: Veranstaltung -> Gebäude -> Slots -> Personen ->
   // 9. KONTROLLE IN PLANERSTELLUNG
   await gotoTab(page, 'Planerstellung');
   // Der Button ist deaktiviert, solange kein Teilnehmer Prioritäten gesetzt hat (hier nicht
-  // Teil des Admin-Workflows, sondern eine Selbstbedienungs-Aktion der Teilnehmer selbst).
+  // Teil des Organisator-Workflows, sondern eine Selbstbedienungs-Aktion der Teilnehmer selbst).
   await expect(page.getByRole('button', { name: 'Pläne erstellen' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Pläne erstellen' })).toBeDisabled();
 });
