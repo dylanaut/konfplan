@@ -206,7 +206,14 @@ public class KeycloakUserProvisioningService {
      */
     public void changeRealmRole(Nutzer nutzer, String oldRoleName, String newRoleName) {
         if (null == nutzer.getKeycloakId()) {
-            throw new KeycloakProvisioningException("Nutzer '" + nutzer.getLoginName() + "' hat keinen Keycloak-Account.");
+            // Selbstheilung statt Blockade: kann z.B. bei Altdaten aus der Zeit vor der
+            // Keycloak-Integration oder nach einem lokalen Neustart der (ephemeren) Keycloak-Dev-
+            // Services auftreten, waehrend die persistente lokale DB den Nutzer weiterhin fuehrt.
+            // createUser() legt den fehlenden Account jetzt nach und weist ihm zunaechst die
+            // aktuelle (alte) Rolle zu - die anschliessende remove/add-Logik stuft ihn danach wie
+            // gewohnt auf die neue Rolle um.
+            LOG.warn("Nutzer '" + nutzer.getLoginName() + "' hatte keinen Keycloak-Account - lege ihn jetzt nach.");
+            createUser(nutzer);
         }
         var rolesResource = keycloak.realm(realm).roles();
         RoleRepresentation oldRole = rolesResource.get(oldRoleName).toRepresentation();
