@@ -156,6 +156,14 @@ Remote is **GitHub** (`github.com/dylanaut/konfplan`, private), authenticated vi
 - Verify the current branch with `git branch --show-current` before the first commit of a change set.
 - After merging a PR, verify the change is actually present on `main` (`git log main --oneline | head`, `git grep <new-symbol> main`) and report the merge commit.
 
+### Release Process
+
+1. Bump the version in all **four** `pom.xml` files (root, `backend/`, `frontend/`, `performancetest/`) from `X.Y.Z-SNAPSHOT` to `X.Y.Z` on a `release/X.Y.Z` branch, `./mvnw clean install -DskipTests` + `./mvnw test` green, PR titled `Release X.Y.Z` → squash-merge.
+2. Tag the merge commit and push the tag: `git tag -a vX.Y.Z -m "Release X.Y.Z" && git push origin vX.Y.Z`. The tag push triggers `ci.yml`'s `package` job (builds + pushes the `ghcr.io/dylanaut/konfplan:X.Y.Z` image) and its `release-notes` job.
+3. **Release notes are generated automatically** — the `release-notes` CI job runs `scripts/generate-release-notes.sh vX.Y.Z`, which builds `release_notes/X.Y.Z.txt` from the **full commit message body** of every commit since the previous tag (not just the one-line subject/PR-number), stripping `(#123)` suffixes, `Closes #123` lines, and `Co-authored-by:` trailers as noise. It commits the file straight to `main` with `[skip ci]` (no PR, since it's a pure data artifact and the trailer prevents a redundant rebuild). This only works well because commit messages on this repo are written with a real descriptive body, not just a title — keep writing them that way. To regenerate by hand (e.g. after improving the script, or backfilling), run `scripts/generate-release-notes.sh <tag>` for one release or `--all` for every tag.
+4. Confirm the image pushed successfully, then create the GitHub Release: `gh release create vX.Y.Z --title "X.Y.Z" --generate-notes`.
+5. Bump to the next `X.Y.(Z+1)-SNAPSHOT` on a new branch/PR to close out the release.
+
 ## Infrastructure Notes
 
 - **Keycloak**: in dev mode, Quarkus Keycloak Dev Services auto-starts a container (needs Docker) and imports the realm from `backend/src/main/resources/keycloak/konfplan-realm.json` (roles, `konfplan-frontend`/`konfplan-backend`/`konfplan-admin-cli` clients). Fixed at `http://localhost:8180` so the frontend's hardcoded `keycloak.js` config can reach it directly. In `%test`, `quarkus.oidc` stays enabled (needed for the `JsonWebToken` CDI producer) but points at a dummy, never-contacted URL — tests use `@TestSecurity`/`@OidcSecurity` instead of a real Keycloak.
