@@ -909,6 +909,10 @@ public class PlanErstellungService {
         }
 
         ergebnis.setSolverConfig(config);
+        // Eine erfolgreiche Neu-Erstellung sieht nur noch die aktuell existierenden Wahlvortraege
+        // und behebt damit jede vorherige Inkonsistenz durch einen zwischenzeitlich
+        // zurueckgezogenen Vortrag (siehe NachrichtService#benachrichtigeUeberZurueckgezogenenVortrag).
+        ergebnis.setVeraltet(false);
         ergebnis.persistAndFlush();
 
         LOG.info("Planungsergebnis für Veranstaltung '" + veranstaltung.getName() + "' wurde gespeichert/aktualisiert.");

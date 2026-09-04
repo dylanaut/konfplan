@@ -65,6 +65,13 @@ async function mockAdminApis(page) {
     localStorage.setItem('role', 'ORGANISATOR');
   });
 
+  // Lokal pro Aufruf (nicht als Modul-Konstante), damit "als gelesen markiert"-Mutationen aus
+  // einem Test nicht in den naechsten durchsickern.
+  const NACHRICHTEN = [
+    { id: 900, titel: 'Wahlvortrag zurückgezogen', inhalt: 'Referent hat einen Vortrag zurückgezogen.', kategorie: 'VORTRAG_ZURUECKGEZOGEN', erstelltAm: '2026-09-01T10:00:00', gelesenAm: null, veranstaltungId: VID },
+    { id: 901, titel: 'Bereits gelesen', inhalt: 'Alte Nachricht.', kategorie: 'VORTRAG_ZURUECKGEZOGEN', erstelltAm: '2026-08-01T10:00:00', gelesenAm: '2026-08-02T10:00:00', veranstaltungId: VID }
+  ];
+
   // Absolute Origin nötig: Axios ruft immer http://localhost:9000 auf (siehe api/axios.js),
   // unabhängig von der Vite-Dev-Server-Origin. Ein bloßes "**/api/**" würde außerdem versehentlich
   // Vites eigenen Asset-Request für "/src/api/axios.js" abfangen und den App-Bootstrap brechen.
@@ -146,6 +153,14 @@ async function mockAdminApis(page) {
     if (path === `/api/organisator/veranstaltungen/${VID}/verfuegbarkeiten`) return json([]);
     if (path === `/api/organisator/veranstaltungen/${VID}/raeume/verfuegbarkeiten`) return json([]);
     if (path === '/api/organisator/protokolle') return json([]);
+    if (path === '/api/nachrichten') return json(NACHRICHTEN);
+    if (path === '/api/nachrichten/ungelesen-anzahl') return json(NACHRICHTEN.filter(n => !n.gelesenAm).length);
+    if (/^\/api\/nachrichten\/\d+\/gelesen$/.test(path) && method === 'PUT') {
+      const id = Number(path.split('/')[3]);
+      const nachricht = NACHRICHTEN.find(n => n.id === id);
+      if (nachricht) nachricht.gelesenAm = new Date().toISOString();
+      return noContent();
+    }
 
     // Sicherheitsnetz: unerwarteter/nicht gemockter Endpunkt - nicht hängen lassen.
     console.warn('[Test] Unmocked API call:', method, path);
@@ -799,6 +814,29 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
       await page.getByRole('button', { name: 'Logout' }).click();
 
       await expect(page).toHaveURL(/\/$/);
+    });
+  });
+
+  test.describe('MessageBox (Nachrichten)', () => {
+    test('zeigt die Anzahl ungelesener Nachrichten als Badge an der Glocke', async ({ page }) => {
+      await expect(page.locator('button[title="Nachrichten"]')).toContainText('1');
+    });
+
+    test('öffnet das Panel, zeigt beide Nachrichten und markiert eine ungelesene beim Klick als gelesen', async ({ page }) => {
+      await page.locator('button[title="Nachrichten"]').click();
+
+      await expect(page.getByText('Wahlvortrag zurückgezogen')).toBeVisible();
+      await expect(page.getByText('Bereits gelesen')).toBeVisible();
+      await expect(page.locator('button[title="Nachrichten"]')).toContainText('1');
+
+      const [request] = await Promise.all([
+        page.waitForRequest(req => /\/api\/nachrichten\/900\/gelesen$/.test(req.url()) && req.method() === 'PUT'),
+        page.getByText('Wahlvortrag zurückgezogen').click()
+      ]);
+      expect(request.method()).toBe('PUT');
+
+      // Badge verschwindet, sobald keine ungelesene Nachricht mehr übrig ist.
+      await expect(page.locator('button[title="Nachrichten"] span')).toHaveCount(0);
     });
   });
 });

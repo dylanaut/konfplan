@@ -12,11 +12,15 @@ import kreyj.konfplan.domain.exception.UpdateNutzerException;
 import kreyj.konfplan.domain.exception.UpdateVortragException;
 import kreyj.konfplan.persistence.Administrator;
 import kreyj.konfplan.persistence.IdEntity;
+import kreyj.konfplan.persistence.Nachricht;
 import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Prioritaet;
+import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Wahlvortrag;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -455,5 +459,34 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         assertThat(Nutzer.<Organisator>findById(testUserId).getVeranstaltungen())
             .extracting(IdEntity::getId)
             .contains(v.getId());
+    }
+
+
+    @Test
+    @Transactional
+    public void deleteVortrag_wahlvortragMitPositivenPrioritaeten_benachrichtigtOrganisatorenUndBetroffeneTeilnehmer() {
+        Organisator organisator = Nutzer.findById(testUserId);
+        Veranstaltung v = Veranstaltung.findById(veranstaltung.getId());
+        organisator.addVeranstaltung(v);
+        v.persistAndFlush();
+
+        Referent referent = new Referent();
+        referent.assignLoginName("referent.fuer.loeschtest");
+        referent.setEmail("referent.fuer.loeschtest@example.com");
+        referent.persist();
+
+        Wahlvortrag wv = new Wahlvortrag();
+        wv.setTitel("Zu löschender Vortrag");
+        wv.setReferent(referent);
+        wv.setVeranstaltung(v);
+        wv.persist();
+
+        new Prioritaet(Teilnehmer.findById(tnId), wv, 6).persist();
+
+        boolean deleted = organisatorService.deleteVortrag(wv.getId(), v);
+
+        assertThat(deleted).isTrue();
+        assertThat(Nachricht.findFuerEmpfaenger(organisator)).hasSize(1);
+        assertThat(Nachricht.findFuerEmpfaenger(Teilnehmer.findById(tnId))).hasSize(1);
     }
 }

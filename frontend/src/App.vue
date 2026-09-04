@@ -31,16 +31,26 @@
         <!-- Desktop Menu -->
         <div class="hidden md:flex gap-6 items-center relative">
           <button @click="toggleInfoPanel" class="hover:underline text-sm font-bold">Info</button>
+          <button @click="toggleMessageBoxPanel" class="relative hover:opacity-80" title="Nachrichten" aria-label="Nachrichten">
+            <BellIcon class="w-5 h-5"/>
+            <span v-if="messageBox.unreadCount > 0" class="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center">{{ messageBox.unreadCount }}</span>
+          </button>
           <button @click="handleLogoutClick" class="bg-indigo-700 hover:bg-indigo-800 px-3 py-1 rounded text-xs font-black transition-colors uppercase">Logout</button>
           <InfoPanel v-if="infoPanelOpen" class="absolute right-0 top-full mt-2" @close="infoPanelOpen = false" @open-feedback="openFeedbackModal" />
+          <MessageBoxPanel v-if="messageBoxPanelOpen" class="absolute right-0 top-full mt-2" @close="messageBoxPanelOpen = false" />
         </div>
       </div>
 
       <!-- Mobile Menu Content -->
       <div v-if="mobileMenuOpen" class="md:hidden mt-4 flex flex-col gap-2 pb-2 relative">
         <button @click="toggleInfoPanel" class="text-left">Info</button>
+        <button @click="toggleMessageBoxPanel" class="text-left flex items-center gap-2">
+          Nachrichten
+          <span v-if="messageBox.unreadCount > 0" class="bg-red-600 text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center">{{ messageBox.unreadCount }}</span>
+        </button>
         <button @click="handleLogoutClick" class="text-left text-red-200">Logout</button>
         <InfoPanel v-if="infoPanelOpen" @close="infoPanelOpen = false" @open-feedback="openFeedbackModal" />
+        <MessageBoxPanel v-if="messageBoxPanelOpen" @close="messageBoxPanelOpen = false" />
       </div>
     </nav>
 
@@ -54,28 +64,39 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from './stores/auth';
 import { useEventContextStore } from './stores/eventContext';
 import { useUnsavedChangesStore } from './stores/unsavedChanges';
+import { useMessageBoxStore } from './stores/messageBox';
 import { useInactivityLogout } from './composables/useInactivityLogout';
-import { Menu as MenuIcon } from '@lucide/vue';
+import { Menu as MenuIcon, Bell as BellIcon } from '@lucide/vue';
 import { formatZeitraum } from './utils/veranstaltungFormat';
 import InfoPanel from './components/InfoPanel.vue';
+import MessageBoxPanel from './components/MessageBoxPanel.vue';
 import EventLogo from './components/EventLogo.vue';
 import FeedbackModal from './components/FeedbackModal.vue';
 import MaintenanceBanner from './components/MaintenanceBanner.vue';
 import VersionUpdateBanner from './components/VersionUpdateBanner.vue';
 
+const POLL_INTERVAL_MS = 60000;
+
 const auth = useAuthStore();
 const eventContext = useEventContextStore();
 const unsavedChanges = useUnsavedChangesStore();
+const messageBox = useMessageBoxStore();
 const mobileMenuOpen = ref(false);
 const infoPanelOpen = ref(false);
+const messageBoxPanelOpen = ref(false);
 const showFeedbackModal = ref(false);
+let unreadPollInterval = null;
 
 const toggleInfoPanel = () => {
   infoPanelOpen.value = !infoPanelOpen.value;
+};
+
+const toggleMessageBoxPanel = () => {
+  messageBoxPanelOpen.value = !messageBoxPanelOpen.value;
 };
 
 // Automatischer Inaktivitäts-Logout läuft bewusst NICHT über diesen Handler, sondern ruft
@@ -96,6 +117,21 @@ const openFeedbackModal = () => {
 };
 
 useInactivityLogout();
+
+onMounted(() => {
+  if (auth.isAuthenticated) {
+    messageBox.fetchUnreadCount();
+  }
+  unreadPollInterval = setInterval(() => {
+    if (auth.isAuthenticated) {
+      messageBox.fetchUnreadCount();
+    }
+  }, POLL_INTERVAL_MS);
+});
+
+onUnmounted(() => {
+  clearInterval(unreadPollInterval);
+});
 </script>
 
 <style>

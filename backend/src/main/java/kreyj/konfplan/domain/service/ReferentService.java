@@ -49,13 +49,16 @@ public class ReferentService implements ReferentServiceInterface {
 
     private final ProtokollService protokollService;
     private final KeycloakUserProvisioningService keycloakUserProvisioningService;
+    private final NachrichtService nachrichtService;
 
 
     public ReferentService(MailService mailService, ProtokollService protokollService,
-                           KeycloakUserProvisioningService keycloakUserProvisioningService) {
+                           KeycloakUserProvisioningService keycloakUserProvisioningService,
+                           NachrichtService nachrichtService) {
         this.mailService = mailService;
         this.protokollService = protokollService;
         this.keycloakUserProvisioningService = keycloakUserProvisioningService;
+        this.nachrichtService = nachrichtService;
     }
 
 
@@ -327,6 +330,9 @@ public class ReferentService implements ReferentServiceInterface {
         checkDeadline(veranstaltung);
 
         String titel = vortrag.getTitel();
+        if (vortrag instanceof Wahlvortrag wahlvortrag) {
+            nachrichtService.benachrichtigeUeberZurueckgezogenenVortrag(wahlvortrag, veranstaltung);
+        }
         vortrag.delete();
 
         if (veranstaltung.getBeginntAm().isAfter(LocalDateTime.now())) {
@@ -386,6 +392,9 @@ public class ReferentService implements ReferentServiceInterface {
 
         Veranstaltung veranstaltung = vortrag.getVeranstaltung();
         String titel = vortrag.getTitel();
+        if (vortrag instanceof Wahlvortrag wahlvortrag) {
+            nachrichtService.benachrichtigeUeberZurueckgezogenenVortrag(wahlvortrag, veranstaltung);
+        }
         vortrag.delete();
 
         if (veranstaltung.getBeginntAm().isAfter(LocalDateTime.now())) {

@@ -4,6 +4,7 @@ import io.quarkus.hibernate.orm.panache.Panache;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Gebaeude;
+import kreyj.konfplan.persistence.Nachricht;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Planungsergebnis;
@@ -33,6 +34,7 @@ public abstract class DatabaseCleaner {
         VortragVerfuegbarkeit.deleteAll();
         Prioritaet.deleteAll();
         Verbesserungsvorschlag.deleteAll();
+        Nachricht.deleteAll();
         Wartungshinweis.deleteAll();
         // @ElementCollection-Tabellen auf Subklassen (Wahlvortrag/Teilnehmer) werden bei einem
         // Bulk-Delete auf der Basisklasse nicht automatisch mitgeloescht.

@@ -16,6 +16,16 @@
       </div>
     </div>
 
+    <!-- Veralteter Plan: ein bereits zugeteilter Wahlvortrag wurde zurückgezogen -->
+    <div v-if="qualitaet.veraltet" class="bg-amber-50 border border-amber-200 rounded-xl p-4 no-print flex items-start gap-2">
+      <AlertTriangleIcon class="w-5 h-5 shrink-0 mt-0.5 text-amber-600"/>
+      <p class="text-xs text-amber-800">
+        Der Plan könnte veraltete Daten enthalten (ein bereits zugeteilter Wahlvortrag wurde
+        zurückgezogen). Bitte erstellen Sie den Plan im Tab "Planerstellung" neu, damit die
+        betroffenen Teilnehmer neu verteilt werden.
+      </p>
+    </div>
+
     <!-- Belegungsplan -->
     <div v-if="eventContext.selectedEvent && belegungsPlan && belegungsPlan.length > 0">
       <Stundenplan :vid="eventContext.selectedEvent.id" />
@@ -132,6 +142,7 @@
 
 <script setup>
 import { useRouter } from 'vue-router';
+import { AlertTriangle as AlertTriangleIcon } from '@lucide/vue';
 import { useEventContextStore } from '../../../stores/eventContext';
 import Stundenplan from '../../../views/report/Stundenplan.vue';
 
