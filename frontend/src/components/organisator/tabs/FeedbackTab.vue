@@ -8,6 +8,7 @@
         <select v-model="filterStatus" class="input-field-sm">
           <option value="">Alle</option>
           <option value="OFFEN">Offen</option>
+          <option value="IN_BEARBEITUNG">In Bearbeitung</option>
           <option value="ERLEDIGT">Erledigt</option>
         </select>
       </div>
@@ -21,10 +22,12 @@
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
-            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Titel</th>
-            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Von</th>
-            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Am</th>
-            <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+            <th v-for="col in columns" :key="col.key"
+                class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700"
+                @click="sortBy(col.key)">
+              {{ col.label }}
+              <span v-if="sortKey === col.key">{{ sortDir === 'asc' ? '▲' : '▼' }}</span>
+            </th>
             <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Aktionen</th>
           </tr>
         </thead>
@@ -40,15 +43,20 @@
             </td>
             <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-600 font-mono">{{ formatDateTime(v.erstelltAm) }}</td>
             <td class="px-4 py-2 whitespace-nowrap">
-              <span :class="v.status === 'ERLEDIGT' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'"
+              <span :class="dringlichkeitBadgeClass(v.dringlichkeit)"
                     class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">
-                {{ v.status === 'ERLEDIGT' ? 'Erledigt' : 'Offen' }}
+                {{ dringlichkeitLabel(v.dringlichkeit) }}
               </span>
             </td>
-            <td class="px-4 py-2 whitespace-nowrap text-xs flex gap-3">
-              <button @click="$emit('toggleStatus', v)" class="text-indigo-600 hover:underline">
-                {{ v.status === 'ERLEDIGT' ? 'Als offen markieren' : 'Als erledigt markieren' }}
-              </button>
+            <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-600 font-mono">{{ v.release }}</td>
+            <td class="px-4 py-2 whitespace-nowrap">
+              <select :value="v.status" class="input-field-sm" @change="$emit('updateStatus', v, $event.target.value)">
+                <option value="OFFEN">Offen</option>
+                <option value="IN_BEARBEITUNG">In Bearbeitung</option>
+                <option value="ERLEDIGT">Erledigt</option>
+              </select>
+            </td>
+            <td class="px-4 py-2 whitespace-nowrap text-xs">
               <button @click="$emit('delete', v)" class="text-red-600 hover:underline">Löschen</button>
             </td>
           </tr>
@@ -68,17 +76,69 @@ const props = defineProps({
   }
 });
 
-defineEmits(['toggleStatus', 'delete']);
+defineEmits(['updateStatus', 'delete']);
 
 const filterStatus = ref('');
+const sortKey = ref('erstelltAm');
+const sortDir = ref('desc');
+
+const columns = [
+  { key: 'titel', label: 'Titel' },
+  { key: 'erstellerName', label: 'Von' },
+  { key: 'erstelltAm', label: 'Am' },
+  { key: 'dringlichkeit', label: 'Dringlichkeit' },
+  { key: 'release', label: 'Release' },
+  { key: 'status', label: 'Status' }
+];
+
+const DRINGLICHKEIT_RANG = { NIEDRIG: 0, MITTEL: 1, HOCH: 2, KRITISCH: 3 };
+const STATUS_RANG = { OFFEN: 0, IN_BEARBEITUNG: 1, ERLEDIGT: 2 };
+
+const sortBy = (key) => {
+  if (sortKey.value === key) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortKey.value = key;
+    sortDir.value = 'asc';
+  }
+};
+
+const sortValue = (v, key) => {
+  if (key === 'dringlichkeit') return DRINGLICHKEIT_RANG[v.dringlichkeit] ?? -1;
+  if (key === 'status') return STATUS_RANG[v.status] ?? -1;
+  if (key === 'erstelltAm') return new Date(v.erstelltAm).getTime();
+  return (v[key] ?? '').toString().toLowerCase();
+};
 
 const displayVorschlaege = computed(() => {
   let result = [...props.vorschlaege];
   if (filterStatus.value) {
     result = result.filter(v => v.status === filterStatus.value);
   }
+  const dir = sortDir.value === 'asc' ? 1 : -1;
+  result.sort((a, b) => {
+    const av = sortValue(a, sortKey.value);
+    const bv = sortValue(b, sortKey.value);
+    if (av < bv) return -1 * dir;
+    if (av > bv) return 1 * dir;
+    return 0;
+  });
   return result;
 });
+
+const dringlichkeitLabel = (d) => ({
+  NIEDRIG: 'Niedrig',
+  MITTEL: 'Mittel',
+  HOCH: 'Hoch',
+  KRITISCH: 'Kritisch'
+}[d] ?? d);
+
+const dringlichkeitBadgeClass = (d) => ({
+  NIEDRIG: 'bg-gray-100 text-gray-700',
+  MITTEL: 'bg-blue-100 text-blue-700',
+  HOCH: 'bg-amber-100 text-amber-700',
+  KRITISCH: 'bg-red-100 text-red-700'
+}[d] ?? 'bg-gray-100 text-gray-700');
 
 const formatDateTime = (dateTimeString) => {
   if (!dateTimeString) return '';

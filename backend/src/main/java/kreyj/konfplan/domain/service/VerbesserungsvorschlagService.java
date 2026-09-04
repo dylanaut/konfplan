@@ -1,8 +1,12 @@
 package kreyj.konfplan.domain.service;
 
+import io.quarkus.info.BuildInfo;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
+import kreyj.konfplan.persistence.Dringlichkeit;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Verbesserungsvorschlag;
 import kreyj.konfplan.persistence.VorschlagStatus;
@@ -13,8 +17,11 @@ import java.util.List;
 @ApplicationScoped
 public class VerbesserungsvorschlagService {
 
+    @Inject
+    Instance<BuildInfo> buildInfo;
+
     @Transactional
-    public Verbesserungsvorschlag create(String titel, String beschreibung, String erstellerLoginName) {
+    public Verbesserungsvorschlag create(String titel, String beschreibung, Dringlichkeit dringlichkeit, String erstellerLoginName) {
         Nutzer ersteller = Nutzer.findByLoginName(erstellerLoginName);
         if (null == ersteller) {
             throw new NotFoundException("Nutzer mit Login-Name '" + erstellerLoginName + "' nicht gefunden.");
@@ -26,6 +33,8 @@ public class VerbesserungsvorschlagService {
         vorschlag.setErsteller(ersteller);
         vorschlag.setErstelltAm(LocalDateTime.now());
         vorschlag.setStatus(VorschlagStatus.OFFEN);
+        vorschlag.setDringlichkeit(null != dringlichkeit ? dringlichkeit : Dringlichkeit.MITTEL);
+        vorschlag.setRelease(buildInfo.isResolvable() ? buildInfo.get().version() : "unbekannt");
         vorschlag.persist();
         return vorschlag;
     }

@@ -72,6 +72,12 @@ async function mockAdminApis(page) {
     { id: 901, titel: 'Bereits gelesen', inhalt: 'Alte Nachricht.', kategorie: 'VORTRAG_ZURUECKGEZOGEN', erstelltAm: '2026-08-01T10:00:00', gelesenAm: '2026-08-02T10:00:00', veranstaltungId: VID }
   ];
 
+  // Lokal pro Aufruf, damit Status-Änderungen aus einem Test nicht in den naechsten durchsickern.
+  const VERBESSERUNGSVORSCHLAEGE = [
+    { id: 700, titel: 'Dunkelmodus', beschreibung: 'Bitte einen Dark Mode ergänzen.', erstelltAm: '2026-08-01T10:00:00', erstellerName: 'Teilnehmer, Tom', erstellerRolle: 'TEILNEHMER', status: 'OFFEN', dringlichkeit: 'NIEDRIG', release: '1.15.0', version: 0 },
+    { id: 701, titel: 'Export als PDF', beschreibung: 'PDF-Export für Laufzettel.', erstelltAm: '2026-08-15T10:00:00', erstellerName: 'Referent, Rudi', erstellerRolle: 'REFERENT', status: 'IN_BEARBEITUNG', dringlichkeit: 'KRITISCH', release: '1.16.0', version: 0 }
+  ];
+
   // Absolute Origin nötig: Axios ruft immer http://localhost:9000 auf (siehe api/axios.js),
   // unabhängig von der Vite-Dev-Server-Origin. Ein bloßes "**/api/**" würde außerdem versehentlich
   // Vites eigenen Asset-Request für "/src/api/axios.js" abfangen und den App-Bootstrap brechen.
@@ -153,6 +159,19 @@ async function mockAdminApis(page) {
     if (path === `/api/organisator/veranstaltungen/${VID}/verfuegbarkeiten`) return json([]);
     if (path === `/api/organisator/veranstaltungen/${VID}/raeume/verfuegbarkeiten`) return json([]);
     if (path === '/api/organisator/protokolle') return json([]);
+    if (path === '/api/verbesserungsvorschlaege') {
+      if (method === 'GET') return json(VERBESSERUNGSVORSCHLAEGE);
+      if (method === 'POST') return json({ ...body(), id: 702, status: 'OFFEN', erstellerName: 'Organisator, Anna', erstellerRolle: 'ORGANISATOR', release: '1.16.0' }, 201);
+    }
+    if (/^\/api\/verbesserungsvorschlaege\/\d+\/status$/.test(path) && method === 'PUT') {
+      const id = Number(path.split('/')[2]);
+      const vorschlag = VERBESSERUNGSVORSCHLAEGE.find(v => v.id === id);
+      if (vorschlag) vorschlag.status = body();
+      return json(vorschlag);
+    }
+    if (/^\/api\/verbesserungsvorschlaege\/\d+$/.test(path) && method === 'DELETE') {
+      return noContent();
+    }
     if (path === '/api/nachrichten') return json(NACHRICHTEN);
     if (path === '/api/nachrichten/ungelesen-anzahl') return json(NACHRICHTEN.filter(n => !n.gelesenAm).length);
     if (/^\/api\/nachrichten\/\d+\/gelesen$/.test(path) && method === 'PUT') {
@@ -876,6 +895,60 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
 
       // Badge verschwindet, sobald keine ungelesene Nachricht mehr übrig ist.
       await expect(page.locator('button[title="Nachrichten"] span')).toHaveCount(0);
+    });
+  });
+
+  test.describe('Feedback (Verbesserungsvorschläge)', () => {
+    test('zeigt Dringlichkeit, Release und Status aller Vorschläge an', async ({ page }) => {
+      await gotoTab(page, 'Feedback');
+
+      await expect(page.getByText('Dunkelmodus')).toBeVisible();
+      await expect(page.getByText('Niedrig')).toBeVisible();
+      await expect(page.getByText('Kritisch')).toBeVisible();
+      await expect(page.getByText('1.15.0')).toBeVisible();
+      await expect(page.getByText('1.16.0')).toBeVisible();
+    });
+
+    test('sortiert die Tabelle nach Klick auf eine Spaltenüberschrift um', async ({ page }) => {
+      await gotoTab(page, 'Feedback');
+
+      const titelZellen = () => page.locator('tbody tr td:first-child div:first-child');
+      // Standard-Sortierung ist "Am" absteigend (neueste zuerst) - "Export als PDF" (15.08.) vor "Dunkelmodus" (01.08.).
+      await expect(titelZellen().nth(0)).toHaveText('Export als PDF');
+
+      const titelHeader = page.getByRole('columnheader', { name: 'Titel' });
+      await titelHeader.click();
+      await expect(titelZellen().nth(0)).toHaveText('Dunkelmodus');
+
+      await titelHeader.click();
+      await expect(titelZellen().nth(0)).toHaveText('Export als PDF');
+    });
+
+    test('ändert den Status über das Auswahlfeld auf "In Bearbeitung"', async ({ page }) => {
+      await gotoTab(page, 'Feedback');
+
+      const statusSelect = page.locator('tbody tr', { hasText: 'Dunkelmodus' }).locator('select');
+      const [request] = await Promise.all([
+        page.waitForRequest(req => /\/api\/verbesserungsvorschlaege\/700\/status$/.test(req.url()) && req.method() === 'PUT'),
+        statusSelect.selectOption('IN_BEARBEITUNG')
+      ]);
+      expect(request.postDataJSON()).toBe('IN_BEARBEITUNG');
+    });
+
+    test('reicht einen neuen Vorschlag inklusive Dringlichkeit über das Feedback-Modal ein', async ({ page }) => {
+      await page.getByRole('button', { name: 'Info' }).click();
+      await page.getByText('Was geht besser?').click();
+
+      await page.locator('label:has-text("Titel") + input').fill('Neue Idee');
+      await page.locator('label:has-text("Beschreibung") + textarea').fill('Beschreibung der Idee.');
+      await page.locator('label:has-text("Dringlichkeit") + select').selectOption('HOCH');
+
+      const [request] = await Promise.all([
+        page.waitForRequest(req => req.url().endsWith('/api/verbesserungsvorschlaege') && req.method() === 'POST'),
+        page.getByRole('button', { name: 'Absenden' }).click()
+      ]);
+      expect(request.postDataJSON().dringlichkeit).toBe('HOCH');
+      await expect(page.getByText('Vielen Dank!')).toBeVisible();
     });
   });
 });

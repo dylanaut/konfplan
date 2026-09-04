@@ -193,7 +193,7 @@
 
       <FeedbackTab v-if="activeTab === 'feedback'"
                    :vorschlaege="feedback"
-                   @toggleStatus="toggleFeedbackStatus"
+                   @updateStatus="updateFeedbackStatus"
                    @delete="deleteFeedback"
       />
 
@@ -548,8 +548,7 @@ const refreshFeedback = async () => {
   }
 };
 
-const toggleFeedbackStatus = async (vorschlag) => {
-  const neuerStatus = vorschlag.status === 'ERLEDIGT' ? 'OFFEN' : 'ERLEDIGT';
+const updateFeedbackStatus = async (vorschlag, neuerStatus) => {
   try {
     await api.put(`/api/verbesserungsvorschlaege/${vorschlag.id}/status`, `"${neuerStatus}"`, {
       headers: { 'Content-Type': 'application/json' }

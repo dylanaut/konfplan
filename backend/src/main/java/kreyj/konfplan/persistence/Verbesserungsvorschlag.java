@@ -37,6 +37,13 @@ public class Verbesserungsvorschlag extends VersionedEntity {
     @Column(nullable = false)
     private VorschlagStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Dringlichkeit dringlichkeit;
+
+    @Column(nullable = false)
+    private String release;
+
     public static List<Verbesserungsvorschlag> listAll() {
         return list("order by erstelltAm desc");
     }

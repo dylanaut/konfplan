@@ -38,8 +38,8 @@ public class VerbesserungsvorschlagResource {
 
     @POST
     @Operation(summary = "Verbesserungsvorschlag einreichen", description = "Legt einen neuen Verbesserungsvorschlag des angemeldeten Nutzers an.")
-    public Response create(@RequestBody(description = "Titel und Beschreibung des Vorschlags") VerbesserungsvorschlagDto dto) {
-        var vorschlag = vorschlagService.create(dto.titel, dto.beschreibung, JwtHelper.getUserPrincipalName(jwt));
+    public Response create(@RequestBody(description = "Titel, Beschreibung und Dringlichkeit des Vorschlags") VerbesserungsvorschlagDto dto) {
+        var vorschlag = vorschlagService.create(dto.titel, dto.beschreibung, dto.dringlichkeit, JwtHelper.getUserPrincipalName(jwt));
         return Response.status(Response.Status.CREATED).entity(VerbesserungsvorschlagDto.from(vorschlag)).build();
     }
 

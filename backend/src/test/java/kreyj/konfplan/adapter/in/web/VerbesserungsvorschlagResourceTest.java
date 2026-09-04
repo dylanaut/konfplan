@@ -10,6 +10,7 @@ import io.quarkus.test.security.oidc.OidcSecurity;
 import io.restassured.http.ContentType;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.VerbesserungsvorschlagDto;
+import kreyj.konfplan.persistence.Dringlichkeit;
 import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Teilnehmer;
@@ -59,6 +60,7 @@ class VerbesserungsvorschlagResourceTest extends DatabaseCleaner {
         VerbesserungsvorschlagDto dto = new VerbesserungsvorschlagDto();
         dto.titel = "Dunkelmodus";
         dto.beschreibung = "Bitte einen Dark Mode ergänzen.";
+        dto.dringlichkeit = Dringlichkeit.HOCH;
 
         given()
             .contentType(ContentType.JSON)
@@ -68,11 +70,31 @@ class VerbesserungsvorschlagResourceTest extends DatabaseCleaner {
             .statusCode(CREATED.getStatusCode())
             .body("titel", org.hamcrest.Matchers.equalTo("Dunkelmodus"))
             .body("status", org.hamcrest.Matchers.equalTo("OFFEN"))
+            .body("dringlichkeit", org.hamcrest.Matchers.equalTo("HOCH"))
+            .body("release", org.hamcrest.Matchers.notNullValue())
             .body("erstellerName", org.hamcrest.Matchers.equalTo("Teilnehmer, Tom"));
 
         List<Verbesserungsvorschlag> alle = Verbesserungsvorschlag.listAll();
         assertThat(alle).hasSize(1);
         assertThat(alle.get(0).getErsteller().getLoginName()).isEqualTo("tom.teilnehmer");
+        assertThat(alle.get(0).getRelease()).isNotBlank();
+    }
+
+    @Test
+    @TestSecurity(user = "tom.teilnehmer", roles = "TEILNEHMER")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "tom.teilnehmer")})
+    void create_ohneDringlichkeit_faelltAufMittelZurueck() {
+        VerbesserungsvorschlagDto dto = new VerbesserungsvorschlagDto();
+        dto.titel = "Ohne Dringlichkeit";
+        dto.beschreibung = "Beschreibung";
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(dto)
+            .when().post()
+            .then()
+            .statusCode(CREATED.getStatusCode())
+            .body("dringlichkeit", org.hamcrest.Matchers.equalTo("MITTEL"));
     }
 
     @Test
@@ -120,6 +142,23 @@ class VerbesserungsvorschlagResourceTest extends DatabaseCleaner {
     @Test
     @TestSecurity(user = "anna.admin", roles = "ORGANISATOR")
     @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "anna.admin")})
+    void updateStatus_markiertAlsInBearbeitung() {
+        Long id = erstelleVorschlagAlsTeilnehmer("Feature In Arbeit", "Beschreibung").getId();
+
+        given()
+            .contentType(ContentType.JSON)
+            .body("\"IN_BEARBEITUNG\"")
+            .when().put("/" + id + "/status")
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body("status", org.hamcrest.Matchers.equalTo("IN_BEARBEITUNG"));
+
+        assertThat(Verbesserungsvorschlag.<Verbesserungsvorschlag>findById(id).getStatus()).isEqualTo(VorschlagStatus.IN_BEARBEITUNG);
+    }
+
+    @Test
+    @TestSecurity(user = "anna.admin", roles = "ORGANISATOR")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "anna.admin")})
     void delete_entferntDenVorschlagEndgueltig() {
         Long id = erstelleVorschlagAlsTeilnehmer("Feature Z", "Beschreibung").getId();
 
@@ -139,6 +178,8 @@ class VerbesserungsvorschlagResourceTest extends DatabaseCleaner {
         v.setErsteller(Nutzer.findByLoginName("tom.teilnehmer"));
         v.setErstelltAm(LocalDateTime.now());
         v.setStatus(VorschlagStatus.OFFEN);
+        v.setDringlichkeit(Dringlichkeit.MITTEL);
+        v.setRelease("test");
         v.persist();
         return v;
     }
