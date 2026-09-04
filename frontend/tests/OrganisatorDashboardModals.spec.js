@@ -391,6 +391,45 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
       await expect(page.getByText('Administrator bearbeiten')).toBeVisible();
     });
 
+    test('reicht bei der anschließenden Speicherung die durch den Rollenwechsel erhöhte Version weiter', async ({ page }) => {
+      // Der Rollenwechsel kann serverseitig einen zusätzlichen Flush auslösen (z.B. Self-Healing
+      // eines fehlenden Keycloak-Accounts, siehe OrganisatorService#changeRole) und dabei die
+      // Version erhöhen. Die Standard-Mocks in mockAdminApis() bilden das nicht ab (sie echoen nur
+      // den Request-Body), daher hier gezielt überschrieben, um die reale Backend-Kette
+      // nachzustellen und die Regression aus #453 abzudecken: handleSaveUser() darf für die
+      // anschließende Nutzer-Aktualisierung nicht mehr die veraltete Version verwenden.
+      await page.route('http://localhost:9000/api/organisator/nutzer/100/rolle', async (route) => {
+        const body = JSON.parse(route.request().postData() || '{}');
+        return route.fulfill({ status: 200, json: { id: 100, role: body.role, version: 6 } });
+      });
+      await page.route('http://localhost:9000/api/organisator/nutzer/100', async (route) => {
+        if (route.request().method() !== 'PUT') return route.fallback();
+        const body = JSON.parse(route.request().postData() || '{}');
+        if (body.version !== 6) {
+          return route.fulfill({
+            status: 409,
+            json: { error: 'Der Nutzer wurde zwischenzeitlich von Dritten geändert. Bitte aktualisieren Sie die Daten und versuchen Sie es erneut.' }
+          });
+        }
+        return route.fulfill({ status: 200, json: body });
+      });
+
+      await gotoTab(page, 'Organisatoren');
+      await page.locator('button[title="Bearbeiten"]').first().click();
+      const roleSelect = page.locator('label:has-text("Rolle") + select');
+      await roleSelect.selectOption('ADMINISTRATOR');
+
+      const [, updateRequest] = await Promise.all([
+        page.waitForRequest(req => /\/api\/organisator\/nutzer\/100\/rolle$/.test(req.url()) && req.method() === 'PUT'),
+        page.waitForRequest(req => /\/api\/organisator\/nutzer\/100$/.test(req.url()) && req.method() === 'PUT'),
+        page.getByRole('button', { name: 'Änderungen speichern' }).click()
+      ]);
+
+      expect(updateRequest.postDataJSON().version).toBe(6);
+      await expect(page.getByRole('dialog')).toHaveCount(0);
+      await expect(page.getByText('Organisator bearbeiten')).toHaveCount(0);
+    });
+
     test('Rolle ist beim Bearbeiten deaktiviert und zeigt rollenspezifische Felder für Referenten', async ({ page }) => {
       await gotoTab(page, 'Referenten');
       await page.locator('button[title="Bearbeiten"]').first().click();
