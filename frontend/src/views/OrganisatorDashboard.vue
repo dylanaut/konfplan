@@ -780,7 +780,12 @@ const handleSaveUser = async (u) => {
     const originalRole = selectedUser.value?.role;
     if (u.id && originalRole && originalRole !== u.role
         && (originalRole === 'ORGANISATOR' || originalRole === 'ADMINISTRATOR')) {
-      await api.put(`/api/organisator/nutzer/${u.id}/rolle`, { role: u.role });
+      // Der Rollenwechsel kann serverseitig einen zusätzlichen Flush auslösen (z.B. Self-Healing
+      // eines fehlenden Keycloak-Accounts) und dabei die Version erhöhen. Die anschließende
+      // Aktualisierung muss diese neue Version verwenden, sonst schlägt sie mit einem falschen
+      // "von Dritten geändert"-Fehler fehl.
+      const { data: umgestufterNutzer } = await api.put(`/api/organisator/nutzer/${u.id}/rolle`, { role: u.role });
+      u.version = umgestufterNutzer.version;
     }
     if (u.id) await api.put(`${endpoint}/${u.id}`, u);
     else await api.post(endpoint, u);
