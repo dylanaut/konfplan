@@ -1,0 +1,33 @@
+Release Notes 1.17.0
+Released: 2026-09-04
+
+Changes:
+
+- Release-Notes fuer 1.16.0 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.16.1-SNAPSHOT)
+
+- Rollenwechsel: veraltete Version im Folge-Update behoben
+  Der Rollenwechsel-Endpunkt (PUT .../nutzer/{id}/rolle) kann serverseitig
+  einen zusätzlichen Flush auslösen (z.B. Self-Healing eines fehlenden
+  Keycloak-Accounts, siehe #440) und dabei die Version erhöhen.
+  handleSaveUser() verwarf bisher die Response dieses Aufrufs und schickte
+  den anschließenden regulären Update-Request weiterhin mit der vor dem
+  Öffnen des Modals eingelesenen, jetzt veralteten Version - das
+  optimistische Locking in OrganisatorService#updateUser schlug dadurch
+  fälschlich mit "von Dritten geändert" fehl, obwohl es derselbe Vorgang
+  war. Die Response des Rollenwechsels liefert die aktuelle Version bereits
+  mit; sie wird jetzt für den Folge-Request übernommen.
+
+- Verbesserungsvorschlag: Dringlichkeit, Release, Status "In Bearbeitung", sortierbare Übersicht
+  Erweitert die Feedback-Übersicht um drei fehlende Dimensionen: eine vom
+  Einreicher gewählte Dringlichkeit (NIEDRIG/MITTEL/HOCH/KRITISCH), eine
+  bei der Erstellung automatisch gesetzte Release-Nummer (wiederverwendet
+  die bestehende BuildInfo-Quelle von AppInfoResource statt eine neue
+  Versionsermittlung einzuführen) und den bisher fehlenden Zwischenstatus
+  IN_BEARBEITUNG. Die Status-Änderung erfolgt jetzt über ein Auswahlfeld
+  statt eines binären Umschalt-Links, da drei Zustände existieren. Alle
+  Spalten der Übersicht sind über Klick auf die Kopfzeile sortierbar.
+
+- Release 1.17.0
+
