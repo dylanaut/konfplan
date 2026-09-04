@@ -1,0 +1,41 @@
+Release Notes 1.16.0
+Released: 2026-09-04
+
+Changes:
+
+- Release-Notes fuer 1.15.0 ergaenzen [skip ci]
+
+- Release Notes: ausführliche Commit-Texte statt PR-Nummern verwenden
+  generate-release-notes.sh nutzt jetzt den vollständigen Commit-Body statt nur
+  der einzeiligen Subject-Zeile, da die Squash-Merge-Commits in diesem Repo
+  bereits ausführliche Beschreibungstexte enthalten. Entfernt dabei "(#123)"-
+  Suffixe, "Closes #123"-Zeilen und "Co-authored-by:"-Trailer als Rauschen.
+  Fix für einen Pipefail-Bug: grep -v liefert exit 1, wenn eine komplette
+  Commit-Nachricht nach dem Filtern leer bleibt (z.B. Commits ohne Body) - unter
+  set -euo pipefail brach das Skript dadurch beim ersten solchen Commit ab.
+  Alle 18 bestehenden release_notes/*.txt-Dateien rückwirkend neu erzeugt.
+
+- Prepare next development iteration (1.15.1-SNAPSHOT)
+
+- CLAUDE.md: Release-Prozess inkl. automatischer Release-Notes dokumentieren
+  Neue Sektion "Release Process" unter "Git & Feature Workflow": der bisher nur
+  implizit befolgte Ablauf (Versions-Bump in allen vier POMs, Tag, GHCR-Image,
+  GitHub-Release, Next-SNAPSHOT) war nirgends dokumentiert. Ergänzt außerdem den
+  Hinweis auf die automatische Release-Notes-Generierung
+  (scripts/generate-release-notes.sh, CI-Job "release-notes"): volle
+  Commit-Message-Bodies statt bloßer PR-Nummern, automatisch nach main
+  committet.
+
+- MessageBox: Nachrichten-Postfach je Nutzer + Warnung bei Wahlvortrag-Rückzug
+  Zieht ein Referent seinen Wahlvortrag zurück, nachdem Teilnehmer dafür
+  bereits Prioritäten vergeben haben, blieb das bisher unsichtbar. Statt
+  das Löschen zu blockieren (ein Referent muss z.B. bei Krankheit
+  zurücktreten können), führt dies ein generisches In-App-Postfach
+  (Nachricht/NachrichtService/NachrichtResource) ein: Organisatoren
+  werden gewarnt, betroffene Teilnehmer zur Neu-Priorisierung
+  aufgefordert. War der Vortrag bereits fest verplant, markiert
+  Planungsergebnis.veraltet den Plan als überholt, bis er neu erstellt
+  wird.
+
+- Release 1.16.0
+
