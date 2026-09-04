@@ -2,29 +2,267 @@ Release Notes 1.1.0
 Released: 2026-08-19
 
 Changes:
-- Prepare next development iteration (1.0.1-SNAPSHOT) (#122)
-- dockerfile: minizinc inclusion fixed updated doku install.sh fixed: DON'T apt-get docker.io
+
+- Prepare next development iteration (1.0.1-SNAPSHOT)
+
 - dockerfile: minizinc inclusion fixed
-- Bump io.gatling:gatling-maven-plugin from 4.11.0 to 4.21.10 (#111)
-- Bump com.opencsv:opencsv from 5.11.2 to 5.12.0 (#112)
-- Bump org.apache.maven:apache-maven from 3.9.12 to 3.9.16 (#113)
-- Bump nanoid from 3.3.12 to 3.3.18 in /frontend (#125)
-- Bump com.fasterxml.jackson.module:jackson-module-blackbird (#114)
-- Bump postcss from 8.5.15 to 8.5.26 in /frontend (#124)
-- Bump axios from 1.17.0 to 1.18.0 in /frontend (#123)
-- Bump tar from 7.5.16 to 7.5.22 in /frontend (#126)
-- Bump org.apache.maven.plugins:maven-resources-plugin from 3.0.0 to 3.5.0 (#115)
-- Fix production crash from writing to a read-only import.meta.env property (#132)
-- Export/Import von Planungsdaten für externe MiniZinc-Berechnung (#134)
-- Enum Neigung durch Veranlagung ersetzen, neues Attribut Abschluss auf Vortrag (#136)
+  updated doku
+  install.sh fixed: DON'T apt-get docker.io
+
+- dockerfile: minizinc inclusion fixed
+
+- Bump io.gatling:gatling-maven-plugin from 4.11.0 to 4.21.10
+  Bumps [io.gatling:gatling-maven-plugin](https://github.com/gatling/gatling-maven-plugin) from 4.11.0 to 4.21.10.
+  - [Commits](https://github.com/gatling/gatling-maven-plugin/compare/v4.11.0...v4.21.10)
+  ---
+  updated-dependencies:
+  - dependency-name: io.gatling:gatling-maven-plugin
+    dependency-version: 4.21.10
+    dependency-type: direct:development
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump com.opencsv:opencsv from 5.11.2 to 5.12.0
+  Bumps com.opencsv:opencsv from 5.11.2 to 5.12.0.
+  ---
+  updated-dependencies:
+  - dependency-name: com.opencsv:opencsv
+    dependency-version: 5.12.0
+    dependency-type: direct:production
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump org.apache.maven:apache-maven from 3.9.12 to 3.9.16
+  Bumps org.apache.maven:apache-maven from 3.9.12 to 3.9.16.
+  ---
+  updated-dependencies:
+  - dependency-name: org.apache.maven:apache-maven
+    dependency-version: 3.9.16
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump nanoid from 3.3.12 to 3.3.18 in /frontend
+  Bumps [nanoid](https://github.com/ai/nanoid) from 3.3.12 to 3.3.18.
+  - [Release notes](https://github.com/ai/nanoid/releases)
+  - [Changelog](https://github.com/ai/nanoid/blob/3.3.18/CHANGELOG.md)
+  - [Commits](https://github.com/ai/nanoid/compare/3.3.12...3.3.18)
+  ---
+  updated-dependencies:
+  - dependency-name: nanoid
+    dependency-version: 3.3.18
+    dependency-type: indirect
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump com.fasterxml.jackson.module:jackson-module-blackbird
+  Bumps [com.fasterxml.jackson.module:jackson-module-blackbird](https://github.com/FasterXML/jackson-modules-base) from 2.22.0 to 2.22.1.
+  - [Commits](https://github.com/FasterXML/jackson-modules-base/compare/jackson-modules-base-2.22.0...jackson-modules-base-2.22.1)
+  ---
+  updated-dependencies:
+  - dependency-name: com.fasterxml.jackson.module:jackson-module-blackbird
+    dependency-version: 2.22.1
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump postcss from 8.5.15 to 8.5.26 in /frontend
+  Bumps [postcss](https://github.com/postcss/postcss) from 8.5.15 to 8.5.26.
+  - [Release notes](https://github.com/postcss/postcss/releases)
+  - [Changelog](https://github.com/postcss/postcss/blob/main/CHANGELOG.md)
+  - [Commits](https://github.com/postcss/postcss/compare/8.5.15...8.5.26)
+  ---
+  updated-dependencies:
+  - dependency-name: postcss
+    dependency-version: 8.5.26
+    dependency-type: direct:development
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump axios from 1.17.0 to 1.18.0 in /frontend
+  Bumps [axios](https://github.com/axios/axios) from 1.17.0 to 1.18.0.
+  - [Release notes](https://github.com/axios/axios/releases)
+  - [Changelog](https://github.com/axios/axios/blob/v1.x/CHANGELOG.md)
+  - [Commits](https://github.com/axios/axios/compare/v1.17.0...v1.18.0)
+  ---
+  updated-dependencies:
+  - dependency-name: axios
+    dependency-version: 1.18.0
+    dependency-type: direct:production
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump tar from 7.5.16 to 7.5.22 in /frontend
+  Bumps [tar](https://github.com/isaacs/node-tar) from 7.5.16 to 7.5.22.
+  - [Release notes](https://github.com/isaacs/node-tar/releases)
+  - [Changelog](https://github.com/isaacs/node-tar/blob/main/CHANGELOG.md)
+  - [Commits](https://github.com/isaacs/node-tar/compare/v7.5.16...v7.5.22)
+  ---
+  updated-dependencies:
+  - dependency-name: tar
+    dependency-version: 7.5.22
+    dependency-type: indirect
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump org.apache.maven.plugins:maven-resources-plugin from 3.0.0 to 3.5.0
+  Bumps [org.apache.maven.plugins:maven-resources-plugin](https://github.com/apache/maven-resources-plugin) from 3.0.0 to 3.5.0.
+  - [Release notes](https://github.com/apache/maven-resources-plugin/releases)
+  - [Commits](https://github.com/apache/maven-resources-plugin/compare/maven-resources-plugin-3.0.0...maven-resources-plugin-3.5.0)
+  ---
+  updated-dependencies:
+  - dependency-name: org.apache.maven.plugins:maven-resources-plugin
+    dependency-version: 3.5.0
+    dependency-type: direct:development
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Fix production crash from writing to a read-only import.meta.env property
+  Vite statisch-ersetzt import.meta.env.VITE_API_URL beim Production-Build
+  (auch als Zuweisungsziel), wodurch aus der Zeile effektiv
+  "undefined = undefined;" wird - das wirft im Strict Mode einen TypeError,
+  weil "undefined" eine read-only globale Property von window ist. Der
+  baseURL-Fallback war zudem fuer echte Deployments (Quinoa, gleicher
+  Origin) falsch und zeigt jetzt korrekt auf eine relative URL.
+
+- Export/Import von Planungsdaten für externe MiniZinc-Berechnung
+  Erlaubt es, ein vollständiges Export-Bundle (.dzn + Modell + Oid-Metadaten) für
+  eine Veranstaltung herunterzuladen, extern mit der minizinc-CLI zu berechnen
+  und das Ergebnis anschließend wieder als Planungsergebnis zu importieren.
+
+- Enum Neigung durch Veranlagung ersetzen, neues Attribut Abschluss auf Vortrag
+  Veranlagung ersetzt das bisherige Neigung-Enum mit 12 neuen fachlichen/beruflichen
+  Ausrichtungen und entfernt die Kategorie-Unterteilung ersatzlos. Vortrag erhält
+  zusätzlich ein optionales, einwertiges Attribut Abschluss (AbschlussTyp), verdrahtet
+  analog zum bestehenden Berufsfeld inkl. CSV-Import.
+
 - neues kompass-demo dataset
-- Attribute slogan und biography aus Referent entfernen (#139)
-- Attribut berufsfeld aus Vortrag entfernen (#142)
-- Referenten-Verfügbarkeit: 403 beim Ändern von Slots beheben (#145)
+
+- Attribute slogan und biography aus Referent entfernen
+  Entfernt beide Felder vollständig aus Entity, DTOs, Services/Mapper, CSV-Import
+  (DTO + Fixtures + Dokumentation) und Frontend (UserEditorModal, ReferentDashboard).
+  Neue Migration droppt die zugehörigen Spalten auf der Nutzer-Tabelle.
+
+- Attribut berufsfeld aus Vortrag entfernen
+  Entfernt Berufsfeld vollständig aus Entity, DTOs, Services/Mapper, CSV-Import,
+  Reports und Frontend (inkl. gelöschtem Berufsfeld-Enum). AuffuellungService
+  nutzt zur Ersatz-Heuristik jetzt Veranlagungs-Überlappung statt Berufsfeld.
+  Neue CSV-Import-Unterstützung für Veranlagungen (pipe-getrennt) auf
+  Wahlvorträgen, inkl. sinnvoll befüllter Test-Fixtures. TeilnehmerDashboard
+  zeigt Wahlvorträge jetzt als durchnummerierte Veranlagungs-Matrix statt
+  Berufsfeld-Gruppierung, und die Prioritäten-Eingabe als kompakte,
+  nummerngestützte Tabelle (bei Bedarf in mehrere Tabellen aufgeteilt).
+
+- Referenten-Verfügbarkeit: 403 beim Ändern von Slots beheben
+  * Checkbox "mehrfach halten" im ReferentDashboard ausblenden
+  Das wiederholbar-Feld wird derzeit noch nicht ausgewertet, daher Checkbox
+  samt Frame vorerst unsichtbar schalten statt aus dem Datenmodell zu entfernen.
+  * Referenten-Verfügbarkeit: 403/500 beim Ändern von Slots beheben
+  Zwei Bugs im Zusammenspiel:
+  - Frontend schickte {userId, slotId, isAvailable} statt des vom Backend
+    erwarteten {nutzerId, veranstaltungId, verfuegbareSlotIds}, wodurch
+    dto.nutzerId immer null war -> 403.
+  - Backend rief anschließend clear()/addAll() auf dem von
+    getVerfuegbareSlotIds() zurückgegebenen unveränderlichen Set auf, was
+    mit UnsupportedOperationException (500) fehlschlug. Jetzt wie in
+    TeilnehmerService.updateVerfuegbarkeit über setVerfuegbareSlotIds(...).
+  * Frontend an Verfügbarkeits-API-Vertrag anpassen (nutzerId/verfuegbareSlotIds)
+  Payload und Response-Parsing für den Verfügbarkeits-Endpoint waren auf
+  ein veraltetes Contract-Format ausgelegt, das nicht mehr zum Backend-DTO
+  passt (siehe vorherigen Commit). Frontend jetzt analog zu
+  TeilnehmerDashboard.vue: volle Slot-Id-Menge lokal togglen und komplett
+  ersetzen statt Einzel-Slot-Toggle zu senden.
+  * Regressionstest für #143: Referent kann Verfügbarkeit aktualisieren
+  Deckt POST /api/referenten/veranstaltungen/{vid}/verfuegbarkeiten end-to-end
+  ab und stellt sicher, dass der korrekte Contract (nutzerId/veranstaltungId/
+  verfuegbareSlotIds) akzeptiert wird und die Slot-Ids tatsächlich persistiert
+  werden.
+  ---------
+
 - CLAUDE.md-Workflowregeln ergänzen, generate_loginnames.py um DB-Abgleich erweitern
-- Vortragsbearbeitung als Modal, kein globaler Alles-speichern-Button mehr (#146)
-- Bump form-data from 4.0.5 to 4.0.6 in /frontend (#129)
-- Bump org.jsoup:jsoup from 1.15.3 to 1.23.1 in /backend (#128)
-- Bump brace-expansion in /frontend (#127)
-- Bump vite from 7.3.5 to 8.2.1 in /frontend (#137)
+  - CLAUDE.md: Git-Workflow-, Worktree-, Build-Verify-, Scope- und Doku-Regeln ergänzt
+  - generate_loginnames.py: prüft LoginNamen zusätzlich gegen bereits vorhandene
+    Nutzer in der laufenden Datenbank (via psycopg2), um Dubletten zwischen CSV
+    und DB aufzulösen
+  - kompass-demo Fixtures aktualisiert (Header-Casing, Gruppen-Filter, Kommentarzeile)
+  - Testressource Referenten_und_Vorträge.xlsx ergänzt
+
+- Vortragsbearbeitung als Modal, kein globaler Alles-speichern-Button mehr
+  Neues ReferentVortragEditorModal.vue (angelehnt an AdminVortragEditorModal.vue)
+  mit Speichern/Abbrechen ersetzt die inline immer sichtbare Vortragsdetails-Sektion
+  im ReferentDashboard. Der globale "Alles speichern"-Button entfällt; stattdessen
+  bekommt nur das Profil-Formular einen lokalen Speichern-Button, der ausschließlich
+  bei ungespeicherten Änderungen (dirty state) erscheint - die übrigen Sections
+  (Verfügbarkeit, Veranstaltungsanmeldungen) speichern bereits pro Klick sofort.
+  version und abschluss werden im Modal ohne eigenes UI-Feld durchgereicht, da das
+  Backend sie beim Update sonst stillschweigend auf null zurücksetzen bzw. das
+  optimistische Locking mit einem falschen Konflikt fehlschlagen lassen würde.
+  Die Checkbox "mehrfach halten" bleibt wie im Original vorerst ausgeblendet
+  (v-if="false"), da das Feature backendseitig noch nicht ausgewertet wird.
+
+- Bump form-data from 4.0.5 to 4.0.6 in /frontend
+  Bumps [form-data](https://github.com/form-data/form-data) from 4.0.5 to 4.0.6.
+  - [Changelog](https://github.com/form-data/form-data/blob/master/CHANGELOG.md)
+  - [Commits](https://github.com/form-data/form-data/compare/v4.0.5...v4.0.6)
+  ---
+  updated-dependencies:
+  - dependency-name: form-data
+    dependency-version: 4.0.6
+    dependency-type: indirect
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump org.jsoup:jsoup from 1.15.3 to 1.23.1 in /backend
+  Bumps [org.jsoup:jsoup](https://github.com/jhy/jsoup) from 1.15.3 to 1.23.1.
+  - [Release notes](https://github.com/jhy/jsoup/releases)
+  - [Changelog](https://github.com/jhy/jsoup/blob/master/CHANGES.md)
+  - [Commits](https://github.com/jhy/jsoup/compare/jsoup-1.15.3...jsoup-1.23.1)
+  ---
+  updated-dependencies:
+  - dependency-name: org.jsoup:jsoup
+    dependency-version: 1.23.1
+    dependency-type: direct:production
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump brace-expansion in /frontend
+  Bumps  and [brace-expansion](https://github.com/juliangruber/brace-expansion). These dependencies needed to be updated together.
+  Updates `brace-expansion` from 5.0.6 to 5.0.9
+  - [Release notes](https://github.com/juliangruber/brace-expansion/releases)
+  - [Commits](https://github.com/juliangruber/brace-expansion/compare/v5.0.6...v5.0.9)
+  Updates `brace-expansion` from 2.1.1 to 2.1.4
+  - [Release notes](https://github.com/juliangruber/brace-expansion/releases)
+  - [Commits](https://github.com/juliangruber/brace-expansion/compare/v5.0.6...v5.0.9)
+  ---
+  updated-dependencies:
+  - dependency-name: brace-expansion
+    dependency-version: 5.0.9
+    dependency-type: indirect
+  - dependency-name: brace-expansion
+    dependency-version: 2.1.4
+    dependency-type: indirect
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump vite from 7.3.5 to 8.2.1 in /frontend
+  Bumps [vite](https://github.com/vitejs/vite/tree/HEAD/packages/vite) from 7.3.5 to 8.2.1.
+  - [Release notes](https://github.com/vitejs/vite/releases)
+  - [Changelog](https://github.com/vitejs/vite/blob/main/packages/vite/CHANGELOG.md)
+  - [Commits](https://github.com/vitejs/vite/commits/v8.2.1/packages/vite)
+  ---
+  updated-dependencies:
+  - dependency-name: vite
+    dependency-version: 8.2.1
+    dependency-type: direct:development
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
 - Merge pull request #148
+  * Release 1.1.0
+  * added quarkus http env settings in docker-compose.yml
+

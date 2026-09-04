@@ -2,6 +2,20 @@ Release Notes 1.9.0
 Released: 2026-09-02
 
 Changes:
-- Prepare next development iteration (1.8.1-SNAPSHOT) (#396)
-- VersionUpdateBanner: SNAPSHOT-Versionen von der Hinweis-Anzeige ausschließen (#398)
-- Release 1.9.0 (#401)
+
+- Prepare next development iteration (1.8.1-SNAPSHOT)
+
+- VersionUpdateBanner: SNAPSHOT-Versionen von der Hinweis-Anzeige ausschließen
+  Produktion pinnt IMAGE_TAG immer auf einen echten Release (nie ein
+  SNAPSHOT), betrifft also nur Dev-/Staging-Umgebungen, die laufend neu
+  gebaute SNAPSHOT-Images deployen - dort würde der Hinweis sonst bei
+  jedem Redeploy erneut aufpoppen, obwohl sich nur der Git-Commit, nicht
+  die Versionsnummer ändert. Polling wird jetzt beendet, sobald die beim
+  Mount erfasste Ausgangsversion ein SNAPSHOT ist.
+  Per Live-Test (echter Login-Flow gegen quarkus:dev, laufende
+  1.8.1-SNAPSHOT) verifiziert: nur ein einziger /api/info-Aufruf, Polling
+  stoppt sofort, Banner erscheint trotz gemockter Git-Commit-Änderung
+  nicht.
+
+- Release 1.9.0
+

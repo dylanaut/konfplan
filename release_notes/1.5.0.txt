@@ -2,6 +2,20 @@ Release Notes 1.5.0
 Released: 2026-09-01
 
 Changes:
-- Prepare next development iteration (1.4.2-SNAPSHOT) (#371)
-- Prioritäten: Eindeutigkeits-Pruefung entfernt + Validierungstexte erreichen die UI (#373)
-- Release 1.5.0 (#375)
+
+- Prepare next development iteration (1.4.2-SNAPSHOT)
+
+- Prioritäten: Eindeutigkeits-Pruefung entfernt + Validierungstexte erreichen die UI
+  savePrioritaeten erlaubt jetzt doppelte Rangwerte - die bisherige
+  Eindeutigkeits-Pruefung wurde ersatzlos entfernt.
+  Root-Cause-Fix fuer ein zweites Problem: der WebApplicationException(String, int)
+  -Konstruktor (dominantes Muster in den Service-Klassen) liefert laut JAX-RS-Spec
+  eine Response OHNE Entity - die Meldung existierte bisher nur als
+  exception.getMessage(), nie im HTTP-Body. Dadurch zeigte das Frontend bei jedem
+  400/403/404 nur die generische technische Meldung statt des eigentlichen
+  Validierungstexts. WebApplicationExceptionMapper traegt die Meldung jetzt als
+  Plain-Text-Entity nach, wenn die Response noch keine hat - keine
+  Frontend-Aenderung nötig, extractErrorMessage liest den String-Body bereits aus.
+
+- Release 1.5.0
+

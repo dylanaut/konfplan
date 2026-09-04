@@ -2,6 +2,22 @@ Release Notes 1.8.0
 Released: 2026-09-02
 
 Changes:
-- Prepare next development iteration (1.7.1-SNAPSHOT) (#390)
-- Frontend: Hinweis auf neue App-Version bei offener Sitzung (#392)
-- Release 1.8.0 (#394)
+
+- Prepare next development iteration (1.7.1-SNAPSHOT)
+
+- Frontend: Hinweis auf neue App-Version bei offener Sitzung
+  Ein Browser-Tab, der ueber ein Deployment hinweg offen bleibt (Token wird
+  im Hintergrund silent-refresht, ohne je eine echte Top-Level-Navigation
+  auszuloesen), lief bisher unbegrenzt mit der alten JS-Version weiter -
+  der no-cache-Header auf index.html greift nur bei echter Navigation.
+  Neue Komponente VersionUpdateBanner.vue pollt periodisch /api/info und
+  vergleicht Version+Git-Commit gegen den beim Mount erfassten Ausgangswert.
+  Bei Abweichung: Banner mit "Jetzt neu laden"-Button, analog zum
+  bestehenden Wartungshinweis-Banner. Per Live-Test (echter Login-Flow,
+  gemockte Versionsänderung) verifiziert.
+  Nebenbefund behoben: MaintenanceBanner wurde im Template von App.vue
+  verwendet, aber nie importiert - der Wartungshinweis-Banner hat dadurch
+  nie gerendert.
+
+- Release 1.8.0
+

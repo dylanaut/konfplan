@@ -2,8 +2,36 @@ Release Notes 1.14.0
 Released: 2026-09-03
 
 Changes:
-- Prepare next development iteration (1.13.1-SNAPSHOT) (#428)
-- Letzter Administrator/Organisator darf nicht gelöscht oder herabgestuft werden (#430)
-- Logout bei ungespeicherten Änderungen abbrechbar machen (#432)
-- Tote Zeit-Slot-Auswahl im Raum-Editor entfernen, Handbuch aktualisieren (#434)
-- Release 1.14.0 (#435)
+
+- Prepare next development iteration (1.13.1-SNAPSHOT)
+
+- Letzter Administrator/Organisator darf nicht gelöscht oder herabgestuft werden
+  Verhindert, dass das System ohne jeden Administrator oder eine Veranstaltung
+  ohne jeden Organisator zurückbleibt: neuer Rollenwechsel-Endpunkt
+  (OrganisatorService#changeRole) für Organisator<->Administrator-Umstufung,
+  Guards in deleteUser/updateUser gegen das Löschen bzw. Entfernen des letzten
+  Administrators oder einzigen Veranstaltungs-Organisators, sowie ein Guard in
+  VeranstaltungService#save gegen Veranstaltungen ohne jeden Organisator.
+
+- Logout bei ungespeicherten Änderungen abbrechbar machen
+  Neuer Pinia-Store unsavedChanges.js hält eine Dirty-Check-Funktion der aktuell
+  aktiven editierbaren Ansicht (Teilnehmer-/Referenten-/Organisator-Dashboard,
+  jeweils in onMounted registriert/in onUnmounted entfernt). App.vue fragt vor
+  einem manuellen Logout per window.confirm nach, falls diese Funktion
+  ungespeicherte Änderungen meldet; bei Abbruch bleibt der Nutzer angemeldet. Der
+  automatische Inaktivitäts-Logout läuft weiterhin direkt über auth.logout() und
+  bleibt dadurch unblockiert.
+
+- Tote Zeit-Slot-Auswahl im Raum-Editor entfernen, Handbuch aktualisieren
+  RaumEditorModal.vue verwarf die Checkbox-Auswahl "Verfügbare Zeit-Slots" beim
+  Speichern stillschweigend, da RaumDto kein entsprechendes Feld kennt - die
+  tatsächlich wirksame Raum-Verfügbarkeit wird ausschließlich über die
+  "Raum-Verfügbarkeiten verwalten"-Matrix im Gebäude-Tab gepflegt. Entfernt die
+  tote UI (Template, selectedSlotIds, formatSlot, slots-Prop) sowie die
+  zugehörige veraltete Tabellenzeile im Admin-Benutzerhandbuch.
+  Ergänzt außerdem die in #429/#431 eingeführten Schutzregeln (letzter
+  Administrator/Organisator, Logout-Rückfrage bei ungespeicherten Änderungen) im
+  Admin-Benutzerhandbuch, die dort bisher nicht dokumentiert waren.
+
+- Release 1.14.0
+

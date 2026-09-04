@@ -2,123 +2,1266 @@ Release Notes 1.3.0
 Released: 2026-09-01
 
 Changes:
-- Prepare next development iteration (1.2.1-SNAPSHOT) (#175)
-- Prod: Keycloak-Realm-Konfig (SMTP, UPDATE_PASSWORD) bei jedem Start synchronisieren (#177)
-- Vollständige Benutzerhandbücher für Admin, Referent und Teilnehmer (#179)
-- Prototyp: eingebettete Hilfetexte (Fragezeichen-Icon) für Planerstellung (#181)
-- Benutzerhandbücher: Hinweis auf Passwort-Festlegung bei Erstanmeldung (#183)
-- Benutzerhandbücher: Versionsnummer, docx-Export und PDF-Auslieferung (#185)
-- docx-Profil: fehlerhaftes AsciiDoc-Markup in Legacy-Docs behoben (#187)
-- Karrierekompass Linz 2026: 22 weitere Referenten und Vorträge (#189)
-- CSV-Import: UTF-8-BOM in Kopfzeile robust behandeln (#191)
+
+- Prepare next development iteration (1.2.1-SNAPSHOT)
+  Setzt alle vier POMs von 1.2.0 auf 1.2.1-SNAPSHOT, nach dem Release 1.2.0.
+
+- Prod: Keycloak-Realm-Konfig (SMTP, UPDATE_PASSWORD) bei jedem Start synchronisieren
+  Keycloaks --import-realm wendet deploy/keycloak-realm.template.json nur beim
+  erstmaligen Anlegen der Realm an - existiert die Realm schon, werden spaetere
+  Aenderungen an der Template-JSON beim Container-Neustart stillschweigend
+  ignoriert. Dadurch fehlte auf einem bereits laufenden Deployment (Neuwied)
+  der smtpServer.from, Keycloaks natives "Passwort vergessen" schlug mit
+  "Invalid sender address 'null'" fehl (SEND_RESET_PASSWORD_ERROR).
+  ProdKeycloakRealmSyncService gleicht deshalb bei jedem App-Start smtpServer
+  (aus denselben quarkus.mailer.*-Properties, die auch der App-eigene Mailer
+  nutzt) und die UPDATE_PASSWORD-RequiredAction per Admin-API auf den
+  Zielzustand ab, unabhaengig davon, ob die Realm neu angelegt oder schon
+  vorhanden ist. Ergaenzt manage-realm fuer den admin-cli-Service-Account im
+  Template (fuer Neuinstallationen); fuer bestehende Deployments ist ein
+  einmaliger manueller kcadm-Befehl noetig (siehe WARNING in
+  keycloak-migration.adoc).
+
+- Vollständige Benutzerhandbücher für Admin, Referent und Teilnehmer
+  Feld-für-Feld-Dokumentation (AsciiDoc + Screenshots) aller Seiten, Dialoge,
+  Eingabefelder und Aktionen je Rolle, inklusive der pro Rolle erreichbaren
+  Berichte. Screenshots per Playwright gegen den laufenden quarkus:dev mit dem
+  kompass-demo-Datensatz erstellt.
+
+- Prototyp: eingebettete Hilfetexte (Fragezeichen-Icon) für Planerstellung
+  Neue wiederverwendbare HelpTooltip.vue: Fragezeichen-Icon, das per Klick
+  einen kurzen Erklärtext einblendet (schließt bei Klick außerhalb oder
+  Escape). Inhalt kondensiert aus den Benutzerhandbüchern (#178).
+  Als Pilot in PlanungTab.vue neben der Überschrift und allen
+  Solver-Konfigurationsfeldern eingebunden.
+
+- Benutzerhandbücher: Hinweis auf Passwort-Festlegung bei Erstanmeldung
+  Ergänzt in allen drei Handbüchern (Admin, Referent, Teilnehmer) einen
+  Hinweis, dass Keycloak bei der allerersten Anmeldung eines neu angelegten
+  Kontos die Festlegung eines eigenen, neuen Passworts erzwingt - das beim
+  Anlegen vergebene Start-/Einladungspasswort gilt nur für diesen ersten Login.
+
+- Benutzerhandbücher: Versionsnummer, docx-Export und PDF-Auslieferung
+  - :konfplan-version:-Attribut (major.minor) in allen drei
+    Benutzerhandbüchern, aus der Projekt-Version abgeleitet.
+  - Neues Maven-Profil "docx" (backend): rendert alle .adoc-Dokumente über
+    DocBook5 + Pandoc als Word-Dateien (mvn -pl backend process-resources
+    -Pdocx). Pandoc muss lokal installiert sein.
+  - Neues Maven-Profil "build-user-manuals" (backend): rendert die drei
+    Benutzerhandbücher als PDF direkt in META-INF/resources/handbuecher, damit
+    sie als statische Ressource im Anwendungs-Jar landen.
+  - CI/CD (ci.yml) aktiviert build-user-manuals beim Build, sodass jedes
+    gebaute Docker-Image die aktuellen Handbuch-PDFs enthält.
+  - InfoPanel.vue bietet Downloads für alle drei Handbücher an (Origin-Handling
+    analog zu axios.js, damit die Links auch im lokalen Dev-Betrieb mit
+    getrennten Frontend-/Backend-Origins funktionieren statt gegen den
+    Vite-Dev-Server aufgelöst zu werden).
+
+- docx-Profil: fehlerhaftes AsciiDoc-Markup in Legacy-Docs behoben
+  mvn -pl backend process-resources -Pdocx (#184) schlug für zwei
+  vorbestehende Dokumente mit "Invalid XML"-Fehlern von Pandoc fehl:
+  - OIDC mit Keykloak.adoc: `%dev.*` im Codespan wurde von Asciidoctor als
+    Beginn eines Bold-Spans fehlinterpretiert (überlappend mit dem späteren
+    *nur*), was verschachteltes, nicht wohlgeformtes DocBook-XML erzeugte.
+  - Ubuntu-Frischinstallation.adoc:
+    - `git clone https://github.com/...` erzeugte durch automatische
+      URL-Erkennung + Ellipsis-Substitution im Codespan einen kaputten
+      Auto-Link mit nicht terminierter Zeichenreferenz.
+    - subs="attributes" in drei [source]-Blöcken ersetzte (statt zu ergänzen)
+      die Standard-Substitutionen, wodurch das automatische Escaping von
+      </>/& übersprungen wurde - literale Platzhalter wie <deine-domain>
+      landeten dadurch als kaputte XML-Tags im DocBook-Output.
+  Fix: Formulierungen leicht angepasst bzw. subs="attributes+" statt
+  subs="attributes" (Standard-Asciidoctor-Idiom zum Ergänzen statt Ersetzen
+  der Substitutionen) - kein inhaltlicher Unterschied in HTML/PDF-Ausgabe.
+
+- Karrierekompass Linz 2026: 22 weitere Referenten und Vorträge
+  Neue Referenten (referenten.csv), ihre Wahlvorträge (wahl_vortraege.csv)
+  und Slot-Verfügbarkeiten (ref_verfuegbarkeiten.csv) aus einer vom Nutzer
+  bereitgestellten Rohdaten-Liste ergänzt. Das Freitextfeld "Name, Vorname,
+  Position" wurde je Zeile in Vorname/Nachname/Position aufgeteilt (uneinheitliches
+  Format, bei Mehrdeutigkeit anhand der Email-Adressen-Reihenfolge verifiziert),
+  LoginNames konsistent zum bestehenden vorname.nachname-Schema abgeleitet
+  (Umlaute als ae/oe/ue/ss transliteriert), E-Mails kleingeschrieben, Veranlagungen
+  inhaltlich passend zum jeweiligen Vortragsthema zugeordnet.
+  Import (Referenten, Wahlvorträge, Verfügbarkeiten) per Testlauf gegen die
+  echten Import-Services verifiziert: 56 Referenten (vorher 34), 55 Wahlvorträge
+  (vorher 33), keine doppelten LoginNames.
+
+- CSV-Import: UTF-8-BOM in Kopfzeile robust behandeln
+  * CSV-Import: UTF-8-BOM in Kopfzeile robust behandeln
+  Alle 5 CSV-Import-Services öffneten die Import-Datei mit new
+  FileReader(csvFilePath.toFile()). Enthält die Datei ein UTF-8-BOM (z.B. von
+  Excels "CSV UTF-8"-Export - ein auf Windows verbreiteter Workflow), landet
+  das BOM als Teil des ersten Spaltennamens der Kopfzeile ("﻿Nachname" statt
+  "Nachname"), wodurch OpenCSVs Pflichtspalten-Erkennung mit
+  CsvRequiredFieldEmptyException fehlschlägt. Betraf nicht nur Test-Fixtures,
+  sondern jeden Admin, der eine reale, in Excel gespeicherte CSV-Datei über
+  die Import-Funktion der Anwendung hochlädt.
+  Neue CsvHelper.openCsvReader(Path)-Utility: öffnet die Datei explizit als
+  UTF-8 und überspringt ein ggf. vorhandenes BOM (Dateien ohne BOM bleiben
+  unverändert) - ersetzt new FileReader(...) an allen 10 Stellen in
+  AdminService, GebaeudeService, ReferentService, TeilnehmerService und
+  VeranstaltungService.
+  Per Testlauf gegen die tatsächlich betroffene Datei
+  (csv_import/karrierekompass-linz-2026/teilnehmer.csv, die reale BOM enthält)
+  verifiziert: 711 Teilnehmer importieren jetzt fehlerfrei (vorher:
+  CsvRequiredFieldEmptyException).
+  * Restore accidentally deleted xlsx files from previous commit
+  The previous commit on this branch swept up unrelated, already-staged
+  file deletions from the working tree that had nothing to do with this
+  PR. Restoring them here to keep this PR scoped to the CSV-BOM fix only.
+  ---------
+
 - blurred images
+
 - more blurred images
-- generate_loginnames.py: mindestens 5 Buchstaben des Vornamens verwenden (#195)
-- Verwaiste Testdateien entfernen (#197)
-- CSV-Import: deadlineReferenten und deadlineTeilnehmer für Veranstaltungen unterstützen (#193)
-- Login-Seite: News-Laufband aus konfigurierbarer laufband.txt (#199)
-- feature/200 loginname full firstname (#201)
+
+- generate_loginnames.py: mindestens 5 Buchstaben des Vornamens verwenden
+  * generate_loginnames.py: mindestens 5 Buchstaben des Vornamens verwenden
+  Bei Kollisionen wurde bisher ab einem einzelnen Buchstaben des Vornamens
+  verlängert (l. -> le. -> leo. ...), was zu sehr kurzen LoginNamen führte.
+  Jetzt startet der Kandidat immer mit mindestens 5 Buchstaben (bzw. dem
+  kompletten Vornamen, falls kürzer). Ist der Vorname komplett ausgeschöpft,
+  wird die fortlaufende Nummer an den Vornamen statt an den Nachnamen
+  angehängt.
+  * karrierekompass-linz-2026: Teilnehmer-LoginNamen mit neuer Skriptlogik regenerieren
+  teilnehmer.csv nutzte noch das alte Einzelbuchstaben-Schema. Mit der
+  angepassten generate_loginnames.py (min. 5 Buchstaben) neu generiert und
+  die Umbenennung in allen referenzierenden Dateien nachgezogen
+  (teilnehmer_verfuegbarkeiten.csv, tn_prios.csv, tn_prios_random.csv).
+  Dabei aufgefallen: tn_prios*.csv referenzieren bereits vorher (unabhängig
+  von dieser Änderung) den nicht existierenden LoginName
+  'm.maximilianschaeferlouis' - vermutlich ein Tippfehler statt
+  'm.schaefer' (Maximilian Louis Schäfer). Nicht Teil dieser Änderung,
+  daher unverändert belassen.
+  * karrierekompass-linz-2026: verwaiste LoginName-Referenz korrigieren
+  m.maximilianschaeferlouis in teilnehmer_verfuegbarkeiten.csv/tn_prios.csv/
+  tn_prios_random.csv referenzierte keinen existierenden Teilnehmer -
+  gemeint war offensichtlich Maximilian Louis Schäfer (jetzt maxim.schaefer
+  nach der LoginName-Regenerierung).
+  ---------
+
+- Verwaiste Testdateien entfernen
+  Referenten_und_Vorträge.xlsx und teilnehmer_mgl.csv/teilnehmer_rks.csv/
+  teilnehmer_roh.csv wurden von keinem Java-Code mehr referenziert.
+
+- CSV-Import: deadlineReferenten und deadlineTeilnehmer für Veranstaltungen unterstützen
+  VeranstaltungCsvDto bekommt optionale Spalten Deadline_Referenten/
+  Deadline_Teilnehmer; importFromCsvDetailed() übernimmt diese Werte
+  per smartDeadLine() (gleiche Logik wie der bestehende REST/DTO-Pfad),
+  statt sie hart auf beginntAm.minusDays(7/3) zu setzen.
+
+- Login-Seite: News-Laufband aus konfigurierbarer laufband.txt
+  * Login-Seite: News-Laufband aus konfigurierbarer laufband.txt
+  Neuer oeffentlicher Endpunkt GET /api/laufband liefert alle nicht-leeren
+  Zeilen einer per konfplan.laufband.path (Env-Override LAUFBAND_PATH)
+  konfigurierbaren Datei, sofern diese existiert und ihre erste Zeile
+  nicht leer ist - sonst eine leere Liste. Die neue NewsLaufband.vue-
+  Komponente pollt das alle 5 Minuten und zeigt die News als umlaufendes
+  Marquee auf der Login-Seite (Redirecting.vue); ohne Inhalt bleibt ein
+  neutraler grauer Platzhalter sichtbar.
+  * deploy: LAUFBAND_PATH und Volume-Mount fuer News-Laufband ergaenzen
+  ./data wird als /var/lib/konfplan in den App-Container gemountet - Admins
+  koennen dort laufband.txt anlegen/bearbeiten/loeschen, ohne den Container
+  neu zu bauen oder Shell-Zugriff zu brauchen (Datei wird bei jedem Request
+  neu eingelesen).
+  ---------
+
+- feature/200 loginname full firstname
+  * generate_loginnames.py: vollständigen Vornamen statt Kürzung verwenden
+  LoginName = vollständiger erster Vorname + "." + Nachname statt bisheriger
+  Buchstaben-Kürzung; Bindestriche in Vor-/Nachname werden durch Punkt
+  ersetzt. Bei Kollisionen wird die fortlaufende Nummer jetzt an den
+  Nachnamen angehängt statt an den Vornamen.
+  * CSV-Fixtures: Teilnehmer-LoginNamen mit vollem Vornamen regenerieren
+  Wendet die neue generate_loginnames.py-Logik (voller erster Vorname statt
+  Kürzung) auf teilnehmer.csv in allen CSV-Testbundles an und zieht die
+  Umbenennung in referenzierende Dateien (teilnehmer_verfuegbarkeiten.csv,
+  tn_prios.csv, tn_prios_random.csv) nach. Organisatoren- und
+  Referenten-LoginNamen bleiben unverändert.
+  Bundles ohne Diff (medium, small, veranstaltung_import_bundles/*) hatten
+  bereits Logins, die unter dem neuen Schema identisch bleiben.
+  karrierekompass-linz-2026/tn_prios.csv bewusst ausgenommen (dort lokal in
+  Bearbeitung, LoginNamen dort weiterhin nach altem Schema).
+  ---------
+
 - more blurred images
-- Bump com.github.spotbugs:spotbugs-maven-plugin from 4.10.3.0 to 4.10.4.0 (#204)
-- Bump @capacitor/android from 8.4.0 to 8.5.0 in /frontend (#205)
-- Bump com.fasterxml.jackson.module:jackson-module-blackbird (#206)
-- Bump vite from 8.2.1 to 8.2.2 in /frontend (#208)
-- Bump org.codehaus.mojo:build-helper-maven-plugin from 3.6.0 to 3.6.1 (#209)
-- Bump io.quarkiverse.quinoa:quarkus-quinoa from 2.8.4 to 2.9.0 (#210)
-- Bump @lucide/vue from 1.17.0 to 1.33.0 in /frontend (#211)
-- Bump vite-plugin-vue-devtools from 8.1.2 to 8.2.1 in /frontend (#212)
-- Bump vue from 3.5.35 to 3.5.41 in /frontend (#213)
-- Bump com.github.spotbugs:spotbugs-annotations from 4.10.3 to 4.10.4 (#207)
-- AdminDashboard: Referenten-Tab immer in der Navigation anzeigen (#215)
-- Keycloak-Provisionierung: 409 bei verwaistem Keycloak-User abfangen (#203)
-- KeycloakUserProvisioningService: Response-Body bei Fehlerstatus in Exception-Message aufnehmen (#217)
-- created dataset "klein" some KC fixes
-- Begriff "Veranlagung" durchgängig durch "Neigung" ersetzen (#219)
+
+- Bump com.github.spotbugs:spotbugs-maven-plugin from 4.10.3.0 to 4.10.4.0
+  Bumps [com.github.spotbugs:spotbugs-maven-plugin](https://github.com/spotbugs/spotbugs-maven-plugin) from 4.10.3.0 to 4.10.4.0.
+  - [Release notes](https://github.com/spotbugs/spotbugs-maven-plugin/releases)
+  - [Commits](https://github.com/spotbugs/spotbugs-maven-plugin/compare/spotbugs-maven-plugin-4.10.3.0...spotbugs-maven-plugin-4.10.4.0)
+  ---
+  updated-dependencies:
+  - dependency-name: com.github.spotbugs:spotbugs-maven-plugin
+    dependency-version: 4.10.4.0
+    dependency-type: direct:development
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump @capacitor/android from 8.4.0 to 8.5.0 in /frontend
+  Bumps [@capacitor/android](https://github.com/ionic-team/capacitor) from 8.4.0 to 8.5.0.
+  - [Release notes](https://github.com/ionic-team/capacitor/releases)
+  - [Changelog](https://github.com/ionic-team/capacitor/blob/main/CHANGELOG.md)
+  - [Commits](https://github.com/ionic-team/capacitor/compare/8.4.0...8.5.0)
+  ---
+  updated-dependencies:
+  - dependency-name: "@capacitor/android"
+    dependency-version: 8.5.0
+    dependency-type: direct:production
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump com.fasterxml.jackson.module:jackson-module-blackbird
+  Bumps [com.fasterxml.jackson.module:jackson-module-blackbird](https://github.com/FasterXML/jackson-modules-base) from 2.22.1 to 2.22.2.
+  - [Commits](https://github.com/FasterXML/jackson-modules-base/compare/jackson-modules-base-2.22.1...jackson-modules-base-2.22.2)
+  ---
+  updated-dependencies:
+  - dependency-name: com.fasterxml.jackson.module:jackson-module-blackbird
+    dependency-version: 2.22.2
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump vite from 8.2.1 to 8.2.2 in /frontend
+  Bumps [vite](https://github.com/vitejs/vite/tree/HEAD/packages/vite) from 8.2.1 to 8.2.2.
+  - [Release notes](https://github.com/vitejs/vite/releases)
+  - [Changelog](https://github.com/vitejs/vite/blob/main/packages/vite/CHANGELOG.md)
+  - [Commits](https://github.com/vitejs/vite/commits/v8.2.2/packages/vite)
+  ---
+  updated-dependencies:
+  - dependency-name: vite
+    dependency-version: 8.2.2
+    dependency-type: direct:development
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump org.codehaus.mojo:build-helper-maven-plugin from 3.6.0 to 3.6.1
+  Bumps [org.codehaus.mojo:build-helper-maven-plugin](https://github.com/mojohaus/build-helper-maven-plugin) from 3.6.0 to 3.6.1.
+  - [Release notes](https://github.com/mojohaus/build-helper-maven-plugin/releases)
+  - [Commits](https://github.com/mojohaus/build-helper-maven-plugin/compare/3.6.0...3.6.1)
+  ---
+  updated-dependencies:
+  - dependency-name: org.codehaus.mojo:build-helper-maven-plugin
+    dependency-version: 3.6.1
+    dependency-type: direct:development
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump io.quarkiverse.quinoa:quarkus-quinoa from 2.8.4 to 2.9.0
+  Bumps [io.quarkiverse.quinoa:quarkus-quinoa](https://github.com/quarkiverse/quarkus-quinoa) from 2.8.4 to 2.9.0.
+  - [Release notes](https://github.com/quarkiverse/quarkus-quinoa/releases)
+  - [Commits](https://github.com/quarkiverse/quarkus-quinoa/compare/2.8.4...2.9.0)
+  ---
+  updated-dependencies:
+  - dependency-name: io.quarkiverse.quinoa:quarkus-quinoa
+    dependency-version: 2.9.0
+    dependency-type: direct:production
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump @lucide/vue from 1.17.0 to 1.33.0 in /frontend
+  Bumps [@lucide/vue](https://github.com/lucide-icons/lucide/tree/HEAD/packages/vue) from 1.17.0 to 1.33.0.
+  - [Release notes](https://github.com/lucide-icons/lucide/releases)
+  - [Commits](https://github.com/lucide-icons/lucide/commits/1.33.0/packages/vue)
+  ---
+  updated-dependencies:
+  - dependency-name: "@lucide/vue"
+    dependency-version: 1.33.0
+    dependency-type: direct:production
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump vite-plugin-vue-devtools from 8.1.2 to 8.2.1 in /frontend
+  Bumps [vite-plugin-vue-devtools](https://github.com/vuejs/devtools/tree/HEAD/packages/vite) from 8.1.2 to 8.2.1.
+  - [Release notes](https://github.com/vuejs/devtools/releases)
+  - [Commits](https://github.com/vuejs/devtools/commits/v8.2.1/packages/vite)
+  ---
+  updated-dependencies:
+  - dependency-name: vite-plugin-vue-devtools
+    dependency-version: 8.2.1
+    dependency-type: direct:development
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump vue from 3.5.35 to 3.5.41 in /frontend
+  Bumps [vue](https://github.com/vuejs/core) from 3.5.35 to 3.5.41.
+  - [Release notes](https://github.com/vuejs/core/releases)
+  - [Changelog](https://github.com/vuejs/core/blob/main/CHANGELOG.md)
+  - [Commits](https://github.com/vuejs/core/compare/v3.5.35...v3.5.41)
+  ---
+  updated-dependencies:
+  - dependency-name: vue
+    dependency-version: 3.5.41
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump com.github.spotbugs:spotbugs-annotations from 4.10.3 to 4.10.4
+  Bumps [com.github.spotbugs:spotbugs-annotations](https://github.com/spotbugs/spotbugs) from 4.10.3 to 4.10.4.
+  - [Release notes](https://github.com/spotbugs/spotbugs/releases)
+  - [Changelog](https://github.com/spotbugs/spotbugs/blob/master/CHANGELOG.md)
+  - [Commits](https://github.com/spotbugs/spotbugs/compare/4.10.3...4.10.4)
+  ---
+  updated-dependencies:
+  - dependency-name: com.github.spotbugs:spotbugs-annotations
+    dependency-version: 4.10.4
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- AdminDashboard: Referenten-Tab immer in der Navigation anzeigen
+  * AdminDashboard: Referenten-Tab immer in der Navigation anzeigen
+  Der Tab-Button verschwand bisher, sobald keine Veranstaltung
+  ausgewählt war. Klick ohne Auswahl zeigt weiterhin den bestehenden
+  "Keine Veranstaltung ausgewählt"-Hinweis.
+  * more blurred images
+  ---------
+
+- Keycloak-Provisionierung: 409 bei verwaistem Keycloak-User abfangen
+  * Keycloak-Provisionierung: 409 bei verwaistem Keycloak-User abfangen
+  Der Bündelimport einer Veranstaltung läuft in einer DB-Transaktion, aber
+  das Anlegen des Keycloak-Users (Organisatoren-Import) ist kein Teil davon.
+  Schlägt ein späterer Schritt fehl und die DB rollt zurück, bleibt der
+  bereits angelegte Keycloak-User bestehen (Split-Brain zwischen DB und
+  Keycloak) - jeder erneute Importversuch scheiterte bisher dauerhaft mit
+  Status 409, weil createUser() jeden Nicht-201-Status als fatal behandelte.
+  Bei 409 wird der bestehende Keycloak-User jetzt per Username, sonst per
+  E-Mail nachgeschlagen und wiederverwendet statt den Import zu blockieren.
+  Nur wenn auch das keinen Treffer liefert, bleibt der Fehler fatal.
+  * CSV-Import: Nutzer-Dublettenprüfung auch per E-Mail statt nur loginName
+  Organisatoren-, Referenten- und Teilnehmer-Import prüften vor dem Anlegen
+  nur, ob der loginName schon existiert (Nutzer.findByLoginName). Existierte
+  dieselbe Person bereits unter einem anderen loginName (z.B. Rest eines
+  früher nur teilweise geglückten Imports), griff diese Prüfung nicht -
+  der anschließende persistAndFlush() verletzte dann den DB-weiten
+  UNIQUE-Constraint auf Nutzer.email, was die laufende Postgres-Transaktion
+  vergiftete ("current transaction is aborted ... nextval('id_sequence')"
+  bei jedem folgenden Statement) statt den Import kontrolliert zu
+  überspringen.
+  Neue Nutzer.findByLoginNameOrEmail() prüft beides; alle drei Importer
+  nutzen sie jetzt für die Dublettenprüfung.
+  Selbe Fehlerursache wie #202 (Keycloak-409), nur eine Ebene tiefer in der
+  lokalen DB statt in Keycloak.
+  ---------
+
+- KeycloakUserProvisioningService: Response-Body bei Fehlerstatus in Exception-Message aufnehmen
+  Bei einem Fehlerstatus (weder 201 noch 409) beim Anlegen eines
+  Keycloak-Users enthielt die Exception-Message bisher nur den
+  HTTP-Status. Der Response-Body (z.B. Keycloaks eigener
+  Validierungsfehlercode) wird nun mit aufgenommen, um die Diagnose
+  zu erleichtern.
+
+- created dataset "klein"
+  some KC fixes
+
+- Begriff "Veranlagung" durchgängig durch "Neigung" ersetzen
+  Betrifft Persistenz (Entity/Join-Tables inkl. neuer Flyway-Migration),
+  DTOs, REST-Resource (/api/veranlagungen -> /api/neigungen), CSV-Import,
+  Frontend (Store/Komponenten/UI-Texte) und Doku (Benutzerhandbücher,
+  CLAUDE.md, AGENTS.md). Enum-Werte (SOZIAL, ORGANISATORISCH, ...) und
+  die historischen Flyway-Migrationen V4/V5 bleiben unverändert.
+
 - KC support for DE, updated realm
-- TeilnehmerDashboard: falschen API-Pfad beim Speichern der Prioritäten korrigieren (#221)
-- Veranstaltung: maximale Anzahl vergebbarer Prioritäten konfigurierbar machen (#223)
-- ZIP-Import: einzelnen Top-Level-Ordner trotz macOS-Metadaten (__MACOSX) erkennen (#225)
+
+- TeilnehmerDashboard: falschen API-Pfad beim Speichern der Prioritäten korrigieren
+  savePriorities() postete an das nicht existierende /api/teilnehmer/prios
+  statt an /api/prios (PrioritaetenResource) - jeder Speicherversuch schlug
+  mit 404 fehl. Regressionstest für den POST-Roundtrip ergänzt, da bisher
+  nur der GET-Pfad abgedeckt war.
+
+- Veranstaltung: maximale Anzahl vergebbarer Prioritäten konfigurierbar machen
+  * Veranstaltung: maximale Anzahl vergebbarer Prioritäten konfigurierbar machen
+  Neues optionales Feld maxPrioritaeten auf Veranstaltung (editierbar im
+  Veranstaltungs-Editor), server-seitig in PrioritaetService.savePrioritaeten
+  durchgesetzt (400 bei Überschreitung). TeilnehmerDashboard zeigt die Anzahl
+  bereits vergebener Prioritäten im Verhältnis zum Limit an und deaktiviert
+  den Speichern-Button bei Überschreitung. Ohne konfiguriertes Limit (null)
+  bleibt das Verhalten unverändert.
+  Verifiziert end-to-end im Browser (Admin setzt Limit, Teilnehmer wird beim
+  Überschreiten blockiert) sowie per Backend-Test für die serverseitige
+  Durchsetzung.
+  * Veranstaltungs-CSV-Import: Max_Prioritaeten-Spalte unterstützen
+  Analog zu Deadline_Referenten/Deadline_Teilnehmer kann die Obergrenze
+  für vergebbare Prioritäten jetzt auch beim CSV-/ZIP-Bundle-Import einer
+  Veranstaltung gesetzt werden (Spalte optional, leer = unbeschränkt).
+  ---------
+
+- ZIP-Import: einzelnen Top-Level-Ordner trotz macOS-Metadaten (__MACOSX) erkennen
+  determineEffectiveRoot() stieg nur dann eine Ebene in ein entpacktes ZIP
+  ab, wenn das Wurzelverzeichnis genau ein Unterverzeichnis enthielt. Ein
+  reales macOS-"Ordner komprimieren" (Finder bzw. ditto --sequesterRsrc)
+  legt jedoch zusätzlich einen __MACOSX-Metadatenordner an, sobald
+  irgendeine Datei ein Extended Attribute hat (z.B. das Quarantäne-Flag
+  heruntergeladener Dateien - in der Praxis sehr häufig). Damit hatte das
+  Wurzelverzeichnis zwei Unterordner statt einem, die Erkennung schlug
+  fehl und der Import brach mit "fehlende Pflicht-Dateien" ab, obwohl der
+  eigentliche Ordner korrekt vorhanden war.
+  __MACOSX-Ordner und .DS_Store-Dateien werden bei der Erkennung jetzt
+  ignoriert. Regressionstest reproduziert die reale macOS-ZIP-Struktur
+  (verifiziert: Test schlägt ohne den Fix mit exakt diesem Fehler fehl).
+
 - added deadlines and max_prioritaeten columns
-- Logo with alpha clean Verfügbarkeiten
-- TeilnehmerDashboard: Prioritäts-Eingabefelder zeigen nur Spinner-Pfeile, nicht die Zahl (#227)
-- AdminDashboard: Auswahl-Pfeil überdeckt Text im 'Aktive Veranstaltung'-Dropdown (#229)
-- KeycloakUserProvisioningService.resetPassword: erzwingt Passwort-Änderung beim nächsten Login (#231)
-- NewsLaufband: Text größer darstellen (#233)
-- docker-compose.yml: QUARKUS_HTTP_PROXY_*-Einstellungen dokumentieren (#235)
-- Kein Start-Passwort mehr vergeben - Nutzer setzen eigenes Passwort per Keycloak-Selfservice (#237)
-- Kleine UX-Anpassungen: Erstanmeldung-Hinweis + Passwort-Reset ohne E-Mail für Teilnehmer (#239)
-- Logo with alpha clean Verfügbarkeiten
-- Passwort-Reset-Link: Gültigkeit auf 10 Minuten begrenzen (#241)
-- Prometheus-Metrics-Endpoint für Grafana: Ressourcenverbrauch, Online-Nutzer, Verweilzeit, fehlgeschlagene Logins nach Rolle (#245)
-- Prometheus + Grafana im docker-compose-Stack fuer Metriken-Visualisierung bei reinem SSH-Zugriff (#247)
-- Frontend: Fallback für kaputtes Event-Logo-Bild und fehlende aria-labels auf Icon-Buttons (#249)
-- MiniZinc-Solver fest auf cp-sat setzen, Solver-Auswahl entfernt (#251)
-- SocialMedia-login-keycloak.adoc: KonfPlan-spezifische Umsetzung ergänzen, Instagram-Fehler korrigiert (#243)
-- Deploy: ausgehende Server-IP überwachen, Push-Alarm per ntfy.sh (Brevo-Allowlist) (#253)
+
+- Logo with alpha
+  clean Verfügbarkeiten
+
+- TeilnehmerDashboard: Prioritäts-Eingabefelder zeigen nur Spinner-Pfeile, nicht die Zahl
+  Die Priorität-Zelle ist mit w-10 (2.5rem) sehr schmal; bei dieser Breite
+  verdrängen die nativen Browser-Spinner-Pfeile von <input type="number">
+  die eingegebene Zahl vollständig aus dem sichtbaren Bereich (im Browser
+  verifiziert). Spinner-Pfeile für dieses Feld ausgeblendet - Ein-/Ausgabe
+  per Tastatur und Maus bleibt unverändert möglich.
+
+- AdminDashboard: Auswahl-Pfeil überdeckt Text im 'Aktive Veranstaltung'-Dropdown
+  .input-field bringt via @apply ein px-2 (8px rechtes Padding) mit
+  gleicher CSS-Spezifität wie das Utility pr-12, das eigentlich Platz für
+  den Auswahl-Pfeil (@tailwindcss/forms) reservieren soll. Je nach
+  Einfüge-Reihenfolge der Vue-<style>-Blöcke gewann bislang px-2, wodurch
+  das tatsächliche padding-right bei 8px statt 48px landete und der Pfeil
+  den Text bei längeren Veranstaltungsnamen überdeckte (in Chromium und
+  WebKit verifiziert). !pr-12 erzwingt jetzt zuverlässig die 48px.
+
+- KeycloakUserProvisioningService.resetPassword: erzwingt Passwort-Änderung beim nächsten Login
+  Analog zu createUser() wird das neue Passwort außerhalb von Dev/Test
+  jetzt als temporär markiert und UPDATE_PASSWORD als Required Action
+  gesetzt - ein vom Admin gesetztes Passwort muss der Nutzer beim
+  nächsten Login also zwingend selbst ändern. In Dev/Test bleibt das
+  Verhalten unverändert (dauerhaft gültig, Komfort für Testläufe).
+
+- NewsLaufband: Text größer darstellen
+  font-size von 0.875rem auf 1.25rem erhöht, Container-Höhe entsprechend
+  angepasst, damit der größere Text nicht abgeschnitten wird.
+
+- docker-compose.yml: QUARKUS_HTTP_PROXY_*-Einstellungen dokumentieren
+  Erklärender Kommentar für die vier bereits vorhandenen Einstellungen
+  sowie ein Troubleshooting-Eintrag in Deployment-DockerCompose.adoc.
+  Grund: bei der Neuwied-Installation griff ohne diese Einstellungen eine
+  Keycloak-Required-Action ("Update Password") beim Referenten-Login
+  nicht, obwohl Realm- und User-Konfiguration nachweislich korrekt
+  waren - ein schwer diagnostizierbarer Folgefehler durch fehlendes
+  Vertrauen in die X-Forwarded-*-Header von Caddy.
+
+- Kein Start-Passwort mehr vergeben - Nutzer setzen eigenes Passwort per Keycloak-Selfservice
+  Der bisherige Ansatz (zufälliges UUID-Passwort in Prod) war ein
+  strukturelles Problem: das Passwort wurde nirgends gespeichert, geloggt
+  oder verschickt - niemand konnte es dem Nutzer je mitteilen, wodurch
+  sich neu angelegte Nutzer nie zum ersten Mal anmelden konnten
+  (Keycloak-Login schlug mit invalid_user_credentials fehl).
+  KeycloakUserProvisioningService.createUser() legt Nutzer in Prod jetzt
+  ohne Credentials an. Realm-Einstellung resetPasswordAllowed=true ist
+  bereits aktiv, sodass der Nutzer über "Passwort vergessen" auf der
+  Keycloak-Login-Seite selbst sein erstes Passwort setzt (Keycloak
+  verschickt dafür die E-Mail, kein zusätzlicher App-Code nötig). In
+  Dev/Test bleibt das feste "konfplan"-Passwort zur Testbequemlichkeit
+  unverändert.
+  Aufrufer (AdminService, TeilnehmerService, ReferentService) generieren
+  kein Passwort mehr; die drei Benutzerhandbücher beschreiben den
+  korrigierten Ablauf.
+
+- Kleine UX-Anpassungen: Erstanmeldung-Hinweis + Passwort-Reset ohne E-Mail für Teilnehmer
+  1. Keycloak-Login-Link "Passwort vergessen" umbenannt in "Erstanmeldung /
+     Passwort vergessen" (macht deutlich, dass dieser Weg auch für die
+     allererste Anmeldung genutzt wird, siehe #236/#237). Umgesetzt per
+     Realm-Localization-Override statt eigenem Theme - läuft idempotent bei
+     jedem Prod-Start (ProdKeycloakRealmSyncService, analog zum bestehenden
+     SMTP-/RequiredAction-Sync) sowie beim lokalen Dev-Start (neuer
+     DevKeycloakLoginTextsService). Dev/Test-Realm hat dafür jetzt
+     internationalizationEnabled mit Locale "de" (vorher rein englisch).
+  2. Teilnehmer-Tab im AdminDashboard hat jetzt denselben
+     "Passwort zurücksetzen"-Button wie der Organisatoren-Tab. Nutzt den
+     bereits bestehenden, E-Mail-losen Reset-Endpunkt (KeycloakUserProvisioningService.resetPassword,
+     #231) - notwendig, weil Teilnehmer nicht zwangsläufig eine E-Mail-Adresse
+     haben und nur ihren LoginNamen kennen. Der Login-Vorgang (LoginName +
+     vom Organisator mitgeteiltes Passwort, danach ggf. erzwungene
+     Passwort-Änderung in Prod) bleibt dabei vollständig ohne Anmeldelink
+     funktionsfähig - im Browser end-to-end verifiziert.
+
+- Logo with alpha
+  clean Verfügbarkeiten
+
+- Passwort-Reset-Link: Gültigkeit auf 10 Minuten begrenzen
+  Realm-Setting actionTokenGeneratedByUserLifespan (Keycloak-Default: 5
+  Minuten) auf 600 Sekunden gesetzt - betrifft alle nutzer-initiierten
+  Action-Tokens, insbesondere den "Erstanmeldung / Passwort vergessen"-
+  Link. Keycloaks Standard-Mailtext rendert die tatsächlich konfigurierte
+  Lebensdauer automatisch mit ein ("Der Link ist 10 Minuten gültig."),
+  kein zusätzlicher Theme-Eingriff nötig - im Dev-Mailpit end-to-end
+  verifiziert (E-Mail-Text sowie exp-iat des Action-Tokens = 600s).
+  In ProdKeycloakRealmSyncService idempotent bei jedem Start synchronisiert
+  (analog zu SMTP/RequiredAction/Login-Texten), da Realm-Import bestehende
+  Deployments nicht anfasst (#176). Für Dev/Test reicht die direkte
+  Realm-JSON-Einstellung, da der Dev-Container bei jedem Start frisch
+  importiert wird.
+  Der native Self-Service-Link-Flow für Nutzer mit E-Mail-Adresse (u.a.
+  Teilnehmer) bleibt dabei unverändert funktionsfähig - im Dev-Mailpit
+  end-to-end verifiziert.
+
+- Prometheus-Metrics-Endpoint für Grafana: Ressourcenverbrauch, Online-Nutzer, Verweilzeit, fehlgeschlagene Logins nach Rolle
+  * SocialMedia-login-keycloak.adoc: KonfPlan-spezifische Umsetzung ergänzen, Instagram-Fehler korrigiert
+  Die bisherige Doku ging von einer eigenen Nutzerverwaltung aus, nicht
+  von KonfPlans tatsächlicher Architektur (Keycloak bereits alleiniger
+  Identity Provider, registrationAllowed=false, Nutzer ausschließlich
+  organisator-provisioniert).
+  Gegen das tatsächlich genutzte Keycloak 26.7.0 verifiziert:
+  - Instagram ist entgegen der bisherigen Doku-Aussage KEIN eingebauter
+    Identity-Provider-Typ (Google/Microsoft/Facebook sind es).
+  - YouTube-Konten sind Google-Konten, kein eigener Provider nötig.
+  - Der Standard-"First Broker Login"-Flow enthält "Create User If
+    Unique" - ohne Deaktivierung würde Social Login registrationAllowed
+    =false unterlaufen und verwaiste, nicht provisionierte Accounts
+    anlegen.
+  Neuer Abschnitt "Frage 7" beschreibt die konkrete Umsetzung für
+  KonfPlan: korrektes Redirect-URI-Muster (mit /auth-Pfad wegen
+  KC_HTTP_RELATIVE_PATH), sowie Anleitung zur Einschränkung des
+  First-Broker-Login-Flows pro Provider, damit Social Login nur als
+  zusätzliche Anmeldeoption für bereits bestehende Nutzer funktioniert.
+  * Prometheus-Metrics-Endpoint fuer Grafana: Ressourcenverbrauch, Online-Nutzer, Verweilzeit, fehlgeschlagene Logins nach Rolle
+  quarkus-micrometer-registry-prometheus liefert JVM-/HTTP-/DB-Pool-Metriken
+  automatisch unter /q/metrics, laufend auf einem eigenen Management-Port
+  (9001) statt dem oeffentlichen App-Port, damit der Endpunkt nicht
+  versehentlich oeffentlich erreichbar ist.
+  Drei KonfPlan-spezifische Metriken:
+  - konfplan_users_online{role}: Gauge, aktualisiert per Request-Filter
+    ohne DB-Zugriff im Hot-Path (Rolle direkt aus dem SecurityContext).
+    Peaks werden bewusst nicht serverseitig berechnet, sondern per
+    max_over_time() in Grafana abgeleitet.
+  - konfplan_session_duration_seconds{role}: Timer, aus Backend-eigenem
+    Aktivitaets-Tracking (nicht aus der Keycloak-Session-Laufzeit, die
+    auch bei Inaktivitaet "eingeloggt" bleibt).
+  - konfplan_login_failures_total{role}: Counter, gespeist aus Keycloaks
+    Realm-Events (LOGIN_ERROR) - fehlgeschlagene Logins passieren bei
+    Keycloak, nie im Backend selbst. Dafuer Realm-Events aktiviert
+    (Realm-JSON fuer Neuanlagen, ProdKeycloakRealmSyncService idempotent
+    fuer bestehende Deployments) und dem Admin-CLI-Service-Account die
+    Client-Rolle view-events gewaehrt.
+  Per Live-Test gegen Keycloak 26.7.0 zwei nicht offensichtliche API-
+  Eigenheiten aufgedeckt und dokumentiert: der events-Endpoint verlangt
+  direction=asc/desc klein geschrieben (ASC/DESC -> 400, obwohl der
+  Java-Admin-Client dafuer nur einen ungeprueften String-Parameter
+  anbietet), und liefert ohne view-events 403 statt 401.
+  ---------
+
+- Prometheus + Grafana im docker-compose-Stack fuer Metriken-Visualisierung bei reinem SSH-Zugriff
+  Neues Compose-Profil "monitoring": Prometheus scraped app:9001 ueber
+  das interne Docker-Netzwerk (keine Freigabe auf Host/Internet noetig),
+  Grafana ist wie app/mailpit nur an 127.0.0.1 gebunden - Zugriff
+  ausschliesslich per SSH-Tunnel, nie oeffentlich ueber Caddy geroutet.
+  Datenquelle und ein vorkonfiguriertes Dashboard ("KonfPlan Uebersicht",
+  alle sechs Kennzahlen aus Monitoring-Grafana.adoc: Online-Nutzer,
+  fehlgeschlagene Logins, Verweilzeit, DB-Pool, JVM-Heap, HTTP-Requests)
+  werden beim Start automatisch provisioniert.
+  Per Live-Test verifiziert: Grafana laedt Datenquelle+Dashboard fehlerfrei,
+  alle sechs PromQL-Queries parsen korrekt gegen einen echten Prometheus.
+  Dabei einen dev-mode-spezifischen Stolperstein entdeckt und dokumentiert
+  (Quarkus' LocalHostOnlyFilter, nur im quarkus-vertx-http-dev-Artefakt -
+  liefert in quarkus:dev 400 Bad Request fuer jeden Host ausser
+  localhost/127.0.0.1, tritt im gepackten Prod-Image nicht auf).
+
+- Frontend: Fallback für kaputtes Event-Logo-Bild und fehlende aria-labels auf Icon-Buttons
+  Ergebnis der web-design-review-Pruefung:
+  - Neue EventLogo.vue-Komponente ersetzt drei unabhaengige <img>-Vorkommen
+    (App.vue-Header, Teilnehmer-/Referenten-Dashboard) - blendet das Bild
+    bei Ladefehler aus (@error) statt des Browser-Broken-Image-Icons,
+    Fehlerzustand wird bei Aenderung der Bild-URL automatisch zurueckgesetzt.
+  - 18 Icon-only-Buttons in den Admin-Tabs (Bearbeiten/Loeschen/Einladen/
+    Passwort-zuruecksetzen/Belegungsplan-anzeigen) bekommen ein aria-label
+    passend zum bestehenden title-Text - 6 davon (alle Loeschen-Buttons)
+    hatten bisher ueberhaupt keinen zugaenglichen Namen, nicht mal title.
+  Per Playwright-Vollsuite verifiziert: 21 vorbestehende Fehlschlaege in
+  reports.spec.js (fehlende Snapshot-Baselines, betreffen views/report/*,
+  von dieser Aenderung nicht beruehrt) treten identisch auch auf
+  unveraendertem main auf - bestaetigt gegen einen sauberen Worktree.
+
+- MiniZinc-Solver fest auf cp-sat setzen, Solver-Auswahl entfernt
+  Fuer die Planerstellung wird ausschliesslich cp-sat unterstuetzt -
+  die Auswahlmoeglichkeit war nie sinnvoll nutzbar (Gecode/COIN-BC waren
+  nie getestet oder als Optionen vorgesehen). Entfernt:
+  - SolverConfig.solver-Feld (Backend-DTO), Konstruktoren entsprechend
+    angepasst.
+  - Solver-Dropdown im PlanungTab, Grid entsprechend von 6 auf 5 Spalten.
+  - solver-Property aus dem reaktiven Frontend-State.
+  MiniZinc wird jetzt mit einer festen Konstante (MZN_SOLVER = "cp-sat")
+  statt eines konfigurierbaren Werts aufgerufen.
+  Per Live-Test verifiziert: POST-Payload beim Erstellen eines Plans
+  enthaelt kein solver-Feld mehr, MiniZinc-Prozess laeuft weiterhin
+  erfolgreich durch (Exit-Code 0).
+
+- SocialMedia-login-keycloak.adoc: KonfPlan-spezifische Umsetzung ergänzen, Instagram-Fehler korrigiert
+  Die bisherige Doku ging von einer eigenen Nutzerverwaltung aus, nicht
+  von KonfPlans tatsächlicher Architektur (Keycloak bereits alleiniger
+  Identity Provider, registrationAllowed=false, Nutzer ausschließlich
+  organisator-provisioniert).
+  Gegen das tatsächlich genutzte Keycloak 26.7.0 verifiziert:
+  - Instagram ist entgegen der bisherigen Doku-Aussage KEIN eingebauter
+    Identity-Provider-Typ (Google/Microsoft/Facebook sind es).
+  - YouTube-Konten sind Google-Konten, kein eigener Provider nötig.
+  - Der Standard-"First Broker Login"-Flow enthält "Create User If
+    Unique" - ohne Deaktivierung würde Social Login registrationAllowed
+    =false unterlaufen und verwaiste, nicht provisionierte Accounts
+    anlegen.
+  Neuer Abschnitt "Frage 7" beschreibt die konkrete Umsetzung für
+  KonfPlan: korrektes Redirect-URI-Muster (mit /auth-Pfad wegen
+  KC_HTTP_RELATIVE_PATH), sowie Anleitung zur Einschränkung des
+  First-Broker-Login-Flows pro Provider, damit Social Login nur als
+  zusätzliche Anmeldeoption für bereits bestehende Nutzer funktioniert.
+
+- Deploy: ausgehende Server-IP überwachen, Push-Alarm per ntfy.sh (Brevo-Allowlist)
+  Cloud-Server ohne feste IP koennen ihre ausgehende Adresse aendern -
+  Brevo blockt den SMTP-Zugang dann mit 525 5.7.1 Unauthorized IP address,
+  bis die neue IP manuell in der Brevo-Zulassungsliste ergaenzt wird
+  (Root Cause des Incidents vom 2026-08-25). Brevo bietet dafuer keine API
+  zur automatischen Pflege, nur die Web-Oberflaeche - daher hier zumindest
+  fruehzeitige Erkennung statt eines reaktiven Ausfalls.
+  deploy/check-outbound-ip.sh (POSIX sh, per Cron) vergleicht die aktuelle
+  ausgehende IP (curl https://api.ipify.org) mit der zuletzt bekannten und
+  schickt bei Aenderung eine Push-Benachrichtigung ueber ntfy.sh - bewusst
+  unabhaengig von Brevo/SMTP, damit die Meldung auch ankommt, wenn genau
+  die Aenderung gerade den Mailversand blockiert. Topic konfigurierbar
+  ueber NTFY_TOPIC in deploy/.env, Zustand nicht im Repo (gitignored).
+  Per Live-Test verifiziert: Erststart legt nur den Ausgangswert an ohne
+  Fehlalarm, unveraenderte IP loest keine Meldung aus, eine simulierte
+  Aenderung erzeugt eine tatsaechlich zugestellte ntfy.sh-Push-Nachricht
+  (per ntfy-JSON-API bestaetigt) und aktualisiert den Zustand korrekt.
+  Als dauerhafte Loesung in der Doku auf Hetzner Floating IPs verwiesen
+  (mit Hinweis, dass dafuer zusaetzliche Routing-Konfiguration noetig
+  waere, nicht Teil dieses Skripts).
+
 - asset path fixed to /images/
-- ReferentDashboard: Event-Logo in 'Meine Veranstaltungsanmeldungen' vergrößert (#255)
-- Admin: Bulk-Passwort-Reset für Teilnehmer mit verschlüsseltem PDF-Report (#257)
-- Deploy: Brevo-IP-Autorisierung bei IP-Änderung automatisch per Playwright eintragen (#260)
-- Teilnehmer-Passwort-Report: CSV in passwortgeschütztem ZIP statt PDF, Gruppen als Spalten (#261)
+
+- ReferentDashboard: Event-Logo in 'Meine Veranstaltungsanmeldungen' vergrößert
+  Logo war fest auf h-10 (40px) gesetzt, deutlich kleiner als der
+  danebenstehende Textblock (Name, Datum, Organisatoren, Deadline - bis
+  zu vier Zeilen). Auf h-16 (64px) erhöht, damit es optisch zur
+  Texthöhe passt.
+  Ein Versuch mit dynamischem Flex-Stretch (Logo automatisch so hoch wie
+  der Textblock) scheiterte per Live-Test: ohne feste Hoehenbegrenzung
+  verwendet der Browser fuer die Stretch-Berechnung die intrinsische
+  Originalgroesse des Bildes als Berechnungsgrundlage, wodurch das Logo
+  ueberdimensioniert wurde. Ein fester, groesserer Wert ist hier robuster.
+
+- Admin: Bulk-Passwort-Reset für Teilnehmer mit verschlüsseltem PDF-Report
+  Ermoeglicht dem Organisator, fuer eine per Suche/Mehrfachauswahl (inkl.
+  "alle N auswaehlen", bereits im Teilnehmer-Tab vorhanden) getroffene
+  Menge von Teilnehmern in einem Schritt neue temporaere Passwoerter zu
+  setzen und als passwortverschluesselte PDF-Tabelle (Name, Anmeldename,
+  Passwort) herunterzuladen - statt wie bisher jedem einzeln ein
+  Passwort auszudenken und mitzuteilen.
+  - PasswordGenerator: SecureRandom, Zeichensatz ohne 0/O/1/I/l.
+  - PdfService: erste echte Backend-PDF-Erzeugung in dieser Codebase
+    (bisherige "Reports" waren reines Browser-Print). openhtmltopdf
+    rendert HTML zu PDF-Bytes, OpenPDF (PdfStamper.setEncryption,
+    AES-128) verschluesselt sie nach - openhtmltopdf selbst bietet keine
+    Verschluesselungs-Hooks.
+  - TeilnehmerPasswortPdfService: laedt/validiert Teilnehmer innerhalb
+    einer kurzen Transaktion, ruft danach ohne offene Transaktion pro
+    Teilnehmer das bereits bestehende KeycloakUserProvisioningService
+    .resetPassword() (unveraendert, setzt in Prod weiterhin
+    temporary=true + UPDATE_PASSWORD) - einzelne Fehlschlaege blockieren
+    nicht die PDF-Erzeugung fuer die uebrigen.
+  - Neuer Endpunkt POST /api/admin/veranstaltungen/{vid}/teilnehmer/
+    passwoerter/pdf, PDF-Öffnungspasswort wird vom Organisator selbst
+    festgelegt. Teilfehlschlaege werden per X-KonfPlan-Failed-Teilnehmer-
+    Header gemeldet (dafuer cors.exposed-headers ergaenzt).
+  - Frontend: neues GeneratePasswordsPdfModal, vierter Batch-Button im
+    Teilnehmer-Tab (exakt gleiches Muster wie die drei bestehenden),
+    Download exakt nach dem bestehenden exportDzn/exportBundle-Blob-
+    Muster.
+  - bcprov-jdk18on als neue Abhaengigkeit ergaenzt: openpdf deklariert
+    sie nur optional, ohne sie schlaegt AES-Verschluesselung zur
+    Laufzeit mit NoClassDefFoundError fehl (per Test entdeckt).
+  Per Live-Test durchgehend verifiziert: PDF wird erzeugt, mit falschem
+  Passwort abgelehnt (pypdf), mit richtigem Passwort geoeffnet und
+  enthaelt den erwarteten Tabelleninhalt inkl. generiertem Passwort;
+  Login mit diesem Passwort funktioniert. Neue Backend-Tests
+  (PasswordGeneratorTest, PdfServiceTest, AdminResourceTeilnehmerPasswortPdfTest)
+  sowie volle Bestandssuite (Backend + Playwright) gruen.
+
+- Deploy: Brevo-IP-Autorisierung bei IP-Änderung automatisch per Playwright eintragen
+  * Deploy: Brevo-IP-Autorisierung bei IP-Änderung automatisch per Playwright eintragen
+  Die Neuwied-Server-IP aendert sich taeglich - bisher musste die neue
+  IP jedes Mal manuell unter Brevos Authorized-IPs-Seite eingetragen
+  werden. Brevo bietet dafuer keine API (siehe #252-Recherche), nur die
+  Web-Oberflaeche mit einer "Paste list"-Texteingabe.
+  deploy/brevo-ip-updater/ (Playwright, offizielles Docker-Image, kein
+  Node/Playwright auf dem Host noetig):
+  - setup-session.mjs: einmaliges, interaktives Setup - loggt sich ein,
+    fragt den bei Brevos Geraeteverifizierung per E-Mail zugestellten
+    6-stelligen Code interaktiv per Terminal ab (funktioniert ohne
+    Display auf einem Headless-Server) und speichert die resultierende
+    Sitzung dauerhaft. Danach gilt das "Geraet" bei Brevo als
+    vertrauenswuerdig, kein erneuter Code noetig.
+  - update-ip.mjs: nutzt die gespeicherte Sitzung, traegt die uebergebene
+    IP per "Paste list" ein. Erkennt eine abgelaufene Sitzung (Redirect
+    zur Login-Seite) und bricht dann klar erkennbar ab statt eine falsche
+    Erfolgsmeldung zu liefern.
+  - check-outbound-ip.sh ruft bei erkannter IP-Aenderung automatisch
+    update-ip.mjs auf (per docker run) und meldet Erfolg/Fehlschlag
+    zusaetzlich im ntfy-Push-Text - die bisherige manuelle Nachtrage-
+    Anleitung bleibt der Fallback bei Fehlschlag.
+  Zugangsdaten folgen dem bestehenden Secrets-Muster: BREVO_LOGIN_EMAIL
+  in deploy/.env (nicht geheim), Passwort in deploy/secrets/ (gitignored).
+  Gespeicherte Sitzung und Fehler-Screenshots ebenfalls gitignored.
+  Per lokalem Test verifiziert: Argument-/Fehlerpfade beider Skripte
+  (fehlende IP, fehlende Sitzung, fehlende Zugangsdaten) sowie der
+  komplette check-outbound-ip.sh-Ablauf ohne/mit unvollstaendiger
+  Brevo-Konfiguration - inkl. tatsaechlich zugestellter ntfy-Meldung mit
+  korrektem Status-Text.
+  WICHTIG: Die eigentliche Login-/Formular-Interaktion mit Brevo (Seiten-
+  Selektoren) ist nach bestem Wissen aus der oeffentlichen Brevo-Hilfe-
+  Dokumentation entwickelt, aber mangels Zugriff auf einen echten Account
+  NICHT gegen die echte Seite verifiziert - erfordert gemeinsames
+  Nachjustieren mit echten Zugangsdaten vor dem produktiven Einsatz.
+  * Brevo-IP-Automatisierung: fehlenden npm-install-Schritt ergänzen
+  Per Live-Test entdeckt: das Playwright-Docker-Image bringt nur den
+  Browser mit, nicht das npm-Paket selbst - ohne einen einmaligen
+  "npm install" im gemounteten Ordner schlaegt jeder Aufruf mit
+  ERR_MODULE_NOT_FOUND fehl. Ergaenzt in Doku und Skript-Kommentar.
+  * Brevo-Login-Skript: echte Login-Seite (einstufig) und Verify-Device-Selektoren korrigieren
+  Live-Test gegen den echten Brevo-Account auf dem Neuwied-Server ergab: E-Mail und
+  Passwort stehen auf derselben Seite (kein zweistufiger Login), der Button heißt
+  "Log In", und das Geräteverifizierungs-Feld hat weder name="code" noch
+  autocomplete="one-time-code" (Placeholder "E.g. 172846", Button "Verify").
+  ---------
+
+- Teilnehmer-Passwort-Report: CSV in passwortgeschütztem ZIP statt PDF, Gruppen als Spalten
+  * Teilnehmer-Passwort-Report: CSV in passwortgeschütztem ZIP statt PDF, Gruppen als Spalten
+  Ersetzt den PDF-Report (openhtmltopdf/OpenPDF, jetzt tote Abhängigkeiten) durch eine
+  mit zip4j AES-256-verschlüsselte ZIP-Datei mit einer CSV-Tabelle darin (opencsv,
+  ";"-Trennzeichen wie beim CSV-Import, UTF-8-BOM für Excel-Kompatibilität). Die
+  Gruppen eines Teilnehmers werden positionsbasiert auf "Gruppe 1".."Gruppe N" verteilt
+  (N = maximale Gruppenanzahl in der jeweiligen Auswahl) statt in einer Spalte
+  zusammengefasst.
+  * Fix: fehlende Content-Änderungen für Zip-Umbenennung nachträglich staged
+  Beim ursprünglichen git mv + Überschreiben der Dateien wurden die inhaltlichen
+  Änderungen (nicht nur die Umbenennung) für 5 Dateien nie erneut gestaged - der
+  vorherige Commit enthielt daher noch den alten Pdf-Klasseninhalt unter neuem
+  Dateinamen. Lokal fiel das nicht auf, da mvn gegen das (korrekte) Arbeitsverzeichnis
+  kompiliert, nicht gegen den git-Commit.
+  ---------
+
 - switch Nachname/Vorname für pwd report
-- Teilnehmer-Bearbeiten-Dialog: Gruppenzugehörigkeit korrekt aktualisieren (voller Ersatz statt nur Hinzufügen) (#263)
-- Trainingsvideos.adoc: Prompt-Vorlagen für Erklärvideo-Erstellung dokumentieren (#265)
-- Trainingsvideos.adoc: Tippfehler in Überschrift korrigieren (#266)
-- Trainingsvideos.adoc: Abschnitt zum Playwright-Aufnahmeskript ergänzen (#267)
-- axios.js: fehlgeschlagenen Keycloak-Token-Refresh loggen (#269)
-- Admin-Passwort-Reset erzwingt Passwortwechsel jetzt auch in Dev/Test (#271)
-- Server-Fehlermeldungen beim Speichern korrekt anzeigen statt generischer Axios-Meldung (#273)
-- Abstimmungsfragebogen: Prioritäten-Tabelle nach 30 Spalten umbrechen (#275)
-- Veranstaltung: Feature-Flag für Selbst-Änderung der Teilnehmer-Verfügbarkeit (#277)
-- Vortrag-Bearbeitung als Admin: DTO-Feldnamen-Mismatch behoben, Optimistic-Lock-Fehler sichtbar machen (#279)
-- logo cosmetics video recordings upload
-- Docker Compose: app wartet jetzt auf Keycloak-Readiness statt Race Condition (#281)
-- Nutzer ohne E-Mail-Adresse anlegen: Leerstring statt NULL verletzte UNIQUE-Constraint (#283)
-- Sitzungsende beim Redirect zu Keycloak erklären statt lautlos wirken zu lassen (#285)
-- Keycloak-Healthcheck: /auth-Praefix fehlte, Endpunkt lag hinter KC_HTTP_RELATIVE_PATH (#287)
-- cAdvisor fuer Container-Uptime/-Restarts im Monitoring-Stack ergaenzt (#289)
-- cAdvisor auf v0.60.5 angehoben: v0.49.1 lieferte keine Metriken mit containerd-Snapshotter (#291)
-- UserEditorModal: Rollenauswahl entfernen, wenn Rolle fix ist; Kopfzeile dynamisch (#295)
-- Organisation-Feld im Referenten-Bearbeiten-Dialog ergänzt (#293)
-- Vortrags-Legende: Klick auf Neigungs-Spalte hebt passende Vorträge hervor (#299)
+
+- Teilnehmer-Bearbeiten-Dialog: Gruppenzugehörigkeit korrekt aktualisieren (voller Ersatz statt nur Hinzufügen)
+  AdminService.updateUser() rief für Teilnehmer bisher dto.gruppen.forEach(t::addGruppe) auf - das
+  fügt neue Gruppen hinzu, entfernt aber nie im Modal abgewählte. Neue Methode
+  Teilnehmer.setGruppen(Collection<String>) (clear + addAll, analog zu setNeigungen) behebt das.
+  Nebenbei: AdminResourceTeilnehmerPasswortZipTest an das mit b2fb338/4c66111 bereits auf main
+  geänderte "Nachname, Vorname"-Format angepasst (Test war seit dem direkten Hotfix-Commit rot).
+
+- Trainingsvideos.adoc: Prompt-Vorlagen für Erklärvideo-Erstellung dokumentieren
+  Zweistufiger Workflow mit Claude Code: Text-Skript (Konzeption) + Playwright-Aufnahme
+  (Produktion), inkl. wiederverwendbarer Prompt-Vorlagen und dem Teilnehmer-Beispiel samt
+  docx-Ergebnis.
+
+- Trainingsvideos.adoc: Tippfehler in Überschrift korrigieren
+
+- Trainingsvideos.adoc: Abschnitt zum Playwright-Aufnahmeskript ergänzen
+  Dokumentiert frontend/scripts/record-teilnehmer-demo.mjs (Aufruf, Verhalten,
+  Umgebungsvariablen) als konkretes Beispiel für Schritt 2 (Produktion) des
+  Trainingsvideo-Workflows.
+
+- axios.js: fehlgeschlagenen Keycloak-Token-Refresh loggen
+  Der Request-Interceptor fing Fehler von keycloak.updateToken(30) bisher ohne Logging ab - ein
+  fehlgeschlagener Refresh war in der Browser-Konsole unsichtbar und zeigte sich nur indirekt als
+  401 mit einem WARN im Backend-Log (Quarkus OidcProvider: "Verification of the token ... has
+  failed").
+
+- Admin-Passwort-Reset erzwingt Passwortwechsel jetzt auch in Dev/Test
+  KeycloakUserProvisioningService.resetPassword() setzte temporary=false in Dev/Test (Komfort fuer
+  wiederholte Testlaeufe) - dadurch landete ein Teilnehmer nach Login mit einem admin-vergebenen
+  Einmal-Passwort direkt im Dashboard statt zur eigenen Passwortvergabe aufgefordert zu werden.
+  Der erzwungene Wechsel ist aber der eigentliche Zweck dieser Aktion (Einzel-Reset UND
+  Bulk-ZIP-Report) und muss daher unabhaengig vom LaunchMode gelten. createUser()s
+  Dev/Test-Standardpasswort "konfplan" ist davon nicht betroffen.
+
+- Server-Fehlermeldungen beim Speichern korrekt anzeigen statt generischer Axios-Meldung
+  Dashboards lasen Fehlertexte über e.response.data.message aus, das Backend
+  liefert aber entweder einen reinen String-Body oder {error: "..."}. Neuer
+  Helper extractErrorMessage() deckt beide Formen ab.
+
+- Abstimmungsfragebogen: Prioritäten-Tabelle nach 30 Spalten umbrechen
+  Die Legende wird in Blöcke von 30 Wahlvorträgen aufgeteilt und pro Block
+  in einer eigenen Tabelle gerendert, statt alle Spalten in einer Zeile
+  zu rendern, die am Seitenrand abgeschnitten wurde.
+
+- Veranstaltung: Feature-Flag für Selbst-Änderung der Teilnehmer-Verfügbarkeit
+  Organisatoren können pro Veranstaltung freischalten, ob Teilnehmer ihre
+  persönliche Verfügbarkeit im Dashboard selbst ändern dürfen. Die Sektion
+  wird im Frontend nur bei aktivem Flag angezeigt; der Update-Endpunkt
+  prüft das Flag zusätzlich serverseitig.
+
+- Vortrag-Bearbeitung als Admin: DTO-Feldnamen-Mismatch behoben, Optimistic-Lock-Fehler sichtbar machen
+  AdminVortragEditorModal.vue führte version nicht mit und nutzte Feldnamen,
+  die im Backend-DTO nicht existieren, wodurch der Optimistic-Lock-Check dort
+  immer fehlschlug und mehrere Felder beim Speichern verloren gingen.
+  Zusätzlich zeigen Veranstaltungs- und Slot-Speichern jetzt Fehler
+  (inkl. echter Versions-Konflikte) als Meldung an statt sie zu verschlucken.
+
+- logo cosmetics
+  video recordings upload
+
+- Docker Compose: app wartet jetzt auf Keycloak-Readiness statt Race Condition
+  keycloak hatte keinen Healthcheck und app kein depends_on darauf, wodurch
+  ProdKeycloakRealmSyncService beim Boot manchmal gegen ein noch nicht
+  erreichbares Keycloak lief ("Connection refused") und dabei u.a. die
+  view-events-Rolle nie vergeben wurde - Folge: FailedLoginMetricsPoller
+  schlug seitdem dauerhaft mit 403 fehl.
+
+- Nutzer ohne E-Mail-Adresse anlegen: Leerstring statt NULL verletzte UNIQUE-Constraint
+  AdminService.createUser() speicherte ein leeres E-Mail-Feld als Leerstring
+  statt null - NULL ist vom DB-UNIQUE-Constraint auf email ausgenommen, ein
+  Leerstring nicht. Der zweite Nutzer ohne E-Mail-Adresse scheiterte daher
+  mit "duplicate key value violates unique constraint".
+
+- Sitzungsende beim Redirect zu Keycloak erklären statt lautlos wirken zu lassen
+  Router-Guard und Axios-401-Interceptor leiteten bei fehlender/ungueltiger
+  Sitzung ohne jede Erklaerung zu Keycloak um - wirkte insbesondere nach
+  Browser-Zurueck auf eine schon aufgeloeste Route wie ein unerklaertes
+  Pseudo-Undo der Navigation. Neue Toast-Meldung vor dem Redirect, ausser
+  bei der allerersten Navigation nach App-Start (dort ist "nicht
+  angemeldet" der Normalfall).
+  Behebt nicht das eigentliche OAuth-Redirect-Verhalten beim Zurueck-Button
+  direkt nach einem Keycloak-Login (inhaerente Eigenschaft von
+  Redirect-basierten OAuth-Flows) - siehe Issue.
+
+- Keycloak-Healthcheck: /auth-Praefix fehlte, Endpunkt lag hinter KC_HTTP_RELATIVE_PATH
+  Live auf Prod verifiziert: KC_HTTP_RELATIVE_PATH (/auth) gilt in
+  Keycloak 26.5 auch fuer das Management-Interface, nicht nur fuer die
+  Haupt-HTTP-Schnittstelle. /health/ready lieferte daher dauerhaft 404,
+  der Container blieb "unhealthy" und app blockierte auf
+  depends_on: service_healthy, obwohl Keycloak laengst fertig war.
+
+- cAdvisor fuer Container-Uptime/-Restarts im Monitoring-Stack ergaenzt
+  Docker Compose selbst liefert keine Prometheus-Metriken zu
+  Container-Lebenszyklen. Neuer cadvisor-Service (Profil "monitoring", nur
+  lesende Mounts, kein privileged), Prometheus-Scrape-Job und ein
+  Uptime-Panel im Grafana-Dashboard.
+  Live verifiziert: der Docker-Socket muss explizit gemountet werden
+  (/var/run/docker.sock statt des ganzen /var/run-Verzeichnisses), sonst
+  registriert sich cAdvisors Docker-Integration nicht und alle Metriken
+  zeigen nur rohe Cgroup-Pfade statt einzelner Container.
+
+- cAdvisor auf v0.60.5 angehoben: v0.49.1 lieferte keine Metriken mit containerd-Snapshotter
+  Live auf Prod verifiziert: Docker Engine 29.7.2 mit containerd-Snapshotter
+  ("driver-type: io.containerd.snapshotter.v1", inzwischen Standard) liess
+  cAdvisors Docker-Factory zwar registrieren, aber die Layer-ID-Aufloesung
+  schlug fuer jeden Container fehl - /metrics zeigte nur rohe Root-Cgroups
+  statt einzelner Container. Bekannter, gefixter cAdvisor-Bug
+  (google/cadvisor#3643/#3860, Fix in PR #3709, ausgeliefert ab v0.54.0).
+  Image zog ab v0.53.0 zudem von gcr.io/cadvisor/cadvisor zu
+  ghcr.io/google/cadvisor um.
+
+- UserEditorModal: Rollenauswahl entfernen, wenn Rolle fix ist; Kopfzeile dynamisch
+  Beim Bearbeiten war die Rolle ohnehin nie änderbar (nur disabled) - der
+  Selector entfaellt jetzt komplett, Kopfzeile zeigt "<Rolle> bearbeiten".
+  Beim Neuanlegen entfaellt er ebenfalls, wenn der aufrufende Tab
+  (Referenten/Teilnehmer/Organisatoren, ueber "+ Neu") die Rolle bereits
+  vorgibt - Kopfzeile dann "<Rolle> anlegen". Ohne Kontext-Hinweis bleibt
+  die Auswahl wie bisher.
+
+- Organisation-Feld im Referenten-Bearbeiten-Dialog ergänzt
+  UserEditorModal.vue hatte im "Referenten-Profil"-Block nur "Job-Rolle /
+  Position" - organisation existierte im Backend längst (Referent-Entity,
+  NutzerDto, AdminService), fehlte aber komplett im Formular.
+
+- Vortrags-Legende: Klick auf Neigungs-Spalte hebt passende Vorträge hervor
+
 - test script für autom. Brevo Mailversand
-- Hinweistext zur Prioritäten-Legende fett, rot und größer (#297)
-- TeilnehmerDashboard: Hinweistext, Wortwahl, Mehrfachauswahl + Highlight-Ausweitung (#301)
+
+- Hinweistext zur Prioritäten-Legende fett, rot und größer
+
+- TeilnehmerDashboard: Hinweistext, Wortwahl, Mehrfachauswahl + Highlight-Ausweitung
+  - Hinweistext unter der Neigungen-Auswahl im Profil ergänzt.
+  - "bei {{referentName}}" zu "von {{referentName}}" in der Vortrags-Legende.
+  - Neigungs-Spaltenüberschriften erlauben jetzt Mehrfachauswahl (OR-Verknüpfung).
+  - Prioritäten-Eingabe hebt die Nummern der so markierten Vorträge ebenfalls hervor.
+
 - typo
-- Vortrags-Legende: Zeile aufklappbar für Referent, Organisation und Inhalt (#303)
-- VortraegeTab: Inhalt des Vortrags unter dem Titel anzeigen (#305)
+
+- Vortrags-Legende: Zeile aufklappbar für Referent, Organisation und Inhalt
+  Referent-Organisation und Inhalt kamen bereits vom Backend (VortragDto),
+  wurden im Frontend aber nirgends angezeigt.
+
+- VortraegeTab: Inhalt des Vortrags unter dem Titel anzeigen
+
 - doppelter Referenten am Vortrag
-- VortraegeTab: Inhalts-Box je nach Textlänge 2-, 3- oder 4-zeilig (#307)
-- VortraegeTab: zeichenbasierte Zeilenschätzung durch robustes line-clamp-4 ersetzt (#309)
-- VorträgeTab: Drucken-Button für Übersicht aller Wahlvorträge (#311)
-- Notify bei APP ERROR: error-log-notifier.sh Doku update ür keycloak
+
+- VortraegeTab: Inhalts-Box je nach Textlänge 2-, 3- oder 4-zeilig
+  Statt fix auf 2 Zeilen begrenzt, schaetzt inhaltLineClampClass() anhand
+  der Zeichenzahl die benoetigten Zeilen (line-clamp-2/-3/-4, auf 4 begrenzt).
+
+- VortraegeTab: zeichenbasierte Zeilenschätzung durch robustes line-clamp-4 ersetzt
+  Die Schätzung (60 Zeichen/Zeile) war auf eine bestimmte Spaltenbreite
+  kalibriert und unterschaetzte je nach tatsaechlicher Breite regelmaessig
+  die benoetigte Zeilenzahl, wodurch Text weiterhin nach 2 Zeilen
+  abgeschnitten wurde. line-clamp begrenzt nur die maximale Zeilenzahl -
+  ein fixes line-clamp-4 reicht daher aus und ist unabhaengig von der
+  Spaltenbreite korrekt.
+
+- VorträgeTab: Drucken-Button für Übersicht aller Wahlvorträge
+  Neue Report-Seite (Titel, Referent + Organisation, Abschluss, Neigungen,
+  Inhalt), analog zu den bestehenden Reports. Kein neuer Backend-Endpunkt
+  noetig, VortragDto liefert bereits alle benoetigten Felder.
+
+- Notify bei APP ERROR: error-log-notifier.sh
+  Doku update ür keycloak
+
 - deploy: COMPOSE_PROFILES in .env.example dokumentieren
-- Admin/Teilnehmer-UI: Referenten-Mail, Wahlvorträge-Nummerierung, Neigungen-Highlight (#312)
-- TeilnehmerDashboard: Neigungen-Highlighting live, Prioritäten-Section zuerst & offen (#313)
-- Playwright: vorbestehende Testfehler beheben (Test-/Fixture-Drift, kein App-Bug) (#323)
-- Benutzerhandbücher: neue UI-Features dokumentieren (Admin/Teilnehmer) (#324)
-- UseCase-Liste reparieren + Handbücher aktualisieren/Lücken schließen (#325)
-- Totes Prioritäten-Endpoint entfernen + UseCaseScanner deterministisch machen (#326)
-- Deployment-Doku: separate Brevo-Warn-E-Mail bei neuer IP dokumentieren (#327)
-- Bump @playwright/test from 1.60.0 to 1.62.1 in /frontend (#322)
-- Bump io.netty:netty-bom from 4.2.1.Final to 4.2.17.Final (#321)
-- Bump @types/node from 24.13.1 to 26.4.0 in /frontend (#319)
-- Bump actions/setup-java from 5.7.0 to 6.0.0 (#318)
-- Bump io.gatling:gatling-maven-plugin from 4.21.10 to 4.21.11 (#316)
-- Bump quarkus.platform.version from 3.38.1 to 3.39.1 (#315)
-- Bump axios from 1.18.0 to 1.20.0 in /frontend (#314)
-- Bump pinia from 2.3.1 to 4.0.3 in /frontend (#317)
-- Tailwind CSS v3 -> v4 Migration (Issue #328) (#329)
+  Erspart das wiederholte --profile-Flag bei jedem docker-compose-Aufruf,
+  insbesondere jetzt mit dem neuen "alerting"-Profil für error-log-notifier.
+
+- Admin/Teilnehmer-UI: Referenten-Mail, Wahlvorträge-Nummerierung, Neigungen-Highlight
+  - ReferentenTab: "Alle per Mail"-Button oeffnet mailto-BCC an alle Referenten
+    der Veranstaltung mit hinterlegter E-Mail.
+  - WahlvortraegeUebersicht (Druck-Report): Eintraege sind jetzt wie die
+    bestehende Legende alphabetisch nach Titel durchnummeriert.
+  - TeilnehmerDashboard: eigene gespeicherte Neigungen highlighten automatisch
+    die passenden Spalten in der Vortrags-Legende (Vorbelegung + Aktualisierung
+    nach dem Speichern), manuelles Spalten-Toggle bleibt unveraendert nutzbar.
+
+- TeilnehmerDashboard: Neigungen-Highlighting live, Prioritäten-Section zuerst & offen
+  - Aenderungen an "Meine Neigungen" wirken sich sofort (per watch statt nur
+    bei Laden/Speichern) auf das Highlighting in der Vortrags-Legende und der
+    Prio-Vergabe aus, auch schon vor dem Speichern. Manuelles Spalten-Toggle
+    bleibt unveraendert nutzbar.
+  - "Vorträge & Prioritäten" steht jetzt immer vor "Meine Verfügbarkeit" und
+    ist fuer die erste Veranstaltung beim Laden bereits aufgeklappt.
+
+- Playwright: vorbestehende Testfehler beheben (Test-/Fixture-Drift, kein App-Bug)
+  - UserEditorModal-Assertions an die absichtliche UX aus #295 angepasst
+    (rollenspezifischer Titel, Rolle-Select entfaellt komplett statt nur
+    deaktiviert zu sein bei fixer/gesperrter Rolle).
+  - InactivityLogout.spec.js mockt jetzt die Admin-APIs, damit ein echtes 401
+    nicht mehr per Axios-Interceptor einen unkontrollierten keycloak.login()-
+    Redirect ausloest, der mit den Fake-Clock-Assertions um die Wette lief.
+  - reports.spec.js-Fixtures (Laufzettel, Raumschilder) aufs aktuelle flache
+    Backend-DTO-Schema gebracht; freie-slots.json in zwei eigene Fixtures
+    aufgeteilt (beide Endpunkte liefern denselben Feldnamen "nutzer" mit
+    unterschiedlichem Inhalt). Raumschilder-Test-Selektor entschaerft
+    (h2 war durch VeranstaltungHeader mehrdeutig).
+  - Nie committete, von CI ohnehin nie gepruefte toHaveScreenshot()-Vergleiche
+    entfernt; bestehende Inhalts-Assertions bleiben als Regressionsschutz.
+
+- Benutzerhandbücher: neue UI-Features dokumentieren (Admin/Teilnehmer)
+  - Admin: "Alle per Mail"-Button im Referenten-Tab und "Drucken"-Button
+    (Wahlvorträge-Übersicht) im Vorträge-Tab dokumentiert, jeweils mit neuem
+    Kopfzeilen-Screenshot; neuer Report-Abschnitt "Wahlvorträge-Übersicht".
+  - Teilnehmer: Reihenfolge "Vorträge & Prioritäten" vor "Meine Verfügbarkeit"
+    nachgezogen (inkl. Standard-aufgeklappt-Hinweis); Neigungen-Hervorhebung
+    in der Legende dokumentiert (manuelles Spalten-Toggle UND automatische
+    Vorbelegung/Live-Update aus "Meine Neigungen").
+  - Screenshots frisch gegen quarkus:dev mit dem kompass-demo-Datensatz erstellt,
+    Fokus zentriert (scrollIntoView block:"center"/gezielter Scroll-Offset
+    statt Element an den Viewport-Rand zu haengen) und der vite-devtools-
+    Overlay ausgeblendet.
+
+- UseCase-Liste reparieren + Handbücher aktualisieren/Lücken schließen
+  - UseCaseScanner.java repariert: scannte bisher nur adapter.in.web und
+    verlor dadurch KalenderResource (liegt in adapter.rest); PlantUML-Knoten
+    waren zudem nur nach Methodennamen dedupliziert und verschmolzen dadurch
+    gleichnamige Endpunkte verschiedener Resource-Klassen (z.B. "getAll" in
+    GebaeudeResource und VeranstaltungResource) fälschlich zu einem Knoten.
+    Umbenannt in USE_CASES.adoc, passend zum bereits im generate-docs-Profil
+    verdrahteten Dateinamen (der alte KonfPlan-API.adoc-Name war ein Relikt).
+    Neu erzeugt: jetzt alle 119 Endpunkte korrekt und eindeutig enthalten.
+  - Benutzerhandbuch-Admin.adoc: fehlende UseCases ergänzt - Batch-Button
+    "Passwörter (ZIP)" samt neuem Dialog, "Termine exportieren" (ICS) im
+    eingebetteten Belegungsplan, Benutzerhandbücher-Downloads im Info-Menü.
+  - Benutzerhandbuch-Referent.adoc: Aktualitätsprüfung gegen den aktuellen
+    Code ergab mehrere Abweichungen, jetzt korrigiert - Löschen-Guard für
+    Vorträge vergangener Veranstaltungen, Keycloak-gehostetes Login/Passwort-
+    Reset statt eigener Anmeldeseite, Benutzerhandbücher-Downloads im Info-
+    Menü, exakte Anmeldename-Beschriftung, Logo nur bei gesetztem Link
+    anklickbar, Kopier-Dedup anhand des Vortragstitels statt der ID. Dazu
+    aktualisierter Screenshot (vergrößertes Event-Logo, #255).
+  - Benutzerhandbuch-Teilnehmer.adoc: Benutzerhandbücher-Downloads im
+    Info-Menü ergänzt (Konsistenz mit den beiden anderen Handbüchern).
+
+- Totes Prioritäten-Endpoint entfernen + UseCaseScanner deterministisch machen
+  VeranstaltungResource.saveTeilnehmerPrioritaeten (PUT
+  /api/veranstaltungen/{vid}/teilnehmer/{userId}/prioritaeten) hatte keinen
+  einzigen Frontend-Aufrufer mehr (verifiziert: kein Treffer in frontend/src/,
+  kein Backend-Test) - überholt vom tatsächlich genutzten /api/prios-Pfad
+  (PrioritaetenResource/PrioritaetService). Entfernt inkl. der nur dafür
+  genutzten Service-Methode TeilnehmerService.savePriorities (Interface +
+  Implementierung, keine weiteren Aufrufer) und nicht mehr benötigter Imports.
+  Voller Backend-Testlauf danach: 184/184 grün.
+  UseCaseScanner sortiert Methoden jetzt vor der Ausgabe nach Namen -
+  Method.getDeclaredMethods() liefert keine stabile Reihenfolge, wodurch jede
+  Neu-Erzeugung zuvor auch ohne inhaltliche Änderung einen riesigen,
+  unleserlichen Diff erzeugte (live beobachtet: 270+ Zeilen für einen
+  einzelnen entfernten Endpunkt). Verifiziert: zwei aufeinanderfolgende Läufe
+  erzeugen jetzt byte-identischen Output. USE_CASES.adoc entsprechend neu
+  generiert (118 statt 119 Endpunkte, jetzt zusätzlich deterministisch
+  sortiert - der einmalige groessere Diff dieser Umsortierung zahlt sich bei
+  jeder kuenftigen Regenerierung aus).
+
+- Deployment-Doku: separate Brevo-Warn-E-Mail bei neuer IP dokumentieren
+  * Deployment-Doku: separate Brevo-Warn-E-Mail bei neuer IP dokumentieren
+  Getrennt von der bereits dokumentierten Authorized-IPs-Allowlist verschickt
+  Brevo zusätzlich eine Sicherheits-Warn-E-Mail bei jedem SMTP-Zugriff von
+  einer neuen IP - auch nach erfolgreicher Eintragung. Abschalten/Hintergrund
+  ergänzt, damit das beim nächsten IP-Wechsel nicht überrascht.
+  * CI: MiniZinc-Installation robuster machen (Asset-Namensschema + Auth)
+  Der "Install MiniZinc"-Step schlug fehl: MiniZinc hat mit Release 2.10.1
+  das Namensschema seines Linux-Release-Assets geändert
+  ("bundle-linux-x86_64.tgz" -> "x86_64-linux-gnu.tgz"), wodurch das bisherige
+  grep-Pattern keinen Treffer mehr fand. Pattern erweitert, um beide Schemata
+  abzudecken (verifiziert per lokalem End-to-End-Testlauf: URL-Auflösung,
+  Download und Entpacken laufen jetzt durch).
+  Zusätzlich den API-Aufruf mit dem automatisch bereitgestellten GITHUB_TOKEN
+  authentifiziert (60 auf 5000 Anfragen/Stunde) - GitHub-Runner teilen sich
+  IP-Adressen, das unauthentifizierte Rate-Limit für api.github.com kann
+  dadurch unabhängig von diesem konkreten Fehler erschöpft sein.
+  ---------
+
+- Bump @playwright/test from 1.60.0 to 1.62.1 in /frontend
+  Bumps [@playwright/test](https://github.com/microsoft/playwright) from 1.60.0 to 1.62.1.
+  - [Release notes](https://github.com/microsoft/playwright/releases)
+  - [Commits](https://github.com/microsoft/playwright/compare/v1.60.0...v1.62.1)
+  ---
+  updated-dependencies:
+  - dependency-name: "@playwright/test"
+    dependency-version: 1.62.1
+    dependency-type: direct:development
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump io.netty:netty-bom from 4.2.1.Final to 4.2.17.Final
+  Bumps [io.netty:netty-bom](https://github.com/netty/netty) from 4.2.1.Final to 4.2.17.Final.
+  - [Release notes](https://github.com/netty/netty/releases)
+  - [Commits](https://github.com/netty/netty/compare/netty-4.2.1.Final...netty-4.2.17.Final)
+  ---
+  updated-dependencies:
+  - dependency-name: io.netty:netty-bom
+    dependency-version: 4.2.17.Final
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump @types/node from 24.13.1 to 26.4.0 in /frontend
+  Bumps [@types/node](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/HEAD/types/node) from 24.13.1 to 26.4.0.
+  - [Release notes](https://github.com/DefinitelyTyped/DefinitelyTyped/releases)
+  - [Commits](https://github.com/DefinitelyTyped/DefinitelyTyped/commits/HEAD/types/node)
+  ---
+  updated-dependencies:
+  - dependency-name: "@types/node"
+    dependency-version: 26.4.0
+    dependency-type: direct:development
+    update-type: version-update:semver-major
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump actions/setup-java from 5.7.0 to 6.0.0
+  Bumps [actions/setup-java](https://github.com/actions/setup-java) from 5.7.0 to 6.0.0.
+  - [Release notes](https://github.com/actions/setup-java/releases)
+  - [Commits](https://github.com/actions/setup-java/compare/v5.7.0...v6.0.0)
+  ---
+  updated-dependencies:
+  - dependency-name: actions/setup-java
+    dependency-version: 6.0.0
+    dependency-type: direct:production
+    update-type: version-update:semver-major
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump io.gatling:gatling-maven-plugin from 4.21.10 to 4.21.11
+  Bumps [io.gatling:gatling-maven-plugin](https://github.com/gatling/gatling-maven-plugin) from 4.21.10 to 4.21.11.
+  - [Commits](https://github.com/gatling/gatling-maven-plugin/compare/v4.21.10...v4.21.11)
+  ---
+  updated-dependencies:
+  - dependency-name: io.gatling:gatling-maven-plugin
+    dependency-version: 4.21.11
+    dependency-type: direct:development
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump quarkus.platform.version from 3.38.1 to 3.39.1
+  Bumps `quarkus.platform.version` from 3.38.1 to 3.39.1.
+  Updates `io.quarkus.platform:quarkus-bom` from 3.38.1 to 3.39.1
+  - [Commits](https://github.com/quarkusio/quarkus-platform/compare/3.38.1...3.39.1)
+  Updates `io.quarkus.platform:quarkus-maven-plugin` from 3.38.1 to 3.39.1
+  - [Commits](https://github.com/quarkusio/quarkus-platform/compare/3.38.1...3.39.1)
+  ---
+  updated-dependencies:
+  - dependency-name: io.quarkus.platform:quarkus-bom
+    dependency-version: 3.39.1
+    dependency-type: direct:production
+    update-type: version-update:semver-minor
+  - dependency-name: io.quarkus.platform:quarkus-maven-plugin
+    dependency-version: 3.39.1
+    dependency-type: direct:development
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump axios from 1.18.0 to 1.20.0 in /frontend
+  Bumps [axios](https://github.com/axios/axios) from 1.18.0 to 1.20.0.
+  - [Release notes](https://github.com/axios/axios/releases)
+  - [Changelog](https://github.com/axios/axios/blob/v1.x/CHANGELOG.md)
+  - [Commits](https://github.com/axios/axios/compare/v1.18.0...v1.20.0)
+  ---
+  updated-dependencies:
+  - dependency-name: axios
+    dependency-version: 1.20.0
+    dependency-type: direct:production
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump pinia from 2.3.1 to 4.0.3 in /frontend
+  Bumps [pinia](https://github.com/vuejs/pinia) from 2.3.1 to 4.0.3.
+  - [Release notes](https://github.com/vuejs/pinia/releases)
+  - [Commits](https://github.com/vuejs/pinia/compare/v2.3.1...v4.0.3)
+  ---
+  updated-dependencies:
+  - dependency-name: pinia
+    dependency-version: 4.0.3
+    dependency-type: direct:production
+    update-type: version-update:semver-major
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Tailwind CSS v3 -> v4 Migration (Issue #328)
+  - tailwindcss ^3.4.19 -> ^4.3.3, PostCSS-Integration durch den offiziell
+    empfohlenen Vite-Plugin-Weg ersetzt (@tailwindcss/vite statt
+    tailwindcss+autoprefixer als PostCSS-Plugins) - postcss.config.mjs damit
+    komplett entfallen, autoprefixer/postcss als devDependencies entfernt.
+  - tailwind.config.js entfernt: Theme-Erweiterungen (Primärfarbe, Schriftart)
+    und das @tailwindcss/forms-Plugin leben jetzt direkt in src/style.css als
+    @theme- bzw. @plugin-Direktiven (neues v4-Konfigurationsmodell).
+  - @tailwind base/components/utilities ersetzt durch @import "tailwindcss".
+  - In allen 24 betroffenen Vue-Komponenten mit @apply in <style scoped>
+    @reference "tailwindcss" ergänzt - v4 isoliert jeden Scoped-Style-Block
+    einzeln, wodurch @apply ohne diese Direktive mit "Cannot apply unknown
+    utility class" fehlschlägt (Breaking Change, betraf den gesamten Build).
+  Verifiziert: `npm run build` fehlerfrei, visuelle Stichprobe (Admin/
+  Referent/Teilnehmer-Dashboard, ein Modal) unauffällig, komplette
+  Playwright-Suite 129/129 grün über alle drei Browser (vorher: 128/129,
+  identisch bis auf einen bereits bekannten browserseitigen Flake).
+
 - blur new images
-- Verbesserungsvorschläge: Feedback-Funktion für alle Nutzerrollen (#331)
-- Betrieb: Feedback-Doku, längere Reset-Link-Gültigkeit, Mail-Bounce-Alarm (#333)
-- Docker-Build: MiniZinc-Release-Asset-Namensschema aktualisiert (#335)
-- brevo-ip-updater: Fehlschläge diagnostizierbar machen (#337)
-- brevo-ip-updater: Fehlerdetails per ntfy-Push mitliefern (#339)
-- sendmail-test.sh: fehlende RFC-5322-Leerzeile zwischen Header und Body ergänzt (#341)
-- Passwort-Mindestanforderungen für alle neu gesetzten Passwörter (#343)
-- Prioritäten speichern: Datenverlust und fälschliche 400-Fehler behoben (#345)
-- Admin-verwaltetes Wartungs-Hinweisbanner für alle eingeloggten Nutzer (#347)
-- Mail-Bounce-Alarm: Ursache differenzieren (fehlende E-Mail vs. SMTP-Fehler) (#349)
-- InfoPanel: Teilnehmer und Referenten sehen nur ihr eigenes Handbuch (#351)
-- Release 1.3.0 (#353)
+
+- Verbesserungsvorschläge: Feedback-Funktion für alle Nutzerrollen
+  Jeder Nutzer kann über einen neuen Dialog (Titel + Beschreibung) einen
+  Verbesserungsvorschlag einreichen. Admins verwalten alle Vorschläge in
+  einem neuen Admin-Tab (Status offen/erledigt, löschen).
+
+- Betrieb: Feedback-Doku, längere Reset-Link-Gültigkeit, Mail-Bounce-Alarm
+  Benutzerhandbücher um den neuen Verbesserungsvorschlag-Dialog und Admin-Tab
+  "Feedback" ergänzt. Gültigkeitsdauer des Passwort-Reset-/Erstanmeldung-Links
+  von 10 Minuten auf 36 Stunden erhöht. Ein neuer EmailDeliveryFailureAlertPoller
+  pollt Keycloaks SEND_RESET_PASSWORD_ERROR-Events und spiegelt sie als
+  ERROR-Log-Zeile ins App-Log, damit der bestehende ntfy-Watcher (der nur den
+  App-Container beobachtet) auch Mailversand-Fehler aus Keycloaks eigenem
+  SMTP-Client erfasst.
+
+- Docker-Build: MiniZinc-Release-Asset-Namensschema aktualisiert
+  MiniZincIDE benennt Linux-Release-Assets seit Version 2.10.1 nach dem Schema
+  *-x86_64-linux-gnu.tgz statt *-bundle-linux-x86_64.tgz - das grep-Pattern
+  fand dadurch keinen Treffer mehr, wodurch der Docker-Build mit einer leeren
+  Download-URL fehlschlug.
+
+- brevo-ip-updater: Fehlschläge diagnostizierbar machen
+  * brevo-ip-updater: Fehlschläge diagnostizierbar machen
+  Playwright-Ausgabe von update-ip.mjs landet jetzt bei jedem Lauf zusaetzlich
+  fest in deploy/brevo-ip-updater/last-run.log, unabhaengig vom aeusseren
+  Cron-Redirect. Browser-/Context-/Page-Setup in update-ip.mjs und
+  setup-session.mjs liegt jetzt innerhalb des try-Blocks, damit auch
+  Startfehler (z.B. korrupte storage-state.json) einen Screenshot und eine
+  klare Fehlermeldung erzeugen statt einer unbehandelten Exception.
+  * .gitignore: brevo-ip-updater package-lock.json ignorieren
+  Lokal generierte Datei (npm install im Zuge lokaler Tests), nicht Teil des
+  committeten Setups.
+  ---------
+
+- brevo-ip-updater: Fehlerdetails per ntfy-Push mitliefern
+  check-outbound-ip.sh haengt bei einem Fehlschlag die letzten 2000 Byte von
+  last-run.log direkt an den ntfy-Push an, damit die tatsaechliche
+  Fehlermeldung ohne Server-Login sichtbar ist. Byte- statt zeilenbasierte
+  Begrenzung, damit ein langer Playwright-Stacktrace nicht gegen ntfy.sh's
+  4096-Byte-Nachrichtenlimit laeuft.
+
+- sendmail-test.sh: fehlende RFC-5322-Leerzeile zwischen Header und Body ergänzt
+  Ohne die Leerzeile wurde die Body-Zeile als ungueltige Header-Fortsetzung
+  interpretiert - Empfangsserver wie Gmail verwerfen eine so fehlgeformte
+  Nachricht kommentarlos statt einen Fehler zu melden. Zusaetzlich Date-,
+  MIME-Version- und Content-Type-Header ergaenzt (fehlten komplett; Body
+  enthielt ein HTML-Tag ohne passenden Content-Type sowie einen Umlaut ohne
+  Charset-Deklaration).
+
+- Passwort-Mindestanforderungen für alle neu gesetzten Passwörter
+  Keycloak-Realm-Passwort-Policy (mind. 8 Zeichen, je mind. 1 Groß-/
+  Kleinbuchstabe, 1 Ziffer, 1 Sonderzeichen) gilt jetzt sowohl für den
+  Selbst-Reset ("Erstanmeldung / Passwort vergessen") als auch für vom Admin
+  gesetzte Passwörter - nicht rückwirkend für Bestandspasswörter.
+  KeycloakUserProvisioningService.resetPassword fängt eine Policy-Ablehnung
+  jetzt ab und wirft eine lesbare deutsche Fehlermeldung statt einer rohen
+  WebApplicationException. PasswordResetModal.vue validiert clientseitig
+  gegen dieselbe Regel und bekommt einen Ein-/Ausblenden-Schalter fürs Feld.
+  Der bisherige Fix-Passwort-Wert für Dev/Test-Konten ("konfplan") erfüllt
+  die neue Policy nicht mehr und wurde durch "Konfplan1!" ersetzt (Code,
+  Test, Performance-Test-Fixture, Dokumentation).
+
+- Prioritäten speichern: Datenverlust und fälschliche 400-Fehler behoben
+  savePrioritaeten löschte bisher ALLE bestehenden Prioritäten des Nutzers
+  und legte nur die im aktuellen Request enthaltenen neu an. Da der Client
+  bewusst nur die seit dem letzten Speichern geänderten Einträge sendet
+  (TeilnehmerDashboard.vue, changedPriorities), löschte jeder weitere
+  Speicher-Aufruf stillschweigend zuvor gespeicherte Prioritäten.
+  Arbeitet jetzt als Upsert je Eintrag (wie updateSinglePrioritaet): nur die
+  im Request enthaltenen Vorträge werden verändert, alle anderen bleiben
+  unangetastet. Duplikat- und Maximal-Prüfung berücksichtigen dafür jetzt den
+  sich ergebenden Gesamtzustand statt nur der im Request enthaltenen
+  Einträge - und ignorieren dabei Priorität 0 ("kein Interesse", kein
+  Rangplatz), was zuvor bei mehreren gleichzeitig auf 0 gesetzten Vorträgen
+  zu einem fälschlichen 400 führte.
+
+- Admin-verwaltetes Wartungs-Hinweisbanner für alle eingeloggten Nutzer
+  Neuer Button "Wartung ankündigen" im Admin-Bereich öffnet einen Dialog zum
+  Setzen von Start-/Endzeitpunkt eines geplanten Wartungsfensters
+  (Wartungshinweis, Singleton-Entität). Alle eingeloggten Nutzer sehen ab
+  dem Speichern ein Hinweisbanner mit Countdown, das sich per Polling
+  (alle 60s) aktualisiert und automatisch verschwindet, sobald der
+  angekündigte Endzeitpunkt erreicht ist.
+
+- Mail-Bounce-Alarm: Ursache differenzieren (fehlende E-Mail vs. SMTP-Fehler)
+  * Mail-Bounce-Alarm: Ursache differenzieren (fehlende E-Mail vs. SMTP-Fehler)
+  EmailDeliveryFailureAlertPoller unterschied bisher nicht, warum Keycloak
+  eine Passwort-Reset-Mail nicht versenden konnte, und vermutete pauschal
+  ein SMTP-Problem. Per Live-Test gegen Keycloak 26.7.1 verifiziert, dass
+  der ResetCredentialEmail-Authenticator zwei unterschiedliche Fehlercodes
+  setzt: "invalid_email" (Nutzer hat keine E-Mail-Adresse hinterlegt - kein
+  SMTP-Problem, Selbst-Reset ist fuer diesen Nutzer ein Dead-End) und
+  "email_send_failed" (tatsaechlicher SMTP-Fehlerfall). Die Meldung nennt
+  jetzt fuer den invalid_email-Fall direkt den richtigen naechsten Schritt
+  (Admin-Dialog "Passwort zuruecksetzen") statt einer irrefuehrenden
+  SMTP-Vermutung.
+  * Typos in InfoPanel.vue
+  ---------
+
+- InfoPanel: Teilnehmer und Referenten sehen nur ihr eigenes Handbuch
+  Im Info-Menü wird die Liste der Benutzerhandbücher jetzt anhand der
+  Rolle des angemeldeten Nutzers gefiltert - Teilnehmer sehen nur "Für
+  Teilnehmer", Referenten nur "Für Referenten". Admins sehen weiterhin
+  alle drei.
+
+- Release 1.3.0
+  Setzt alle vier POMs (root, backend, frontend, performancetest) von
+  1.2.1-SNAPSHOT auf 1.3.0.
+

@@ -2,6 +2,32 @@ Release Notes 1.11.0
 Released: 2026-09-03
 
 Changes:
-- Prepare next development iteration (1.10.1-SNAPSHOT) (#409)
-- Version-Reload-Hinweis, Onboarding-Status Gruppen/Suche/Sortierung, Sticky-Spalten-Nachbesserung (#411)
-- Release 1.11.0 (#413)
+
+- Prepare next development iteration (1.10.1-SNAPSHOT)
+
+- Version-Reload-Hinweis, Onboarding-Status Gruppen/Suche/Sortierung, Sticky-Spalten-Nachbesserung
+  1. VersionUpdateBanner.vue: Banner-Text weist jetzt explizit darauf hin, alle
+     Änderungen zu speichern, da für die neue Version ggf. eine erneute
+     Anmeldung erforderlich ist. Ein Bestätigungsdialog vor dem eigentlichen
+     Reload gibt Nutzern eine letzte Gelegenheit, das nachzuholen. Hintergrund:
+     ein Nutzer meldete ~30s 404-Fehler nach Klick auf "Jetzt neu laden" und
+     war unsicher, ob eine erneute Anmeldung nötig ist.
+  2. OnboardingTab.vue + Backend: Gruppen-Spalte ergänzt (nur für Teilnehmer
+     befüllt, leer bei Admin/Referent - neues Feld in OnboardingStatusDto,
+     OnboardingStatusService.gruppenVon()), Suchfeld (wie in den anderen
+     Admin-Tabs) und sortierbare Spalten (LoginName/Rolle/Gruppen/E-Mail/Status)
+     nach demselben Muster wie TeilnehmerTab/VeranstaltungenTab ergänzt.
+  3. TeilnehmerTab.vue: Sticky-Spalten-Nachbesserung - bei Zeilen ohne
+     Priorität nutzten die sticky "Name"/"Gruppen"-Zellen eine transparente
+     Hintergrundfarbe (bg-amber-50/60), wodurch beim horizontalen Scrollen
+     darunterliegender Inhalt (die Prioritäten-Zellen) sichtbar durchschimmerte
+     - genau das vom Nutzer gemeldete Verhalten. Auf eine deckende Farbe
+     (bg-amber-100) umgestellt.
+  Per Live-Test (echter Login-Flow gegen quarkus:dev) verifiziert: Reload-
+  Bestätigungsdialog erscheint mit korrektem Text und verhindert den Reload bei
+  Abbruch, Onboarding-Tab zeigt Gruppen korrekt/leer je nach Rolle mit
+  funktionierender Suche und Sortierung, sticky Spalten bleiben bei
+  gemockter "keine Priorität"-Markierung vollständig deckend.
+
+- Release 1.11.0
+

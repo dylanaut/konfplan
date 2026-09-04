@@ -2,118 +2,1623 @@ Release Notes 1.0.0
 Released: 2026-08-17
 
 Changes:
+
 - Initial commit
+
 - Sync von main: GitHub Actions CI/CD einrichten, Docker-Build-Bugfixes
+
 - Sync von main: Deploy-Workflow getrennt
+
 - Sync von main: SpotBugs nicht mehr build-brechend
+
 - Sync von main: CLAUDE.md auf GitHub-Workflow umgestellt
+
 - MiniZinc ins JVM-Docker-Image installieren
+  Ohne MiniZinc im Image scheitert die automatische Planerstellung zur
+  Laufzeit (PlanErstellungService ruft es per absolutem Pfad als externen
+  Prozess auf). Bundle wird analog zum CI-Test-Job von den offiziellen
+  MiniZincIDE-GitHub-Releases geladen; MINIZINC_PATH zeigt entsprechend.
+
 - Dockerfile.jvm: gzip/tar fehlten im UBI-Minimal-Image (MiniZinc-Extraktion schlug fehl)
-- Bump actions/download-artifact from 4 to 8 (#1)
-- Bump surefire-plugin.version from 3.5.5 to 3.5.6 (#2)
-- Bump docker/build-push-action from 6 to 7 (#3)
-- Bump actions/checkout from 4 to 7 (#5)
-- Bump actions/upload-artifact from 4 to 7 (#6)
-- Bump actions/setup-java from 4 to 5 (#7)
-- Bump quarkus-mailpit.version from 2.0.0 to 2.1.2 (#8)
-- Bump org.mnode.ical4j:ical4j from 4.2.5 to 4.3.0 (#9)
-- Bump io.quarkiverse.quinoa:quarkus-quinoa from 2.8.1 to 2.8.3 (#10)
-- Bump com.github.spotbugs:spotbugs-maven-plugin from 4.9.8.3 to 4.10.3.0 (#4)
+
+- Bump actions/download-artifact from 4 to 8
+  Bumps [actions/download-artifact](https://github.com/actions/download-artifact) from 4 to 8.
+  - [Release notes](https://github.com/actions/download-artifact/releases)
+  - [Commits](https://github.com/actions/download-artifact/compare/v4...v8)
+  ---
+  updated-dependencies:
+  - dependency-name: actions/download-artifact
+    dependency-version: '8'
+    dependency-type: direct:production
+    update-type: version-update:semver-major
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump surefire-plugin.version from 3.5.5 to 3.5.6
+  Bumps `surefire-plugin.version` from 3.5.5 to 3.5.6.
+  Updates `org.apache.maven.plugins:maven-surefire-plugin` from 3.5.5 to 3.5.6
+  - [Release notes](https://github.com/apache/maven-surefire/releases)
+  - [Commits](https://github.com/apache/maven-surefire/compare/surefire-3.5.5...surefire-3.5.6)
+  Updates `org.apache.maven.plugins:maven-failsafe-plugin` from 3.5.5 to 3.5.6
+  - [Release notes](https://github.com/apache/maven-surefire/releases)
+  - [Commits](https://github.com/apache/maven-surefire/compare/surefire-3.5.5...surefire-3.5.6)
+  Updates `org.apache.maven.plugins:maven-surefire-report-plugin` from 3.5.5 to 3.5.6
+  - [Release notes](https://github.com/apache/maven-surefire/releases)
+  - [Commits](https://github.com/apache/maven-surefire/compare/surefire-3.5.5...surefire-3.5.6)
+  ---
+  updated-dependencies:
+  - dependency-name: org.apache.maven.plugins:maven-failsafe-plugin
+    dependency-version: 3.5.6
+    dependency-type: direct:development
+    update-type: version-update:semver-patch
+  - dependency-name: org.apache.maven.plugins:maven-surefire-plugin
+    dependency-version: 3.5.6
+    dependency-type: direct:development
+    update-type: version-update:semver-patch
+  - dependency-name: org.apache.maven.plugins:maven-surefire-report-plugin
+    dependency-version: 3.5.6
+    dependency-type: direct:development
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump docker/build-push-action from 6 to 7
+  Bumps [docker/build-push-action](https://github.com/docker/build-push-action) from 6 to 7.
+  - [Release notes](https://github.com/docker/build-push-action/releases)
+  - [Commits](https://github.com/docker/build-push-action/compare/v6...v7)
+  ---
+  updated-dependencies:
+  - dependency-name: docker/build-push-action
+    dependency-version: '7'
+    dependency-type: direct:production
+    update-type: version-update:semver-major
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump actions/checkout from 4 to 7
+  Bumps [actions/checkout](https://github.com/actions/checkout) from 4 to 7.
+  - [Release notes](https://github.com/actions/checkout/releases)
+  - [Changelog](https://github.com/actions/checkout/blob/main/CHANGELOG.md)
+  - [Commits](https://github.com/actions/checkout/compare/v4...v7)
+  ---
+  updated-dependencies:
+  - dependency-name: actions/checkout
+    dependency-version: '7'
+    dependency-type: direct:production
+    update-type: version-update:semver-major
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump actions/upload-artifact from 4 to 7
+  Bumps [actions/upload-artifact](https://github.com/actions/upload-artifact) from 4 to 7.
+  - [Release notes](https://github.com/actions/upload-artifact/releases)
+  - [Commits](https://github.com/actions/upload-artifact/compare/v4...v7)
+  ---
+  updated-dependencies:
+  - dependency-name: actions/upload-artifact
+    dependency-version: '7'
+    dependency-type: direct:production
+    update-type: version-update:semver-major
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump actions/setup-java from 4 to 5
+  Bumps [actions/setup-java](https://github.com/actions/setup-java) from 4 to 5.
+  - [Release notes](https://github.com/actions/setup-java/releases)
+  - [Commits](https://github.com/actions/setup-java/compare/v4...v5)
+  ---
+  updated-dependencies:
+  - dependency-name: actions/setup-java
+    dependency-version: '5'
+    dependency-type: direct:production
+    update-type: version-update:semver-major
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump quarkus-mailpit.version from 2.0.0 to 2.1.2
+  Bumps `quarkus-mailpit.version` from 2.0.0 to 2.1.2.
+  Updates `io.quarkiverse.mailpit:quarkus-mailpit` from 2.0.0 to 2.1.2
+  - [Release notes](https://github.com/quarkiverse/quarkus-mailpit/releases)
+  - [Commits](https://github.com/quarkiverse/quarkus-mailpit/compare/2.0.0...2.1.2)
+  Updates `io.quarkiverse.mailpit:quarkus-mailpit-testing` from 2.0.0 to 2.1.2
+  - [Release notes](https://github.com/quarkiverse/quarkus-mailpit/releases)
+  - [Commits](https://github.com/quarkiverse/quarkus-mailpit/compare/2.0.0...2.1.2)
+  ---
+  updated-dependencies:
+  - dependency-name: io.quarkiverse.mailpit:quarkus-mailpit
+    dependency-version: 2.1.2
+    dependency-type: direct:production
+    update-type: version-update:semver-minor
+  - dependency-name: io.quarkiverse.mailpit:quarkus-mailpit-testing
+    dependency-version: 2.1.2
+    dependency-type: direct:development
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump org.mnode.ical4j:ical4j from 4.2.5 to 4.3.0
+  Bumps [org.mnode.ical4j:ical4j](https://github.com/ical4j/ical4j) from 4.2.5 to 4.3.0.
+  - [Release notes](https://github.com/ical4j/ical4j/releases)
+  - [Changelog](https://github.com/ical4j/ical4j/blob/develop/CHANGELOG.md)
+  - [Commits](https://github.com/ical4j/ical4j/compare/ical4j-4.2.5...ical4j-4.3.0)
+  ---
+  updated-dependencies:
+  - dependency-name: org.mnode.ical4j:ical4j
+    dependency-version: 4.3.0
+    dependency-type: direct:production
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump io.quarkiverse.quinoa:quarkus-quinoa from 2.8.1 to 2.8.3
+  Bumps [io.quarkiverse.quinoa:quarkus-quinoa](https://github.com/quarkiverse/quarkus-quinoa) from 2.8.1 to 2.8.3.
+  - [Release notes](https://github.com/quarkiverse/quarkus-quinoa/releases)
+  - [Commits](https://github.com/quarkiverse/quarkus-quinoa/compare/2.8.1...2.8.3)
+  ---
+  updated-dependencies:
+  - dependency-name: io.quarkiverse.quinoa:quarkus-quinoa
+    dependency-version: 2.8.3
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump com.github.spotbugs:spotbugs-maven-plugin from 4.9.8.3 to 4.10.3.0
+  Bumps [com.github.spotbugs:spotbugs-maven-plugin](https://github.com/spotbugs/spotbugs-maven-plugin) from 4.9.8.3 to 4.10.3.0.
+  - [Release notes](https://github.com/spotbugs/spotbugs-maven-plugin/releases)
+  - [Commits](https://github.com/spotbugs/spotbugs-maven-plugin/compare/spotbugs-maven-plugin-4.9.8.3...spotbugs-maven-plugin-4.10.3.0)
+  ---
+  updated-dependencies:
+  - dependency-name: com.github.spotbugs:spotbugs-maven-plugin
+    dependency-version: 4.10.3.0
+    dependency-type: direct:development
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
 - Add Windows network access guide for local WLAN deployment
+  Documents Bonjour/mDNS, hosts-file, and router-DNS options for reaching
+  KonfPlan under a logical hostname from Windows clients.
+
 - Fix invalid table markup in TeilnehmerDashboard.vue
+  Wrap the availability grid's <tr> rows in <tbody>, resolving a Vite
+  warning about <tr> being an invalid direct child of <table>.
+
 - Fix Vorträge & Prioritäten section not opening in TeilnehmerDashboard
+  /api/prios/{vid} returns a {vortragId: prioWert} map, but the handler
+  called .reduce() on it as if it were an array of objects. This threw
+  before activeEventId was set, so clicking the section header silently
+  did nothing. Also surface load errors to the user instead of only
+  logging them.
+
 - PROD Doku erweitert
+
 - Enable Quinoa SPA routing fallback
+  quarkus.quinoa.enable-spa-routing defaults to false, so a hard
+  navigation to a Vue Router route (e.g. /login, /admin) returned
+  Quarkus' generic 404 page instead of index.html. This broke the
+  logout flow whenever a stray 401 triggered the axios interceptor's
+  window.location hard redirect to /login.
+
 - Fix two 500 errors on TeilnehmerDashboard
+  - updateVerfuegbarkeit called .clear()/.addAll() on the read-only Set
+    returned by getVerfuegbareSlotIds(), throwing
+    UnsupportedOperationException. Use the existing setter instead.
+  - PrioritaetenResource.getPrioritaeten lacked @Transactional; loading
+    a Veranstaltung eagerly joins Planungsergebnis.jsonErgebnis (a
+    @Lob), which Postgres refuses to stream outside a transaction.
+  Verified against the running dev backend: both endpoints now return
+  200 instead of 500.
+
 - Gray out mandatory Pflichtvortrag slots and fix Vorträge 403
+  - Availability grid now disables and grays out slots the participant
+    must attend due to a Pflichtvortrag tied to their group, forcing
+    those slots to show as available.
+  - togglePriorities() called /api/teilnehmer/zuweisungen?vid=... which
+    has no matching endpoint but accidentally matched the ADMIN-only
+    /api/teilnehmer/{id} route, causing a 403 for every participant.
+    Fixed to call the actual endpoint
+    /api/teilnehmer/veranstaltungen/{vid}/zuweisungen.
+  Verified against the running dev backend and in a real browser
+  session (Playwright, real login) that both the grid rendering and
+  the Vorträge & Prioritäten section now work without errors.
+
 - typos in html texten
-- Migrate database layer from PostgreSQL to SQL Server (Azure SQL Edge) (#11)
-- Fix Teilnehmer-Zuordnungen 404 and clean up Stundenplan room display (#12)
-- Remove redundant id field shadowing AbstractIdDto.id (#13)
-- Fix Gebaeude assignment bug and clean up remaining SpotBugs findings (#14)
-- Add directory-based bulk CSV import for creating a new Veranstaltung (#15)
-- Debian-13-Pakete für KonfPlan, MSSQL und Mailpit (#26)
-- Fix konfplan-mssql volume permissions and missing DB creation (#28)
-- Derive CSV fixture loginNames from vorname.nachname instead of email (#32)
-- Switch production database back from MS SQL Server to PostgreSQL (#30)
-- Rebuild TeilnehmerSimulation.scala for the current REST API (#34)
-- Fix stale Playwright E2E tests to match current REST API and UI (#36)
-- Add export/download function for the generated MiniZinc .dzn data file (#38)
-- Fix handleSaveUser/deleteUser/handleGlobalUpload overwriting the merged user list (#40)
-- Add regression test for CSV import wiping the merged user list (#42)
-- Add IP-scoped rate limiting to the login endpoint (#44)
-- Add inactivity-based auto-logout to the frontend (#46)
-- Tune connection/thread pools and add a closed-workload load test for ~700 concurrent users (#48)
-- Fix connection pool warm-up: min-size alone doesn't pre-create connections (#50)
-- Fix Verzeichnis-Bündel-Import timing out in %prod for larger datasets (#52)
-- Add Teilnehmer self-service email-change flow (#54)
-- Fix public link flows breaking when a stale token sits in localStorage (#56)
-- Fix a failed login attempt clearing an unrelated, valid session (#58)
-- Fix admin accounts without email being permanently unrecoverable (#60)
-- Add IP-based rate limiting to forgot-password (#61) (#62)
-- Invalidate outstanding JWTs on password reset (#64)
-- Document the admin-lockout gap fix in backend/AGENTS.md (#65)
-- Add ZIP-upload variant for Veranstaltung bulk CSV import (#24)
-- Fix infinite loading spinner in Freie-Slots and Laufzettel reports (#67)
-- Show event logo, date range, and organizers in page headers (#73)
-- Fix report PDFs printing in grayscale instead of color (#71)
-- Fix missing first name/groups and organisation in Laufzettel-Alle reports (#75)
-- Add Anwesenheiten (attendance) report; fix broken UebersichtRaeume rendering (#77)
-- Scope printing the embedded Stundenplan to just the Vortragsplan (#79)
-- Rename Stundenplan ICS button to 'Termine exportieren' (#81)
-- Fix logout leaving the previous page visible instead of Login (#85)
-- Fix Pflichtvortrag missing from Zugeteilt column when not in solver result (#87)
-- Fix HTTP 500 viewing personal plan once a Planungsergebnis exists (#83)
+
+- Migrate database layer from PostgreSQL to SQL Server (Azure SQL Edge)
+  * Migrate database layer from PostgreSQL to SQL Server (Azure SQL Edge)
+  Swaps the persistence stack to Microsoft SQL Server, using
+  mcr.microsoft.com/azure-sql-edge as the local dev/prod-test container
+  image since it's the only SQL-Server-compatible image that runs
+  natively on ARM64 (Apple Silicon); mcr.microsoft.com/mssql/server
+  requires amd64 emulation. Azure SQL Edge was officially retired by
+  Microsoft on 2025-09-30 (no further updates) but remains pullable
+  and is the only practical local ARM64 option today.
+  - verfuegbareSlotIds (previously a native Postgres bigint array with
+    no SQL Server equivalent) is now a proper @ElementCollection with
+    a composite @AssociationOverride per NutzerVerfuegbarkeit/
+    RaumVerfuegbarkeit/VortragVerfuegbarkeit, each backed by its own
+    join table. No caller changes needed anywhere in the codebase.
+  - pom.xml: quarkus-jdbc-postgresql -> quarkus-jdbc-mssql,
+    flyway-database-postgresql -> flyway-sqlserver.
+  - application.properties: db-kind=mssql, SQL Server JDBC URL syntax,
+    devservices pinned to the azure-sql-edge image, EULA acceptance
+    via container-license-acceptance.txt.
+  - V1__schema.sql/V2__data.sql/import-dev.sql rewritten for T-SQL
+    (bit, datetime2, varchar(max) for the old Postgres oid/jsonb LOB
+    columns, NEXT VALUE FOR, TRUE/FALSE -> 1/0), derived from the DDL
+    Hibernate itself generates against a real azure-sql-edge instance
+    rather than guessed, plus hand-added FKs from the new slot join
+    tables to Slot(id).
+  - docker-compose.yml, ensure_prod_db.sh, ensure_prod_infra.sh,
+    kill_dev_container.sh switched to Azure SQL Edge. sqlcmd is not
+    bundled in this image; healthchecks and the one-off "CREATE
+    DATABASE konfplan" step use isql (unixODBC), which is. Removed
+    init_db.sh/init_roles.sh (Postgres-specific, confirmed unused).
+  Verified end-to-end: full H2 test suite (115/115), a real
+  quarkus:dev run against azure-sql-edge, a real Flyway migration
+  from an empty database (the actual %prod code path, not just
+  Hibernate drop-and-create), CSV seed data landing correctly in the
+  new join tables, LOB/JSON round-tripping on Planungsergebnis, German
+  umlaut preservation, and the docker-compose stack including the
+  idempotent CREATE DATABASE step.
+  * Fix ReferentDashboard profile not loading and save 409
+  - GET /api/referenten/profile and GET /api/referenten/veranstaltungen
+    both threw LazyInitializationException accessing Nutzer.veranstaltungen
+    outside a Hibernate session - neither endpoint had @Transactional.
+    The frontend only logged the failure, leaving the profile at its
+    default (versionless) state, so the subsequent PUT always sent a
+    missing version and got rejected with 409 (optimistic lock).
+  - The Biografie textarea was bound to referent.bio while the backend
+    DTO field is biography, so it would have stayed empty even after
+    the 500 fix.
+  Verified against the running dev backend: both GET endpoints return
+  200 with full data, PUT now succeeds and correctly bumps the version,
+  and a full browser run through login -> profile -> save shows no
+  errors.
+  * Introduce loginName as the immutable identity key; email becomes optional
+  Nutzer previously used email as login credential, unique business key,
+  and contact address all at once. Adds a new loginName field that takes
+  over the first two roles - immutable once assigned, unique, required -
+  while email stays as an optional contact-only field.
+  Backend:
+  - Nutzer.loginName: NaturalId, no setter (assignLoginName() enforces
+    write-once), backed by a plain unique index; email keeps its existing
+    nullable filtered-unique-index mapping unchanged.
+  - Login, JWT (upn/sub), forgot-password, and every "resolve the current
+    user from the JWT" call site (Referent/Teilnehmer/Prioritaeten/Report/
+    Kalender resources, VeranstaltungService's organizer resolution) now
+    key off loginName instead of email.
+  - Mail-sending guarded on email presence everywhere it wasn't already
+    (MailService.sendVortragsRegistrierung/sendVerfuegbarkeitChanged
+    Notification, forgotPassword, senderEmail fallback to app.mail.admin).
+  - Fixed two real bugs surfaced by making email routinely null:
+    AdminService.updateUser NPE'd comparing old/new email with .equals()
+    instead of Objects.equals(), and createUser skipped password-hash
+    generation for no-email users.
+  - CSV import (Admin/Teilnehmer/Referent/Vortrag/Veranstaltung/
+    Verfuegbarkeiten/Prioritaeten) now keys off a LoginName column;
+    email import stays optional. All 5 fixture datasets regenerated with
+    loginName derived from each email's local part, and cross-reference
+    columns (Referent_Email, Organisatoren_Emails, etc.) rewritten to
+    reference loginName instead.
+  Frontend:
+  - Login form is loginName-based; forgot-password copy reflects that a
+    user without an email can only get a password reset from an Admin.
+  - UserEditorModal has a required loginName field, editable only when
+    creating a new user (disabled thereafter, mirroring the existing
+    role-select pattern). Admin tables and both self-service dashboards
+    show loginName, with email demoted to an optional secondary field.
+  Verified: full backend test suite (115/115) after updating ~16 test
+  files affected by the new NOT NULL constraint, plus a live end-to-end
+  pass against the running SQL Server dev container - login by loginName
+  succeeds and by email fails, JWT claims carry loginName, forgot-password
+  sends mail only when email exists while still returning an identical
+  202 for unknown users, and a real CSV import via REST creates a user
+  with the new LoginName column correctly populated.
+  * rename vortragsmanager to konfplan in docker images
+  * Serialize Berufsfeld via its German display name, not the enum constant
+  Round-trips Vortrag.berufsfeld through @JsonValue/@JsonCreator on the
+  Berufsfeld enum so the API always shows/accepts the human-readable name
+  instead of the Java constant identifier. Drops the frontend's duplicated
+  constant/label mapping in favor of using the display names directly.
+  * Add sortable Gruppen column to the Prioritäten-Matrix table
+  The Verfügbarkeits-Matrix table already showed a sortable group column
+  next to the participant name; the Prioritäten-Matrix table above it was
+  missing the same column despite sharing the same sort state.
+  * Report solver timeout instead of leaving the Planerstellung button stuck
+  MiniZinc prints "=====UNKNOWN=====" when its --time-limit expires without
+  finding a solution, but this was never checked, so the run silently
+  returned an empty result with a generic "keine Lösung"-message. The UI's
+  status polling also ignored lastError entirely, so users got no feedback
+  and the button state resolved without any explanation.
+  Now the timeout case throws a dedicated MinizincException naming the
+  configured limit, and the frontend surfaces that message to the user
+  instead of silently switching to the Ergebnisse tab.
+  * hashed default password for import in dev or test mode
+  * Add live countdown to the Planerstellung cancel button
+  Shows the remaining seconds of the configured solver timeout on the
+  "Erstellung abbrechen" button while a plan is being generated, so the
+  admin can see how long the current run is expected to keep going.
+  * Stop wrapping dev-data seeding in one giant transaction
+  DevDataInitService.onStart() was @Transactional, so the whole CSV-based
+  seeding loop for every configured dataset shared one JDBC connection.
+  Row-by-row imports across multiple datasets routinely exceeded even the
+  already-bumped 3-minute dev transaction timeout; once Narayana's reaper
+  rolled the transaction back mid-loop, every subsequent statement failed
+  with "Could not prepare statement [Connection is closed]".
+  Each importXFromCsv step is already independently @Transactional, so
+  removing the outer annotation lets every step commit on its own instead
+  of sharing one long-lived, timeout-prone transaction.
+  * Don't hold a DB transaction open across the MiniZinc solver call
+  erstellePlan() was @Transactional end-to-end, so the transaction spanned
+  the whole MiniZinc invocation, which blocks for up to the admin-configured
+  solver timeout (now surfaced and encouraged via the PlanungTab countdown).
+  Once a run took longer than the JTA transaction timeout, Narayana's reaper
+  rolled the transaction back while the app thread was still waiting on the
+  external process; persisting the result afterwards then failed with
+  "ARJUNA016102: The transaction is not active!".
+  Split the DB work into two short, independently-transactional steps
+  (bereiteDznVor and speicherePlanungsergebnis) with the long-running,
+  non-transactional MiniZinc call in between. speicherePlanungsergebnis now
+  re-fetches the Veranstaltung by id instead of reusing a reference that may
+  be stale after a multi-minute solver run. As a side effect, a collision
+  detected in this async safety-net check now also surfaces via lastError
+  instead of being silently swallowed.
+  * Rework Planqualität scoring: separate Güte and Raumwechsel-Anzahl
+  Replace the single "kosten" score with an explicit "guete" objective
+  and a standalone "raumwechsel" count (previously baked into the
+  solver's cost as an implicit penalty), and remove the unused MiniZinc
+  output-only oid parameters that broke solving. Fix result persistence
+  using valueToTree instead of putPOJO so Jackson can deserialize the
+  oid arrays as long[]. Display the resulting PlanQualitaetDto fields in
+  the Ergebnisse tab, which previously received but never rendered them.
+  * Cancel in-flight requests and running Planerstellung on logout; tune PlanErstellungService logging
+  Logout previously only cleared client-side auth state, leaving any
+  running MiniZinc solve and the Ergebnisse-tab status polling active.
+  auth.js now sends DELETE /api/planungen (best-effort, admin-only)
+  before clearing the token, and axios.js tracks every request via an
+  AbortController so cancelAllRequests() can abort whatever is still
+  in flight. AdminDashboard.vue also clears its polling interval on
+  unmount, which previously kept firing after navigating away.
+  Also tightens PlanErstellungService/AuffuellungService logging
+  (debug-gate the full dzn dump, add start/progress markers) picked up
+  from IDE edits.
+  * Disable Planerstellung cancel button outside the actual MiniZinc solve
+  The configurable timeout in PlanungTab.vue only bounds the MiniZinc
+  solve itself, not the DB-heavy dzn-preparation and result-persistence
+  steps around it - and cancel() can't interrupt those since they hold
+  no live process handle. Track the current step as a Phase enum
+  (VORBEREITUNG/BERECHNUNG/PERSISTIERUNG) in PlanErstellungService,
+  expose it via GET /api/planungen/status, and only enable the
+  Abbrechen button while phase is BERECHNUNG; otherwise show a disabled
+  placeholder. The countdown in PlanungTab.vue now also starts when
+  BERECHNUNG begins rather than at the initial click, since it
+  previously ran down during preparation before solving even started.
+  * Retry login up to 3x on transient failures right after app start
+  The very first login attempt right after 'mvnw quarkus:dev' starts can
+  occasionally fail with a real 401 (not just a connection error) even
+  with correct credentials, showing "Login fehlgeschlagen" - the prior
+  retry only covered plain connection failures and only retried once.
+  Root cause of the transient 401 couldn't be pinned down exactly, so
+  harden the retry instead: 3 attempts with a short delay for any
+  failure (network or HTTP), covering the startup race either way while
+  still failing fast on a real wrong-password attempt (after the same
+  3 retries).
+  * Fix Prioritaeten report cell/slot data and report layout
+  PrioReport never exposed wvOids/slotOids/raumOids, so getSlotInfo()
+  in Prioritaeten.vue always resolved to undefined values. SlotDto's
+  tag()/start()/ende()/zeitraum()/zeitraumTag() also silently never
+  serialized to JSON since Jackson only auto-detects getXxx()-style
+  methods, breaking date/time display across Prioritaeten, Stundenplan
+  and TeilnehmerZuordnungen.
+  Also open the six ErgebnisseTab report links in a new browser tab,
+  and stretch the three Stundenplan-Übersicht cards to the full row
+  width (col-md-3 -> col-md-4).
+  * Fix N+1 priorities query and cache parsed MinizincResult
+  Every report request recomputed the full DashboardData from scratch,
+  including 3xN individual DB round-trips (one per Teilnehmer, called
+  three times) to load Wahlvortrag-Prioritaeten. Bulk-load them once per
+  Veranstaltung instead via PrioritaetService.getVortragPrioritaetenByVeranstaltung().
+  Also cache the MinizincResult parsed from Planungsergebnis's JSON blob,
+  keyed by its id/version, so repeated report views don't re-parse the
+  same (potentially large) besucht/instanz_slot/instanz_raum arrays on
+  every request. A new plan bumps the @Version and invalidates the cache.
+  * Build DashboardData only for the report actually requested
+  getDashboardData() unconditionally computed every derived structure
+  (Belegungsdetails, Teilnehmer-Erfuellung, Teilnehmer-Stundenplan,
+  Planungsstatistik, WahlErfuellungStats) on every single report
+  request, even though each of the three report endpoints only ever
+  consumed one of stundenplan/teilnehmerReport/prioReport.
+  Split it into getStundenplan()/getTeilnehmerReport()/getPrioReport(),
+  each building the shared base data once and then running only the
+  computation steps its own report actually needs.
+  * Fix N+1 queries in Planerstellung's data preparation phase
+  appendTnPrios ran one Prioritaet.find() per (Teilnehmer x Wahlvortrag)
+  pair - for realistic event sizes that's thousands of individual DB
+  round-trips just to build the priorities matrix for MiniZinc. Reuse
+  PrioritaetService.getVortragPrioritaetenByVeranstaltung() (already
+  introduced for the report N+1 fix) to bulk-load it once instead.
+  pruefeKollisionen, which runs on every Planerstellung attempt, had the
+  same shape: one NutzerVerfuegbarkeit.findById() per Teilnehmer, one
+  RaumVerfuegbarkeit.findById() and another NutzerVerfuegbarkeit lookup
+  per Pflichtvortrag, plus a Slot.findById() per slot id inside the rare
+  collision-message branch. Bulk-load all three into maps up front.
+  * experiment mit drop of exists Fehler durch SqlDialect gescheitert
+  ---------
+
+- Fix Teilnehmer-Zuordnungen 404 and clean up Stundenplan room display
+  * Fix 404 on Teilnehmer-Zuordnungen for admins
+  getTeilnehmerDashboardData resolved the caller via
+  TeilnehmerService.findByLoginName() and 404'd if that lookup failed -
+  but admins aren't Teilnehmer, so every admin call to the
+  "Teilnehmer-Zuordnungen" overview (its only frontend caller) failed.
+  The lookup never actually gated any data anyway: the report always
+  returns the full teilnehmer_stundenplan for every participant of the
+  Veranstaltung, regardless of who's asking. Drop the dead check and the
+  now-unused TeilnehmerService/JwtHelper dependencies.
+  * Show unoccupied rooms as a summary line instead of empty cards
+  Each unbooked room in a slot rendered its own "Nicht belegt" card,
+  cluttering the grid. List their names in a single line below the
+  occupied-room cards instead, in the same style as the existing
+  Aufsicht (unassigned participants) line.
+  ---------
+
+- Remove redundant id field shadowing AbstractIdDto.id
+  VortragDto and ReferentVeranstaltungDto each redeclared "public Long
+  id", shadowing the field already inherited from AbstractIdDto (via
+  AbstractVersionedDto). Flagged by SpotBugs as MF_CLASS_MASKS_FIELD
+  (rank 6, "Scary" tier - the two highest-severity findings in the whole
+  codebase). Harmless today since all current access is through the
+  concrete DTO type, but a landmine for any future code that sets/reads
+  .id through an AbstractIdDto-typed reference.
+
+- Fix Gebaeude assignment bug and clean up remaining SpotBugs findings
+  * Fix Gebaeude assignment always failing silently in VeranstaltungService
+  save() looked up Gebaeude.findById(dto.id) inside the per-Gebaeude
+  loop - using the Veranstaltung's own id instead of the loop variable
+  gDto's id. Since all entities share one DB sequence, a Veranstaltung's
+  id never matches any Gebaeude row, so this always returned null
+  (or threw for a brand-new Veranstaltung with dto.id == null): no
+  Gebaeude ever got attached via this path, and nothing tested it.
+  Found via SpotBugs' DLS_DEAD_LOCAL_STORE flagging the unused loop
+  variable gDto - a rare case where that check wasn't a false positive.
+  * Close the Connection opened just to log the dev-data JDBC URL
+  onStart() called datasource.getConnection() only to read the metadata
+  URL for a log line, never closing it (SpotBugs ODR_OPEN_DATABASE_RESOURCE).
+  Harmless in practice since it only runs once per app start, but still
+  a real leak. Use try-with-resources.
+  * Remove dead MiniZincConfig class
+  Unused @ConfigProperties binding for minizinc.path - PlanErstellungService
+  reads that same property directly via @ConfigProperty instead. Flagged
+  by SpotBugs (UUF_UNUSED_PUBLIC_OR_PROTECTED_FIELD); was already marked
+  @SuppressWarnings("unused") rather than removed.
+  ---------
+
+- Add directory-based bulk CSV import for creating a new Veranstaltung
+  Admins currently upload each CSV (Veranstaltung, Slots, Referenten,
+  Teilnehmer, Vorträge, ...) one at a time through separate tab buttons.
+  DevDataInitService already shows the pattern for a bundled dataset -
+  a directory with fixed CSV filenames imported in a fixed order - but
+  that only runs at dev-mode startup against hardcoded test fixtures.
+  Add VeranstaltungImportService/-Resource exposing the same import
+  sequence at runtime: list configured base-path subdirectories (via
+  GET /api/admin/veranstaltung-import/datasets, flagging which are
+  missing mandatory files and thus not selectable), and trigger a full
+  import of one directory (POST .../datasets/{name}/import). The whole
+  sequence runs in one @Transactional(rollbackOn = Exception.class)
+  boundary and validates row counts for mandatory files, so a partially
+  broken CSV set rolls back entirely instead of leaving a half-created
+  Veranstaltung behind.
+  VeranstaltungService gains importFromCsvDetailed(), returning the
+  created entities directly instead of just a count, so the import
+  service can pick up the new Veranstaltung's id without the fragile
+  "most recently created" query DevDataInitService relies on. The
+  existing importFromCsv(Path) keeps its exact behavior for its two
+  other callers (DevDataInitService, VeranstaltungResource).
+  New admin tab lists available directories with a per-file
+  present/missing indicator and triggers the import; on success it
+  auto-selects the newly created Veranstaltung, matching the existing
+  "create new Veranstaltung" UX.
+
+- Debian-13-Pakete für KonfPlan, MSSQL und Mailpit
+  * Add Debian 13 .deb packaging for app, MSSQL and Mailpit
+  MS SQL Server has no official Debian package (Microsoft supports only
+  RHEL/SLES/Ubuntu natively); the officially recommended path for other
+  distributions is the Docker container, which konfplan-mssql wraps in a
+  systemd service. Mailpit has no official .deb either, so konfplan-mailpit
+  takes the same Docker-wrapper approach. MiniZinc is already packaged in
+  Debian 13's own repository and is referenced only as a Depends.
+  Also parameterize minizinc.path via MINIZINC_PATH env var so the deb
+  package can point it at /usr/bin/minizinc instead of the hardcoded
+  macOS dev path.
+  * Bring install.sh and .gitlab-ci.yml up to date with the MSSQL/Debian-13 stack
+  install.sh targeted Ubuntu 22.04 + PostgreSQL from before the SQL Server
+  migration (#11) and even had a wrong app port (8080 vs the actual 9000). It
+  now targets Debian 13 and delegates to the packaging/debian/ .deb pipeline
+  instead of duplicating install logic that already lives there.
+  .gitlab-ci.yml's deploy job still passed a hardcoded postgresql:// JDBC URL;
+  switched to the DB_HOST/PORT/NAME/USER/PASSWORD env vars the app actually
+  reads in its %prod profile.
+  ---------
+
+- Fix konfplan-mssql volume permissions and missing DB creation
+  * Fix konfplan-mssql volume permissions and missing DB creation
+  Found by actually installing the .deb packages in a systemd+Docker Debian 13
+  test environment (real install, not just package inspection):
+  - konfplan's postinst ran `chown -R konfplan:konfplan /var/lib/konfplan`,
+    which clobbers konfplan-mssql's mssql-data directory depending on install
+    order. Scoped the chown to konfplan's own subdirectories only.
+  - The mssql/server container runs as non-root user "mssql" (UID 10001);
+    without matching ownership on the bind-mounted host directory, SQL Server
+    failed to start with "Permission denied" creating /var/opt/mssql/.system.
+  - SQL Server (unlike Postgres' POSTGRES_DB) never auto-creates a named
+    database, so the app failed on first boot with "Cannot open database
+    konfplan". Added an ExecStartPost script that creates it idempotently once
+    SQL Server is ready.
+  Verified end-to-end: fresh package install -> all three services start ->
+  app connects to a real SQL Server container, Flyway migrations apply,
+  HTTP 200 from the host.
+  * Set executable bit on ensure-db.sh in the repo
+  ---------
+
+- Derive CSV fixture loginNames from vorname.nachname instead of email
+  Many loginName values in the Organisatoren/Teilnehmer/Referenten CSV test
+  fixtures were email-derived and often cryptic or non-descriptive (chrisumilgl,
+  kheidrich, messenverwaltung, may, ref1, and the juergenkrey-<name> anonymized
+  pattern in bo_26_09/import-test). Regenerated them as <vorname>.<nachname>
+  (umlaut-transliterated, hyphen/space-joined multi-part names flattened to
+  additional dot-separated tokens, e.g. "Max Bao Nam Hartung" -> "max.bao.nam.
+  hartung"), deduplicated within each dataset, and propagated the renames
+  through every cross-referencing column (Referent_LoginName, loginName in the
+  *_verfuegbarkeiten files, "Teilnehmer LoginName" in tn_prios/tn_prios_random,
+  Organisatoren_LoginNames in veranstaltungen.csv).
+  Preserved as deliberate aliases rather than mechanically renamed: juergenkrey
+  (shared identity with the production seed admin in V2__data.sql), scalanaut,
+  dylanaut, and juergenkreyalias-ref - these read as real chosen handles, not
+  email-derived noise.
+  Also fixed a pre-existing data bug surfaced by the derivation: karrierekompass
+  -linz-2026/teilnehmer.csv had "lfter" instead of "Alfter" as Nachname for one
+  row (confirmed against the same person's correct spelling in other datasets),
+  which would otherwise have produced naja.lfter instead of naja.alfter.
+  Verified: full backend test suite (124/124, including the CSV/directory-
+  import tests that read these exact fixtures), a uniqueness + cross-reference
+  integrity check across all 8 datasets, and a real quarkus:dev boot that
+  imports the medium and karrierekompass-linz-2026 datasets end-to-end (632
+  Teilnehmer, 2553 Prioritaeten, all referent/room/participant availabilities)
+  without error.
+
+- Switch production database back from MS SQL Server to PostgreSQL
+  * Switch production database back from MS SQL Server to PostgreSQL
+  Customer decided on PostgreSQL after all, as originally planned before the
+  MSSQL migration in #11.
+  - backend/pom.xml: quarkus-jdbc-mssql/flyway-sqlserver -> quarkus-jdbc-postgresql/flyway-database-postgresql
+  - application.properties: datasource config (prod/dev) back to postgresql;
+    dropped the Azure SQL Edge devservices image/dialect overrides
+  - Flyway V1__schema.sql/V2__data.sql: translated the T-SQL-specific bits back
+    to Postgres syntax (bit->boolean, datetime2->timestamp, varchar(max)->oid/
+    jsonb matching the @Lob/@JdbcTypeCode(JSON) annotations on Planungsergebnis,
+    dropped "nonclustered", NEXT VALUE FOR -> nextval()). The @ElementCollection
+    join-table redesign for verfuegbareSlotIds from the MSSQL migration is kept
+    as-is - it's a cleaner model independent of DB choice.
+  - db/ensure_prod_db.sh, db/ensure_prod_infra.sh, backend/kill_dev_container.sh,
+    backend/src/main/docker/docker-compose.yml: back to postgres:18/Postgres
+    DevServices: matches the last pre-MSSQL versions of these files.
+  - Removed container-license-acceptance.txt (Testcontainers EULA acceptance
+    file, only needed for the non-free Azure SQL Edge image).
+  - packaging/debian/: replaced the konfplan-mssql Docker-wrapper package with
+    konfplan-postgresql, which just depends on Debian's native `postgresql`
+    package and runs a oneshot systemd service to create the app's database
+    and role - no Docker needed for the DB anymore.
+  - install.sh, .gitlab-ci.yml, CLAUDE.md, AGENTS.md: updated references.
+    CLAUDE.md/AGENTS.md had never actually been updated for the MSSQL migration
+    and already described PostgreSQL; only fixed a stale db/init_db.sh mention.
+  Verified: 124/124 backend tests green, a real (non-H2) migration + boot
+  against a Postgres 18 container, and a full install of the rebuilt .deb
+  packages in a systemd+Docker Debian 13 test container (app reaches Postgres,
+  Flyway migrates, HTTP 200 from the host).
+  * Fix db/import-dev.sql for PostgreSQL (missed in the revert)
+  Hibernate's dev-mode sql-load-script still used the MSSQL-era 1/0 integer
+  literal for the is_active boolean column. Postgres rejects that outright
+  ("column is_active is of type boolean but expression is of type integer"),
+  which broke quarkus:dev before dev-data seeding even started. Found by
+  actually running quarkus:dev end-to-end rather than just the H2 test suite,
+  which never exercises this file (%test disables the sql-load-script).
+  ---------
+
+- Rebuild TeilnehmerSimulation.scala for the current REST API
+  The old simulation targeted an API shape that no longer exists: login body
+  field "username" (now "loginName"), priority field "prioritaet" (now
+  "prioWert", range 0-10 with 10=highest, no duplicate values per request),
+  hardcoded vortragId 1/2/3, and a feeder CSV of fictitious accounts. Given
+  essentially every request in the scenario needed to change, rebuilt it
+  rather than patching individual fields.
+  New scenario mirrors the real flow from TeilnehmerDashboard.vue: login ->
+  GET /api/teilnehmer/veranstaltungen -> GET .../vortraege, GET /api/prios/{vid}
+  and GET .../zuweisungen loaded in parallel (via .resources(), matching how
+  the frontend loads them when the priorities panel is opened) -> POST
+  /api/prios with priorities derived from the actually-returned Wahlvortrag
+  IDs instead of hardcoded ones. Deliberately posts to the real backend path
+  /api/prios rather than replicating the frontend's existing (separate,
+  unrelated) bug of posting to /api/teilnehmer/prios, which doesn't exist
+  server-side.
+  Feeder CSV regenerated from the real karrierekompass-linz-2026 dev dataset's
+  Teilnehmer loginNames (already vorname.nachname-formatted from the recent
+  loginName migration) instead of fictitious teilnehmerN@konfplan.de accounts.
+  Found while getting this to actually pass against a running instance: the
+  default password for CSV-imported users in dev/test mode is "konfplan", not
+  "start123" as AGENTS.md/CLAUDE.md claimed (TeilnehmerService.importFromCsv;
+  prod imports get a random UUID instead) - fixed both docs.
+  Also found and worked around a Gatling gotcha in this module's pinned
+  Gatling/Scala versions: the "${var}" EL placeholder syntax in StringBody/
+  header()/get() string literals is not interpolated - verified by capturing
+  the raw request with netcat, which showed the literal "${var}" text sent
+  unsubstituted. Every dynamic value now goes through a Session => String
+  function instead (documented in the README so it doesn't get reintroduced).
+  Verified end-to-end against a real quarkus:dev instance seeded with the
+  karrierekompass-linz-2026 dataset: a temporarily-reduced load profile ran
+  clean (30/30 requests OK) through login, dashboard data loading, and
+  priority updates before restoring the full ramp-up/peak/ramp-down profile.
+
+- Fix stale Playwright E2E tests to match current REST API and UI
+  AdminDashboardModals.spec.js was missing the required "Anmeldename" field
+  when creating users. reports.spec.js lacked auth simulation, used
+  non-cross-origin mock URLs, and outdated dynamic JSON import syntax.
+  PlanungsWorkflow.spec.js is rebuilt from scratch with a stateful API mock
+  that mirrors the real Gebäude-association, Slot-creation and Nutzer-anlage
+  flows.
+
+- Add export/download function for the generated MiniZinc .dzn data file
+  New PlanErstellungService.generiereDznVorschau() reuses the existing
+  DZN-generation/precondition-checking logic without invoking the solver,
+  exposed via POST /api/planungen/{vid}/dzn. Adds a ".dzn exportieren"
+  button next to "Pläne erstellen" in the Planerstellung tab, which
+  triggers a browser download of the current solver configuration's DZN
+  content.
+
+- Fix handleSaveUser/deleteUser/handleGlobalUpload overwriting the merged user list
+  loadData() already merges admin and event-specific users into users.value
+  when a Veranstaltung is selected. The subsequent unconditional
+  refreshAdmins() call overwrote that merge with the admin-only
+  /api/admin/nutzer response, silently dropping the just-created/deleted/
+  imported Referent or Teilnehmer from the Referenten/Teilnehmer tabs and
+  the Vortrag-Editor's Referent dropdown. refreshAdmins() is now only used
+  as a fallback when no Veranstaltung is selected (its original purpose,
+  e.g. creating a global Admin).
+  Removes the test-side workaround in PlanungsWorkflow.spec.js that had
+  been masking this application bug.
+
+- Add regression test for CSV import wiping the merged user list
+  Covers the #39 bug in handleGlobalUpload: after a Referenten CSV import,
+  the mock simulates the backend now including the new Referent by
+  switching its GET .../nutzer response only after the import POST fires.
+  The test waits for handleGlobalUpload's full await chain to settle
+  before asserting, since an unbuffered check could pass on the
+  transient pre-refreshAdmins() state even when the bug is present.
+  Verified this test fails against the pre-#39 code and passes with the
+  fix in place.
+
+- Add IP-scoped rate limiting to the login endpoint
+  New LoginRateLimiterService tracks failed /api/auth/login attempts per
+  client IP in a fixed 15-minute window (configurable via
+  app.security.login-rate-limit.*); after 5 failures the IP gets HTTP 429
+  with a Retry-After header until the window expires, before credentials
+  are even checked. Scoped per IP rather than per loginName so an attacker
+  can't lock out a specific victim's account. A successful login clears
+  the counter; a scheduled cleanup task bounds memory growth from
+  short-lived attacker IPs.
+  Also fixes authStore.login()'s retry loop, which previously retried up
+  to 3 times on ANY error including a real 401/429 - tripling the
+  effective attempt count against the new limit for a single user mistake
+  and retrying against a 429 that can't possibly succeed. It now only
+  retries on network-level failures (backend not yet reachable), and
+  shows a dedicated message for 429 mentioning the wait time.
+  Verified live against a running backend: 5 failed attempts -> 401 each,
+  6th -> 429 with Retry-After; a single wrong-password submit now sends
+  exactly one request instead of three.
+
+- Add inactivity-based auto-logout to the frontend
+  New useInactivityLogout() composable (App.vue) tracks global user
+  activity (mouse, keyboard, scroll, touch) while authenticated and calls
+  authStore.logout() after 30 minutes without any interaction, showing a
+  distinct toast so the user understands why they landed back on /login
+  rather than thinking they logged out themselves. The timer only runs
+  while logged in.
+  Security hardening, not a server resource optimization - auth is
+  stateless JWT (no server-side session object), so an idle tab costs the
+  backend nothing between requests. This limits how long a leaked token or
+  an unattended unlocked device stays exploitable, independent of the JWT's
+  full 4h validity window.
+  Verified the new Playwright tests (using page.clock to simulate elapsed
+  time deterministically) actually catch a regression: they fail when the
+  composable call is commented out and pass with it restored.
+
+- Tune connection/thread pools and add a closed-workload load test for ~700 concurrent users
+  Explicitly size the Agroal JDBC pool (min-size=10, max-size=50, well
+  under Postgres' default max_connections=100 to leave headroom for
+  admin/monitoring connections) and the Quarkus worker thread pool
+  (max-threads=200, sized above the DB pool so requests waiting on a DB
+  slot aren't also thread-starved) instead of relying on unstated
+  defaults. Raise the systemd unit's LimitNOFILE to 65536, since the
+  common 1024 default doesn't leave much margin for several hundred
+  concurrent HTTP connections.
+  Extract the shared Teilnehmer-dashboard scenario out of
+  TeilnehmerSimulation into TeilnehmerScenario, and add
+  ConcurrencyCapacitySimulation: a closed-workload Gatling simulation that
+  holds a fixed number of concurrent users (default 700) rather than an
+  arrival rate, to directly validate "can the backend handle N concurrent
+  users" instead of inferring it from throughput. Also fix
+  performancetest/pom.xml's simulationClass to be property-driven
+  (${gatling.simulationClass}) instead of hardcoded, since it silently
+  ignored -Dgatling.simulationClass overrides before.
+  Verified live: ran ConcurrencyCapacitySimulation against quarkus:dev
+  with these settings at 700 concurrent users (60s ramp-up, 120s hold) -
+  44,946 requests, 0 failures, p95 1.3s / p99 2.0s response time, no
+  warnings/errors in the backend logs.
+
+- Fix connection pool warm-up: min-size alone doesn't pre-create connections
+  Verified live against a real (non-devservices) Postgres instance:
+  pg_stat_activity showed only 3 connections right after boot, not the
+  configured min-size=10. Agroal's min-size only acts as a floor once the
+  pool has already grown under load - initial-size is what actually forces
+  eager creation at startup. Added it; re-verified ~10 connections exist
+  immediately after boot.
+
+- Fix Verzeichnis-Bündel-Import timing out in %prod for larger datasets
+  importDataset() intentionally runs the whole bundle import in one
+  transaction (all-or-nothing per the class doc). For larger participant
+  counts, BCrypt-hashing alone pushes past the 60s JTA default timeout.
+  %dev never surfaced this because of its own
+  default-transaction-timeout=3m override, which %prod has no equivalent
+  of.
+  Add @TransactionConfiguration(timeout = 300) scoped to just this one
+  (admin-only, occasionally slow) operation rather than loosening the
+  global default timeout for every transaction in %prod.
+  Verified live against a real (non-devservices) Postgres instance under
+  %prod: importing 632 Teilnehmer previously failed with "ARJUNA016102:
+  The transaction is not active!"; with the fix, the same import (104s)
+  now succeeds with no manual override needed.
+  The existing test importDataset_createsVeranstaltungAndAttachesAllData
+  had @Transactional on the test method itself, which conflicts with
+  @TransactionConfiguration (Narayana only allows changing the timeout at
+  the actual transaction entry point - matching the real call path from
+  VeranstaltungImportResource, which has no open transaction either).
+  Fixed by calling importDataset() outside any pre-existing transaction
+  and moving the follow-up assertions into a fresh one via
+  QuarkusTransaction.requiringNew(). Added a fast reflection-based
+  regression test asserting the timeout override is present, since a
+  real end-to-end test with hundreds of rows would be too slow for the
+  suite.
+
+- Add Teilnehmer self-service email-change flow
+  Teilnehmer previously had no working way to set/change their own email:
+  TeilnehmerDashboard.vue showed an editable email field, but
+  updateTeilnehmerProfile explicitly rejected any email change with 400 -
+  a dead end. Only Admins could set it (CSV import / UserEditorModal).
+  Adds the same double-opt-in pattern already working for Referenten
+  (ReferentResource): POST /api/teilnehmer/email-change-request (current
+  password required, 2h token, notifies the old address, sends a
+  confirmation link to the new one) and GET
+  /api/teilnehmer/email-change-confirm (public, token-based). The general
+  profile update still rejects email changes - only this dedicated,
+  confirmed flow can change it, so an unverified/mistyped address can
+  never silently become the notification target.
+  New app.frontend.base-url config property (defaults to
+  http://localhost:5173) for the confirmation link, since it needs to
+  land on a frontend page rather than a bare backend JSON response -
+  added FRONTEND_BASE_URL=CHANGE_ME to the systemd env file to match the
+  existing DB_PASSWORD/BREVO_SMTP_* placeholder convention.
+  New EmailChangeConfirm.vue (public route) mirrors ResetPassword.vue's
+  pattern for landing on the confirmation link. TeilnehmerDashboard.vue's
+  "Profil speichern" button/saveProfile()/hasProfileChanges are removed
+  entirely since email was the only thing they ever actually saved (the
+  other fields are already read-only); replaced with a dedicated
+  "E-Mail ändern" mini-form.
+  Found and fixed a real bug while live-testing the actual UI flow: the
+  wrong-password check returned 401, which collided with axios.js's
+  global response interceptor (any 401 = invalid token = force logout) -
+  a user mistyping their password got silently logged out instead of
+  seeing the error. Changed to 403 (already authenticated via JWT, this
+  is a supplementary confirmation check, not a session/token problem).
+  Fixed the identical pre-existing bug in ReferentResource's matching
+  endpoint too, since it's the same defect in the code this was mirrored
+  from.
+  Verified live end-to-end against quarkus:dev + real Mailpit: triggered
+  the request through the real UI, extracted the real confirmation link
+  from the actual sent email via Mailpit's API, confirmed through the
+  real EmailChangeConfirm.vue page, and verified via the API that the
+  email genuinely changed. Also re-verified live that a wrong password
+  now shows the error in the form without forcing a logout.
+
+- Fix public link flows breaking when a stale token sits in localStorage
+  axios.js's request interceptor unconditionally attached any stored
+  token to every request, including calls to @PermitAll endpoints
+  (login, forgot-/reset-password, email-change-confirm). Verified live
+  against a real backend: Quarkus' JWT security layer rejects a request
+  carrying an invalid/expired Bearer token with 401 *before* the
+  @PermitAll check even runs. The global response interceptor then reads
+  that 401 as "session expired" and force-redirects to /login - which on
+  ResetPassword.vue or EmailChangeConfirm.vue destroys the entire
+  link-based flow for anyone with a stale token sitting in localStorage
+  (e.g. an expired session from an earlier tab), since those pages exist
+  specifically for users who may not have a valid session at all.
+  Same root cause as the 401-vs-global-interceptor bug fixed in #53/#54
+  for the authenticated email-change endpoints, one level up: the request
+  interceptor now simply never attaches a token to known public
+  endpoints, regardless of what's in localStorage.
+  New PublicEndpointsNoStaleToken.spec.js asserts the fix directly (no
+  Authorization header sent) against mocked APIs. Verified these tests
+  actually catch the regression: reverted the fix, confirmed all 3 fail
+  with the stale token attached, restored it, confirmed green. Full
+  Playwright suite: 138/138.
+
+- Fix a failed login attempt clearing an unrelated, valid session
+  Follow-up to #55/#56: the response interceptor cleared token/role from
+  localStorage on ANY 401, even one from a @PermitAll endpoint that never
+  used a token in the first place (e.g. a failed login attempt with a
+  wrong password). Since no router guard stops an already-authenticated
+  user from visiting /login, a user validly logged in (e.g. in another
+  tab) who navigates there and mistypes credentials for a different
+  account gets their unrelated, perfectly valid session wiped by the
+  401 response - even though that request never touched it.
+  The response interceptor now reuses the same isPublicPath() check
+  already used by the request interceptor: a 401 from a known @PermitAll
+  endpoint no longer triggers the clear/redirect.
+  New test verified against the actual bug (reverted the check, confirmed
+  the test fails with the session cleared, restored it, confirmed green).
+  Full Playwright suite: 141/141.
+
+- Fix admin accounts without email being permanently unrecoverable
+  Email was optional for every role including ADMIN (CSV import and the
+  UI form), but forgotPassword requires one to send a reset link, and
+  there was no other way to set a user's password after creation -
+  setPasswordHash was only ever called at creation time. Result: an ADMIN
+  account without an email that forgets its password is permanently
+  locked out through the application - no self-service, no admin-assisted
+  recovery, only direct DB access could fix it.
+  Two-part fix:
+  1. Prevention: email is now required for the ADMIN role, enforced at
+     creation (API + CSV import - CSV rows are skipped with a warning
+     rather than aborting the whole import) and when an existing admin's
+     email would be removed via update.
+  2. Recovery for existing accounts: new POST /api/admin/nutzer/{id}/reset-password
+     lets an admin set any user's password directly (works regardless of
+     whether that user has an email), with a minimum 8-character check.
+     New "Passwort zurücksetzen" action + PasswordResetModal.vue in the
+     Organisatoren tab.
+  Verified live against a real backend: creating an admin without email
+  is rejected (400), creating one with email succeeds, and using the new
+  reset-password endpoint to rescue a locked-out-style account works -
+  the new password logs in immediately after.
+  New tests: 6 in AdminServiceTest, 3 in AdminResourceTest (backend), 2 in
+  AdminDashboardModals.spec.js (frontend, ×3 browsers). Full suites:
+  backend 147/147, Playwright 147/147.
+
+- Add IP-based rate limiting to forgot-password (#61)
+  POST /api/auth/forgot-password was @PermitAll with no limit on how often
+  it could be called, letting anyone trigger unlimited reset emails to any
+  registered address (spam) or exhaust login-name enumeration attempts.
+  Mirrors the login rate limiter (#44): a separate ForgotPasswordRateLimiterService
+  (kept independent rather than sharing an abstraction with LoginRateLimiterService,
+  to avoid risk to that already-shipped/tested code) blocks a client IP for a
+  window after max-attempts requests, returning 429 + Retry-After. Kept per-IP
+  rather than per-login-name so an attacker can't grief a specific victim by
+  burning their reset quota.
+  While wiring up the frontend's 429 handling (mirrored from the equivalent
+  login-rate-limit case in stores/auth.js) and writing a Playwright test for
+  it, discovered the Retry-After header was actually unreadable by the browser
+  in a real cross-origin (5173 vs 9000) setup: it's not on the CORS safelisted
+  response-header list, and the backend never sent
+  Access-Control-Expose-Headers. This silently broke the wait-time message for
+  the existing login rate limiter too (never caught before since it was only
+  tested with RestAssured/curl, not against real browser CORS) - fixed via
+  quarkus.http.cors.exposed-headers, verified live against a running backend.
+
+- Invalidate outstanding JWTs on password reset
+  * Invalidate outstanding JWTs on password reset (#63)
+  Resetting a password (self-service AuthResource#resetPassword, or the
+  admin rescue path AdminService#resetPassword added in #60) only changed
+  the stored hash - it left any already-issued JWTs for that user untouched.
+  If an account was compromised and an attacker already holds a valid token,
+  resetting the password wouldn't lock them out until the token's natural
+  4h expiry.
+  Adds TokenInvalidationService: an in-memory per-loginName "invalid before"
+  timestamp, in the same single-instance-friendly spirit as the existing
+  LoginRateLimiterService/ForgotPasswordRateLimiterService (accepting that a
+  restart clears it, given the short 4h token lifetime). Enforcement happens
+  via TokenInvalidationAugmentor, a SecurityIdentityAugmentor that runs on
+  every authenticated request and compares the JWT's iat claim against that
+  threshold - the idiomatic Quarkus mechanism for rejecting otherwise
+  signature-valid tokens post-authentication. The threshold is truncated to
+  whole seconds to match the iat claim's second-level precision, so a token
+  freshly issued in the same second as the reset isn't spuriously rejected.
+  Both password-reset call sites now call invalidateTokensIssuedBefore()
+  after updating the hash. Verified end-to-end with a dedicated integration
+  test that enables real JWT auth for one test class (normally disabled in
+  %test) and signs actual tokens against a real protected endpoint - plus
+  live-verified against a running dev backend: an admin's own pre-reset
+  token gets 401 on the next request while a freshly logged-in token keeps
+  working.
+  * Document rate limiting and JWT invalidation in backend/AGENTS.md
+  The Security section only mentioned roles/JWT issuance/BCrypt - it didn't
+  cover the login/forgot-password rate limiters (#44, #62) or the new
+  password-reset JWT invalidation (#63), including the non-obvious
+  CORS exposed-headers gotcha found while shipping #62. Also lists the
+  three new services in the service/AGENTS.md catalog.
+  ---------
+
+- Document the admin-lockout gap fix in backend/AGENTS.md
+  The Security section covered rate limiting and JWT invalidation but never
+  mentioned the earlier admin-lockout fix (#60): ADMIN accounts have no
+  superior instance that can reset their password on their behalf, unlike
+  REFERENT/TEILNEHMER, so a passwordless-recovery admin account without an
+  email address was previously unrecoverable. Documents both halves of that
+  fix - the create/update-time email requirement and the admin-to-admin
+  rescue reset-password endpoint - alongside the related sections it ties
+  into (forgot-password's email requirement, JWT invalidation on reset).
+
+- Add ZIP-upload variant for Veranstaltung bulk CSV import
+  * Add ZIP-upload variant for Veranstaltung bulk CSV import
+  Organizers can now upload a ZIP containing the CSV set directly through
+  the browser instead of needing filesystem access to pre-place a directory
+  on the server. Extracts to a temp dir (guarded against zip-slip and zip
+  bombs, with single-top-level-folder auto-unwrap), validates the same
+  mandatory-file rules, and runs through the existing all-or-nothing
+  importDataset logic (extracted into a shared runImport helper).
+  * WIP: shorten Referent-LoginNames and drop Teilnehmer-Emails in CSV fixtures
+  Preserving in-progress local edits before merging main:
+  - referenten.csv/wahl_vortraege.csv/ref_verfuegbarkeiten.csv: shorten
+    loginNames to a jk-<vorname>_<nachname> convention.
+  - teilnehmer.csv: remove real student email addresses from the fixture.
+  ---------
+
+- Fix infinite loading spinner in Freie-Slots and Laufzettel reports
+  * Fix infinite loading spinner in Freie-Slots and Laufzettel reports
+  Freie Slots (Referenten/Teilnehmer) never resolved: the service leaked
+  raw Slot entities into the JSON response, and Slot.veranstaltung ->
+  Veranstaltung.slots forms an unguarded bidirectional cycle with no
+  @JsonIgnore, so Jackson serialization never terminated. Map to SlotDto
+  instead, matching every other report endpoint. Also fixes a field-name
+  mismatch (nutzer vs referenten/teilnehmer) that would otherwise leave
+  the table empty once the response arrives.
+  Laufzettel (Alle/Teilnehmer/Referent) return a flat ZuweisungDto /
+  ReferentVortragDto, but the Vue templates were written against a
+  nested shape (.teilnehmer, .slot, .vortrag, .raum) that never existed
+  on those DTOs, so rendering threw as soon as data arrived. Wrap the
+  laufzettel-alle-data response in {veranstaltung, plaene} to match the
+  other Laufzettel endpoints, and fix all three templates to read the
+  actual flat fields.
+  * Add descriptive tab titles, fix print button, and split Laufzettel by role
+  Report tabs opened via ErgebnisseTab.vue always showed the generic
+  "KonfPlan | Event Organisation" title. Set document.title to
+  "<veranstaltung.name> - <Reportname>" once each report's data loads.
+  The "Drucken" button had no effect in any of the 11 report views: the
+  template expression `window.print()` compiled to `_ctx.window.print()`
+  because Vue's template compiler only allow-lists a fixed set of
+  globals (Math, Date, JSON, ...) and `window` isn't one of them, so it
+  silently threw on `undefined.print()`. Move the call into a
+  script-scope handler where `window` correctly resolves to the global.
+  Also split "Laufzettel (Alle)" into two disjoint reports: it only ever
+  covered Teilnehmer, so it's relabeled "Laufzettel für Teilnehmer", and
+  a new sibling "Laufzettel für Referenten" is added (new endpoint
+  laufzettel-alle-referenten-data + LaufzettelAlleReferenten.vue),
+  reusing the existing PlanService.getPlanFuerReferent per referent.
+  * Trigger CI re-run
+  No workflow runs were registered for this PR at all (neither on open
+  nor the follow-up push), unlike every other recent PR in this repo.
+  Empty commit to force a new pull_request synchronize event.
+  * Trigger CI re-run after Actions spending limit was raised
+  Confirmed root cause: private repo, Actions spending limit had been
+  reached, so pull_request/push events were silently dropped instead of
+  queuing (no check-suite ever registered). Retriggering now that the
+  limit is raised.
+  ---------
+
+- Show event logo, date range, and organizers in page headers
+  The event logo, date range, and organizer data already existed
+  end-to-end in the domain model and VeranstaltungDto, but was only
+  partially surfaced (logo + name + start date in the Admin nav bar) —
+  this is primarily a frontend wiring task.
+  - New shared VeranstaltungHeader.vue, wired into all 12 report views
+    (each always scoped to exactly one Veranstaltung, including the
+    individual Laufzettel pages Teilnehmer/Referent open directly).
+  - Admin nav bar (App.vue) extended with end date and organizer names.
+  - Teilnehmer/Referent dashboards list multiple events at once with no
+    single "current" event like Admin has, so each event's own card
+    gets its logo + organizers instead of a persistent global header.
+  - organisatorNamen previously returned only the last name
+    (getLastName()); switched to the existing getFullName() convention.
+  - TeilnehmerVeranstaltungDto/ReferentVeranstaltungDto (the narrow
+    per-dashboard list DTOs) gained logo/logo_link/organisatorNamen,
+    which they didn't carry before.
+  - New frontend util formatZeitraum() mirrors the backend's
+    zeitraumTage() formatting, which exists server-side but was never
+    exposed as JSON.
+
+- Fix report PDFs printing in grayscale instead of color
+  Browsers suppress background colors/images when printing by default
+  (to save ink) unless the page opts back in with
+  print-color-adjust: exact. None of the 12 report views set this, so
+  every colored element that relies on a background (table-dark
+  headers, the success/warning status badges in Prioritaeten.vue and
+  TeilnehmerZuordnungen.vue) printed as grayscale, losing the actual
+  information those colors convey (e.g. the "Wunsch erfüllt/nicht
+  erfüllt" legend).
+  Set on each view's print-stylesheet body rule, where it cascades to
+  all descendants since the property is inherited.
+
+- Fix missing first name/groups and organisation in Laufzettel-Alle reports
+  Both bulk Laufzettel reports read the per-person header from
+  plan[0], which (a) only ever carried the last name (getLastName()),
+  never the first name, (b) had no organisation/gruppen data at all,
+  and (c) would throw on any person with zero assigned Vorträge, since
+  plan[0] is undefined for an empty array — likely crashing the whole
+  list's render, not just that person's row.
+  PlanService now builds teilnehmer/referent names via getFullName().
+  ReferentVortragDto gained referentOrganisation. Both report DTOs gained
+  a parallel List<NutzerDto> (teilnehmer/referenten), mirroring the
+  existing FreieSlotsDto.nutzer pattern, so the frontend header reads
+  name/gruppen/organisation from a list that always contains every
+  person regardless of whether they have any plan entries.
+
+- Add Anwesenheiten (attendance) report; fix broken UebersichtRaeume rendering
+  New printable report listing, per talk, the assigned Teilnehmer with a
+  checkbox column for marking attendance by hand. Reuses the existing
+  raeume-data endpoint (RaumBelegungUebersicht already carries talk,
+  referent, slot, room, and participant names per talk instance) —
+  no backend change needed. The checkbox is a CSS-drawn box rather than
+  an <input>, so it prints consistently across browsers.
+  While tracing that endpoint's response shape, found UebersichtRaeume.vue
+  has been rendering an empty table: its template read a nested
+  raum.belegungen structure that RaumBelegungUebersicht never provides
+  (it's a flat list, one entry per slot+room). Fixed by grouping by room
+  client-side and reading the actual flat fields.
+
+- Scope printing the embedded Stundenplan to just the Vortragsplan
+  The "Drucken" button inside the embedded Stundenplan (ErgebnisseTab
+  tab) called window.print(), which printed the entire admin page: the
+  App nav bar, the dashboard header/veranstaltung-selector, the tab
+  navigation, and ErgebnisseTab's own Planqualität card and Berichte
+  button grid, alongside the actual Vortragsplan.
+  The @media print .no-print rule previously only existed scattered
+  across individual report views' own <style> blocks — it happened to
+  work here only incidentally because Stundenplan.vue is always loaded
+  whenever this tab is visible. Moved the rule into the global
+  style.css and marked the surrounding page chrome no-print so only the
+  Vortragsplan itself prints.
+
+- Rename Stundenplan ICS button to 'Termine exportieren'
+
+- Fix logout leaving the previous page visible instead of Login
+  auth.logout() calls eventContext.clearEvent() (setting selectedEvent
+  to null) before router.push('/login') completes. ErgebnisseTab.vue
+  rendered <Stundenplan :vid="eventContext.selectedEvent.id" /> gated
+  only on belegungsPlan.length > 0 - a separate, unrelated piece of
+  local state in AdminDashboard.vue that clearEvent() doesn't touch.
+  The reactive update to selectedEvent triggers a re-render of
+  ErgebnisseTab while it's still mounted (navigation hasn't swapped the
+  route yet), throwing on the null dereference. That uncaught render
+  error corrupts Vue's reactivity cycle badly enough that the subsequent
+  unmount/remount into Login.vue also throws - so the old page's DOM
+  stays in place even though the URL already shows /login.
+  Reproduced live via Playwright (admin login, event with an existing
+  plan, Ergebnisse tab, logout) - console showed exactly this two-stage
+  crash. Confirmed fixed after adding the null guard.
+
+- Fix Pflichtvortrag missing from Zugeteilt column when not in solver result
+  getPlanFuerTeilnehmer() looked up the participant's index in the
+  MiniZinc result's teilnehmer_oids array and returned an empty list
+  immediately if not found - before ever reaching the Pflichtvortrag
+  loop. A participant only appears in teilnehmer_oids if they took part
+  in solving for Wahlvorträge (e.g. submitted any priorities);
+  Pflichtvorträge are assigned purely by group membership and have
+  nothing to do with the solver, so this early return incorrectly hid
+  them too.
+  Reproduced live with the "medium" demo dataset (Teilnehmer "Alex
+  Alfa", group "GruppeA", Pflichtvortrag "Vortrag GruppeA") - the
+  "Zugeteilt" column in "Meine Prioritäten" stayed empty even for the
+  mandatory talk their group always attends.
+  Scoped the tnIdx check to only the Wahlvortrag loop, which is the only
+  part that actually indexes into besucht[tnIdx][...]. Added a
+  regression test.
+
+- Fix HTTP 500 viewing personal plan once a Planungsergebnis exists
+  Veranstaltung.planungsergebnis is a @OneToOne with no explicit fetch
+  type, defaulting to EAGER per the JPA spec. Planungsergebnis.jsonErgebnis
+  is @Lob, stored as a PostgreSQL oid (large object) — Postgres refuses
+  to read large objects outside a transaction ("LargeObjects (LOB)
+  dürfen im Modus 'auto-commit' nicht verwendet werden").
+  TeilnehmerResource.getPlan() (Teilnehmer dashboard "Vorträge &
+  Prioritäten") and ReferentResource.getMyPlan() both called
+  Veranstaltung.findById() without @Transactional, so every request ran
+  in auto-commit mode and crashed the moment the queried Veranstaltung
+  already had a plan. Confirmed via a production stack trace (repro:
+  Teilnehmer "Alex Alfa", Veranstaltung "Demo (medium)").
+  This never showed up in the test suite because it runs against H2,
+  which doesn't enforce PostgreSQL's LOB-outside-transaction restriction.
+  - Veranstaltung.planungsergebnis switched to fetch = FetchType.LAZY
+    (its getter is never called anywhere in the codebase, so this is a
+    pure protective change with no behavior difference for legitimate
+    callers).
+  - @Transactional added to both resource methods.
+  - New regression tests import the exact "medium" CSV dataset
+    (the same one DevDataInitService uses for the demo event) plus a
+    real Planungsergebnis, covering both endpoints end-to-end.
+  Audited every other Veranstaltung.findById call site under
+  adapter/in/web/ for the same missing-@Transactional pattern; these
+  were the only two unprotected ones.
+
 - csv updated
+
 - LOG.debug
-- Nutzerverwaltung nach Keycloak migrieren (Option A) (#89)
-- Docs: sync CLAUDE.md/AGENTS.md/asciidoc with the Keycloak migration (#91)
-- CI: Qodana-Linter-Version an Action-Version anpassen (#93)
-- Add Docker Compose deployment procedure for UTM (local) and Hetzner (#95)
-- Fix bootstrap.sh randomly generating the Brevo SMTP password (#97)
-- Bump org.asciidoctor:asciidoctorj-diagram from 3.2.0 to 3.2.1 (#16)
-- Bump org.apache.maven.plugins:maven-site-plugin from 3.21.0 to 3.22.0 (#17)
-- Bump docker/login-action from 3 to 4 (#18)
-- Bump gatling.version from 3.15.0 to 3.15.1 (#19)
-- Bump de.elnarion.maven:plantuml-generator-maven-plugin (#20)
-- Bump com.github.eirslett:frontend-maven-plugin from 2.0.0 to 2.0.2 (#21)
-- Bump actions/setup-java from 5 to 5.6.0 (#22)
-- Add konfplan-keycloak Debian package for the .deb/systemd install path (#99)
-- Add Keycloak to the local native-image test infra script and docs (#108)
-- Remove dead Quarkus-scaffolding Dockerfiles from backend/src/main/docker (#110)
-- Bump actions/setup-java from 5.6.0 to 5.7.0 (#106)
-- Bump actions/checkout from 4 to 7 (#100)
-- Bump com.github.librepdf:openpdf from 2.0.3 to 3.0.5 (#101)
-- Bump io.quarkiverse.quinoa:quarkus-quinoa from 2.8.3 to 2.8.4 (#102)
-- Bump quarkus.platform.version from 3.35.1 to 3.38.1 (#103)
-- Bump org.asciidoctor:asciidoctorj-pdf from 2.3.20 to 2.3.23 (#104)
-- Bump com.tngtech.archunit:archunit-junit5 from 1.4.2 to 1.5.0 (#105)
+
+- Nutzerverwaltung nach Keycloak migrieren (Option A)
+  * Backend: migrate authentication/identity to Keycloak (OIDC)
+  Replace the self-managed JWT stack (quarkus-security-jpa, self-signed
+  tokens in AuthResource, TokenInvalidationService, rate limiters) with
+  quarkus-oidc token validation and Keycloak-backed identity. Nutzer now
+  carries only business data plus a keycloakId link; a new
+  KeycloakUserProvisioningService owns all Keycloak Admin REST calls and
+  is wired into every user creation/update/delete/reset-password path
+  (AdminService, TeilnehmerService, ReferentService). Self-service
+  password reset and email-change flows are dropped in favor of
+  Keycloak's own login page and Account Console. In dev mode Quarkus
+  Keycloak Dev Services auto-starts a container using the bundled realm
+  export (keycloak/konfplan-realm.json).
+  Since production has essentially no real users yet (accounts are
+  created via CSV import together with a new Veranstaltung), there is no
+  legacy-password migration step - V3__keycloak_auth.sql drops the
+  obsolete auth columns outright.
+  * Frontend: switch to Keycloak Authorization Code Flow login
+  Replace the in-app login form with a keycloak-js redirect flow.
+  keycloak.init({onLoad:'check-sso'}) runs before mount; the router
+  guard now calls keycloak.login() directly instead of routing to a
+  static /login page, and the axios interceptor refreshes/attaches the
+  Keycloak token per request. The token/role are still mirrored into the
+  same localStorage keys as before so existing Playwright bypass tests
+  keep working unchanged.
+  Drops the now-obsolete self-service password-reset and email-change UI
+  (both flows move to Keycloak's login page / Account Console).
+  * Frontend: fix Keycloak bootstrap crash and Playwright specs
+  keycloak.init()'s default checkLoginIframe probes a cross-origin
+  iframe against the Keycloak server for third-party-cookie support;
+  when Keycloak is unreachable this can throw a "localStorage access
+  denied" error inside that iframe and abort the whole app bootstrap.
+  Disable it (checkLoginIframe: false) - the router guard already
+  handles per-route auth checks, so the periodic iframe session-check
+  isn't needed.
+  Redirecting.vue no longer auto-redirects to Keycloak on mount when
+  unauthenticated (only protected routes trigger that via the router
+  guard) - landing on the root path now shows a manual "Anmelden"
+  button. logout() only calls keycloak.logout() when a real Keycloak
+  session exists, otherwise it just clears local state and returns to
+  "/". This fixes a regression where the inactivity-auto-logout tests
+  tried to bounce through an unreachable Keycloak server.
+  Delete the Playwright specs for the removed self-service login/
+  forgot-password/reset-password/email-change flows; trim
+  TeilnehmerDashboard.spec.js to the one assertion that still applies
+  (email field is read-only). Confirmed the remaining reports.spec.js
+  failures are pre-existing flakiness on main, unrelated to this change.
+  * Backend: fix Keycloak dev-realm permissions and stale dev seed SQL
+  Found via an actual quarkus:dev smoke test: the konfplan-admin-cli
+  service account was missing the realm-management "view-realm" role,
+  so KeycloakUserProvisioningService.assignRealmRole (which reads a
+  role's representation before assigning it) got a 403 from every user
+  creation - the medium CSV dataset silently failed to provision anyone
+  in Keycloak.
+  Also fixes db/import-dev.sql, a raw SQL seed script for the dev
+  schema that still inserted into the now-dropped password_hash column
+  and crashed dev-mode startup entirely.
+  Verified end-to-end: quarkus:dev now boots cleanly, Keycloak Dev
+  Services imports the realm, CSV-imported users are provisioned in
+  Keycloak, and a password-grant token for one of them is accepted by
+  the migrated backend with the correct role.
+  ---------
+
+- Docs: sync CLAUDE.md/AGENTS.md/asciidoc with the Keycloak migration
+  The Keycloak PR (#88/#89) removed AuthResource, BcryptUtil-based
+  password hashing, TokenInvalidationService, and the login/forgot-
+  password rate limiters, but left every doc describing the old JWT/
+  BCrypt architecture as-is. Update the root and package-level
+  AGENTS.md/CLAUDE.md files, the developer handbook, and the
+  auto-generated USE_CASES.adoc's AuthResource/email-change sections to
+  reflect Keycloak/OIDC as the current state, and mark
+  keycloak-migration.adoc (the original planning doc) as implemented.
+  Also cleans up two leftovers the original PR missed: the now-unused
+  privateKey.pem/publicKey.pem signing-key pair (+ their generator
+  script) and a dead Retry-After CORS exposed-header entry that only
+  existed for the removed rate limiters.
+
+- CI: Qodana-Linter-Version an Action-Version anpassen
+  * CI: bump Qodana linter to 2026.2 to match the qodana-action version
+  qodana_code_quality.yml uses JetBrains/qodana-action@v2026.2 (CLI
+  2026.2.0), but qodana.yaml pinned the linter image at
+  jetbrains/qodana-jvm:2025.3. Qodana's own compatibility check
+  rejected that pairing and failed the job before running any analysis,
+  on every branch including main. 2026.2 is available on Docker Hub and
+  matches the action version.
+  * CI: switch Qodana to the Community linter (no cloud license configured)
+  jetbrains/qodana-jvm:2026.2 pulled and ran, but Qodana linters have
+  required a Qodana Cloud connection (QODANA_TOKEN) since 2023.2, and
+  no such secret is configured on this repo - the job failed with
+  "please ensure you have an access token". jetbrains/qodana-jvm-community
+  doesn't need one.
+  ---------
+
+- Add Docker Compose deployment procedure for UTM (local) and Hetzner
+  New deploy/ directory: a single docker-compose.yml running App +
+  PostgreSQL + Keycloak, with Caddy (automatic Let's Encrypt) and
+  Mailpit as optional profiles ("public"/"mailpit"). Works identically
+  on a local UTM VM and on a Hetzner Cloud server - only deploy/.env
+  and the active profile differ.
+  Passwords never live in the compose file, .env, or git: bootstrap.sh
+  generates them server-side into deploy/secrets/*.txt (hex, chmod 600,
+  gitignored) on first run, idempotently, and Compose binds them as
+  file secrets. Postgres uses its native *_FILE env var support;
+  Keycloak and the app read the mounted secret files via an overridden
+  command since neither supports that convention natively. The
+  Keycloak realm import is templated (admin-cli client secret + public
+  URL) from keycloak-realm.template.json into a generated, gitignored
+  file.
+  Verified end-to-end against real containers, not just written down:
+  brought up Postgres + Keycloak, confirmed the realm/roles import,
+  logged in as the generated bootstrap admin, and confirmed the
+  rendered admin-cli secret matches what Keycloak actually stored.
+  Caught and fixed two real bugs along the way - Postgres 18's new
+  volume mount convention, and base64-generated secrets breaking
+  form-urlencoded requests (switched to hex) - plus a Compose quirk
+  where required-var (${VAR:?}) is evaluated for every service
+  regardless of active profile, which would have broken the default/
+  local case entirely.
+  Documented in backend/src/main/asciidoc/Deployment-DockerCompose.adoc
+  (UTM setup, Hetzner setup incl. DNS/firewall, update/redeploy,
+  backups, troubleshooting). Existing .deb/systemd deployment
+  (packaging/debian/) is untouched - this is an additional, alternative
+  procedure.
+
+- Fix bootstrap.sh randomly generating the Brevo SMTP password
+  brevo_smtp_password was treated the same as the app's own secrets
+  (db_password, keycloak_admin_password, keycloak_admin_cli_secret) and
+  got a random hex value whenever the file was missing. Unlike those,
+  it's an external credential from the operator's Brevo account - a
+  random value silently breaks real mail delivery with an auth error
+  that nothing surfaces at bootstrap time.
+  Now only creates an empty placeholder file and warns clearly if
+  BREVO_SMTP_USER is set in .env but the secret file is still empty.
+  Also documents this in Deployment-DockerCompose.adoc, and adds an
+  explicit "Persistenz" section confirming (and having verified against
+  real containers: created a user, ran a full down/up cycle without
+  -v, confirmed both the admin login and the user survived) that
+  Keycloak's realm/user data persists across restarts via the shared
+  Postgres volume.
+
+- Bump org.asciidoctor:asciidoctorj-diagram from 3.2.0 to 3.2.1
+  Bumps [org.asciidoctor:asciidoctorj-diagram](https://github.com/asciidoctor/asciidoctorj-diagram) from 3.2.0 to 3.2.1.
+  - [Release notes](https://github.com/asciidoctor/asciidoctorj-diagram/releases)
+  - [Commits](https://github.com/asciidoctor/asciidoctorj-diagram/compare/v3.2.0...v3.2.1)
+  ---
+  updated-dependencies:
+  - dependency-name: org.asciidoctor:asciidoctorj-diagram
+    dependency-version: 3.2.1
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump org.apache.maven.plugins:maven-site-plugin from 3.21.0 to 3.22.0
+  Bumps [org.apache.maven.plugins:maven-site-plugin](https://github.com/apache/maven-site-plugin) from 3.21.0 to 3.22.0.
+  - [Release notes](https://github.com/apache/maven-site-plugin/releases)
+  - [Commits](https://github.com/apache/maven-site-plugin/compare/maven-site-plugin-3.21.0...maven-site-plugin-3.22.0)
+  ---
+  updated-dependencies:
+  - dependency-name: org.apache.maven.plugins:maven-site-plugin
+    dependency-version: 3.22.0
+    dependency-type: direct:development
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump docker/login-action from 3 to 4
+  Bumps [docker/login-action](https://github.com/docker/login-action) from 3 to 4.
+  - [Release notes](https://github.com/docker/login-action/releases)
+  - [Commits](https://github.com/docker/login-action/compare/v3...v4)
+  ---
+  updated-dependencies:
+  - dependency-name: docker/login-action
+    dependency-version: '4'
+    dependency-type: direct:production
+    update-type: version-update:semver-major
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump gatling.version from 3.15.0 to 3.15.1
+  Bumps `gatling.version` from 3.15.0 to 3.15.1.
+  Updates `io.gatling.highcharts:gatling-charts-highcharts` from 3.15.0 to 3.15.1
+  - [Commits](https://github.com/gatling/gatling-highcharts/compare/v3.15.0...v3.15.1)
+  Updates `io.gatling:gatling-recorder` from 3.15.0 to 3.15.1
+  - [Commits](https://github.com/gatling/gatling/compare/v3.15.0...v3.15.1)
+  ---
+  updated-dependencies:
+  - dependency-name: io.gatling.highcharts:gatling-charts-highcharts
+    dependency-version: 3.15.1
+    dependency-type: direct:development
+    update-type: version-update:semver-patch
+  - dependency-name: io.gatling:gatling-recorder
+    dependency-version: 3.15.1
+    dependency-type: direct:development
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump de.elnarion.maven:plantuml-generator-maven-plugin
+  Bumps [de.elnarion.maven:plantuml-generator-maven-plugin](https://github.com/devlauer/plantuml-generator) from 1.1.2 to 3.0.1.
+  - [Changelog](https://github.com/devlauer/plantuml-generator/blob/master/Changelog.adoc)
+  - [Commits](https://github.com/devlauer/plantuml-generator/compare/plantuml-generator-1.1.2...plantuml-generator-3.0.1)
+  ---
+  updated-dependencies:
+  - dependency-name: de.elnarion.maven:plantuml-generator-maven-plugin
+    dependency-version: 3.0.1
+    dependency-type: direct:development
+    update-type: version-update:semver-major
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump com.github.eirslett:frontend-maven-plugin from 2.0.0 to 2.0.2
+  Bumps [com.github.eirslett:frontend-maven-plugin](https://github.com/eirslett/frontend-maven-plugin) from 2.0.0 to 2.0.2.
+  - [Changelog](https://github.com/eirslett/frontend-maven-plugin/blob/master/CHANGELOG.md)
+  - [Commits](https://github.com/eirslett/frontend-maven-plugin/compare/frontend-plugins-2.0.0...frontend-plugins-2.0.2)
+  ---
+  updated-dependencies:
+  - dependency-name: com.github.eirslett:frontend-maven-plugin
+    dependency-version: 2.0.2
+    dependency-type: direct:development
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump actions/setup-java from 5 to 5.6.0
+  Bumps [actions/setup-java](https://github.com/actions/setup-java) from 5 to 5.6.0.
+  - [Release notes](https://github.com/actions/setup-java/releases)
+  - [Commits](https://github.com/actions/setup-java/compare/v5...v5.6.0)
+  ---
+  updated-dependencies:
+  - dependency-name: actions/setup-java
+    dependency-version: 5.6.0
+    dependency-type: direct:production
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Add konfplan-keycloak Debian package for the .deb/systemd install path
+  Brings the native .deb packaging (packaging/debian/) in line with the
+  Keycloak migration (#88), analogous to the existing Docker Compose
+  procedure (#94): new Docker-wrapper package + systemd service for
+  Keycloak, an additional "keycloak" database via konfplan-postgresql,
+  konfplan.env's new KC_* variables, and updated install.sh/README.
+
+- Add Keycloak to the local native-image test infra script and docs
+  db/ensure_prod_infra.sh predates the Keycloak migration (#88) and left
+  out authentication - a local native-image test run couldn't start
+  without a reachable Keycloak (no DevServices in native mode). Adds a
+  Keycloak container block (own DB, realm import rendered from the same
+  deploy/keycloak-realm.template.json used by the Docker Compose and
+  .deb paths) and updates "Betrieb mit Native Image.adoc" accordingly.
+
+- Remove dead Quarkus-scaffolding Dockerfiles from backend/src/main/docker
+  Dockerfile, Dockerfile.legacy-jar, Dockerfile.native-micro, and the
+  local docker-compose.yml were unmodified/superseded template leftovers,
+  referenced nowhere in CI, docs, or scripts - only Dockerfile.jvm
+  (GHCR image, deploy/docker-compose.yml) and Dockerfile.native
+  (documented in the native-image guide) are actually used.
+
+- Bump actions/setup-java from 5.6.0 to 5.7.0
+
+- Bump actions/checkout from 4 to 7
+
+- Bump com.github.librepdf:openpdf from 2.0.3 to 3.0.5
+
+- Bump io.quarkiverse.quinoa:quarkus-quinoa from 2.8.3 to 2.8.4
+
+- Bump quarkus.platform.version from 3.35.1 to 3.38.1
+
+- Bump org.asciidoctor:asciidoctorj-pdf from 2.3.20 to 2.3.23
+
+- Bump com.tngtech.archunit:archunit-junit5 from 1.4.2 to 1.5.0
+
 - Add combined Ubuntu install guide for Docker Compose and .deb paths
+  Consolidates the two existing installation recipes (Docker Compose,
+  .deb/systemd packages) plus the from-source build/test workflow into
+  a single quick-reference document for a fresh Ubuntu machine.
+
 - Docs for deployment
+
 - Document gh CLI + PAT clone workflow for the private repo
+  HTTPS git clone with a plain password fails on a fresh machine since
+  GitHub dropped password auth in 2021; document the gh-CLI-based PAT
+  setup (install, token, gh auth setup-git) as the recommended path.
+
 - Switch class diagram generation to PlantUML, tidy docs and .gitignore
+  Rename USE_CASES.adoc to KonfPlan-API.adoc, drop the superseded
+  USE_CASES_gemini.adoc draft, and generate the class diagram as .puml
+  (with JPA annotations, short class names, SVG rendering) instead of
+  .dot. Also prune the accumulated auto-generated build-artifact
+  entries from .gitignore down to the real ignore rules.
+
 - Ignore accidental root/backend npm artifacts and log files
+  node_modules ended up installed at the repo root and under backend/
+  (the real frontend deps live in frontend/node_modules), alongside
+  stray log/result files; ignore and remove them locally instead of
+  tracking generated output.
+
 - Document ghcr.io login and docker.io corporate-network troubleshooting
+  Add the required "docker login ghcr.io" step before pulling the
+  private app image, and a troubleshooting note for the case where
+  docker.io itself is unreachable behind a corporate proxy/firewall
+  (observed as a docker compose pull failing with connection refused).
+
 - Refine docker.io troubleshooting: no generic proxy found on this network
+  Checked scutil --proxy, shell env, git/npm config for an existing
+  corporate proxy - none configured, only the known nexus.msg.group npm
+  mirror. Points to targeted registry blocking rather than a blanket
+  forward proxy, so prioritize checking for a Docker/OCI mirror in the
+  same Nexus over hunting a generic HTTP_PROXY.
+
 - Document the local-to-public (profile "public") migration path
+  Add a walkthrough for switching a local/test Docker Compose deployment
+  to a permanently internet-reachable one: DNS records, firewall, .env
+  changes, bootstrap.sh public, and the Caddy/Let's Encrypt startup. Also
+  flag that a Keycloak realm already imported with a localhost redirect
+  URI needs a clean restart (or manual redirect-URI edit) before going
+  public.
+
 - Explain how to actually create the two DNS A records
+  Expand the DNS step of the public-profile migration with concrete
+  sub-steps: finding the server's public IP, where to log in to manage
+  the domain (Hetzner DNS / registrar), the record table, and verifying
+  propagation with dig before starting Caddy.
+
 - Expand ufw port-opening steps with a lockout warning
+  Clarify that the firewall step targets the VM's own ufw, separate
+  from any upstream cloud firewall, and add a status-check/install step
+  plus an explicit warning to allow the SSH port before enabling ufw to
+  avoid locking yourself out.
+
 - Document ufw-free port opening and clean ufw removal
+  Add an alternative to ufw for opening 80/443 (direct iptables rules
+  or cloud-firewall-only), plus a safe removal procedure using
+  "ufw reset" before purging - this avoids leaving orphaned ufw chains
+  in iptables/nftables and warns against a blanket iptables flush,
+  which would also wipe Docker's own chains needed by the running
+  containers.
+
 - Add kcadm.sh command sequence for creating the bootstrap admin
+  Document the CLI alternative to clicking through the Keycloak admin
+  console: authenticate kcadm against the container, create the
+  juergenkrey user, set its password, and assign the ADMIN realm role.
+  Clarify that this Keycloak password - not the V2__data.sql hash - is
+  the actual login credential.
+
 - Clarify the .deb packages have no CI/release automation
+  Unlike the Docker image (auto-built and pushed to ghcr.io by
+  ci.yml on every push to main), the four .deb packages are built
+  purely locally by install.sh/build-all.sh - no workflow step or
+  GitHub Release produces them, and mvn install/package does not
+  trigger packaging/debian/build-all.sh.
+
 - Document profile-symmetric teardown before switching to "public"
+  Add a "subdom" attribute for the example subdomain and use it
+  consistently in the DNS/env/curl examples. Also expand the .env-switch
+  step with the actual teardown command matching the profile flags used
+  to start (e.g. "mailpit"), an optional image-removal flag, and a note
+  that the ghcr.io docker login survives "docker compose down -v".
+
 - Add external reachability check for the public-profile deployment
+  Document DNS/TCP/HTTP/TLS checks to run from an external machine
+  (not the VM itself) after switching to profile "public", ordered so
+  each step isolates the next layer to debug (DNS -> firewall -> TLS).
+
 - Fix bootstrap.sh secret permissions to survive non-root containers
+  Secrets were generated with chmod 600, readable only by the host user
+  that ran bootstrap.sh. Docker Compose file-secrets bind-mount them
+  with the host file's permissions intact, but the app/keycloak images
+  run as a non-root user (e.g. USER 185 in Dockerfile.jvm), so the
+  container got "Permission denied" reading them - observed as the app
+  crash-looping on "grant type 'client_credentials' requires client
+  secret" and, from the browser, a redirect loop against a dead
+  upstream. Switch to chmod 644 (the secrets/ directory itself stays
+  chmod 700, and secrets are still read-only-mounted into containers).
+  Update Deployment-DockerCompose.adoc accordingly and add a
+  troubleshooting entry plus manual fix-up command to
+  Ubuntu-Frischinstallation.adoc for already-generated secrets.
+
 - Add docker-compose override and docs for native-image cloud deploy
+  Dockerfile.native uses a different entrypoint (./application instead
+  of the JVM image's run-java.sh) and container user (1001 vs 185), so
+  swapping IMAGE_TAG alone doesn't work. Add
+  deploy/docker-compose.native.yml to override the app service's image/
+  working_dir/entrypoint/command while reusing the existing postgres/
+  keycloak/mailpit/caddy services, and document the full build-push-
+  deploy flow (including the write:packages PAT scope needed to push)
+  in Ubuntu-Frischinstallation.adoc.
+
 - Fix Hibernate enhancement version mismatch and Keycloak dev-services realm import
+  hibernate-maven-plugin was pinned below the Hibernate ORM version Quarkus
+  pulls at runtime, breaking bytecode enhancement on startup. Dev Services'
+  Keycloak container also runs its master realm with SSL required, which
+  made the admin-token request needed to import the konfplan realm fail.
+
 - Fix juergenkrey dev-admin login by provisioning via CSV instead of raw SQL
+  The SUPER ADMIN row in import-dev.sql was inserted directly into the
+  Nutzer table, so it never got a Keycloak counterpart (keycloak_id
+  stayed NULL) and could not log in. Move juergenkrey/juergenkrey@yahoo.de
+  into organisatoren.csv for the "medium" dev dataset so DevDataInitService
+  provisions it through AdminService/KeycloakUserProvisioningService like
+  every other dev user, and drop the now-redundant (and colliding) raw
+  insert.
+
 - Surface duplicate loginName/email errors when creating an admin
+  AdminService.createUser relied solely on the DB unique constraint and
+  Keycloak's own uniqueness check, so a duplicate loginName/email caused
+  an uncaught 500 - AdminDashboard.vue's handleSaveUser only console.error'd
+  the failure, leaving the admin with no clue why saving failed. Check
+  Nutzer.findByLoginName/findByEmail upfront and throw a BusinessException
+  with a clear message, and let KeycloakProvisioningException extend
+  BusinessException too so any remaining Keycloak-side conflict gets a
+  proper error body instead of an opaque 500. Show that message via
+  alert() in handleSaveUser, matching the pattern already used by
+  handleResetPassword/handleInviteUser.
+
 - Add printable Abstimmungsfragebogen report for all Teilnehmer
+  Admins need a paper form per Teilnehmer to collect Wahlvortrag
+  priorities before/without entering them into the system. Add
+  GET /api/reports/{vid}/abstimmungsfragebogen-data (numbers all
+  Wahlvortraege of the event, grouped by Berufsfeld) and a matching
+  printable Vue report view, following the existing per-Teilnehmer
+  page-break-after/window.print() pattern used by LaufzettelAlle.vue.
+  Linked from a new "Vorbereitung" section in ErgebnisseTab.vue that,
+  unlike the existing report links, isn't gated behind an already
+  generated plan, since this form is meant to be printed beforehand.
+
 - ObjectMapper mit reflection-free serializer (Blackbird)
+
 - Move prod Keycloak to a path prefix instead of its own subdomain
+  The cloud operator hosting the public deployment won't issue a second
+  A-record, so Keycloak now shares the app's domain under /auth
+  (KC_HTTP_RELATIVE_PATH + Keycloak 26 hostname-v2 full-URL KC_HOSTNAME)
+  instead of a separate KEYCLOAK_HOSTNAME subdomain. Caddy routes /auth*
+  to keycloak without path rewriting so Keycloak's self-generated URLs
+  stay correct. Also fixes a latent gap where the frontend's Keycloak URL
+  was never actually wired up for prod builds (VITE_KEYCLOAK_URL was set
+  nowhere) - it's now derived from window.location.origin at runtime
+  instead of needing a CI build-time value, which also makes the single
+  published image portable across deployment hostnames without a rebuild.
+
 - Add script to auto-generate unique LoginName values from names
+  Fill the empty LoginName column in teilnehmer.csv (abbreviated first
+  name + surname, German umlauts/ß transliterated to ae/oe/ue/ss,
+  collisions resolved by widening the abbreviation before falling back
+  to a numeric suffix) instead of assigning 616 login names by hand for
+  the karrierekompass-linz-2026 import.
+
 - ObjectMapper mit reflection-free serializer (Blackbird)
-- Add Neigungen (interests) to Teilnehmer and Wahlvortrag (#117)
-- Organisator-Namen als mailto-Link mit Veranstaltungsname als Betreff (#119)
-- Kommentar mit # in CSV Import Teilnehmer und Aula für Messe aktualisiert
-- Release 1.0.0 (#121)
+
+- Add Neigungen (interests) to Teilnehmer and Wahlvortrag
+  Teilnehmer koennen ihre persoenlichen Neigungen angeben, Referenten/Admins
+  markieren pro Wahlvortrag welche Neigungen inhaltlich adressiert werden.
+  Neuer Enum-Typ Neigung (Name/Beschreibung/Kategorie), Set<Neigung> per
+  ElementCollection auf Teilnehmer und Wahlvortrag, neuer GET /api/neigungen
+  Lookup-Endpoint fuer die Frontend-Auswahl.
+
+- Organisator-Namen als mailto-Link mit Veranstaltungsname als Betreff
+  Im Teilnehmer-/Referenten-Dashboard und in allen Reports (ueber
+  VeranstaltungHeader.vue) sind die angezeigten Organisatoren-Namen jetzt
+  mailto-Links; Subject ist der Name der jeweiligen Veranstaltung.
+
+- Kommentar mit # in CSV Import
+  Teilnehmer und Aula für Messe aktualisiert
+
+- Release 1.0.0
+  Setzt alle Modul-Versionen von 1.0.0-SNAPSHOT auf 1.0.0 und erweitert
+  ci.yml: bei einem Tag-Push (v*.*.*) wird das Docker-Image zusaetzlich mit
+  der Versionsnummer statt nur sha/latest getaggt.
+

@@ -2,9 +2,44 @@ Release Notes 1.7.0
 Released: 2026-09-02
 
 Changes:
-- Prepare next development iteration (1.6.1-SNAPSHOT) (#381)
-- Brevo-IP-Updater: Lade-Skeleton-Hang auf der Authorized-IPs-Seite behoben (#385)
-- Absender-Domain auf konfplan.de umgestellt + Brevo-Domain-Auth-Anleitung (#383)
+
+- Prepare next development iteration (1.6.1-SNAPSHOT)
+
+- Brevo-IP-Updater: Lade-Skeleton-Hang auf der Authorized-IPs-Seite behoben
+  update-ip.mjs hing reproduzierbar in einem Lade-Skeleton auf Brevos
+  Authorized-IPs-Seite, obwohl dieselbe Sitzung in einem normalen Browser
+  einwandfrei funktionierte - ohne jedes CAPTCHA-/Bot-Erkennungsskript im DOM
+  (per error-*.html-Analyse ausgeschlossen).
+  - waitUntil: 'networkidle' ersetzt durch 'domcontentloaded' + explizites
+    Warten auf den konkreten Button (beide Skripte) - SPAs mit dauerhaften
+    Verbindungen erreichen 'networkidle' sonst nie zuverlässig.
+  - Fehlerdiagnose erweitert: error-*.html (vollständiges DOM) zusätzlich zum
+    Screenshot, plus URL/Titel im Log.
+  - Kern-Fix: setup-session.mjs besucht die Zielseite jetzt einmal VOR dem
+    Speichern der Sitzung - storageState() erfasst Cookies + localStorage,
+    aber nicht sessionStorage/IndexedDB; der einmalige Besuch lässt Brevo
+    offenbar noetigen Init-State in localStorage ablegen.
+  - update-ip.mjs zusätzlich mit navigator.webdriver-Override und
+    --disable-blink-features=AutomationControlled.
+  - Per Live-Test (echter Account) verifiziert: beide Skripte laufen jetzt
+    erfolgreich durch.
+
+- Absender-Domain auf konfplan.de umgestellt + Brevo-Domain-Auth-Anleitung
+  Root-Cause-Analyse: yahoo.com/yahoo.de veröffentlichen DMARC p=reject
+  (pct=100). Brevo kann eine Freemail-Domain nie authentifizieren (kein
+  DNS-Zugriff), daher lehnen DMARC-strikte Empfänger-Gateways (u.a. Sophos
+  Email, individuelle Hochschul-/Behörden-Mailgateways) Mails von
+  @yahoo.com/@yahoo.de konsequent ab - unabhängig davon, welcher lokale
+  Adressteil verwendet wird.
+  Absenderadresse in application.properties, keycloak-realm.template.json,
+  MailService (app.mail.admin) und der Dev-Test-Resource auf
+  kontakt@konfplan.de umgestellt. deploy/sendmail-test.sh entsprechend
+  angepasst. Neue Anleitung in Deployment-DockerCompose.adoc dokumentiert
+  die einmalige Brevo-Domain-Authentifizierung (SPF/DKIM/DMARC-DNS-Records).
+
 - Fixed Email Sender: kontakt@konfplan.de
+
 - Invalid Prio msg
-- Release 1.7.0 (#387)
+
+- Release 1.7.0
+

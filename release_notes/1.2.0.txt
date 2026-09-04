@@ -2,18 +2,153 @@ Release Notes 1.2.0
 Released: 2026-08-19
 
 Changes:
-- Prepare next development iteration (1.1.1-SNAPSHOT) (#149)
+
+- Prepare next development iteration (1.1.1-SNAPSHOT)
+
 - added quarkus http env settings in docker-compose.yml
-- Info-Menüeintrag im Header, Rollen-Kürzel entfernt (#151)
-- Keycloak-SMTP für lokalen Dev-Modus mit Mailpit verdrahten (#155)
-- Mailpit-DevServices-Port fest auf 8025 pinnen (#153)
-- Offene-Punkte-Liste: Keycloak-SMTP-Punkt für Dev/Mailpit abhaken (#156)
-- Keycloak-Realm-SMTP für Prod-Deployment (Brevo/Mailpit) verdrahten (#158)
-- Prod-Realm: Update-Password als Default-Required-Action für neue Nutzer (#160)
-- PlanungTab: Export/Import-Buttons unter die Konfiguration verschieben (#162)
-- Planerstellung: Inkonsistenzen als persistentes Banner statt Alert (#164)
-- ReferentenTab (Admin): fehlenden Speichern-Button für Verfügbarkeiten ergänzen (#166)
-- Mailto-Links für Organisatoren mit Underline + Mailbox-Icon (#168)
-- Raumschilder-Report: veraltete verschachtelte vortrag-Referenz entfernen (#172)
-- SlotDto: Zeitangaben-Methoden zu Standard-Bean-Gettern umbenennen (#170)
-- Release 1.2.0 (#174)
+
+- Info-Menüeintrag im Header, Rollen-Kürzel entfernt
+  - Neues /api/info liefert Name, Version, Build-Datum und Git-Commit über die
+    quarkus-info-Extension (GitInfo/BuildInfo). quarkus.application.version war
+    fest auf "1.0.0" gepinnt und damit von der tatsächlichen Maven-Version
+    entkoppelt - jetzt übernimmt Quarkus automatisch die echte Projektversion.
+  - Neues InfoPanel.vue im Header zeigt diese Daten plus einen Mailto-Link an
+    juergenkrey@yahoo.de.
+  - "tn"/"ref"/"adm"-Rollenkürzel im Header (Desktop + Mobile) entfernt,
+    bewusst ohne Ersatz-Navigation.
+
+- Keycloak-SMTP für lokalen Dev-Modus mit Mailpit verdrahten
+  * Keycloak-Realm-SMTP für lokalen Dev-Modus mit Mailpit verdrahten
+  Der native "Passwort vergessen"-Link im Keycloak-Login-Dialog
+  (resetPasswordAllowed: true) konnte bisher keine Mail verschicken, da der
+  dev-importierten Realm-JSON ein smtpServer fehlt. Statische SMTP-Konfiguration
+  ist für quarkus:dev nicht möglich, da Keycloak- und Mailpit-DevService in
+  getrennten Containern laufen und der Mailpit-SMTP-Port bei jedem Start
+  zufällig neu vergeben wird.
+  Neuer dev-only Startup-Hook (DevKeycloakSmtpConfigService) übernimmt daher
+  zur Laufzeit die von Quarkus für den App-eigenen Mailer bereits korrekt
+  aufgelösten quarkus.mailer.host/-port-Werte und setzt sie per Keycloak
+  Admin-REST-API als Realm-SMTP-Konfiguration - ohne Rätselraten über
+  Container-Hostnamen/-Netzwerke. Nur in %dev aktiv (@IfBuildProfile).
+  * Admin-CLI-Service-Account braucht manage-realm für Realm-SMTP-Update
+  Der Startup-Hook aus dem vorigen Commit schlug mit 403 fehl:
+  service-account-konfplan-admin-cli hatte nur manage-users/view-users/
+  view-realm, aber RealmResource#update() (zum Setzen des smtpServer)
+  erfordert manage-realm.
+  Nur die Dev-Realm-JSON betroffen (backend/src/main/resources/keycloak/) -
+  die separat gepflegte Prod-Vorlage (deploy/keycloak-realm.template.json)
+  bleibt unverändert, da der neue Hook @IfBuildProfile("dev") ist.
+  * host.docker.internal statt localhost fuer Keycloak-Realm-SMTP
+  localhost zeigte aus Sicht des nativ laufenden App-Prozesses korrekt auf
+  Mailpits gemappten Port, aber Keycloak laeuft selbst in einem eigenen
+  Docker-Container - dort ist "localhost" der Keycloak-Container selbst, nicht
+  der Host-Rechner. Live gegen quarkus:dev verifiziert: Mail kommt jetzt in
+  Mailpit an.
+  ---------
+
+- Mailpit-DevServices-Port fest auf 8025 pinnen
+  Bisher wies Testcontainers dem Mailpit-Container bei jedem quarkus:dev-Start
+  einen zufälligen Host-Port zu, was das lokale Auffinden der Web-UI erschwerte.
+  Analog zu Postgres (65432) und Keycloak (8180) jetzt fest gepinnt.
+
+- Offene-Punkte-Liste: Keycloak-SMTP-Punkt für Dev/Mailpit abhaken
+  Der Punkt deckte ursprünglich sowohl Dev (Mailpit) als auch Prod (Brevo) ab.
+  #154 hat nur die Dev-Hälfte erledigt (DevKeycloakSmtpConfigService) - Prod-
+  SMTP für Keycloaks eigenen Passwort-Reset-Flow bleibt offen.
+
+- Keycloak-Realm-SMTP für Prod-Deployment (Brevo/Mailpit) verdrahten
+  Keycloaks nativer "Passwort vergessen"-Flow (resetPasswordAllowed: true)
+  konnte im Docker-Compose-Deployment ebenfalls keine Mail verschicken, da
+  der Realm-Vorlage ein smtpServer fehlte. Anders als im lokalen quarkus:dev
+  (#154) importiert Keycloak hier seine Realm-JSON direkt beim eigenen Start
+  (kein Laufzeit-Admin-API-Aufruf nötig) - bootstrap.sh rendert die Platzhalter
+  jetzt mit denselben Env-Variablen/Secrets, die der App-eigene Mailer in
+  docker-compose.yml schon nutzt (Default mailpit/1025/DISABLED, echte
+  Brevo-Werte wenn gesetzt), keine Ausweitung der Admin-CLI-Service-Account-
+  Rechte nötig.
+  Externe Zugangsdaten (Brevo-Nutzername/-Passwort) werden zweistufig
+  escaped (JSON-Escaping, dann sed-Replacement-Escaping), da sie sed-
+  Sonderzeichen und JSON-Sonderzeichen enthalten können - lokal mit
+  Testwerten (inkl. &, \, ", | im Passwort) verifiziert.
+
+- Prod-Realm: Update-Password als Default-Required-Action für neue Nutzer
+  Bisher erzwang nur KeycloakUserProvisioningService.createUser() (App-Code)
+  in %prod ein temporäres Passwort + UPDATE_PASSWORD-Required-Action. Ein
+  Nutzer, der direkt in der Keycloak-Admin-Konsole angelegt wird, bekäme das
+  Verhalten nicht automatisch.
+  requiredActions mit UPDATE_PASSWORD als defaultAction: true auf Realm-Ebene
+  lässt Keycloak diese Required Action automatisch in JEDEN danach neu
+  angelegten Nutzer mergen - unabhängig von der Anlage-Methode (Admin-REST-API
+  oder manuell in der Konsole). Empirisch mit Keycloak 26.7.0 verifiziert
+  (Wegwerf-Container, echtes Realm-Import + Nutzeranlage über den
+  konfplan-admin-cli Service-Account).
+  Bewusst NUR im Prod-Template, nicht im Dev-Realm
+  (backend/src/main/resources/keycloak/konfplan-realm.json): Keycloak merged
+  die Default-Action in JEDEN neu angelegten Nutzer, auch bei explizit leerer
+  requiredActions-Liste - das würde das bewusst bequeme, nicht-temporäre
+  "konfplan"-Standardpasswort für lokale Testläufe zunichtemachen.
+
+- PlanungTab: Export/Import-Buttons unter die Konfiguration verschieben
+  Die drei Buttons ".dzn exportieren", "Bundle exportieren" und "Ergebnis
+  importieren" standen bisher in einer Reihe rechts neben der
+  Solver-Konfiguration und nahmen dort zu viel horizontalen Platz weg.
+  Jetzt in einer eigenen Zeile unterhalb, der "Pläne erstellen"-Button
+  bleibt rechts neben der Konfiguration, aber verkleinert (px-8 py-4
+  text-lg -> px-5 py-2.5 text-sm), ebenso die beiden Status-Varianten
+  (Abbrechen/Vorbereitung läuft) für optische Konsistenz.
+
+- Planerstellung: Inkonsistenzen als persistentes Banner statt Alert
+  Wenn die Vorbedingungs-Prüfung für die Planerstellung fehlschlägt
+  (PlanErstellungService.pruefeKollisionenOrThrow -> 400), zeigte das
+  Admin-Dashboard bisher einen alert() mit der Fehlermeldung.
+  Stattdessen jetzt ein Banner oberhalb der Tab-Inhalte (bleibt daher auch
+  bei Tab-Wechseln bestehen, da es außerhalb des ":key=activeTab"-Bereichs
+  liegt), das erst über einen "Verstanden"-Button geschlossen wird. Ein
+  neuer Planerstellungs-Versuch blendet ein noch offenes Banner
+  automatisch aus.
+
+- ReferentenTab (Admin): fehlenden Speichern-Button für Verfügbarkeiten ergänzen
+  Die Verfügbarkeits-Checkboxen togglen nur den lokalen Zustand im
+  availabilityStore - anders als TeilnehmerTab.vue/GebaeudeTab.vue fehlte
+  der "Alle Änderungen speichern"-Button, der availabilityStore.
+  saveAvailabilities(selectedVid) aufruft. Geänderte Referenten-
+  Verfügbarkeiten wurden dadurch nie persistiert.
+  Kein Regressions-Fund laut git log (ReferentenTab.vue unverändert seit
+  dem initialen Commit) - der Button hat hier offenbar von Anfang an
+  gefehlt.
+
+- Mailto-Links für Organisatoren mit Underline + Mailbox-Icon
+  Bisher nur "hover:underline" (Unterstreichung erst bei Hover) und ohne
+  visuellen Hinweis auf einen Link. Jetzt immer unterstrichen plus
+  Mailbox-Icon vor dem Namen, in TeilnehmerDashboard.vue und
+  ReferentDashboard.vue.
+
+- Raumschilder-Report: veraltete verschachtelte vortrag-Referenz entfernen
+  Das Template griff noch auf ein nicht mehr existierendes vortrag-Objekt
+  zu (vortrag.titel, vortrag.referent.firstName/lastName) statt auf die
+  flachen Felder des RaumplanEintragDto (vortragTitel, referentName). Der
+  dadurch ausgeloeste Fehler in der Render-Funktion liess Vue das
+  DOM-Update verwerfen, sodass der Lade-Spinner dauerhaft sichtbar blieb.
+
+- SlotDto: Zeitangaben-Methoden zu Standard-Bean-Gettern umbenennen
+  Reports (Teilnehmer-Zuordnungen, Stundenplan, Prioritaeten) zeigten statt
+  der Zeitangaben nur ", -" in Tabellen-Kopfzeilen: das reale JSON enthielt
+  nur die echten Felder, die virtuellen @JsonProperty-Methoden tag()/
+  start()/ende()/zeitraum()/zeitraumTag() fehlten komplett.
+  Ursache: ObjectMapperCustomizerImpl registriert Jacksons BlackbirdModule
+  (reflection-freie, lambda-basierte Serialisierung), das laut Dokumentation
+  Felder und Standard-Bean-Getter/Setter unterstuetzt, aber keine beliebig
+  benannten @JsonProperty-Methoden. Live gegen die laufende quarkus:dev-
+  Instanz verifiziert (GET /api/reports/{vid}/teilnehmer-dashboard-data
+  lieferte tatsaechlich kein "tag"/"start"/"ende" im JSON).
+  Fix: Methoden zu getTag()/getStart()/getEnde()/getZeitraum()/
+  getZeitraumTag() umbenannt - Blackbird unterstuetzt Standard-Getter, und
+  Jacksons Property-Namen bleiben durch die Getter-Konvention identisch
+  ("tag", "start", ...), daher keine Frontend-Aenderungen noetig.
+  Neuer Regressionstest SlotDtoSerializationTest nutzt den echten per CDI
+  injizierten ObjectMapper (identischer Mechanismus wie die REST-Endpunkte)
+  und haette den Bug erkannt.
+
+- Release 1.2.0
+  Setzt alle Modul-Versionen von 1.1.1-SNAPSHOT auf 1.2.0.
+
