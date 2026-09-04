@@ -26,6 +26,16 @@
           <textarea v-model="beschreibung" rows="5" class="input-field w-full" required></textarea>
         </div>
 
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Dringlichkeit</label>
+          <select v-model="dringlichkeit" class="input-field w-full" required>
+            <option value="NIEDRIG">Niedrig</option>
+            <option value="MITTEL">Mittel</option>
+            <option value="HOCH">Hoch</option>
+            <option value="KRITISCH">Kritisch</option>
+          </select>
+        </div>
+
         <p v-if="error" class="text-xs text-red-600">{{ error }}</p>
 
         <div class="flex justify-end gap-3 pt-2">
@@ -53,6 +63,7 @@ const emit = defineEmits(['close']);
 
 const titel = ref('');
 const beschreibung = ref('');
+const dringlichkeit = ref('MITTEL');
 const error = ref('');
 const isSubmitting = ref(false);
 const submitted = ref(false);
@@ -61,6 +72,7 @@ watch(() => props.isVisible, (visible) => {
   if (visible) {
     titel.value = '';
     beschreibung.value = '';
+    dringlichkeit.value = 'MITTEL';
     error.value = '';
     submitted.value = false;
   }
@@ -72,7 +84,7 @@ const submit = async () => {
   isSubmitting.value = true;
   error.value = '';
   try {
-    await api.post('/api/verbesserungsvorschlaege', { titel: titel.value, beschreibung: beschreibung.value });
+    await api.post('/api/verbesserungsvorschlaege', { titel: titel.value, beschreibung: beschreibung.value, dringlichkeit: dringlichkeit.value });
     submitted.value = true;
   } catch (e) {
     console.error('Fehler beim Einreichen des Verbesserungsvorschlags:', e);
