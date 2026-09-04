@@ -36,6 +36,11 @@ public class Planungsergebnis extends VersionedEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     private SolverConfig solverConfig;
 
+    // Gesetzt, wenn nach der letzten Planerstellung ein bereits zugeteilter Wahlvortrag
+    // zurückgezogen wurde (siehe NachrichtService#benachrichtigeUeberZurueckgezogenenVortrag) -
+    // wird bei der naechsten erfolgreichen Neu-Erstellung wieder zurueckgesetzt.
+    private boolean veraltet = false;
+
     public static Planungsergebnis getPlanungsergebnis(Veranstaltung veranstaltung) {
         return Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
     }

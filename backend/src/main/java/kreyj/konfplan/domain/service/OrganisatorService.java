@@ -90,13 +90,16 @@ public class OrganisatorService implements OrganisatorServiceInterface {
     private final MailService mailService;
     private final ProtokollService protokollService;
     private final KeycloakUserProvisioningService keycloakUserProvisioningService;
+    private final NachrichtService nachrichtService;
 
 
     public OrganisatorService(MailService mailService, ProtokollService protokollService,
-                        KeycloakUserProvisioningService keycloakUserProvisioningService) {
+                        KeycloakUserProvisioningService keycloakUserProvisioningService,
+                        NachrichtService nachrichtService) {
         this.mailService = mailService;
         this.protokollService = protokollService;
         this.keycloakUserProvisioningService = keycloakUserProvisioningService;
+        this.nachrichtService = nachrichtService;
     }
 
 
@@ -1332,6 +1335,9 @@ public class OrganisatorService implements OrganisatorServiceInterface {
         }
 
         String titel = entity.getTitel();
+        if (entity instanceof Wahlvortrag wahlvortrag) {
+            nachrichtService.benachrichtigeUeberZurueckgezogenenVortrag(wahlvortrag, veranstaltung);
+        }
         boolean deleted = Vortrag.deleteById(id);
 
         if (deleted) {

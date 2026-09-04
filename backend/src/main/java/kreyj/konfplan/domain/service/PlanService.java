@@ -196,7 +196,7 @@ public class PlanService {
     public PlanQualitaetDto getPlanQualitaet(Veranstaltung veranstaltung) {
         Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
         if (null == planungsergebnis) {
-            return new PlanQualitaetDto(0, 0, 0, "Kein Ergebnis vorhanden");
+            return new PlanQualitaetDto(0, 0, 0, "Kein Ergebnis vorhanden", false);
         }
 
         try {
@@ -206,10 +206,10 @@ public class PlanService {
             int raumwechsel = root.has("raumwechsel") ? root.get("raumwechsel").asInt() : 0;
             String status = "Planerstellung abgeschlossen";
 
-            return new PlanQualitaetDto(guete, zuweisungen, raumwechsel, status);
+            return new PlanQualitaetDto(guete, zuweisungen, raumwechsel, status, planungsergebnis.isVeraltet());
         } catch (Exception e) {
             LOG.error("Fehler beim Parsen der Planqualität für Veranstaltung " + veranstaltung.getName(), e);
-            return new PlanQualitaetDto(0, 0, 0, "Fehler beim Parsen");
+            return new PlanQualitaetDto(0, 0, 0, "Fehler beim Parsen", planungsergebnis.isVeraltet());
         }
     }
 
