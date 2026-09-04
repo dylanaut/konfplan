@@ -2,6 +2,39 @@ Release Notes 1.10.0
 Released: 2026-09-03
 
 Changes:
-- Prepare next development iteration (1.9.1-SNAPSHOT) (#403)
-- AdminDashboard: Sidebar-Navigation, Onboarding-Status-Tab, Sticky-Spalten-Fix (#405)
-- Release 1.10.0 (#407)
+
+- Prepare next development iteration (1.9.1-SNAPSHOT)
+
+- AdminDashboard: Sidebar-Navigation, Onboarding-Status-Tab, Sticky-Spalten-Fix
+  * AdminDashboard: Sidebar-Navigation, Onboarding-Status-Tab, Sticky-Spalten-Fix
+  Drei zusammenhängende Verbesserungen:
+  1. TeilnehmerTab.vue: Sticky-Spalten-Bug in der Prioritäten-Matrix behoben -
+     nur "Name" war sticky, "Gruppen" scrollte darunter weg und wurde von der
+     fixierten Name-Spalte überlagert. "Gruppen" ist jetzt ebenfalls sticky
+     (versetzt um die Breite der Name-Spalte), sodass nur noch die
+     Prio-Eingabespalten tatsächlich scrollen.
+  2. AdminDashboard.vue: horizontale Tab-Leiste (12 Tabs) durch eine neue,
+     ein-/ausklappbare linke Sidebar (AdminSidebarNav.vue) ersetzt, gruppiert
+     nach Stammdaten/Planung/Administration - jede Gruppe einzeln auf-/zuklappbar,
+     die gesamte Leiste zusätzlich auf einen Icon-Streifen einklappbar.
+  3. Neuer "Onboarding-Status"-Tab (OnboardingTab.vue): zeigt LoginName, Rolle,
+     E-Mail und ob ein Nutzer bereits ein echtes eigenes Passwort vergeben hat.
+     KeycloakUserProvisioningService.hatEchtesPasswort() (einzige Stelle mit
+     Zugriff auf den Keycloak Admin REST Client, siehe Klassenkommentar) prüft
+     dafür pro Nutzer: kein Credential vorhanden ODER noch ausstehende
+     UPDATE_PASSWORD-Required-Action (Admin-Reset oder Prod-Konvention "kein
+     Start-Passwort") zählt als "kein echtes Passwort". Neuer Endpunkt
+     GET /api/admin/onboarding-status (ADMIN-only).
+  Per Live-Test (echter Login-Flow gegen quarkus:dev) verifiziert: Sidebar mit
+  Gruppen und Collapse-Toggle, Onboarding-Tab lädt echte Nutzerdaten korrekt,
+  Sticky-Spalten-Fix per erzwungenem Overflow bestätigt.
+  * AdminSidebarNav: echte Icons statt Zwei-Buchstaben-Kürzel
+  Die vorherige Kollaps-Darstellung (erste zwei Buchstaben des Tab-Labels)
+  war bei mehreren Tabs mehrdeutig (z.B. "Veranstaltungen" und
+  "Verzeichnis-Import" beide "Ve"). Jeder Tab hat jetzt ein eigenes,
+  thematisch passendes Lucide-Icon, sichtbar sowohl im eingeklappten
+  Icon-Streifen als auch neben dem Label im ausgeklappten Zustand.
+  ---------
+
+- Release 1.10.0
+

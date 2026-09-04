@@ -2,6 +2,19 @@ Release Notes 1.4.1
 Released: 2026-09-01
 
 Changes:
-- Prepare next development iteration (1.4.1-SNAPSHOT) (#365)
-- Serverseitiges Logging fuer rohe WebApplicationException-basierte Fehlerantworten (#367)
-- Release 1.4.1 (#369)
+
+- Prepare next development iteration (1.4.1-SNAPSHOT)
+  Setzt alle vier POMs von 1.4.0 auf 1.4.1-SNAPSHOT, nach dem Release 1.4.0.
+
+- Serverseitiges Logging fuer rohe WebApplicationException-basierte Fehlerantworten
+  Business-Validierungsfehler wie die 400er in PrioritaetService.savePrioritaeten
+  werfen eine rohe WebApplicationException mit eigener Response - diese wird vom
+  bestehenden BusinessExceptionMapper (nur fuer BusinessException) nicht abgefangen
+  und landete bisher ohne jeden Log-Eintrag im Server-Log. Ein neuer globaler
+  ExceptionMapper<WebApplicationException> loggt jetzt Status, Meldung und den
+  loginName des authentifizierten Nutzers, ohne die Response zu veraendern - damit
+  sind Meldungen externer Nutzer (bei denen nur der loginName bekannt ist) anhand
+  der Server-Logs diagnostizierbar.
+
+- Release 1.4.1
+

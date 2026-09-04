@@ -2,5 +2,51 @@ Release Notes 1.12.0
 Released: 2026-09-03
 
 Changes:
-- Rollenmodell: Admin -> Organisator umbenennen, neue Rolle Administrator (#422)
-- Release 1.12.0 (#423)
+
+- Rollenmodell: Admin -> Organisator umbenennen, neue Rolle Administrator
+  * Backend: Rollenmodell Admin -> Organisator umbenennen, neue Rolle Administrator
+  Admin.java wird zu Organisator.java (@DiscriminatorValue ORGANISATOR); die neue
+  Administrator-Entity erweitert Organisator, sodass jede bisherige
+  "instanceof Organisator"-Pruefung automatisch auch Administratoren erfasst.
+  Alle "ADMIN"-Rollen-Checks (@RolesAllowed, Keycloak-Realm-Rollen,
+  UserActivityTracker) werden zu {"ORGANISATOR","ADMINISTRATOR"} erweitert,
+  ausser bei den zwei neuen exklusiven Endpunkten (Wartungshinweis setzen/loeschen,
+  Verzeichnis-Import), die nur noch ADMINISTRATOR erlauben. AdminService/
+  AdminResource/AdminCsvDto/AdminPasswordResetDto werden mechanisch auf
+  Organisator* umbenannt. Neue Flyway-Migration V14 migriert bestehende
+  ADMIN-Zeilen zu ORGANISATOR. ProdKeycloakRealmSyncService benennt die
+  Keycloak-Realm-Rolle bei bereits laufenden Deployments idempotent um und legt
+  ADMINISTRATOR neu an. Verwaiste Datei-Kopie backend/src/main/resources/
+  konfplan-realm.json geloescht.
+  * Frontend: Rollenmodell Admin -> Organisator umbenennen, neue Rolle Administrator
+  components/admin/ wird zu components/organisator/, AdminDashboard.vue zu
+  OrganisatorDashboard.vue, Router-Pfad /admin zu /organisator; alle
+  /api/admin/...-Aufrufe folgen den Backend-Pfaden nach /api/organisator/....
+  stores/auth.js: isAdmin -> isOrganisator (liefert true fuer ORGANISATOR UND
+  ADMINISTRATOR, da Administrator dieselben Rechte hat), neu isAdministrator.
+  router/index.js prueft Rollen jetzt ueber diese semantischen Store-Getter statt
+  per strikter String-Gleichheit, damit ORGANISATOR-Routen weiterhin auch fuer
+  ADMINISTRATOR zugaenglich sind. OrganisatorDashboard.vue blendet "Wartung
+  ankündigen" und den Tab "Verzeichnis-Import" nur fuer ADMINISTRATOR ein.
+  UserEditorModal.vue erlaubt bei bestehenden Organisatoren/Administratoren ein
+  Umschalten der Rolle zwischen beiden (neue Nutzer werden weiterhin nur als
+  ORGANISATOR angelegt). Playwright-Suite (inkl. Umbenennung von
+  AdminDashboardModals.spec.js) entsprechend angepasst und gruen; live gegen
+  echtes quarkus:dev + echten Keycloak-Login verifiziert (ORGANISATOR erhaelt
+  403/blendet die Administrator-Elemente aus, ADMINISTRATOR hat vollen Zugriff).
+  * Docs + restliche /api/admin-Pfade auf Organisator/Administrator umstellen
+  OnboardingStatusResource/ProtokollResource: @Path von /api/admin/... auf
+  /api/organisator/... umgestellt (waren beim ersten Rename-Durchgang
+  uebersehen worden); KalenderResource/-Service: getAdminKalender/
+  generateAdminCalendar zu getOrganisatorKalender/generateOrganisatorCalendar,
+  Pfad /admin/{id} zu /organisator/{id}. USE_CASES.adoc per UseCaseScanner neu
+  generiert (jetzt korrekt ORGANISATOR/ADMINISTRATOR statt ADMIN). CLAUDE.md,
+  AGENTS.md, backend/AGENTS.md, backend/src/test/AGENTS.md und
+  Benutzerhandbuch-Admin.adoc auf das neue Vier-Rollen-Modell aktualisiert;
+  Deployment-DockerCompose.adoc/Ubuntu-Frischinstallation.adoc weisen den
+  Bootstrap-Nutzer juergenkrey nun als ADMINISTRATOR statt ADMIN an (historische
+  Migrations-/OIDC-Tutorial-Dokumente bewusst unangetastet gelassen).
+  ---------
+
+- Release 1.12.0
+

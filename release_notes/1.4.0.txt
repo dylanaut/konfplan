@@ -2,8 +2,38 @@ Release Notes 1.4.0
 Released: 2026-09-01
 
 Changes:
-- Prepare next development iteration (1.3.1-SNAPSHOT) (#355)
-- Produktion: IMAGE_TAG immer auf Release-Version pinnen, nie auf 'latest' (#357)
-- Log-Zeile bei fehlgeschlagener JWT-Verifizierung: LoginName ergänzen (#359)
-- TeilnehmerTab: Teilnehmer ohne vergebene Priorität dezent hervorheben (#361)
-- Release 1.4.0 (#363)
+
+- Prepare next development iteration (1.3.1-SNAPSHOT)
+  Setzt alle vier POMs von 1.3.0 auf 1.3.1-SNAPSHOT, nach dem Release 1.3.0.
+
+- Produktion: IMAGE_TAG immer auf Release-Version pinnen, nie auf 'latest'
+  deploy/.env.example defaultet jetzt auf die aktuelle Release-Version statt
+  latest. Deployment-DockerCompose.adoc dokumentiert das Pinnen als festen
+  Ablauf vor jedem Update/Redeploy - latest folgt jedem Push auf main, also
+  potenziell unfertigem Stand.
+  Nebenbei: CLAUDE.md bereinigt - enthielt korrupten Alt-Inhalt (Section-
+  Header mit rohem "\n\n" statt echtem Zeilenumbruch, dahinter themenfremde
+  Beispiel-Prompts aus einer offenbar fehlgeschlagenen frueheren Bearbeitung).
+  Die tatsaechlich brauchbaren Regeln daraus wurden in bestehende bzw. neue
+  Abschnitte uebernommen, der Rest entfernt.
+
+- Log-Zeile bei fehlgeschlagener JWT-Verifizierung: LoginName ergänzen
+  Neuer CDI-Observer AuthFailureUsernameLogger auf Quarkus' generisches
+  AuthenticationFailureEvent (feuert bei jedem Authentifizierungs-
+  Fehlschlag, nicht OIDC-spezifisch). Liest das Bearer-Token direkt aus
+  dem Request und loggt den preferred_username-Claim zusaetzlich als
+  eigene WARN-Zeile - unabhaengig davon, ob die Verifizierung erfolgreich
+  war, da JWTs nur signiert, nicht verschluesselt sind.
+  Per Live-Test gegen echten Dev-Keycloak verifiziert (manipulierte
+  Signatur erzeugt denselben Fehlschlag wie ein abgelaufenes Token).
+
+- TeilnehmerTab: Teilnehmer ohne vergebene Priorität dezent hervorheben
+  In der Prioritäten-Matrix werden Zeilen von Teilnehmern, die noch keine
+  einzige Priorität vergeben haben (kein Wert > 0), jetzt mit einem
+  dezenten gelblichen Hintergrund markiert, damit Admins sie schnell
+  erkennen. Tooltip beim Hovern erklärt den Grund.
+
+- Release 1.4.0
+  Setzt alle vier POMs (root, backend, frontend, performancetest) von
+  1.3.1-SNAPSHOT auf 1.4.0.
+

@@ -2,8 +2,41 @@ Release Notes 1.15.0
 Released: 2026-09-04
 
 Changes:
-- Prepare next development iteration (1.14.1-SNAPSHOT) (#436)
-- Fix: Rollenwechsel Organisator<->Administrator ohne Keycloak-Account schlägt fehl (#440)
-- Release Notes Verzeichnis + automatische Generierung in CI (#438)
-- VortraegeTab: Aktion zur Anzeige der Anmeldungen eines Wahlvortrags (#442)
-- Release 1.15.0 (#443)
+
+- Prepare next development iteration (1.14.1-SNAPSHOT)
+
+- Fix: Rollenwechsel Organisator<->Administrator ohne Keycloak-Account schlägt fehl
+  KeycloakUserProvisioningService#changeRealmRole brach hart ab, wenn der
+  Nutzer keinen Keycloak-Account hatte (z.B. Altdaten aus der Zeit vor der
+  Keycloak-Integration oder nach einem lokalen Neustart der ephemeren
+  Keycloak-Dev-Services, während die persistente lokale DB den Nutzer
+  weiterhin führt). Legt den fehlenden Account jetzt selbstheilend über
+  createUser() nach, bevor die eigentliche Rollenumstufung erfolgt - analog
+  zum bereits bestehenden 409-Konflikt-Handling in derselben Klasse.
+
+- Release Notes Verzeichnis + automatische Generierung in CI
+  * Release Notes Verzeichnis + automatische Generierung in CI
+  Neues release_notes/-Verzeichnis mit einer Datei pro bisher veröffentlichter
+  Version (v1.0.0 bis v1.14.0), jeweils eine grobe Zusammenfassung der Änderungen
+  aus dem Commit-Log seit dem vorherigen Tag. scripts/generate-release-notes.sh
+  erzeugt diese Dateien (einzeln oder per --all rückwirkend für alle Tags).
+  ci.yml bekommt einen neuen Job "release-notes", der bei jedem Versions-Tag-Push
+  (major, minor und patch) nach erfolgreichem Build+Test+Image die passende Datei
+  generiert und automatisch nach main committet ([skip ci], damit kein weiterer
+  CI-Lauf für diesen reinen Text-Commit ausgelöst wird).
+  * Retrigger CI [empty commit]
+  ---------
+
+- VortraegeTab: Aktion zur Anzeige der Anmeldungen eines Wahlvortrags
+  Neues Icon (UserCheck, "Angemeldete Teilnehmer") je Wahlvortrag-Zeile im
+  Vorträge-Tab öffnet einen neuen Report-Tab mit LoginName + Priorität aller
+  Teilnehmer, die sich für den Vortrag beworben haben, sortiert nach Priorität
+  absteigend. Priorität 0 ("keine Präferenz") zählt nicht als Anmeldung. Die
+  Gesamtzahl erscheint in der Kopfzeile. Pflichtvorträge zeigen die Aktion
+  nicht, da es dort keine Prioritätenvergabe gibt.
+  Neuer Endpunkt GET /api/reports/{vid}/vortrag/{vortragId}/anmeldungen-data
+  (ReportResource) + ReportDto.VortragAnmeldungenDto, neue Route
+  "VortragAnmeldungen" (frontend/src/views/report/VortragAnmeldungen.vue).
+
+- Release 1.15.0
+

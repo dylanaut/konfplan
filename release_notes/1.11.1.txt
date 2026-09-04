@@ -2,6 +2,25 @@ Release Notes 1.11.1
 Released: 2026-09-03
 
 Changes:
-- Prepare next development iteration (1.11.1-SNAPSHOT) (#415)
-- TeilnehmerDashboard: Client-seitige Validierung der Prioritäts-Eingabe (#417)
-- Release 1.11.1 (#419)
+
+- Prepare next development iteration (1.11.1-SNAPSHOT)
+
+- TeilnehmerDashboard: Client-seitige Validierung der Prioritäts-Eingabe
+  Teilnehmer meldeten Backend-Fehlermeldungen beim Speichern von
+  Wahlvortrags-Prioritäten durch fehlerhafte Werte (leer, Dezimalzahl,
+  außerhalb des gültigen Intervalls).
+  Neue Prüfung vor dem Speichern: Wert muss eine ganze Zahl im Intervall
+  [Prioritaet.PRIO_MIN, PRIO_MAX] = [0, 10] sein (muss mit dem Backend
+  uebereinstimmen, siehe Kommentar). Ungültige Eingabefelder werden rot
+  markiert (Rahmen, Hintergrund, Tooltip), "Meine Prioritäten speichern"
+  bleibt deaktiviert, solange mindestens ein ungültiger Wert vorhanden ist.
+  Nebenbefund beim Live-Test entdeckt und behoben: das global eingebundene
+  @tailwindcss/forms-Plugin ueberschreibt die Border-Farbe von <input>-
+  Elementen ueber eine Selektor-Regel mit hoeherer Spezifitaet als eine
+  einzelne Tailwind-Utility-Klasse - border-{color}-Utilities auf
+  Formularfeldern brauchen deshalb den !-Wichtig-Modifier (!border-red-500
+  statt border-red-500), um ueberhaupt sichtbar zu werden. Per Live-Test
+  (echter Login-Flow, DOM-Stylesheet-Inspektion) verifiziert.
+
+- Release 1.11.1
+

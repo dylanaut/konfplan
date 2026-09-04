@@ -2,5 +2,24 @@ Release Notes 1.13.0
 Released: 2026-09-03
 
 Changes:
-- Fix Raum/Gebäude speichern: LazyInitializationException statt Erfolg (#424) (#425)
-- Release 1.13.0 (#427)
+
+- Fix Raum/Gebäude speichern: LazyInitializationException statt Erfolg (#424)
+  GebaeudeResource.createRaum/updateRaum sowie create/getOne/update fuer Gebaeude
+  gaben bisher die rohe JPA-Entity zurueck statt eines DTOs. Beim Serialisieren
+  (bzw. bei update() schon beim Zugriff auf die lazy raeume-Collection nach
+  Ende der Transaktion) warf das eine LazyInitializationException -> HTTP 500,
+  obwohl der Datenbank-Schreibvorgang bereits erfolgreich war. Fuer Organisatoren
+  sah das aus wie "Speichern tut nichts": kein Fehler, keine sichtbare Aenderung.
+  Fix: alle fuenf Endpunkte geben jetzt GebaeudeSimpleDto/RaumDto zurueck (wie
+  getAll/getRaeumeByGebaeude es bereits taten) und sind zusaetzlich
+  @Transactional, damit die DTO-Konstruktion noch innerhalb derselben Session
+  laeuft wie der Service-Aufruf. Zusaetzlich behoben: createRaum warf bei einem
+  im Request-Body mitgeschickten Gebaeude-Stub ({"gebaeude":{"id":...}}, wie ihn
+  das Frontend tatsaechlich sendet) eine PropertyValueException, da r.gebaeude
+  erst NACH dem initialen persistAndFlush() auf die korrekt verwaltete Entity
+  gesetzt wurde - jetzt vorher.
+  Neuer Regressionstest GebaeudeResourceTest deckt alle vier reparierten
+  Endpunkte ab.
+
+- Release 1.13.0
+
