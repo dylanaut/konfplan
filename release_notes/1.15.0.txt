@@ -1,0 +1,9 @@
+Release Notes 1.15.0
+Released: 2026-09-04
+
+Changes:
+- Prepare next development iteration (1.14.1-SNAPSHOT) (#436)
+- Fix: Rollenwechsel Organisator<->Administrator ohne Keycloak-Account schlägt fehl (#440)
+- Release Notes Verzeichnis + automatische Generierung in CI (#438)
+- VortraegeTab: Aktion zur Anzeige der Anmeldungen eines Wahlvortrags (#442)
+- Release 1.15.0 (#443)
