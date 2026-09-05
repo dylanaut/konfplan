@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.PlanQualitaetDto;
+import kreyj.konfplan.adapter.in.web.dto.PlanungsergebnisListDto;
 import kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht;
 import kreyj.konfplan.adapter.in.web.dto.RaumDto;
 import kreyj.konfplan.adapter.in.web.dto.RaumplanEintragDto;
@@ -13,6 +14,8 @@ import kreyj.konfplan.adapter.in.web.dto.ReferentVortragDto;
 import kreyj.konfplan.adapter.in.web.dto.SlotDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerDto;
 import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
+import kreyj.konfplan.domain.exception.BusinessException;
+import kreyj.konfplan.domain.exception.EntityNotFoundException;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Planungsergebnis;
@@ -194,7 +197,7 @@ public class PlanService {
 
     @Transactional
     public PlanQualitaetDto getPlanQualitaet(Veranstaltung veranstaltung) {
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
+        Planungsergebnis planungsergebnis = getPlanungsergebnis(veranstaltung);
         if (null == planungsergebnis) {
             return new PlanQualitaetDto(0, 0, 0, "Kein Ergebnis vorhanden", false);
         }
@@ -214,6 +217,71 @@ public class PlanService {
     }
 
 
+    /**
+     * Liefert ALLE Planungsergebnisse einer Veranstaltung (veröffentlicht oder nicht) für die
+     * Verwaltungsansicht im ErgebnisseTab - im Gegensatz zu {@link #getPlanQualitaet}, das nur das
+     * veröffentlichte liefert (siehe Planungsergebnis#getPlanungsergebnis).
+     */
+    @Transactional
+    public List<PlanungsergebnisListDto> listePlanungsergebnisse(Veranstaltung veranstaltung) {
+        return Planungsergebnis.findAlleFuer(veranstaltung).stream()
+            .map(e -> new PlanungsergebnisListDto(e.getId(), e.getErsteller(), e.getErstelltAm(), extrahiereGuete(e), e.isPubliziert()))
+            .toList();
+    }
+
+
+    private int extrahiereGuete(Planungsergebnis ergebnis) {
+        try {
+            JsonNode root = objectMapper.readTree(ergebnis.getJsonErgebnis());
+            return root.has("guete") ? root.get("guete").asInt() : 0;
+        } catch (Exception e) {
+            LOG.warn("Konnte Güte nicht aus Planungsergebnis " + ergebnis.getId() + " lesen", e);
+            return 0;
+        }
+    }
+
+
+    /**
+     * Veröffentlicht das angegebene Planungsergebnis und entzieht einem zuvor veröffentlichten
+     * automatisch den Status (es gilt danach als nicht-publiziert und ist damit wieder löschbar) -
+     * pro Veranstaltung darf immer nur genau eines veröffentlicht sein.
+     */
+    @Transactional
+    public void publiziereErgebnis(Veranstaltung veranstaltung, Long ergebnisId) {
+        Planungsergebnis ergebnis = ladeErgebnisFuer(veranstaltung, ergebnisId);
+
+        Planungsergebnis.<Planungsergebnis>find("veranstaltung = ?1 and publiziert = true", veranstaltung)
+            .list()
+            .forEach(bisherPubliziert -> bisherPubliziert.setPubliziert(false));
+
+        ergebnis.setPubliziert(true);
+    }
+
+
+    /**
+     * Löscht ein Planungsergebnis - ein veröffentlichtes kann NICHT gelöscht werden, das muss
+     * zuerst durch Veröffentlichen eines anderen (oder gar keines) Ergebnisses ersetzt werden.
+     */
+    @Transactional
+    public void loescheErgebnis(Veranstaltung veranstaltung, Long ergebnisId) {
+        Planungsergebnis ergebnis = ladeErgebnisFuer(veranstaltung, ergebnisId);
+        if (ergebnis.isPubliziert()) {
+            throw new BusinessException("Ein veröffentlichtes Planungsergebnis kann nicht gelöscht werden.");
+        }
+        ergebnis.delete();
+        minizincResultCache.remove(ergebnisId);
+    }
+
+
+    private Planungsergebnis ladeErgebnisFuer(Veranstaltung veranstaltung, Long ergebnisId) {
+        Planungsergebnis ergebnis = Planungsergebnis.findById(ergebnisId);
+        if (null == ergebnis || !ergebnis.getVeranstaltung().getId().equals(veranstaltung.getId())) {
+            throw new EntityNotFoundException(Planungsergebnis.class, "Planungsergebnis " + ergebnisId + " nicht gefunden.");
+        }
+        return ergebnis;
+    }
+
+
     @Transactional
     public List<ZuweisungDto> getPlanFuerTeilnehmer(Teilnehmer teilnehmer, Veranstaltung veranstaltung) {
         Objects.requireNonNull(veranstaltung);
@@ -221,7 +289,7 @@ public class PlanService {
             return Collections.emptyList();
         }
 
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
+        Planungsergebnis planungsergebnis = getPlanungsergebnis(veranstaltung);
         if (null == planungsergebnis) {
             return Collections.emptyList();
         }
@@ -320,7 +388,7 @@ public class PlanService {
             return Collections.emptyList();
         }
 
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
+        Planungsergebnis planungsergebnis = getPlanungsergebnis(veranstaltung);
         if (null == planungsergebnis) {
             return Collections.emptyList();
         }
@@ -404,7 +472,7 @@ public class PlanService {
 
     @Transactional
     public Map<Long, Map<Long, RaumplanEintragDto>> getRaumbelegungsplan(Veranstaltung veranstaltung) {
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
+        Planungsergebnis planungsergebnis = getPlanungsergebnis(veranstaltung);
         if (null == planungsergebnis) {
             return Collections.emptyMap();
         }
@@ -572,7 +640,7 @@ public class PlanService {
     @Transactional
     public Map<Long, List<SlotDto>> getFreieSlotsTeilnehmer(Veranstaltung veranstaltung) {
         Map<Long, List<SlotDto>> freieSlotsTeilnehmer = new HashMap<>();
-        Planungsergebnis planungsergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
+        Planungsergebnis planungsergebnis = getPlanungsergebnis(veranstaltung);
         if (null == planungsergebnis) {
             return Collections.emptyMap();
         }

@@ -101,6 +101,7 @@ class TeilnehmerVortraegeUndPrioritaetenTest extends DatabaseCleaner {
 
             Planungsergebnis pe = new Planungsergebnis();
             pe.setVeranstaltung(veranstaltung);
+            pe.setPubliziert(true);
             pe.setJsonErgebnis(result.toJson(mapper));
             pe.persist();
         });

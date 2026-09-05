@@ -14,6 +14,7 @@ import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -29,8 +30,10 @@ import java.time.LocalDateTime;
 import java.util.Set;
 
 import static io.restassured.RestAssured.given;
+import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 import static jakarta.ws.rs.core.Response.Status.CONFLICT;
 import static jakarta.ws.rs.core.Response.Status.CREATED;
+import static jakarta.ws.rs.core.Response.Status.NO_CONTENT;
 import static jakarta.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.is;
@@ -80,6 +83,84 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
                 .statusCode(OK.getStatusCode())
                 .body("size()", is(1))
                 .body("[0].titel", is("Test Vortrag"));
+    }
+
+
+    @Test
+    void testListePlanungsergebnisse_leerOhnePlan() {
+        given()
+            .when().get("/{vid}/planungsergebnisse", testVid)
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body("size()", is(0));
+    }
+
+
+    @Test
+    void testListePlanungsergebnisse_zeigtAlleUnabhaengigVomPublikationsstatus() {
+        createPlanungsergebnis("erster", false);
+        createPlanungsergebnis("zweiter", true);
+
+        given()
+            .when().get("/{vid}/planungsergebnisse", testVid)
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body("size()", is(2));
+    }
+
+
+    @Test
+    void testPubliziereErgebnis_entziehtVorherigemDenStatus() {
+        Long ersteId = createPlanungsergebnis("erster", true);
+        Long zweiteId = createPlanungsergebnis("zweiter", false);
+
+        given()
+            .when().put("/{vid}/planungsergebnisse/{ergebnisId}/publizieren", testVid, zweiteId)
+            .then()
+            .statusCode(OK.getStatusCode());
+
+        given()
+            .when().get("/{vid}/planungsergebnisse", testVid)
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body("find { it.id == " + ersteId + " }.publiziert", is(false))
+            .body("find { it.id == " + zweiteId + " }.publiziert", is(true));
+    }
+
+
+    @Test
+    void testLoescheErgebnis_veroeffentlichtesWirdAbgelehnt() {
+        Long id = createPlanungsergebnis("erster", true);
+
+        given()
+            .when().delete("/{vid}/planungsergebnisse/{ergebnisId}", testVid, id)
+            .then()
+            .statusCode(BAD_REQUEST.getStatusCode());
+    }
+
+
+    @Test
+    void testLoescheErgebnis_unveroeffentlichtesWirdGeloescht() {
+        Long id = createPlanungsergebnis("erster", false);
+
+        given()
+            .when().delete("/{vid}/planungsergebnisse/{ergebnisId}", testVid, id)
+            .then()
+            .statusCode(NO_CONTENT.getStatusCode());
+    }
+
+
+    @Transactional
+    Long createPlanungsergebnis(String ersteller, boolean publiziert) {
+        Veranstaltung v = Veranstaltung.findById(testVid);
+        Planungsergebnis pe = new Planungsergebnis();
+        pe.setVeranstaltung(v);
+        pe.setErsteller(ersteller);
+        pe.setErstelltAm(LocalDateTime.now());
+        pe.setPubliziert(publiziert);
+        pe.setJsonErgebnis("{\"guete\": 42}");
+        pe.persist();
+        return pe.getId();
     }
 
 

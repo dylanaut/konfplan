@@ -48,6 +48,7 @@ public class PlanServiceTest extends DatabaseCleaner {
 
         Planungsergebnis ergebnis = new Planungsergebnis();
         ergebnis.setVeranstaltung(veranstaltung);
+        ergebnis.setPubliziert(true);
         ergebnis.setSolverConfig(new SolverConfig(60, 1, 1, false));
         // Simulate a minimal valid JSON structure to avoid NullPointerExceptions during parsing
         ergebnis.setJsonErgebnis("""
