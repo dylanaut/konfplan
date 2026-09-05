@@ -1,0 +1,87 @@
+Release Notes 1.18.0
+Released: 2026-09-05
+
+Changes:
+
+- Release-Notes fuer 1.17.0 ergaenzen [skip ci]
+
+- Datenbank-Export (konfplan + Keycloak) für Administratoren
+  Administratoren können im Dashboard (Tab "Datenbank-Export") ein per pg_dump
+  erstelltes Backup beider Datenbanken als ZIP herunterladen - konfplan und
+  Keycloak liegen auf derselben Postgres-Instanz mit denselben Zugangsdaten,
+  daher genügt ein Klick für beide.
+  Ein Restore ist bewusst nicht über die Oberfläche möglich (zu destruktiv für
+  einen Web-Button), sondern nur über das neue Skript deploy/restore_db.sh,
+  das beide Datenbanken per pg_restore über die bestehende
+  "docker compose exec postgres"-Route wiederherstellt.
+  pg_dump läuft als externer Prozess (Muster wie PlanErstellungService/
+  MiniZinc). Da der Server auf Postgres 18 läuft, installiert Dockerfile.jvm
+  über das offizielle PGDG-Repo eine passende Client-Version - pg_dump darf
+  nicht älter als der gesicherte Server sein.
+  Tests laufen mangels echtem Postgres in der Pipeline (nur H2) gegen ein
+  Stub-Skript statt echtem pg_dump, verifizieren aber die komplette
+  ZIP-Erstellung und die Rollenbeschränkung auf ADMINISTRATOR.
+
+- Mehrere Planungsläufe pro Veranstaltung: Historie, Löschen, Veröffentlichen
+  Organisatoren können die Planung einer Veranstaltung jetzt mehrfach anstoßen -
+  jeder Lauf legt eine eigene Planungsergebnis-Zeile an (statt die bestehende zu
+  überschreiben) und wird im ErgebnisseTab tabellarisch angezeigt (Ersteller,
+  Erstellungsdatum, Güte, Status). Ergebnisse lassen sich löschen, außer dem
+  veröffentlichten. Genau ein Ergebnis pro Veranstaltung kann veröffentlicht
+  sein - erst das steht Organisatoren, Teilnehmern und Referenten als Plan/
+  Report zur Verfügung. Veröffentlichen erfordert eine Bestätigung und entzieht
+  einem zuvor veröffentlichten Ergebnis automatisch den Status.
+  Planungsergebnis wechselt von @OneToOne (Unique-Constraint) zu @ManyToOne;
+  alle bestehenden Leser (Teilnehmer-/Referenten-/Organisator-Reports,
+  NachrichtService) laufen über den zentralen Chokepoint
+  Planungsergebnis.getPlanungsergebnis(), der jetzt nur noch das veröffentlichte
+  Ergebnis liefert - dadurch war für sie keine Anpassung nötig, nur die
+  duplizierten Inline-Queries in PlanService wurden auf denselben Helper
+  konsolidiert. Migration markiert bestehende Zeilen als veröffentlicht, damit
+  sich am sichtbaren Verhalten bereits geplanter Veranstaltungen nichts ändert.
+
+- Organisator: Nachricht an ausgewählte Nutzer der Veranstaltung senden
+  Ein Organisator kann jetzt eine Nachricht verfassen und an ausgewählte
+  Organisatoren, Teilnehmer und/oder Referenten EINER Veranstaltung ins
+  bestehende In-App-Postfach senden (neuer Tab "Nachrichten" im Dashboard,
+  Empfänger-Multi-Select gruppiert nach Rolle inkl. "Alle auswählen" je Gruppe
+  und Suchfeld). Kein E-Mail-Versand, rein In-App - konsistent mit der
+  bestehenden Trennung von MailService und NachrichtService.
+  Das In-App-Postfach selbst (Entity, Service-Kernmethode, Glocke + Panel im
+  Frontend) existierte bereits nur für systemgenerierte Nachrichten. Neu:
+  - NachrichtService.sendeAnAusgewaehlte(...) validiert, dass jeder Empfänger
+    tatsächlich Organisator/Teilnehmer/Referent DIESER Veranstaltung ist
+    (Veranstaltung.organisatoren()/teilnehmer()/referenten()), bevor überhaupt
+    eine Nachricht verschickt wird.
+  - Neuer Endpunkt POST /api/veranstaltungen/{vid}/nachrichten (gleiche Rollen
+    wie bisher: ORGANISATOR/ADMINISTRATOR).
+  - Nachricht.absender (JWT-Principal-Name, analog Planungsergebnis.ersteller,
+    null = "System" für bestehende automatische Nachrichten) und neuer
+    Kategoriewert ORGANISATOR_NACHRICHT (Migration erweitert den harten
+    DB-CHECK-Constraint aus V15 - Constraint-Name empirisch gegen echtes
+    Postgres 18 verifiziert).
+  - MessageBoxPanel.vue zeigt den Absender jetzt an.
+
+- Release 1.18.0
+  Bump version from 1.17.0 to 1.18.0 in all four pom.xml files. Minor bump
+  (statt Patch) da seit 1.17.0 drei neue Features hinzukamen (Datenbank-Export/
+  Import, mehrere Planungsläufe pro Veranstaltung, Organisator-Nachrichten),
+  keine reinen Bugfixes.
+
+- Fix Dockerfile.jvm: microdnf kann PGDG-Repo-RPM nicht per URL installieren
+  Der v1.18.0-Tag-Push schlug im "package"-Job fehl: "microdnf install -y
+  <url>" wird von microdnf (anders als dnf/yum) nicht als Repo-RPM-Installation
+  interpretiert, sondern als Paketname gesucht ("error: No package matches
+  'https://...'").
+  Fix: Die PGDG-Repo-Definition direkt schreiben statt das Repo-RPM zu
+  "installieren" - dieselbe "microdnf install -y <paketname>"-Form, die im
+  vorherigen Schritt (gzip/tar) bereits nachweislich funktioniert. Per
+  "rpm -qlp" gegen die echte heruntergeladene RPM-Datei verifiziert: Paket
+  "postgresql18" existiert im Repo und installiert pg_dump tatsächlich unter
+  /usr/pgsql-18/bin/pg_dump (passend zum bereits gesetzten PG_DUMP_PATH).
+  Der eigentliche microdnf-Install-Schritt selbst bleibt in dieser Sandbox
+  weiterhin nicht end-to-end testbar (bestehendes, unabhängiges TLS-Problem
+  beim Zugriff auf beliebige HTTPS-Hosts aus Docker-Containern heraus - betraf
+  bereits den unveränderten MiniZinc-Schritt vor diesem PR). Muss nach dem
+  Mergen über den echten package-Job (CI) verifiziert werden.
+
