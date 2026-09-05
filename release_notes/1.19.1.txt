@@ -1,0 +1,28 @@
+Release Notes 1.19.1
+Released: 2026-09-05
+
+Changes:
+
+- Release-Notes fuer 1.19.0 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.19.1-SNAPSHOT)
+  Bump version from 1.19.0 to 1.19.1-SNAPSHOT in all four pom.xml files,
+  closing out release 1.19.0.
+
+- Sidebar: "Nachrichten"- und "Datenbank-Export"-Tab tatsächlich anzeigen
+  OrganisatorSidebarNav.vue rendert einen Tab-Button nur, wenn er sowohl in
+  visibleTabs (OrganisatorDashboard.vue) als auch in einer der drei
+  hartcodierten groups-Listen dieser Komponente steht. Bei der Einführung
+  beider Tabs (Datenbank-Export in #460, Nachrichten in #464) wurde nur
+  visibleTabs/tabLabels ergänzt, nicht aber groups - beide Tabs waren dadurch
+  seitdem für niemanden in der Sidebar sichtbar, unabhängig von der Rolle
+  (nicht nur für Administrator, wie ursprünglich gemeldet).
+  Beide in die Gruppe "Administration" eingeordnet (neben Onboarding-Status/
+  Protokoll/Feedback - ebenfalls uebergreifende Betriebs-Funktionen statt
+  Stammdaten oder Planung).
+
+- Release 1.19.1
+  Bump version from 1.19.1-SNAPSHOT to 1.19.1 in all four pom.xml files.
+  Fix-Release (kein Minor-Bump): enthaelt lediglich den Sidebar-Fix (#471) fuer
+  die seit 1.18.0 unsichtbaren Tabs "Nachrichten" und "Datenbank-Export".
+
