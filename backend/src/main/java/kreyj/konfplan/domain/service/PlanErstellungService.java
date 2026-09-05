@@ -165,7 +165,7 @@ public class PlanErstellungService {
 
                 if (resultJson.contains("instanz_slot") && isValidJson(resultJson)) {
                     phase = Phase.PERSISTIERUNG;
-                    speicherePlanungsergebnis(veranstaltungId, resultJson, config, vorbereitung);
+                    speicherePlanungsergebnis(veranstaltungId, resultJson, config, vorbereitung, username);
                     protokollService.log(ProtokollKategorie.PLANUNG, "Planerstellung erfolgreich",
                         "Planerstellung für '" + vorbereitung.vName() + "' abgeschlossen. Ergebnis wurde gespeichert.", veranstaltungId, veranstaltungId, username);
                 } else {
@@ -387,7 +387,7 @@ public class PlanErstellungService {
                 metadata.getTeilnehmerOids(), metadata.getWahlvortragOids(),
                 metadata.getSlotOids(), metadata.getRaumOids());
 
-            speicherePlanungsergebnis(veranstaltungId, loesungsJson, metadata.getSolverConfig(), vorbereitung);
+            speicherePlanungsergebnis(veranstaltungId, loesungsJson, metadata.getSolverConfig(), vorbereitung, username);
             protokollService.log(ProtokollKategorie.PLANUNG, "Planungsergebnis importiert",
                 "Extern berechnetes Planungsergebnis für '" + veranstaltung.getName() + "' importiert.",
                 veranstaltungId, veranstaltungId, username);
@@ -876,13 +876,15 @@ public class PlanErstellungService {
 
     @Transactional
     public void speicherePlanungsergebnis(Long veranstaltungId, String jsonErgebnis, SolverConfig config,
-                                          DznVorbereitung vorbereitung) {
+                                          DznVorbereitung vorbereitung, String username) {
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
-        Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
-        if (null == ergebnis) {
-            ergebnis = new Planungsergebnis();
-            ergebnis.setVeranstaltung(veranstaltung);
-        }
+        // Jeder Planungslauf legt eine eigene Zeile an (Historie, siehe Issue #461) statt die
+        // bestehende zu überschreiben - startet unpubliziert, der Organisator muss das
+        // Veröffentlichen im ErgebnisseTab explizit bestätigen.
+        Planungsergebnis ergebnis = new Planungsergebnis();
+        ergebnis.setVeranstaltung(veranstaltung);
+        ergebnis.setErsteller(username);
+        ergebnis.setErstelltAm(LocalDateTime.now());
         LOG.info("Speichere Planungsergebnis für Veranstaltung: " + veranstaltung.getName());
         try {
             ObjectNode root = (ObjectNode) objectMapper.readTree(jsonErgebnis);
@@ -909,13 +911,9 @@ public class PlanErstellungService {
         }
 
         ergebnis.setSolverConfig(config);
-        // Eine erfolgreiche Neu-Erstellung sieht nur noch die aktuell existierenden Wahlvortraege
-        // und behebt damit jede vorherige Inkonsistenz durch einen zwischenzeitlich
-        // zurueckgezogenen Vortrag (siehe NachrichtService#benachrichtigeUeberZurueckgezogenenVortrag).
-        ergebnis.setVeraltet(false);
         ergebnis.persistAndFlush();
 
-        LOG.info("Planungsergebnis für Veranstaltung '" + veranstaltung.getName() + "' wurde gespeichert/aktualisiert.");
+        LOG.info("Planungsergebnis für Veranstaltung '" + veranstaltung.getName() + "' wurde gespeichert.");
     }
 
 

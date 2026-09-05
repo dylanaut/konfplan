@@ -425,6 +425,51 @@ public class VeranstaltungResource {
 
 
     @GET
+    @Path("/{vid}/planungsergebnisse")
+    @Operation(summary = "Alle Planungsergebnisse auflisten",
+        description = "Listet ALLE Planungsläufe einer Veranstaltung (veröffentlicht oder nicht) für die Verwaltungsansicht im ErgebnisseTab.")
+    public Response listePlanungsergebnisse(@PathParam("vid") Long vid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(NOT_FOUND).build();
+        }
+
+        return Response.ok(planService.listePlanungsergebnisse(veranstaltung)).build();
+    }
+
+
+    @PUT
+    @Path("/{vid}/planungsergebnisse/{ergebnisId}/publizieren")
+    @Operation(summary = "Planungsergebnis veröffentlichen",
+        description = "Veröffentlicht das angegebene Planungsergebnis als Plan/Report für Organisatoren, Teilnehmer und Referenten und entzieht "
+            + "einem zuvor veröffentlichten Ergebnis automatisch den Status.")
+    public Response publiziereErgebnis(@PathParam("vid") Long vid, @PathParam("ergebnisId") Long ergebnisId) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(NOT_FOUND).build();
+        }
+
+        planService.publiziereErgebnis(veranstaltung, ergebnisId);
+        return Response.ok().build();
+    }
+
+
+    @DELETE
+    @Path("/{vid}/planungsergebnisse/{ergebnisId}")
+    @Operation(summary = "Planungsergebnis löschen",
+        description = "Löscht ein Planungsergebnis. Ein veröffentlichtes Ergebnis kann nicht gelöscht werden.")
+    public Response loescheErgebnis(@PathParam("vid") Long vid, @PathParam("ergebnisId") Long ergebnisId) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(NOT_FOUND).build();
+        }
+
+        planService.loescheErgebnis(veranstaltung, ergebnisId);
+        return Response.noContent().build();
+    }
+
+
+    @GET
     @Path("/{vid}/plan")
     @Operation(summary = "Gesamtplan (Zuweisungen) abrufen", description = "Ruft die vollständige Liste aller Zuweisungen (Teilnehmer zu Vorträgen) ab.")
     public Response getGesamtplan(@PathParam("vid") Long vid) {

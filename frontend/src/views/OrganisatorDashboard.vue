@@ -70,6 +70,7 @@
                      :qualitaet="qualitaet"
                      :eventSlots="eventSlots"
                      :raeume="filteredRaeume"
+                     @published="loadData"
       />
 
       <VeranstaltungenTab v-if="activeTab === 'veranstaltungen'"

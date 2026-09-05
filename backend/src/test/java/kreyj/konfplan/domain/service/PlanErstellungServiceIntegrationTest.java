@@ -340,7 +340,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
                 .get(2); // Slot 3 (per Setup mit dem Pflichtvortrag belegt)
 
         SolverConfig config = new SolverConfig(120, 4, 1);
-        planErstellungService.erstellePlan(veranstaltung.getId(), config, "username");
+        erstellePlanUndPubliziere(veranstaltung, config);
 
         List<RaumBelegungUebersicht> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
         List<RaumBelegungUebersicht> wahlvortrag1Eintraege = belegungsplan.stream()
@@ -361,7 +361,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
         // auffuellen=true (Default des 3-Parameter-Konstruktors)
         SolverConfig config = new SolverConfig(60, 4, 1);
-        planErstellungService.erstellePlan(veranstaltung.getId(), config, "username");
+        erstellePlanUndPubliziere(veranstaltung, config);
 
         List<RaumBelegungUebersicht> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
 
@@ -379,7 +379,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         Veranstaltung veranstaltung = fillUpSetup();
 
         SolverConfig config = new SolverConfig(60, 4, 1, false);
-        planErstellungService.erstellePlan(veranstaltung.getId(), config, "username");
+        erstellePlanUndPubliziere(veranstaltung, config);
 
         List<RaumBelegungUebersicht> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
 
@@ -396,7 +396,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
         // 1. PlanErstellung durchführen
         SolverConfig config = new SolverConfig(10, 4, 1);
-        planErstellungService.erstellePlan(veranstaltung.getId(), config, "username");
+        erstellePlanUndPubliziere(veranstaltung, config);
 
         // 2. Ergebnis prüfen
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
@@ -461,7 +461,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
         // 1. PlanErstellung durchführen
         SolverConfig config = new SolverConfig(60, 4, 1);
-        planErstellungService.erstellePlan(veranstaltung.getId(), config, "username");
+        erstellePlanUndPubliziere(veranstaltung, config);
 
         // 2. Ergebnis prüfen
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
@@ -494,7 +494,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
 
         // 1. PlanErstellung durchführen
         SolverConfig config = new SolverConfig(60, 4, 1);
-        planErstellungService.erstellePlan(veranstaltung.getId(), config, "username");
+        erstellePlanUndPubliziere(veranstaltung, config);
 
         // 2. Ergebnis prüfen
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
@@ -519,7 +519,7 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         Veranstaltung veranstaltung = complexSetup();
         // 1. PlanErstellung durchführen
         SolverConfig config = new SolverConfig(120, 4, 2);
-        planErstellungService.erstellePlan(veranstaltung.getId(), config, "username");
+        erstellePlanUndPubliziere(veranstaltung, config);
 
         // 2. Ergebnis prüfen
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
@@ -636,6 +636,9 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
         Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung", veranstaltung).firstResult();
         assertThat(ergebnis).describedAs("Planungsergebnis sollte nach dem Import vorhanden sein.").isNotNull();
         assertThat(ergebnis.getJsonErgebnis()).contains("instanz_slot");
+        // Seit Issue #461 startet auch ein importiertes Ergebnis unpubliziert - explizit
+        // veröffentlichen, damit getDetaillierterPlan (liest nur das veröffentlichte Ergebnis) es sieht.
+        planService.publiziereErgebnis(veranstaltung, ergebnis.getId());
 
         List<RaumBelegungUebersicht> belegungsplan = planService.getDetaillierterPlan(veranstaltung);
         boolean tn1InWahlvortrag1 = belegungsplan.stream()
@@ -696,6 +699,21 @@ public class PlanErstellungServiceIntegrationTest extends DatabaseCleaner {
     // -------------------------------------------------------------------
     // Helper-Methoden für Test-Setups
     // -------------------------------------------------------------------
+
+    /**
+     * Ruft erstellePlan auf und veröffentlicht das neu erzeugte Ergebnis anschließend sofort -
+     * seit Issue #461 startet ein neuer Planungslauf unpubliziert (siehe
+     * PlanErstellungService#speicherePlanungsergebnis), die Report-/Belegungsplan-Methoden in
+     * PlanService liefern aber nur noch das veröffentlichte Ergebnis. Diese Tests prüfen die
+     * Solver-Korrektheit, nicht den Publish-Workflow, daher hier immer sofort veröffentlichen.
+     */
+    private void erstellePlanUndPubliziere(Veranstaltung veranstaltung, SolverConfig config) throws Exception {
+        planErstellungService.erstellePlan(veranstaltung.getId(), config, "username");
+        Planungsergebnis neuestesErgebnis = Planungsergebnis.<Planungsergebnis>find("veranstaltung = ?1 order by id desc", veranstaltung)
+                .firstResult();
+        planService.publiziereErgebnis(veranstaltung, neuestesErgebnis.getId());
+    }
+
 
     public String starteTestPlanErstellung(SolverConfig config, String modelName) throws Exception {
         URL modelUrl = getClass().getClassLoader().getResource("minizinc/" + modelName);
