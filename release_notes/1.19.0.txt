@@ -1,0 +1,16 @@
+Release Notes 1.19.0
+Released: 2026-09-05
+
+Changes:
+
+- Release-Notes fuer 1.18.0 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.18.1-SNAPSHOT)
+  Bump version from 1.18.0 to 1.18.1-SNAPSHOT in all four pom.xml files,
+  closing out release 1.18.0.
+
+- skript to incr version IMAGE_TAG in .env
+
+- Release 1.19.0
+  Bump version from 1.18.1-SNAPSHOT to 1.19.0 in all four pom.xml files.
+
