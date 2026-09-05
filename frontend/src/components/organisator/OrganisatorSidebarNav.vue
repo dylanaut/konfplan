@@ -52,6 +52,8 @@ import {
   ScrollText as ScrollTextIcon,
   MessageSquare as MessageSquareIcon,
   KeyRound as KeyRoundIcon,
+  Download as DownloadIcon,
+  Send as SendIcon,
 } from '@lucide/vue';
 
 const tabIcons = {
@@ -68,6 +70,8 @@ const tabIcons = {
   protokoll: ScrollTextIcon,
   feedback: MessageSquareIcon,
   onboarding: KeyRoundIcon,
+  datenbankExport: DownloadIcon,
+  nachrichten: SendIcon,
 };
 
 const props = defineProps({
@@ -82,7 +86,7 @@ const emit = defineEmits(['tab-click']);
 const groups = [
   { name: 'Stammdaten', tabs: ['veranstaltungen', 'veranstaltungImport', 'gebaeude', 'organisatoren', 'teilnehmer', 'referenten', 'vortraege'] },
   { name: 'Planung', tabs: ['slots', 'planung', 'ergebnisse'] },
-  { name: 'Administration', tabs: ['onboarding', 'protokoll', 'feedback'] },
+  { name: 'Administration', tabs: ['onboarding', 'protokoll', 'feedback', 'nachrichten', 'datenbankExport'] },
 ];
 
 const collapsed = ref(false);
