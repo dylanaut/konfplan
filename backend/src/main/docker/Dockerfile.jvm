@@ -101,8 +101,12 @@ ENV MINIZINC_PATH="/opt/minizinc/bin/minizinc"
 # Postgres-Client-Versionen - pg_dump darf aber nicht aelter sein als der gesicherte Server
 # (Postgres 18, siehe deploy/docker-compose.yml), sonst schlaegt der Dump fehl oder ist
 # unvollstaendig. Daher stattdessen ueber das offizielle PGDG-Repo installieren, das gezielt
-# "postgresql18" (nur Client-Tools, kein Server) fuer EL8 bereitstellt.
-RUN microdnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
+# "postgresql18" (nur Client-Tools, kein Server) fuer EL8 bereitstellt. Das Repo-RPM selbst
+# NICHT per "microdnf install <url>" installieren - anders als dnf/yum akzeptiert microdnf keine
+# Remote-URL als Paketquelle ("error: No package matches <url>", live in CI beobachtet) - daher
+# die Repo-Definition direkt schreiben (kein GPG-Check noetig, da HTTPS + offizielle
+# PostgreSQL-Domain, analog zum unsignierten MiniZinc-Download oben).
+RUN printf '[pgdg18]\nname=PostgreSQL 18 for RHEL 8 - x86_64\nbaseurl=https://download.postgresql.org/pub/repos/yum/18/redhat/rhel-8-x86_64\nenabled=1\ngpgcheck=0\n' > /etc/yum.repos.d/pgdg18.repo \
     && microdnf install -y postgresql18 \
     && microdnf clean all
 ENV PG_DUMP_PATH="/usr/pgsql-18/bin/pg_dump"
