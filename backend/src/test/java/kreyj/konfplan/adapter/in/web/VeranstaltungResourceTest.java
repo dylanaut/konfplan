@@ -17,6 +17,7 @@ import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
+import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
@@ -161,6 +162,51 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
         pe.setJsonErgebnis("{\"guete\": 42}");
         pe.persist();
         return pe.getId();
+    }
+
+
+    @Test
+    void testSendeNachricht_anMitgliedDerVeranstaltung_wirdZugestellt() {
+        Long empfaengerId = createTeilnehmerInVeranstaltung("nachrichten-tn");
+
+        given()
+            .contentType(ContentType.JSON)
+            .body("{\"empfaengerIds\": [" + empfaengerId + "], \"titel\": \"Hallo\", \"inhalt\": \"Wichtige Info\"}")
+            .when().post("/{vid}/nachrichten", testVid)
+            .then()
+            .statusCode(OK.getStatusCode());
+    }
+
+
+    @Test
+    void testSendeNachricht_anFremdenNutzer_wirdAbgelehnt() {
+        Long fremderId = createTeilnehmer("fremder-tn");
+
+        given()
+            .contentType(ContentType.JSON)
+            .body("{\"empfaengerIds\": [" + fremderId + "], \"titel\": \"Hallo\", \"inhalt\": \"Wichtige Info\"}")
+            .when().post("/{vid}/nachrichten", testVid)
+            .then()
+            .statusCode(BAD_REQUEST.getStatusCode());
+    }
+
+
+    @Transactional
+    Long createTeilnehmerInVeranstaltung(String loginName) {
+        Long id = createTeilnehmer(loginName);
+        Teilnehmer tn = Teilnehmer.findById(id);
+        tn.addVeranstaltung(Veranstaltung.findById(testVid));
+        return id;
+    }
+
+
+    @Transactional
+    Long createTeilnehmer(String loginName) {
+        Teilnehmer tn = new Teilnehmer();
+        tn.assignLoginName(loginName);
+        tn.setEmail(loginName + "@test.de");
+        tn.persist();
+        return tn.getId();
     }
 
 

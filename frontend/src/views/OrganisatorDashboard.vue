@@ -92,6 +92,8 @@
 
       <DatenbankExportTab v-if="activeTab === 'datenbankExport'"/>
 
+      <NachrichtenTab v-if="activeTab === 'nachrichten' && selectedVid" :users="users"/>
+
       <GebaeudeTab v-if="activeTab === 'gebaeude'"
                    :gebaeude="gebaeudeFuerGebaeudeTab"
                    :pageSize="pageSize"
@@ -284,6 +286,7 @@ import ErgebnisseTab from '../components/organisator/tabs/ErgebnisseTab.vue';
 import VeranstaltungenTab from '../components/organisator/tabs/VeranstaltungenTab.vue';
 import VeranstaltungImportTab from '../components/organisator/tabs/VeranstaltungImportTab.vue';
 import DatenbankExportTab from '../components/organisator/tabs/DatenbankExportTab.vue';
+import NachrichtenTab from '../components/organisator/tabs/NachrichtenTab.vue';
 import GebaeudeTab from '../components/organisator/tabs/GebaeudeTab.vue';
 import OrganisatorenTab from '../components/organisator/tabs/OrganisatorenTab.vue';
 import TeilnehmerTab from '../components/organisator/tabs/TeilnehmerTab.vue';
@@ -326,6 +329,7 @@ const tabLabels = {
   slots: 'Zeit-Slots',
   planung: 'Planerstellung',
   ergebnisse: 'Ergebnisse',
+  nachrichten: 'Nachrichten',
   protokoll: 'Protokoll',
   feedback: 'Feedback',
   onboarding: 'Onboarding-Status'
@@ -393,7 +397,7 @@ const visibleTabs = computed(() => {
   const tabs = selectedVid.value ? ['organisatoren', 'gebaeude',
     'teilnehmer', 'referenten', 'vortraege',
     'veranstaltungen', 'veranstaltungImport', 'datenbankExport', 'slots',
-    'planung', 'ergebnisse',
+    'planung', 'ergebnisse', 'nachrichten',
     'protokoll', 'feedback', 'onboarding'] : ['organisatoren', 'gebaeude', 'referenten',
     'veranstaltungen', 'veranstaltungImport', 'datenbankExport',
     'protokoll', 'feedback', 'onboarding'];

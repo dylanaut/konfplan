@@ -11,13 +11,16 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
 import kreyj.konfplan.adapter.in.web.dto.*;
 import kreyj.konfplan.application.port.in.OrganisatorServiceInterface;
 import kreyj.konfplan.application.port.in.ReferentServiceInterface;
 import kreyj.konfplan.application.port.in.TeilnehmerServiceInterface;
 import kreyj.konfplan.application.port.in.VeranstaltungServiceInterface;
+import kreyj.konfplan.domain.service.NachrichtService;
 import kreyj.konfplan.domain.service.PlanService;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -48,14 +51,16 @@ public class VeranstaltungResource {
     private final ReferentServiceInterface referentService;
     private final TeilnehmerServiceInterface teilnehmerService;
     private final PlanService planService;
+    private final NachrichtService nachrichtService;
 
     public VeranstaltungResource(VeranstaltungServiceInterface veranstaltungService, OrganisatorServiceInterface adminService, ReferentServiceInterface referentService,
-                                 TeilnehmerServiceInterface teilnehmerService, PlanService planService) {
+                                 TeilnehmerServiceInterface teilnehmerService, PlanService planService, NachrichtService nachrichtService) {
         this.veranstaltungService = veranstaltungService;
         this.adminService = adminService;
         this.referentService = referentService;
         this.teilnehmerService = teilnehmerService;
         this.planService = planService;
+        this.nachrichtService = nachrichtService;
     }
 
 
@@ -466,6 +471,23 @@ public class VeranstaltungResource {
 
         planService.loescheErgebnis(veranstaltung, ergebnisId);
         return Response.noContent().build();
+    }
+
+
+    @POST
+    @Path("/{vid}/nachrichten")
+    @Operation(summary = "Nachricht an ausgewählte Nutzer senden",
+        description = "Sendet eine Nachricht ins In-App-Postfach ausgewählter Organisatoren, Teilnehmer und/oder Referenten dieser Veranstaltung. "
+            + "Kein E-Mail-Versand, rein In-App.")
+    public Response sendeNachricht(@PathParam("vid") Long vid, NachrichtSendenDto dto, @Context SecurityContext securityContext) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(NOT_FOUND).build();
+        }
+
+        String absender = securityContext.getUserPrincipal().getName();
+        nachrichtService.sendeAnAusgewaehlte(veranstaltung, dto.empfaengerIds, dto.titel, dto.inhalt, absender);
+        return Response.ok().build();
     }
 
 
