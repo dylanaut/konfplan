@@ -143,6 +143,9 @@ services:
       DB_PORT: "5432"
       DB_NAME: konfplan
       DB_USER: postgres
+      # Fuer den Administrator-Datenbank-Export (DatabaseBackupService) - dieselbe Postgres-
+      # Instanz/dieselben Zugangsdaten wie oben, siehe postgres-init/01-create-keycloak-db.sql.
+      KEYCLOAK_DB_NAME: keycloak
       KC_SERVER_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080/auth}
       KC_REALM: konfplan
       FRONTEND_BASE_URL: ${APP_PUBLIC_URL:-http://localhost:9000}

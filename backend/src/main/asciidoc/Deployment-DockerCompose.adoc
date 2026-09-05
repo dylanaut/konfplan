@@ -295,10 +295,19 @@ Konkret verifiziert: Admin-Login + ein eigens angelegter Testnutzer überleben e
 
 == Backup-Hinweise
 
-* **PostgreSQL**: Volume `deploy_postgres-data` enthält sowohl die App- als auch die Keycloak-Datenbank.
-Klassischer `pg_dump`/Volume-Snapshot reicht für einen Kleinbetrieb.
+* **PostgreSQL-Export**: Ein Administrator kann im Dashboard (Tab "Datenbank-Export") einen Download
+anstoßen, der `GET /api/administrator/backup/export` aufruft (`DatabaseBackupResource`). Das Backend
+erstellt dabei per `pg_dump -Fc` je einen Dump der `konfplan`- und der `keycloak`-Datenbank (dieselbe
+Postgres-Instanz, dieselben Zugangsdaten - siehe `postgres-init/01-create-keycloak-db.sql`) und liefert
+beide gebündelt als ZIP (`konfplan.dump` + `keycloak.dump`) zum direkten Download.
+* **PostgreSQL-Restore**: bewusst **kein** Button in der Oberfläche - ein Restore überschreibt beide
+Datenbanken vollständig. Stattdessen `deploy/restore_db.sh <backup.zip>` aus dem `deploy/`-Verzeichnis
+ausführen: das Skript fragt eine Bestätigung ab, stoppt `app` + `keycloak` (offene Verbindungen würden
+`pg_restore --clean` sonst blockieren), restauriert beide Datenbanken per `pg_restore` und startet beide
+Container danach wieder.
 * **Keycloak-Realm**: `docker compose exec keycloak /opt/keycloak/bin/kc.sh export --dir /tmp/export --realm konfplan`
-exportiert den aktuellen (durch Admin-UI-Änderungen ggf. abweichenden) Realm-Zustand - nützlich vor größeren Änderungen, ersetzt aber kein DB-Backup.
+exportiert zusätzlich den aktuellen (durch Admin-UI-Änderungen ggf. abweichenden) Realm-Zustand als JSON -
+nützlich vor größeren Änderungen, ersetzt aber kein DB-Backup.
 * **Secrets**: `deploy/secrets/` ist der einzige Ort, an dem die Passwörter existieren - bei einem Server-Wechsel/Wiederherstellung müssen sie mitgesichert werden (z.B. verschlüsselt, getrennt von einem reinen DB-Backup).
 
 == Monitoring / Metriken

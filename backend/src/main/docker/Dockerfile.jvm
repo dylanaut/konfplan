@@ -96,6 +96,17 @@ RUN curl -fsSL https://api.github.com/repos/MiniZinc/MiniZincIDE/releases/latest
     && chown -R 185:0 /opt/minizinc
 ENV MINIZINC_PATH="/opt/minizinc/bin/minizinc"
 
+# pg_dump wird von DatabaseBackupService als externer Prozess aufgerufen (Administrator-Export,
+# siehe application.properties "pg-dump.path"). UBI8s eigenes microdnf-Repo fuehrt nur veraltete
+# Postgres-Client-Versionen - pg_dump darf aber nicht aelter sein als der gesicherte Server
+# (Postgres 18, siehe deploy/docker-compose.yml), sonst schlaegt der Dump fehl oder ist
+# unvollstaendig. Daher stattdessen ueber das offizielle PGDG-Repo installieren, das gezielt
+# "postgresql18" (nur Client-Tools, kein Server) fuer EL8 bereitstellt.
+RUN microdnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
+    && microdnf install -y postgresql18 \
+    && microdnf clean all
+ENV PG_DUMP_PATH="/usr/pgsql-18/bin/pg_dump"
+
 # We make four distinct layers so if there are application changes the library layers can be re-used
 COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
 COPY --chown=185 target/quarkus-app/*.jar /deployments/

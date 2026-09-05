@@ -44,7 +44,7 @@
         </div>
 
         <!-- START-ZUSTAND (Empty State) -->
-        <div v-if="!selectedVid && !['veranstaltungen', 'veranstaltungImport', 'gebaeude', 'organisatoren', 'protokoll', 'feedback', 'onboarding'].includes(activeTab)"
+        <div v-if="!selectedVid && !['veranstaltungen', 'veranstaltungImport', 'datenbankExport', 'gebaeude', 'organisatoren', 'protokoll', 'feedback', 'onboarding'].includes(activeTab)"
              class="bg-indigo-50 p-8 rounded-2xl text-center border-2 border-dashed border-indigo-200 animate-fade-in">
           <div class="text-indigo-400 mb-3 flex justify-center">
             <CalendarIcon class="w-10 h-10"/>
@@ -88,6 +88,8 @@
       <VeranstaltungImportTab v-if="activeTab === 'veranstaltungImport'"
                               @imported="handleDatasetImported"
       />
+
+      <DatenbankExportTab v-if="activeTab === 'datenbankExport'"/>
 
       <GebaeudeTab v-if="activeTab === 'gebaeude'"
                    :gebaeude="gebaeudeFuerGebaeudeTab"
@@ -280,6 +282,7 @@ import {
 import ErgebnisseTab from '../components/organisator/tabs/ErgebnisseTab.vue';
 import VeranstaltungenTab from '../components/organisator/tabs/VeranstaltungenTab.vue';
 import VeranstaltungImportTab from '../components/organisator/tabs/VeranstaltungImportTab.vue';
+import DatenbankExportTab from '../components/organisator/tabs/DatenbankExportTab.vue';
 import GebaeudeTab from '../components/organisator/tabs/GebaeudeTab.vue';
 import OrganisatorenTab from '../components/organisator/tabs/OrganisatorenTab.vue';
 import TeilnehmerTab from '../components/organisator/tabs/TeilnehmerTab.vue';
@@ -315,6 +318,7 @@ const tabLabels = {
   gebaeude: 'Gebäude',
   veranstaltungen: 'Veranstaltungen',
   veranstaltungImport: 'Verzeichnis-Import',
+  datenbankExport: 'Datenbank-Export',
   teilnehmer: 'Teilnehmer',
   referenten: 'Referenten',
   vortraege: 'Vorträge',
@@ -387,13 +391,15 @@ const csvFeedback = reactive({
 const visibleTabs = computed(() => {
   const tabs = selectedVid.value ? ['organisatoren', 'gebaeude',
     'teilnehmer', 'referenten', 'vortraege',
-    'veranstaltungen', 'veranstaltungImport', 'slots',
+    'veranstaltungen', 'veranstaltungImport', 'datenbankExport', 'slots',
     'planung', 'ergebnisse',
     'protokoll', 'feedback', 'onboarding'] : ['organisatoren', 'gebaeude', 'referenten',
-    'veranstaltungen', 'veranstaltungImport',
+    'veranstaltungen', 'veranstaltungImport', 'datenbankExport',
     'protokoll', 'feedback', 'onboarding'];
-  // Verzeichnis-Import ist exklusiv fuer Administratoren (siehe VeranstaltungImportResource).
-  return auth.isAdministrator ? tabs : tabs.filter(t => t !== 'veranstaltungImport');
+  // Verzeichnis-Import und Datenbank-Export sind exklusiv fuer Administratoren (siehe
+  // VeranstaltungImportResource / DatabaseBackupResource).
+  const administratorOnlyTabs = ['veranstaltungImport', 'datenbankExport'];
+  return auth.isAdministrator ? tabs : tabs.filter(t => !administratorOnlyTabs.includes(t));
 });
 
 const futureEvents = computed(() => {
