@@ -15,9 +15,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Systemgenerierte Nachricht an einen einzelnen Nutzer (In-App-Postfach). Erste Ausprägung:
- * Warnung an Organisatoren bzw. Aufforderung zur Neu-Priorisierung an Teilnehmer, wenn ein
- * Referent einen Wahlvortrag zurückzieht (siehe NachrichtService#benachrichtigeUeberZurueckgezogenenVortrag).
+ * Nachricht an einen einzelnen Nutzer (In-App-Postfach). Entweder systemgeneriert (z.B. Warnung
+ * an Organisatoren bzw. Aufforderung zur Neu-Priorisierung an Teilnehmer, wenn ein Referent einen
+ * Wahlvortrag zurückzieht, siehe NachrichtService#benachrichtigeUeberZurueckgezogenenVortrag) -
+ * dann ist {@link #absender} {@code null} ("System") - oder manuell von einem Organisator verfasst
+ * (siehe NachrichtService#sendeAnAusgewaehlte), dann trägt {@link #absender} dessen
+ * JWT-Principal-Name (analog Planungsergebnis#ersteller).
  */
 @Entity
 @NoArgsConstructor
@@ -27,6 +30,8 @@ public class Nachricht extends VersionedEntity {
 
     @ManyToOne
     private Nutzer empfaenger;
+
+    private String absender;
 
     @Column(nullable = false)
     private String titel;

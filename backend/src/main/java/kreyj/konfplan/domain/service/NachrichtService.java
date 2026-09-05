@@ -4,6 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
+import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.persistence.Nachricht;
 import kreyj.konfplan.persistence.NachrichtKategorie;
 import kreyj.konfplan.persistence.Nutzer;
@@ -16,7 +17,9 @@ import kreyj.konfplan.persistence.Wahlvortrag;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * In-App-Postfach ("MessageBox") pro Nutzer für systemgenerierte Nachrichten. Erste Ausprägung:
@@ -34,10 +37,15 @@ public class NachrichtService {
     }
 
 
+    /**
+     * @param absender JWT-Principal-Name des Verfassers (analog Planungsergebnis#ersteller), oder
+     *                 {@code null} für eine systemgenerierte Nachricht ("System").
+     */
     @Transactional
-    public Nachricht sendeNachricht(Nutzer empfaenger, String titel, String inhalt, NachrichtKategorie kategorie, Long veranstaltungId) {
+    public Nachricht sendeNachricht(Nutzer empfaenger, String titel, String inhalt, NachrichtKategorie kategorie, Long veranstaltungId, String absender) {
         Nachricht nachricht = new Nachricht();
         nachricht.setEmpfaenger(empfaenger);
+        nachricht.setAbsender(absender);
         nachricht.setTitel(titel);
         nachricht.setInhalt(inhalt);
         nachricht.setKategorie(kategorie);
@@ -45,6 +53,31 @@ public class NachrichtService {
         nachricht.setErstelltAm(LocalDateTime.now());
         nachricht.persist();
         return nachricht;
+    }
+
+
+    /**
+     * Sendet eine manuell von einem Organisator verfasste Nachricht an mehrere ausgewählte
+     * Empfänger - jeder muss tatsächlich Organisator, Teilnehmer oder Referent DIESER
+     * Veranstaltung sein (kein beliebiger Nutzer-Zugriff über die ID).
+     */
+    @Transactional
+    public void sendeAnAusgewaehlte(Veranstaltung veranstaltung, List<Long> empfaengerIds, String titel, String inhalt, String absender) {
+        Set<Long> erlaubteIds = new HashSet<>();
+        veranstaltung.organisatoren().forEach(n -> erlaubteIds.add(n.getId()));
+        veranstaltung.teilnehmer().forEach(n -> erlaubteIds.add(n.getId()));
+        veranstaltung.referenten().forEach(n -> erlaubteIds.add(n.getId()));
+
+        for (Long empfaengerId : empfaengerIds) {
+            if (!erlaubteIds.contains(empfaengerId)) {
+                throw new BusinessException("Nutzer " + empfaengerId + " gehört nicht zu dieser Veranstaltung.");
+            }
+        }
+
+        for (Long empfaengerId : empfaengerIds) {
+            Nutzer empfaenger = Nutzer.findById(empfaengerId);
+            sendeNachricht(empfaenger, titel, inhalt, NachrichtKategorie.ORGANISATOR_NACHRICHT, veranstaltung.getId(), absender);
+        }
     }
 
 
@@ -115,7 +148,7 @@ public class NachrichtService {
                 : "");
         for (Organisator organisator : veranstaltung.organisatoren()) {
             sendeNachricht(organisator, "Wahlvortrag zurückgezogen", organisatorInhalt,
-                NachrichtKategorie.VORTRAG_ZURUECKGEZOGEN, veranstaltung.getId());
+                NachrichtKategorie.VORTRAG_ZURUECKGEZOGEN, veranstaltung.getId(), null);
         }
 
         String deadlineText = veranstaltung.getDeadlineTeilnehmer() != null
@@ -126,7 +159,7 @@ public class NachrichtService {
             + " eine neue Priorität für einen anderen Wahlvortrag.";
         for (Teilnehmer teilnehmer : betroffeneTeilnehmer) {
             sendeNachricht(teilnehmer, "Dein priorisierter Vortrag wurde zurückgezogen", teilnehmerInhalt,
-                NachrichtKategorie.VORTRAG_ZURUECKGEZOGEN, veranstaltung.getId());
+                NachrichtKategorie.VORTRAG_ZURUECKGEZOGEN, veranstaltung.getId(), null);
         }
     }
 

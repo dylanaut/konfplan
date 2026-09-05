@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @RegisterForReflection
 public class NachrichtDto {
     public Long id;
+    public String absender;
     public String titel;
     public String inhalt;
     public NachrichtKategorie kategorie;
@@ -19,6 +20,7 @@ public class NachrichtDto {
     public static NachrichtDto from(Nachricht n) {
         NachrichtDto dto = new NachrichtDto();
         dto.id = n.getId();
+        dto.absender = n.getAbsender();
         dto.titel = n.getTitel();
         dto.inhalt = n.getInhalt();
         dto.kategorie = n.getKategorie();

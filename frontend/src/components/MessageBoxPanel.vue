@@ -18,7 +18,7 @@
           <span v-if="!message.gelesenAm" class="w-2 h-2 rounded-full bg-indigo-600 shrink-0"></span>
         </div>
         <p class="text-xs text-gray-600 mt-1">{{ message.inhalt }}</p>
-        <p class="text-[10px] text-gray-400 mt-1">{{ formatDateTime(message.erstelltAm) }}</p>
+        <p class="text-[10px] text-gray-400 mt-1">Von {{ message.absender || 'System' }} · {{ formatDateTime(message.erstelltAm) }}</p>
       </li>
     </ul>
   </div>
