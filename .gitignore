@@ -81,3 +81,4 @@ build/
 /backend/result_log.txt
 /backend/laufband.txt
 /deploy/brevo-ip-updater/package-lock.json
+/db_backups/
