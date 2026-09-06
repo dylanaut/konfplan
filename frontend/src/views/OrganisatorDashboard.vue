@@ -1099,7 +1099,15 @@ const pollPlanningStatus = () => {
   }, 2000);
 };
 
+// responseType 'blob' liefert Fehlerantworten ebenfalls als Blob statt geparstem JSON -
+// extractErrorMessage() kann das nicht direkt, daher hier erst den Blob in JSON/Text aufloesen.
+const extractBlobErrorMessage = async (e) => {
+  const body = e.response?.data instanceof Blob ? JSON.parse(await e.response.data.text()) : e.response?.data;
+  return body?.error || body?.message || e.message;
+};
+
 const exportDzn = async (solverConfig) => {
+  planungsInkonsistenzen.value = null;
   try {
     const response = await api.post(`/api/planungen/${selectedVid.value}/dzn`, solverConfig, { responseType: 'blob' });
     const url = window.URL.createObjectURL(response.data);
@@ -1110,14 +1118,14 @@ const exportDzn = async (solverConfig) => {
     window.URL.revokeObjectURL(url);
   } catch (e) {
     console.error('Fehler beim Export der MiniZinc-Datendatei:', e);
-    // responseType 'blob' liefert Fehlerantworten ebenfalls als Blob statt geparstem JSON.
-    const body = e.response?.data instanceof Blob ? JSON.parse(await e.response.data.text()) : e.response?.data;
-    const msg = body?.error || body?.message || e.message;
-    alert('DZN-Export nicht möglich:\n\n' + msg);
+    // Dieselbe Kollisionsprüfung wie bei der Planerstellung (siehe startPlanning) - blockierende
+    // Warnungen daher auch hier im persistenten Banner statt in einem fluechtigen alert().
+    planungsInkonsistenzen.value = await extractBlobErrorMessage(e);
   }
 };
 
 const exportBundle = async (solverConfig) => {
+  planungsInkonsistenzen.value = null;
   try {
     const response = await api.post(`/api/planungen/${selectedVid.value}/export`, solverConfig, { responseType: 'blob' });
     const url = window.URL.createObjectURL(response.data);
@@ -1128,10 +1136,9 @@ const exportBundle = async (solverConfig) => {
     window.URL.revokeObjectURL(url);
   } catch (e) {
     console.error('Fehler beim Export des Planungspakets:', e);
-    // responseType 'blob' liefert Fehlerantworten ebenfalls als Blob statt geparstem JSON.
-    const body = e.response?.data instanceof Blob ? JSON.parse(await e.response.data.text()) : e.response?.data;
-    const msg = body?.error || body?.message || e.message;
-    alert('Export nicht möglich:\n\n' + msg);
+    // Dieselbe Kollisionsprüfung wie bei der Planerstellung (siehe startPlanning) - blockierende
+    // Warnungen daher auch hier im persistenten Banner statt in einem fluechtigen alert().
+    planungsInkonsistenzen.value = await extractBlobErrorMessage(e);
   }
 };
 
