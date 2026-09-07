@@ -1,0 +1,31 @@
+Release Notes 1.20.1
+Released: 2026-09-07
+
+Changes:
+
+- Release-Notes fuer 1.20.0 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.20.1-SNAPSHOT)
+  Bump version from 1.20.0 to 1.20.1-SNAPSHOT in all four pom.xml files,
+  closing out release 1.20.0.
+
+- Anmeldungen-Übersicht: Prio-Segmente je Balken, eigene Liste ohne Anmeldungen
+  Zwei Verbesserungen am Anmeldungen-Übersicht-Report auf Nutzerwunsch:
+  1. Wahlvorträge ohne Anmeldungen erscheinen nicht mehr als leere (0%-)
+     Balken zwischen den echten Balken, sondern in einer eigenen Liste am
+     Seitenende ("Wahlvorträge ohne Anmeldungen").
+  2. Jeder Balken ist jetzt in Segmente je abgegebener Priorität (1-10)
+     unterteilt, Segmentbreite proportional zur Anzahl je Prio. Farbskala
+     hellgelb (1) -> dunkelgrün (10), mit dataviz-Skill validiert (Helligkeit
+     monoton, Schrittweite >= 0.06 ΔL, Kontrast am hellen Ende >= 2:1) - die
+     "ein Farbton"-Ordinalregel ist bewusst nicht erfüllt, da explizit eine
+     Gelb-Grün-Ratingskala gewünscht war; kompensiert durch feste
+     Links-nach-rechts-Reihenfolge (Position codiert Identität mit) und
+     MouseOver-Tooltip mit der exakten Anzahl je Segment.
+  Backend: neues Feld `segmente` (prioWert + anzahl, gruppiert via
+  Collectors.groupingBy) auf jeder Zeile, neue Liste `ohneAnmeldungen` statt
+  Zeilen mit anzahlAnmeldungen=0.
+
+- Release 1.20.1
+  Bump version from 1.20.1-SNAPSHOT to 1.20.1 in all four pom.xml files.
+
