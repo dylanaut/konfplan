@@ -1,0 +1,42 @@
+Release Notes 1.19.3
+Released: 2026-09-07
+
+Changes:
+
+- Release-Notes fuer 1.19.2 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.19.3-SNAPSHOT)
+  Bump version from 1.19.2 to 1.19.3-SNAPSHOT in all four pom.xml files,
+  closing out release 1.19.2.
+
+- Fix Dependabot alerts: bump browserslist and @xmldom/xmldom
+  Both are transitive npm dependencies (browserslist via
+  vite-plugin-vue-devtools -> @babel/helper-compilation-targets;
+  @xmldom/xmldom via @capacitor/cli -> plist). Their parent packages'
+  semver ranges already allow the patched versions, so `npm update`
+  resolves both without needing package.json overrides.
+  - browserslist 4.28.2 -> 4.28.9 (CVE-2026-73088, high)
+  - @xmldom/xmldom 0.9.10 -> 0.9.12 (CVE-2026-83610, medium)
+
+- Fix SPA hard-navigation 404s with a custom Vert.x fallback route
+  Quinoa's quarkus.quinoa.enable-spa-routing=true (added in 077f390 to fix
+  the /login hard-redirect after a stray 401) never actually worked in
+  production: hard-navigating to any Vue Router route (window.open deep
+  link, browser reload, the 401 -> /login redirect itself) returns
+  Quarkus' generic 404 instead of index.html. Confirmed by rebuilding and
+  running the exact dependency versions from that commit (Quarkus 3.35.1,
+  Quinoa 2.8.1) locally in prod mode against real Postgres/Keycloak - still
+  404s, and Quinoa's own debug log never shows its "re-routing SPA
+  request" line, meaning its fallback handler is never even invoked. This
+  is a known, unresolved upstream ordering issue between Quinoa and the
+  quarkus-rest extension (quarkiverse/quarkus-quinoa#666, closed as not
+  planned).
+  SpaFallbackRoute registers its own catch-all GET route at the lowest
+  possible order (runs before everything else, including Quinoa and
+  quarkus-rest) that reroutes any request to "/" unless it targets /api,
+  /q, or looks like a static file request (last path segment contains a
+  dot) - letting those fall through to their normal handling untouched.
+
+- Release 1.19.3
+  Bump version from 1.19.3-SNAPSHOT to 1.19.3 in all four pom.xml files.
+
