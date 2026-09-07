@@ -1,0 +1,40 @@
+Release Notes 1.21.0
+Released: 2026-09-07
+
+Changes:
+
+- Release-Notes fuer 1.20.2 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.20.3-SNAPSHOT)
+  Bump version from 1.20.2 to 1.20.3-SNAPSHOT in all four pom.xml files,
+  closing out release 1.20.2.
+
+- Prio-Eingabefelder: native Spinner-Pfeile entfernt
+  Die Prioritäten-Matrix im TeilnehmerTab zeigte bisher die nativen
+  Up/Down-Pfeile des number-Inputs, die in der schmalen Zelle die
+  eingegebene Zahl verdrängen. Übernimmt die bereits im
+  TeilnehmerDashboard (Teilnehmer-Ansicht) verwendete .prio-input-Klasse
+  samt Spinner-Ausblendung, damit beide Prio-Eingabefelder konsistent
+  als einfache Zahlenfelder ohne Pfeile erscheinen.
+
+- TeilnehmerTab: sticky Name-/Gruppen-Spalten überdecken Prio-Eingabe nicht mehr
+  Zwei Ursachen, warum die sticky Name- und Gruppen-Zellen der
+  Prioritäten-Matrix über die erste(n) Prio-Eingabespalte(n) liefen -
+  initial und beim Scrollen (die sticky-Zellen haben z-10, ihr
+  überlaufender Inhalt legte sich also über die dahinterliegenden Zellen):
+  - Die Gruppen-Zelle hatte keine Breitenbegrenzung/Textkürzung; eine
+    lange Gruppenliste lief einfach über die per table-fixed vorgesehene
+    Spaltenbreite hinaus.
+  - Der Name-Text steckte in einem Flex-Container ohne min-w-0 - Flex-Items
+    schrumpfen per Default nicht unter ihre Inhaltsbreite, wodurch
+    "truncate" bei langen Namen wirkungslos blieb (bekannter Tailwind-
+    Flexbox-Stolperstein).
+  Beide Zellen bekommen jetzt eine explizite Breite (w-48/w-32, passend zur
+  th-Breite) und truncate mit min-w-0 an der richtigen Stelle.
+
+- Release 1.21.0
+  Bump version from 1.20.3-SNAPSHOT to 1.21.0 (Minor statt Patch) in
+  allen vier pom.xml, da dieses Release mehrere UI-Verbesserungen
+  (Prio-Eingabe ohne Spinner-Pfeile, sticky-Spalten-Fix im TeilnehmerTab)
+  seit 1.20.2 buendelt.
+
