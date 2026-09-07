@@ -384,4 +384,105 @@ class ReportResourceTest {
                 .then()
                 .statusCode(404);
     }
+
+
+    // --- Wahlvortraege-Anmeldungen-Uebersicht (Anzahl + Ø-Priorität je Wahlvortrag) ---
+    // Läuft bewusst gegen echte H2-Persistenz statt PanacheMock: die Java-seitige Aggregation
+    // (groupingBy + average) soll real gegen persistierte Daten laufen.
+
+
+    @Test
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
+    void getWahlvortraegeAnmeldungenUebersichtData_asAdmin_liefertSortiertMitDurchschnitt() {
+        Long[] ids = new Long[1];
+        QuarkusTransaction.requiringNew().run(() -> {
+            Veranstaltung v = new Veranstaltung();
+            v.setName("Uebersicht-Test-Event");
+            v.setBeginntAm(LocalDateTime.now());
+            v.persist();
+
+            Referent referent = new Referent();
+            referent.assignLoginName("uebersicht-referent");
+            referent.setEmail("uebersicht-referent@test.de");
+            referent.persist();
+
+            Wahlvortrag wvVoll = new Wahlvortrag();
+            wvVoll.setTitel("Vortrag mit vielen Anmeldungen");
+            wvVoll.setVeranstaltung(v);
+            wvVoll.setReferent(referent);
+            wvVoll.persist();
+
+            Wahlvortrag wvWenig = new Wahlvortrag();
+            wvWenig.setTitel("Vortrag mit wenigen Anmeldungen");
+            wvWenig.setVeranstaltung(v);
+            wvWenig.setReferent(referent);
+            wvWenig.persist();
+
+            Wahlvortrag wvLeer = new Wahlvortrag();
+            wvLeer.setTitel("Vortrag ohne Anmeldungen");
+            wvLeer.setVeranstaltung(v);
+            wvLeer.setReferent(referent);
+            wvLeer.persist();
+
+            Teilnehmer t1 = new Teilnehmer();
+            t1.assignLoginName("uebersicht.eins");
+            t1.setEmail("uebersicht.eins@test.de");
+            t1.persist();
+
+            Teilnehmer t2 = new Teilnehmer();
+            t2.assignLoginName("uebersicht.zwei");
+            t2.setEmail("uebersicht.zwei@test.de");
+            t2.persist();
+
+            Teilnehmer t3 = new Teilnehmer();
+            t3.assignLoginName("uebersicht.drei");
+            t3.setEmail("uebersicht.drei@test.de");
+            t3.persist();
+
+            new Prioritaet(t1, wvVoll, 10).persist();
+            new Prioritaet(t2, wvVoll, 6).persist();
+            new Prioritaet(t3, wvVoll, 8).persist();
+            new Prioritaet(t1, wvWenig, 4).persist();
+            // prioWert 0 = "keine Präferenz" - darf nicht zaehlen, wvLeer bleibt bei count=0.
+            new Prioritaet(t2, wvLeer, 0).persist();
+
+            ids[0] = v.getId();
+        });
+
+        given()
+                .when().get(ids[0] + "/wahlvortraege-anmeldungen-uebersicht-data")
+                .then()
+                .statusCode(200)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("zeilen.size()", is(3))
+                .body("zeilen[0].titel", is("Vortrag mit vielen Anmeldungen"))
+                .body("zeilen[0].anzahlAnmeldungen", is(3))
+                .body("zeilen[0].durchschnittPrio", is(8.0f))
+                .body("zeilen[1].titel", is("Vortrag mit wenigen Anmeldungen"))
+                .body("zeilen[1].anzahlAnmeldungen", is(1))
+                .body("zeilen[1].durchschnittPrio", is(4.0f))
+                .body("zeilen[2].titel", is("Vortrag ohne Anmeldungen"))
+                .body("zeilen[2].anzahlAnmeldungen", is(0))
+                .body("zeilen[2].durchschnittPrio", is(0.0f));
+    }
+
+
+    @Test
+    @TestSecurity(user = "testReferent", roles = "REFERENT")
+    void getWahlvortraegeAnmeldungenUebersichtData_asWrongRole_shouldBeForbidden() {
+        given()
+                .when().get("1/wahlvortraege-anmeldungen-uebersicht-data")
+                .then()
+                .statusCode(403);
+    }
+
+
+    @Test
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
+    void getWahlvortraegeAnmeldungenUebersichtData_unbekannteVeranstaltung_shouldReturn404() {
+        given()
+                .when().get("999999/wahlvortraege-anmeldungen-uebersicht-data")
+                .then()
+                .statusCode(404);
+    }
 }

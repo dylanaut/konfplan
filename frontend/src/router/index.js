@@ -21,6 +21,7 @@ const Stundenplan = () => import('../views/report/Stundenplan.vue');
 const Anwesenheiten = () => import('../views/report/Anwesenheiten.vue');
 const WahlvortraegeUebersicht = () => import('../views/report/WahlvortraegeUebersicht.vue');
 const VortragAnmeldungen = () => import('../views/report/VortragAnmeldungen.vue');
+const WahlvortraegeAnmeldungenUebersicht = () => import('../views/report/WahlvortraegeAnmeldungenUebersicht.vue');
 
 const routes = [
     {
@@ -142,6 +143,12 @@ const routes = [
         path: '/organisator/veranstaltung/:vid/vortrag/:vortragId/anmeldungen',
         name: 'VortragAnmeldungen',
         component: VortragAnmeldungen,
+        meta: { requiresAuth: true, role: 'ORGANISATOR' }
+    },
+    {
+        path: '/organisator/veranstaltung/:vid/wahlvortraege-anmeldungen',
+        name: 'WahlvortraegeAnmeldungen',
+        component: WahlvortraegeAnmeldungenUebersicht,
         meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {
