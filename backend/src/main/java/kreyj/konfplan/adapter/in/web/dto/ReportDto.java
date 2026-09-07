@@ -163,10 +163,13 @@ public class ReportDto {
     public static class WahlvortraegeAnmeldungenUebersichtDto {
         public final VeranstaltungDto veranstaltung;
         public final List<WahlvortragAnmeldungenZeileDto> zeilen;
+        public final List<WahlvortragOhneAnmeldungenDto> ohneAnmeldungen;
 
-        public WahlvortraegeAnmeldungenUebersichtDto(Veranstaltung veranstaltung, List<WahlvortragAnmeldungenZeileDto> zeilen) {
+        public WahlvortraegeAnmeldungenUebersichtDto(Veranstaltung veranstaltung, List<WahlvortragAnmeldungenZeileDto> zeilen,
+                                                      List<WahlvortragOhneAnmeldungenDto> ohneAnmeldungen) {
             this.veranstaltung = VeranstaltungDto.from(veranstaltung);
             this.zeilen = zeilen;
+            this.ohneAnmeldungen = ohneAnmeldungen;
         }
     }
 
@@ -175,12 +178,35 @@ public class ReportDto {
         public final String titel;
         public final long anzahlAnmeldungen;
         public final double durchschnittPrio;
+        public final List<PrioSegmentDto> segmente;
 
-        public WahlvortragAnmeldungenZeileDto(Long vortragId, String titel, long anzahlAnmeldungen, double durchschnittPrio) {
+        public WahlvortragAnmeldungenZeileDto(Long vortragId, String titel, long anzahlAnmeldungen, double durchschnittPrio,
+                                               List<PrioSegmentDto> segmente) {
             this.vortragId = vortragId;
             this.titel = titel;
             this.anzahlAnmeldungen = anzahlAnmeldungen;
             this.durchschnittPrio = durchschnittPrio;
+            this.segmente = segmente;
+        }
+    }
+
+    public static class PrioSegmentDto {
+        public final int prioWert;
+        public final long anzahl;
+
+        public PrioSegmentDto(int prioWert, long anzahl) {
+            this.prioWert = prioWert;
+            this.anzahl = anzahl;
+        }
+    }
+
+    public static class WahlvortragOhneAnmeldungenDto {
+        public final Long vortragId;
+        public final String titel;
+
+        public WahlvortragOhneAnmeldungenDto(Long vortragId, String titel) {
+            this.vortragId = vortragId;
+            this.titel = titel;
         }
     }
 

@@ -301,15 +301,30 @@ public class ReportResource {
         Map<Long, List<Prioritaet>> prioByVortragId = prioritaeten.stream()
             .collect(Collectors.groupingBy(p -> p.getVortrag().getId()));
 
-        List<ReportDto.WahlvortragAnmeldungenZeileDto> zeilen = veranstaltung.getWahlvortraege().stream()
+        List<Wahlvortrag> wahlvortraege = veranstaltung.getWahlvortraege();
+
+        List<ReportDto.WahlvortragAnmeldungenZeileDto> zeilen = wahlvortraege.stream()
+            .filter(wv -> prioByVortragId.containsKey(wv.getId()))
             .map(wv -> {
-                List<Prioritaet> prios = prioByVortragId.getOrDefault(wv.getId(), List.of());
+                List<Prioritaet> prios = prioByVortragId.get(wv.getId());
                 double durchschnitt = prios.stream().mapToInt(Prioritaet::getPrioWert).average().orElse(0.0);
-                return new ReportDto.WahlvortragAnmeldungenZeileDto(wv.getId(), wv.getTitel(), prios.size(), durchschnitt);
+                List<ReportDto.PrioSegmentDto> segmente = prios.stream()
+                    .collect(Collectors.groupingBy(Prioritaet::getPrioWert, Collectors.counting()))
+                    .entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .map(e -> new ReportDto.PrioSegmentDto(e.getKey(), e.getValue()))
+                    .toList();
+                return new ReportDto.WahlvortragAnmeldungenZeileDto(wv.getId(), wv.getTitel(), prios.size(), durchschnitt, segmente);
             })
             .sorted(Comparator.comparingLong((ReportDto.WahlvortragAnmeldungenZeileDto z) -> z.anzahlAnmeldungen).reversed())
             .toList();
 
-        return Response.ok(new ReportDto.WahlvortraegeAnmeldungenUebersichtDto(veranstaltung, zeilen)).build();
+        List<ReportDto.WahlvortragOhneAnmeldungenDto> ohneAnmeldungen = wahlvortraege.stream()
+            .filter(wv -> !prioByVortragId.containsKey(wv.getId()))
+            .sorted(Comparator.comparing(Wahlvortrag::getTitel, String.CASE_INSENSITIVE_ORDER))
+            .map(wv -> new ReportDto.WahlvortragOhneAnmeldungenDto(wv.getId(), wv.getTitel()))
+            .toList();
+
+        return Response.ok(new ReportDto.WahlvortraegeAnmeldungenUebersichtDto(veranstaltung, zeilen, ohneAnmeldungen)).build();
     }
 }
