@@ -37,6 +37,11 @@
           <option value="">Alle Gruppen</option>
           <option v-for="g in teilnehmerGruppen" :key="g" :value="g">{{ g }}</option>
         </select>
+        <label v-if="sortedWahlvortraege.length > 0"
+               class="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap px-1">
+          <input type="checkbox" v-model="filters.ohnePrioritaeten" class="rounded border-gray-300"/>
+          Nur ohne Prioritäten
+        </label>
         <input v-model="filters.teilnehmer" placeholder="Suchen..." class="input-field text-xs py-1 px-2"/>
         <button @click="emit('triggerUpload', `/api/veranstaltungen/${selectedVid}/teilnehmer/import`)"
                 class="btn-secondary text-xs py-1 px-3">Import
@@ -325,7 +330,8 @@ const pages = reactive({
 
 const filters = reactive({
   teilnehmer: '',
-  gruppen: ''
+  gruppen: '',
+  ohnePrioritaeten: false
 });
 
 const sorts = reactive({
@@ -358,6 +364,10 @@ watch(() => filters.teilnehmer, () => {
   pages.teilnehmer = 1;
 });
 watch(() => filters.gruppen, () => {
+  pages.teilnehmer = 1;
+  selectedParticipantIds.value = [];
+});
+watch(() => filters.ohnePrioritaeten, () => {
   pages.teilnehmer = 1;
   selectedParticipantIds.value = [];
 });
@@ -423,6 +433,9 @@ const filteredParticipants = computed(() => {
   let list = props.teilnehmer.filter(t => t && t.veranstaltungIds && Array.isArray(t.veranstaltungIds) && t.veranstaltungIds.includes(props.selectedVid));
   if (filters.gruppen) {
     list = list.filter(t => (t.gruppen || []).includes(filters.gruppen));
+  }
+  if (filters.ohnePrioritaeten) {
+    list = list.filter(t => hasNoPriorities(t.id));
   }
   return processList(list, filters.teilnehmer, sorts.teilnehmer);
 });
