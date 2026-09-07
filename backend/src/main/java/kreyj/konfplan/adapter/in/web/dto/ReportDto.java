@@ -160,6 +160,30 @@ public class ReportDto {
         }
     }
 
+    public static class WahlvortraegeAnmeldungenUebersichtDto {
+        public final VeranstaltungDto veranstaltung;
+        public final List<WahlvortragAnmeldungenZeileDto> zeilen;
+
+        public WahlvortraegeAnmeldungenUebersichtDto(Veranstaltung veranstaltung, List<WahlvortragAnmeldungenZeileDto> zeilen) {
+            this.veranstaltung = VeranstaltungDto.from(veranstaltung);
+            this.zeilen = zeilen;
+        }
+    }
+
+    public static class WahlvortragAnmeldungenZeileDto {
+        public final Long vortragId;
+        public final String titel;
+        public final long anzahlAnmeldungen;
+        public final double durchschnittPrio;
+
+        public WahlvortragAnmeldungenZeileDto(Long vortragId, String titel, long anzahlAnmeldungen, double durchschnittPrio) {
+            this.vortragId = vortragId;
+            this.titel = titel;
+            this.anzahlAnmeldungen = anzahlAnmeldungen;
+            this.durchschnittPrio = durchschnittPrio;
+        }
+    }
+
     public static class LegendeEintragDto {
         public final int nummer;
         public final String titel;

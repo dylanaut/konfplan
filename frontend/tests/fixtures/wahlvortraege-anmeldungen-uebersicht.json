@@ -1,0 +1,11 @@
+{
+  "veranstaltung": {
+    "id": 1,
+    "name": "Berufsorientierungstag 2025"
+  },
+  "zeilen": [
+    { "vortragId": 301, "titel": "Informatiker", "anzahlAnmeldungen": 3, "durchschnittPrio": 8.0 },
+    { "vortragId": 302, "titel": "Physiker", "anzahlAnmeldungen": 1, "durchschnittPrio": 4.0 },
+    { "vortragId": 303, "titel": "Vortrag ohne Anmeldungen", "anzahlAnmeldungen": 0, "durchschnittPrio": 0.0 }
+  ]
+}

@@ -30,6 +30,7 @@ import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.logging.Logger;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -279,5 +280,36 @@ public class ReportResource {
         List<Prioritaet> prioritaeten = Prioritaet.<Prioritaet>find(
             "vortrag.id = ?1 and prioWert > 0 order by prioWert desc, teilnehmer.loginName", vortragId).list();
         return Response.ok(new ReportDto.VortragAnmeldungenDto(veranstaltung, wahlvortrag, prioritaeten)).build();
+    }
+
+
+    @GET
+    @Path("/{vid}/wahlvortraege-anmeldungen-uebersicht-data")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
+    @Operation(summary = "Daten für die Anmeldungen-Übersicht aller Wahlvorträge (Anzahl + Ø-Priorität je Wahlvortrag)")
+    public Response getWahlvortraegeAnmeldungenUebersichtData(@PathParam("vid") Long vid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+
+        // prioWert = 0 bedeutet "keine Präferenz", zaehlt also nicht als Anmeldung (siehe getVortragAnmeldungenData).
+        List<Prioritaet> prioritaeten = Prioritaet.<Prioritaet>find(
+            "vortrag.veranstaltung.id = ?1 and prioWert > 0", vid).list();
+
+        Map<Long, List<Prioritaet>> prioByVortragId = prioritaeten.stream()
+            .collect(Collectors.groupingBy(p -> p.getVortrag().getId()));
+
+        List<ReportDto.WahlvortragAnmeldungenZeileDto> zeilen = veranstaltung.getWahlvortraege().stream()
+            .map(wv -> {
+                List<Prioritaet> prios = prioByVortragId.getOrDefault(wv.getId(), List.of());
+                double durchschnitt = prios.stream().mapToInt(Prioritaet::getPrioWert).average().orElse(0.0);
+                return new ReportDto.WahlvortragAnmeldungenZeileDto(wv.getId(), wv.getTitel(), prios.size(), durchschnitt);
+            })
+            .sorted(Comparator.comparingLong((ReportDto.WahlvortragAnmeldungenZeileDto z) -> z.anzahlAnmeldungen).reversed())
+            .toList();
+
+        return Response.ok(new ReportDto.WahlvortraegeAnmeldungenUebersichtDto(veranstaltung, zeilen)).build();
     }
 }

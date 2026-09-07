@@ -223,4 +223,37 @@ test.describe('Report-Generierung', () => {
     await expect(popup).toHaveCount(0);
   });
 
+  test('sollte die Anmeldungen-Übersicht über alle Wahlvorträge absteigend sortiert rendern', async ({ page }) => {
+    const veranstaltungId = 1;
+    // Absolutes Glob, da die Axios-Basis-URL (http://localhost:9000) von der
+    // Playwright-baseURL (Vite-Dev-Server) abweicht.
+    const apiUrl = `**/api/reports/${veranstaltungId}/wahlvortraege-anmeldungen-uebersicht-data`;
+    const routeUrl = `/organisator/veranstaltung/${veranstaltungId}/wahlvortraege-anmeldungen`;
+
+    // Die Route ist ORGANISATOR-geschützt: Login-Status vor dem Laden der Seite simulieren.
+    await page.addInitScript(() => {
+      localStorage.setItem('token', 'test-token');
+      localStorage.setItem('role', 'ORGANISATOR');
+    });
+
+    await page.route(apiUrl, async route => {
+      const json = (await import('./fixtures/wahlvortraege-anmeldungen-uebersicht.json', { with: { type: 'json' } })).default;
+      await route.fulfill({ json });
+    });
+
+    await page.goto(routeUrl);
+    await expect(page.locator('h1').last()).toContainText('Anmeldungen je Wahlvortrag (3)');
+
+    const zeilen = page.locator('.bar-row');
+    await expect(zeilen).toHaveCount(3);
+    // Absteigend nach Anzahl Anmeldungen sortiert.
+    await expect(zeilen.nth(0)).toContainText('Informatiker');
+    await expect(zeilen.nth(0)).toContainText('3 Anmeldungen');
+    await expect(zeilen.nth(0)).toContainText('Ø Priorität 8.0');
+    await expect(zeilen.nth(1)).toContainText('Physiker');
+    await expect(zeilen.nth(1)).toContainText('1 Anmeldung');
+    await expect(zeilen.nth(2)).toContainText('Vortrag ohne Anmeldungen');
+    await expect(zeilen.nth(2)).toContainText('0 Anmeldungen');
+  });
+
 });

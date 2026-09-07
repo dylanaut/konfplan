@@ -14,6 +14,10 @@
           <PrinterIcon class="w-3.5 h-3.5"/>
           Drucken
         </button>
+        <button @click="openWahlvortraegeAnmeldungen" class="btn-secondary flex items-center gap-2 text-xs py-1 px-3">
+          <ChartBarIcon class="w-3.5 h-3.5"/>
+          Anmeldungen
+        </button>
         <button @click="emit('openVortragEditor', null)" class="btn-primary text-xs py-1 px-3">+ Neu</button>
       </div>
     </div>
@@ -68,6 +72,7 @@ import { computed, reactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   ArrowUpDown as ArrowUpDownIcon,
+  ChartBar as ChartBarIcon,
   FileText as FileTextIcon,
   Pencil as PencilIcon,
   Printer as PrinterIcon,
@@ -156,6 +161,12 @@ const openWahlvortraegeUebersicht = () => {
 const openAnmeldungen = (v) => {
   if (!props.selectedVid) return;
   const route = router.resolve({ name: 'VortragAnmeldungen', params: { vid: props.selectedVid, vortragId: v.id } });
+  window.open(route.href, '_blank');
+};
+
+const openWahlvortraegeAnmeldungen = () => {
+  if (!props.selectedVid) return;
+  const route = router.resolve({ name: 'WahlvortraegeAnmeldungen', params: { vid: props.selectedVid } });
   window.open(route.href, '_blank');
 };
 </script>
