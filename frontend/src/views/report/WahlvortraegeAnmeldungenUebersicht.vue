@@ -79,15 +79,12 @@ import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
 import { extractErrorMessage } from '../../utils/errorMessage';
 
-// Sequenzielle Skala Prio 1 (hellgelb) -> Prio 10 (dunkelgrün), in OKLCH interpoliert
-// und mit dataviz-Skill-Validator geprüft (Helligkeit monoton, Schrittweite >= 0.06 ΔL,
-// Kontrast am hellen Ende >= 2:1 gegen weiße Kartenfläche). Bewusste Abweichung von der
-// "ein Farbton"-Ordinalregel, da Nutzer explizit eine Gelb-Grün-Ratingskala wollte -
-// kompensiert durch feste Links-nach-rechts-Reihenfolge (Position codiert Identität mit)
-// und den MouseOver-Tooltip mit der exakten Anzahl je Segment.
+// Sequenzielle Skala Prio 1 (hellgelb) -> Prio 10 (intensivgrün), vom Fachbereich
+// vorgegebene RGB-Werte. Stufe 1 hat bewusst geringen Kontrast zur weißen Kartenfläche
+// (~1:1) - der MouseOver-Tooltip zeigt die exakte Anzahl je Segment als Ausgleich.
 const PRIO_COLORS = {
-  1: '#c2b100', 2: '#a19f17', 3: '#828d20', 4: '#667b24', 5: '#4d6825',
-  6: '#375423', 7: '#24411e', 8: '#142f18', 9: '#071d0f', 10: '#020c06'
+  1: '#ffffb4', 2: '#f5fa8c', 3: '#dcf064', 4: '#bee646', 5: '#96d732',
+  6: '#6ec828', 7: '#46b423', 8: '#23a01e', 9: '#0a8c19', 10: '#007814'
 };
 
 const route = useRoute();
