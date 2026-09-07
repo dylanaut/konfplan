@@ -1,0 +1,31 @@
+Release Notes 1.19.2
+Released: 2026-09-07
+
+Changes:
+
+- Release-Notes fuer 1.19.1 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.19.2-SNAPSHOT)
+  Bump version from 1.19.1 to 1.19.2-SNAPSHOT in all four pom.xml files,
+  closing out release 1.19.1.
+
+- Export-Kollisionswarnungen im persistenten Banner statt in alert()
+  DZN-Export und Bundle-Export (PlanungTab) laufen durch dieselbe
+  Kollisionsprüfung wie die normale Planerstellung (beide rufen
+  PlanErstellungService#bereiteDznVor auf) - blockierende Warnungen wurden bei
+  startPlanning() bereits im persistenten roten Banner oben im Dashboard
+  angezeigt (bleibt bis "Verstanden" auch über Tab-Wechsel sichtbar), bei
+  exportDzn()/exportBundle() aber nur als flüchtiges alert()-Popup, das beim
+  Wegklicken sofort samt Inhalt verschwindet.
+  Beide Export-Funktionen nutzen jetzt denselben planungsInkonsistenzen-Banner
+  wie startPlanning(). responseType 'blob' liefert Fehlerantworten als Blob
+  statt geparstem JSON - dafür die bereits vorhandene manuelle Blob-Parse-Logik
+  in einen gemeinsamen Helper extractBlobErrorMessage() ausgelagert.
+
+- ignore db_backups
+
+- Release 1.19.2
+  Bump version from 1.19.2-SNAPSHOT to 1.19.2 in all four pom.xml files.
+  Fix-Release: enthaelt Export-Kollisionswarnungen im persistenten Banner
+  statt in alert() (#480).
+
