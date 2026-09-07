@@ -1,0 +1,26 @@
+Release Notes 1.21.1
+Released: 2026-09-08
+
+Changes:
+
+- Release-Notes fuer 1.21.0 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.21.1-SNAPSHOT)
+  Bump version from 1.21.0 to 1.21.1-SNAPSHOT in all four pom.xml files,
+  closing out release 1.21.0.
+
+- TeilnehmerTab: direkte Seitenwahl und editierbare Paginierungsgröße
+  PaginationControls bekommt ein neues, standardmäßig deaktiviertes
+  "editable"-Prop: aktiviert eine Seitenzahl-Eingabe (statt reinem
+  Text) sowie ein Eingabefeld für die Einträge/Seite, das per
+  v-model:pageSize nach außen kommuniziert wird. Alle anderen Tabs
+  (GebaeudeTab, OrganisatorenTab, SlotsTab, ReferentenTab,
+  VeranstaltungenTab, VortraegeTab) setzen das Prop nicht und bleiben
+  dadurch unverändert.
+  Im TeilnehmerTab wird dafür eine eigene, lokale Paginierungsgröße
+  (statt der global geteilten props.pageSize) eingeführt, damit eine
+  Änderung hier nicht die anderen Tabs des Dashboards beeinflusst.
+
+- Release 1.21.1
+  Bump version from 1.21.1-SNAPSHOT to 1.21.1 in all four pom.xml files.
+
