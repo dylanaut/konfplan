@@ -155,8 +155,8 @@
             </tr>
             </tbody>
           </table>
-          <PaginationControls v-model:currentPage="pages.teilnehmer" :totalItems="filteredParticipants.length"
-                              :pageSize="pageSize"/>
+          <PaginationControls v-model:currentPage="pages.teilnehmer" v-model:pageSize="localPageSize"
+                              :totalItems="filteredParticipants.length" editable/>
         </div>
       </div>
     </div>
@@ -265,8 +265,8 @@
             </tr>
             </tbody>
           </table>
-          <PaginationControls v-model:currentPage="pages.teilnehmer" :totalItems="filteredParticipants.length"
-                              :pageSize="pageSize"/>
+          <PaginationControls v-model:currentPage="pages.teilnehmer" v-model:pageSize="localPageSize"
+                              :totalItems="filteredParticipants.length" editable/>
         </div>
         <div v-else class="bg-white p-8 rounded-xl text-center border-2 border-dashed border-gray-200 text-gray-500">
           <UsersIcon class="w-10 h-10 mx-auto mb-3 text-gray-400"/>
@@ -328,6 +328,13 @@ const router = useRouter();
 
 const pages = reactive({
   teilnehmer: 1
+});
+
+// Eigene, editierbare Paginierungsgröße statt der globalen props.pageSize - Änderungen
+// hier sollen nur diesen Tab betreffen, nicht alle anderen Tabs des Dashboards.
+const localPageSize = ref(props.pageSize);
+watch(localPageSize, () => {
+  pages.teilnehmer = 1;
 });
 
 const filters = reactive({
@@ -418,8 +425,8 @@ const processList = (list, filterText, sortConfig) => {
 };
 
 const paginate = (list, page) => {
-  const start = (page - 1) * props.pageSize;
-  return list.slice(start, start + props.pageSize);
+  const start = (page - 1) * localPageSize.value;
+  return list.slice(start, start + localPageSize.value);
 };
 
 const toggleSort = (key, field) => {
