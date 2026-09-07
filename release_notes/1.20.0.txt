@@ -1,0 +1,34 @@
+Release Notes 1.20.0
+Released: 2026-09-07
+
+Changes:
+
+- Release-Notes fuer 1.19.3 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.19.4-SNAPSHOT)
+  Bump version from 1.19.3 to 1.19.4-SNAPSHOT in all four pom.xml files,
+  closing out release 1.19.3.
+
+- Anmeldungen-Übersicht über alle Wahlvorträge (Balkendiagramm)
+  Neue Report-Seite: horizontales Balkendiagramm über alle Wahlvorträge
+  einer Veranstaltung, absteigend sortiert nach Anzahl Anmeldungen
+  (Prioritaet-Einträge mit prioWert > 0), je Balken Anzahl (Zahl +
+  Balkenlänge) und Ø-Priorität (nur über prioWert > 0 gemittelt).
+  Wahlvorträge ohne Anmeldungen erscheinen mit Anzahl 0.
+  Aggregation läuft in Java (Panache find().list() + Collectors.groupingBy)
+  statt per JPQL-GROUP BY, analog zum einzigen bestehenden Präzedenzfall
+  (PrioritaetService.getVortragPrioritaetenByVeranstaltung) - das behandelt
+  Wahlvorträge ohne Anmeldungen korrekt, da über
+  Veranstaltung.getWahlvortraege() iteriert wird statt über die
+  Prioritaet-Query.
+  Kein neues Chart-Framework: die Balken sind handgerollte <div>s mit
+  prozentualer width, wie im restlichen Bootstrap-Report-Bereich üblich.
+  Aufruf über neuen Button im VortraegeTab neben "Drucken", gleiche
+  window.open-Logik wie die bestehenden Report-Buttons, Zugriff für
+  ORGANISATOR + ADMINISTRATOR über das bestehende isOrganisator-Muster.
+
+- Release 1.20.0
+  Bump version from 1.19.4-SNAPSHOT to 1.20.0 in all four pom.xml files.
+  Minor version bump (not 1.19.4) since this release includes a new
+  feature (Anmeldungen-Übersicht-Balkendiagramm, #488), not just a fix.
+
