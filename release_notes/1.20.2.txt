@@ -1,0 +1,25 @@
+Release Notes 1.20.2
+Released: 2026-09-07
+
+Changes:
+
+- Release-Notes fuer 1.20.1 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.20.2-SNAPSHOT)
+  Bump version from 1.20.1 to 1.20.2-SNAPSHOT in all four pom.xml files,
+  closing out release 1.20.1.
+
+- Anmeldungen-Übersicht: Prio-Farbskala durch fachlich vorgegebene RGB-Werte ersetzt
+  Ersetzt die zuvor generierte OKLCH-Rampe durch die vom Fachbereich
+  festgelegten 10 RGB-Farbtöne für die Prioritätsstufen 1-10.
+
+- TeilnehmerTab: Filter "Nur ohne Prioritäten" ergänzt
+  Nutzt dieselbe hasNoPriorities()-Logik, die bereits die Zeilen in der
+  Prioritäten-Matrix farblich markiert (amber-Hintergrund), jetzt zusätzlich
+  als Checkbox-Filter neben dem bestehenden Gruppen-Filter, damit Teilnehmer
+  ohne Prioritäten gezielt gefiltert statt nur optisch markiert werden
+  können.
+
+- Release 1.20.2
+  Bump version from 1.20.2-SNAPSHOT to 1.20.2 in all four pom.xml files.
+
