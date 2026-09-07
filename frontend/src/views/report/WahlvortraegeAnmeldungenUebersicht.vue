@@ -19,25 +19,49 @@
         </button>
       </div>
 
-      <p v-if="reportData.zeilen.length === 0" class="text-muted">Keine Wahlvorträge vorhanden.</p>
+      <p v-if="reportData.zeilen.length === 0" class="text-muted">Keine Anmeldungen vorhanden.</p>
 
       <div v-else class="card shadow-sm p-3">
+        <div class="prio-legend mb-4">
+          <span class="text-muted small me-2">Priorität:</span>
+          <span class="prio-legend-track">
+            <span
+              v-for="p in 10"
+              :key="p"
+              class="prio-legend-swatch"
+              :style="{ backgroundColor: PRIO_COLORS[p] }"
+            ></span>
+          </span>
+          <span class="text-muted small ms-2">1 (niedrig) &rarr; 10 (hoch)</span>
+        </div>
+
         <div v-for="zeile in reportData.zeilen" :key="zeile.vortragId" class="bar-row mb-3">
           <div class="d-flex justify-content-between small mb-1">
             <span class="fw-bold">{{ zeile.titel }}</span>
             <span class="text-muted">
               {{ zeile.anzahlAnmeldungen }} Anmeldung{{ zeile.anzahlAnmeldungen === 1 ? '' : 'en' }}
-              <template v-if="zeile.anzahlAnmeldungen > 0">
-                &middot; Ø Priorität {{ zeile.durchschnittPrio.toFixed(1) }}
-              </template>
+              &middot; Ø Priorität {{ zeile.durchschnittPrio.toFixed(1) }}
             </span>
           </div>
           <div class="bar-track">
-            <div class="bar-fill" :style="{ width: barWidth(zeile.anzahlAnmeldungen) + '%' }">
-              <span v-if="zeile.anzahlAnmeldungen > 0" class="bar-value">{{ zeile.anzahlAnmeldungen }}</span>
-            </div>
+            <span
+              v-for="segment in zeile.segmente"
+              :key="segment.prioWert"
+              class="bar-segment"
+              :style="{ width: barWidth(segment.anzahl) + '%', backgroundColor: PRIO_COLORS[segment.prioWert] }"
+              :title="`Priorität ${segment.prioWert}: ${segment.anzahl} Anmeldung${segment.anzahl === 1 ? '' : 'en'}`"
+            ></span>
           </div>
         </div>
+      </div>
+
+      <div v-if="reportData.ohneAnmeldungen.length > 0" class="mt-4">
+        <h2 class="h5">Wahlvorträge ohne Anmeldungen ({{ reportData.ohneAnmeldungen.length }})</h2>
+        <ul class="list-group">
+          <li v-for="wv in reportData.ohneAnmeldungen" :key="wv.vortragId" class="list-group-item text-muted">
+            {{ wv.titel }}
+          </li>
+        </ul>
       </div>
     </div>
 
@@ -55,8 +79,19 @@ import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
 import { extractErrorMessage } from '../../utils/errorMessage';
 
+// Sequenzielle Skala Prio 1 (hellgelb) -> Prio 10 (dunkelgrün), in OKLCH interpoliert
+// und mit dataviz-Skill-Validator geprüft (Helligkeit monoton, Schrittweite >= 0.06 ΔL,
+// Kontrast am hellen Ende >= 2:1 gegen weiße Kartenfläche). Bewusste Abweichung von der
+// "ein Farbton"-Ordinalregel, da Nutzer explizit eine Gelb-Grün-Ratingskala wollte -
+// kompensiert durch feste Links-nach-rechts-Reihenfolge (Position codiert Identität mit)
+// und den MouseOver-Tooltip mit der exakten Anzahl je Segment.
+const PRIO_COLORS = {
+  1: '#c2b100', 2: '#a19f17', 3: '#828d20', 4: '#667b24', 5: '#4d6825',
+  6: '#375423', 7: '#24411e', 8: '#142f18', 9: '#071d0f', 10: '#020c06'
+};
+
 const route = useRoute();
-const reportData = ref({ veranstaltung: {}, zeilen: [] });
+const reportData = ref({ veranstaltung: {}, zeilen: [], ohneAnmeldungen: [] });
 const loading = ref(true);
 const error = ref(null);
 
@@ -117,25 +152,36 @@ onMounted(async () => {
   display: none;
 }
 
+.prio-legend {
+  display: flex;
+  align-items: center;
+}
+.prio-legend-track {
+  display: flex;
+  gap: 2px;
+}
+.prio-legend-swatch {
+  width: 1rem;
+  height: 0.75rem;
+  border-radius: 2px;
+}
+
 .bar-track {
+  display: flex;
+  gap: 2px;
   background-color: #e9ecef;
   border-radius: 0.375rem;
   height: 1.75rem;
   overflow: hidden;
+  padding: 2px;
 }
-.bar-fill {
-  background-color: #4338ca;
+.bar-segment {
   height: 100%;
-  min-width: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: 0.5rem;
-  transition: width 0.3s ease;
+  min-width: 3px;
+  border-radius: 2px;
+  transition: filter 0.15s ease;
 }
-.bar-value {
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 700;
+.bar-segment:hover {
+  filter: brightness(1.15);
 }
 </style>

@@ -439,11 +439,17 @@ class ReportResourceTest {
             t3.setEmail("uebersicht.drei@test.de");
             t3.persist();
 
+            Teilnehmer t4 = new Teilnehmer();
+            t4.assignLoginName("uebersicht.vier");
+            t4.setEmail("uebersicht.vier@test.de");
+            t4.persist();
+
             new Prioritaet(t1, wvVoll, 10).persist();
             new Prioritaet(t2, wvVoll, 6).persist();
             new Prioritaet(t3, wvVoll, 8).persist();
+            new Prioritaet(t4, wvVoll, 8).persist();
             new Prioritaet(t1, wvWenig, 4).persist();
-            // prioWert 0 = "keine Präferenz" - darf nicht zaehlen, wvLeer bleibt bei count=0.
+            // prioWert 0 = "keine Präferenz" - darf nicht zaehlen, wvLeer bleibt ohne Anmeldungen.
             new Prioritaet(t2, wvLeer, 0).persist();
 
             ids[0] = v.getId();
@@ -454,16 +460,25 @@ class ReportResourceTest {
                 .then()
                 .statusCode(200)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body("zeilen.size()", is(3))
+                .body("zeilen.size()", is(2))
                 .body("zeilen[0].titel", is("Vortrag mit vielen Anmeldungen"))
-                .body("zeilen[0].anzahlAnmeldungen", is(3))
+                .body("zeilen[0].anzahlAnmeldungen", is(4))
                 .body("zeilen[0].durchschnittPrio", is(8.0f))
+                .body("zeilen[0].segmente.size()", is(3))
+                .body("zeilen[0].segmente[0].prioWert", is(6))
+                .body("zeilen[0].segmente[0].anzahl", is(1))
+                .body("zeilen[0].segmente[1].prioWert", is(8))
+                .body("zeilen[0].segmente[1].anzahl", is(2))
+                .body("zeilen[0].segmente[2].prioWert", is(10))
+                .body("zeilen[0].segmente[2].anzahl", is(1))
                 .body("zeilen[1].titel", is("Vortrag mit wenigen Anmeldungen"))
                 .body("zeilen[1].anzahlAnmeldungen", is(1))
                 .body("zeilen[1].durchschnittPrio", is(4.0f))
-                .body("zeilen[2].titel", is("Vortrag ohne Anmeldungen"))
-                .body("zeilen[2].anzahlAnmeldungen", is(0))
-                .body("zeilen[2].durchschnittPrio", is(0.0f));
+                .body("zeilen[1].segmente.size()", is(1))
+                .body("zeilen[1].segmente[0].prioWert", is(4))
+                .body("zeilen[1].segmente[0].anzahl", is(1))
+                .body("ohneAnmeldungen.size()", is(1))
+                .body("ohneAnmeldungen[0].titel", is("Vortrag ohne Anmeldungen"));
     }
 
 

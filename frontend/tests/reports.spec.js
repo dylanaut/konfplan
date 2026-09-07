@@ -242,18 +242,28 @@ test.describe('Report-Generierung', () => {
     });
 
     await page.goto(routeUrl);
-    await expect(page.locator('h1').last()).toContainText('Anmeldungen je Wahlvortrag (3)');
+    await expect(page.locator('h1').last()).toContainText('Anmeldungen je Wahlvortrag (2)');
 
     const zeilen = page.locator('.bar-row');
-    await expect(zeilen).toHaveCount(3);
+    await expect(zeilen).toHaveCount(2);
     // Absteigend nach Anzahl Anmeldungen sortiert.
     await expect(zeilen.nth(0)).toContainText('Informatiker');
     await expect(zeilen.nth(0)).toContainText('3 Anmeldungen');
     await expect(zeilen.nth(0)).toContainText('Ø Priorität 8.0');
     await expect(zeilen.nth(1)).toContainText('Physiker');
     await expect(zeilen.nth(1)).toContainText('1 Anmeldung');
-    await expect(zeilen.nth(2)).toContainText('Vortrag ohne Anmeldungen');
-    await expect(zeilen.nth(2)).toContainText('0 Anmeldungen');
+
+    // Der Balken des "Informatiker"-Vortrags ist in 3 Prio-Segmente unterteilt,
+    // mit Anzahl je Prio als Tooltip (title-Attribut).
+    const segmente = zeilen.nth(0).locator('.bar-segment');
+    await expect(segmente).toHaveCount(3);
+    await expect(segmente.nth(0)).toHaveAttribute('title', 'Priorität 6: 1 Anmeldung');
+    await expect(segmente.nth(1)).toHaveAttribute('title', 'Priorität 8: 1 Anmeldung');
+    await expect(segmente.nth(2)).toHaveAttribute('title', 'Priorität 10: 1 Anmeldung');
+
+    // Wahlvorträge ohne Anmeldungen erscheinen separat am Ende, nicht als Balken.
+    await expect(page.getByText('Wahlvorträge ohne Anmeldungen (1)')).toBeVisible();
+    await expect(page.locator('.list-group-item')).toHaveText(['Vortrag ohne Anmeldungen']);
   });
 
 });
