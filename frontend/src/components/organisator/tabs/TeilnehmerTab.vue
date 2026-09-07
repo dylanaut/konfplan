@@ -147,7 +147,7 @@
                        v-model.number="getParticipantPrio(u.id, vortrag.id).prioWert"
                        @input="markPrioChanged(u.id)"
                        :disabled="isEventFinished"
-                       class="w-12 text-center border rounded py-0.5 text-[10px] focus:ring-indigo-500 focus:border-indigo-500 border-gray-100"/>
+                       class="prio-input w-12 text-center border rounded py-0.5 text-[10px] focus:ring-indigo-500 focus:border-indigo-500 border-gray-100"/>
               </td>
               <td></td>
             </tr>
@@ -513,6 +513,17 @@ const openParticipantPlan = (participant) => {
 
 .input-field {
   @apply rounded-lg border border-gray-300 px-2 py-1 text-gray-900 focus:ring-2 focus:ring-indigo-500 bg-white;
+}
+
+/* Die schmale Prioritäts-Zelle hat keinen Platz für die nativen Spinner-Pfeile - ohne
+   dieses Ausblenden verdrängen sie die eingegebene Zahl vollständig aus der Zelle. */
+.prio-input::-webkit-outer-spin-button,
+.prio-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.prio-input[type=number] {
+  -moz-appearance: textfield;
 }
 
 .animate-fade-in {
