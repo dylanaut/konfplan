@@ -1,5 +1,6 @@
 package kreyj.konfplan.adapter.in.web;
 
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.h2.H2DatabaseTestResource;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
+import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 import static jakarta.ws.rs.core.Response.Status.CREATED;
 import static jakarta.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -103,6 +105,70 @@ class GebaeudeResourceTest extends DatabaseCleaner {
             .body("gebaeudeId", is(gebaeudeId.intValue()));
 
         assertThat(Raum.<Raum>findById(raumId).getKapazitaet()).isEqualTo(42);
+    }
+
+
+    @Test
+    void create_mitGueltigemKuerzel_speichertEsNormalisiert() {
+        String body = "{\"name\":\"Nebenhaus\",\"typ\":\"SCHULE\",\"ort\":\"Teststadt\","
+            + "\"strasse\":\"Teststraße\",\"hausnummer\":\"2\",\"postleitzahl\":\"12345\",\"kuerzel\":\"neb\"}";
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(body)
+            .when().post()
+            .then()
+            .statusCode(CREATED.getStatusCode())
+            .body("kuerzel", is("NEB"));
+    }
+
+
+    @Test
+    void create_mitZuKurzemKuerzel_wirdAbgelehnt() {
+        String body = "{\"name\":\"Nebenhaus\",\"typ\":\"SCHULE\",\"ort\":\"Teststadt\","
+            + "\"strasse\":\"Teststraße\",\"hausnummer\":\"2\",\"postleitzahl\":\"12345\",\"kuerzel\":\"AB\"}";
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(body)
+            .when().post()
+            .then()
+            .statusCode(BAD_REQUEST.getStatusCode());
+    }
+
+
+    @Test
+    void create_mitBereitsVergebenemKuerzel_wirdAbgelehnt() {
+        QuarkusTransaction.requiringNew().run(() ->
+            Gebaeude.<Gebaeude>findById(gebaeudeId).setKuerzel("HGA"));
+
+        String body = "{\"name\":\"Nebenhaus\",\"typ\":\"SCHULE\",\"ort\":\"Teststadt\","
+            + "\"strasse\":\"Teststraße\",\"hausnummer\":\"2\",\"postleitzahl\":\"12345\",\"kuerzel\":\"hga\"}";
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(body)
+            .when().post()
+            .then()
+            .statusCode(BAD_REQUEST.getStatusCode());
+    }
+
+
+    @Test
+    void update_mitUnveraendertEigenemKuerzel_wirdNichtAlsDuplikatAbgelehnt() {
+        QuarkusTransaction.requiringNew().run(() ->
+            Gebaeude.<Gebaeude>findById(gebaeudeId).setKuerzel("HGA"));
+
+        String body = "{\"id\":" + gebaeudeId + ",\"version\":0,\"name\":\"Haupthaus\",\"typ\":\"SCHULE\",\"ort\":\"Teststadt\","
+            + "\"strasse\":\"Teststraße\",\"hausnummer\":\"1\",\"postleitzahl\":\"12345\",\"kuerzel\":\"HGA\"}";
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(body)
+            .when().put("/{id}", gebaeudeId)
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body("kuerzel", is("HGA"));
     }
 
 

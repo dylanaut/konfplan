@@ -20,6 +20,8 @@ public class GebaeudeSimpleDto extends AbstractVersionedDto {
 
     public Gebaeudetyp typ;
 
+    public String kuerzel;
+
     public List<RaumDto> raeume;
 
 
@@ -34,6 +36,7 @@ public class GebaeudeSimpleDto extends AbstractVersionedDto {
         dto.ort = gebaeude.getOrt();
         dto.postleitzahl = gebaeude.getPostleitzahl();
         dto.typ = gebaeude.getTyp();
+        dto.kuerzel = gebaeude.getKuerzel();
 
         dto.raeume = gebaeude.getRaeume().stream()
             .map(RaumDto::from)

@@ -74,7 +74,7 @@
             <div v-for="[r_oid, raum] in belegteRaeume(s_oid)" :key="r_oid" class="col-md-3">
               <div class="card h-100 card-vortrag" :class="getBelegung(s_oid, r_oid).isPflicht ? 'border-primary border-2' : 'border-light'">
                 <div class="card-header py-1 d-flex justify-content-between small bg-light">
-                  <span>Raum: <strong>{{ raum.name }}</strong></span>
+                  <span><strong>{{ raumLabel(raum) }}</strong></span>
                   <span class="text-muted">Kap: {{ raum.kapazitaet }}</span>
                 </div>
                 <div class="card-body p-2">
@@ -148,6 +148,7 @@
 import { ref, onMounted, defineProps } from 'vue';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
+import { raumLabel } from '../../utils/raumLabel';
 
 const props = defineProps({
   vid: {

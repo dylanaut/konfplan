@@ -14,6 +14,7 @@ public class RaumDto extends AbstractVersionedDto {
     public String etage;
     public Long gebaeudeId;
     public String gebaeudeName;
+    public String gebaeudeKuerzel;
 
 
     // -------------------------------------------------------------------
@@ -31,6 +32,7 @@ public class RaumDto extends AbstractVersionedDto {
 
         dto.gebaeudeId = raum.getGebaeude().getId();
         dto.gebaeudeName = raum.getGebaeude().getName();
+        dto.gebaeudeKuerzel = raum.getGebaeude().getKuerzel();
 
         return dto;
     }

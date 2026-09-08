@@ -38,6 +38,14 @@ public class Gebaeude extends VersionedEntity {
     @Column(nullable = false)
     private String ort;
 
+    // Kurzes, eindeutiges Kürzel (3-4 Buchstaben) für kompakte Raumanzeigen in Reports/
+    // Plandarstellungen ("{Kürzel} {Raumname}" statt "Raum: {Raumname}"). Nullable, da bereits
+    // bestehende Gebäude beim Einführen dieses Felds noch keins gesetzt haben - unique erlaubt
+    // trotzdem mehrere NULL-Werte (Standard-SQL-Semantik), nur tatsächlich vergebene Kürzel
+    // müssen eindeutig sein.
+    @Column(unique = true, length = 4)
+    private String kuerzel;
+
 
     @OneToMany(mappedBy = "gebaeude", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
     Set<Raum> raeume = new HashSet<>();

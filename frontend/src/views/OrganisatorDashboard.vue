@@ -725,6 +725,7 @@ const handleSaveGebaeude = async (g) => {
     await refreshGebaeude();
   } catch (e) {
     console.error('Fehler beim Speichern des Gebäudes:', e);
+    alert('Fehler beim Speichern: ' + extractErrorMessage(e));
   }
 };
 const deleteGebaeude = async (id) => {
