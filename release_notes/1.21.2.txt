@@ -1,0 +1,46 @@
+Release Notes 1.21.2
+Released: 2026-09-08
+
+Changes:
+
+- Release-Notes fuer 1.21.1 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.21.2-SNAPSHOT)
+  Bump version from 1.21.1 to 1.21.2-SNAPSHOT in all four pom.xml files,
+  closing out release 1.21.1.
+
+- Backfill RaumVerfuegbarkeit für nachträglich angelegte Räume
+  RaumService.save() zog beim Anlegen eines neuen Raums nur die
+  Gebaeude<->Raum-Beziehung nach, nicht aber die RaumVerfuegbarkeit für
+  Veranstaltungen, die das Gebäude bereits vorher enthielten. Ein Raum, der
+  einem schon verknüpften Gebäude nachträglich hinzugefügt wurde, hatte
+  dadurch für dessen Veranstaltungen gar keine RaumVerfuegbarkeit-Zeile, was
+  appendRaumVerfuegbarkeiten bei der nächsten Planerstellung mit einer NPE
+  abbrechen ließ.
+  Legt beim Anlegen eines Raums jetzt RaumVerfuegbarkeit (verfügbar) für alle
+  Slots aller bereits verknüpften Veranstaltungen an, und behandelt eine
+  fehlende RaumVerfuegbarkeit in der DZN-Erzeugung defensiv als "in allen
+  Slots verfügbar" (analog zu RaumVerfuegbarkeit.isRaumVerfuegbar), damit
+  bereits betroffene Bestandsdaten sich selbst heilen statt zu crashen.
+
+- Räume-Tab: sortierbare Spalten, Lösch-Bug und eindeutige Raumnamen
+  - GebaeudeTab.vue: Name/Kapazität/Etage der Raum-Tabelle sind jetzt wie
+    die Gebäude-Tabelle klickbar sortierbar.
+  - OrganisatorDashboard.vue#deleteRaum griff auf r.gebaeude.id zu, das
+    vom Backend gelieferte RaumDto hat aber nur ein flaches gebaeudeId-Feld.
+    Der dadurch geworfene TypeError wurde im catch-Block verschluckt, der
+    DELETE-Request nie abgesendet - der Raum blieb nach "Löschen" sichtbar.
+    Nutzt jetzt die per Event mitgelieferte Gebäude-Id.
+  - RaumEditorModal.vue hatte denselben Root Cause: beim Bearbeiten eines
+    bestehenden Raums fiel die Gebäude-Vorbelegung mangels gebaeude.id auf
+    das erste Gebäude der Liste zurück statt das tatsächliche Gebäude zu
+    übernehmen - konnte beim Speichern einer Bearbeitung den Raum unbemerkt
+    umhängen. Regressionstests in OrganisatorDashboardModals.spec.js für
+    beide Fälle ergänzt (verifiziert: schlagen ohne die Fixes fehl).
+  - Raumname muss jetzt pro Gebäude eindeutig sein: DB-Unique-Constraint
+    (V20-Migration + JPA-Annotation) plus proaktive Prüfung in
+    RaumService.save() mit verständlicher Fehlermeldung statt rohem
+    Constraint-Fehler.
+
+- Release 1.21.2
+
