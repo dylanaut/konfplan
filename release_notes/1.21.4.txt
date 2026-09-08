@@ -1,0 +1,143 @@
+Release Notes 1.21.4
+Released: 2026-09-08
+
+Changes:
+
+- Release-Notes fuer 1.21.3 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.21.4-SNAPSHOT)
+  Bump version from 1.21.3 to 1.21.4-SNAPSHOT in all four pom.xml files,
+  closing out release 1.21.3.
+
+- DashboardService: NPE bei nachträglich entferntem Teilnehmer beheben
+  DashboardData#teilnehmer wird aus den aktuell live mit der Veranstaltung
+  verknüpften Teilnehmern gebaut, während die MinizincResult-Arrays
+  (teilnehmer_oids, besucht) eine eingefrorene Momentaufnahme vom Zeitpunkt
+  der Planerstellung sind. Wird ein Teilnehmer danach aus der Veranstaltung
+  entfernt, referenziert der gespeicherte Plan weiterhin dessen Oid, aber
+  dd.teilnehmer.get(oid) liefert null - mehrere Stellen griffen darauf ohne
+  Null-Check zu (analog zum bekannten Muster bei gelöschten Vorträgen in
+  PlanService.getRaumbelegungsplan).
+  Ergänzt Null-Guards in calculatePrefsFillUpStats, createTeilnehmerErfuellung,
+  berechneBelegungUndFreieSlots und createTeilnehmerStundenplan - überspringt
+  den entfernten Teilnehmer statt zu crashen.
+
+- Kurzfristige Umplanung bei Vortragsausfall
+  * Backend: kurzfristige Umplanung bei Vortragsausfall
+  Wenn nach der Planerstellung ein Referent kurzfristig ausfällt, konnte der
+  Organisator bisher nur den kompletten Plan neu berechnen lassen
+  (NachrichtService#benachrichtigeUeberZurueckgezogenenVortrag markierte das
+  Ergebnis nur als veraltet). Neuer UmplanungService markiert stattdessen
+  gezielt eine einzelne Wahlvortrag-Instanz als ausgefallen und verteilt
+  deren bereits zugewiesene Teilnehmer - passend zu ihren Neigungen und nur
+  soweit Raumkapazität frei ist - auf andere Instanzen im selben Zeitslot.
+  - Planungsergebnis.MinizincResult um instanz_ausgefallen erweitert
+    (Instanz bleibt im Plan sichtbar statt gelöscht zu werden).
+  - PlanService.getWahlvortragInstanzen liefert die Wahlvortrag-Instanzen
+    eines BESTIMMTEN Planungsergebnisses (nicht nur des veröffentlichten)
+    inklusive Ids für die neue Umplanungs-Ansicht.
+  - UmplanungService patcht das bestehende Planungsergebnis in-place (deserialisiert
+    bewusst NICHT über den versionsbasierten Cache aus PlanService, um bei einem
+    Fehler mitten in der Verteilung keinen nie persistierten Zwischenstand im
+    Cache hängen zu lassen) und benachrichtigt betroffene Teilnehmer, den
+    Referenten sowie bei unvollständiger Umverteilung die Organisatoren
+    (neue NachrichtKategorie VORTRAG_AUSGEFALLEN, V21-Migration für den
+    CHECK-Constraint).
+  - Neue Endpunkte: GET .../planungsergebnisse/{id}/instanzen,
+    POST .../planungsergebnisse/{id}/umplanen.
+  Refs #517
+  * Frontend: kurzfristige Umplanung bei Vortragsausfall
+  Neue UmplanungModal.vue, aus dem ErgebnisseTab per neuem "Vorträge
+  ansehen"-Button pro Planungslauf erreichbar: listet die Wahlvortrag-
+  Instanzen eines Planungsergebnisses, bereits ausgefallene Instanzen
+  werden ausgegraut/durchgestrichen mit "Ausgefallen"-Badge angezeigt.
+  Für aktive Instanzen markiert "Als ausgefallen markieren & umverteilen"
+  die Instanz und zeigt die Umverteilung (bzw. nicht platzierte Teilnehmer)
+  als Ergebnis-Banner an.
+  Playwright-Tests für den neuen Modal-Flow ergänzt (gemockte APIs, analog
+  zum bestehenden Muster in dieser Spec-Datei).
+  ---------
+
+- Bump surefire-plugin.version from 3.5.6 to 3.6.0
+  Bumps `surefire-plugin.version` from 3.5.6 to 3.6.0.
+  Updates `org.apache.maven.plugins:maven-surefire-plugin` from 3.5.6 to 3.6.0
+  - [Release notes](https://github.com/apache/maven-surefire/releases)
+  - [Commits](https://github.com/apache/maven-surefire/compare/surefire-3.5.6...surefire-3.6.0)
+  Updates `org.apache.maven.plugins:maven-failsafe-plugin` from 3.5.6 to 3.6.0
+  - [Release notes](https://github.com/apache/maven-surefire/releases)
+  - [Commits](https://github.com/apache/maven-surefire/compare/surefire-3.5.6...surefire-3.6.0)
+  Updates `org.apache.maven.plugins:maven-surefire-report-plugin` from 3.5.6 to 3.6.0
+  - [Release notes](https://github.com/apache/maven-surefire/releases)
+  - [Commits](https://github.com/apache/maven-surefire/compare/surefire-3.5.6...surefire-3.6.0)
+  ---
+  updated-dependencies:
+  - dependency-name: org.apache.maven.plugins:maven-surefire-plugin
+    dependency-version: 3.6.0
+    dependency-type: direct:development
+    update-type: version-update:semver-minor
+  - dependency-name: org.apache.maven.plugins:maven-failsafe-plugin
+    dependency-version: 3.6.0
+    dependency-type: direct:development
+    update-type: version-update:semver-minor
+  - dependency-name: org.apache.maven.plugins:maven-surefire-report-plugin
+    dependency-version: 3.6.0
+    dependency-type: direct:development
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump org.projectlombok:lombok from 1.18.46 to 1.18.48
+  Bumps [org.projectlombok:lombok](https://github.com/projectlombok/lombok) from 1.18.46 to 1.18.48.
+  - [Changelog](https://github.com/projectlombok/lombok/blob/master/doc/changelog.markdown)
+  - [Commits](https://github.com/projectlombok/lombok/compare/v1.18.46...v1.18.48)
+  ---
+  updated-dependencies:
+  - dependency-name: org.projectlombok:lombok
+    dependency-version: 1.18.48
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump org.apache.maven.plugins:maven-compiler-plugin
+  Bumps [org.apache.maven.plugins:maven-compiler-plugin](https://github.com/apache/maven-compiler-plugin) from 3.15.0 to 3.16.0.
+  - [Release notes](https://github.com/apache/maven-compiler-plugin/releases)
+  - [Commits](https://github.com/apache/maven-compiler-plugin/compare/maven-compiler-plugin-3.15.0...maven-compiler-plugin-3.16.0)
+  ---
+  updated-dependencies:
+  - dependency-name: org.apache.maven.plugins:maven-compiler-plugin
+    dependency-version: 3.16.0
+    dependency-type: direct:development
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump @types/node from 26.4.0 to 26.4.1 in /frontend
+  Bumps [@types/node](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/HEAD/types/node) from 26.4.0 to 26.4.1.
+  - [Release notes](https://github.com/DefinitelyTyped/DefinitelyTyped/releases)
+  - [Commits](https://github.com/DefinitelyTyped/DefinitelyTyped/commits/HEAD/types/node)
+  ---
+  updated-dependencies:
+  - dependency-name: "@types/node"
+    dependency-version: 26.4.1
+    dependency-type: direct:development
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump @capacitor/core from 8.5.0 to 8.5.1 in /frontend
+  Bumps [@capacitor/core](https://github.com/ionic-team/capacitor) from 8.5.0 to 8.5.1.
+  - [Release notes](https://github.com/ionic-team/capacitor/releases)
+  - [Changelog](https://github.com/ionic-team/capacitor/blob/main/CHANGELOG.md)
+  - [Commits](https://github.com/ionic-team/capacitor/compare/8.5.0...8.5.1)
+  ---
+  updated-dependencies:
+  - dependency-name: "@capacitor/core"
+    dependency-version: 8.5.1
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Release 1.21.4
+
