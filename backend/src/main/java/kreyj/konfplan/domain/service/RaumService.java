@@ -5,6 +5,8 @@ import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import kreyj.konfplan.persistence.Raum;
+import kreyj.konfplan.persistence.Slot;
+import kreyj.konfplan.persistence.Veranstaltung;
 import org.jboss.logging.Logger;
 
 import java.util.List;
@@ -53,6 +55,17 @@ public class RaumService {
             gebaeude.addRaum(r);
             r.persistAndFlush();
             gebaeude.persistAndFlush();
+
+            // Gebaeude.addRaum() aktualisiert nur die Gebaeude<->Raum-Beziehung; für
+            // Veranstaltungen, die dieses Gebäude bereits VOR dem neuen Raum aufgenommen hatten,
+            // fehlt sonst die RaumVerfuegbarkeit für dessen Slots (führt sonst zu NPE bei der
+            // Planerstellung, siehe appendRaumVerfuegbarkeiten in PlanErstellungService).
+            for (Veranstaltung veranstaltung : gebaeude.getVeranstaltungen()) {
+                for (Slot slot : veranstaltung.getSlots()) {
+                    r.updateRaumVerfuegbarkeit(slot, veranstaltung, true, true);
+                }
+            }
+
             protokollService.log(ProtokollKategorie.RAUM, "Raum erstellt", "Raum '" + r.getName() + "' im Gebäude '" + gebaeude.getName() + "' erstellt.", r.getId());
             return r;
         } else {
