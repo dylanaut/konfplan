@@ -23,7 +23,7 @@
         <div v-for="raum in sortedRaeume" :key="raum.id" class="col-12 page-break-after">
           <div class="card h-100">
             <div class="card-header text-center">
-              <h2>Raum: {{ raum.name }}</h2>
+              <h2>{{ raumLabel(raum) }}</h2>
             </div>
             <div class="card-body">
               <table class="table table-striped">
@@ -65,6 +65,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
+import { raumLabel } from '../../utils/raumLabel';
 
 const route = useRoute();
 const reportData = ref({ veranstaltung: {}, raumplan: {}, raeume: [], slots: [] });

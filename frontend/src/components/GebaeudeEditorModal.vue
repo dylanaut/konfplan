@@ -14,6 +14,12 @@
           <input v-model="form.name" type="text" class="input-field" required />
         </div>
 
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Kürzel (3-4 Buchstaben, optional)</label>
+          <input v-model="form.kuerzel" type="text" maxlength="4" class="input-field uppercase" placeholder="z.B. HG" />
+          <p class="text-[11px] text-gray-400 mt-1">Wird in Reports/Plandarstellungen kompakt vor dem Raumnamen angezeigt, muss über alle Gebäude eindeutig sein.</p>
+        </div>
+
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-1">Gebäudetyp</label>
           <select v-model="form.typ" class="input-field" required>
@@ -68,6 +74,7 @@ const form = reactive({
   id: null,
   name: '',
   typ: 'HAUPTGEBÄUDE',
+  kuerzel: '',
   strasse: '',
   hausnummer: '',
   postleitzahl: '',
@@ -80,6 +87,7 @@ watch(
       form.id = val?.id ?? null;
       form.name = val?.name ?? '';
       form.typ = val?.typ ?? 'HAUPTGEBÄUDE';
+      form.kuerzel = val?.kuerzel ?? '';
       form.strasse = val?.strasse ?? '';
       form.hausnummer = val?.hausnummer ?? '';
       form.postleitzahl = val?.postleitzahl ?? '';

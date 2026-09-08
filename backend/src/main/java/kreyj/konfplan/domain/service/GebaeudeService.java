@@ -5,6 +5,7 @@ import com.opencsv.bean.CsvToBeanBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.csv.GebaeudeRaeumeCsvDto;
+import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.ProtokollKategorie;
@@ -41,7 +42,11 @@ public class GebaeudeService {
 
     @Transactional
     public Gebaeude save(Gebaeude g) {
+        String kuerzel = normalisiereUndValidiereKuerzel(g.getKuerzel());
+        ensureKuerzelIstEindeutig(kuerzel, g.getId());
+
         if (g.getId() == null) {
+            g.setKuerzel(kuerzel);
             g.persistAndFlush();
             protokollService.log(ProtokollKategorie.GEBAEUDE, "Gebäude erstellt", "Gebäude '" + g.getName() + "' erstellt.", g.getId());
             return g;
@@ -56,8 +61,32 @@ public class GebaeudeService {
             entity.setHausnummer(g.getHausnummer());
             entity.setPostleitzahl(g.getPostleitzahl());
             entity.setOrt(g.getOrt());
+            entity.setKuerzel(kuerzel);
             protokollService.log(ProtokollKategorie.GEBAEUDE, "Gebäude aktualisiert", "Gebäude '" + entity.getName() + "' aktualisiert.", entity.getId());
             return entity;
+        }
+    }
+
+
+    private String normalisiereUndValidiereKuerzel(String kuerzel) {
+        if (StringUtils.isBlank(kuerzel)) {
+            return null;
+        }
+        String normalisiert = kuerzel.trim().toUpperCase();
+        if (normalisiert.length() < 3 || normalisiert.length() > 4) {
+            throw new BusinessException("Das Gebäude-Kürzel muss aus 3 oder 4 Buchstaben bestehen.");
+        }
+        return normalisiert;
+    }
+
+
+    private void ensureKuerzelIstEindeutig(String kuerzel, Long ignoriertGebaeudeId) {
+        if (null == kuerzel) {
+            return;
+        }
+        Gebaeude vorhandenesGebaeude = Gebaeude.find("kuerzel", kuerzel).firstResult();
+        if (null != vorhandenesGebaeude && !vorhandenesGebaeude.getId().equals(ignoriertGebaeudeId)) {
+            throw new BusinessException("Das Kürzel '" + kuerzel + "' wird bereits von Gebäude '" + vorhandenesGebaeude.getName() + "' verwendet.");
         }
     }
 
