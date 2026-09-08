@@ -164,6 +164,11 @@ public class DashboardService {
         for (int tnIdx = 0; tnIdx < dd.besucht.length; tnIdx++) {
             boolean[][] tn_besucht = dd.besucht[tnIdx];
             TeilnehmerDto tn = dd.teilnehmer.get(dd.mzTeilnehmerOids[tnIdx]);
+            if (null == tn) {
+                // Teilnehmer war zum Zeitpunkt der Planerstellung noch Teil der Veranstaltung,
+                // wurde seitdem aber entfernt (siehe berechneBelegungUndFreieSlots).
+                continue;
+            }
             Map<Long, Integer> prios = dd.getPrioritaeten(tn.id);
 
             for (int wvIdx = 0; wvIdx < dd.mzWahlvortragOids.length; wvIdx++) {
@@ -232,6 +237,11 @@ public class DashboardService {
     private void createTeilnehmerErfuellung(DashboardData dd) {
         for (int tnIdx = 0; tnIdx < dd.mzTeilnehmerOids.length; tnIdx++) {
             long tnOid = dd.mzTeilnehmerOids[tnIdx];
+            if (null == dd.teilnehmer.get(tnOid)) {
+                // Teilnehmer war zum Zeitpunkt der Planerstellung noch Teil der Veranstaltung,
+                // wurde seitdem aber entfernt (siehe berechneBelegungUndFreieSlots).
+                continue;
+            }
             Map<Long, WahlvortragStatus> wahlVortragStatuus = new LinkedHashMap<>();
             Map<Long, Integer> wvPrios = dd.getPrioritaeten(tnOid);
 
@@ -313,6 +323,11 @@ public class DashboardService {
                         if (dd.besucht[tnIdx][wvIdx][instIdx]) {
                             long tnOid = dd.mzTeilnehmerOids[tnIdx];
                             TeilnehmerDto tn = dd.teilnehmer.get(tnOid);
+                            if (null == tn) {
+                                // Teilnehmer war zum Zeitpunkt der Planerstellung noch Teil der
+                                // Veranstaltung, wurde seitdem aber entfernt.
+                                continue;
+                            }
                             wvNamen.add(tn.gName());
                             verplanteTnProSlot.get(slotOid).add(tnOid);
                         }
@@ -350,6 +365,11 @@ public class DashboardService {
     private void createTeilnehmerStundenplan(DashboardData dd) {
         for (int tnIdx = 0; tnIdx < dd.mzTeilnehmerOids.length; tnIdx++) {
             TeilnehmerDto tn = dd.teilnehmer.get(dd.mzTeilnehmerOids[tnIdx]);
+            if (null == tn) {
+                // Teilnehmer war zum Zeitpunkt der Planerstellung noch Teil der Veranstaltung,
+                // wurde seitdem aber entfernt (siehe berechneBelegungUndFreieSlots).
+                continue;
+            }
             long tnOid = tn.id;
             Set<String> tnGruppen = tn.gruppen;
             Map<Long, Integer> wvPrios = dd.getPrioritaeten(tnOid);
