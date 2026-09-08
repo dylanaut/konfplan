@@ -22,8 +22,15 @@
       <table class="table table-striped table-bordered">
         <thead class="table-dark">
           <tr>
-            <th scope="col">Referent</th>
+            <th scope="col" role="button" class="sortable" @click="toggleSort('name')">
+              Referent
+              <i class="bi ms-1" :class="sortIconClass('name')"></i>
+            </th>
             <th scope="col">Freie Slots</th>
+            <th scope="col" role="button" class="sortable" @click="toggleSort('anzahl')">
+              Anzahl freier Slots
+              <i class="bi ms-1" :class="sortIconClass('anzahl')"></i>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -37,6 +44,7 @@
               </ul>
               <span v-else class="text-muted">Keine freien Slots</span>
             </td>
+            <td>{{ anzahlFreieSlots(referent.id) }}</td>
           </tr>
         </tbody>
       </table>
@@ -62,10 +70,33 @@ const error = ref(null);
 
 const handlePrint = () => window.print();
 
+const sortKey = ref('name');
+const sortDir = ref('asc');
+
+const toggleSort = (key) => {
+  if (sortKey.value === key) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortKey.value = key;
+    sortDir.value = 'asc';
+  }
+};
+
+const sortIconClass = (key) => {
+  if (sortKey.value !== key) return 'bi-arrow-down-up text-white-50';
+  return sortDir.value === 'asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill';
+};
+
+const anzahlFreieSlots = (referentId) => (reportData.value.freieSlots[referentId] || []).length;
+
 const sortedReferenten = computed(() => {
   if (!reportData.value.nutzer) return [];
+  const richtung = sortDir.value === 'asc' ? 1 : -1;
   return [...reportData.value.nutzer].sort((a, b) => {
-    return a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName);
+    if (sortKey.value === 'anzahl') {
+      return (anzahlFreieSlots(a.id) - anzahlFreieSlots(b.id)) * richtung;
+    }
+    return (a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName)) * richtung;
   });
 });
 
@@ -146,5 +177,15 @@ const formatSlot = (slot) => {
 /* Standardmäßig sind Druck-spezifische Elemente versteckt */
 .print-footer, .print-only {
   display: none;
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sortable:hover {
+  opacity: 0.85;
 }
 </style>

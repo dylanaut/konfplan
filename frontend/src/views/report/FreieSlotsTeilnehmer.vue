@@ -14,9 +14,17 @@
       <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" />
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
         <h1 class="h3">Freie Slots für Teilnehmer</h1>
-        <button @click="handlePrint" class="btn btn-secondary">
-          <i class="bi bi-printer"></i> Drucken
-        </button>
+        <div class="d-flex align-items-center gap-3">
+          <div class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" id="ohneFreieSlotsAusblenden" v-model="ohneFreieSlotsAusblenden">
+            <label class="form-check-label" for="ohneFreieSlotsAusblenden">
+              Teilnehmer ohne freie Slots ausblenden
+            </label>
+          </div>
+          <button @click="handlePrint" class="btn btn-secondary">
+            <i class="bi bi-printer"></i> Drucken
+          </button>
+        </div>
       </div>
 
       <table class="table table-striped table-bordered">
@@ -62,9 +70,16 @@ const error = ref(null);
 
 const handlePrint = () => window.print();
 
+const ohneFreieSlotsAusblenden = ref(false);
+
+const hatFreieSlots = (teilnehmerId) => (reportData.value.freieSlots[teilnehmerId] || []).length > 0;
+
 const sortedTeilnehmer = computed(() => {
   if (!reportData.value.nutzer) return [];
-  return [...reportData.value.nutzer].sort((a, b) => {
+  const gefiltert = ohneFreieSlotsAusblenden.value
+    ? reportData.value.nutzer.filter(tn => hatFreieSlots(tn.id))
+    : reportData.value.nutzer;
+  return [...gefiltert].sort((a, b) => {
     return a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName);
   });
 });
