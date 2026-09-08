@@ -262,6 +262,15 @@ public class PlanService {
     /**
      * Löscht ein Planungsergebnis - ein veröffentlichtes kann NICHT gelöscht werden, das muss
      * zuerst durch Veröffentlichen eines anderen (oder gar keines) Ergebnisses ersetzt werden.
+     *
+     * <p>Bewusst ein Bulk-JPQL-DELETE ({@code Planungsergebnis.delete("id", ...)}) statt der
+     * naheliegenderen Instanz-Methode {@code ergebnis.delete()} (bzw. {@code deleteById}):
+     * beide liefern für dieses Entity beobachtbar "Erfolg", ohne dass tatsächlich eine
+     * DELETE-Anweisung an die DB geht - der Datensatz blieb bestehen (reproduzierbar per Test,
+     * dieselbe Instanz per direktem {@code em.remove}). Root Cause nicht abschließend geklärt,
+     * einziger Verdächtige im Entity ist das {@code @Lob}-Feld {@code jsonErgebnis} (das einzige
+     * `@Lob`-Feld im gesamten Domänenmodell). Das Bulk-Delete umgeht den Entity-Lifecycle
+     * komplett und funktioniert nachweislich zuverlässig.
      */
     @Transactional
     public void loescheErgebnis(Veranstaltung veranstaltung, Long ergebnisId) {
@@ -269,7 +278,7 @@ public class PlanService {
         if (ergebnis.isPubliziert()) {
             throw new BusinessException("Ein veröffentlichtes Planungsergebnis kann nicht gelöscht werden.");
         }
-        ergebnis.delete();
+        Planungsergebnis.delete("id", ergebnisId);
         minizincResultCache.remove(ergebnisId);
     }
 
