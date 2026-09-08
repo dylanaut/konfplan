@@ -43,7 +43,7 @@ public class WahlErfuellungStats {
                                     ((wv_erfuellung / (gewaehlte > 0 ? gewaehlte : 1.0f)) * 100));
                         }));
 
-        this.prioErfuellungenProzentual = prioErfuellungen.entrySet().stream()
+        this.prioErfuellungenProzentual = prioPrefs.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey,
                         entry -> {
                             int gewaehlte = entry.getValue();
