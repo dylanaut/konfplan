@@ -432,11 +432,11 @@ public class OrganisatorService implements OrganisatorServiceInterface {
             // Send user deletion notification email BEFORE deleting the user
             mailService.sendUserDeletionNotification(nutzer);
 
-            String email = nutzer.getEmail();
+            String loginName = nutzer.getLoginName();
             keycloakUserProvisioningService.deleteUser(nutzer);
             boolean deleted = Nutzer.deleteById(id);
             if (deleted) {
-                protokollService.log(ProtokollKategorie.NUTZER, "Nutzer gelöscht", "Nutzer '" + email + "' gelöscht.", id);
+                protokollService.log(ProtokollKategorie.NUTZER, "Nutzer gelöscht", "Nutzer '" + loginName + "' gelöscht.", id);
             }
             return deleted;
         }

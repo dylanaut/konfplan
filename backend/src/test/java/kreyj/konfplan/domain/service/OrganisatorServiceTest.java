@@ -17,6 +17,8 @@ import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Neigung;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Prioritaet;
+import kreyj.konfplan.persistence.Protokoll;
+import kreyj.konfplan.persistence.ProtokollKategorie;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -405,6 +407,30 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
 
         assertThat(deleted).isTrue();
         assertThat(Nutzer.<Nutzer>findById(admin1.getId())).isNull();
+    }
+
+
+    /**
+     * Regressionstest: das Protokoll-Ereignis beim Löschen eines Nutzers nutzte bisher dessen
+     * E-Mail-Adresse - die ist aber nicht pflicht (kein nullable=false auf Nutzer.email) und kann
+     * z.B. bei über CSV importierten Nutzern ohne Adresse fehlen. Der loginName ist dagegen immer
+     * gesetzt und identifiziert den Nutzer eindeutig.
+     */
+    @Test
+    @Transactional
+    public void deleteUser_mitNullEmail_protokolliertLoginNameStattEmail() {
+        Administrator admin1 = persistedAdministrator("admin.ohne.email");
+        admin1.setEmail(null);
+        persistedAdministrator("admin.mit.email");
+
+        boolean deleted = organisatorService.deleteUser(admin1.getId());
+
+        assertThat(deleted).isTrue();
+        Protokoll eintrag = Protokoll.<Protokoll>find(
+                "kategorie = ?1 and ereignis = ?2 order by id desc", ProtokollKategorie.NUTZER, "Nutzer gelöscht")
+            .firstResult();
+        assertThat(eintrag).isNotNull();
+        assertThat(eintrag.getDetails()).contains("admin.ohne.email").doesNotContain("null");
     }
 
 
