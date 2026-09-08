@@ -263,11 +263,11 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
     @Transactional
     @Override
     public void deleteUser(Nutzer nutzer) {
-        String email = nutzer.getEmail();
+        String loginName = nutzer.getLoginName();
         Long id = nutzer.getId();
         keycloakUserProvisioningService.deleteUser(nutzer);
         nutzer.delete();
-        protokollService.log(ProtokollKategorie.NUTZER, "Nutzer gelöscht", "Nutzer " + email + " gelöscht.", id);
+        protokollService.log(ProtokollKategorie.NUTZER, "Nutzer gelöscht", "Nutzer " + loginName + " gelöscht.", id);
     }
 
 
