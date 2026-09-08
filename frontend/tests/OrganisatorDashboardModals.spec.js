@@ -31,6 +31,20 @@ const VERANSTALTUNG = {
 };
 
 const GEBAEUDE = [{
+  // Steht bewusst VOR "Testgebäude" in der Liste: das Raum-Editor-Modal erhält von
+  // OrganisatorDashboard.vue die komplette, ungefilterte Gebäude-Liste (nicht die pro
+  // Veranstaltung gefilterte Tab-Ansicht) - ein Regressionstest für falsches Default-Gebäude
+  // beim Bearbeiten eines bestehenden Raums (siehe RaumEditorModal.vue) braucht daher mind.
+  // zwei Gebäude, wobei das FALSCHE zuerst kommt.
+  id: 11,
+  name: 'Anderes Gebäude',
+  typ: 'SCHULE',
+  strasse: 'Nebenstraße',
+  hausnummer: '2',
+  postleitzahl: '54321',
+  ort: 'Teststadt',
+  raeume: []
+}, {
   id: 10,
   name: 'Testgebäude',
   typ: 'SCHULE',
@@ -38,7 +52,7 @@ const GEBAEUDE = [{
   hausnummer: '1',
   postleitzahl: '12345',
   ort: 'Teststadt',
-  raeume: [{ id: 20, name: 'Raum A', kapazitaet: 30, etage: 'EG' }]
+  raeume: [{ id: 20, name: 'Raum A', kapazitaet: 30, etage: 'EG', gebaeudeId: 10, gebaeudeName: 'Testgebäude' }]
 }];
 
 const ALL_USERS = [
@@ -315,6 +329,38 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
       await expect(page.getByText('Raum bearbeiten')).toBeVisible();
       await expect(page.locator('label:has-text("Name des Raums") + input')).toHaveValue('Raum A');
       await expect(page.locator('label:has-text("Zugehöriges Gebäude") + select')).toBeDisabled();
+    });
+
+    // Regressionstest: Das Raum-Editor-Modal bekommt die komplette, ungefilterte Gebäude-Liste
+    // (siehe OrganisatorDashboard.vue, ":gebaeude=\"gebaeude\""). Der RaumDto vom Backend liefert
+    // "gebaeudeId" (kein verschachteltes "gebaeude.id") - ein Bugfix musste sicherstellen, dass das
+    // Formular trotzdem das tatsächliche Gebäude des Raums vorbelegt und nicht auf das erste
+    // Gebäude der Liste zurückfällt.
+    test('bearbeiten eines Raums behält dessen tatsächliches Gebäude bei (nicht das erste der Liste)', async ({ page }) => {
+      await gotoTab(page, 'Gebäude');
+      await page.locator('button:has-text("Testgebäude")').click();
+      await page.locator('button[title="Raum bearbeiten"]').first().click();
+
+      await expect(page.getByText('Raum bearbeiten')).toBeVisible();
+      await expect(page.locator('label:has-text("Zugehöriges Gebäude") + select')).toHaveValue('10');
+
+      const [request] = await Promise.all([
+        page.waitForRequest(req => /\/api\/gebaeude\/10\/raeume\/20$/.test(req.url()) && req.method() === 'PUT'),
+        page.getByRole('button', { name: 'Speichern' }).click()
+      ]);
+      expect(request.postDataJSON().gebaeude.id).toBe(10);
+    });
+
+    test('löscht einen Raum über die korrekte Gebäude/Raum-URL', async ({ page }) => {
+      await gotoTab(page, 'Gebäude');
+      await page.locator('button:has-text("Testgebäude")').click();
+
+      page.once('dialog', dialog => dialog.accept());
+      const [request] = await Promise.all([
+        page.waitForRequest(req => /\/api\/gebaeude\/10\/raeume\/20$/.test(req.url()) && req.method() === 'DELETE'),
+        page.locator('button[title="Raum löschen"]').first().click()
+      ]);
+      expect(request.method()).toBe('DELETE');
     });
   });
 

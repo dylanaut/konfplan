@@ -7,6 +7,8 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,6 +21,7 @@ import java.util.Set;
 import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvId;
 
 @Entity
+@Table(uniqueConstraints = @UniqueConstraint(name = "UK_RAUM_GEBAEUDE_NAME", columnNames = {"gebaeude_id", "name"}))
 @NoArgsConstructor
 @Getter
 @Setter

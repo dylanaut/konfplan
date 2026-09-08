@@ -750,15 +750,17 @@ const handleSaveRaum = async (r) => {
     await refreshGebaeude();
   } catch (e) {
     console.error('Fehler beim Speichern des Raumes:', e);
+    alert('Fehler beim Speichern: ' + extractErrorMessage(e));
   }
 };
-const deleteRaum = async (r) => {
+const deleteRaum = async (r, buildingId) => {
   if (confirm("Löschen?")) {
     try {
-      await api.delete(`/api/gebaeude/${r.gebaeude.id}/raeume/${r.id}`);
+      await api.delete(`/api/gebaeude/${buildingId}/raeume/${r.id}`);
       await refreshGebaeude();
     } catch (e) {
       console.error('Fehler beim Löschen des Raumes:', e);
+      alert('Fehler beim Löschen: ' + extractErrorMessage(e));
     }
   }
 };

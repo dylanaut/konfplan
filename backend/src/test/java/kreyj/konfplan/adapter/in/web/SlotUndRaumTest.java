@@ -11,6 +11,7 @@ import io.restassured.http.ContentType;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
+import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.domain.service.RaumService;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
@@ -32,6 +33,7 @@ import static jakarta.ws.rs.core.Response.Status.CREATED;
 import static jakarta.ws.rs.core.Response.Status.OK;
 import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvIdL;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @QuarkusTest
 @QuarkusTestResource(H2DatabaseTestResource.class)
@@ -253,5 +255,59 @@ class SlotUndRaumTest extends DatabaseCleaner {
         RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(RaumVerfuegbarkeitId.rvIdL(saved.getId(), v1_Id));
         assertThat(rv).describedAs("RaumVerfuegbarkeit für nachträglich angelegten Raum fehlt").isNotNull();
         assertThat(rv.getVerfuegbareSlotIds()).contains(slot.getId());
+    }
+
+
+    @Test
+    @Transactional
+    void testRaumNameMussProGebaeudeEindeutigSein() {
+        assertThatThrownBy(() -> raumService.save(new Raum("R1", 10), gebaeudeId))
+            .isInstanceOf(BusinessException.class);
+    }
+
+
+    @Test
+    @Transactional
+    void testGleicherRaumNameInAnderemGebaeudeIstErlaubt() {
+        Gebaeude g2 = new Gebaeude();
+        g2.setName("G2");
+        g2.setTyp(Gebaeudetyp.EXTERN);
+        g2.setPostleitzahl("53567");
+        g2.setStrasse("Wallroth");
+        g2.setOrt("Buchholz");
+        g2.persist();
+
+        Raum saved = raumService.save(new Raum("R1", 10), g2.getId());
+
+        assertThat(saved.getId()).isNotNull();
+    }
+
+
+    @Test
+    @Transactional
+    void testUmbenennenAufEigenenNamenIstErlaubt() {
+        Raum unveraendert = new Raum();
+        unveraendert.setId(raumId);
+        unveraendert.setName("R1");
+        unveraendert.setKapazitaet(25);
+
+        Raum saved = raumService.save(unveraendert, gebaeudeId);
+
+        assertThat(saved.getKapazitaet()).isEqualTo(25);
+    }
+
+
+    @Test
+    @Transactional
+    void testUmbenennenAufBereitsVergebenenNamenImGleichenGebaeudeSchlaegtFehl() {
+        raumService.save(new Raum("R2", 10), gebaeudeId);
+
+        Raum umbenannt = new Raum();
+        umbenannt.setId(raumId);
+        umbenannt.setName("R2");
+        umbenannt.setKapazitaet(20);
+
+        assertThatThrownBy(() -> raumService.save(umbenannt, gebaeudeId))
+            .isInstanceOf(BusinessException.class);
     }
 }
