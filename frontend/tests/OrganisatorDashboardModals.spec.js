@@ -193,6 +193,9 @@ async function mockAdminApis(page) {
     if (/^\/api\/veranstaltungen\/\d+\/planungsergebnisse\/\d+\/umplanen$/.test(path) && method === 'POST') {
       return json({ umverteilt: [{ teilnehmerName: 'Teilnehmer, Tom', neuerVortragTitel: 'Anderer Wahlvortrag' }], nichtPlatziert: [] });
     }
+    if (/^\/api\/veranstaltungen\/\d+\/planungsergebnisse\/\d+\/zurueckziehen$/.test(path) && method === 'PUT') {
+      return json({});
+    }
     if (path === `/api/organisator/veranstaltungen/${VID}/gruppen`) return json(GRUPPEN);
     if (path === `/api/organisator/veranstaltungen/${VID}/verfuegbarkeiten`) return json([]);
     if (path === `/api/organisator/veranstaltungen/${VID}/raeume/verfuegbarkeiten`) return json([]);
@@ -636,6 +639,38 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
       expect(request.postDataJSON()).toEqual({ wahlvortragId: 400, instanzIndex: 0 });
 
       await expect(page.getByText('Teilnehmer, Tom → Anderer Wahlvortrag')).toBeVisible();
+    });
+  });
+
+  test.describe('Planungsergebnis zurückziehen', () => {
+    test('zeigt den Zurückziehen-Button nur für veröffentlichte Ergebnisse und ruft den Endpunkt auf', async ({ page }) => {
+      page.once('dialog', dialog => dialog.accept());
+      await gotoTab(page, 'Ergebnisse');
+
+      const row = page.locator('tbody tr', { hasText: 'admin@test.de' });
+      await expect(row.getByRole('button', { name: 'Zurückziehen' })).toBeVisible();
+      await expect(row.getByRole('button', { name: 'Veröffentlichen' })).toHaveCount(0);
+
+      const [request] = await Promise.all([
+        page.waitForRequest(req => /\/api\/veranstaltungen\/\d+\/planungsergebnisse\/601\/zurueckziehen$/.test(req.url()) && req.method() === 'PUT'),
+        row.getByRole('button', { name: 'Zurückziehen' }).click()
+      ]);
+      expect(request.method()).toBe('PUT');
+    });
+  });
+
+  test.describe('Berichte ansehen (Planungsergebnis)', () => {
+    test('öffnet die Berichte-Auswahl und ein Report-Link enthält die ergebnisId als Query-Parameter', async ({ page }) => {
+      await gotoTab(page, 'Ergebnisse');
+      await page.getByRole('button', { name: 'Berichte ansehen' }).click();
+
+      await expect(page.getByRole('heading', { name: 'Berichte ansehen' })).toBeVisible();
+
+      const [popup] = await Promise.all([
+        page.waitForEvent('popup'),
+        page.getByRole('button', { name: 'Stundenplan' }).click()
+      ]);
+      expect(popup.url()).toContain('ergebnisId=601');
     });
   });
 

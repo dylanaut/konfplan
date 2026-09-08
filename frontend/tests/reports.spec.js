@@ -75,7 +75,7 @@ test.describe('Report-Generierung', () => {
     });
 
     await page.goto(routeUrl);
-    await expect(page.locator('h1').last()).toContainText('Belegungsplan für Raum: Forum');
+    await expect(page.locator('h1').last()).toContainText('Belegungsplan für Forum');
     await expect(page.locator('table tbody tr').first().locator('td').nth(1)).toContainText('Grundlagen des Projektmanagements');
   });
 
@@ -123,7 +123,7 @@ test.describe('Report-Generierung', () => {
     await page.goto(routeUrl);
     // Scoped auf ".card-header" - VeranstaltungHeader.vue rendert selbst ebenfalls ein <h2> mit
     // dem Veranstaltungsnamen, ein ungescoptes "h2" waere daher mehrdeutig.
-    await expect(page.locator('.card-header h2')).toContainText('Raum: Forum');
+    await expect(page.locator('.card-header h2')).toContainText('Forum');
     await expect(page.locator('table tbody tr').first().locator('td').nth(1)).toContainText('Grundlagen des Projektmanagements');
   });
 
@@ -229,6 +229,11 @@ test.describe('Report-Generierung', () => {
     const raumB = page.locator('.card-vortrag', { hasText: 'Berufsorientierung' });
     await expect(raumB.locator('.badge.bg-success')).toHaveText('4 TN');
     await expect(raumB.locator('.badge.bg-primary')).toHaveText('Pflicht');
+
+    // Freie Räume: nach Gebäude-Kürzel gruppiert (alphabetisch: HG vor NG) und innerhalb
+    // jeder Gruppe alphabetisch nach Raumname sortiert (A001 vor A101).
+    await expect(page.getByText('Freie Räume (3):')).toBeVisible();
+    await expect(page.locator('.alert-secondary')).toContainText('HG: A001, A101 • NG: A101');
 
     // Aufsicht: Teilnehmer ohne Programm im Slot.
     await expect(page.getByText('Aufsicht (1):')).toBeVisible();

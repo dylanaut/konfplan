@@ -6,6 +6,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
@@ -53,18 +54,23 @@ public class ReportResource {
     }
 
 
+    private boolean isOrganisatorOderAdmin() {
+        return jwt.getGroups().contains("ORGANISATOR") || jwt.getGroups().contains("ADMINISTRATOR");
+    }
+
+
     @GET
     @Path("/{vid}/laufzettel-alle-data")
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für alle Laufzettel (JSON)")
-    public Response getAlleLaufzettelData(@PathParam("vid") Long vid) {
+    public Response getAlleLaufzettelData(@PathParam("vid") Long vid, @QueryParam("ergebnisId") Long ergebnisId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         Map<Long, List<ZuweisungDto>> plaene = veranstaltung.teilnehmer().stream()
-            .collect(Collectors.toMap(IdEntity::getId, t -> planService.getPlanFuerTeilnehmer(t, veranstaltung)));
+            .collect(Collectors.toMap(IdEntity::getId, t -> planService.getPlanFuerTeilnehmer(t, veranstaltung, ergebnisId)));
         List<NutzerDto> teilnehmerDtos = veranstaltung.teilnehmer().stream().map(NutzerDto::from).toList();
 
         return Response.ok(new ReportDto.LaufzettelAlleDto(veranstaltung, plaene, teilnehmerDtos)).build();
@@ -76,13 +82,13 @@ public class ReportResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für alle Laufzettel der Referenten (JSON)")
-    public Response getAlleLaufzettelReferentenData(@PathParam("vid") Long vid) {
+    public Response getAlleLaufzettelReferentenData(@PathParam("vid") Long vid, @QueryParam("ergebnisId") Long ergebnisId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         Map<Long, List<ReferentVortragDto>> plaene = veranstaltung.referenten().stream()
-            .collect(Collectors.toMap(IdEntity::getId, r -> planService.getPlanFuerReferent(r, veranstaltung)));
+            .collect(Collectors.toMap(IdEntity::getId, r -> planService.getPlanFuerReferent(r, veranstaltung, ergebnisId)));
         List<NutzerDto> referentenDtos = veranstaltung.referenten().stream().map(NutzerDto::from).toList();
 
         return Response.ok(new ReportDto.LaufzettelAlleReferentenDto(veranstaltung, plaene, referentenDtos)).build();
@@ -94,16 +100,19 @@ public class ReportResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({"TEILNEHMER", "ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für Teilnehmer-Laufzettel (JSON)")
-    public Response getLaufzettelTeilnehmerData(@PathParam("vid") Long vid, @PathParam("tid") Long tid) {
+    public Response getLaufzettelTeilnehmerData(@PathParam("vid") Long vid, @PathParam("tid") Long tid, @QueryParam("ergebnisId") Long ergebnisId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         Teilnehmer teilnehmer = Teilnehmer.findById(tid);
         if (null == teilnehmer || null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        if (!(jwt.getGroups().contains("ORGANISATOR") || jwt.getGroups().contains("ADMINISTRATOR")) && !teilnehmer.getLoginName().equals(jwt.getName())) {
+        if (!isOrganisatorOderAdmin() && !teilnehmer.getLoginName().equals(jwt.getName())) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
-        List<ZuweisungDto> plan = planService.getPlanFuerTeilnehmer(teilnehmer, veranstaltung);
+        // ergebnisId (Vorschau eines unveröffentlichten Ergebnisses) ist nur für Organisatoren/
+        // Administratoren wirksam, damit ein Teilnehmer nicht per URL-Parameter ein noch nicht
+        // veröffentlichtes Ergebnis einsehen kann.
+        List<ZuweisungDto> plan = planService.getPlanFuerTeilnehmer(teilnehmer, veranstaltung, isOrganisatorOderAdmin() ? ergebnisId : null);
         return Response.ok(new ReportDto.LaufzettelTeilnehmerDto(veranstaltung, teilnehmer, plan)).build();
     }
 
@@ -113,16 +122,16 @@ public class ReportResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({"REFERENT", "ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für Referenten-Laufzettel (JSON)")
-    public Response getLaufzettelReferentData(@PathParam("vid") Long vid, @PathParam("rid") Long refId) {
+    public Response getLaufzettelReferentData(@PathParam("vid") Long vid, @PathParam("rid") Long refId, @QueryParam("ergebnisId") Long ergebnisId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         Referent referent = Referent.findById(refId);
         if (null == referent || null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        if (!(jwt.getGroups().contains("ORGANISATOR") || jwt.getGroups().contains("ADMINISTRATOR")) && !referent.getLoginName().equals(jwt.getName())) {
+        if (!isOrganisatorOderAdmin() && !referent.getLoginName().equals(jwt.getName())) {
             return Response.status(Response.Status.FORBIDDEN).build();
         }
-        List<ReferentVortragDto> plan = planService.getPlanFuerReferent(referent, veranstaltung);
+        List<ReferentVortragDto> plan = planService.getPlanFuerReferent(referent, veranstaltung, isOrganisatorOderAdmin() ? ergebnisId : null);
         return Response.ok(new ReportDto.LaufzettelReferentDto(veranstaltung, referent, plan)).build();
     }
 
@@ -132,13 +141,13 @@ public class ReportResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für Raumbelegungsplan (JSON)")
-    public Response getRaumbelegungsplanData(@PathParam("vid") Long vid, @PathParam("rid") Long rid) {
+    public Response getRaumbelegungsplanData(@PathParam("vid") Long vid, @PathParam("rid") Long rid, @QueryParam("ergebnisId") Long ergebnisId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         Raum raum = Raum.findById(rid);
         if (null == raum || null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        Map<Long, Map<Long, RaumplanEintragDto>> belegung = planService.getRaumbelegungsplan(veranstaltung);
+        Map<Long, Map<Long, RaumplanEintragDto>> belegung = planService.getRaumbelegungsplan(veranstaltung, ergebnisId);
         return Response.ok(new ReportDto.RaumbelegungsplanDto(veranstaltung, RaumDto.from(raum), belegung)).build();
     }
 
@@ -148,12 +157,12 @@ public class ReportResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für Übersicht aller Räume (JSON)")
-    public Response getUebersichtRaeumeData(@PathParam("vid") Long vid) {
+    public Response getUebersichtRaeumeData(@PathParam("vid") Long vid, @QueryParam("ergebnisId") Long ergebnisId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(new ReportDto.UebersichtRaeumeDto(veranstaltung, planService.getDetaillierterPlan(veranstaltung))).build();
+        return Response.ok(new ReportDto.UebersichtRaeumeDto(veranstaltung, planService.getDetaillierterPlan(veranstaltung, ergebnisId))).build();
     }
 
 
@@ -162,7 +171,7 @@ public class ReportResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für alle Raumschilder (JSON)")
-    public Response getAlleRaumschilderData(@PathParam("vid") Long vid) {
+    public Response getAlleRaumschilderData(@PathParam("vid") Long vid, @QueryParam("ergebnisId") Long ergebnisId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -170,7 +179,7 @@ public class ReportResource {
         var raeume = veranstaltung.getRaeume().stream().map(RaumDto::from).toList();
         var slots = veranstaltung.getSlots().stream().map(SlotDto::from).toList();
         return Response.ok(new ReportDto.RaumschilderDto(veranstaltung,
-            planService.getRaumbelegungsplan(veranstaltung), raeume, slots)).build();
+            planService.getRaumbelegungsplan(veranstaltung, ergebnisId), raeume, slots)).build();
     }
 
 
@@ -179,12 +188,12 @@ public class ReportResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für freie Slots der Referenten (JSON)")
-    public Response getFreieSlotsReferentenData(@PathParam("vid") Long vid) {
+    public Response getFreieSlotsReferentenData(@PathParam("vid") Long vid, @QueryParam("ergebnisId") Long ergebnisId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(new ReportDto.FreieSlotsDto(veranstaltung, planService.getFreieSlotsReferenten(veranstaltung),
+        return Response.ok(new ReportDto.FreieSlotsDto(veranstaltung, planService.getFreieSlotsReferenten(veranstaltung, ergebnisId),
             veranstaltung.referenten().stream().map(NutzerDto::from).toList()
         )).build();
     }
@@ -196,13 +205,13 @@ public class ReportResource {
     @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Transactional
     @Operation(summary = "Daten für freie Slots der Teilnehmer (JSON)")
-    public Response getFreieSlotsTeilnehmerData(@PathParam("vid") Long vid) {
+    public Response getFreieSlotsTeilnehmerData(@PathParam("vid") Long vid, @QueryParam("ergebnisId") Long ergebnisId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         return Response.ok(new ReportDto.FreieSlotsDto(veranstaltung,
-            planService.getFreieSlotsTeilnehmer(veranstaltung),
+            planService.getFreieSlotsTeilnehmer(veranstaltung, ergebnisId),
             veranstaltung.teilnehmer().stream().map(NutzerDto::from).toList())).build();
     }
 
@@ -226,12 +235,12 @@ public class ReportResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für Organisator-Dashboard / Tab ErgebnisVue")
-    public Response getStundenplanData(@PathParam("vid") Long vid) {
+    public Response getStundenplanData(@PathParam("vid") Long vid, @QueryParam("ergebnisId") Long ergebnisId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(dashboardService.getStundenplan(veranstaltung)).build();
+        return Response.ok(dashboardService.getStundenplan(veranstaltung, ergebnisId)).build();
     }
 
 
@@ -240,12 +249,14 @@ public class ReportResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR", "TEILNEHMER"})
     @Operation(summary = "Daten für Teilnehmer-Dashboard / Tab ErgebnisVue")
-    public Response getTeilnehmerDashboardData(@PathParam("vid") Long vid) {
+    public Response getTeilnehmerDashboardData(@PathParam("vid") Long vid, @QueryParam("ergebnisId") Long ergebnisId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(dashboardService.getTeilnehmerReport(veranstaltung)).build();
+        // ergebnisId (Vorschau eines unveröffentlichten Ergebnisses) ist nur für Organisatoren/
+        // Administratoren wirksam, siehe getLaufzettelTeilnehmerData.
+        return Response.ok(dashboardService.getTeilnehmerReport(veranstaltung, isOrganisatorOderAdmin() ? ergebnisId : null)).build();
     }
 
 
@@ -255,12 +266,12 @@ public class ReportResource {
     @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
     @Operation(summary = "Daten für Prioritäten-Dashboard / Tab ErgebnisVue")
     @Transactional
-    public Response getPriosDashboardData(@PathParam("vid") Long vid) {
+    public Response getPriosDashboardData(@PathParam("vid") Long vid, @QueryParam("ergebnisId") Long ergebnisId) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(dashboardService.getPrioReport(veranstaltung)).build();
+        return Response.ok(dashboardService.getPrioReport(veranstaltung, ergebnisId)).build();
     }
 
 

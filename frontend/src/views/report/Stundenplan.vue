@@ -99,10 +99,10 @@
             <div class="col-12">
               <div class="alert alert-secondary py-2 px-3 m-0 shadow-sm">
                 <div class="d-flex align-items-center">
-                  <strong class="me-2">🚪 Freie Räume ({{ freieRaeume(s_oid).length }}):</strong>
+                  <strong class="me-2">🚪 Freie Räume ({{ freieRaeumeAnzahl(s_oid) }}):</strong>
                   <div class="small">
-                    <span v-if="freieRaeume(s_oid).length === 0">Alle Räume belegt.</span>
-                    <span v-else>{{ freieRaeume(s_oid).join(" • ") }}</span>
+                    <span v-if="freieRaeumeAnzahl(s_oid) === 0">Alle Räume belegt.</span>
+                    <span v-else>{{ freieRaeumeGruppiert(s_oid).join(" • ") }}</span>
                   </div>
                 </div>
               </div>
@@ -146,6 +146,7 @@
 
 <script setup>
 import { ref, onMounted, defineProps } from 'vue';
+import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
 import { raumLabel } from '../../utils/raumLabel';
@@ -157,6 +158,7 @@ const props = defineProps({
   },
 });
 
+const route = useRoute();
 const reportData = ref(null);
 const loading = ref(true);
 const error = ref(null);
@@ -171,7 +173,9 @@ onMounted(async () => {
     return;
   }
   try {
-    const response = await api.get(`/api/reports/${props.vid}/stundenplan-data`);
+    const ergebnisId = route.query.ergebnisId;
+    const url = `/api/reports/${props.vid}/stundenplan-data` + (ergebnisId ? `?ergebnisId=${ergebnisId}` : '');
+    const response = await api.get(url);
     reportData.value = response.data;
   } catch (err) {
     error.value = 'Fehler beim Laden der Dashboard-Daten: ' + (err.response?.data?.message || err.message);
@@ -189,11 +193,27 @@ const belegteRaeume = (s_oid) => {
   return Object.entries(reportData.value.raeume).filter(([r_oid]) => getBelegung(s_oid, r_oid));
 };
 
-const freieRaeume = (s_oid) => {
+const freieRaeumeAnzahl = (s_oid) => {
+  if (!reportData.value) return 0;
+  return Object.entries(reportData.value.raeume).filter(([r_oid]) => !getBelegung(s_oid, r_oid)).length;
+};
+
+const freieRaeumeGruppiert = (s_oid) => {
   if (!reportData.value) return [];
-  return Object.entries(reportData.value.raeume)
+  const gruppen = new Map();
+  Object.entries(reportData.value.raeume)
     .filter(([r_oid]) => !getBelegung(s_oid, r_oid))
-    .map(([, raum]) => raum.name);
+    .forEach(([, raum]) => {
+      const kuerzel = raum.gebaeudeKuerzel || '';
+      if (!gruppen.has(kuerzel)) gruppen.set(kuerzel, []);
+      gruppen.get(kuerzel).push(raum.name);
+    });
+  return [...gruppen.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([kuerzel, namen]) => {
+      const sortiert = [...namen].sort((a, b) => a.localeCompare(b));
+      return kuerzel ? `${kuerzel}: ${sortiert.join(', ')}` : sortiert.join(', ');
+    });
 };
 
 const openTnPopup = (belegung) => {
