@@ -1,6 +1,7 @@
 package kreyj.konfplan.domain.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -63,6 +64,38 @@ public class PlanServiceTest extends DatabaseCleaner {
             }
             """);
         ergebnis.persist();
+    }
+
+
+    /**
+     * Regressionstest: {@code ergebnis.delete()} (Panache-Instanzmethode) meldete für dieses
+     * Entity beobachtbar Erfolg, ohne dass tatsächlich eine DELETE-Anweisung an die DB ging - der
+     * Datensatz blieb bestehen (siehe Kommentar an {@link PlanService#loescheErgebnis}). Über
+     * getrennte Transaktionen (wie bei echten, aufeinanderfolgenden HTTP-Requests) statt
+     * innerhalb derselben Transaktion, damit ein reiner Erststufen-Cache-Effekt das eigentliche
+     * DB-Verhalten nicht verdeckt.
+     */
+    @Test
+    public void testLoescheErgebnis_persistiertTatsaechlich() {
+        Long veranstaltungId = veranstaltung.getId();
+        Long id = QuarkusTransaction.requiringNew().call(() -> {
+            Planungsergebnis pe = new Planungsergebnis();
+            pe.setVeranstaltung(Veranstaltung.findById(veranstaltungId));
+            pe.setPubliziert(false);
+            pe.setJsonErgebnis("{}");
+            pe.persist();
+            return pe.getId();
+        });
+
+        QuarkusTransaction.requiringNew().run(() -> {
+            Veranstaltung v = Veranstaltung.findById(veranstaltungId);
+            planService.loescheErgebnis(v, id);
+        });
+
+        Planungsergebnis nachDemLoeschen = QuarkusTransaction.requiringNew()
+            .call(() -> Planungsergebnis.findById(id));
+
+        assertThat(nachDemLoeschen).describedAs("Planungsergebnis sollte nach loescheErgebnis nicht mehr existieren").isNull();
     }
 
 

@@ -148,6 +148,12 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
             .when().delete("/{vid}/planungsergebnisse/{ergebnisId}", testVid, id)
             .then()
             .statusCode(NO_CONTENT.getStatusCode());
+
+        given()
+            .when().get("/{vid}/planungsergebnisse", testVid)
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body("find { it.id == " + id + " }", is((Object) null));
     }
 
 
