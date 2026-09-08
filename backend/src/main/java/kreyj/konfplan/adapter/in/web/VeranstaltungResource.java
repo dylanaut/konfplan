@@ -22,6 +22,7 @@ import kreyj.konfplan.application.port.in.TeilnehmerServiceInterface;
 import kreyj.konfplan.application.port.in.VeranstaltungServiceInterface;
 import kreyj.konfplan.domain.service.NachrichtService;
 import kreyj.konfplan.domain.service.PlanService;
+import kreyj.konfplan.domain.service.UmplanungService;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
@@ -52,15 +53,18 @@ public class VeranstaltungResource {
     private final TeilnehmerServiceInterface teilnehmerService;
     private final PlanService planService;
     private final NachrichtService nachrichtService;
+    private final UmplanungService umplanungService;
 
     public VeranstaltungResource(VeranstaltungServiceInterface veranstaltungService, OrganisatorServiceInterface adminService, ReferentServiceInterface referentService,
-                                 TeilnehmerServiceInterface teilnehmerService, PlanService planService, NachrichtService nachrichtService) {
+                                 TeilnehmerServiceInterface teilnehmerService, PlanService planService, NachrichtService nachrichtService,
+                                 UmplanungService umplanungService) {
         this.veranstaltungService = veranstaltungService;
         this.adminService = adminService;
         this.referentService = referentService;
         this.teilnehmerService = teilnehmerService;
         this.planService = planService;
         this.nachrichtService = nachrichtService;
+        this.umplanungService = umplanungService;
     }
 
 
@@ -471,6 +475,41 @@ public class VeranstaltungResource {
 
         planService.loescheErgebnis(veranstaltung, ergebnisId);
         return Response.noContent().build();
+    }
+
+
+    @GET
+    @Path("/{vid}/planungsergebnisse/{ergebnisId}/instanzen")
+    @Operation(summary = "Wahlvortrag-Instanzen eines Planungsergebnisses auflisten",
+        description = "Listet alle Wahlvortrag-Instanzen (Zeitslot-Vorkommen) des angegebenen Planungsergebnisses für die "
+            + "Umplanungs-Ansicht bei kurzfristigem Vortragsausfall.")
+    public Response getWahlvortragInstanzen(@PathParam("vid") Long vid, @PathParam("ergebnisId") Long ergebnisId) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(NOT_FOUND).build();
+        }
+
+        return Response.ok(planService.getWahlvortragInstanzen(veranstaltung, ergebnisId)).build();
+    }
+
+
+    @POST
+    @Path("/{vid}/planungsergebnisse/{ergebnisId}/umplanen")
+    @Operation(summary = "Wahlvortrag-Instanz kurzfristig umplanen",
+        description = "Markiert eine Wahlvortrag-Instanz als ausgefallen und verteilt deren bereits zugewiesene Teilnehmer - "
+            + "passend zu ihren Neigungen und soweit Raumkapazität frei ist - auf andere Instanzen im selben Zeitslot.")
+    public Response vortragsInstanzUmplanen(@PathParam("vid") Long vid, @PathParam("ergebnisId") Long ergebnisId,
+                                             @RequestBody(description = "Der auszufallende Wahlvortrag und dessen Instanz-Index") UmplanungAnfrageDto anfrage,
+                                             @Context SecurityContext securityContext) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(NOT_FOUND).build();
+        }
+
+        String username = securityContext.getUserPrincipal().getName();
+        UmplanungErgebnisDto ergebnis = umplanungService.vortragsInstanzUmplanen(
+            veranstaltung, ergebnisId, anfrage.wahlvortragId, anfrage.instanzIndex, username);
+        return Response.ok(ergebnis).build();
     }
 
 

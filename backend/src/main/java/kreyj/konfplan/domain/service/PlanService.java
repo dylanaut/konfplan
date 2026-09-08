@@ -13,6 +13,7 @@ import kreyj.konfplan.adapter.in.web.dto.RaumplanEintragDto;
 import kreyj.konfplan.adapter.in.web.dto.ReferentVortragDto;
 import kreyj.konfplan.adapter.in.web.dto.SlotDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerDto;
+import kreyj.konfplan.adapter.in.web.dto.UmplanungInstanzDto;
 import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
 import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.domain.exception.EntityNotFoundException;
@@ -273,7 +274,11 @@ public class PlanService {
     }
 
 
-    private Planungsergebnis ladeErgebnisFuer(Veranstaltung veranstaltung, Long ergebnisId) {
+    /**
+     * Package-private (statt privat), damit {@link UmplanungService} dieselbe Lade-/
+     * Zugehörigkeitsprüfung wiederverwenden kann.
+     */
+    Planungsergebnis ladeErgebnisFuer(Veranstaltung veranstaltung, Long ergebnisId) {
         Planungsergebnis ergebnis = Planungsergebnis.findById(ergebnisId);
         if (null == ergebnis || !ergebnis.getVeranstaltung().getId().equals(veranstaltung.getId())) {
             throw new EntityNotFoundException(Planungsergebnis.class, "Planungsergebnis " + ergebnisId + " nicht gefunden.");
@@ -573,6 +578,79 @@ public class PlanService {
             LOG.error("Fehler beim Erstellen des Raumbelegungsplans für Veranstaltung " + veranstaltung.getName(), e);
             return Collections.emptyMap();
         }
+    }
+
+
+    /**
+     * Liefert alle Wahlvortrag-Instanzen eines BESTIMMTEN Planungsergebnisses (nicht zwingend
+     * das veröffentlichte) inklusive Wahlvortrag-/Instanz-Ids für die Umplanungs-Ansicht im
+     * ErgebnisseTab - im Gegensatz zu {@link #getRaumbelegungsplan}, das immer nur das
+     * veröffentlichte Ergebnis betrachtet und keine Ids exponiert (nur Anzeigetexte).
+     */
+    @Transactional
+    public List<UmplanungInstanzDto> getWahlvortragInstanzen(Veranstaltung veranstaltung, Long ergebnisId) {
+        Planungsergebnis ergebnis = ladeErgebnisFuer(veranstaltung, ergebnisId);
+        Planungsergebnis.MinizincResult result = getMinizincResult(ergebnis);
+
+        long[] tnOids = result.teilnehmer_oids;
+        long[] wvOids = result.wahlvortrag_oids;
+        long[] slotOids = result.slot_oids;
+        long[] raumOids = result.raum_oids;
+        boolean[][][] besucht = result.besucht;
+        int[][] instanzSlot = result.instanz_slot;
+        int[][] instanzRaum = result.instanz_raum;
+
+        Map<Long, Vortrag> vortragMap = veranstaltung.getVortraege().stream().collect(toMap(IdEntity::getId, Function.identity()));
+        Map<Long, Slot> slotMap = veranstaltung.getSlots().stream().collect(toMap(IdEntity::getId, Function.identity()));
+        Map<Long, Raum> raumMap = veranstaltung.getRaeume().stream().collect(toMap(IdEntity::getId, Function.identity()));
+
+        List<UmplanungInstanzDto> instanzen = new ArrayList<>();
+        for (int wIdx = 0; wIdx < wvOids.length; wIdx++) {
+            Vortrag vortrag = vortragMap.get(wvOids[wIdx]);
+            if (null == vortrag) {
+                continue;
+            }
+
+            for (int iIdx = 0; iIdx < instanzSlot[wIdx].length; iIdx++) {
+                int sIdx = instanzSlot[wIdx][iIdx] - 1;
+                if (sIdx < 0) {
+                    continue;
+                }
+
+                int rIdx = instanzRaum[wIdx][iIdx] - 1;
+                Slot slot = slotMap.get(slotOids[sIdx]);
+                Raum raum = raumMap.get(raumOids[rIdx]);
+                if (null == slot || null == raum) {
+                    continue;
+                }
+
+                int belegteAnzahl = 0;
+                for (int pIdx = 0; pIdx < tnOids.length; pIdx++) {
+                    if (besucht[pIdx][wIdx][iIdx]) {
+                        belegteAnzahl++;
+                    }
+                }
+
+                instanzen.add(new UmplanungInstanzDto(
+                    vortrag.getId(),
+                    iIdx,
+                    vortrag.getTitel(),
+                    vortrag.getReferent().getFullName(),
+                    slot.getId(),
+                    slot.getStartTime().format(TIME_FORMAT),
+                    raum.getId(),
+                    raum.getName(),
+                    raum.getKapazitaet(),
+                    belegteAnzahl,
+                    result.istAusgefallen(wIdx, iIdx)
+                ));
+            }
+        }
+
+        return instanzen.stream()
+            .sorted(comparing((UmplanungInstanzDto d) -> slotMap.get(d.slotId).getStartTime())
+                .thenComparing(d -> d.raumName))
+            .toList();
     }
 
 
