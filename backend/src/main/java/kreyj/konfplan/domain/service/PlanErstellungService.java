@@ -44,7 +44,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -160,9 +160,19 @@ public class PlanErstellungService {
                 LOG.debug("MiniZinc Datendatei:\n" + vorbereitung.dznContent());
             }
 
+            // Modell-Resource auf eine echte Datei extrahieren, statt den Klassenpfad-URL direkt in
+            // einen Path umzuwandeln: im gepackten Fast-Jar-Deployment liegt die Resource innerhalb
+            // eines Jars (jar:file:...!/minizinc/...), wofür Paths.get(URI) ohne offenes ZipFileSystem
+            // eine FileSystemNotFoundException wirft. Der externe MiniZinc-Prozess braucht ohnehin
+            // einen Pfad im echten Dateisystem.
+            Path tempModel = Files.createTempFile("planung_model_", ".mzn");
+            try (InputStream modelStream = modelUrl.openStream()) {
+                Files.copy(modelStream, tempModel, StandardCopyOption.REPLACE_EXISTING);
+            }
+
             try {
                 phase = Phase.BERECHNUNG;
-                String resultJson = rufeMiniZincAuf(Paths.get(modelUrl.toURI()), tempDzn, config);
+                String resultJson = rufeMiniZincAuf(tempModel, tempDzn, config);
 
                 if (resultJson.contains("instanz_slot") && isValidJson(resultJson)) {
                     phase = Phase.PERSISTIERUNG;
@@ -178,6 +188,7 @@ public class PlanErstellungService {
                 }
             } finally {
                 Files.deleteIfExists(tempDzn);
+                Files.deleteIfExists(tempModel);
             }
         } catch (Exception e) {
             protokollService.log(ProtokollKategorie.PLANUNG, "Fehler bei Planerstellung", e.getMessage(), veranstaltungId, veranstaltungId, username);
