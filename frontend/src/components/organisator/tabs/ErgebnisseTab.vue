@@ -36,6 +36,10 @@
             <span v-else class="px-1.5 py-0.5 rounded bg-gray-50 text-gray-600 border border-gray-200">Entwurf</span>
           </td>
           <td class="px-3 py-2 text-right space-x-2">
+            <button @click="vortraegeAnsehen(e)" :disabled="busyId !== null"
+                    class="px-2 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
+              Vorträge ansehen
+            </button>
             <button v-if="!e.publiziert" @click="publizieren(e)" :disabled="busyId !== null"
                     class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600 disabled:opacity-50">
               Veröffentlichen
@@ -188,6 +192,8 @@
       </div>
     </div>
 
+    <UmplanungModal :isVisible="showUmplanungModal" :vid="eventContext.selectedEvent?.id" :ergebnisId="umplanungErgebnisId"
+                    @close="showUmplanungModal = false"/>
   </section>
 </template>
 
@@ -197,6 +203,7 @@ import { useRouter } from 'vue-router';
 import { AlertTriangle as AlertTriangleIcon, RefreshCw as RefreshCwIcon } from '@lucide/vue';
 import { useEventContextStore } from '../../../stores/eventContext';
 import Stundenplan from '../../../views/report/Stundenplan.vue';
+import UmplanungModal from './UmplanungModal.vue';
 import api from '../../../api/axios';
 
 const props = defineProps({
@@ -221,6 +228,13 @@ const ergebnisse = ref([]);
 const loading = ref(false);
 const error = ref('');
 const busyId = ref(null);
+const showUmplanungModal = ref(false);
+const umplanungErgebnisId = ref(null);
+
+const vortraegeAnsehen = (ergebnis) => {
+  umplanungErgebnisId.value = ergebnis.id;
+  showUmplanungModal.value = true;
+};
 
 const formatDateTime = (isoString) => new Date(isoString).toLocaleString('de-DE');
 

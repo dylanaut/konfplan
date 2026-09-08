@@ -86,6 +86,16 @@ public class Planungsergebnis extends VersionedEntity {
         public int[][] instanz_raum;
         // enthält für jeden Teilnehmer, jeden Wahlvortrag und über alle Instanzen: true/false  für teilnahme
         public boolean[][][] besucht;
+        // [wahlvortragIdx][instanzIdx]: true, wenn diese Instanz nachträglich (kurzfristiger
+        // Ausfall, siehe UmplanungService) als ausgefallen markiert wurde. Bei älteren, vor
+        // diesem Feature erzeugten Planungsergebnissen beim Deserialisieren null - Lesezugriffe
+        // müssen das über {@link #istAusgefallen} statt direktem Array-Zugriff abfragen.
+        public boolean[][] instanz_ausgefallen;
+
+
+        public boolean istAusgefallen(int wahlvortragIdx, int instanzIdx) {
+            return null != instanz_ausgefallen && instanz_ausgefallen[wahlvortragIdx][instanzIdx];
+        }
 
         public long[] teilnehmer_oids;
         public long[] wahlvortrag_oids;
