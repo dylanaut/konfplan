@@ -1,0 +1,43 @@
+Release Notes 1.22.0
+Released: 2026-09-08
+
+Changes:
+
+- Release-Notes fuer 1.21.5 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.21.6-SNAPSHOT)
+
+- Prio-Erfüllung-Prozentberechnung im ErgebnisseTab korrigiert
+  Die Berechnung von prioErfuellungenProzentual iterierte fälschlich über
+  prioErfuellungen (erfüllte Wünsche) statt über prioPrefs (gewählte
+  Wünsche) und las den Vergleichswert ebenfalls aus prioErfuellungen -
+  Zähler und Nenner waren dadurch immer identisch, sodass stets 100%
+  angezeigt wurde.
+
+- Planungsergebnis explizit zurückziehen + Reports für unveröffentlichte Ergebnisse einsehbar
+  Ein veröffentlichtes Planungsergebnis kann jetzt explizit zurückgezogen
+  werden (Button "Zurückziehen" mit Bestätigungsdialog), ohne dass gleich
+  ein anderes Ergebnis veröffentlicht werden muss. Außerdem können alle
+  plan-abhängigen Reports (Stundenplan, Raumbelegungsplan, Laufzettel,
+  Freie Slots etc.) jetzt für ein beliebiges, auch unveröffentlichtes
+  Planungsergebnis eingesehen werden, über einen neuen Button "Berichte
+  ansehen" pro Zeile in der Planungsläufe-Tabelle. Ein optionaler
+  ergebnisId-Query-Parameter ist dafür nur für Organisatoren/
+  Administratoren wirksam, damit Teilnehmer/Referenten ihn nicht nutzen
+  können, um unveröffentlichte Ergebnisse einzusehen.
+  Enthält außerdem: die "Freie Räume"-Anzeige im Stundenplan-Report wird
+  jetzt nach Gebäude-Kürzel gruppiert und alphabetisch sortiert, sowie
+  zwei stale Playwright-Assertions korrigiert, die noch das in einer
+  früheren Änderung entfernte "Raum:"-Präfix erwarteten.
+
+- Konsistenzverstöße beim DZN-/Bundle-Export werden jetzt korrekt angezeigt
+  BusinessExceptionMapper setzte keinen expliziten Response-Media-Type,
+  wodurch die Fehlerantwort das @Produces des ausgelösten Endpunkts
+  übernahm (TEXT_PLAIN bei /planungen/{vid}/dzn, application/zip bei
+  /planungen/{vid}/export) statt JSON. Die Fehler-Map wurde dadurch über
+  ihre toString()-Repräsentation statt als valides JSON serialisiert -
+  das Frontend konnte die Konsistenzverstöße dadurch nicht parsen und
+  zeigte sie dem Organisator nie an.
+
+- Release 1.22.0
+
