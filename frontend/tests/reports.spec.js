@@ -147,7 +147,24 @@ test.describe('Report-Generierung', () => {
 
     await page.goto(routeUrl);
     await expect(page.locator('h1').last()).toContainText('Freie Slots für Referenten');
+    // Standard-Sortierung nach Nachname: "Weiss" vor "Zimmermann".
     await expect(page.locator('table tbody tr').first().locator('td').nth(0)).toContainText('Dr. Eva Weiss');
+    await expect(page.locator('table tbody tr').first().locator('td').nth(2)).toContainText('3');
+
+    // Nach Anzahl freier Slots aufsteigend sortieren: Tom Zimmermann (1) vor Dr. Eva Weiss (3).
+    await page.getByRole('button', { name: 'Anzahl freier Slots' }).click();
+    await expect(page.locator('table tbody tr').first().locator('td').nth(0)).toContainText('Tom Zimmermann');
+
+    // Erneuter Klick kehrt die Richtung um.
+    await page.getByRole('button', { name: 'Anzahl freier Slots' }).click();
+    await expect(page.locator('table tbody tr').first().locator('td').nth(0)).toContainText('Dr. Eva Weiss');
+
+    // Referenten-Spalte ist ebenfalls klickbar sortierbar: erster Klick waehlt Name/aufsteigend
+    // (wie die Standard-Sortierung), zweiter Klick kehrt auf Name/absteigend um.
+    await page.getByRole('button', { name: 'Referent' }).click();
+    await expect(page.locator('table tbody tr').first().locator('td').nth(0)).toContainText('Dr. Eva Weiss');
+    await page.getByRole('button', { name: 'Referent' }).click();
+    await expect(page.locator('table tbody tr').first().locator('td').nth(0)).toContainText('Tom Zimmermann');
   });
 
   test('sollte freie Slots für Teilnehmer korrekt rendern', async ({ page }) => {
@@ -170,7 +187,16 @@ test.describe('Report-Generierung', () => {
 
     await page.goto(routeUrl);
     await expect(page.locator('h1').last()).toContainText('Freie Slots für Teilnehmer');
-    await expect(page.locator('table tbody tr').first().locator('td').nth(0)).toContainText('Max Mustermann');
+    await expect(page.locator('table tbody tr')).toHaveCount(2);
+    // Sortiert nach Nachname: "Beispiel" vor "Mustermann".
+    await expect(page.locator('table tbody tr').first().locator('td').nth(0)).toContainText('Anna Beispiel');
+
+    await page.getByLabel('Teilnehmer ohne freie Slots ausblenden').check();
+    await expect(page.locator('table tbody tr')).toHaveCount(1);
+    await expect(page.locator('table tbody tr').first().locator('td').nth(0)).toContainText('Anna Beispiel');
+
+    await page.getByLabel('Teilnehmer ohne freie Slots ausblenden').uncheck();
+    await expect(page.locator('table tbody tr')).toHaveCount(2);
   });
 
   test('sollte die Belegungen im Stundenplan korrekt anzeigen und die Teilnehmerliste per Klick öffnen', async ({ page }) => {
