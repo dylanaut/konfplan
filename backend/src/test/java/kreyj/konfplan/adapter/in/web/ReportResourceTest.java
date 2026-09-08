@@ -78,7 +78,7 @@ class ReportResourceTest {
         PanacheMock.mock(Veranstaltung.class);
         Mockito.when(Teilnehmer.findById(1L)).thenReturn(mockTeilnehmer);
         Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
-        Mockito.when(planService.getPlanFuerTeilnehmer(any(), any())).thenReturn(Collections.emptyList());
+        Mockito.when(planService.getPlanFuerTeilnehmer(any(), any(), any())).thenReturn(Collections.emptyList());
 
         given()
                 .when().get("1/teilnehmer/1/laufzettel-data")
@@ -95,7 +95,7 @@ class ReportResourceTest {
         PanacheMock.mock(Veranstaltung.class);
         Mockito.when(Teilnehmer.findById(1L)).thenReturn(mockTeilnehmer);
         Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
-        Mockito.when(planService.getPlanFuerTeilnehmer(any(), any())).thenReturn(Collections.emptyList());
+        Mockito.when(planService.getPlanFuerTeilnehmer(any(), any(), any())).thenReturn(Collections.emptyList());
 
         given()
                 .when().get("1/teilnehmer/1/laufzettel-data")
@@ -115,6 +115,46 @@ class ReportResourceTest {
     }
 
 
+    @Test
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
+    void getLaufzettelTeilnehmerData_asAdmin_mitErgebnisId_wirdDurchgereicht() {
+        PanacheMock.mock(Teilnehmer.class);
+        PanacheMock.mock(Veranstaltung.class);
+        Mockito.when(Teilnehmer.findById(1L)).thenReturn(mockTeilnehmer);
+        Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
+        Mockito.when(planService.getPlanFuerTeilnehmer(any(), any(), any())).thenReturn(Collections.emptyList());
+
+        given()
+                .queryParam("ergebnisId", 42L)
+                .when().get("1/teilnehmer/1/laufzettel-data")
+                .then()
+                .statusCode(200);
+
+        Mockito.verify(planService).getPlanFuerTeilnehmer(mockTeilnehmer, mockVeranstaltung, 42L);
+    }
+
+
+    @Test
+    @TestSecurity(user = "teilnehmer@test.com", roles = "TEILNEHMER")
+    void getLaufzettelTeilnehmerData_asSelf_mitErgebnisId_wirdIgnoriert() {
+        // Sicherheitsvorkehrung: ein Teilnehmer darf per ergebnisId-Parameter kein unveröffentlichtes
+        // Ergebnis einsehen - der Parameter wird bei Nicht-Organisatoren/Administratoren ignoriert.
+        PanacheMock.mock(Teilnehmer.class);
+        PanacheMock.mock(Veranstaltung.class);
+        Mockito.when(Teilnehmer.findById(1L)).thenReturn(mockTeilnehmer);
+        Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
+        Mockito.when(planService.getPlanFuerTeilnehmer(any(), any(), any())).thenReturn(Collections.emptyList());
+
+        given()
+                .queryParam("ergebnisId", 42L)
+                .when().get("1/teilnehmer/1/laufzettel-data")
+                .then()
+                .statusCode(200);
+
+        Mockito.verify(planService).getPlanFuerTeilnehmer(mockTeilnehmer, mockVeranstaltung, null);
+    }
+
+
     // --- Referenten-Laufzettel ---
 
 
@@ -125,7 +165,7 @@ class ReportResourceTest {
         PanacheMock.mock(Veranstaltung.class);
         Mockito.when(Referent.findById(1L)).thenReturn(mockReferent);
         Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
-        Mockito.when(planService.getPlanFuerReferent(any(), any())).thenReturn(Collections.emptyList());
+        Mockito.when(planService.getPlanFuerReferent(any(), any(), any())).thenReturn(Collections.emptyList());
 
         given()
                 .when().get("1/referent/1/laufzettel-data")
@@ -142,7 +182,7 @@ class ReportResourceTest {
         PanacheMock.mock(Veranstaltung.class);
         Mockito.when(Referent.findById(1L)).thenReturn(mockReferent);
         Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
-        Mockito.when(planService.getPlanFuerReferent(any(), any())).thenReturn(Collections.emptyList());
+        Mockito.when(planService.getPlanFuerReferent(any(), any(), any())).thenReturn(Collections.emptyList());
 
         given()
                 .when().get("1/referent/1/laufzettel-data")
@@ -189,13 +229,30 @@ class ReportResourceTest {
     void getUebersichtRaeumeData_asAdmin_shouldSucceed() {
         PanacheMock.mock(Veranstaltung.class);
         Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
-        Mockito.when(planService.getDetaillierterPlan(any())).thenReturn(Collections.emptyList());
+        Mockito.when(planService.getDetaillierterPlan(any(), any())).thenReturn(Collections.emptyList());
 
         given()
                 .when().get("1/raeume-data")
                 .then()
                 .statusCode(200)
                 .contentType(MediaType.APPLICATION_JSON);
+    }
+
+
+    @Test
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
+    void getUebersichtRaeumeData_mitErgebnisId_wirdDurchgereicht() {
+        PanacheMock.mock(Veranstaltung.class);
+        Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
+        Mockito.when(planService.getDetaillierterPlan(any(), any())).thenReturn(Collections.emptyList());
+
+        given()
+                .queryParam("ergebnisId", 7L)
+                .when().get("1/raeume-data")
+                .then()
+                .statusCode(200);
+
+        Mockito.verify(planService).getDetaillierterPlan(mockVeranstaltung, 7L);
     }
 
 
@@ -214,7 +271,7 @@ class ReportResourceTest {
     void getAlleRaumschilderData_asAdmin_shouldSucceed() {
         PanacheMock.mock(Veranstaltung.class);
         Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
-        Mockito.when(planService.getRaumbelegungsplan(any())).thenReturn(Collections.emptyMap());
+        Mockito.when(planService.getRaumbelegungsplan(any(), any())).thenReturn(Collections.emptyMap());
 
         given()
                 .when().get("1/raumschilder-data")
@@ -229,7 +286,7 @@ class ReportResourceTest {
     void getFreieSlotsReferentenData_asAdmin_shouldSucceed() {
         PanacheMock.mock(Veranstaltung.class);
         Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
-        Mockito.when(planService.getFreieSlotsReferenten(any())).thenReturn(Collections.emptyMap());
+        Mockito.when(planService.getFreieSlotsReferenten(any(), any())).thenReturn(Collections.emptyMap());
 
         given()
                 .when().get("1/freie-slots-referenten-data")
@@ -244,7 +301,7 @@ class ReportResourceTest {
     void getFreieSlotsTeilnehmerData_asAdmin_shouldSucceed() {
         PanacheMock.mock(Veranstaltung.class);
         Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
-        Mockito.when(planService.getFreieSlotsTeilnehmer(any())).thenReturn(Collections.emptyMap());
+        Mockito.when(planService.getFreieSlotsTeilnehmer(any(), any())).thenReturn(Collections.emptyMap());
 
         given()
                 .when().get("1/freie-slots-teilnehmer-data")
@@ -265,7 +322,7 @@ class ReportResourceTest {
         // Teilnehmer sind) 404, obwohl der Report alle Teilnehmer der Veranstaltung zeigt.
         PanacheMock.mock(Veranstaltung.class);
         Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
-        Mockito.when(dashboardService.getTeilnehmerReport(any())).thenReturn(
+        Mockito.when(dashboardService.getTeilnehmerReport(any(), any())).thenReturn(
             new TeilnehmerReport(null, null, Collections.emptyMap(), Collections.emptyList(), Collections.emptyList()));
 
         given()
@@ -281,7 +338,7 @@ class ReportResourceTest {
     void getTeilnehmerDashboardData_asTeilnehmer_shouldSucceed() {
         PanacheMock.mock(Veranstaltung.class);
         Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
-        Mockito.when(dashboardService.getTeilnehmerReport(any())).thenReturn(
+        Mockito.when(dashboardService.getTeilnehmerReport(any(), any())).thenReturn(
             new TeilnehmerReport(null, null, Collections.emptyMap(), Collections.emptyList(), Collections.emptyList()));
 
         given()

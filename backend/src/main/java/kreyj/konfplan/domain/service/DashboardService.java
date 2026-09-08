@@ -63,7 +63,12 @@ public class DashboardService {
      * der sie tatsächlich braucht (siehe getStundenplan/getTeilnehmerReport/getPrioReport).
      */
     private DashboardData buildBaseData(Veranstaltung veranstaltung) {
-        Planungsergebnis.MinizincResult result = planService.getMinizincResult(veranstaltung);
+        return buildBaseData(veranstaltung, null);
+    }
+
+
+    private DashboardData buildBaseData(Veranstaltung veranstaltung, Long ergebnisId) {
+        Planungsergebnis.MinizincResult result = planService.getMinizincResult(veranstaltung, ergebnisId);
 
         Map<Long, Set<Long>> nvMap =
             NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>list("veranstaltungId = ?1", veranstaltung.getId())
@@ -101,7 +106,13 @@ public class DashboardService {
 
     @Transactional
     public Stundenplan getStundenplan(Veranstaltung veranstaltung) {
-        DashboardData dd = buildBaseData(veranstaltung);
+        return getStundenplan(veranstaltung, null);
+    }
+
+
+    @Transactional
+    public Stundenplan getStundenplan(Veranstaltung veranstaltung, Long ergebnisId) {
+        DashboardData dd = buildBaseData(veranstaltung, ergebnisId);
 
         berechneBelegungUndFreieSlots(dd);
         createTeilnehmerErfuellung(dd);
@@ -117,7 +128,13 @@ public class DashboardService {
 
     @Transactional
     public TeilnehmerReport getTeilnehmerReport(Veranstaltung veranstaltung) {
-        DashboardData dd = buildBaseData(veranstaltung);
+        return getTeilnehmerReport(veranstaltung, null);
+    }
+
+
+    @Transactional
+    public TeilnehmerReport getTeilnehmerReport(Veranstaltung veranstaltung, Long ergebnisId) {
+        DashboardData dd = buildBaseData(veranstaltung, ergebnisId);
 
         createTeilnehmerStundenplan(dd);
 
@@ -128,7 +145,13 @@ public class DashboardService {
 
     @Transactional
     public PrioReport getPrioReport(Veranstaltung veranstaltung) {
-        DashboardData dd = buildBaseData(veranstaltung);
+        return getPrioReport(veranstaltung, null);
+    }
+
+
+    @Transactional
+    public PrioReport getPrioReport(Veranstaltung veranstaltung, Long ergebnisId) {
+        DashboardData dd = buildBaseData(veranstaltung, ergebnisId);
 
         createTeilnehmerErfuellung(dd);
 

@@ -17,6 +17,21 @@
     "101": {
       "name": "Raum B",
       "kapazitaet": 5
+    },
+    "102": {
+      "name": "A101",
+      "kapazitaet": 10,
+      "gebaeudeKuerzel": "NG"
+    },
+    "103": {
+      "name": "A101",
+      "kapazitaet": 10,
+      "gebaeudeKuerzel": "HG"
+    },
+    "104": {
+      "name": "A001",
+      "kapazitaet": 10,
+      "gebaeudeKuerzel": "HG"
     }
   },
   "belegungDetails": {

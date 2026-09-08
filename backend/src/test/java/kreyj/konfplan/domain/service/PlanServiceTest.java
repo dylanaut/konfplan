@@ -208,4 +208,61 @@ public class PlanServiceTest extends DatabaseCleaner {
     }
 
 
+    @Test
+    @Transactional
+    public void testZurueckziehenErgebnis_entziehtVeroeffentlichungsstatus() {
+        Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
+        assertThat(ergebnis.isPubliziert()).isTrue();
+
+        planService.zurueckziehenErgebnis(veranstaltung, ergebnis.getId());
+
+        assertThat(ergebnis.isPubliziert()).isFalse();
+    }
+
+
+    @Test
+    @Transactional
+    public void testZurueckziehenErgebnis_beiNichtVeroeffentlichtem_wirftBusinessException() {
+        Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
+        ergebnis.setPubliziert(false);
+
+        assertThat(org.junit.jupiter.api.Assertions.assertThrows(
+            kreyj.konfplan.domain.exception.BusinessException.class,
+            () -> planService.zurueckziehenErgebnis(veranstaltung, ergebnis.getId())
+        )).hasMessage("Dieses Planungsergebnis ist nicht veröffentlicht.");
+    }
+
+
+    @Test
+    @Transactional
+    public void testGetRaumbelegungsplanMitErgebnisId_liefertUnveroeffentlichtesErgebnis() {
+        // Das veröffentlichte Fixture-Ergebnis hat teilnehmer_oids: [] - ein zweites,
+        // unveröffentlichtes Ergebnis mit abweichenden Daten muss über die ergebnisId-Überladung
+        // erreichbar sein, unabhängig vom Veröffentlichungsstatus.
+        Planungsergebnis unveroeffentlicht = new Planungsergebnis();
+        unveroeffentlicht.setVeranstaltung(veranstaltung);
+        unveroeffentlicht.setPubliziert(false);
+        unveroeffentlicht.setSolverConfig(new SolverConfig(60, 1, 1, false));
+        unveroeffentlicht.setJsonErgebnis("""
+            {
+              "instanz_slot": [[]],
+              "instanz_raum": [[]],
+              "besucht": [[[]]],
+              "teilnehmer_oids": [99],
+              "wahlvortrag_oids": [],
+              "slot_oids": [],
+              "raum_oids": []
+            }
+            """);
+        unveroeffentlicht.persist();
+
+        Planungsergebnis.MinizincResult viaErgebnisId =
+            planService.getMinizincResult(veranstaltung, unveroeffentlicht.getId());
+        assertThat(viaErgebnisId.teilnehmer_oids).containsExactly(99L);
+
+        Planungsergebnis.MinizincResult veroeffentlicht = planService.getMinizincResult(veranstaltung);
+        assertThat(veroeffentlicht.teilnehmer_oids).isEmpty();
+    }
+
+
 }

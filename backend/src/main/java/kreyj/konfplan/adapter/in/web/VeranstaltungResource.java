@@ -463,6 +463,22 @@ public class VeranstaltungResource {
     }
 
 
+    @PUT
+    @Path("/{vid}/planungsergebnisse/{ergebnisId}/zurueckziehen")
+    @Operation(summary = "Planungsergebnis zurückziehen",
+        description = "Entzieht einem veröffentlichten Planungsergebnis den Veröffentlichungsstatus, ohne ein anderes "
+            + "zu veröffentlichen - der Plan verschwindet dadurch sofort aus allen Teilnehmer-/Referenten-Ansichten.")
+    public Response zurueckziehenErgebnis(@PathParam("vid") Long vid, @PathParam("ergebnisId") Long ergebnisId) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(NOT_FOUND).build();
+        }
+
+        planService.zurueckziehenErgebnis(veranstaltung, ergebnisId);
+        return Response.ok().build();
+    }
+
+
     @DELETE
     @Path("/{vid}/planungsergebnisse/{ergebnisId}")
     @Operation(summary = "Planungsergebnis löschen",

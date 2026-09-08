@@ -81,7 +81,9 @@ onMounted(async () => {
     return;
   }
   try {
-    const response = await api.get(`/api/reports/${veranstaltungId}/raeume-data`);
+    const ergebnisId = route.query.ergebnisId;
+    const url = `/api/reports/${veranstaltungId}/raeume-data` + (ergebnisId ? `?ergebnisId=${ergebnisId}` : '');
+    const response = await api.get(url);
     reportData.value = response.data;
     document.title = `${response.data.veranstaltung.name} - Anwesenheiten`;
   } catch (err) {

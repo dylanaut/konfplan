@@ -110,7 +110,9 @@ onMounted(async () => {
     return;
   }
   try {
-    const response = await api.get(`/api/reports/${veranstaltungId}/prios-dashboard-data`);
+    const ergebnisId = route.query.ergebnisId;
+    const url = `/api/reports/${veranstaltungId}/prios-dashboard-data` + (ergebnisId ? `?ergebnisId=${ergebnisId}` : '');
+    const response = await api.get(url);
     reportData.value = response.data;
     document.title = `${response.data.veranstaltung.name} - Prioritätenanalyse`;
   } catch (err) {

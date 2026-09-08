@@ -157,6 +157,45 @@ class VeranstaltungResourceTest extends DatabaseCleaner {
     }
 
 
+    @Test
+    void testZurueckziehenErgebnis_veroeffentlichtesWirdEntzogen() {
+        Long id = createPlanungsergebnis("erster", true);
+
+        given()
+            .when().put("/{vid}/planungsergebnisse/{ergebnisId}/zurueckziehen", testVid, id)
+            .then()
+            .statusCode(OK.getStatusCode());
+
+        given()
+            .when().get("/{vid}/planungsergebnisse", testVid)
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body("find { it.id == " + id + " }.publiziert", is(false));
+    }
+
+
+    @Test
+    void testZurueckziehenErgebnis_unveroeffentlichtesWirdAbgelehnt() {
+        Long id = createPlanungsergebnis("erster", false);
+
+        given()
+            .when().put("/{vid}/planungsergebnisse/{ergebnisId}/zurueckziehen", testVid, id)
+            .then()
+            .statusCode(BAD_REQUEST.getStatusCode());
+    }
+
+
+    @Test
+    void testZurueckziehenErgebnis_unbekannteId_liefertBadRequest() {
+        // ladeErgebnisFuer wirft EntityNotFoundException (extends BusinessException), die vom
+        // BusinessExceptionMapper einheitlich auf 400 abgebildet wird (siehe testLoescheErgebnis_veroeffentlichtesWirdAbgelehnt).
+        given()
+            .when().put("/{vid}/planungsergebnisse/{ergebnisId}/zurueckziehen", testVid, 999999L)
+            .then()
+            .statusCode(BAD_REQUEST.getStatusCode());
+    }
+
+
     @Transactional
     Long createPlanungsergebnis(String ersteller, boolean publiziert) {
         Veranstaltung v = Veranstaltung.findById(testVid);

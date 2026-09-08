@@ -36,6 +36,10 @@
             <span v-else class="px-1.5 py-0.5 rounded bg-gray-50 text-gray-600 border border-gray-200">Entwurf</span>
           </td>
           <td class="px-3 py-2 text-right space-x-2">
+            <button @click="berichteAnsehen(e)" :disabled="busyId !== null"
+                    class="px-2 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
+              Berichte ansehen
+            </button>
             <button @click="vortraegeAnsehen(e)" :disabled="busyId !== null"
                     class="px-2 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
               Vorträge ansehen
@@ -43,6 +47,10 @@
             <button v-if="!e.publiziert" @click="publizieren(e)" :disabled="busyId !== null"
                     class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600 disabled:opacity-50">
               Veröffentlichen
+            </button>
+            <button v-if="e.publiziert" @click="zurueckziehen(e)" :disabled="busyId !== null"
+                    class="px-2 py-1 bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-50">
+              Zurückziehen
             </button>
             <button @click="loeschen(e)" :disabled="e.publiziert || busyId !== null"
                     :title="e.publiziert ? 'Ein veröffentlichtes Ergebnis kann nicht gelöscht werden' : ''"
@@ -194,6 +202,8 @@
 
     <UmplanungModal :isVisible="showUmplanungModal" :vid="eventContext.selectedEvent?.id" :ergebnisId="umplanungErgebnisId"
                     @close="showUmplanungModal = false"/>
+    <BerichteAuswahlModal :isVisible="showBerichteModal" :vid="eventContext.selectedEvent?.id" :ergebnisId="berichteErgebnisId"
+                    @close="showBerichteModal = false"/>
   </section>
 </template>
 
@@ -204,6 +214,7 @@ import { AlertTriangle as AlertTriangleIcon, RefreshCw as RefreshCwIcon } from '
 import { useEventContextStore } from '../../../stores/eventContext';
 import Stundenplan from '../../../views/report/Stundenplan.vue';
 import UmplanungModal from './UmplanungModal.vue';
+import BerichteAuswahlModal from './BerichteAuswahlModal.vue';
 import api from '../../../api/axios';
 
 const props = defineProps({
@@ -216,10 +227,10 @@ const emit = defineEmits(['published']);
 const router = useRouter();
 const eventContext = useEventContextStore();
 
-const navigateToReport = (routeName) => {
+const navigateToReport = (routeName, ergebnisId = null) => {
   const vid = eventContext.selectedEvent?.id;
   if (vid) {
-    const route = router.resolve({ name: routeName, params: { vid } });
+    const route = router.resolve({ name: routeName, params: { vid }, query: ergebnisId ? { ergebnisId } : {} });
     window.open(route.href, '_blank');
   }
 };
@@ -230,10 +241,17 @@ const error = ref('');
 const busyId = ref(null);
 const showUmplanungModal = ref(false);
 const umplanungErgebnisId = ref(null);
+const showBerichteModal = ref(false);
+const berichteErgebnisId = ref(null);
 
 const vortraegeAnsehen = (ergebnis) => {
   umplanungErgebnisId.value = ergebnis.id;
   showUmplanungModal.value = true;
+};
+
+const berichteAnsehen = (ergebnis) => {
+  berichteErgebnisId.value = ergebnis.id;
+  showBerichteModal.value = true;
 };
 
 const formatDateTime = (isoString) => new Date(isoString).toLocaleString('de-DE');
@@ -266,6 +284,24 @@ const publizieren = async (ergebnis) => {
     emit('published');
   } catch (e) {
     error.value = 'Veröffentlichen fehlgeschlagen: ' + (e.response?.data?.error || e.message);
+  } finally {
+    busyId.value = null;
+  }
+};
+
+const zurueckziehen = async (ergebnis) => {
+  if (!confirm('Dieses veröffentlichte Planungsergebnis wirklich zurückziehen? Teilnehmer und Referenten sehen den Plan danach sofort nicht mehr in ihren Ansichten (Laufzettel, Stundenplan etc.).')) {
+    return;
+  }
+  const vid = eventContext.selectedEvent?.id;
+  busyId.value = ergebnis.id;
+  error.value = '';
+  try {
+    await api.put(`/api/veranstaltungen/${vid}/planungsergebnisse/${ergebnis.id}/zurueckziehen`);
+    await loadErgebnisse();
+    emit('published');
+  } catch (e) {
+    error.value = 'Zurückziehen fehlgeschlagen: ' + (e.response?.data?.error || e.message);
   } finally {
     busyId.value = null;
   }

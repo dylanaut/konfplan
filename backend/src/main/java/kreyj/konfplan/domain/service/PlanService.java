@@ -127,15 +127,21 @@ public class PlanService {
 
     @Transactional
     public List<RaumBelegungUebersicht> getDetaillierterPlan(Veranstaltung veranstaltung) {
+        return getDetaillierterPlan(veranstaltung, null);
+    }
+
+
+    @Transactional
+    public List<RaumBelegungUebersicht> getDetaillierterPlan(Veranstaltung veranstaltung, Long ergebnisId) {
         assert veranstaltung != null;
         Objects.requireNonNull(veranstaltung);
 
         // Nur wenn gar kein Plan existiert, leere Liste liefern. Existiert ein Ergebnis ohne
         // Zuweisungen, soll trotzdem das vollständige Raster (alle Plätze "FREI") gebaut werden.
-        if (null == getPlanungsergebnis(veranstaltung)) {
+        if (null == resolveErgebnis(veranstaltung, ergebnisId)) {
             return Collections.emptyList();
         }
-        Map<Long, Map<Long, RaumplanEintragDto>> raumplan = getRaumbelegungsplan(veranstaltung);
+        Map<Long, Map<Long, RaumplanEintragDto>> raumplan = getRaumbelegungsplan(veranstaltung, ergebnisId);
 
         List<RaumBelegungUebersicht> detaillierterPlan = new ArrayList<>();
         List<Slot> sortedSlots = veranstaltung.getSlots().stream()
@@ -198,7 +204,13 @@ public class PlanService {
 
     @Transactional
     public PlanQualitaetDto getPlanQualitaet(Veranstaltung veranstaltung) {
-        Planungsergebnis planungsergebnis = getPlanungsergebnis(veranstaltung);
+        return getPlanQualitaet(veranstaltung, null);
+    }
+
+
+    @Transactional
+    public PlanQualitaetDto getPlanQualitaet(Veranstaltung veranstaltung, Long ergebnisId) {
+        Planungsergebnis planungsergebnis = resolveErgebnis(veranstaltung, ergebnisId);
         if (null == planungsergebnis) {
             return new PlanQualitaetDto(0, 0, 0, "Kein Ergebnis vorhanden", false);
         }
@@ -296,14 +308,45 @@ public class PlanService {
     }
 
 
+    /**
+     * Löst das für einen Report/Plan zu verwendende Planungsergebnis auf: bei angegebener
+     * {@code ergebnisId} genau dieses (unabhängig vom Veröffentlichungsstatus, z.B. für die
+     * Vorschau eines noch nicht veröffentlichten Ergebnisses), sonst das veröffentlichte.
+     */
+    private Planungsergebnis resolveErgebnis(Veranstaltung veranstaltung, Long ergebnisId) {
+        return ergebnisId != null ? ladeErgebnisFuer(veranstaltung, ergebnisId) : getPlanungsergebnis(veranstaltung);
+    }
+
+
+    /**
+     * Zieht ein veröffentlichtes Planungsergebnis zurück (publiziert = false), ohne ein anderes
+     * zu veröffentlichen - der Plan verschwindet dadurch sofort aus allen Teilnehmer-/Referenten-
+     * Ansichten (Laufzettel, Stundenplan etc.), analog zum Zustand vor der ersten Veröffentlichung.
+     */
+    @Transactional
+    public void zurueckziehenErgebnis(Veranstaltung veranstaltung, Long ergebnisId) {
+        Planungsergebnis ergebnis = ladeErgebnisFuer(veranstaltung, ergebnisId);
+        if (!ergebnis.isPubliziert()) {
+            throw new BusinessException("Dieses Planungsergebnis ist nicht veröffentlicht.");
+        }
+        ergebnis.setPubliziert(false);
+    }
+
+
     @Transactional
     public List<ZuweisungDto> getPlanFuerTeilnehmer(Teilnehmer teilnehmer, Veranstaltung veranstaltung) {
+        return getPlanFuerTeilnehmer(teilnehmer, veranstaltung, null);
+    }
+
+
+    @Transactional
+    public List<ZuweisungDto> getPlanFuerTeilnehmer(Teilnehmer teilnehmer, Veranstaltung veranstaltung, Long ergebnisId) {
         Objects.requireNonNull(veranstaltung);
         if (null == teilnehmer) {
             return Collections.emptyList();
         }
 
-        Planungsergebnis planungsergebnis = getPlanungsergebnis(veranstaltung);
+        Planungsergebnis planungsergebnis = resolveErgebnis(veranstaltung, ergebnisId);
         if (null == planungsergebnis) {
             return Collections.emptyList();
         }
@@ -398,11 +441,17 @@ public class PlanService {
 
     @Transactional
     public List<ReferentVortragDto> getPlanFuerReferent(Referent referent, Veranstaltung veranstaltung) {
+        return getPlanFuerReferent(referent, veranstaltung, null);
+    }
+
+
+    @Transactional
+    public List<ReferentVortragDto> getPlanFuerReferent(Referent referent, Veranstaltung veranstaltung, Long ergebnisId) {
         if (null == referent) {
             return Collections.emptyList();
         }
 
-        Planungsergebnis planungsergebnis = getPlanungsergebnis(veranstaltung);
+        Planungsergebnis planungsergebnis = resolveErgebnis(veranstaltung, ergebnisId);
         if (null == planungsergebnis) {
             return Collections.emptyList();
         }
@@ -486,7 +535,13 @@ public class PlanService {
 
     @Transactional
     public Map<Long, Map<Long, RaumplanEintragDto>> getRaumbelegungsplan(Veranstaltung veranstaltung) {
-        Planungsergebnis planungsergebnis = getPlanungsergebnis(veranstaltung);
+        return getRaumbelegungsplan(veranstaltung, null);
+    }
+
+
+    @Transactional
+    public Map<Long, Map<Long, RaumplanEintragDto>> getRaumbelegungsplan(Veranstaltung veranstaltung, Long ergebnisId) {
+        Planungsergebnis planungsergebnis = resolveErgebnis(veranstaltung, ergebnisId);
         if (null == planungsergebnis) {
             return Collections.emptyMap();
         }
@@ -665,8 +720,14 @@ public class PlanService {
 
     @Transactional
     public Map<Long, List<SlotDto>> getFreieSlotsReferenten(Veranstaltung veranstaltung) {
+        return getFreieSlotsReferenten(veranstaltung, null);
+    }
+
+
+    @Transactional
+    public Map<Long, List<SlotDto>> getFreieSlotsReferenten(Veranstaltung veranstaltung, Long ergebnisId) {
         Map<Long, List<SlotDto>> freieSlotsReferenten = new HashMap<>();
-        Planungsergebnis planungsergebnis = getPlanungsergebnis(veranstaltung);
+        Planungsergebnis planungsergebnis = resolveErgebnis(veranstaltung, ergebnisId);
 
         try {
             Planungsergebnis.MinizincResult result =
@@ -726,8 +787,14 @@ public class PlanService {
 
     @Transactional
     public Map<Long, List<SlotDto>> getFreieSlotsTeilnehmer(Veranstaltung veranstaltung) {
+        return getFreieSlotsTeilnehmer(veranstaltung, null);
+    }
+
+
+    @Transactional
+    public Map<Long, List<SlotDto>> getFreieSlotsTeilnehmer(Veranstaltung veranstaltung, Long ergebnisId) {
         Map<Long, List<SlotDto>> freieSlotsTeilnehmer = new HashMap<>();
-        Planungsergebnis planungsergebnis = getPlanungsergebnis(veranstaltung);
+        Planungsergebnis planungsergebnis = resolveErgebnis(veranstaltung, ergebnisId);
         if (null == planungsergebnis) {
             return Collections.emptyMap();
         }
@@ -792,8 +859,14 @@ public class PlanService {
 
     @Transactional
     public Planungsergebnis.MinizincResult getMinizincResult(Veranstaltung veranstaltung) {
+        return getMinizincResult(veranstaltung, null);
+    }
+
+
+    @Transactional
+    public Planungsergebnis.MinizincResult getMinizincResult(Veranstaltung veranstaltung, Long ergebnisId) {
         Objects.requireNonNull(veranstaltung, "veranstaltung must not be null");
-        Planungsergebnis planungsergebnis = getPlanungsergebnis(veranstaltung);
+        Planungsergebnis planungsergebnis = resolveErgebnis(veranstaltung, ergebnisId);
 
         return getMinizincResult(planungsergebnis);
 

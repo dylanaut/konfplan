@@ -75,7 +75,9 @@ onMounted(async () => {
     return;
   }
   try {
-    const response = await api.get(`/api/reports/${veranstaltungId}/raum/${raumId}/belegungsplan-data`);
+    const ergebnisId = route.query.ergebnisId;
+    const url = `/api/reports/${veranstaltungId}/raum/${raumId}/belegungsplan-data` + (ergebnisId ? `?ergebnisId=${ergebnisId}` : '');
+    const response = await api.get(url);
     reportData.value = response.data;
   } catch (err) {
     error.value = 'Fehler beim Laden der Daten: ' + (err.response?.data?.message || err.message);
