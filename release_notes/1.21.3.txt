@@ -1,0 +1,27 @@
+Release Notes 1.21.3
+Released: 2026-09-08
+
+Changes:
+
+- Release-Notes fuer 1.21.2 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.21.3-SNAPSHOT)
+  Bump version from 1.21.2 to 1.21.3-SNAPSHOT in all four pom.xml files,
+  closing out release 1.21.2.
+
+- MiniZinc-Modell auf echte Datei extrahieren statt Klassenpfad-URI
+  PlanErstellungService.erstellePlan() wandelte die Klassenpfad-URL des
+  MiniZinc-Modells direkt per Paths.get(modelUrl.toURI()) in einen Path um.
+  Im gepackten Fast-Jar-Container-Image liegt die Resource innerhalb eines
+  Jars (jar:file:...!/minizinc/konfplan.mzn) - Paths.get(URI) wirft darauf
+  ohne vorher explizit geöffnetes ZipFileSystem eine
+  FileSystemNotFoundException. In quarkus:dev (exploded Classpath) und in
+  Tests trat der Fehler nie auf, weshalb er auf dem Neuwied-Server erst
+  beim ersten echten Planerstellungs-Lauf im Container sichtbar wurde.
+  Extrahiert das Modell jetzt analog zur bereits bestehenden .dzn-Datei
+  über Files.createTempFile + Files.copy(modelUrl.openStream(), ...) auf
+  eine echte temporäre Datei, bevor der externe MiniZinc-Prozess gestartet
+  wird - unabhängig vom Packaging.
+
+- Release 1.21.3
+
