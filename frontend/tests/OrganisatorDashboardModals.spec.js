@@ -72,6 +72,21 @@ const SLOTS = [
 
 const GRUPPEN = ['10a'];
 
+const PLANUNGSERGEBNISSE = [
+  { id: 601, ersteller: 'admin@test.de', erstelltAm: '2026-09-01T08:00:00', guete: 111, publiziert: true }
+];
+
+const UMPLANUNG_INSTANZEN = [
+  {
+    wahlvortragId: 400, instanzIndex: 0, vortragTitel: 'Wahlvortrag Test', referentName: 'Referent, Rudi',
+    slotId: 500, slotZeit: '09:00', raumId: 20, raumName: 'Raum A', kapazitaet: 30, belegteAnzahl: 2, ausgefallen: false
+  },
+  {
+    wahlvortragId: 402, instanzIndex: 0, vortragTitel: 'Bereits ausgefallen', referentName: 'Referent, Rudi',
+    slotId: 500, slotZeit: '09:00', raumId: 21, raumName: 'Raum B', kapazitaet: 20, belegteAnzahl: 0, ausgefallen: true
+  }
+];
+
 /** Registriert alle vom AdminDashboard beim Laden benötigten API-Mocks. */
 async function mockAdminApis(page) {
   await page.addInitScript(() => {
@@ -169,6 +184,15 @@ async function mockAdminApis(page) {
     }
     if (path === `/api/veranstaltungen/${VID}/plan/details`) return json([]);
     if (path === `/api/veranstaltungen/${VID}/plan/qualitaet`) return json({});
+    if (path === `/api/veranstaltungen/${VID}/planungsergebnisse`) {
+      if (method === 'GET') return json(PLANUNGSERGEBNISSE);
+    }
+    if (/^\/api\/veranstaltungen\/\d+\/planungsergebnisse\/\d+\/instanzen$/.test(path) && method === 'GET') {
+      return json(UMPLANUNG_INSTANZEN);
+    }
+    if (/^\/api\/veranstaltungen\/\d+\/planungsergebnisse\/\d+\/umplanen$/.test(path) && method === 'POST') {
+      return json({ umverteilt: [{ teilnehmerName: 'Teilnehmer, Tom', neuerVortragTitel: 'Anderer Wahlvortrag' }], nichtPlatziert: [] });
+    }
     if (path === `/api/organisator/veranstaltungen/${VID}/gruppen`) return json(GRUPPEN);
     if (path === `/api/organisator/veranstaltungen/${VID}/verfuegbarkeiten`) return json([]);
     if (path === `/api/organisator/veranstaltungen/${VID}/raeume/verfuegbarkeiten`) return json([]);
@@ -585,6 +609,33 @@ test.describe('AdminDashboard - Modale Dialoge', () => {
       await gotoTab(page, 'Vorträge');
 
       await expect(page.locator('tr', { hasText: 'Pflichtvortrag Test' }).locator('button[title="Angemeldete Teilnehmer"]')).toHaveCount(0);
+    });
+  });
+
+  test.describe('Kurzfristige Umplanung', () => {
+    test('öffnet die Umplanungs-Ansicht und zeigt die Wahlvortrag-Instanzen eines Planungsergebnisses', async ({ page }) => {
+      await gotoTab(page, 'Ergebnisse');
+      await page.getByRole('button', { name: 'Vorträge ansehen' }).click();
+
+      await expect(page.getByText('Kurzfristige Umplanung')).toBeVisible();
+      const modalRows = page.locator('.fixed.inset-0 tbody tr');
+      await expect(modalRows).toHaveCount(2);
+      await expect(modalRows.filter({ hasText: 'Bereits ausgefallen' }).getByText('Ausgefallen', { exact: true })).toBeVisible();
+    });
+
+    test('markiert eine Instanz als ausgefallen und zeigt die Umverteilung an', async ({ page }) => {
+      page.once('dialog', dialog => dialog.accept());
+      await gotoTab(page, 'Ergebnisse');
+      await page.getByRole('button', { name: 'Vorträge ansehen' }).click();
+      await expect(page.getByText('Kurzfristige Umplanung')).toBeVisible();
+
+      const [request] = await Promise.all([
+        page.waitForRequest(req => /\/api\/veranstaltungen\/\d+\/planungsergebnisse\/601\/umplanen$/.test(req.url()) && req.method() === 'POST'),
+        page.locator('tbody tr', { hasText: 'Wahlvortrag Test' }).getByRole('button', { name: 'Als ausgefallen markieren & umverteilen' }).click()
+      ]);
+      expect(request.postDataJSON()).toEqual({ wahlvortragId: 400, instanzIndex: 0 });
+
+      await expect(page.getByText('Teilnehmer, Tom → Anderer Wahlvortrag')).toBeVisible();
     });
   });
 
