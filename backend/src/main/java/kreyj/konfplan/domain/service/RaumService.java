@@ -2,6 +2,7 @@ package kreyj.konfplan.domain.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import kreyj.konfplan.persistence.Raum;
@@ -48,6 +49,8 @@ public class RaumService {
         }
 
         if (r.getId() == null) {
+            ensureNameIstEindeutigImGebaeude(gebaeudeId, r.getName(), null);
+
             // gebaeude.addRaum(r) muss vor dem Persistieren laufen: r.gebaeude zeigt sonst noch auf
             // das aus dem Request-Body deserialisierte, detached Gebaeude-Stub-Objekt (nur id
             // gesetzt, version = null), was Hibernate beim Insert mit einer
@@ -74,6 +77,8 @@ public class RaumService {
                 return null;
             }
 
+            ensureNameIstEindeutigImGebaeude(raum.getGebaeude().getId(), r.getName(), raum.getId());
+
             raum.setName(r.getName());
             raum.setKapazitaet(r.getKapazitaet());
             raum.setEtage(r.getEtage());
@@ -81,6 +86,14 @@ public class RaumService {
             raum.persistAndFlush();
             protokollService.log(ProtokollKategorie.RAUM, "Raum aktualisiert", "Raum '" + raum.getName() + "' im Gebäude '" + gebaeude.getName() + "' aktualisiert.", raum.getId());
             return raum;
+        }
+    }
+
+
+    private void ensureNameIstEindeutigImGebaeude(Long gebaeudeId, String name, Long ignoriertRaumId) {
+        Raum vorhandenerRaum = Raum.find("gebaeude.id = ?1 and name = ?2", gebaeudeId, name).firstResult();
+        if (null != vorhandenerRaum && !vorhandenerRaum.getId().equals(ignoriertRaumId)) {
+            throw new BusinessException("Ein Raum mit dem Namen '" + name + "' existiert in diesem Gebäude bereits.");
         }
     }
 

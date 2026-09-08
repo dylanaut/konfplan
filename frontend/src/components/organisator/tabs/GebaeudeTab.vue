@@ -47,14 +47,14 @@
                 <table class="min-w-full divide-y divide-gray-200 text-xs">
                   <thead class="bg-gray-100 text-[9px] uppercase font-bold text-gray-500">
                   <tr>
-                    <th class="px-4 py-1.5 text-left">Name</th>
-                    <th class="px-4 py-1.5 text-center">Kapazität</th>
-                    <th class="px-4 py-1.5 text-left">Etage</th>
+                    <th @click="toggleSort('raeume', 'name')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition">Name <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
+                    <th @click="toggleSort('raeume', 'kapazitaet')" class="px-4 py-1.5 text-center cursor-pointer hover:text-indigo-600 transition">Kapazität <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
+                    <th @click="toggleSort('raeume', 'etage')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition">Etage <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
                     <th class="px-4 py-1.5 text-right">Aktionen</th>
                   </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-100">
-                  <tr v-for="r in g.raeume" :key="r.id" class="hover:bg-gray-100">
+                  <tr v-for="r in sortedRaeume(g.raeume)" :key="r.id" class="hover:bg-gray-100">
                     <td class="px-4 py-2">{{ r.name }}</td>
                     <td class="px-4 py-2 text-center">{{ r.kapazitaet }}</td>
                     <td class="px-4 py-2">{{ r.etage || '-' }}</td>
@@ -229,7 +229,8 @@ const filters = reactive({
 });
 
 const sorts = reactive({
-  gebaeude: { key: 'name', dir: 'asc' }
+  gebaeude: { key: 'name', dir: 'asc' },
+  raeume: { key: 'name', dir: 'asc' }
 });
 
 const expandedBuildings = reactive({}); // Zustand für auf-/zuklappbare Gebäude
@@ -287,6 +288,19 @@ const toggleSort = (key, field) => {
     sorts[key].key = field;
     sorts[key].dir = 'asc';
   }
+};
+
+const sortedRaeume = (raeume) => {
+  const { key, dir } = sorts.raeume;
+  return [...(raeume || [])].sort((a, b) => {
+    const valA = a[key];
+    const valB = b[key];
+    if (typeof valA === 'number' && typeof valB === 'number') {
+      return dir === 'asc' ? valA - valB : valB - valA;
+    }
+    const cmp = String(valA || '').localeCompare(String(valB || ''));
+    return dir === 'asc' ? cmp : -cmp;
+  });
 };
 
 const filteredGebaeude = computed(() => processList(props.gebaeude, filters.gebaeude, sorts.gebaeude));

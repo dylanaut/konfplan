@@ -67,7 +67,7 @@ watch(
       form.name = val?.name ?? '';
       form.kapazitaet = val?.kapazitaet ?? 10;
       form.etage = val?.etage ?? '';
-      form.gebaeude.id = val?.gebaeude?.id ?? (props.gebaeude[0]?.id || null);
+      form.gebaeude.id = val?.gebaeude?.id ?? val?.gebaeudeId ?? (props.gebaeude[0]?.id || null);
     },
     { immediate: true }
 );
