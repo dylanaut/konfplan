@@ -8,12 +8,15 @@ import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
+import kreyj.konfplan.domain.service.RaumService;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
+import kreyj.konfplan.persistence.RaumVerfuegbarkeitId;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Veranstaltung;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,9 +42,13 @@ class SlotUndRaumTest extends DatabaseCleaner {
     @TestHTTPEndpoint(OrganisatorResource.class)
     URL adminEndpoint;
 
+    @Inject
+    RaumService raumService;
+
     Long v1_Id;
     Long v2_Id;
     Long raumId;
+    Long gebaeudeId;
 
 
     @BeforeEach
@@ -70,6 +77,7 @@ class SlotUndRaumTest extends DatabaseCleaner {
         g.setStrasse("Wallroth");
         g.setOrt("Buchholz");
         g.persist();
+        gebaeudeId = g.getId();
 
         v1.addGebaeude(g);
         v2.addGebaeude(g);
@@ -220,5 +228,30 @@ class SlotUndRaumTest extends DatabaseCleaner {
 
         assertThat(target.isBlockedByOtherEvent).describedAs("Raum sollte durch andere Veranstaltung blockiert sein").isTrue();
         assertThat(target.blockingEventName).isEqualTo("Andere Veranstaltung");
+    }
+
+
+    /**
+     * Regressionstest: Wird ein Raum erst NACH der Verknüpfung seines Gebäudes mit einer
+     * Veranstaltung (die bereits Slots hat) angelegt, muss trotzdem eine RaumVerfuegbarkeit für
+     * jeden bestehenden Slot entstehen. Andernfalls wirft die Planerstellung eine NPE
+     * (siehe PlanErstellungService#appendRaumVerfuegbarkeiten).
+     */
+    @Test
+    @Transactional
+    void testRaumVerfuegbarkeitWirdBeimSpaeterenRaumAngelegt() {
+        Veranstaltung v1 = Veranstaltung.findById(v1_Id);
+        Slot slot = new Slot("Slot 1",
+            LocalDateTime.of(2025, 10, 1, 9, 0),
+            LocalDateTime.of(2025, 10, 1, 10, 0), v1);
+        slot.persist();
+        v1.addSlot(slot);
+
+        Raum neuerRaum = new Raum("R2", 15);
+        Raum saved = raumService.save(neuerRaum, gebaeudeId);
+
+        RaumVerfuegbarkeit rv = RaumVerfuegbarkeit.findById(RaumVerfuegbarkeitId.rvIdL(saved.getId(), v1_Id));
+        assertThat(rv).describedAs("RaumVerfuegbarkeit für nachträglich angelegten Raum fehlt").isNotNull();
+        assertThat(rv.getVerfuegbareSlotIds()).contains(slot.getId());
     }
 }

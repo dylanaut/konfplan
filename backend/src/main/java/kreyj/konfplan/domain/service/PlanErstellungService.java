@@ -62,6 +62,7 @@ import java.util.zip.ZipOutputStream;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 
 @ApplicationScoped
 public class PlanErstellungService {
@@ -820,7 +821,12 @@ public class PlanErstellungService {
         for (Raum raum : raeume) {
             sb.append("\n");
             RaumVerfuegbarkeit rv = rvMap.get(raum.getId());
-            Set<Long> verfSlotIds = rv.getVerfuegbareSlotIds();
+            // Fehlende RaumVerfuegbarkeit == "in allen Slots verfügbar" (gleiche Semantik wie
+            // RaumVerfuegbarkeit.isRaumVerfuegbar), z.B. für Räume, die vor diesem Fix zu einem
+            // bereits verknüpften Gebäude hinzugefügt wurden, ohne dass die Verfügbarkeit nachgezogen wurde.
+            Set<Long> verfSlotIds = null == rv
+                ? slots.stream().map(Slot::getId).collect(toSet())
+                : rv.getVerfuegbareSlotIds();
             int sIdx = 0;
             for (Slot s : slots) {
                 sb.append(verfSlotIds.contains(s.getId()));
