@@ -1,0 +1,76 @@
+Release Notes 1.21.5
+Released: 2026-09-08
+
+Changes:
+
+- Release-Notes fuer 1.21.4 ergaenzen [skip ci]
+
+- Bump vue-router from 4.6.4 to 5.3.1
+  Vue Router 5 merges unplugin-vue-router into the core package "with no
+  breaking changes" per the maintainer's own release notes; reviewed v5.0
+  through v5.3.1 changelogs, all changes are experimental/opt-in typed-
+  routes features or scroll-behavior bug fixes that this app's router
+  (plain path params, beforeEach/next()) doesn't touch.
+  Verified locally: full Playwright suite green (62 passed) before and
+  after the bump, aside from 2 pre-existing unrelated failures confirmed
+  present on main as well.
+  Supersedes #476 (Dependabot's own branch went conflicting after other
+  dependency PRs merged first).
+
+- Prepare next development iteration (1.21.5-SNAPSHOT)
+  Bump version from 1.21.4 to 1.21.5-SNAPSHOT in all four pom.xml files,
+  closing out release 1.21.4.
+
+- Löschen eines Planungsergebnisses persistiert jetzt zuverlässig
+  PlanService.loescheErgebnis() rief die Panache-Instanzmethode
+  ergebnis.delete() auf. Reproduzierbar per Test bestätigt: sowohl
+  ergebnis.delete() als auch Planungsergebnis.deleteById(id) melden Erfolg
+  (keine Exception, deleteById liefert sogar true zurück), ohne dass
+  tatsächlich eine DELETE-Anweisung an die Datenbank geht - der Datensatz
+  blieb bestehen, weshalb die Planungsläufe-Tabelle im Ergebnisse-Tab nach
+  dem Löschen unverändert blieb.
+  Root Cause nicht abschließend geklärt; einziger auffälliger Unterschied
+  zu allen anderen Entities im Domänenmodell: Planungsergebnis.jsonErgebnis
+  ist das einzige @Lob-Feld im gesamten Schema. Ein Bulk-JPQL-Delete
+  (Planungsergebnis.delete("id", id)) umgeht den Entity-Lifecycle komplett
+  und funktioniert nachweislich zuverlässig - darauf umgestellt.
+  Neue Regressionstests auf Service-Ebene (PlanServiceTest, getrennte
+  Transaktionen wie bei echten aufeinanderfolgenden HTTP-Requests) und
+  REST-Ebene (VeranstaltungResourceTest, GET nach DELETE prüft, dass die
+  Zeile tatsächlich weg ist).
+
+- Freie-Slots-Reports: Filter ohne freie Slots + sortierbare Spalten
+  - Freie Slots (Teilnehmer): neue Checkbox "Teilnehmer ohne freie Slots
+    ausblenden" filtert die Tabelle entsprechend.
+  - Freie Slots (Referenten): neue Spalte "Anzahl freier Slots" je Referent;
+    sowohl diese als auch die Referenten-Namens-Spalte sind durch Klick auf
+    die Kopfzeile sortierbar (auf-/absteigend).
+  Playwright-Tests erweitert (Fixtures um einen zweiten Nutzer mit
+  abweichender Slot-Anzahl/Sortierposition ergänzt, um die neuen Filter-
+  und Sortier-Interaktionen tatsächlich zu prüfen statt nur den
+  Ausgangszustand).
+
+- Gebäude-Kürzel für kompakte Raumanzeige in Reports/Plandarstellungen
+  Neues, optionales Feld kuerzel (3-4 Buchstaben) am Gebäude, editierbar
+  im Gebäude-Editor-Modal, muss über alle Gebäude eindeutig sein
+  (DB-Unique-Constraint via V22-Migration + service-seitige Validierung
+  mit verständlicher Fehlermeldung statt rohem Constraint-Fehler).
+  Ersetzt das bisherige "Raum: {Raumname}"-Präfix in Raumbelegungsplan.vue,
+  Raumschilder.vue und Stundenplan.vue durch "{Kürzel} {Raumname}" (neuer
+  gemeinsamer Helper frontend/src/utils/raumLabel.js), mit Fallback auf den
+  reinen Raumnamen, solange kein Kürzel gesetzt ist (z.B. Altbestand).
+  RaumDto/GebaeudeSimpleDto um das neue Feld erweitert. Ergänzt außerdem
+  eine bislang fehlende Fehlermeldung beim Speichern eines Gebäudes im
+  Organisator-Dashboard (bisher nur console.error, keine sichtbare
+  Rückmeldung - die neue Kürzel-Validierung wäre sonst unsichtbar
+  fehlgeschlagen).
+
+- Protokoll beim Löschen eines Nutzers nutzt loginName statt E-Mail
+  Nutzer.email ist nicht Pflicht (kein nullable=false) und kann z.B. bei
+  über CSV importierten Nutzern fehlen - der Protokoll-Eintrag zeigte dann
+  "Nutzer 'null' gelöscht.". OrganisatorService#deleteUser und
+  TeilnehmerService#deleteUser nutzen jetzt nutzer.getLoginName(), der
+  immer gesetzt ist und den Nutzer eindeutig identifiziert.
+
+- Release 1.21.5
+
