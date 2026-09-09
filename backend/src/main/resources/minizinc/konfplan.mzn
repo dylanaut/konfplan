@@ -128,6 +128,10 @@ constraint forall(p in 1..n_teilnehmer) (
 bool: opt_referent_raumtreue;
 int: penalty_raumwechsel = 5000;
 
+% Zählt jeden Raumwechsel eines Referenten über das gesamte Event hinweg, nicht nur zwischen
+% unmittelbar aufeinanderfolgenden Slots - ein Referent soll seinen Raum grundsätzlich nie
+% wechseln müssen, auch wenn zwischen zwei seiner Vorträge Slots liegen, in denen er nicht
+% eingeplant ist (z.B. Pausen-Slot dazwischen).
 var int: anzahl_raumwechsel =
     if opt_referent_raumtreue then
         sum(w1, w2 in 1..n_wahlvortraege, i1, i2 in 1..max_instanzen
@@ -140,7 +144,7 @@ var int: anzahl_raumwechsel =
                 var int: r1 = instanz_raum[w1, i1],
                 var int: r2 = instanz_raum[w2, i2]
             } in
-            if (s1 > 0 /\ s2 > 0 /\ abs(s1 - s2) = 1) then
+            if (s1 > 0 /\ s2 > 0) then
                 bool2int(r1 != r2)
             else 0 endif
         )
