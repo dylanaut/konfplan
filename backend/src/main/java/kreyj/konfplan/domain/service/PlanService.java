@@ -867,9 +867,11 @@ public class PlanService {
     public Planungsergebnis.MinizincResult getMinizincResult(Veranstaltung veranstaltung, Long ergebnisId) {
         Objects.requireNonNull(veranstaltung, "veranstaltung must not be null");
         Planungsergebnis planungsergebnis = resolveErgebnis(veranstaltung, ergebnisId);
+        if (null == planungsergebnis) {
+            throw new BusinessException("Für diese Veranstaltung liegt noch kein veröffentlichtes Planungsergebnis vor.");
+        }
 
         return getMinizincResult(planungsergebnis);
-
     }
 
 

@@ -359,6 +359,30 @@ class ReportResourceTest {
     }
 
 
+    @Test
+    @TestSecurity(user = "teilnehmer@test.com", roles = "TEILNEHMER")
+    void getTeilnehmerDashboardData_mitErgebnisId_wirdUnabhaengigVonRolleDurchgereicht() {
+        // Anders als beim persönlichen Laufzettel (laufzettel-teilnehmer-data) zeigt dieser Report
+        // ohnehin die Zuordnungen ALLER Teilnehmer und wird ausschließlich aus der Organisator-
+        // Ansicht (ErgebnisseTab/BerichteAuswahlModal) mit ergebnisId verlinkt - der Parameter wird
+        // daher unabhängig von der Rolle durchgereicht (Regression: wurde zuvor bei Nicht-
+        // Organisatoren verworfen, wodurch ein Vorschau-Link im NPE endete, wenn kein Ergebnis
+        // veröffentlicht war).
+        PanacheMock.mock(Veranstaltung.class);
+        Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
+        Mockito.when(dashboardService.getTeilnehmerReport(any(), any())).thenReturn(
+            new TeilnehmerReport(null, null, Collections.emptyMap(), Collections.emptyList(), Collections.emptyList()));
+
+        given()
+                .queryParam("ergebnisId", 42L)
+                .when().get("1/teilnehmer-dashboard-data")
+                .then()
+                .statusCode(200);
+
+        Mockito.verify(dashboardService).getTeilnehmerReport(mockVeranstaltung, 42L);
+    }
+
+
     // --- Vortrag-Anmeldungen (Prioritäten je Wahlvortrag) ---
     // Läuft bewusst gegen echte H2-Persistenz statt PanacheMock: die eigentliche HQL-Query
     // (vortrag.id = ?1 and prioWert > 0 order by ...) soll real ausgeführt werden.
