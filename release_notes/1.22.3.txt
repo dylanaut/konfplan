@@ -1,0 +1,37 @@
+Release Notes 1.22.3
+Released: 2026-09-09
+
+Changes:
+
+- Release-Notes fuer 1.22.2 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.22.3-SNAPSHOT)
+
+- Laufzettel in ReferentDashboard/TeilnehmerDashboard unmittelbar anzeigen
+  * Laufzettel in ReferentDashboard/TeilnehmerDashboard unmittelbar anzeigen
+  Die Sektion "Mein Zeitplan" ist jetzt die erste Sektion in beiden Dashboards
+  und zeigt den Laufzettel-Inhalt (Zeit, Vortrag, Raum, bei Teilnehmern
+  zusätzlich Referent) direkt inline an, sobald event.planErstellt true ist -
+  kein Klick auf "Laufzettel anzeigen" und kein Wechsel auf die separate
+  Report-Seite mehr nötig. ICS-Download und eine Druckansicht (verlinkt auf
+  die bestehende Laufzettel-Detailseite) bleiben erhalten.
+  Im TeilnehmerDashboard wurden die bisherigen ICS/Laufzettel-Buttons aus dem
+  Kopf der "Meine Veranstaltungen"-Zeile entfernt, da sie durch die neue
+  Sektion redundant wurden - identisch zur bereits bestehenden Struktur im
+  ReferentDashboard.
+  * Test-Fixture 'medium': Event-Datum in die Zukunft verschoben (CI-Flake)
+  ReferentVerfuegbarkeitTest schlug fehl, sobald das Systemdatum den
+  per smartDeadLine() defaulteten Referenten-Deadline-Zeitpunkt erreichte:
+  die Veranstaltung begann am 2026-09-16 09:00, die Deadline defaultet ohne
+  expliziten CSV-Wert auf Beginn minus 7 Tage (gleiche Uhrzeit) = 2026-09-16
+  - 7 = 2026-09-09 09:00 - exakt "heute" zum Zeitpunkt dieses Commits. Bisher
+  lief das nur auf CI durch, weil der Runner zufällig eine andere Uhrzeit/
+  einen anderen Tag hatte; das Datum war ein Zeitbombe-Fixture.
+  Datum in veranstaltungen.csv und slots.csv um 9 Jahre verschoben
+  (2035-09-16), um das Problem für die absehbare Zukunft zu entschärfen.
+  Betrifft ReferentVerfuegbarkeitTest, ReferentPlaeneTest und
+  TeilnehmerVortraegeUndPrioritaetenTest (alle nutzen den 'medium'-Datensatz).
+  ---------
+
+- Release 1.22.3
+
