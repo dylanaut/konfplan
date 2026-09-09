@@ -1,0 +1,39 @@
+Release Notes 1.22.4
+Released: 2026-09-09
+
+Changes:
+
+- Release-Notes fuer 1.22.3 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.22.4-SNAPSHOT)
+
+- PlanungTab: max. Wiederholungen mit Anzahl Zeit-Slots vorbelegen und begrenzen
+  SolverConfig.maxInstanzen wird jetzt automatisch mit der Anzahl der
+  Zeit-Slots der Veranstaltung vorbelegt (mehr Wiederholungen als Slots
+  ergeben ohnehin keinen Sinn) und läuft auch beim Wechsel der Veranstaltung
+  mit, da PlanungTab dabei nicht neu gemountet wird. Das Eingabefeld ist per
+  min/max-Attribut sowie einer @change-Korrektur auf 0..AnzahlSlots begrenzt.
+  Bewusst kein v-model: die Begrenzung greift beim Verlassen des Feldes
+  (@change) statt bei jedem Tastendruck, um Tippen nicht zu stören. Zusätzlich
+  wird der geklammerte Wert direkt in event.target.value zurückgeschrieben,
+  da Vue bei einem Vergleich mit dem bisherigen reaktiven Wert keine
+  Re-Render-Aktualisierung auslöst, wenn beide zufällig übereinstimmen
+  (z.B. Eingabe "10" bei eventSlotsCount=3, aktueller Wert bereits 3) - ohne
+  das direkte Zurückschreiben würde das Feld dann dauerhaft den ungültig
+  eingegebenen DOM-Wert anzeigen.
+
+- MiniZinc: Raumtreue-Constraint auf alle Slots ausweiten
+  anzahl_raumwechsel bestrafte Raumwechsel eines Referenten bisher nur
+  zwischen unmittelbar aufeinanderfolgenden Slots (abs(s1-s2) = 1). Damit
+  blieb ein Raumwechsel unbestraft, sobald zwischen zwei Vorträgen desselben
+  Referenten mindestens ein Slot liegt, in dem er nicht eingeplant ist (z.B.
+  ein Pausen-Slot dazwischen) - ein Referent sollte aber über die gesamte
+  Veranstaltung hinweg grundsätzlich nie den Raum wechseln müssen.
+  Die Adjazenz-Bedingung entfällt, sodass jetzt alle Slot-Paare desselben
+  Referenten verglichen werden. Der bestehende, bewusst hohe Malus
+  (penalty_raumwechsel = 5000) bleibt unverändert und dominiert weiterhin
+  gegenüber Prioritäts- und Zuweisungsnutzen, sodass Raumtreue nur dann
+  aufgegeben wird, wenn keine raumtreue Lösung feasible ist.
+
+- Release 1.22.4
+
