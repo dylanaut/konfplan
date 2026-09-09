@@ -224,4 +224,19 @@ test('Vollständiger Workflow: Veranstaltung -> Gebäude -> Slots -> Personen ->
   // Teil des Organisator-Workflows, sondern eine Selbstbedienungs-Aktion der Teilnehmer selbst).
   await expect(page.getByRole('button', { name: 'Pläne erstellen' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Pläne erstellen' })).toBeDisabled();
+
+  // 10. "max. Wiederholungen" ist mit der Anzahl der angelegten Zeit-Slots (3) vorbelegt und
+  // auf 0..AnzahlSlots limitiert (Issue: maxInstanzen soll nie mehr Wiederholungen erlauben,
+  // als ohnehin Slots zur Verfügung stehen).
+  const maxInstanzenInput = page.locator('label:has-text("max. Wiederholungen") + input');
+  await expect(maxInstanzenInput).toHaveValue('3');
+  await maxInstanzenInput.fill('10');
+  await maxInstanzenInput.dispatchEvent('change');
+  await expect(maxInstanzenInput).toHaveValue('3');
+  await maxInstanzenInput.fill('-5');
+  await maxInstanzenInput.dispatchEvent('change');
+  await expect(maxInstanzenInput).toHaveValue('0');
+  await maxInstanzenInput.fill('2');
+  await maxInstanzenInput.dispatchEvent('change');
+  await expect(maxInstanzenInput).toHaveValue('2');
 });

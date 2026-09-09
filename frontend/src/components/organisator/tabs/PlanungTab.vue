@@ -59,9 +59,9 @@
             <div>
               <label class="flex items-center gap-1 text-[9px] uppercase font-bold text-indigo-300 mb-0.5">
                 max. Wiederholungen
-                <HelpTooltip label="max. Wiederholungen" text="Maximale Anzahl von Wiederholungen pro Vortrag."/>
+                <HelpTooltip label="max. Wiederholungen" text="Maximale Anzahl von Wiederholungen pro Vortrag. Vorbelegt mit der Anzahl der Zeit-Slots der Veranstaltung, da mehr Wiederholungen ohnehin nicht in den Plan passen würden."/>
               </label>
-              <input v-model.number="solverConfig.maxInstanzen" type="number" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
+              <input :value="solverConfig.maxInstanzen" @change="onMaxInstanzenChange" type="number" min="0" :max="eventSlotsCount" class="w-full bg-indigo-800 border-none rounded text-xs text-white focus:ring-2 focus:ring-green-400 py-1 px-2"/>
             </div>
             <div>
               <label class="flex items-center gap-1 text-[9px] uppercase font-bold text-indigo-300 mb-0.5">
@@ -158,11 +158,31 @@ const onErgebnisFileSelected = (event) => {
 
 const solverConfig = reactive({
   timeout: 120,
-  maxInstanzen: 2,
+  maxInstanzen: props.eventSlotsCount,
   numThreads: 4,
   auffuellen: true,
   maxWvsProTn: 0,
 });
+
+// maxInstanzen ist immer mit der Anzahl der Zeit-Slots der Veranstaltung vorbelegt - mehr
+// Wiederholungen eines Vortrags als Slots könnten ohnehin nie in den Plan passen. Läuft auch
+// beim Wechsel der Veranstaltung mit, da PlanungTab dabei nicht neu gemountet wird.
+watch(() => props.eventSlotsCount, (count) => {
+  solverConfig.maxInstanzen = count;
+});
+
+// Begrenzung greift beim Verlassen des Feldes (@change), nicht bei jedem Tastendruck, damit
+// Tippen nicht gestört wird. Zusätzliches direktes Zurückschreiben in event.target.value ist
+// nötig, weil der geklammerte Wert zufällig mit dem bisherigen reaktiven Wert übereinstimmen
+// kann (z.B. Eingabe "10" bei eventSlotsCount=3, aktueller Wert bereits 3) - Vue erkennt dann
+// keine Änderung und würde das Feld sonst dauerhaft auf dem ungültig eingegebenen DOM-Wert
+// stehen lassen.
+const onMaxInstanzenChange = (event) => {
+  const num = Number(event.target.value);
+  const clamped = Number.isFinite(num) ? Math.min(Math.max(num, 0), props.eventSlotsCount) : 0;
+  solverConfig.maxInstanzen = clamped;
+  event.target.value = clamped;
+};
 
 const remainingSeconds = ref(0);
 let countdownInterval = null;
