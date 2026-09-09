@@ -1,0 +1,35 @@
+Release Notes 1.22.2
+Released: 2026-09-09
+
+Changes:
+
+- Release-Notes fuer 1.22.1 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.22.2-SNAPSHOT)
+
+- Vite-8-inkompatible Dev-Plugins entfernen (vite-plugin-html, vite-plugin-vue-devtools)
+  * vite-plugin-html entfernen (inkompatibel mit Vite 8, verursacht Dev-Server-Fehler)
+  vite-plugin-html (^3.2.2) ist seit Jahren unmaintained und wurde nie
+  gegen neuere Vite-Majors getestet. Nach dem Dependabot-Bump von Vite
+  7.3.1 auf 8.2.2 blieb die Version unverändert und bricht seitdem die
+  transformIndexHtml/import-analysis-Pipeline: der Dev-Server wirft
+  "Failed to parse source for import analysis" für index.html. Das
+  Plugin war mit leeren Optionen registriert und index.html enthält
+  keine EJS-Platzhalter, wurde also ohnehin nirgends aktiv genutzt.
+  Zusätzlich war die Dependency doppelt (dependencies + devDependencies)
+  gelistet.
+  * vite-plugin-vue-devtools entfernen (ebenfalls inkompatibel mit Vite 8)
+  Nach Entfernung von vite-plugin-html (#546) trat derselbe
+  "Failed to parse source for import analysis"-Fehler beim Laden von
+  index.html weiterhin auf, sobald ein echter Browser (statt curl) das
+  Frontend über den Quinoa-Dev-Proxy lud. Ursache war
+  vite-plugin-vue-devtools@8.2.1 (aktuellste Version, kein Update
+  verfuegbar): es bindet vite-plugin-inspect ein, das den HTML-Transform
+  in Vite 8 auf dieselbe Art bricht wie zuvor vite-plugin-html.
+  Verifiziert durch Deaktivieren des Plugins samt anschliessenden
+  echten Browser-Requests (inklusive Asset-Ladevorgaengen) ueber den
+  laufenden Quinoa-Dev-Proxy - keine weiteren Fehler im Log.
+  ---------
+
+- Release 1.22.2
+
