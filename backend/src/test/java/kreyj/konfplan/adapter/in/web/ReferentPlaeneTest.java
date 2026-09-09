@@ -1,6 +1,5 @@
 package kreyj.konfplan.adapter.in.web;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -51,8 +50,6 @@ class ReferentPlaeneTest extends DatabaseCleaner {
     ReferentService referentService;
     @Inject
     TeilnehmerService teilnehmerService;
-    @Inject
-    ObjectMapper mapper;
 
     Long vid;
 
@@ -100,7 +97,7 @@ class ReferentPlaeneTest extends DatabaseCleaner {
             Planungsergebnis pe = new Planungsergebnis();
             pe.setVeranstaltung(veranstaltung);
             pe.setPubliziert(true);
-            pe.setJsonErgebnis(result.toJson(mapper));
+            pe.setJsonErgebnis(result.toJson());
             pe.persist();
         });
     }

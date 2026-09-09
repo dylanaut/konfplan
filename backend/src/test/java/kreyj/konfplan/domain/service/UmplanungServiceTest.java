@@ -1,6 +1,5 @@
 package kreyj.konfplan.domain.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -41,9 +40,6 @@ class UmplanungServiceTest extends DatabaseCleaner {
 
     @Inject
     NachrichtService nachrichtService;
-
-    @Inject
-    ObjectMapper objectMapper;
 
     private Long schuleId;
     private Long raumGrossId;
@@ -135,7 +131,7 @@ class UmplanungServiceTest extends DatabaseCleaner {
     private Planungsergebnis persistiereErgebnis(Veranstaltung veranstaltung, Planungsergebnis.MinizincResult result) {
         Planungsergebnis ergebnis = new Planungsergebnis();
         ergebnis.setVeranstaltung(veranstaltung);
-        ergebnis.setJsonErgebnis(result.toJson(objectMapper));
+        ergebnis.setJsonErgebnis(result.toJson());
         ergebnis.setErsteller("test-organisator");
         ergebnis.setErstelltAm(LocalDateTime.now());
         ergebnis.setPubliziert(true);
@@ -317,10 +313,6 @@ class UmplanungServiceTest extends DatabaseCleaner {
 
     private Planungsergebnis.MinizincResult ladeAktualisiertesErgebnis(Long ergebnisId) {
         Planungsergebnis neu = Planungsergebnis.findById(ergebnisId);
-        try {
-            return objectMapper.readValue(neu.getJsonErgebnis(), Planungsergebnis.MinizincResult.class);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return Planungsergebnis.MinizincResult.fromJson(neu.getJsonErgebnis());
     }
 }

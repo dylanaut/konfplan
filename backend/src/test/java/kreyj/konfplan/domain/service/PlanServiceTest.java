@@ -1,6 +1,5 @@
 package kreyj.konfplan.domain.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -32,9 +31,6 @@ public class PlanServiceTest extends DatabaseCleaner {
 
     @Inject
     PlanService planService;
-
-    @Inject
-    ObjectMapper objectMapper;
 
     private Veranstaltung veranstaltung;
 
@@ -119,8 +115,7 @@ public class PlanServiceTest extends DatabaseCleaner {
 
         // The primary assertion is implicit: the test fails if a HibernateException is thrown.
         assertDoesNotThrow(() -> {
-            results[0] = objectMapper.readValue(jsonErgebnis,
-                Planungsergebnis.MinizincResult.class);
+            results[0] = Planungsergebnis.MinizincResult.fromJson(jsonErgebnis);
         }, "Accessing the detailed plan should not throw any exception.");
 
         Planungsergebnis.MinizincResult result = results[0];

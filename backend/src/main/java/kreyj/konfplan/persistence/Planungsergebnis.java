@@ -14,6 +14,7 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import kreyj.konfplan.adapter.in.web.dto.SolverConfig;
 import kreyj.konfplan.persistence.converter.LocalDateTimeConverter;
+import kreyj.konfplan.util.CompactBooleanArrayModule;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -80,6 +81,12 @@ public class Planungsergebnis extends VersionedEntity {
     @SuppressWarnings("unused")
     public static class MinizincResult {
 
+        // Eigener ObjectMapper (statt des app-weiten, CDI-verwalteten) nur für dieses Ergebnis:
+        // schreibt/liest boolean[][]/boolean[][][]-Felder (z.B. besucht) als 0/1 statt true/false,
+        // um beim Speichern großer Planungsergebnisse Platz zu sparen.
+        private static final ObjectMapper PERSISTENCE_MAPPER =
+            new ObjectMapper().registerModule(new CompactBooleanArrayModule());
+
         // enthält für jeden Wahlvortrag und über alle Instanzen die MZ-SlotId
         public int[][] instanz_slot;
         // enthält für jeden Raum und über alle Instanzen die MZ-RaumId
@@ -107,9 +114,18 @@ public class Planungsergebnis extends VersionedEntity {
         public int raumwechsel;
 
 
-        public String toJson(final ObjectMapper mapper) {
+        public String toJson() {
             try {
-                return mapper.writeValueAsString(this);
+                return PERSISTENCE_MAPPER.writeValueAsString(this);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+
+        public static MinizincResult fromJson(String json) {
+            try {
+                return PERSISTENCE_MAPPER.readValue(json, MinizincResult.class);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }

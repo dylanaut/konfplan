@@ -1,6 +1,5 @@
 package kreyj.konfplan.domain.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.UmplanungErgebnisDto;
@@ -41,13 +40,11 @@ public class UmplanungService {
 
     private final PlanService planService;
     private final NachrichtService nachrichtService;
-    private final ObjectMapper objectMapper;
 
 
-    public UmplanungService(PlanService planService, NachrichtService nachrichtService, ObjectMapper objectMapper) {
+    public UmplanungService(PlanService planService, NachrichtService nachrichtService) {
         this.planService = planService;
         this.nachrichtService = nachrichtService;
-        this.objectMapper = objectMapper;
     }
 
 
@@ -170,7 +167,7 @@ public class UmplanungService {
             neueVortragTitelProTeilnehmer.add(neuerVortragTitel);
         }
 
-        ergebnis.setJsonErgebnis(result.toJson(objectMapper));
+        ergebnis.setJsonErgebnis(result.toJson());
 
         benachrichtigeBeteiligte(veranstaltung, ausgefallenerVortrag, umverteilteTeilnehmer,
             neueVortragTitelProTeilnehmer, nichtPlatzierteTeilnehmer, username);
@@ -184,11 +181,7 @@ public class UmplanungService {
 
 
     private Planungsergebnis.MinizincResult deserialisiere(Planungsergebnis ergebnis) {
-        try {
-            return objectMapper.readValue(ergebnis.getJsonErgebnis(), Planungsergebnis.MinizincResult.class);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return Planungsergebnis.MinizincResult.fromJson(ergebnis.getJsonErgebnis());
     }
 
 

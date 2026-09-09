@@ -881,16 +881,16 @@ public class PlanService {
             return cached.result();
         }
 
+        Planungsergebnis.MinizincResult result;
         try {
-            Planungsergebnis.MinizincResult result = objectMapper.readValue(planungsergebnis.getJsonErgebnis(),
-                Planungsergebnis.MinizincResult.class);
-            minizincResultCache.put(planungsergebnis.getId(),
-                new CachedMinizincResult(planungsergebnis.getVersion(), result));
-            return result;
-        } catch (JsonProcessingException e) {
+            result = Planungsergebnis.MinizincResult.fromJson(planungsergebnis.getJsonErgebnis());
+        } catch (RuntimeException e) {
             LOG.warn("Failed to parse Minizinc result for Veranstaltung" + planungsergebnis.getJsonErgebnis());
-            throw new RuntimeException(e);
+            throw e;
         }
+        minizincResultCache.put(planungsergebnis.getId(),
+            new CachedMinizincResult(planungsergebnis.getVersion(), result));
+        return result;
     }
 
 
