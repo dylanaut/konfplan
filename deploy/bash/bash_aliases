@@ -11,15 +11,18 @@ alias l='ls -CF'
 #
 alias ghcr_login='cat ~/.ssh/ghcr.pat |docker login ghcr.io -u dylanaut --password-stdin'
 #
+export COMPOSE_PROFILES=public,monitoring,alerting
 alias konf_pull='docker compose pull'
-alias konf_up='docker compose --profile public --profile monitoring up -d'
-alias konf_down='docker compose --profile public --profile monitoring down'
+alias konf_up='docker compose up -d --force-recreate app'
+alias konf_down='docker compose down'
 #
 alias kc_log='docker compose logs keycloak --since 60m | grep -iE "mail|smtp|brevo"'
 alias konf_logs='docker compose logs app --tail 100'
 alias psql_logs='docker compose logs postgres --tail 100'
+alias konf_psql='docker compose exec -it postgres:18 psql -U konfplan -d konfplan'
 #
 alias ipaddr='curl -s https://api.ipify.org'
+alias which_ip='curl -fsS --max-time 10 "https://api.ipify.org"'
 alias ediff0="emacs -nw --eval '(call-interactively \"ediff-files\")'"
 #
 alias bashrc='nano ~/.bashrc'
