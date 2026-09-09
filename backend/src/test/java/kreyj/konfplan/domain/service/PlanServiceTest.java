@@ -260,4 +260,22 @@ public class PlanServiceTest extends DatabaseCleaner {
     }
 
 
+    @Test
+    @Transactional
+    public void testGetMinizincResult_ohneErgebnis_wirftBusinessExceptionStattNullPointerException() {
+        // Regression: fehlte bislang ein veröffentlichtes Planungsergebnis (z.B. Report-Vorschau
+        // ohne wirksame ergebnisId), führte der Aufruf zu einer unbehandelten NullPointerException
+        // (500) statt einer sprechenden Fehlermeldung (siehe getMinizincResult(Veranstaltung, Long)).
+        Veranstaltung ohneErgebnis = new Veranstaltung();
+        ohneErgebnis.setName("Event ohne Planungsergebnis");
+        ohneErgebnis.setBeginntAm(LocalDateTime.now());
+        ohneErgebnis.persist();
+
+        assertThat(org.junit.jupiter.api.Assertions.assertThrows(
+            kreyj.konfplan.domain.exception.BusinessException.class,
+            () -> planService.getMinizincResult(ohneErgebnis)
+        )).hasMessage("Für diese Veranstaltung liegt noch kein veröffentlichtes Planungsergebnis vor.");
+    }
+
+
 }

@@ -254,9 +254,11 @@ public class ReportResource {
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        // ergebnisId (Vorschau eines unveröffentlichten Ergebnisses) ist nur für Organisatoren/
-        // Administratoren wirksam, siehe getLaufzettelTeilnehmerData.
-        return Response.ok(dashboardService.getTeilnehmerReport(veranstaltung, isOrganisatorOderAdmin() ? ergebnisId : null)).build();
+        // Anders als getLaufzettelTeilnehmerData (persönlicher Plan eines einzelnen Teilnehmers)
+        // zeigt dieser Report ohnehin die Zuordnungen ALLER Teilnehmer und wird ausschließlich aus
+        // der Organisator-Ansicht (ErgebnisseTab/BerichteAuswahlModal) verlinkt - ergebnisId (Vorschau
+        // eines unveröffentlichten Ergebnisses) wird daher unabhängig von der Rolle honoriert.
+        return Response.ok(dashboardService.getTeilnehmerReport(veranstaltung, ergebnisId)).build();
     }
 
 
