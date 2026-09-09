@@ -1,0 +1,33 @@
+Release Notes 1.22.1
+Released: 2026-09-09
+
+Changes:
+
+- Release-Notes fuer 1.22.0 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.22.1-SNAPSHOT)
+
+- update bash_aliases
+
+- Planungsergebnis: konsistentes Mapping + kompakte 0/1-Kodierung für boolean-Arrays
+  * Inkonsistentes Planungsergebnis-Mapping in Veranstaltung korrigiert
+  Die Planungsergebnis-Seite wurde seit Issue #461 auf @ManyToOne
+  umgestellt (mehrere Planungsläufe pro Veranstaltung), das inverse
+  Feld in Veranstaltung war aber noch als @OneToOne annotiert. Auf
+  @OneToMany mit dem Feldnamen planungsergebnisse (List<Planungsergebnis>)
+  umgestellt, um die Relation konsistent abzubilden.
+  * .mzn Ausgabe mit 0,1 statt true,false
+  * MinizincResult.besucht/instanz_ausgefallen als 0/1 statt true/false persistieren
+  Ergänzt den bereits angepassten MiniZinc-Output (0/1 statt true/false,
+  siehe vorheriger Commit) um die passende Java-seitige Kompaktierung: ein
+  dedizierter ObjectMapper (CompactBooleanArrayModule) schreibt/liest
+  boolean[][]- und boolean[][][]-Felder von MinizincResult als 0/1, um beim
+  Speichern großer Planungsergebnisse Platz zu sparen. Der app-weite,
+  CDI-verwaltete ObjectMapper bleibt unverändert (u.a. für das rohe
+  Solver-JSON in PlanErstellungService, das weiterhin generisch geparst
+  wird). Keine Migration nötig, da laut Vorgabe keine bestehenden
+  Planungsergebnisse erhalten werden müssen.
+  ---------
+
+- Release 1.22.1
+
