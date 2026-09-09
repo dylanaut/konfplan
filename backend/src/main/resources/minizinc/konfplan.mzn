@@ -170,4 +170,9 @@ solve maximize guete;
 % OUTPUT
 % =============================================================================
 
-output ["{ \"instanz_slot\": \(instanz_slot), \"instanz_raum\": \(instanz_raum), \"besucht\": \(besucht), \"guete\": \(guete), \"zuweisungen\": \(anzahl_zuweisungen), \"raumwechsel\": \(anzahl_raumwechsel) }"];
+output ["{ \"instanz_slot\": \(instanz_slot),",
+    " \"instanz_raum\": \(instanz_raum),",
+    " \"besucht\": [", join(",", [ show(bool2int(besucht[x,y,z])) | x in 1..n_teilnehmer, y in 1..n_wahlvortraege, z in 1..max_instanzen ] ), "],",
+    " \"guete\": \(guete),",
+    " \"zuweisungen\": \(anzahl_zuweisungen),",
+    " \"raumwechsel\": \(anzahl_raumwechsel) }"];
