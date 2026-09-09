@@ -13,7 +13,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.transaction.Transactional;
@@ -266,8 +265,8 @@ public class Veranstaltung extends VersionedEntity {
     }
 
     @JsonIgnore
-    @OneToOne(mappedBy = "veranstaltung", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    Planungsergebnis planungsergebnis;
+    @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    List<Planungsergebnis> planungsergebnisse;
 
 
     // -------------------------------------------------------------------

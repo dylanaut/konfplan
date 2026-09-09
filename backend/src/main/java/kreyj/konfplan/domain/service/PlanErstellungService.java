@@ -919,7 +919,7 @@ public class PlanErstellungService {
                 auffuellungService.fuelleAuf(veranstaltung, result, config.getMaxWvsProTn());
             }
 
-            String fixedJson = result.toJson(objectMapper);
+            String fixedJson = result.toJson();
             LOG.info("###" + fixedJson);
 
             ergebnis.setJsonErgebnis(fixedJson);

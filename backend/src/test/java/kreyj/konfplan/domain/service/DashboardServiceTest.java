@@ -1,6 +1,5 @@
 package kreyj.konfplan.domain.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -35,9 +34,6 @@ class DashboardServiceTest extends DatabaseCleaner {
 
     @Inject
     DashboardService dashboardService;
-
-    @Inject
-    ObjectMapper objectMapper;
 
     private Long schuleId;
     private Long raumGrossId;
@@ -127,7 +123,7 @@ class DashboardServiceTest extends DatabaseCleaner {
     private Planungsergebnis persistiereVeroeffentlichtesErgebnis(Veranstaltung veranstaltung, Planungsergebnis.MinizincResult result) {
         Planungsergebnis ergebnis = new Planungsergebnis();
         ergebnis.setVeranstaltung(veranstaltung);
-        ergebnis.setJsonErgebnis(result.toJson(objectMapper));
+        ergebnis.setJsonErgebnis(result.toJson());
         ergebnis.setErsteller("test-organisator");
         ergebnis.setErstelltAm(LocalDateTime.now());
         ergebnis.setPubliziert(true);
