@@ -15,7 +15,6 @@
     "bootstrap": "^5.3.8",
     "keycloak-js": "^26.0.0",
     "pinia": "^4.0.3",
-    "vite-plugin-html": "^3.2.2",
     "vue": "^3.5.41",
     "vue-router": "^5.3.1",
     "vue-toastification": "^2.0.0-rc.5"
@@ -28,8 +27,6 @@
     "@types/node": "^26.4.1",
     "@vitejs/plugin-vue": "^6.0.3",
     "tailwindcss": "^4.3.3",
-    "vite": "^8.2.2",
-    "vite-plugin-html": "^3.2.2",
-    "vite-plugin-vue-devtools": "^8.2.1"
+    "vite": "^8.2.2"
   }
 }
