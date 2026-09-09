@@ -5,6 +5,60 @@
       <img src="/logo/konfplan-light.svg" alt="Konfplan Logo" class="h-16" />
     </div>
 
+    <!-- NEUE Sektion: Mein Zeitplan -->
+    <section v-if="events.length > 0" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <div class="flex items-center justify-between mb-6 text-indigo-600">
+        <div class="flex items-center gap-2">
+          <CalendarCheckIcon class="w-6 h-6" />
+          <h2 class="text-xl font-bold">Mein Zeitplan</h2>
+        </div>
+      </div>
+      <div class="space-y-4">
+        <div v-for="event in events" :key="'schedule-' + event.id" class="border border-gray-200 rounded-lg p-4">
+          <div class="flex justify-between items-center">
+            <div>
+              <h3 class="font-bold text-lg text-gray-800">{{ event.name }}</h3>
+              <p class="text-xs text-gray-600">{{ formatDate(event.beginntAm) }} - {{ formatDate(event.endetAm) }}</p>
+            </div>
+            <div v-if="event.planErstellt" class="flex gap-2">
+              <button @click="downloadKalender(event.id)" class="btn-secondary">
+                <CalendarPlus class="w-4 h-4 mr-2" /> ICS
+              </button>
+              <button @click="viewMySchedule(event.id)" class="btn-secondary">
+                <PrinterIcon class="w-4 h-4 mr-2" /> Drucken
+              </button>
+            </div>
+            <div v-else>
+              <span class="text-xs text-gray-400 italic">Plan noch nicht verfügbar</span>
+            </div>
+          </div>
+
+          <div v-if="event.planErstellt" class="mt-4">
+            <div v-if="!laufzettelByEvent[event.id]" class="text-xs text-gray-400 italic">Laufzettel wird geladen…</div>
+            <div v-else-if="laufzettelByEvent[event.id].length === 0" class="text-xs text-gray-400 italic">Für Sie sind aktuell keine Einträge im Plan vorhanden.</div>
+            <table v-else class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-xs text-gray-500 border-b border-gray-200">
+                  <th class="py-1 pr-4 font-medium">Zeit</th>
+                  <th class="py-1 pr-4 font-medium">Vortrag</th>
+                  <th class="py-1 pr-4 font-medium">Raum</th>
+                  <th class="py-1 font-medium">Referent</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(eintrag, idx) in laufzettelByEvent[event.id]" :key="idx" class="border-b border-gray-100 last:border-0">
+                  <td class="py-1.5 pr-4 whitespace-nowrap text-gray-700">{{ formatSlot(eintrag) }}</td>
+                  <td class="py-1.5 pr-4 text-gray-800">{{ eintrag.vortragTitel }}</td>
+                  <td class="py-1.5 pr-4 text-gray-600">{{ eintrag.raumName }}</td>
+                  <td class="py-1.5 text-gray-600">{{ eintrag.referentName }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Sektion: Mein Profil -->
     <section class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
       <div class="flex items-center justify-between mb-6 text-indigo-600">
@@ -89,14 +143,6 @@
                   Deadline für Änderungen: {{ formatDateTime(event.deadlineTeilnehmer) }}
                 </p>
               </div>
-            </div>
-             <div class="flex gap-2">
-               <button v-if="event.planErstellt" @click="downloadKalender(event.id)" class="btn-secondary">
-                 <CalendarPlus class="w-4 h-4 mr-2" /> ICS
-               </button>
-              <button v-if="event.planErstellt" @click="viewMySchedule(event.id)" class="btn-primary">
-                <PrinterIcon class="w-4 h-4 mr-2" /> Laufzettel anzeigen
-              </button>
             </div>
           </div>
 
@@ -270,7 +316,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
+import { ref, onMounted, onUnmounted, computed, reactive, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api/axios';
 import { extractErrorMessage } from '../utils/errorMessage';
@@ -303,6 +349,8 @@ const availabilities = ref({});
 const initialAvailabilities = ref({});
 const eventSlots = ref([]);
 const schedule = ref([]);
+// Laufzettel-Einträge pro Event, Key: eventId, Value: Array (undefined = noch nicht geladen)
+const laufzettelByEvent = reactive({});
 const profile = ref({
   id: null,
   loginName: '',
@@ -458,9 +506,25 @@ const fetchTeilnehmerVeranstaltungen = async () => {
     if (events.value.length > 0) {
       await togglePriorities(events.value[0].id);
     }
+    for (const event of events.value) {
+      if (event.planErstellt) {
+        await fetchLaufzettelForEvent(event.id);
+      }
+    }
   } catch (error) {
     console.error("Fehler beim Laden der Veranstaltungen:", error);
   }
+};
+
+const fetchLaufzettelForEvent = async (vid) => {
+   if (!profile.value?.id) return;
+   try {
+      const res = await api.get(`/api/reports/${vid}/teilnehmer/${profile.value.id}/laufzettel-data`);
+      laufzettelByEvent[vid] = [...(res.data.plan ?? [])].sort((a, b) => new Date(a.slotBeginn) - new Date(b.slotBeginn));
+   } catch (e) {
+      console.error(`Fehler beim Laden des Laufzettels für Event ${vid}:`, e);
+      laufzettelByEvent[vid] = [];
+   }
 };
 
 const togglePriorities = async (eventId) => {
@@ -598,6 +662,13 @@ const mailtoLink = (email, subject) => `mailto:${email}?subject=${encodeURICompo
 const formatDate = (d) => new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const formatDateTime = (d) => new Date(d).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 const formatTime = (d) => new Date(d).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+const formatSlot = (eintrag) => {
+  const options = { hour: '2-digit', minute: '2-digit' };
+  const start = new Date(eintrag.slotBeginn).toLocaleTimeString('de-DE', options);
+  const end = new Date(eintrag.slotEnde).toLocaleTimeString('de-DE', options);
+  return `${start} - ${end}`;
+};
 </script>
 
 <style scoped>
