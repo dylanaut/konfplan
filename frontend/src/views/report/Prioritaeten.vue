@@ -42,7 +42,7 @@
               <tr class="table-dark">
                 <th class="p-2" style="min-width: 200px;">Teilnehmer</th>
                 <th v-for="(wv, wv_oid) in reportData.wv_dict" :key="wv_oid" class="text-center p-2" :title="getWvTitle(wv)">
-                  WV{{ wv_oid }}
+                  {{ wvNummern[wv_oid] }}
                 </th>
               </tr>
               </thead>
@@ -142,6 +142,18 @@ const getWvTitle = (wv) => {
   const ref = reportData.value.ref_dict[wv.referentId];
   return `${ref.organisation}: ${wv.titel}`;
 };
+
+// Fortlaufende Nummer je Wahlvortrag, alphabetisch nach Titel - konsistent mit der Legende der
+// Wahlvorträge im TeilnehmerTab des Organisator-Dashboards (dort ebenfalls nach titel.localeCompare
+// sortiert), damit dieselbe Nummer in beiden Ansichten denselben Wahlvortrag bezeichnet.
+const wvNummern = computed(() => {
+  if (!reportData.value) return {};
+  const nummern = {};
+  Object.entries(reportData.value.wv_dict)
+    .sort(([, a], [, b]) => a.titel.localeCompare(b.titel))
+    .forEach(([wv_oid], index) => { nummern[wv_oid] = index + 1; });
+  return nummern;
+});
 
 const getStatusClass = (wvs) => {
   if (!wvs) return '';
