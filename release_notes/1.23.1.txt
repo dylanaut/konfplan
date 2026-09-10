@@ -1,0 +1,17 @@
+Release Notes 1.23.1
+Released: 2026-09-10
+
+Changes:
+
+- Release-Notes fuer 1.23.0 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.23.1-SNAPSHOT)
+
+- Report Prioritätenanalyse: Tabelle zu Vollbild/FullWindow expandierbar
+  Button "Vollbild" neben dem Gruppenfilter lässt den gesamten Bereich
+  (Filter + Tabelle) das komplette Browser-Fenster ausfüllen (position: fixed,
+  Flexbox-Layout, Body-Scroll währenddessen gesperrt). Escape oder der Button
+  selbst ("Verkleinern") setzen die Ansicht zurück.
+
+- Release 1.23.1
+
