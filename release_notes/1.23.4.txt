@@ -1,0 +1,15 @@
+Release Notes 1.23.4
+Released: 2026-09-10
+
+Changes:
+
+- Release-Notes fuer 1.23.3 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.23.4-SNAPSHOT)
+
+- Report Prioritätenanalyse: Datum in Tabellenzellen entfernen
+  getSlotInfo zeigt in den Zellen nur noch Uhrzeit und Raum statt
+  zusätzlich des Datums (Wochentag + Datum).
+
+- Release 1.23.4
+
