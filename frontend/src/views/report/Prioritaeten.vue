@@ -205,7 +205,7 @@ const getSlotInfo = (wvs, wv_oid) => {
   const slot = reportData.value.slots[reportData.value.slotOids[slot_idx - 1]];
   const raum_idx = reportData.value.instanz_raum[wv_oid_index][wvs_idx];
   const raum = reportData.value.raeume[reportData.value.raumOids[raum_idx - 1]];
-  return `${slot.tag}, ${slot.start} @ ${raum.name}`;
+  return `${slot.start} @ ${raum.name}`;
 };
 </script>
 
