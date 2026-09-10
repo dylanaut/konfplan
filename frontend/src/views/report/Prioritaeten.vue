@@ -19,7 +19,7 @@
         </button>
       </header>
 
-      <section class="mt-4">
+      <section class="mt-4" :class="{ 'report-fullwindow': isExpanded }">
         <div class="row mb-3 align-items-center no-print">
           <div class="col-md-4">
             <label for="classFilter" class="form-label small fw-bold text-muted">Gruppe filtern:</label>
@@ -32,6 +32,10 @@
             <span class="badge bg-light text-dark border" id="visibleCount">
               {{ visibleCountText }}
             </span>
+            <button @click="isExpanded = !isExpanded" class="btn btn-outline-secondary btn-sm ms-2">
+              <component :is="isExpanded ? MinimizeIcon : MaximizeIcon" class="d-inline-block" style="width: 14px; height: 14px;" />
+              {{ isExpanded ? 'Verkleinern' : 'Vollbild' }}
+            </button>
           </div>
         </div>
 
@@ -89,8 +93,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { Maximize as MaximizeIcon, Minimize as MinimizeIcon } from '@lucide/vue';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
 
@@ -99,6 +104,24 @@ const reportData = ref(null);
 const loading = ref(true);
 const error = ref(null);
 const selectedGruppe = ref('all');
+const isExpanded = ref(false);
+
+// Body-Scroll sperren, solange die Tabelle das Browser-Fenster ausfüllt (sonst zwei
+// verschachtelte Scrollbalken), und mit Escape wieder verkleinerbar machen.
+watch(isExpanded, (expanded) => {
+  document.body.style.overflow = expanded ? 'hidden' : '';
+});
+
+const onKeydown = (event) => {
+  if (event.key === 'Escape' && isExpanded.value) {
+    isExpanded.value = false;
+  }
+};
+document.addEventListener('keydown', onKeydown);
+onUnmounted(() => {
+  document.removeEventListener('keydown', onKeydown);
+  document.body.style.overflow = '';
+});
 
 const handlePrint = () => window.print();
 
@@ -220,5 +243,29 @@ body {
   height: 20px;
   border-radius: 3px;
   margin-right: 8px;
+}
+
+/* Vollbild-Ansicht der Prioritätenanalyse-Tabelle: füllt das komplette Browser-Fenster,
+   Gruppenfilter/Vollbild-Button bleiben oben sichtbar, die Tabelle wächst in den Rest. */
+.report-fullwindow {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background-color: #f8f9fa;
+  padding: 1rem;
+  margin: 0 !important;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.report-fullwindow .card {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.report-fullwindow .table-responsive {
+  flex: 1 1 auto;
+  max-height: none !important;
 }
 </style>
