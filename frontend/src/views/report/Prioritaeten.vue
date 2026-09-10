@@ -45,7 +45,7 @@
               <thead class="sticky-table-header">
               <tr class="table-dark">
                 <th class="p-2" style="min-width: 200px;">Teilnehmer</th>
-                <th v-for="(wv, wv_oid) in reportData.wv_dict" :key="wv_oid" class="text-center p-2" :title="getWvTitle(wv)">
+                <th v-for="wv_oid in sortedWvOids" :key="wv_oid" class="text-center p-2" :title="getWvTitle(reportData.wv_dict[wv_oid])">
                   {{ wvNummern[wv_oid] }}
                 </th>
               </tr>
@@ -53,7 +53,7 @@
               <tbody>
               <tr v-for="tn_erf in filteredTeilnehmer" :key="tn_erf.teilnehmer.id" class="participant-row">
                 <td class="fw-bold border-end bg-light">{{ tn_erf.teilnehmer.fullname }}</td>
-                <td v-for="wv_oid in reportData.wvOids" :key="wv_oid" class="text-center p-2" :class="getStatusClass(tn_erf.wvStatuus[wv_oid])">
+                <td v-for="wv_oid in sortedWvOids" :key="wv_oid" class="text-center p-2" :class="getStatusClass(tn_erf.wvStatuus[wv_oid])">
                   <template v-if="tn_erf.wvStatuus[wv_oid] && tn_erf.wvStatuus[wv_oid].status !== '0'">
                     <div v-if="tn_erf.wvStatuus[wv_oid].instanz" class="fw-bold">
                       {{ getSlotInfo(tn_erf.wvStatuus[wv_oid], wv_oid) }}
@@ -166,15 +166,20 @@ const getWvTitle = (wv) => {
   return `${ref.organisation}: ${wv.titel}`;
 };
 
-// Fortlaufende Nummer je Wahlvortrag, alphabetisch nach Titel - konsistent mit der Legende der
+// Reihenfolge der Wahlvortrag-Spalten, alphabetisch nach Titel - konsistent mit der Legende der
 // Wahlvorträge im TeilnehmerTab des Organisator-Dashboards (dort ebenfalls nach titel.localeCompare
-// sortiert), damit dieselbe Nummer in beiden Ansichten denselben Wahlvortrag bezeichnet.
-const wvNummern = computed(() => {
-  if (!reportData.value) return {};
-  const nummern = {};
-  Object.entries(reportData.value.wv_dict)
+// sortiert). Sowohl Kopfzeile als auch Tabellenkörper iterieren über dieselbe Reihenfolge, damit die
+// angezeigte Nummer von links nach rechts numerisch aufsteigend erscheint.
+const sortedWvOids = computed(() => {
+  if (!reportData.value) return [];
+  return Object.entries(reportData.value.wv_dict)
     .sort(([, a], [, b]) => a.titel.localeCompare(b.titel))
-    .forEach(([wv_oid], index) => { nummern[wv_oid] = index + 1; });
+    .map(([wv_oid]) => wv_oid);
+});
+
+const wvNummern = computed(() => {
+  const nummern = {};
+  sortedWvOids.value.forEach((wv_oid, index) => { nummern[wv_oid] = index + 1; });
   return nummern;
 });
 
