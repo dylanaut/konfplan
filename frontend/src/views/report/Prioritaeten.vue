@@ -52,7 +52,12 @@
               </thead>
               <tbody>
               <tr v-for="tn_erf in filteredTeilnehmer" :key="tn_erf.teilnehmer.id" class="participant-row">
-                <td class="fw-bold border-end bg-light">{{ tn_erf.teilnehmer.fullname }}</td>
+                <td class="fw-bold border-end bg-light">
+                  {{ tn_erf.teilnehmer.fullname }}
+                  <div v-if="tn_erf.teilnehmer.gruppen && tn_erf.teilnehmer.gruppen.length" class="small text-muted fw-normal">
+                    {{ tn_erf.teilnehmer.gruppen.join(', ') }}
+                  </div>
+                </td>
                 <td v-for="wv_oid in sortedWvOids" :key="wv_oid" class="text-center p-2" :class="getStatusClass(tn_erf.wvStatuus[wv_oid])">
                   <template v-if="tn_erf.wvStatuus[wv_oid] && tn_erf.wvStatuus[wv_oid].status !== '0'">
                     <div v-if="tn_erf.wvStatuus[wv_oid].instanz" class="fw-bold">
