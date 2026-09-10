@@ -1,0 +1,17 @@
+Release Notes 1.23.2
+Released: 2026-09-10
+
+Changes:
+
+- Release-Notes fuer 1.23.1 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.23.2-SNAPSHOT)
+
+- Report Prioritätenanalyse: Wahlvortrag-Spalten numerisch aufsteigend sortieren
+  Kopfzeile und Tabellenkörper iterieren jetzt über dieselbe alphabetisch nach
+  Titel sortierte Reihenfolge (sortedWvOids) statt über die ursprüngliche
+  Backend-Reihenfolge nach Vortrag-ID - dadurch erscheint die Nummer von links
+  nach rechts jetzt tatsächlich aufsteigend (1, 2, 3, ...) statt verstreut.
+
+- Release 1.23.2
+
