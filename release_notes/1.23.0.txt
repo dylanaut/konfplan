@@ -1,0 +1,24 @@
+Release Notes 1.23.0
+Released: 2026-09-10
+
+Changes:
+
+- Release-Notes fuer 1.22.5 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.22.6-SNAPSHOT)
+
+- update run configs
+
+- Report Teilnehmer-Zuordnungen: Spalte "Teilnehmer" schmaler und per Maus resizable
+  Spaltenbreite von 200px (min-width) auf 67px (ein Drittel) reduziert und einen
+  Drag-Handle am rechten Rand der Kopfzelle ergänzt, mit dem sich die Breite
+  live per Maus anpassen lässt (Mindestbreite 40px).
+
+- Report Prioritätenanalyse: fortlaufende Nummer statt Vortrag-ID in Kopfzeile
+  Kopfzelle zeigt jetzt eine fortlaufende Nummer (alphabetisch nach Titel
+  sortiert) statt der rohen Vortrag-ID - konsistent mit der Legende der
+  Wahlvorträge im TeilnehmerTab des Organisator-Dashboards, die dieselbe
+  Sortierung verwendet. Der Titel bleibt als MouseOver-Tooltip erhalten.
+
+- Release 1.23.0
+
