@@ -40,7 +40,10 @@
             <table class="table table-hover table-bordered table-sm m-0" style="font-size: 0.85rem;">
               <thead class="table-dark sticky-table-header text-center">
               <tr>
-                <th class="p-2" style="min-width: 200px;">Teilnehmer</th>
+                <th class="p-2 position-relative" :style="{ width: teilnehmerColWidth + 'px' }">
+                  Teilnehmer
+                  <span class="col-resize-handle no-print" @mousedown="startResize" title="Spaltenbreite ändern"></span>
+                </th>
                 <th v-for="s_info in reportData.slots" :key="s_info.id" class="p-2">
                   {{ s_info.tag }}, {{ s_info.start }}-{{ s_info.ende }}
                 </th>
@@ -48,7 +51,7 @@
               </thead>
               <tbody>
               <tr v-for="tn_sp in filteredTeilnehmer" :key="tn_sp.teilnehmer.id" class="participant-row">
-                <td class="fw-bold bg-light border-end">{{ tn_sp.teilnehmer.fullname }}</td>
+                <td class="fw-bold bg-light border-end" :style="{ width: teilnehmerColWidth + 'px' }">{{ tn_sp.teilnehmer.fullname }}</td>
                 <td v-for="slot_oid in Object.keys(reportData.slots)" :key="slot_oid"
                     class="text-center p-2"
                     :class="getStatusClass(tn_sp.tnSlotBelegungen[slot_oid])"
@@ -101,6 +104,28 @@ const reportData = ref(null);
 const loading = ref(true);
 const error = ref(null);
 const selectedGruppe = ref('all');
+
+// Ursprüngliche Spaltenbreite war 200px (min-width) - ein Drittel davon als neuer Startwert,
+// per Drag-Handle im Header (startResize) frei nachjustierbar.
+const teilnehmerColWidth = ref(67);
+
+const startResize = (event) => {
+  const startX = event.clientX;
+  const startWidth = teilnehmerColWidth.value;
+  document.body.style.userSelect = 'none';
+
+  const onMouseMove = (moveEvent) => {
+    teilnehmerColWidth.value = Math.max(40, startWidth + (moveEvent.clientX - startX));
+  };
+  const onMouseUp = () => {
+    document.body.style.userSelect = '';
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+  };
+  document.addEventListener('mousemove', onMouseMove);
+  document.addEventListener('mouseup', onMouseUp);
+  event.preventDefault();
+};
 
 const handlePrint = () => window.print();
 
@@ -192,5 +217,19 @@ const truncTo = (text, maxLen) => {
   height: 20px;
   border-radius: 3px;
   margin-right: 8px;
+}
+
+.col-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+}
+.col-resize-handle:hover,
+.col-resize-handle:active {
+  background-color: rgba(255, 255, 255, 0.35);
 }
 </style>
