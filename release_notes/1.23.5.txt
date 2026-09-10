@@ -1,0 +1,16 @@
+Release Notes 1.23.5
+Released: 2026-09-10
+
+Changes:
+
+- Release-Notes fuer 1.23.4 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.23.5-SNAPSHOT)
+
+- Report Teilnehmer-Zuordnungen: Raumangabe um Gebäudekürzel ergänzen
+  createTeilnehmerStundenplan formatiert die Raumangabe jetzt analog zum
+  Frontend-Util raumLabel.js als "Kürzel Name" (z.B. "A 204") statt nur des
+  reinen Raumnamens, damit Räume gleichnamiger Gebäude unterscheidbar sind.
+
+- Release 1.23.5
+
