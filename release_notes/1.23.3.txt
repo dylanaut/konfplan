@@ -1,0 +1,13 @@
+Release Notes 1.23.3
+Released: 2026-09-10
+
+Changes:
+
+- Release-Notes fuer 1.23.2 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.23.3-SNAPSHOT)
+
+- Report Prioritätenanalyse: Gruppen des Teilnehmers unter dem Namen anzeigen
+
+- Release 1.23.3
+
