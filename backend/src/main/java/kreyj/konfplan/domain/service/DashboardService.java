@@ -410,7 +410,7 @@ public class DashboardService {
                 for (VortragDto pv : dd.pflichtvortraege.values()) {
                     if (tnGruppen.contains(pv.pflichtGruppe) && Objects.equals(slotOid, pv.pflichtSlotId)) {
                         belegung = new TeilnehmerSlotBelegung(pv.titel,
-                            dd.raeume.get(pv.pflichtRaumId).name, "pflicht");
+                            raumLabel(dd.raeume.get(pv.pflichtRaumId)), "pflicht");
                     }
                 }
 
@@ -423,7 +423,7 @@ public class DashboardService {
                     for (int instIdx = 0; instIdx < dd.instanzSlot[wvIdx].length; instIdx++) {
                         if (dd.instanzSlot[wvIdx][instIdx] == slotIdx && tnVortragBesucht[instIdx]) {
                             long raumOid = dd.mzRaumOids[wahlRaumInstanz[instIdx] - 1];
-                            String raumName = dd.raeume.get(raumOid).name;
+                            String raumName = raumLabel(dd.raeume.get(raumOid));
                             String typ = wvPrios.getOrDefault(wvOid, 0) == 0 ? "auffuellung" : "wahl";
                             belegung = new TeilnehmerSlotBelegung(wv.titel, raumName, typ);
                         }
@@ -434,5 +434,17 @@ public class DashboardService {
 
             dd.teilnehmerStundenplan.add(new TeilnehmerStundenplan(tn, tnSlotsBelegungen));
         }
+    }
+
+
+    /**
+     * Analog zum Frontend-Util {@code raumLabel.js}: Raumname um das Gebäudekürzel ergänzt
+     * (z.B. "A 204"), damit Räume gleichnamiger Gebäude im Report Teilnehmer-Zuordnungen
+     * unterscheidbar sind.
+     */
+    private static String raumLabel(RaumDto raum) {
+        return raum.gebaeudeKuerzel != null && !raum.gebaeudeKuerzel.isBlank()
+            ? raum.gebaeudeKuerzel + " " + raum.name
+            : raum.name;
     }
 }
