@@ -1,0 +1,17 @@
+Release Notes 1.23.6
+Released: 2026-09-10
+
+Changes:
+
+- Release-Notes fuer 1.23.5 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.23.6-SNAPSHOT)
+
+- Organisator-Dashboard: zuletzt bearbeitete Veranstaltung merken und vorauswählen
+  eventContext speichert die zuletzt gewählte Veranstaltungs-ID im localStorage
+  (setEvent/clearEvent), das Dashboard wählt sie beim Mount automatisch wieder
+  vor - sofern der Nutzer noch Zugriff auf sie hat (Abgleich gegen die frisch
+  geladene Veranstaltungsliste, falls inzwischen gelöscht oder Zugriff entzogen).
+
+- Release 1.23.6
+
