@@ -502,6 +502,12 @@ onMounted(async () => {
   await refreshVeranstaltungen();
   await refreshGebaeude();
   await refreshAdmins();
+  if (!selectedVid.value) {
+    const lastVid = eventContext.getLastVeranstaltungId();
+    if (lastVid && veranstaltungen.value.some(v => v.id === lastVid)) {
+      selectedVid.value = lastVid;
+    }
+  }
   if (selectedVid.value) handleVeranstaltungChange();
   unsavedChanges.registerDirtyCheck(() => availabilityStore.hasDirtyAvailabilities()
       || changedPriorities.value.size > 0
