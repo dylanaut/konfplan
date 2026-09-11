@@ -1,0 +1,19 @@
+Release Notes 1.24.1
+Released: 2026-09-11
+
+Changes:
+
+- Release-Notes fuer 1.24.0 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.24.1-SNAPSHOT)
+
+- Steckbrief: Projekt-Kennzahlen ergänzen
+  Neue Sektion mit statistischen Kennzahlen zum Projekt (Historie,
+  Code-Umfang, Architektur, Qualitätssicherung, Beitragende) - Momentaufnahme
+  vom 11.09.2026.
+
+- ErgebnisseTab: Button "Vorträge ansehen" zu "Vortrag umplanen" umbenannt
+  Beschreibt die tatsächliche Funktion (öffnet das Umplanungs-Modal) treffender.
+
+- Release 1.24.1
+
