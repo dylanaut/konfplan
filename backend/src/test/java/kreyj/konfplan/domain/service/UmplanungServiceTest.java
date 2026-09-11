@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -460,5 +461,73 @@ class UmplanungServiceTest extends DatabaseCleaner {
         assertThatThrownBy(() -> umplanungService.teilnehmerUmbuchen(veranstaltung, ergebnis.getId(), tn.getId(),
             new TeilnehmerUmbuchenAnfrageDto(wvAlt.getId(), 0, wvAndererSlot.getId(), 0), "organisator@test.com"))
             .isInstanceOf(BusinessException.class);
+    }
+
+
+    // --- Sitzplatz-Freigabe bei Nichtverfügbarkeit (z.B. Krankmeldung) ---
+
+
+    @Test
+    @Transactional
+    void freigebenBeiNichtVerfuegbarkeit_gibtSitzplatzFreiUndBenachrichtigtReferent() {
+        Veranstaltung veranstaltung = neueVeranstaltung("Verfuegbarkeit-Test-1");
+        Slot slot1 = neuerSlot(veranstaltung, 1);
+        Wahlvortrag wv = neuerWahlvortrag(veranstaltung, "Wahlvortrag 1");
+        Teilnehmer tn = neuerTeilnehmer(veranstaltung, "tn1@test.com");
+
+        Planungsergebnis ergebnis = persistiereErgebnis(veranstaltung, ergebnis(
+            new long[]{tn.getId()},
+            new long[]{wv.getId()},
+            new long[]{slot1.getId()},
+            new long[]{raumGrossId},
+            new int[][]{{1}},
+            new int[][]{{1}},
+            new boolean[][][]{{{true}}}));
+
+        umplanungService.freigebenBeiNichtVerfuegbarkeit(veranstaltung, tn, Set.of(slot1.getId()), "organisator@test.com");
+
+        Planungsergebnis.MinizincResult aktualisiert = ladeAktualisiertesErgebnis(ergebnis.getId());
+        assertThat(aktualisiert.besucht[0][0][0]).describedAs("Sitzplatz muss freigegeben sein").isFalse();
+
+        List<Nachricht> nachrichten = nachrichtService.getNachrichtenFuerNutzer("referent-Verfuegbarkeit-Test-1@test.com");
+        assertThat(nachrichten).hasSize(1);
+        assertThat(nachrichten.get(0).getKategorie()).isEqualTo(NachrichtKategorie.TEILNEHMER_NICHT_VERFUEGBAR);
+    }
+
+
+    @Test
+    @Transactional
+    void freigebenBeiNichtVerfuegbarkeit_slotOhneZuweisung_bleibtUnveraendertOhneBenachrichtigung() {
+        Veranstaltung veranstaltung = neueVeranstaltung("Verfuegbarkeit-Test-2");
+        Slot slot1 = neuerSlot(veranstaltung, 1);
+        Slot slot2 = neuerSlot(veranstaltung, 2);
+        Wahlvortrag wv = neuerWahlvortrag(veranstaltung, "Wahlvortrag 1");
+        Teilnehmer tn = neuerTeilnehmer(veranstaltung, "tn1@test.com");
+
+        Planungsergebnis ergebnis = persistiereErgebnis(veranstaltung, ergebnis(
+            new long[]{tn.getId()},
+            new long[]{wv.getId()},
+            new long[]{slot1.getId(), slot2.getId()},
+            new long[]{raumGrossId},
+            new int[][]{{1}},
+            new int[][]{{1}},
+            new boolean[][][]{{{true}}}));
+
+        umplanungService.freigebenBeiNichtVerfuegbarkeit(veranstaltung, tn, Set.of(slot2.getId()), "organisator@test.com");
+
+        Planungsergebnis.MinizincResult aktualisiert = ladeAktualisiertesErgebnis(ergebnis.getId());
+        assertThat(aktualisiert.besucht[0][0][0]).describedAs("Zuweisung in nicht betroffenem Slot bleibt unangetastet").isTrue();
+        assertThat(nachrichtService.getNachrichtenFuerNutzer("referent-Verfuegbarkeit-Test-2@test.com")).isEmpty();
+    }
+
+
+    @Test
+    @Transactional
+    void freigebenBeiNichtVerfuegbarkeit_ohneVeroeffentlichtenPlan_tutNichtsUndWirftKeineException() {
+        Veranstaltung veranstaltung = neueVeranstaltung("Verfuegbarkeit-Test-3");
+        Slot slot1 = neuerSlot(veranstaltung, 1);
+        Teilnehmer tn = neuerTeilnehmer(veranstaltung, "tn1@test.com");
+
+        umplanungService.freigebenBeiNichtVerfuegbarkeit(veranstaltung, tn, Set.of(slot1.getId()), "organisator@test.com");
     }
 }

@@ -23,16 +23,20 @@ import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.RoleChangeDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerPasswortZipRequestDto;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.SecurityContext;
 import kreyj.konfplan.application.port.in.OrganisatorServiceInterface;
 import kreyj.konfplan.domain.service.MailService;
 import kreyj.konfplan.domain.service.PrioritaetService;
 import kreyj.konfplan.domain.service.TeilnehmerPasswortZipResult;
 import kreyj.konfplan.domain.service.TeilnehmerPasswortZipService;
+import kreyj.konfplan.domain.service.UmplanungService;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
@@ -40,7 +44,9 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvIdL;
 import static kreyj.konfplan.persistence.RaumVerfuegbarkeitId.rvIdL;
@@ -60,13 +66,16 @@ public class OrganisatorResource {
 
     private final TeilnehmerPasswortZipService teilnehmerPasswortZipService;
 
+    private final UmplanungService umplanungService;
+
 
     public OrganisatorResource(OrganisatorServiceInterface organisatorService, PrioritaetService prioritaetService, MailService mailService,
-                          TeilnehmerPasswortZipService teilnehmerPasswortZipService) {
+                          TeilnehmerPasswortZipService teilnehmerPasswortZipService, UmplanungService umplanungService) {
         this.organisatorService = organisatorService;
         this.prioritaetService = prioritaetService;
         this.mailService = mailService;
         this.teilnehmerPasswortZipService = teilnehmerPasswortZipService;
+        this.umplanungService = umplanungService;
     }
 
 
@@ -279,13 +288,28 @@ public class OrganisatorResource {
     @Transactional
     @Operation(summary = "Verfügbarkeit aktualisieren", description = "Aktualisiert die Verfügbarkeit eines Nutzers für einen bestimmten Slot.")
     public Response updateVerfuegbarkeit(@PathParam("vid") Long vid,
-                                         @RequestBody(description = "Verfügbarkeitsdaten für einen Nutzer") NutzerVerfuegbarkeitDto dto) {
+                                         @RequestBody(description = "Verfügbarkeitsdaten für einen Nutzer") NutzerVerfuegbarkeitDto dto,
+                                         @Context SecurityContext securityContext) {
         NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(dto.nutzerId, vid));
 
         if (null == nv) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
+
+        // Slots, die vorher verfügbar waren und es jetzt nicht mehr sind (z.B. Krankmeldung) -
+        // dafür ggf. bereits belegte Sitzplätze im veröffentlichten Plan freigeben.
+        Set<Long> neuNichtVerfuegbar = new HashSet<>(nv.getVerfuegbareSlotIds());
+        neuNichtVerfuegbar.removeAll(dto.verfuegbareSlotIds);
+
         nv.setVerfuegbareSlotIds(dto.verfuegbareSlotIds);
+
+        Nutzer nutzer = Nutzer.findById(dto.nutzerId);
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (nutzer instanceof Teilnehmer teilnehmer && null != veranstaltung && !neuNichtVerfuegbar.isEmpty()) {
+            umplanungService.freigebenBeiNichtVerfuegbarkeit(veranstaltung, teilnehmer, neuNichtVerfuegbar,
+                securityContext.getUserPrincipal().getName());
+        }
+
         return Response.ok().build();
     }
 

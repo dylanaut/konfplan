@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 
@@ -417,6 +418,77 @@ public class UmplanungService {
 
         LOG.infof("Teilnehmer %d manuell umgebucht von Wahlvortrag %d (Instanz %d) auf Wahlvortrag %d (Instanz %d) in Veranstaltung '%s'.",
             teilnehmerId, anfrage.altWahlvortragId, anfrage.altInstanzIndex, anfrage.neuWahlvortragId, anfrage.neuInstanzIndex, veranstaltung.getName());
+    }
+
+
+    /**
+     * Gibt die Sitzplätze eines Teilnehmers in den angegebenen, neu als nicht verfügbar
+     * markierten Zeitslots frei (z.B. Krankmeldung) - nur relevant, falls es für die Veranstaltung
+     * bereits ein VERÖFFENTLICHTES Planungsergebnis gibt (sonst wirkt die Verfügbarkeit ohnehin
+     * erst als Eingabe für den nächsten Planungslauf, siehe {@code OrganisatorResource#updateVerfuegbarkeit}).
+     * Anders als {@link #teilnehmerUmbuchen} wird der frei werdende Platz NICHT automatisch neu
+     * belegt - das wäre bei nur einem betroffenen Teilnehmer keine "Umverteilung" (dafür gibt es
+     * niemanden), sondern eine bewusste separate Organisator-Entscheidung. Pflichtvorträge sind
+     * nicht betroffen - die sind gruppen-/slotbasiert fix zugeteilt, nicht einzeln kapazitätsgezählt.
+     */
+    @Transactional
+    public void freigebenBeiNichtVerfuegbarkeit(Veranstaltung veranstaltung, Teilnehmer teilnehmer,
+                                                  Set<Long> neuNichtVerfuegbareSlotIds, String username) {
+        if (neuNichtVerfuegbareSlotIds.isEmpty()) {
+            return;
+        }
+        Planungsergebnis ergebnis = Planungsergebnis.getPlanungsergebnis(veranstaltung);
+        if (null == ergebnis) {
+            return;
+        }
+        Planungsergebnis.MinizincResult result = deserialisiere(ergebnis);
+
+        long[] tnOids = result.teilnehmer_oids;
+        int pIdx = indexOf(tnOids, teilnehmer.getId());
+        if (pIdx < 0) {
+            return;
+        }
+
+        long[] wvOids = result.wahlvortrag_oids;
+        long[] slotOids = result.slot_oids;
+        boolean[][][] besucht = result.besucht;
+        int[][] instanzSlot = result.instanz_slot;
+
+        Map<Long, Wahlvortrag> wahlvortragByOid = veranstaltung.getWahlvortraege().stream().collect(toMap(IdEntity::getId, Function.identity()));
+
+        boolean geaendert = false;
+        for (int wvIdx = 0; wvIdx < wvOids.length; wvIdx++) {
+            for (int iIdx = 0; iIdx < instanzSlot[wvIdx].length; iIdx++) {
+                if (!besucht[pIdx][wvIdx][iIdx]) {
+                    continue;
+                }
+                int sIdx = instanzSlot[wvIdx][iIdx] - 1;
+                if (sIdx < 0 || sIdx >= slotOids.length || !neuNichtVerfuegbareSlotIds.contains(slotOids[sIdx])) {
+                    continue;
+                }
+
+                besucht[pIdx][wvIdx][iIdx] = false;
+                geaendert = true;
+
+                Wahlvortrag vortrag = wahlvortragByOid.get(wvOids[wvIdx]);
+                if (null != vortrag) {
+                    LOG.infof("Sitzplatz für Teilnehmer %d in Wahlvortrag '%s' (Instanz %d) freigegeben - "
+                            + "in Veranstaltung '%s' nicht mehr verfügbar.",
+                        teilnehmer.getId(), vortrag.getTitel(), iIdx, veranstaltung.getName());
+                    Referent referent = vortrag.getReferent();
+                    if (null != referent) {
+                        String inhalt = "Teilnehmer " + teilnehmer.getFullName() + " wurde als nicht verfügbar markiert "
+                            + "und aus deinem Wahlvortrag '" + vortrag.getTitel() + "' ausgetragen.";
+                        nachrichtService.sendeNachricht(referent, "Teilnehmerzahl in deinem Vortrag geändert", inhalt,
+                            NachrichtKategorie.TEILNEHMER_NICHT_VERFUEGBAR, veranstaltung.getId(), username);
+                    }
+                }
+            }
+        }
+
+        if (geaendert) {
+            ergebnis.setJsonErgebnis(result.toJson());
+        }
     }
 
 
