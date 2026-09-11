@@ -28,6 +28,91 @@ Auch für die anschließende Durchführung der Veranstaltung bietet die App viel
 * Zufriedenheitsabfragen für Teilnehmer und Referenten
 
 
+== Projekt-Kennzahlen
+
+_Stand: 11.09.2026 - Momentaufnahme, veraltet mit fortlaufender Entwicklung schnell._
+
+=== Historie
+
+[cols="2,3",options="header"]
+|===
+| Kennzahl | Wert
+
+| Erster Commit
+| 26.07.2026
+
+| Projektlaufzeit
+| 47 Tage
+
+| Aktuelle Version
+| 1.24.1-SNAPSHOT (letztes Release: 1.24.0)
+
+| Commits (main)
+| 476
+
+| Veröffentlichte Releases
+| 48
+
+| GitHub Issues
+| 219 (alle geschlossen)
+
+| Pull Requests
+| 384 (374 gemerged, 10 ohne Merge geschlossen)
+|===
+
+=== Code-Umfang
+
+[cols="2,1,1",options="header"]
+|===
+| Bereich | Dateien | Zeilen
+
+| Backend (Java, `src/main`)
+| 196
+| 18.194
+
+| Backend-Tests (Java, `src/test`)
+| 55
+| 11.584
+
+| Frontend (Vue/JS, `src`)
+| 77
+| 12.488
+
+| AsciiDoc-Dokumentation
+| 23
+| 7.825
+|===
+
+=== Architektur
+
+* 36 JPA-Entities, 27 Domain-Services, 19 REST-Resources
+* 21 Vue-Views, 40 Vue-Komponenten
+* 25 Flyway-Migrationen
+* 40 Maven-Dependencies (Backend), 11 npm-Laufzeit- + 8 Dev-Dependencies (Frontend)
+
+=== Qualitätssicherung
+
+* 309 Backend-Tests in 52 Testklassen (Stand: alle grün)
+* 7 Playwright-E2E-Test-Dateien
+* CI: SpotBugs + Qodana bei jedem Build
+
+=== Beitragende
+
+[cols="2,1",options="header"]
+|===
+| Autor | Commits
+
+| Jürgen Krey (inkl. Alias-Namen kreyj/Juergen Krey)
+| 558
+
+| dependabot[bot]
+| 60
+
+| github-actions[bot]
+| 31
+|===
+
+
 == Installation
 
 Die Anwendung besteht aus einem Web-Server mit entsprechenden Web-Seiten für alle Beteiligte, die Veranstaltungsdaten werden auf einem separaten Datenbank-Server gespeichert.
