@@ -256,4 +256,30 @@ class TeilnehmerVortraegeUndPrioritaetenTest extends DatabaseCleaner {
             .when().post("/api/prios")
             .then().statusCode(400);
     }
+
+
+    @Test
+    @TestSecurity(user = "alex.alfa", roles = "TEILNEHMER")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "alex.alfa")})
+    void prioritaet_uniqueConstraint_verhindertDoppelteZeileFuerDenselbenVortrag() {
+        // Verifiziert die Absicherung gegen einen Produktions-Fehler: fehlende Unique-Constraint
+        // auf (teilnehmer_id, vortrag_id) erlaubte durch eine Race Condition im find-or-create von
+        // savePrioritaeten/updateSinglePrioritaet zwei Prioritaet-Zeilen fuer denselben
+        // Teilnehmer+Vortrag - das crashte dann erst spaeter beim Lesen (Collectors.toMap ohne
+        // Merge-Funktion, "Duplicate key ..."). Seit V23__prioritaet_unique_teilnehmer_vortrag.sql
+        // verhindert die DB das strukturell, statt es erst beim Lesen zu bemerken.
+        Vortrag wahlvortrag = (Vortrag) Vortrag.find("titel", "Traumberuf Informatiker?").firstResult();
+
+        org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class, () ->
+            QuarkusTransaction.requiringNew().run(() -> {
+                Teilnehmer alexAlfa = (Teilnehmer) Teilnehmer.find("loginName", "alex.alfa").firstResult();
+                // tn_prios.csv (siehe importMediumDataset) hat fuer diese Kombination ggf. bereits
+                // eine Zeile importiert - erst entfernen, damit hier eindeutig genau der unten
+                // erzeugte Konflikt vorliegt.
+                Prioritaet.delete("teilnehmer = ?1 and vortrag = ?2", alexAlfa, wahlvortrag);
+                new Prioritaet(alexAlfa, (kreyj.konfplan.persistence.Wahlvortrag) wahlvortrag, 8).persistAndFlush();
+                new Prioritaet(alexAlfa, (kreyj.konfplan.persistence.Wahlvortrag) wahlvortrag, 8).persistAndFlush();
+            })
+        );
+    }
 }

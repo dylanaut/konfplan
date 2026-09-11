@@ -1,5 +1,6 @@
 package kreyj.konfplan.domain.service;
 
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
@@ -12,6 +13,8 @@ import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.util.TemplateExtensions;
+import org.hibernate.exception.ConstraintViolationException;
+import org.jboss.logging.Logger;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -28,6 +31,9 @@ import static kreyj.konfplan.persistence.Prioritaet.PRIO_MIN;
 
 @ApplicationScoped
 public class PrioritaetService implements PrioritaetServiceInterface {
+
+    private static final Logger LOG = Logger.getLogger(PrioritaetService.class);
+
 
     @Transactional
     @Override
@@ -101,21 +107,64 @@ public class PrioritaetService implements PrioritaetServiceInterface {
             if (vortrag == null) {
                 continue;
             }
-            Prioritaet p = Prioritaet.find("teilnehmer = ?1 and vortrag = ?2", teilnehmer, vortrag).firstResult();
             if (req.prioWert == PRIO_MIN) {
+                Prioritaet p = Prioritaet.find("teilnehmer = ?1 and vortrag = ?2", teilnehmer, vortrag).firstResult();
                 if (p != null) {
                     p.delete();
                 }
                 continue;
             }
-            if (null == p) {
-                p = new Prioritaet();
-                p.setTeilnehmer(teilnehmer);
-                p.setVortrag(vortrag);
-            }
-            p.setPrioWert(req.prioWert);
-            p.persistAndFlush();
+            upsertPrioritaet(teilnehmer, vortrag, req.prioWert);
         }
+    }
+
+
+    /**
+     * Legt eine Prioritaet an oder aktualisiert sie, race-sicher gegenüber zwei fast gleichzeitigen
+     * Requests fuer denselben Teilnehmer+Vortrag (z.B. Doppelklick auf "Speichern" oder ein
+     * Netzwerk-Retry) - ohne das faellt der zweite Request, statt der ersten Zeile die vom ersten
+     * Request angelegte zu aktualisieren, mit einer eigenen neuen Zeile hinein (siehe
+     * UK_prioritaet_teilnehmer_vortrag / V23__prioritaet_unique_teilnehmer_vortrag.sql - vor dieser
+     * Constraint blieb das unbemerkt liegen und crashte erst spaeter beim Lesen).
+     * Jeder Versuch laeuft in einer eigenen, neuen Transaktion (statt in der des Aufrufers), damit
+     * ein abgefangener Constraint-Verstoss nicht die gesamte, ggf. mehrere Eintraege umfassende
+     * Aufrufer-Transaktion als rollback-only markiert.
+     */
+    private void upsertPrioritaet(Teilnehmer teilnehmer, Wahlvortrag vortrag, int prioWert) {
+        try {
+            QuarkusTransaction.requiringNew().run(() -> persistPrioritaet(teilnehmer, vortrag, prioWert));
+        } catch (RuntimeException e) {
+            if (!istUniqueConstraintVerletzung(e)) {
+                throw e;
+            }
+            LOG.warn("Race Condition bei Prioritaet-Upsert (Teilnehmer " + teilnehmer.getId() + ", Vortrag "
+                + vortrag.getId() + ") abgefangen - ein paralleler Request hat die Zeile bereits angelegt, "
+                + "wiederhole als Update.");
+            QuarkusTransaction.requiringNew().run(() -> persistPrioritaet(teilnehmer, vortrag, prioWert));
+        }
+    }
+
+
+    private void persistPrioritaet(Teilnehmer teilnehmer, Wahlvortrag vortrag, int prioWert) {
+        Prioritaet p = Prioritaet.find("teilnehmer = ?1 and vortrag = ?2", teilnehmer, vortrag).firstResult();
+        if (null == p) {
+            p = new Prioritaet();
+            p.setTeilnehmer(teilnehmer);
+            p.setVortrag(vortrag);
+        }
+        p.setPrioWert(prioWert);
+        p.persistAndFlush();
+    }
+
+
+    private boolean istUniqueConstraintVerletzung(Throwable e) {
+        while (null != e) {
+            if (e instanceof ConstraintViolationException) {
+                return true;
+            }
+            e = e.getCause();
+        }
+        return false;
     }
 
 
@@ -136,22 +185,15 @@ public class PrioritaetService implements PrioritaetServiceInterface {
             throw new WebApplicationException("Priorität muss zwischen 0 und 10 liegen", BAD_REQUEST.getStatusCode());
         }
 
-        Prioritaet p = Prioritaet.find("teilnehmer = ?1 and vortrag = ?2", teilnehmer, vortrag).firstResult();
-
         if (prioWert == 0) {
+            Prioritaet p = Prioritaet.find("teilnehmer = ?1 and vortrag = ?2", teilnehmer, vortrag).firstResult();
             if (p != null) {
                 p.delete();
             }
             return;
         }
 
-        if (null == p) {
-            p = new Prioritaet();
-            p.setTeilnehmer(teilnehmer);
-            p.setVortrag(vortrag);
-        }
-        p.setPrioWert(prioWert);
-        p.persistAndFlush();
+        upsertPrioritaet(teilnehmer, vortrag, prioWert);
     }
 
 
@@ -161,7 +203,7 @@ public class PrioritaetService implements PrioritaetServiceInterface {
         Objects.requireNonNull(nutzerId);
         Objects.requireNonNull(veranstaltungId);
 
-        return Prioritaet
+        List<VortragPrioDto> zeilen = Prioritaet
             .find("FROM Prioritaet p " +
                     "JOIN p.teilnehmer tn " +
                     "JOIN p.vortrag v " +
@@ -170,8 +212,28 @@ public class PrioritaetService implements PrioritaetServiceInterface {
                 nutzerId, veranstaltungId
             )
             .project(VortragPrioDto.class)
-            .list().stream()
-            .collect(Collectors.toMap(VortragPrioDto::getVortragId, VortragPrioDto::getPrioWert));
+            .list();
+
+        // Merge-Funktion statt des ohne sie zwingenden IllegalStateException-Absturzes: kann durch
+        // eine fehlende Unique-Constraint auf (teilnehmer_id, vortrag_id) + eine Race Condition im
+        // find-or-create von savePrioritaeten/updateSinglePrioritaet entstehen (zwei fast
+        // gleichzeitige Requests legen je eine neue Prioritaet-Zeile an, statt die des jeweils
+        // anderen zu aktualisieren). Loggt den Konflikt mit vollem Kontext statt ihn nur als
+        // kryptische "Duplicate key"-Meldung im generischen QuarkusErrorHandler zu verlieren, und
+        // liefert dem Teilnehmer trotzdem eine Antwort statt eines 500.
+        Map<Long, Integer> ergebnis = new HashMap<>();
+        for (VortragPrioDto zeile : zeilen) {
+            Integer bisheriger = ergebnis.putIfAbsent(zeile.getVortragId(), zeile.getPrioWert());
+            if (null != bisheriger && !bisheriger.equals(zeile.getPrioWert())) {
+                LOG.warn("Doppelte Prioritaet-Zeile fuer Teilnehmer " + nutzerId + ", Veranstaltung " + veranstaltungId
+                    + ", Vortrag " + zeile.getVortragId() + ": Werte " + bisheriger + " und " + zeile.getPrioWert()
+                    + " - behalte " + bisheriger + ".");
+            } else if (null != bisheriger) {
+                LOG.warn("Doppelte Prioritaet-Zeile (identischer Wert " + bisheriger + ") fuer Teilnehmer " + nutzerId
+                    + ", Veranstaltung " + veranstaltungId + ", Vortrag " + zeile.getVortragId() + ".");
+            }
+        }
+        return ergebnis;
     }
 
 
