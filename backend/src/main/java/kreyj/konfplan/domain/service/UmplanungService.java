@@ -2,6 +2,9 @@ package kreyj.konfplan.domain.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.adapter.in.web.dto.TeilnehmerAktuelleZuweisungDto;
+import kreyj.konfplan.adapter.in.web.dto.TeilnehmerUmbuchenAnfrageDto;
+import kreyj.konfplan.adapter.in.web.dto.UmbuchungOptionDto;
 import kreyj.konfplan.adapter.in.web.dto.UmplanungErgebnisDto;
 import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.persistence.IdEntity;
@@ -10,12 +13,14 @@ import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Wahlvortrag;
 import org.jboss.logging.Logger;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -182,6 +187,236 @@ public class UmplanungService {
 
     private Planungsergebnis.MinizincResult deserialisiere(Planungsergebnis ergebnis) {
         return Planungsergebnis.MinizincResult.fromJson(ergebnis.getJsonErgebnis());
+    }
+
+
+    /**
+     * Liefert die aktuellen Wahlvortrag-Zuweisungen eines einzelnen Teilnehmers in einem
+     * bestimmten Planungsergebnis, für die manuelle Einzel-Umbuchung im ErgebnisseTab (z.B. wenn
+     * ein Teilnehmer nachträglich einen unpassenden Wahlvortrag priorisiert hat und die
+     * Teilnehmer-Deadline bereits abgelaufen ist).
+     */
+    @Transactional
+    public List<TeilnehmerAktuelleZuweisungDto> getAktuelleZuweisungen(Veranstaltung veranstaltung, Long ergebnisId, Long teilnehmerId) {
+        Planungsergebnis ergebnis = planService.ladeErgebnisFuer(veranstaltung, ergebnisId);
+        Planungsergebnis.MinizincResult result = planService.getMinizincResult(ergebnis);
+
+        long[] tnOids = result.teilnehmer_oids;
+        int pIdx = indexOf(tnOids, teilnehmerId);
+        if (pIdx < 0) {
+            return List.of();
+        }
+
+        long[] wvOids = result.wahlvortrag_oids;
+        long[] slotOids = result.slot_oids;
+        long[] raumOids = result.raum_oids;
+        boolean[][][] besucht = result.besucht;
+        int[][] instanzSlot = result.instanz_slot;
+        int[][] instanzRaum = result.instanz_raum;
+
+        Map<Long, Wahlvortrag> wahlvortragByOid = veranstaltung.getWahlvortraege().stream().collect(toMap(IdEntity::getId, Function.identity()));
+        Map<Long, Slot> slotByOid = veranstaltung.getSlots().stream().collect(toMap(IdEntity::getId, Function.identity()));
+        Map<Long, Raum> raumByOid = veranstaltung.getRaeume().stream().collect(toMap(IdEntity::getId, Function.identity()));
+
+        List<TeilnehmerAktuelleZuweisungDto> zuweisungen = new ArrayList<>();
+        for (int wvIdx = 0; wvIdx < wvOids.length; wvIdx++) {
+            Wahlvortrag vortrag = wahlvortragByOid.get(wvOids[wvIdx]);
+            if (null == vortrag) {
+                continue;
+            }
+            for (int iIdx = 0; iIdx < instanzSlot[wvIdx].length; iIdx++) {
+                if (!besucht[pIdx][wvIdx][iIdx]) {
+                    continue;
+                }
+                int sIdx = instanzSlot[wvIdx][iIdx] - 1;
+                int rIdx = instanzRaum[wvIdx][iIdx] - 1;
+                if (sIdx < 0 || rIdx < 0) {
+                    continue;
+                }
+                Slot slot = slotByOid.get(slotOids[sIdx]);
+                Raum raum = raumByOid.get(raumOids[rIdx]);
+                if (null == slot || null == raum) {
+                    continue;
+                }
+                zuweisungen.add(new TeilnehmerAktuelleZuweisungDto(
+                    vortrag.getId(), iIdx, vortrag.getTitel(),
+                    slot.getStartTime().format(PlanService.TIME_FORMAT), raum.getName()));
+            }
+        }
+        return zuweisungen;
+    }
+
+
+    /**
+     * Liefert alternative Wahlvortrag-Instanzen im selben Zeitslot wie die angegebene aktuelle
+     * Zuweisung, mit freier Raumkapazität, absteigend sortiert nach Neigungs-Übereinstimmung mit
+     * dem Teilnehmer - als Entscheidungshilfe für den Organisator, um den Teilnehmer bei der Wahl
+     * einer passenden Alternative zu beraten.
+     */
+    @Transactional
+    public List<UmbuchungOptionDto> getUmbuchungsOptionen(Veranstaltung veranstaltung, Long ergebnisId, Long teilnehmerId,
+                                                            Long altWahlvortragId, int altInstanzIndex) {
+        Planungsergebnis ergebnis = planService.ladeErgebnisFuer(veranstaltung, ergebnisId);
+        Planungsergebnis.MinizincResult result = planService.getMinizincResult(ergebnis);
+
+        long[] tnOids = result.teilnehmer_oids;
+        int pIdx = indexOf(tnOids, teilnehmerId);
+        if (pIdx < 0) {
+            throw new BusinessException("Teilnehmer ist nicht Teil dieses Planungsergebnisses.");
+        }
+
+        long[] wvOids = result.wahlvortrag_oids;
+        long[] raumOids = result.raum_oids;
+        boolean[][][] besucht = result.besucht;
+        int[][] instanzSlot = result.instanz_slot;
+        int[][] instanzRaum = result.instanz_raum;
+
+        int altWvIdx = indexOf(wvOids, altWahlvortragId);
+        if (altWvIdx < 0 || altInstanzIndex < 0 || altInstanzIndex >= instanzSlot[altWvIdx].length) {
+            throw new BusinessException("Aktuelle Zuweisung nicht gefunden.");
+        }
+        int slotIdx1 = instanzSlot[altWvIdx][altInstanzIndex];
+        int maxInstanzen = instanzSlot[0].length;
+
+        Teilnehmer teilnehmer = veranstaltung.teilnehmer().stream()
+            .filter(t -> t.getId().equals(teilnehmerId)).findFirst()
+            .orElseThrow(() -> new BusinessException("Teilnehmer nicht gefunden."));
+        Map<Long, Wahlvortrag> wahlvortragByOid = veranstaltung.getWahlvortraege().stream().collect(toMap(IdEntity::getId, Function.identity()));
+        Map<Long, Raum> raumByOid = veranstaltung.getRaeume().stream().collect(toMap(IdEntity::getId, Function.identity()));
+
+        List<UmbuchungOptionDto> optionen = new ArrayList<>();
+        for (int wIdx = 0; wIdx < wvOids.length; wIdx++) {
+            Wahlvortrag kandidatVortrag = wahlvortragByOid.get(wvOids[wIdx]);
+            if (null == kandidatVortrag) {
+                continue;
+            }
+            for (int iIdx = 0; iIdx < instanzSlot[wIdx].length; iIdx++) {
+                if (wIdx == altWvIdx && iIdx == altInstanzIndex) {
+                    continue;
+                }
+                if (instanzSlot[wIdx][iIdx] != slotIdx1 || result.istAusgefallen(wIdx, iIdx)) {
+                    continue;
+                }
+                if (besuchtWahlvortragBereits(besucht, pIdx, wIdx, maxInstanzen)) {
+                    continue;
+                }
+                int rIdx = instanzRaum[wIdx][iIdx] - 1;
+                if (rIdx < 0) {
+                    continue;
+                }
+                Raum raum = raumByOid.get(raumOids[rIdx]);
+                if (null == raum) {
+                    continue;
+                }
+                int belegteAnzahl = 0;
+                for (int p2 = 0; p2 < tnOids.length; p2++) {
+                    if (besucht[p2][wIdx][iIdx]) {
+                        belegteAnzahl++;
+                    }
+                }
+                if (belegteAnzahl >= raum.getKapazitaet()) {
+                    continue;
+                }
+                long ueberschneidung = kandidatVortrag.getNeigungen().stream()
+                    .filter(teilnehmer.getNeigungen()::contains)
+                    .count();
+                optionen.add(new UmbuchungOptionDto(
+                    kandidatVortrag.getId(), iIdx, kandidatVortrag.getTitel(),
+                    kandidatVortrag.getReferent().getFullName(), raum.getName(),
+                    raum.getKapazitaet(), belegteAnzahl, (int) ueberschneidung));
+            }
+        }
+
+        return optionen.stream()
+            .sorted(Comparator.comparingInt((UmbuchungOptionDto o) -> o.neigungsUeberschneidung).reversed()
+                .thenComparing(Comparator.comparingInt((UmbuchungOptionDto o) -> o.kapazitaet - o.belegteAnzahl).reversed()))
+            .toList();
+    }
+
+
+    /**
+     * Bucht einen einzelnen Teilnehmer manuell von einer Wahlvortrag-Instanz auf eine andere im
+     * selben Zeitslot um - im Gegensatz zu {@link #vortragsInstanzUmplanen} (verteilt ALLE
+     * Teilnehmer einer ausgefallenen Instanz automatisch) hier gezielt für genau einen Teilnehmer
+     * und eine vom Organisator (nach Beratung mit dem Teilnehmern) gewählte Ziel-Instanz.
+     */
+    @Transactional
+    public void teilnehmerUmbuchen(Veranstaltung veranstaltung, Long ergebnisId, Long teilnehmerId,
+                                    TeilnehmerUmbuchenAnfrageDto anfrage, String username) {
+        Planungsergebnis ergebnis = planService.ladeErgebnisFuer(veranstaltung, ergebnisId);
+        // Bewusst frisch deserialisiert statt über den Cache - siehe Kommentar in
+        // vortragsInstanzUmplanen.
+        Planungsergebnis.MinizincResult result = deserialisiere(ergebnis);
+
+        long[] tnOids = result.teilnehmer_oids;
+        int pIdx = indexOf(tnOids, teilnehmerId);
+        if (pIdx < 0) {
+            throw new BusinessException("Teilnehmer ist nicht Teil dieses Planungsergebnisses.");
+        }
+
+        long[] wvOids = result.wahlvortrag_oids;
+        long[] raumOids = result.raum_oids;
+        boolean[][][] besucht = result.besucht;
+        int[][] instanzSlot = result.instanz_slot;
+        int[][] instanzRaum = result.instanz_raum;
+        int maxInstanzen = instanzSlot[0].length;
+
+        int altWvIdx = indexOf(wvOids, anfrage.altWahlvortragId);
+        int neuWvIdx = indexOf(wvOids, anfrage.neuWahlvortragId);
+        if (altWvIdx < 0 || neuWvIdx < 0) {
+            throw new BusinessException("Wahlvortrag ist nicht Teil dieses Planungsergebnisses.");
+        }
+        if (anfrage.altInstanzIndex < 0 || anfrage.altInstanzIndex >= instanzSlot[altWvIdx].length
+            || !besucht[pIdx][altWvIdx][anfrage.altInstanzIndex]) {
+            throw new BusinessException("Teilnehmer ist der angegebenen aktuellen Zuweisung nicht zugeteilt.");
+        }
+        if (anfrage.neuInstanzIndex < 0 || anfrage.neuInstanzIndex >= instanzSlot[neuWvIdx].length
+            || instanzSlot[neuWvIdx][anfrage.neuInstanzIndex] <= 0) {
+            throw new BusinessException("Ziel-Instanz nicht gefunden.");
+        }
+        if (result.istAusgefallen(neuWvIdx, anfrage.neuInstanzIndex)) {
+            throw new BusinessException("Die Ziel-Instanz wurde als ausgefallen markiert.");
+        }
+        if (instanzSlot[altWvIdx][anfrage.altInstanzIndex] != instanzSlot[neuWvIdx][anfrage.neuInstanzIndex]) {
+            throw new BusinessException("Umbuchung ist nur innerhalb desselben Zeitslots möglich.");
+        }
+        if (besuchtWahlvortragBereits(besucht, pIdx, neuWvIdx, maxInstanzen)) {
+            throw new BusinessException("Teilnehmer ist diesem Wahlvortrag bereits in einer anderen Instanz zugeteilt.");
+        }
+
+        Map<Long, Raum> raumByOid = veranstaltung.getRaeume().stream().collect(toMap(IdEntity::getId, Function.identity()));
+        int rIdx = instanzRaum[neuWvIdx][anfrage.neuInstanzIndex] - 1;
+        Raum zielRaum = rIdx < 0 ? null : raumByOid.get(raumOids[rIdx]);
+        if (null == zielRaum) {
+            throw new BusinessException("Raum der Ziel-Instanz nicht gefunden.");
+        }
+        int belegteAnzahl = 0;
+        for (int p2 = 0; p2 < tnOids.length; p2++) {
+            if (besucht[p2][neuWvIdx][anfrage.neuInstanzIndex]) {
+                belegteAnzahl++;
+            }
+        }
+        if (belegteAnzahl >= zielRaum.getKapazitaet()) {
+            throw new BusinessException("Ziel-Instanz hat keinen freien Platz mehr.");
+        }
+
+        besucht[pIdx][altWvIdx][anfrage.altInstanzIndex] = false;
+        besucht[pIdx][neuWvIdx][anfrage.neuInstanzIndex] = true;
+        ergebnis.setJsonErgebnis(result.toJson());
+
+        Teilnehmer teilnehmer = veranstaltung.teilnehmer().stream()
+            .filter(t -> t.getId().equals(teilnehmerId)).findFirst().orElse(null);
+        Map<Long, Wahlvortrag> wahlvortragByOid = veranstaltung.getWahlvortraege().stream().collect(toMap(IdEntity::getId, Function.identity()));
+        Wahlvortrag altVortrag = wahlvortragByOid.get(anfrage.altWahlvortragId);
+        Wahlvortrag neuVortrag = wahlvortragByOid.get(anfrage.neuWahlvortragId);
+        if (null != teilnehmer && null != altVortrag && null != neuVortrag) {
+            String inhalt = "Du wurdest von '" + altVortrag.getTitel() + "' auf '" + neuVortrag.getTitel() + "' umgebucht.";
+            nachrichtService.sendeNachricht(teilnehmer, "Deine Wahlvortrag-Zuteilung wurde geändert", inhalt,
+                NachrichtKategorie.TEILNEHMER_UMGEBUCHT, veranstaltung.getId(), username);
+        }
+
+        LOG.infof("Teilnehmer %d manuell umgebucht von Wahlvortrag %d (Instanz %d) auf Wahlvortrag %d (Instanz %d) in Veranstaltung '%s'.",
+            teilnehmerId, anfrage.altWahlvortragId, anfrage.altInstanzIndex, anfrage.neuWahlvortragId, anfrage.neuInstanzIndex, veranstaltung.getName());
     }
 
 

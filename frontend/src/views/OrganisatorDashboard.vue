@@ -70,6 +70,7 @@
                      :qualitaet="qualitaet"
                      :eventSlots="eventSlots"
                      :raeume="filteredRaeume"
+                     :teilnehmer="filteredTeilnehmer"
                      @published="loadData"
       />
 
