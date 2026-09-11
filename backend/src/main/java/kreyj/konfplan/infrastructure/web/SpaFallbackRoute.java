@@ -21,7 +21,12 @@ public class SpaFallbackRoute {
             String path = ctx.normalizedPath();
             String lastSegment = path.substring(path.lastIndexOf('/') + 1);
             boolean looksLikeStaticFile = lastSegment.contains(".");
-            if (path.equals("/") || path.startsWith("/api") || path.startsWith("/q") || looksLikeStaticFile) {
+            // "/@..." sind Vite-interne Bootstrap-Pfade im Dev-Modus (z.B. /@vite/client, /@id/...) -
+            // ihr letztes Pfadsegment enthält keinen Punkt, obwohl es echte, von Quinoas Dev-Proxy
+            // an Vite weiterzuleitende Ressourcen sind. Ohne diesen Ausschluss wird z.B.
+            // /@vite/client fälschlich auf "/" umgeleitet, bevor Quinoa die Anfrage überhaupt sieht -
+            // das lässt Vites Client-Bootstrap mit einem MIME-Type-Fehler scheitern (leere Seite).
+            if (path.equals("/") || path.startsWith("/api") || path.startsWith("/q") || path.startsWith("/@") || looksLikeStaticFile) {
                 ctx.next();
             } else {
                 ctx.reroute("/");
