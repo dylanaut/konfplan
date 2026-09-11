@@ -7,7 +7,9 @@ import io.quarkus.logging.Log;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import kreyj.konfplan.domain.service.ProtokollService;
 import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.ProtokollKategorie;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.idm.EventRepresentation;
@@ -21,7 +23,9 @@ import java.util.List;
  * {@link kreyj.konfplan.application.prodsupport.ProdKeycloakRealmSyncService} sowie die
  * Realm-JSON fuer Dev/Erstanlage) und zaehlt neue Events als Micrometer-Counter, gruppiert nach
  * der KonfPlan-Rolle des betroffenen Nutzers (per Login-Namen aufgeloest, nicht per Keycloaks
- * userId - die bleibt bei komplett falschem Nutzernamen leer).
+ * userId - die bleibt bei komplett falschem Nutzernamen leer). Zusaetzlich landet jedes Event
+ * mit dem versuchten Login-Namen als Akteur im App-eigenen {@code Protokoll} (Kategorie LOGIN),
+ * damit ein Organisator es auch dort sieht statt nur in Keycloaks eigener Events-Ansicht.
  */
 @ApplicationScoped
 @IfBuildProfile(anyOf = {"dev", "prod"})
@@ -35,6 +39,9 @@ public class FailedLoginMetricsPoller {
 
     @Inject
     MeterRegistry registry;
+
+    @Inject
+    ProtokollService protokollService;
 
     @ConfigProperty(name = "quarkus.keycloak.admin-client.realm")
     String realm;
@@ -59,24 +66,29 @@ public class FailedLoginMetricsPoller {
         }
 
         for (EventRepresentation event : events) {
-            String role = resolveRole(event);
+            String username = extractUsername(event);
+            Nutzer nutzer = null == username ? null : Nutzer.findByLoginName(username);
+            String role = null == nutzer ? UNKNOWN_ROLE : nutzer.getClass().getSimpleName().toUpperCase();
+
             Counter.builder("konfplan.login.failures")
                 .tag("role", role)
                 .description("Fehlgeschlagene Anmeldeversuche, gruppiert nach Rolle")
                 .register(registry)
                 .increment();
+
+            // Akteur explizit auf den versuchten Login-Namen setzen (statt ProtokollService'
+            // Default aus dem JWT des aktuellen Requests - hier gibt es keinen, da der Poll-Lauf
+            // nicht im Kontext des fehlgeschlagenen Logins selbst laeuft).
+            protokollService.log(ProtokollKategorie.LOGIN, "Fehlgeschlagene Anmeldung",
+                "Anmeldeversuch für Login-Namen '" + (null == username ? "unbekannt" : username) + "' fehlgeschlagen.",
+                null == nutzer ? null : nutzer.getId(),
+                null == username ? "unbekannt" : username);
         }
 
         lastPolledAtMillis = dateTo;
     }
 
-    private String resolveRole(EventRepresentation event) {
-        String username = null == event.getDetails() ? null : event.getDetails().get("username");
-        if (null == username) {
-            return UNKNOWN_ROLE;
-        }
-
-        Nutzer nutzer = Nutzer.findByLoginName(username);
-        return null == nutzer ? UNKNOWN_ROLE : nutzer.getClass().getSimpleName().toUpperCase();
+    private String extractUsername(EventRepresentation event) {
+        return null == event.getDetails() ? null : event.getDetails().get("username");
     }
 }
