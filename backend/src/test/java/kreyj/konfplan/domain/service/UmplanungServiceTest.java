@@ -4,6 +4,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.DatabaseCleaner;
+import kreyj.konfplan.adapter.in.web.dto.NachbuchungsVorschlagDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerAktuelleZuweisungDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerUmbuchenAnfrageDto;
 import kreyj.konfplan.adapter.in.web.dto.UmbuchungOptionDto;
@@ -14,7 +15,9 @@ import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.Nachricht;
 import kreyj.konfplan.persistence.NachrichtKategorie;
 import kreyj.konfplan.persistence.Neigung;
+import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Planungsergebnis;
+import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
@@ -529,5 +532,162 @@ class UmplanungServiceTest extends DatabaseCleaner {
         Teilnehmer tn = neuerTeilnehmer(veranstaltung, "tn1@test.com");
 
         umplanungService.freigebenBeiNichtVerfuegbarkeit(veranstaltung, tn, Set.of(slot1.getId()), "organisator@test.com");
+    }
+
+
+    // --- Nachbuchung bei wiederhergestellter Verfügbarkeit ---
+
+
+    @Test
+    @Transactional
+    void ermittleNachbuchungsVorschlaege_sortiertNachUnerfuellterPrioritaetVorNeigung() {
+        Veranstaltung veranstaltung = neueVeranstaltung("Nachbuchung-Test-1");
+        Slot slot1 = neuerSlot(veranstaltung, 1);
+        Wahlvortrag wvHochPrio = neuerWahlvortrag(veranstaltung, "Hoch priorisiert");
+        Wahlvortrag wvNeigungsMatch = neuerWahlvortrag(veranstaltung, "Neigungs-Match", Neigung.TECHNISCH);
+        Teilnehmer tn = neuerTeilnehmer(veranstaltung, "tn1@test.com", Neigung.TECHNISCH);
+
+        Prioritaet prioritaet = new Prioritaet(tn, wvHochPrio, 5);
+        prioritaet.persist();
+
+        Planungsergebnis ergebnis = persistiereErgebnis(veranstaltung, ergebnis(
+            new long[]{tn.getId()},
+            new long[]{wvHochPrio.getId(), wvNeigungsMatch.getId()},
+            new long[]{slot1.getId()},
+            new long[]{raumGrossId},
+            new int[][]{{1}, {1}},
+            new int[][]{{1}, {1}},
+            new boolean[][][]{{{false}, {false}}}));
+
+        List<NachbuchungsVorschlagDto> vorschlaege = umplanungService.ermittleNachbuchungsVorschlaege(
+            veranstaltung, tn, Set.of(slot1.getId()));
+
+        assertThat(vorschlaege).hasSize(1);
+        assertThat(vorschlaege.get(0).slotId).isEqualTo(slot1.getId());
+        assertThat(vorschlaege.get(0).optionen).extracting(o -> o.vortragTitel)
+            .containsExactly("Hoch priorisiert", "Neigungs-Match");
+    }
+
+
+    @Test
+    @Transactional
+    void ermittleNachbuchungsVorschlaege_slotDurchPflichtvortragAbgedeckt_wirdAusgeschlossen() {
+        Veranstaltung veranstaltung = neueVeranstaltung("Nachbuchung-Test-2");
+        Slot slot1 = neuerSlot(veranstaltung, 1);
+        Wahlvortrag wv = neuerWahlvortrag(veranstaltung, "Wahlvortrag im Slot");
+        Teilnehmer tn = neuerTeilnehmer(veranstaltung, "tn1@test.com");
+
+        Referent referent = Referent.find("email", "referent-Nachbuchung-Test-2@test.com").firstResult();
+        Raum pflichtRaum = new Raum("Pflicht Raum", 30);
+        pflichtRaum.persist();
+        Gebaeude.<Gebaeude>findById(schuleId).addRaum(pflichtRaum);
+        Pflichtvortrag.create("Pflichtvortrag", "Inhalt", referent, "A", pflichtRaum, slot1, veranstaltung);
+
+        Planungsergebnis ergebnis = persistiereErgebnis(veranstaltung, ergebnis(
+            new long[]{tn.getId()},
+            new long[]{wv.getId()},
+            new long[]{slot1.getId()},
+            new long[]{raumGrossId},
+            new int[][]{{1}},
+            new int[][]{{1}},
+            new boolean[][][]{{{false}}}));
+
+        List<NachbuchungsVorschlagDto> vorschlaege = umplanungService.ermittleNachbuchungsVorschlaege(
+            veranstaltung, tn, Set.of(slot1.getId()));
+
+        assertThat(vorschlaege).describedAs("Slot ist durch Pflichtvortrag der Teilnehmer-Gruppe abgedeckt").isEmpty();
+    }
+
+
+    @Test
+    @Transactional
+    void ermittleNachbuchungsVorschlaege_teilnehmerBereitsInSlotZugeteilt_wirdAusgeschlossen() {
+        Veranstaltung veranstaltung = neueVeranstaltung("Nachbuchung-Test-3");
+        Slot slot1 = neuerSlot(veranstaltung, 1);
+        Wahlvortrag wv1 = neuerWahlvortrag(veranstaltung, "Bereits besucht");
+        Wahlvortrag wv2 = neuerWahlvortrag(veranstaltung, "Andere Option");
+        Teilnehmer tn = neuerTeilnehmer(veranstaltung, "tn1@test.com");
+
+        Planungsergebnis ergebnis = persistiereErgebnis(veranstaltung, ergebnis(
+            new long[]{tn.getId()},
+            new long[]{wv1.getId(), wv2.getId()},
+            new long[]{slot1.getId()},
+            new long[]{raumGrossId},
+            new int[][]{{1}, {1}},
+            new int[][]{{1}, {1}},
+            new boolean[][][]{{{true}, {false}}}));
+
+        List<NachbuchungsVorschlagDto> vorschlaege = umplanungService.ermittleNachbuchungsVorschlaege(
+            veranstaltung, tn, Set.of(slot1.getId()));
+
+        assertThat(vorschlaege).describedAs("Teilnehmer ist im Slot bereits einem Wahlvortrag zugeteilt").isEmpty();
+    }
+
+
+    @Test
+    @Transactional
+    void teilnehmerNachbuchen_buchtTeilnehmerUndSendetNachricht() {
+        Veranstaltung veranstaltung = neueVeranstaltung("Nachbuchung-Test-4");
+        Slot slot1 = neuerSlot(veranstaltung, 1);
+        Wahlvortrag wv = neuerWahlvortrag(veranstaltung, "Wahlvortrag 1");
+        Teilnehmer tn = neuerTeilnehmer(veranstaltung, "tn1@test.com");
+
+        Planungsergebnis ergebnis = persistiereErgebnis(veranstaltung, ergebnis(
+            new long[]{tn.getId()},
+            new long[]{wv.getId()},
+            new long[]{slot1.getId()},
+            new long[]{raumGrossId},
+            new int[][]{{1}},
+            new int[][]{{1}},
+            new boolean[][][]{{{false}}}));
+
+        umplanungService.teilnehmerNachbuchen(veranstaltung, tn, wv.getId(), 0, "organisator@test.com");
+
+        Planungsergebnis.MinizincResult aktualisiert = ladeAktualisiertesErgebnis(ergebnis.getId());
+        assertThat(aktualisiert.besucht[0][0][0]).describedAs("Teilnehmer muss der Instanz zugeteilt sein").isTrue();
+
+        List<Nachricht> nachrichten = nachrichtService.getNachrichtenFuerNutzer("tn1@test.com");
+        assertThat(nachrichten).hasSize(1);
+        assertThat(nachrichten.get(0).getKategorie()).isEqualTo(NachrichtKategorie.TEILNEHMER_NACHGEBUCHT);
+    }
+
+
+    @Test
+    @Transactional
+    void teilnehmerNachbuchen_beiVollerInstanz_wirftBusinessException() {
+        Veranstaltung veranstaltung = neueVeranstaltung("Nachbuchung-Test-5");
+        Slot slot1 = neuerSlot(veranstaltung, 1);
+        Raum raumKlein = new Raum("Raum Klein", 1);
+        raumKlein.persist();
+        Gebaeude.<Gebaeude>findById(schuleId).addRaum(raumKlein);
+
+        Wahlvortrag wv = neuerWahlvortrag(veranstaltung, "Voller Vortrag");
+        Teilnehmer tnBelegt = neuerTeilnehmer(veranstaltung, "tn1@test.com");
+        Teilnehmer tnNachzubuchen = neuerTeilnehmer(veranstaltung, "tn2@test.com");
+
+        Planungsergebnis ergebnis = persistiereErgebnis(veranstaltung, ergebnis(
+            new long[]{tnBelegt.getId(), tnNachzubuchen.getId()},
+            new long[]{wv.getId()},
+            new long[]{slot1.getId()},
+            new long[]{raumKlein.getId()},
+            new int[][]{{1}},
+            new int[][]{{1}},
+            new boolean[][][]{{{true}}, {{false}}}));
+
+        assertThatThrownBy(() -> umplanungService.teilnehmerNachbuchen(veranstaltung, tnNachzubuchen, wv.getId(), 0, "organisator@test.com"))
+            .isInstanceOf(BusinessException.class);
+    }
+
+
+    @Test
+    @Transactional
+    void teilnehmerNachbuchen_ohneVeroeffentlichtenPlan_wirftBusinessException() {
+        Veranstaltung veranstaltung = neueVeranstaltung("Nachbuchung-Test-6");
+        neuerSlot(veranstaltung, 1);
+        Wahlvortrag wv = neuerWahlvortrag(veranstaltung, "Wahlvortrag 1");
+        Teilnehmer tn = neuerTeilnehmer(veranstaltung, "tn1@test.com");
+
+        assertThatThrownBy(() -> umplanungService.teilnehmerNachbuchen(veranstaltung, tn, wv.getId(), 0, "organisator@test.com"))
+            .isInstanceOf(BusinessException.class);
     }
 }
