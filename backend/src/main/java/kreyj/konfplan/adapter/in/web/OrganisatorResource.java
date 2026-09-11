@@ -18,6 +18,7 @@ import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.VortragPrioDto;
 import kreyj.konfplan.adapter.in.web.dto.OrganisatorPasswordResetDto;
 import kreyj.konfplan.adapter.in.web.dto.ImportResultDto;
+import kreyj.konfplan.adapter.in.web.dto.NachbuchungsVorschlagDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
@@ -297,20 +298,32 @@ public class OrganisatorResource {
         }
 
         // Slots, die vorher verfügbar waren und es jetzt nicht mehr sind (z.B. Krankmeldung) -
-        // dafür ggf. bereits belegte Sitzplätze im veröffentlichten Plan freigeben.
-        Set<Long> neuNichtVerfuegbar = new HashSet<>(nv.getVerfuegbareSlotIds());
+        // dafür ggf. bereits belegte Sitzplätze im veröffentlichten Plan freigeben. Umgekehrt:
+        // Slots, die vorher nicht verfügbar waren und es jetzt sind - dafür passende
+        // Nachbuchungs-Vorschläge ermitteln, die der Organisator im Frontend in einem modalen
+        // Dialog angezeigt bekommt.
+        Set<Long> alteVerfuegbareSlotIds = new HashSet<>(nv.getVerfuegbareSlotIds());
+        Set<Long> neuNichtVerfuegbar = new HashSet<>(alteVerfuegbareSlotIds);
         neuNichtVerfuegbar.removeAll(dto.verfuegbareSlotIds);
+        Set<Long> neuVerfuegbar = new HashSet<>(dto.verfuegbareSlotIds);
+        neuVerfuegbar.removeAll(alteVerfuegbareSlotIds);
 
         nv.setVerfuegbareSlotIds(dto.verfuegbareSlotIds);
 
         Nutzer nutzer = Nutzer.findById(dto.nutzerId);
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        if (nutzer instanceof Teilnehmer teilnehmer && null != veranstaltung && !neuNichtVerfuegbar.isEmpty()) {
-            umplanungService.freigebenBeiNichtVerfuegbarkeit(veranstaltung, teilnehmer, neuNichtVerfuegbar,
-                securityContext.getUserPrincipal().getName());
+        List<NachbuchungsVorschlagDto> nachbuchungsVorschlaege = List.of();
+        if (nutzer instanceof Teilnehmer teilnehmer && null != veranstaltung) {
+            String username = securityContext.getUserPrincipal().getName();
+            if (!neuNichtVerfuegbar.isEmpty()) {
+                umplanungService.freigebenBeiNichtVerfuegbarkeit(veranstaltung, teilnehmer, neuNichtVerfuegbar, username);
+            }
+            if (!neuVerfuegbar.isEmpty()) {
+                nachbuchungsVorschlaege = umplanungService.ermittleNachbuchungsVorschlaege(veranstaltung, teilnehmer, neuVerfuegbar);
+            }
         }
 
-        return Response.ok().build();
+        return Response.ok(nachbuchungsVorschlaege).build();
     }
 
 

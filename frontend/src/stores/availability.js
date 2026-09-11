@@ -57,6 +57,9 @@ export const useAvailabilityStore = defineStore('availability', () => {
         }
     }
 
+    // Rückgabe: nur die Nutzer, für die das Backend tatsächlich Nachbuchungs-Vorschläge geliefert
+    // hat (neu verfügbar gewordener Slot + mindestens eine passende Wahlvortrag-Option) - damit
+    // der Aufrufer bei wiederhergestellter Verfügbarkeit einen Nachbuchungs-Dialog anzeigen kann.
     async function saveAvailabilities(eventId) {
         const userPromises = [];
         for (const userId of changedUserAvailabilities.value) {
@@ -65,7 +68,10 @@ export const useAvailabilityStore = defineStore('availability', () => {
                 veranstaltungId: eventId,
                 verfuegbareSlotIds: Array.from(userAvailabilities.value.get(userId) || [])
             };
-            userPromises.push(api.post(`/api/organisator/veranstaltungen/${eventId}/verfuegbarkeiten`, payload));
+            userPromises.push(
+                api.post(`/api/organisator/veranstaltungen/${eventId}/verfuegbarkeiten`, payload)
+                    .then(res => ({ userId, vorschlaege: res.data || [] }))
+            );
         }
 
         const roomPromises = [];
@@ -78,9 +84,11 @@ export const useAvailabilityStore = defineStore('availability', () => {
             roomPromises.push(api.post(`/api/organisator/veranstaltungen/${eventId}/raeume/verfuegbarkeiten`, payload));
         }
 
-        await Promise.all([...userPromises, ...roomPromises]);
+        const [nutzerErgebnisse] = await Promise.all([Promise.all(userPromises), Promise.all(roomPromises)]);
         changedUserAvailabilities.value.clear();
         changedRoomAvailabilities.value.clear();
+
+        return nutzerErgebnisse.filter(e => e.vorschlaege.some(v => v.optionen.length > 0));
     }
 
     const isUserAvailable = (userId, slotId) => {

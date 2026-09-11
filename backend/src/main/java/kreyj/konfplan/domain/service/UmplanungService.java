@@ -2,6 +2,7 @@ package kreyj.konfplan.domain.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.adapter.in.web.dto.NachbuchungsVorschlagDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerAktuelleZuweisungDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerUmbuchenAnfrageDto;
 import kreyj.konfplan.adapter.in.web.dto.UmbuchungOptionDto;
@@ -11,6 +12,7 @@ import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.NachrichtKategorie;
 import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Planungsergebnis;
+import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
@@ -267,66 +269,20 @@ public class UmplanungService {
         }
 
         long[] wvOids = result.wahlvortrag_oids;
-        long[] raumOids = result.raum_oids;
-        boolean[][][] besucht = result.besucht;
         int[][] instanzSlot = result.instanz_slot;
-        int[][] instanzRaum = result.instanz_raum;
 
         int altWvIdx = indexOf(wvOids, altWahlvortragId);
         if (altWvIdx < 0 || altInstanzIndex < 0 || altInstanzIndex >= instanzSlot[altWvIdx].length) {
             throw new BusinessException("Aktuelle Zuweisung nicht gefunden.");
         }
         int slotIdx1 = instanzSlot[altWvIdx][altInstanzIndex];
-        int maxInstanzen = instanzSlot[0].length;
 
-        Teilnehmer teilnehmer = veranstaltung.teilnehmer().stream()
-            .filter(t -> t.getId().equals(teilnehmerId)).findFirst()
-            .orElseThrow(() -> new BusinessException("Teilnehmer nicht gefunden."));
+        Teilnehmer teilnehmer = ladeTeilnehmer(veranstaltung, teilnehmerId);
         Map<Long, Wahlvortrag> wahlvortragByOid = veranstaltung.getWahlvortraege().stream().collect(toMap(IdEntity::getId, Function.identity()));
         Map<Long, Raum> raumByOid = veranstaltung.getRaeume().stream().collect(toMap(IdEntity::getId, Function.identity()));
 
-        List<UmbuchungOptionDto> optionen = new ArrayList<>();
-        for (int wIdx = 0; wIdx < wvOids.length; wIdx++) {
-            Wahlvortrag kandidatVortrag = wahlvortragByOid.get(wvOids[wIdx]);
-            if (null == kandidatVortrag) {
-                continue;
-            }
-            for (int iIdx = 0; iIdx < instanzSlot[wIdx].length; iIdx++) {
-                if (wIdx == altWvIdx && iIdx == altInstanzIndex) {
-                    continue;
-                }
-                if (instanzSlot[wIdx][iIdx] != slotIdx1 || result.istAusgefallen(wIdx, iIdx)) {
-                    continue;
-                }
-                if (besuchtWahlvortragBereits(besucht, pIdx, wIdx, maxInstanzen)) {
-                    continue;
-                }
-                int rIdx = instanzRaum[wIdx][iIdx] - 1;
-                if (rIdx < 0) {
-                    continue;
-                }
-                Raum raum = raumByOid.get(raumOids[rIdx]);
-                if (null == raum) {
-                    continue;
-                }
-                int belegteAnzahl = 0;
-                for (int p2 = 0; p2 < tnOids.length; p2++) {
-                    if (besucht[p2][wIdx][iIdx]) {
-                        belegteAnzahl++;
-                    }
-                }
-                if (belegteAnzahl >= raum.getKapazitaet()) {
-                    continue;
-                }
-                long ueberschneidung = kandidatVortrag.getNeigungen().stream()
-                    .filter(teilnehmer.getNeigungen()::contains)
-                    .count();
-                optionen.add(new UmbuchungOptionDto(
-                    kandidatVortrag.getId(), iIdx, kandidatVortrag.getTitel(),
-                    kandidatVortrag.getReferent().getFullName(), raum.getName(),
-                    raum.getKapazitaet(), belegteAnzahl, (int) ueberschneidung));
-            }
-        }
+        List<UmbuchungOptionDto> optionen = kandidatenInSlot(result, teilnehmer, pIdx, slotIdx1, altWvIdx, altInstanzIndex,
+            wahlvortragByOid, raumByOid);
 
         return optionen.stream()
             .sorted(Comparator.comparingInt((UmbuchungOptionDto o) -> o.neigungsUeberschneidung).reversed()
@@ -492,6 +448,142 @@ public class UmplanungService {
     }
 
 
+    /**
+     * Ermittelt für neu verfügbar gewordene Zeitslots eines Teilnehmers (z.B. Krankmeldung wieder
+     * zurückgenommen) passende Wahlvortrag-Instanzen mit freier Kapazität - absteigend sortiert
+     * nach unerfüllter Priorität (Wahlvortraege, die der Teilnehmer selbst priorisiert, aber nicht
+     * zugeteilt bekommen hat, zuerst) und danach nach Neigungs-Übereinstimmung. Dient als
+     * Entscheidungshilfe für den Organisator im modalen Nachbuchungs-Dialog - berücksichtigt nur
+     * Slots, in denen der Teilnehmer aktuell weder einem Wahl- noch einem Pflichtvortrag zugeteilt
+     * ist, und nur, falls bereits ein VERÖFFENTLICHTES Planungsergebnis existiert.
+     */
+    @Transactional
+    public List<NachbuchungsVorschlagDto> ermittleNachbuchungsVorschlaege(Veranstaltung veranstaltung, Teilnehmer teilnehmer,
+                                                                            Set<Long> neuVerfuegbareSlotIds) {
+        if (neuVerfuegbareSlotIds.isEmpty()) {
+            return List.of();
+        }
+        Planungsergebnis ergebnis = Planungsergebnis.getPlanungsergebnis(veranstaltung);
+        if (null == ergebnis) {
+            return List.of();
+        }
+        Planungsergebnis.MinizincResult result = planService.getMinizincResult(ergebnis);
+
+        long[] tnOids = result.teilnehmer_oids;
+        int pIdx = indexOf(tnOids, teilnehmer.getId());
+        if (pIdx < 0) {
+            return List.of();
+        }
+
+        long[] slotOids = result.slot_oids;
+        boolean[][][] besucht = result.besucht;
+        int[][] instanzSlot = result.instanz_slot;
+
+        Map<Long, Wahlvortrag> wahlvortragByOid = veranstaltung.getWahlvortraege().stream().collect(toMap(IdEntity::getId, Function.identity()));
+        Map<Long, Raum> raumByOid = veranstaltung.getRaeume().stream().collect(toMap(IdEntity::getId, Function.identity()));
+
+        List<NachbuchungsVorschlagDto> vorschlaege = new ArrayList<>();
+        for (Long slotId : neuVerfuegbareSlotIds) {
+            int slotIdx0 = indexOf(slotOids, slotId);
+            if (slotIdx0 < 0) {
+                // Slot ist nicht Teil dieses Planungsergebnisses (z.B. erst danach angelegt).
+                continue;
+            }
+            int slotIdx1 = slotIdx0 + 1;
+
+            if (besuchtIrgendeinWahlvortragInSlot(besucht, pIdx, instanzSlot, slotIdx1)
+                || pflichtvortragDecktSlotAb(veranstaltung, teilnehmer, slotId)) {
+                continue;
+            }
+
+            List<UmbuchungOptionDto> optionen = kandidatenInSlot(result, teilnehmer, pIdx, slotIdx1, -1, -1, wahlvortragByOid, raumByOid)
+                .stream()
+                .sorted(Comparator.comparingInt((UmbuchungOptionDto o) -> o.prioWert).reversed()
+                    .thenComparing(Comparator.comparingInt((UmbuchungOptionDto o) -> o.neigungsUeberschneidung).reversed())
+                    .thenComparing(Comparator.comparingInt((UmbuchungOptionDto o) -> o.kapazitaet - o.belegteAnzahl).reversed()))
+                .toList();
+
+            Slot slot = Slot.findById(slotId);
+            vorschlaege.add(new NachbuchungsVorschlagDto(slotId,
+                null == slot ? "" : slot.getStartTime().format(PlanService.TIME_FORMAT), optionen));
+        }
+        return vorschlaege;
+    }
+
+
+    /**
+     * Bucht einen Teilnehmer, der bei bereits veröffentlichtem Plan wieder verfügbar gemeldet
+     * wurde, in eine vom Organisator ausgewählte Wahlvortrag-Instanz (siehe
+     * {@link #ermittleNachbuchungsVorschlaege}) - reine Neuzuteilung ohne vorherige Zuweisung, im
+     * Gegensatz zu {@link #teilnehmerUmbuchen} (Wechsel zwischen zwei bestehenden Zuweisungen).
+     */
+    @Transactional
+    public void teilnehmerNachbuchen(Veranstaltung veranstaltung, Teilnehmer teilnehmer, Long wahlvortragId, int instanzIndex, String username) {
+        Planungsergebnis ergebnis = Planungsergebnis.getPlanungsergebnis(veranstaltung);
+        if (null == ergebnis) {
+            throw new BusinessException("Für diese Veranstaltung liegt kein veröffentlichtes Planungsergebnis vor.");
+        }
+        // Bewusst frisch deserialisiert statt über den Cache - siehe Kommentar in
+        // vortragsInstanzUmplanen.
+        Planungsergebnis.MinizincResult result = deserialisiere(ergebnis);
+
+        long[] tnOids = result.teilnehmer_oids;
+        int pIdx = indexOf(tnOids, teilnehmer.getId());
+        if (pIdx < 0) {
+            throw new BusinessException("Teilnehmer ist nicht Teil dieses Planungsergebnisses.");
+        }
+
+        long[] wvOids = result.wahlvortrag_oids;
+        long[] raumOids = result.raum_oids;
+        boolean[][][] besucht = result.besucht;
+        int[][] instanzSlot = result.instanz_slot;
+        int[][] instanzRaum = result.instanz_raum;
+        int maxInstanzen = instanzSlot[0].length;
+
+        int wvIdx = indexOf(wvOids, wahlvortragId);
+        if (wvIdx < 0 || instanzIndex < 0 || instanzIndex >= instanzSlot[wvIdx].length || instanzSlot[wvIdx][instanzIndex] <= 0) {
+            throw new BusinessException("Wahlvortrag-Instanz nicht gefunden.");
+        }
+        if (result.istAusgefallen(wvIdx, instanzIndex)) {
+            throw new BusinessException("Diese Instanz wurde als ausgefallen markiert.");
+        }
+        if (besuchtWahlvortragBereits(besucht, pIdx, wvIdx, maxInstanzen)) {
+            throw new BusinessException("Teilnehmer ist diesem Wahlvortrag bereits in einer anderen Instanz zugeteilt.");
+        }
+
+        Map<Long, Raum> raumByOid = veranstaltung.getRaeume().stream().collect(toMap(IdEntity::getId, Function.identity()));
+        int rIdx = instanzRaum[wvIdx][instanzIndex] - 1;
+        Raum raum = rIdx < 0 ? null : raumByOid.get(raumOids[rIdx]);
+        if (null == raum) {
+            throw new BusinessException("Raum der Instanz nicht gefunden.");
+        }
+        int belegteAnzahl = 0;
+        for (int p2 = 0; p2 < tnOids.length; p2++) {
+            if (besucht[p2][wvIdx][instanzIndex]) {
+                belegteAnzahl++;
+            }
+        }
+        if (belegteAnzahl >= raum.getKapazitaet()) {
+            throw new BusinessException("Instanz hat keinen freien Platz mehr.");
+        }
+
+        besucht[pIdx][wvIdx][instanzIndex] = true;
+        ergebnis.setJsonErgebnis(result.toJson());
+
+        Map<Long, Wahlvortrag> wahlvortragByOid = veranstaltung.getWahlvortraege().stream().collect(toMap(IdEntity::getId, Function.identity()));
+        Wahlvortrag vortrag = wahlvortragByOid.get(wahlvortragId);
+        if (null != vortrag) {
+            String inhalt = "Du bist wieder als verfügbar gemeldet und wurdest dem Wahlvortrag '"
+                + vortrag.getTitel() + "' zugeteilt.";
+            nachrichtService.sendeNachricht(teilnehmer, "Du wurdest einem Wahlvortrag zugeteilt", inhalt,
+                NachrichtKategorie.TEILNEHMER_NACHGEBUCHT, veranstaltung.getId(), username);
+        }
+
+        LOG.infof("Teilnehmer %d nachgebucht in Wahlvortrag %d (Instanz %d) in Veranstaltung '%s'.",
+            teilnehmer.getId(), wahlvortragId, instanzIndex, veranstaltung.getName());
+    }
+
+
     private Instanz waehleBestenKandidaten(Teilnehmer teilnehmer, List<Instanz> eligibleKandidaten, long[] wvOids,
                                            Map<Long, Wahlvortrag> wahlvortragByOid, Map<Instanz, Integer> restkapazitaet) {
         int besteUeberschneidung = -1;
@@ -526,6 +618,103 @@ public class UmplanungService {
             }
         }
         return false;
+    }
+
+
+    private boolean besuchtIrgendeinWahlvortragInSlot(boolean[][][] besucht, int pIdx, int[][] instanzSlot, int slotIdx1) {
+        for (int wIdx = 0; wIdx < instanzSlot.length; wIdx++) {
+            for (int iIdx = 0; iIdx < instanzSlot[wIdx].length; iIdx++) {
+                if (instanzSlot[wIdx][iIdx] == slotIdx1 && besucht[pIdx][wIdx][iIdx]) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+
+    private boolean pflichtvortragDecktSlotAb(Veranstaltung veranstaltung, Teilnehmer teilnehmer, Long slotId) {
+        return veranstaltung.getPflichtvortraege().stream()
+            .anyMatch(pv -> teilnehmer.getGruppen().contains(pv.getPflichtgruppe()) && pv.getPflichtslot().getId().equals(slotId));
+    }
+
+
+    private Teilnehmer ladeTeilnehmer(Veranstaltung veranstaltung, Long teilnehmerId) {
+        return veranstaltung.teilnehmer().stream()
+            .filter(t -> t.getId().equals(teilnehmerId)).findFirst()
+            .orElseThrow(() -> new BusinessException("Teilnehmer nicht gefunden."));
+    }
+
+
+    private int ermittlePrioWert(Teilnehmer teilnehmer, Wahlvortrag vortrag) {
+        Prioritaet p = Prioritaet.find("teilnehmer = ?1 and vortrag = ?2", teilnehmer, vortrag).firstResult();
+        return null == p ? 0 : p.getPrioWert();
+    }
+
+
+    /**
+     * Sammelt alle Wahlvortrag-Instanzen im angegebenen Zeitslot mit freier Raumkapazität, die dem
+     * Teilnehmer noch nicht zugeteilt sind (weder in der ggf. auszuschließenden aktuellen
+     * Instanz - Umbuchung - noch in irgendeiner anderen Instanz desselben Wahlvortrags) - gemeinsam
+     * genutzt von {@link #getUmbuchungsOptionen} und {@link #ermittleNachbuchungsVorschlaege}, die
+     * sich nur in Ausschluss-Kriterium und Sortierung unterscheiden. ausschlussWvIdx/-InstanzIdx auf
+     * -1 setzen, wenn es keine auszuschließende aktuelle Instanz gibt (Nachbuchung).
+     */
+    private List<UmbuchungOptionDto> kandidatenInSlot(Planungsergebnis.MinizincResult result, Teilnehmer teilnehmer, int pIdx,
+                                                       int slotIdx1, int ausschlussWvIdx, int ausschlussInstanzIdx,
+                                                       Map<Long, Wahlvortrag> wahlvortragByOid, Map<Long, Raum> raumByOid) {
+        long[] tnOids = result.teilnehmer_oids;
+        long[] wvOids = result.wahlvortrag_oids;
+        long[] raumOids = result.raum_oids;
+        boolean[][][] besucht = result.besucht;
+        int[][] instanzSlot = result.instanz_slot;
+        int[][] instanzRaum = result.instanz_raum;
+        int maxInstanzen = instanzSlot[0].length;
+
+        List<UmbuchungOptionDto> optionen = new ArrayList<>();
+        for (int wIdx = 0; wIdx < wvOids.length; wIdx++) {
+            Wahlvortrag kandidatVortrag = wahlvortragByOid.get(wvOids[wIdx]);
+            if (null == kandidatVortrag) {
+                continue;
+            }
+            for (int iIdx = 0; iIdx < instanzSlot[wIdx].length; iIdx++) {
+                if (wIdx == ausschlussWvIdx && iIdx == ausschlussInstanzIdx) {
+                    continue;
+                }
+                if (instanzSlot[wIdx][iIdx] != slotIdx1 || result.istAusgefallen(wIdx, iIdx)) {
+                    continue;
+                }
+                if (besuchtWahlvortragBereits(besucht, pIdx, wIdx, maxInstanzen)) {
+                    continue;
+                }
+                int rIdx = instanzRaum[wIdx][iIdx] - 1;
+                if (rIdx < 0) {
+                    continue;
+                }
+                Raum raum = raumByOid.get(raumOids[rIdx]);
+                if (null == raum) {
+                    continue;
+                }
+                int belegteAnzahl = 0;
+                for (int p2 = 0; p2 < tnOids.length; p2++) {
+                    if (besucht[p2][wIdx][iIdx]) {
+                        belegteAnzahl++;
+                    }
+                }
+                if (belegteAnzahl >= raum.getKapazitaet()) {
+                    continue;
+                }
+                long ueberschneidung = kandidatVortrag.getNeigungen().stream()
+                    .filter(teilnehmer.getNeigungen()::contains)
+                    .count();
+                optionen.add(new UmbuchungOptionDto(
+                    kandidatVortrag.getId(), iIdx, kandidatVortrag.getTitel(),
+                    kandidatVortrag.getReferent().getFullName(), raum.getName(),
+                    raum.getKapazitaet(), belegteAnzahl, (int) ueberschneidung,
+                    ermittlePrioWert(teilnehmer, kandidatVortrag)));
+            }
+        }
+        return optionen;
     }
 
 

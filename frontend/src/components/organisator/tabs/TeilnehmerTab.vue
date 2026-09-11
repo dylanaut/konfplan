@@ -180,7 +180,7 @@
             <UploadIcon class="w-3.5 h-3.5"/>
             Verfügbarkeiten Import
           </button>
-          <button v-if="availabilityStore.hasDirtyAvailabilities()" @click="availabilityStore.saveAvailabilities(selectedVid)"
+          <button v-if="availabilityStore.hasDirtyAvailabilities()" @click="handleSaveAvailabilities"
                   :disabled="isEventFinished"
                   class="btn-save-all">
             <SaveAllIcon class="w-3.5 h-3.5"/>
@@ -274,6 +274,11 @@
         </div>
       </div>
     </div>
+
+    <TeilnehmerNachbuchenModal :isVisible="showNachbuchungModal" :vid="selectedVid"
+                               :teilnehmer="aktuellerNachbuchungsKandidat?.teilnehmer"
+                               :vorschlaege="aktuellerNachbuchungsKandidat?.vorschlaege || []"
+                               @close="naechsterNachbuchungsKandidat"/>
   </section>
 </template>
 
@@ -301,6 +306,7 @@ import {
   X as XIcon
 } from '@lucide/vue';
 import PaginationControls from '../../PaginationControls.vue';
+import TeilnehmerNachbuchenModal from './TeilnehmerNachbuchenModal.vue';
 import {useAvailabilityStore} from '../../../stores/availability';
 
 const props = defineProps({
@@ -502,6 +508,29 @@ const openParticipantPlan = (participant) => {
     return;
   }
   router.push({ name: 'LaufzettelTeilnehmer', params: { vid: props.selectedVid, tid: participant.id } });
+};
+
+// Nachbuchungs-Vorschläge nach dem Speichern von Verfügbarkeiten: eine Warteschlange, da beim
+// Speichern mehrere Teilnehmer gleichzeitig wieder verfügbar geworden sein können - der Organisator
+// bearbeitet sie nacheinander in je einem modalen Dialog.
+const nachbuchungsWarteschlange = ref([]);
+const showNachbuchungModal = ref(false);
+const aktuellerNachbuchungsKandidat = computed(() => nachbuchungsWarteschlange.value[0] ?? null);
+
+const handleSaveAvailabilities = async () => {
+  const ergebnisse = await availabilityStore.saveAvailabilities(props.selectedVid);
+  nachbuchungsWarteschlange.value = ergebnisse
+    .map(e => ({
+      teilnehmer: props.teilnehmer.find(t => t.id === e.userId),
+      vorschlaege: e.vorschlaege.filter(v => v.optionen.length > 0)
+    }))
+    .filter(k => k.teilnehmer);
+  showNachbuchungModal.value = nachbuchungsWarteschlange.value.length > 0;
+};
+
+const naechsterNachbuchungsKandidat = () => {
+  nachbuchungsWarteschlange.value.shift();
+  showNachbuchungModal.value = nachbuchungsWarteschlange.value.length > 0;
 };
 </script>
 

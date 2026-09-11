@@ -25,6 +25,7 @@ import kreyj.konfplan.domain.service.NachrichtService;
 import kreyj.konfplan.domain.service.PlanService;
 import kreyj.konfplan.domain.service.UmplanungService;
 import kreyj.konfplan.persistence.Slot;
+import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -579,6 +580,30 @@ public class VeranstaltungResource {
 
         String username = securityContext.getUserPrincipal().getName();
         umplanungService.teilnehmerUmbuchen(veranstaltung, ergebnisId, tid, anfrage, username);
+        return Response.ok().build();
+    }
+
+
+    @POST
+    @Path("/{vid}/teilnehmer/{tid}/nachbuchen")
+    @Operation(summary = "Teilnehmer nach wiederhergestellter Verfügbarkeit in einen Wahlvortrag nachbuchen",
+        description = "Bucht einen Teilnehmer, der bei bereits veröffentlichtem Plan wieder als verfügbar markiert wurde, in eine "
+            + "vom Organisator ausgewählte Wahlvortrag-Instanz (siehe die im Zuge der Verfügbarkeits-Aktualisierung gelieferten "
+            + "Nachbuchungs-Vorschläge). Wirkt immer auf das aktuell veröffentlichte Planungsergebnis.")
+    public Response teilnehmerNachbuchen(@PathParam("vid") Long vid, @PathParam("tid") Long tid,
+                                          @RequestBody(description = "Gewählte Wahlvortrag-Instanz") NachbuchungAnfrageDto anfrage,
+                                          @Context SecurityContext securityContext) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(NOT_FOUND).build();
+        }
+        Teilnehmer teilnehmer = Teilnehmer.findById(tid);
+        if (null == teilnehmer) {
+            return Response.status(NOT_FOUND).build();
+        }
+
+        String username = securityContext.getUserPrincipal().getName();
+        umplanungService.teilnehmerNachbuchen(veranstaltung, teilnehmer, anfrage.wahlvortragId, anfrage.instanzIndex, username);
         return Response.ok().build();
     }
 
