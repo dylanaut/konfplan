@@ -42,7 +42,7 @@
             </button>
             <button @click="vortraegeAnsehen(e)" :disabled="busyId !== null"
                     class="px-2 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
-              Vorträge ansehen
+              Vortrag umplanen
             </button>
             <button @click="teilnehmerUmbuchenAnsehen(e)" :disabled="busyId !== null"
                     class="px-2 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
