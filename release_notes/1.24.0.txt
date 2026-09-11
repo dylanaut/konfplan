@@ -1,0 +1,75 @@
+Release Notes 1.24.0
+Released: 2026-09-11
+
+Changes:
+
+- Release-Notes fuer 1.23.6 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.23.7-SNAPSHOT)
+
+- Fehlgeschlagene Logins zusätzlich im App-Protokoll erfassen
+  FailedLoginMetricsPoller schreibt für jedes Keycloak LOGIN_ERROR-Event jetzt
+  zusätzlich zur bestehenden Prometheus-Metrik einen Eintrag ins App-eigene
+  Protokoll (Kategorie LOGIN, Akteur = versuchter Login-Name, Referenz auf den
+  Nutzer sofern der Login-Name aufgelöst werden konnte).
+
+- Prioritaet: Race Condition bei doppeltem Speichern verhindern
+  - Neue Unique-Constraint UK_prioritaet_teilnehmer_vortrag auf
+    (teilnehmer_id, vortrag_id) - Flyway-Migration V23 für Prod, zusätzlich als
+    JPA-Annotation auf der Entity, damit dieselbe Constraint auch in Dev/Test
+    greift (dort generiert Hibernate das Schema aus den Entities statt Flyway
+    anzuwenden).
+  - savePrioritaeten/updateSinglePrioritaet fangen einen Constraint-Verstoß
+    jetzt über einen gemeinsamen upsertPrioritaet()-Helper ab und wiederholen
+    als Update in einer neuen Transaktion, statt dem Nutzer einen 500 zu
+    liefern (Race: zwei fast gleichzeitige Requests, z.B. Doppelklick).
+  - getVortragPrioritaeten loggt einen aussagekräftigen WARN statt mit
+    IllegalStateException abzustürzen, falls trotzdem einmal Duplikate
+    vorliegen (Defense in Depth, z.B. für Altdaten vor dieser Migration).
+  - deploy/cleanup-duplicate-prioritaeten.sql: manuelles Bereinigungsskript für
+    bestehende Duplikate in Produktion - MUSS vor dem Deployment dieser Version
+    ausgeführt werden, sonst schlägt die Migration beim Start fehl.
+
+- Teilnehmer manuell in anderen Wahlvortrag umbuchen
+  Neue Funktion für Organisatoren, um einen einzelnen Teilnehmer nachträglich
+  von einem Wahlvortrag auf einen anderen im selben Zeitslot umzubuchen - z.B.
+  wenn ein unpassender Wahlvortrag priorisiert wurde, die Teilnehmer-Deadline
+  bereits abgelaufen ist und ein Plan schon erstellt wurde. Unabhängig von der
+  Deadline, da organisatorgetrieben; die Änderung wird sofort in allen Reports
+  sichtbar (schreibt direkt ins bestehende Planungsergebnis, analog zu
+  UmplanungService#vortragsInstanzUmplanen, erhöht dessen @Version wodurch der
+  PlanService-Cache automatisch invalidiert wird).
+  Backend (UmplanungService):
+  - getAktuelleZuweisungen: aktuelle Wahlvortrag-Zuweisungen eines Teilnehmers
+  - getUmbuchungsOptionen: Alternativen im selben Zeitslot mit freier
+    Raumkapazität, absteigend sortiert nach Neigungs-Übereinstimmung - als
+    Entscheidungshilfe, um den Teilnehmer bei der Wahl zu beraten
+  - teilnehmerUmbuchen: führt die Umbuchung durch, validiert Zeitslot-
+    Gleichheit, freie Kapazität und dass der Teilnehmer den Zielvortrag nicht
+    bereits besucht, benachrichtigt den Teilnehmer (neue Nachrichtenkategorie
+    TEILNEHMER_UMGEBUCHT, Migration V24)
+  Frontend: neues Modal "Teilnehmer umbuchen" im ErgebnisseTab - Teilnehmer
+  suchen, aktuelle Zuweisung wählen, aus sortierten Alternativen (Kapazität +
+  Neigungs-Match) eine neue wählen.
+
+- Sitzplatz automatisch freigeben, wenn Teilnehmer bei veröffentlichtem Plan als nicht verfügbar markiert wird
+  OrganisatorResource#updateVerfuegbarkeit ermittelt jetzt die Slots, die
+  vorher verfügbar waren und es nach dem Speichern nicht mehr sind (z.B.
+  Krankmeldung), und ruft dafür UmplanungService#freigebenBeiNichtVerfuegbarkeit
+  auf - gibt den Sitzplatz des Teilnehmers in seinen bereits zugewiesenen
+  Wahlvorträgen für diese Slots frei (besucht=false im bestehenden
+  Planungsergebnis) und benachrichtigt den jeweiligen Referenten (neue
+  Nachrichtenkategorie TEILNEHMER_NICHT_VERFUEGBAR, Migration V25).
+  Bewusst OHNE automatische Neubelegung des frei gewordenen Platzes - anders
+  als bei UmplanungService#vortragsInstanzUmplanen (fällt eine ganze Instanz
+  aus, müssen ALLE ihre Teilnehmer irgendwo untergebracht werden) gibt es bei
+  einem einzelnen krankgemeldeten Teilnehmer niemanden, der "umverteilt"
+  werden müsste - das bleibt eine bewusste, separate Organisator-Entscheidung
+  (z.B. über die kürzlich hinzugefügte teilnehmerUmbuchen-Funktion).
+  Wirkt nur, wenn es für die Veranstaltung ein VERÖFFENTLICHTES
+  Planungsergebnis gibt - sonst bleibt die Verfügbarkeit wie bisher reine
+  Eingabe für den nächsten Planungslauf. Pflichtvorträge sind nicht betroffen
+  (gruppen-/slotbasiert fix zugeteilt, nicht einzeln kapazitätsgezählt).
+
+- Release 1.24.0
+
