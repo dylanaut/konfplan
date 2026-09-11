@@ -11,6 +11,7 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -526,6 +527,59 @@ public class VeranstaltungResource {
         UmplanungErgebnisDto ergebnis = umplanungService.vortragsInstanzUmplanen(
             veranstaltung, ergebnisId, anfrage.wahlvortragId, anfrage.instanzIndex, username);
         return Response.ok(ergebnis).build();
+    }
+
+
+    @GET
+    @Path("/{vid}/planungsergebnisse/{ergebnisId}/teilnehmer/{tid}/zuweisungen")
+    @Operation(summary = "Aktuelle Wahlvortrag-Zuweisungen eines Teilnehmers abrufen",
+        description = "Listet die Wahlvortrag-Instanzen, denen ein einzelner Teilnehmer im angegebenen Planungsergebnis "
+            + "aktuell zugeteilt ist - für die manuelle Einzel-Umbuchung.")
+    public Response getAktuelleZuweisungen(@PathParam("vid") Long vid, @PathParam("ergebnisId") Long ergebnisId, @PathParam("tid") Long tid) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(NOT_FOUND).build();
+        }
+
+        return Response.ok(umplanungService.getAktuelleZuweisungen(veranstaltung, ergebnisId, tid)).build();
+    }
+
+
+    @GET
+    @Path("/{vid}/planungsergebnisse/{ergebnisId}/teilnehmer/{tid}/umbuchen-optionen")
+    @Operation(summary = "Umbuchungs-Optionen für einen Teilnehmer abrufen",
+        description = "Listet alternative Wahlvortrag-Instanzen im selben Zeitslot wie die angegebene aktuelle Zuweisung, "
+            + "mit freier Raumkapazität, sortiert nach Neigungs-Übereinstimmung - als Entscheidungshilfe, um den Teilnehmer "
+            + "bei der Wahl einer passenden Alternative zu beraten.")
+    public Response getUmbuchungsOptionen(@PathParam("vid") Long vid, @PathParam("ergebnisId") Long ergebnisId, @PathParam("tid") Long tid,
+                                           @QueryParam("wahlvortragId") Long wahlvortragId,
+                                           @QueryParam("instanzIndex") int instanzIndex) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(NOT_FOUND).build();
+        }
+
+        return Response.ok(umplanungService.getUmbuchungsOptionen(veranstaltung, ergebnisId, tid, wahlvortragId, instanzIndex)).build();
+    }
+
+
+    @POST
+    @Path("/{vid}/planungsergebnisse/{ergebnisId}/teilnehmer/{tid}/umbuchen")
+    @Operation(summary = "Teilnehmer manuell in einen anderen Wahlvortrag umbuchen",
+        description = "Bucht einen einzelnen Teilnehmer von einer Wahlvortrag-Instanz auf eine andere im selben Zeitslot um "
+            + "(z.B. wenn ein Teilnehmer nachträglich einen unpassenden Wahlvortrag priorisiert hat und die Teilnehmer-Deadline "
+            + "bereits abgelaufen ist) - unabhängig von der Teilnehmer-Deadline, da organisatorgetrieben.")
+    public Response teilnehmerUmbuchen(@PathParam("vid") Long vid, @PathParam("ergebnisId") Long ergebnisId, @PathParam("tid") Long tid,
+                                        @RequestBody(description = "Aktuelle und gewünschte neue Wahlvortrag-Instanz") TeilnehmerUmbuchenAnfrageDto anfrage,
+                                        @Context SecurityContext securityContext) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(NOT_FOUND).build();
+        }
+
+        String username = securityContext.getUserPrincipal().getName();
+        umplanungService.teilnehmerUmbuchen(veranstaltung, ergebnisId, tid, anfrage, username);
+        return Response.ok().build();
     }
 
 

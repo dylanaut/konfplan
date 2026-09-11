@@ -44,6 +44,10 @@
                     class="px-2 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
               Vorträge ansehen
             </button>
+            <button @click="teilnehmerUmbuchenAnsehen(e)" :disabled="busyId !== null"
+                    class="px-2 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
+              Teilnehmer umbuchen
+            </button>
             <button v-if="!e.publiziert" @click="publizieren(e)" :disabled="busyId !== null"
                     class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600 disabled:opacity-50">
               Veröffentlichen
@@ -204,6 +208,8 @@
                     @close="showUmplanungModal = false"/>
     <BerichteAuswahlModal :isVisible="showBerichteModal" :vid="eventContext.selectedEvent?.id" :ergebnisId="berichteErgebnisId"
                     @close="showBerichteModal = false"/>
+    <TeilnehmerUmbuchenModal :isVisible="showUmbuchenModal" :vid="eventContext.selectedEvent?.id" :ergebnisId="umbuchenErgebnisId"
+                    :teilnehmer="teilnehmer" @close="showUmbuchenModal = false"/>
   </section>
 </template>
 
@@ -213,6 +219,7 @@ import { useRouter } from 'vue-router';
 import { AlertTriangle as AlertTriangleIcon, RefreshCw as RefreshCwIcon } from '@lucide/vue';
 import { useEventContextStore } from '../../../stores/eventContext';
 import Stundenplan from '../../../views/report/Stundenplan.vue';
+import TeilnehmerUmbuchenModal from './TeilnehmerUmbuchenModal.vue';
 import UmplanungModal from './UmplanungModal.vue';
 import BerichteAuswahlModal from './BerichteAuswahlModal.vue';
 import api from '../../../api/axios';
@@ -220,6 +227,7 @@ import api from '../../../api/axios';
 const props = defineProps({
   belegungsPlan: {type: Array, required: true},
   qualitaet: {type: Object, required: true},
+  teilnehmer: {type: Array, default: () => []},
 });
 
 const emit = defineEmits(['published']);
@@ -243,10 +251,17 @@ const showUmplanungModal = ref(false);
 const umplanungErgebnisId = ref(null);
 const showBerichteModal = ref(false);
 const berichteErgebnisId = ref(null);
+const showUmbuchenModal = ref(false);
+const umbuchenErgebnisId = ref(null);
 
 const vortraegeAnsehen = (ergebnis) => {
   umplanungErgebnisId.value = ergebnis.id;
   showUmplanungModal.value = true;
+};
+
+const teilnehmerUmbuchenAnsehen = (ergebnis) => {
+  umbuchenErgebnisId.value = ergebnis.id;
+  showUmbuchenModal.value = true;
 };
 
 const berichteAnsehen = (ergebnis) => {

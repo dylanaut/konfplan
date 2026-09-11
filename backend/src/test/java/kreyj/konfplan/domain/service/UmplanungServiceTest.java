@@ -4,6 +4,9 @@ import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.DatabaseCleaner;
+import kreyj.konfplan.adapter.in.web.dto.TeilnehmerAktuelleZuweisungDto;
+import kreyj.konfplan.adapter.in.web.dto.TeilnehmerUmbuchenAnfrageDto;
+import kreyj.konfplan.adapter.in.web.dto.UmbuchungOptionDto;
 import kreyj.konfplan.adapter.in.web.dto.UmplanungErgebnisDto;
 import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.persistence.Gebaeude;
@@ -314,5 +317,148 @@ class UmplanungServiceTest extends DatabaseCleaner {
     private Planungsergebnis.MinizincResult ladeAktualisiertesErgebnis(Long ergebnisId) {
         Planungsergebnis neu = Planungsergebnis.findById(ergebnisId);
         return Planungsergebnis.MinizincResult.fromJson(neu.getJsonErgebnis());
+    }
+
+
+    // --- Manuelle Einzel-Umbuchung ---
+
+
+    @Test
+    @Transactional
+    void getAktuelleZuweisungen_liefertNurDieBesuchtenInstanzenDesTeilnehmers() {
+        Veranstaltung veranstaltung = neueVeranstaltung("Umbuchung-Test-1");
+        Slot slot1 = neuerSlot(veranstaltung, 1);
+        Wahlvortrag wvBesucht = neuerWahlvortrag(veranstaltung, "Besucht");
+        Wahlvortrag wvNichtBesucht = neuerWahlvortrag(veranstaltung, "Nicht besucht");
+        Teilnehmer tn = neuerTeilnehmer(veranstaltung, "tn1@test.com");
+
+        Planungsergebnis ergebnis = persistiereErgebnis(veranstaltung, ergebnis(
+            new long[]{tn.getId()},
+            new long[]{wvBesucht.getId(), wvNichtBesucht.getId()},
+            new long[]{slot1.getId()},
+            new long[]{raumGrossId},
+            new int[][]{{1}, {1}},
+            new int[][]{{1}, {1}},
+            new boolean[][][]{{{true}, {false}}}));
+
+        List<TeilnehmerAktuelleZuweisungDto> zuweisungen = umplanungService.getAktuelleZuweisungen(veranstaltung, ergebnis.getId(), tn.getId());
+
+        assertThat(zuweisungen).hasSize(1);
+        assertThat(zuweisungen.get(0).wahlvortragId).isEqualTo(wvBesucht.getId());
+        assertThat(zuweisungen.get(0).vortragTitel).isEqualTo("Besucht");
+    }
+
+
+    @Test
+    @Transactional
+    void getUmbuchungsOptionen_liefertNurAlternativenImSelbenSlotMitFreierKapazitaet_bevorzugtNeigungsMatch() {
+        Veranstaltung veranstaltung = neueVeranstaltung("Umbuchung-Test-2");
+        Slot slot1 = neuerSlot(veranstaltung, 1);
+        Slot slot2 = neuerSlot(veranstaltung, 2);
+        Wahlvortrag wvAlt = neuerWahlvortrag(veranstaltung, "Unpassend");
+        Wahlvortrag wvOhneMatch = neuerWahlvortrag(veranstaltung, "Ohne Übereinstimmung", Neigung.KREATIV);
+        Wahlvortrag wvMitMatch = neuerWahlvortrag(veranstaltung, "Mit Übereinstimmung", Neigung.TECHNISCH);
+        Wahlvortrag wvAndererSlot = neuerWahlvortrag(veranstaltung, "Anderer Slot", Neigung.TECHNISCH);
+        Teilnehmer tn = neuerTeilnehmer(veranstaltung, "tn1@test.com", Neigung.TECHNISCH);
+
+        Planungsergebnis ergebnis = persistiereErgebnis(veranstaltung, ergebnis(
+            new long[]{tn.getId()},
+            new long[]{wvAlt.getId(), wvOhneMatch.getId(), wvMitMatch.getId(), wvAndererSlot.getId()},
+            new long[]{slot1.getId(), slot2.getId()},
+            new long[]{raumGrossId},
+            new int[][]{{1}, {1}, {1}, {2}},
+            new int[][]{{1}, {1}, {1}, {1}},
+            new boolean[][][]{{{true}, {false}, {false}, {false}}}));
+
+        List<UmbuchungOptionDto> optionen = umplanungService.getUmbuchungsOptionen(veranstaltung, ergebnis.getId(), tn.getId(), wvAlt.getId(), 0);
+
+        assertThat(optionen).extracting(o -> o.vortragTitel).containsExactly("Mit Übereinstimmung", "Ohne Übereinstimmung");
+        assertThat(optionen.get(0).neigungsUeberschneidung).isEqualTo(1);
+        assertThat(optionen.get(1).neigungsUeberschneidung).isEqualTo(0);
+    }
+
+
+    @Test
+    @Transactional
+    void teilnehmerUmbuchen_bewegtTeilnehmerUndSendetNachricht() {
+        Veranstaltung veranstaltung = neueVeranstaltung("Umbuchung-Test-3");
+        Slot slot1 = neuerSlot(veranstaltung, 1);
+        Wahlvortrag wvAlt = neuerWahlvortrag(veranstaltung, "Unpassend");
+        Wahlvortrag wvNeu = neuerWahlvortrag(veranstaltung, "Passend");
+        Teilnehmer tn = neuerTeilnehmer(veranstaltung, "tn1@test.com");
+
+        Planungsergebnis ergebnis = persistiereErgebnis(veranstaltung, ergebnis(
+            new long[]{tn.getId()},
+            new long[]{wvAlt.getId(), wvNeu.getId()},
+            new long[]{slot1.getId()},
+            new long[]{raumGrossId},
+            new int[][]{{1}, {1}},
+            new int[][]{{1}, {1}},
+            new boolean[][][]{{{true}, {false}}}));
+
+        umplanungService.teilnehmerUmbuchen(veranstaltung, ergebnis.getId(), tn.getId(),
+            new TeilnehmerUmbuchenAnfrageDto(wvAlt.getId(), 0, wvNeu.getId(), 0), "organisator@test.com");
+
+        Planungsergebnis.MinizincResult aktualisiert = ladeAktualisiertesErgebnis(ergebnis.getId());
+        assertThat(aktualisiert.besucht[0][0][0]).describedAs("alte Zuweisung muss entfernt sein").isFalse();
+        assertThat(aktualisiert.besucht[0][1][0]).describedAs("neue Zuweisung muss gesetzt sein").isTrue();
+
+        List<Nachricht> nachrichten = nachrichtService.getNachrichtenFuerNutzer("tn1@test.com");
+        assertThat(nachrichten).hasSize(1);
+        assertThat(nachrichten.get(0).getKategorie()).isEqualTo(NachrichtKategorie.TEILNEHMER_UMGEBUCHT);
+    }
+
+
+    @Test
+    @Transactional
+    void teilnehmerUmbuchen_beiVollerZielinstanz_wirftBusinessException() {
+        Veranstaltung veranstaltung = neueVeranstaltung("Umbuchung-Test-4");
+        Slot slot1 = neuerSlot(veranstaltung, 1);
+        Raum raumKlein = new Raum("Raum Klein", 1);
+        raumKlein.persist();
+        Gebaeude.<Gebaeude>findById(schuleId).addRaum(raumKlein);
+
+        Wahlvortrag wvAlt = neuerWahlvortrag(veranstaltung, "Unpassend");
+        Wahlvortrag wvVoll = neuerWahlvortrag(veranstaltung, "Bereits voll");
+        Teilnehmer tn1 = neuerTeilnehmer(veranstaltung, "tn1@test.com");
+        Teilnehmer tn2 = neuerTeilnehmer(veranstaltung, "tn2@test.com");
+
+        Planungsergebnis ergebnis = persistiereErgebnis(veranstaltung, ergebnis(
+            new long[]{tn1.getId(), tn2.getId()},
+            new long[]{wvAlt.getId(), wvVoll.getId()},
+            new long[]{slot1.getId()},
+            new long[]{raumGrossId, raumKlein.getId()},
+            new int[][]{{1}, {1}},
+            new int[][]{{1}, {2}},
+            new boolean[][][]{{{true}, {false}}, {{false}, {true}}}));
+
+        assertThatThrownBy(() -> umplanungService.teilnehmerUmbuchen(veranstaltung, ergebnis.getId(), tn1.getId(),
+            new TeilnehmerUmbuchenAnfrageDto(wvAlt.getId(), 0, wvVoll.getId(), 0), "organisator@test.com"))
+            .isInstanceOf(BusinessException.class);
+    }
+
+
+    @Test
+    @Transactional
+    void teilnehmerUmbuchen_beiUnterschiedlichemZeitslot_wirftBusinessException() {
+        Veranstaltung veranstaltung = neueVeranstaltung("Umbuchung-Test-5");
+        Slot slot1 = neuerSlot(veranstaltung, 1);
+        Slot slot2 = neuerSlot(veranstaltung, 2);
+        Wahlvortrag wvAlt = neuerWahlvortrag(veranstaltung, "Slot 1");
+        Wahlvortrag wvAndererSlot = neuerWahlvortrag(veranstaltung, "Slot 2");
+        Teilnehmer tn = neuerTeilnehmer(veranstaltung, "tn1@test.com");
+
+        Planungsergebnis ergebnis = persistiereErgebnis(veranstaltung, ergebnis(
+            new long[]{tn.getId()},
+            new long[]{wvAlt.getId(), wvAndererSlot.getId()},
+            new long[]{slot1.getId(), slot2.getId()},
+            new long[]{raumGrossId},
+            new int[][]{{1}, {2}},
+            new int[][]{{1}, {1}},
+            new boolean[][][]{{{true}, {false}}}));
+
+        assertThatThrownBy(() -> umplanungService.teilnehmerUmbuchen(veranstaltung, ergebnis.getId(), tn.getId(),
+            new TeilnehmerUmbuchenAnfrageDto(wvAlt.getId(), 0, wvAndererSlot.getId(), 0), "organisator@test.com"))
+            .isInstanceOf(BusinessException.class);
     }
 }
