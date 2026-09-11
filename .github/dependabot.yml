@@ -9,6 +9,13 @@ updates:
     directory: "/frontend"
     schedule:
       interval: "weekly"
+    ignore:
+      # Quarkus Quinoa 2.9.0 ist mit Vite 8 im Dev-Modus (quarkus:dev) inkompatibel - der letzte
+      # automatische Bump auf ^8.2.2 lief nur gegen "npm run build" grün, da die CI den
+      # quarkus:dev-Pfad nicht abdeckt (siehe #610). Bis Quinoa Vite 8 offiziell unterstützt, hier
+      # bei v7 bleiben - Patch-/Minor-Updates innerhalb v7 bleiben erlaubt.
+      - dependency-name: "vite"
+        versions: [">=8.0.0"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
