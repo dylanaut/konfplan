@@ -1,0 +1,150 @@
+Release Notes 1.24.2
+Released: 2026-09-12
+
+Changes:
+
+- Release-Notes fuer 1.24.1 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.24.2-SNAPSHOT)
+
+- Frontend: Vite auf v7 zurückstufen (Quinoa-Dev-Server-Inkompatibilität mit Vite 8)
+  quarkus:dev scheitert beim Öffnen der App mit einem Vite-Fehler
+  ("Failed to parse source for import analysis... File: index.html"),
+  sichtbar nur über die Quinoa-Weiterleitung (standalone `npm run dev` auf
+  Port 5173 läuft fehlerfrei). Quarkus Quinoa 2.9.0 ist offenbar noch nicht
+  mit Vite 8 kompatibel - der Dependabot-Bump auf ^8.2.2 (#137/#205) lief nur
+  gegen `npm run build`, der `quarkus:dev`-Pfad wird von der CI nicht
+  abgedeckt. #547 behob bereits eine verwandte Vite-8-Inkompatibilität für
+  zwei Dev-Plugins; dieser Fall betrifft die Kern-Interaktion zwischen Quinoa
+  und Vites Dev-Server selbst.
+  vite von ^8.2.2 auf ^7.3.5 zurückgestuft (letzte nachweislich funktionierende
+  Version).
+
+- Dependabot: Vite-Major-Updates ignorieren, solange Quinoa v8 nicht unterstützt
+  Verhindert, dass Dependabot vite erneut auf ^8.x hochstuft, bevor Quarkus
+  Quinoa (aktuell 2.9.0) Vite 8 im Dev-Modus unterstützt (siehe #610 - der
+  letzte Bump brach quarkus:dev unbemerkt, da die CI nur "npm run build"
+  gegen die neue Version testet). Patch-/Minor-Updates innerhalb v7 bleiben
+  weiterhin erlaubt.
+  Refs #610
+
+- Nachbuchung: passende Wahlvorträge bei wiederhergestellter Verfügbarkeit vorschlagen
+  Wird ein Teilnehmer bei bereits veröffentlichtem Plan wieder als verfügbar markiert (z.B. nach
+  Rücknahme einer Krankmeldung), ermittelt UmplanungService#ermittleNachbuchungsVorschlaege für jeden
+  neu verfügbaren Zeitslot passende Wahlvortrag-Instanzen mit freier Kapazität - sortiert nach
+  unerfüllter Priorität, dann Neigungs-Übereinstimmung. Slots, die durch einen Pflichtvortrag der
+  Teilnehmer-Gruppe abgedeckt sind oder in denen der Teilnehmer bereits einem Wahlvortrag zugeteilt
+  ist, werden ausgeschlossen. Der Organisator bekommt die Vorschläge im Frontend nach dem Speichern
+  der Verfügbarkeiten in einem modalen Dialog angezeigt und kann dort direkt nachbuchen
+  (teilnehmerNachbuchen). Der Teilnehmer wird nur bei tatsächlicher Nachbuchung per Nachricht
+  (Kategorie TEILNEHMER_NACHGEBUCHT) informiert, nicht beim bloßen Anzeigen der Vorschläge.
+  Refaktoriert die bereits bestehende getUmbuchungsOptionen-Kandidatensuche in einen gemeinsamen
+  kandidatenInSlot-Helper, den beide Use-Cases nutzen.
+
+- Vite-Dev-Server-Bootstrap-Pfade (/@vite/client, /@id/...) nicht mehr auf SPA-Fallback umleiten
+  SpaFallbackRoute registriert eine Vert.x-Route mit order(Integer.MIN_VALUE) - höchste Priorität,
+  läuft vor Quinoas eigenem Dev-Proxy. Sie reroutet jeden GET-Request auf "/", außer der Pfad ist "/",
+  beginnt mit "/api"/"/q", oder das letzte Pfadsegment enthält einen Punkt ("sieht aus wie eine
+  Datei"). Vites eigene interne Bootstrap-Pfade im Dev-Modus (/@vite/client, /@id/...) haben aber
+  keinen Punkt im letzten Segment und wurden dadurch fälschlich auf "/" umgeleitet, bevor Quinoas
+  Dev-Proxy die Anfrage überhaupt sieht - das ließ Vites Client-Bootstrap mit einem MIME-Type-Fehler
+  scheitern (leere Seite in quarkus:dev, unabhängig von der Vite-Version).
+  Verifiziert per TCP-Mitschnitt zwischen Quinoas Dev-Proxy und dem Vite-Prozess: für /@vite/client
+  wurde nie ein Request an Vite gesendet - der Request wurde bereits vorher umgeleitet.
+  Zusätzlich zwei kleinere, unabhängige Quinoa-Dev-Server-Verbesserungen:
+  - dev-server.direct-forwarding=true: verhindert, dass Quinoas Dev-Proxy 200-Antworten mit
+    Content-Type text/html aufgrund einer fehleranfälligen Heuristik verwirft.
+  - dev-server.index-page=/: Quinoa leitet "/" auch wirklich als "/" (statt "index.html") an Vite
+    weiter, damit der HTML-Entry-Point im Modul-Graph unter der korrekten ID registriert wird.
+
+- Vite-Downgrade zurücknehmen (v7 -> v8.3.0) und Dependabot-Ignore entfernen
+  Die weiße Seite in quarkus:dev, wegen der Vite in #611 auf v7 zurückgestuft wurde, hatte eine
+  andere Ursache: SpaFallbackRoute leitete Vites eigene Dev-Bootstrap-Pfade (/@vite/client, /@id/...)
+  fälschlich auf die SPA-Fallback-Seite um, bevor Quinoas Dev-Proxy die Anfrage sah (siehe #623, Fix
+  in #624). Nach diesem Fix funktioniert quarkus:dev auch mit Vite 8 - verifiziert per
+  "npm run build" und vom Nutzer bestätigtem Neustart von quarkus:dev.
+  Der Dependabot-Ignore für Vite-Major-Updates aus #612 entfällt damit ebenfalls.
+
+- Quinoas direct-forwarding entfernen (lieferte SPA-index.html statt echter /api/*-JSON-Antworten)
+  * Quinoas direct-forwarding entfernen (lieferte SPA-index.html statt echter /api/*-JSON-Antworten)
+  Root Cause (per Debug-Log bestätigt): Quinoas Dev-Proxy (order 1100) gewinnt das Vert.x-Routing
+  gegen RESTEasy Reactive für /api/*-Pfade, da Quinoa "/api" nicht als reserviert kennt (die eigene
+  Ignore-Liste wird nur aus quarkus.rest.path/quarkus.resteasy-reactive.path berechnet, nicht aus
+  einzelnen @Path-Annotationen). Für z.B. /api/veranstaltungen leitet Quinoa den Request an Vite
+  weiter; Vite antwortet (Default appType "spa") mit 200 + seiner eigenen index.html. Quinoas
+  shouldForward()-Heuristik würde diese Antwort normalerweise verwerfen (200 + text/html auf einem
+  Pfad, der nicht "/" ist oder auf ".html" endet) und den Request per next() weiterreichen, sodass
+  RESTEasy ihn doch noch bekommt - aber direct-forwarding=true (aus der #623/#624-Diagnose, mittlerweile
+  durch die "/@"-Ausnahme in SpaFallbackRoute überholt) hatte genau diesen Schutz abgeschaltet und
+  dadurch jede 200-Antwort blind durchgereicht, unabhängig vom gültigen Auth-Token des Requests.
+  Zwei zusätzliche, während der Diagnose gefundene Härtungen:
+  - quarkus.http.auth.permission.*: erzwingt Authentifizierung auf HTTP-Ebene für /api/* (mit
+    expliziter Ausnahme für den öffentlichen /api/laufband-Endpunkt), statt sich allein auf
+    CDI-@RolesAllowed zu verlassen, das erst nach dem Vert.x-Routing greift.
+  - %dev.quarkus.oidc.credentials.secret: behebt einen invalid_client-Fehler bei Quarkus' OIDC-
+    Introspection-Fallback (z.B. nach einem Keycloak-Dev-Container-Neustart mit neuen
+    Signierschlüsseln, wenn die lokale JWT-Signaturprüfung fehlschlägt).
+  Test angepasst: unbekannte /api/*-Pfade werden jetzt korrekt mit 401 statt 404 abgewiesen (die
+  Auth-Policy greift bereits vor dem JAX-RS-Routing).
+  * HTTP-Auth-Policy für /api/* auf %dev beschränken (CI-Fix)
+  Die neue quarkus.http.auth.permission-Policy für /api/* darf nicht global (auch %test/%prod)
+  gelten: in %test zeigt quarkus.oidc bewusst auf eine nie kontaktierte Dummy-URL (Tests nutzen
+  @TestSecurity/@OidcSecurity statt echtem Keycloak), ein HTTP-Level-Auth-Check versucht aber auch
+  für Requests ganz ohne Token eine OIDC-Verbindung aufzubauen - das ließ zwei bereits bestehende
+  "erwarte 401 ohne Token"-Tests mit 500 ("OIDC Server is not available") fehlschlagen
+  (AppInfoResourceTest, SpaFallbackRouteTest). Da der eigentliche Bug (Quinoas Dev-Proxy gewinnt
+  gegen RESTEasy für /api/*) ohnehin nur in %dev auftreten kann (Quinoas Dev-Proxy existiert nur im
+  Dev-Modus), reicht die Policy auf %dev zu beschränken.
+  SpaFallbackRouteTest.unbekannterApiPfad wieder auf die ursprüngliche 404-Erwartung zurückgesetzt.
+  ---------
+
+- VeranstaltungImportTab: falschen API-Pfad korrigieren (/api/organisator -> /api/administrator)
+  VeranstaltungImportResource ist bewusst unter /api/administrator/veranstaltung-import gemountet
+  (@RolesAllowed("ADMINISTRATOR") - exklusiv für Administratoren, siehe OrganisatorDashboard.vue).
+  VeranstaltungImportTab.vue rief stattdessen /api/organisator/veranstaltung-import auf - ein reiner
+  Pfad-Tippfehler, der den Verzeichnis-Import in jeder Umgebung (dev, test, prod) 404en ließ,
+  unabhängig von Rolle oder Environment.
+
+- Dev-Modus: juergenkrey nach jedem Neustart als ADMINISTRATOR verfügbar machen
+  Das "klein"-Dataset (aktuell in %dev geladen) importierte bisher nur "scalanaut" als Organisator.
+  juergenkrey/juergenkrey@yahoo.de als zweiten Organisator ergänzt und in DevDataInitService per
+  bereits bestehendem OrganisatorService#changeRole auf ADMINISTRATOR befördert (idempotent, no-op
+  falls schon Administrator) - für lokales Testen administrator-exklusiver Features (z.B.
+  Verzeichnis-Import, Datenbank-Export).
+
+- Dev-Modus: dedizierten Administrator-Account 'admin' statt Rollen-Upgrade-Hack
+  OrganisatorService#createUser unterstützt jetzt auch "ADMINISTRATOR" als Rolle (legt direkt eine
+  Administrator-Entity an, analog zu REFERENT/TEILNEHMER) - vorher konnte über diesen Weg kein neuer
+  Administrator direkt angelegt werden, nur über den Umweg Organisator + changeRole.
+  DevDataInitService legt beim Start (falls noch nicht vorhanden) einen festen, dataset-unabhängigen
+  Account an: Login "admin", Rolle ADMINISTRATOR, Vorname Jürgen, Nachname Krey, E-Mail
+  kontakt@konfplan.de - idempotent, unabhängig davon, welche(s) Dataset(s) via
+  konfplan.dev-data.datasets geladen werden.
+  Nimmt die #632/#633-Änderungen zurück (juergenkrey-Zeile im "klein"-Dataset, Rollen-Upgrade nach
+  CSV-Import in DevDataInitService), die durch diesen saubereren Ansatz überholt sind.
+
+- cleanup files
+
+- cleanup files
+
+- removed import-dev.sql
+
+- csv_import/import-test/ wiederherstellen - CsvFileImportTest bricht main
+  Wurde durch die Commits f4a66ef/11591fe ("cleanup files") versehentlich
+  gelöscht (vermutlich ungewolltes automatisches Staging), wodurch
+  CsvFileImportTest seitdem mit NullPointerException fehlschlägt und main
+  rot ist.
+
+- Ausgefallene Wahlvortrag-Instanz aus Stundenplan/Prioritäten-Report ausblenden
+  DashboardData kannte instanz_ausgefallen bislang nicht und der Stundenplan-Report
+  verließ sich nur inzidentell darauf, dass besucht für eine per Umplanung
+  ausgefallene Instanz bereits leer ist. Der Prioritäten-Report zählte ausgefallene
+  Instanzen sogar explizit weiter mit. Beides jetzt über einen expliziten
+  istAusgefallen-Check statt impliziter Annahmen gelöst.
+  Zusätzlich meldet UmplanungModal nach erfolgreicher Umplanung ein Event, auf das
+  ErgebnisseTab mit einem Remount des Stundenplan-Reports reagiert - der bereits
+  gerenderte Report auf derselben Seite war sonst bis zu einem manuellen Reload
+  veraltet.
+
+- Release 1.24.2
+
