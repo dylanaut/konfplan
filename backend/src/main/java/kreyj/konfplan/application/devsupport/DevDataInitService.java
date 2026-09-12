@@ -10,6 +10,9 @@ import kreyj.konfplan.domain.service.GebaeudeService;
 import kreyj.konfplan.domain.service.ReferentService;
 import kreyj.konfplan.domain.service.TeilnehmerService;
 import kreyj.konfplan.domain.service.VeranstaltungService;
+import kreyj.konfplan.persistence.Administrator;
+import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -88,6 +91,14 @@ public class DevDataInitService {
 
                 // 2. Organisatoren
                 adminService.importOrganisatorenFromCsv(basePath.resolve("organisatoren.csv"));
+
+                // Dev-only: unabhängig davon, mit welcher Rolle ein Dataset diesen Nutzer
+                // importiert, soll er nach jedem Neustart als ADMINISTRATOR verfügbar sein (u.a.
+                // für den administrator-exklusiven Verzeichnis-Import/Datenbank-Export).
+                Nutzer juergenKrey = Nutzer.findByLoginName("juergenkrey");
+                if (juergenKrey instanceof Organisator && !(juergenKrey instanceof Administrator)) {
+                    adminService.changeRole(juergenKrey.getId(), "ADMINISTRATOR");
+                }
 
                 // 3. Veranstaltungen
                 int anzahlVeranstaltungen = veranstaltungService.importFromCsv(basePath.resolve("veranstaltungen.csv"));
