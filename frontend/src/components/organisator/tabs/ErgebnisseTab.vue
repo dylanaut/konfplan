@@ -95,7 +95,7 @@
 
     <!-- Belegungsplan -->
     <div v-if="eventContext.selectedEvent && belegungsPlan && belegungsPlan.length > 0">
-      <Stundenplan :vid="eventContext.selectedEvent.id" />
+      <Stundenplan :vid="eventContext.selectedEvent.id" :key="stundenplanKey" />
     </div>
     <div v-else class="text-center text-gray-500 py-12 bg-white rounded-xl shadow-sm border border-gray-100">
       <p class="font-bold">Kein Planungsergebnis vorhanden.</p>
@@ -205,7 +205,7 @@
     </div>
 
     <UmplanungModal :isVisible="showUmplanungModal" :vid="eventContext.selectedEvent?.id" :ergebnisId="umplanungErgebnisId"
-                    @close="showUmplanungModal = false"/>
+                    @close="showUmplanungModal = false" @umgeplant="stundenplanKey++"/>
     <BerichteAuswahlModal :isVisible="showBerichteModal" :vid="eventContext.selectedEvent?.id" :ergebnisId="berichteErgebnisId"
                     @close="showBerichteModal = false"/>
     <TeilnehmerUmbuchenModal :isVisible="showUmbuchenModal" :vid="eventContext.selectedEvent?.id" :ergebnisId="umbuchenErgebnisId"
@@ -253,6 +253,7 @@ const showBerichteModal = ref(false);
 const berichteErgebnisId = ref(null);
 const showUmbuchenModal = ref(false);
 const umbuchenErgebnisId = ref(null);
+const stundenplanKey = ref(0);
 
 const vortraegeAnsehen = (ergebnis) => {
   umplanungErgebnisId.value = ergebnis.id;

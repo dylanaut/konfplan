@@ -33,6 +33,13 @@ public class DashboardData {
      */
     public boolean[][][] besucht;
 
+    /**
+     * wurde die m-te Instanz des n-ten Wahlvortrags nachträglich als ausgefallen markiert
+     * (siehe UmplanungService)? Kann null sein (ältere Planungsergebnisse) - Zugriff nur über
+     * {@link #istAusgefallen(int, int)}.
+     */
+    public boolean[][] instanzAusgefallen;
+
 
     public long[] mzTeilnehmerOids;
     public long[] mzWahlvortragOids;
@@ -67,12 +74,13 @@ public class DashboardData {
 
 
     public DashboardData(VeranstaltungDto veranstaltung, boolean[][][] besucht, int[][] instanzSlot, int[][] instanzRaum,
-                         Map<Long, Set<Long>> tnVerfuegbar,
+                         boolean[][] instanzAusgefallen, Map<Long, Set<Long>> tnVerfuegbar,
                          long[] mzTeilnehmerOids, long[] mzWahlvortragOids, long[] mzSlotOids, long[] mzRaumOids) {
         this.veranstaltung = veranstaltung;
         this.besucht = besucht;
         this.instanzSlot = instanzSlot;
         this.instanzRaum = instanzRaum;
+        this.instanzAusgefallen = instanzAusgefallen;
         this.tnVerfuegbar = tnVerfuegbar;
 
         this.mzTeilnehmerOids = mzTeilnehmerOids;
@@ -101,5 +109,10 @@ public class DashboardData {
 
     public Map<Long, Integer> getPrioritaeten(long teilnehmerOid) {
         return teilnehmerPrioritaeten.getOrDefault(teilnehmerOid, Map.of());
+    }
+
+
+    public boolean istAusgefallen(int wahlvortragIdx, int instanzIdx) {
+        return null != instanzAusgefallen && instanzAusgefallen[wahlvortragIdx][instanzIdx];
     }
 }

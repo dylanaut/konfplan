@@ -27,7 +27,6 @@ import kreyj.konfplan.persistence.VeranstaltungsVerfuegbarkeit;
 import kreyj.konfplan.util.StringHelper;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -76,7 +75,7 @@ public class DashboardService {
                     VeranstaltungsVerfuegbarkeit::getVerfuegbareSlotIds));
         DashboardData dashboardData = new DashboardData(
             VeranstaltungDto.from(veranstaltung),
-            result.besucht, result.instanz_slot, result.instanz_raum,
+            result.besucht, result.instanz_slot, result.instanz_raum, result.instanz_ausgefallen,
             nvMap,
             result.teilnehmer_oids, result.wahlvortrag_oids, result.slot_oids, result.raum_oids);
         dashboardData.teilnehmer = veranstaltung.teilnehmer().stream()
@@ -155,8 +154,11 @@ public class DashboardService {
 
         createTeilnehmerErfuellung(dd);
 
-        List<Integer> numInstanzenProWv =
-            Arrays.stream(dd.instanzSlot).map(sub -> (int) Arrays.stream(sub).filter(x -> x > 0).count()).toList();
+        List<Integer> numInstanzenProWv = IntStream.range(0, dd.instanzSlot.length)
+            .mapToObj(wvIdx -> (int) IntStream.range(0, dd.instanzSlot[wvIdx].length)
+                .filter(instIdx -> dd.instanzSlot[wvIdx][instIdx] > 0 && !dd.istAusgefallen(wvIdx, instIdx))
+                .count())
+            .toList();
         String geplantAm = now().format(DATE_TIME_FORMATTER);
 
         return new PrioReport(dd.veranstaltung, dd.slots, dd.raeume,
@@ -336,7 +338,7 @@ public class DashboardService {
             for (int instIdx = 0; instIdx < wvInstanzSlot.length; instIdx++) {
                 int slotIdx = wvInstanzSlot[instIdx];
 
-                if (slotIdx > 0) {
+                if (slotIdx > 0 && !dd.istAusgefallen(wvIdx, instIdx)) {
                     long slotOid = dd.mzSlotOids[slotIdx - 1];
                     int[] wvInstanzRaum = dd.instanzRaum[wvIdx];
                     int raumIdx = wvInstanzRaum[instIdx];
