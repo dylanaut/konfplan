@@ -5,14 +5,13 @@ import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.domain.service.OrganisatorService;
 import kreyj.konfplan.domain.service.GebaeudeService;
 import kreyj.konfplan.domain.service.ReferentService;
 import kreyj.konfplan.domain.service.TeilnehmerService;
 import kreyj.konfplan.domain.service.VeranstaltungService;
-import kreyj.konfplan.persistence.Administrator;
 import kreyj.konfplan.persistence.Nutzer;
-import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -79,6 +78,16 @@ public class DevDataInitService {
             throw new RuntimeException(e);
         }
 
+        // Dev-only: ein fester Administrator-Account, unabhängig vom geladenen Dataset - u.a. für
+        // administrator-exklusive Features (Verzeichnis-Import, Datenbank-Export). Idempotent
+        // (kein erneutes Anlegen bei jedem Neustart), da createUser sonst wegen des eindeutigen
+        // Login-Namens fehlschlagen würde.
+        if (null == Nutzer.findByLoginName("admin")) {
+            NutzerDto admin = new NutzerDto("ADMINISTRATOR", "kontakt@konfplan.de", "Jürgen", "Krey", true);
+            admin.loginName = "admin";
+            adminService.createUser(admin, List.of());
+        }
+
         Set<Long> importierteVeranstaltungen = new HashSet<>();
 
         for (String dataSet : dataSets) {
@@ -91,14 +100,6 @@ public class DevDataInitService {
 
                 // 2. Organisatoren
                 adminService.importOrganisatorenFromCsv(basePath.resolve("organisatoren.csv"));
-
-                // Dev-only: unabhängig davon, mit welcher Rolle ein Dataset diesen Nutzer
-                // importiert, soll er nach jedem Neustart als ADMINISTRATOR verfügbar sein (u.a.
-                // für den administrator-exklusiven Verzeichnis-Import/Datenbank-Export).
-                Nutzer juergenKrey = Nutzer.findByLoginName("juergenkrey");
-                if (juergenKrey instanceof Organisator && !(juergenKrey instanceof Administrator)) {
-                    adminService.changeRole(juergenKrey.getId(), "ADMINISTRATOR");
-                }
 
                 // 3. Veranstaltungen
                 int anzahlVeranstaltungen = veranstaltungService.importFromCsv(basePath.resolve("veranstaltungen.csv"));
