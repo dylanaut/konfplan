@@ -49,7 +49,8 @@
       "protocol": "openid-connect",
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": false
+      "serviceAccountsEnabled": false,
+      "secret": "backend-dev-secret"
     },
     {
       "clientId": "konfplan-admin-cli",
