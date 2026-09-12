@@ -150,6 +150,8 @@ public class OrganisatorService implements OrganisatorServiceInterface {
             nutzer = new Referent();
         } else if ("TEILNEHMER".equals(dto.role)) {
             nutzer = new Teilnehmer();
+        } else if ("ADMINISTRATOR".equals(dto.role)) {
+            nutzer = new Administrator();
         } else {
             nutzer = new Organisator();
         }
