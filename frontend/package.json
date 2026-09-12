@@ -10,7 +10,7 @@
     "@capacitor/android": "^8.5.0",
     "@capacitor/core": "^8.5.1",
     "@capacitor/ios": "^8.3.4",
-    "@lucide/vue": "^1.33.0",
+    "@lucide/vue": "^1.43.0",
     "axios": "^1.20.0",
     "bootstrap": "^5.3.8",
     "keycloak-js": "^26.0.0",
