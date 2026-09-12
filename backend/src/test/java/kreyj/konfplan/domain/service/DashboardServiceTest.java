@@ -5,6 +5,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.DatabaseCleaner;
 import kreyj.konfplan.adapter.in.web.dto.templating.BelegungDetail;
+import kreyj.konfplan.adapter.in.web.dto.templating.PrioReport;
 import kreyj.konfplan.adapter.in.web.dto.templating.Stundenplan;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
@@ -108,6 +109,13 @@ class DashboardServiceTest extends DatabaseCleaner {
 
     private Planungsergebnis.MinizincResult ergebnis(long[] tnOids, long[] wvOids, long[] slotOids, long[] raumOids,
                                                       int[][] instanzSlot, int[][] instanzRaum, boolean[][][] besucht) {
+        return ergebnis(tnOids, wvOids, slotOids, raumOids, instanzSlot, instanzRaum, besucht, null);
+    }
+
+
+    private Planungsergebnis.MinizincResult ergebnis(long[] tnOids, long[] wvOids, long[] slotOids, long[] raumOids,
+                                                      int[][] instanzSlot, int[][] instanzRaum, boolean[][][] besucht,
+                                                      boolean[][] instanzAusgefallen) {
         Planungsergebnis.MinizincResult result = new Planungsergebnis.MinizincResult();
         result.teilnehmer_oids = tnOids;
         result.wahlvortrag_oids = wvOids;
@@ -116,6 +124,7 @@ class DashboardServiceTest extends DatabaseCleaner {
         result.instanz_slot = instanzSlot;
         result.instanz_raum = instanzRaum;
         result.besucht = besucht;
+        result.instanz_ausgefallen = instanzAusgefallen;
         return result;
     }
 
@@ -161,5 +170,40 @@ class DashboardServiceTest extends DatabaseCleaner {
         BelegungDetail belegung = plan.getBelegungDetails().values().iterator().next();
         assertThat(belegung.teilnehmer).containsExactly(bleibt.getFullName() + " (A)");
         assertThat(belegung.anzahl).isEqualTo(1);
+    }
+
+
+    /**
+     * Regressionstest für die per "Vortrag umplanen" (siehe UmplanungService) als ausgefallen
+     * markierte Instanz: sie darf im Stundenplan-Report nicht mehr als belegter Slot auftauchen
+     * und in der Prioritäten-Auswertung nicht mehr als verfügbare Instanz zählen - unabhängig
+     * davon, ob {@code besucht} für diese Instanz (wie im Regelfall) bereits geleert wurde. Der
+     * Report muss sich explizit auf instanz_ausgefallen verlassen, nicht nur inzidentell darauf,
+     * dass besucht für eine ausgefallene Instanz immer schon leer ist (siehe
+     * Planungsergebnis#istAusgefallen-Doku: Lesezugriffe müssen den Flag prüfen).
+     */
+    @Test
+    @Transactional
+    void ausgefalleneInstanz_erscheintNichtImStundenplanUndZaehltNichtAlsVerfuegbareInstanz() {
+        Veranstaltung veranstaltung = neueVeranstaltung("Dashboard-Test-2");
+        Slot slot1 = neuerSlot(veranstaltung, 1);
+        Wahlvortrag wv1 = neuerWahlvortrag(veranstaltung, "Fällt aus");
+        Teilnehmer tn = neuerTeilnehmer(veranstaltung, "tn@test.com");
+
+        persistiereVeroeffentlichtesErgebnis(veranstaltung, ergebnis(
+            new long[]{tn.getId()},
+            new long[]{wv1.getId()},
+            new long[]{slot1.getId()},
+            new long[]{raumGrossId},
+            new int[][]{{1}},
+            new int[][]{{1}},
+            new boolean[][][]{{{true}}},
+            new boolean[][]{{true}}));
+
+        Stundenplan plan = dashboardService.getStundenplan(veranstaltung);
+        assertThat(plan.getBelegungDetails()).isEmpty();
+
+        PrioReport prioReport = dashboardService.getPrioReport(veranstaltung);
+        assertThat(prioReport.num_instanzen_pro_wv()).containsExactly(0);
     }
 }

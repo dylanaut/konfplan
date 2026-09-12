@@ -76,7 +76,7 @@ const props = defineProps({
   ergebnisId: { type: [Number, String], default: null }
 });
 
-defineEmits(['close']);
+const emit = defineEmits(['close', 'umgeplant']);
 
 const instanzen = ref([]);
 const loading = ref(false);
@@ -112,6 +112,7 @@ const umplanen = async (instanz) => {
     });
     ergebnis.value = res.data;
     await ladeInstanzen();
+    emit('umgeplant');
   } catch (e) {
     error.value = 'Umplanung fehlgeschlagen: ' + (e.response?.data?.error || e.message);
   } finally {
