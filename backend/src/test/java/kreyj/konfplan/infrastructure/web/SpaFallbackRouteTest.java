@@ -28,14 +28,10 @@ class SpaFallbackRouteTest {
     }
 
     @Test
-    void unbekannterApiPfad_wirdMit401AbgewiesenStattIndexHtml() {
-        // Seit der globalen HTTP-Auth-Policy fuer /api/* (siehe application.properties) werden
-        // unauthentifizierte Requests bereits auf HTTP-Ebene mit 401 abgewiesen, bevor das
-        // JAX-RS-Routing ueberhaupt entscheiden koennte, ob der Pfad existiert - unabhaengig davon
-        // bleibt wichtig, dass hier kein Fallback auf die index.html erfolgt.
+    void unbekannterApiPfad_bleibtEcht404() {
         given()
             .when().get("/api/does-not-exist")
-            .then().statusCode(401);
+            .then().statusCode(404);
     }
 
     @Test
