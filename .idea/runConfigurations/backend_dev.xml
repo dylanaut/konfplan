@@ -35,6 +35,7 @@
     </QsMavenRunConfiguration>
     <method v="2">
       <option name="RunConfigurationTask" enabled="true" run_configuration_name="kill dev ps18" run_configuration_type="ShConfigurationType" />
+      <option name="Maven.BeforeRunTask" enabled="true" file="$PROJECT_DIR$/pom.xml" goal="clean compile -DskipTests -Dpmd.skip=true -Dspotbugs.skip=true" />
     </method>
   </configuration>
 </component>
