@@ -373,8 +373,14 @@ Einrichtung:
 
 . In `deploy/.env`: `BREVO_LOGIN_EMAIL=<login>`
 . Brevo-Account-Passwort ablegen: `echo '<passwort>' > deploy/secrets/brevo_login_password.txt && chmod 644 deploy/secrets/brevo_login_password.txt`
-. In `deploy/.env`: `BREVO_CODE_IMAP_HOST=<imap-server, z.B. imap.mail.yahoo.com>` und optional `BREVO_CODE_IMAP_PORT` (Standard `993`). `BREVO_CODE_IMAP_USER` muss der **primäre Account-Login** sein, NICHT eine Alias-/Zusatzadresse desselben Postfachs, auch wenn die Brevo-Code-Mails an eine solche Alias-Adresse gehen - per Live-Test verifiziert: Yahoos IMAP-Login akzeptiert ausschließlich den primären Benutzernamen, Mail an Aliase landet aber trotzdem im selben, darüber erreichbaren Postfach.
+. In `deploy/.env`: `BREVO_CODE_IMAP_HOST=<imap-server, z.B. imap.mail.yahoo.com>` und optional `BREVO_CODE_IMAP_PORT` (Standard `993`). `BREVO_CODE_IMAP_USER` muss der IMAP-Login des Postfachs sein, das die Brevo-Code-Mails TATSÄCHLICH empfängt - bei einer Alias-/Zusatzadresse variiert es je nach Anbieter, ob das ein eigenständiges Postfach mit eigenem App-Passwort ist oder einen gemeinsamen Posteingang mit einem anderen Account teilt (per Live-Test in einem konkreten Fall als eigenständiges Postfach bestätigt - keine Annahme treffen, sondern das App-Passwort vorher direkt testen, siehe unten).
 . IMAP-Passwort (App-Passwort, siehe Warnung oben) ablegen: `echo '<imap-app-passwort>' > deploy/secrets/brevo_code_mailbox_password.txt && chmod 644 deploy/secrets/brevo_code_mailbox_password.txt`
+. Vor dem eigentlichen Test-Lauf die IMAP-Zugangsdaten direkt verifizieren (unabhängig von `setup-session.mjs`, liefert bei einem Fehlschlag sofort einen konkreten Server-Grund statt der generischen `imapflow`-Meldung "Command failed"):
++
+[source,bash]
+----
+curl -v --url 'imaps://<imap-server>:993/INBOX' --user '<postfach-adresse>:<imap-app-passwort>'
+----
 . `node_modules` in den gemounteten Ordner installieren (das Playwright-Docker-Image bringt nur den Browser mit, nicht die npm-Pakete selbst - der Ordner ist auf den Host gemountet, daher bleibt das dauerhaft erhalten). Nicht nur beim allerersten Einrichten nötig, sondern jedes Mal erneut, wenn sich `package.json` in diesem Ordner ändert (z.B. nach einem `git pull`, das eine Abhängigkeit ändert):
 +
 [source,bash]

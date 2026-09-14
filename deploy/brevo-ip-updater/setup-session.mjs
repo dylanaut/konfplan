@@ -15,7 +15,14 @@
 // NEUEN Code. Fuer echte Automatisierung MUSS der Code deshalb automatisch aus der E-Mail
 // gelesen werden - siehe die IMAP-Konfiguration unten (BREVO_CODE_IMAP_*). Ohne diese
 // Konfiguration faellt das Skript auf einen interaktiven readline-Prompt zurueck (oder scheitert
-// klar, wenn nicht-interaktiv).
+// klar, wenn nicht-interaktiv). Per Live-Test bestaetigt: die gesamte Kette (Login -> IMAP-Code-
+// Abruf -> Sitzung speichern -> update-ip.mjs-API-Call) funktioniert Ende-zu-Ende.
+//
+// WICHTIG: BREVO_CODE_IMAP_USER muss der PRIMAERE Postfach-Login sein, nicht eine Alias-/
+// Zusatzadresse, an die die Code-Mails ggf. adressiert sind - Aliase koennen (je nach Anbieter,
+// z.B. Yahoo) vollstaendig eigenstaendige Postfaecher mit eigenem App-Passwort sein, statt einen
+// gemeinsamen Posteingang mit dem Hauptaccount zu teilen. Im Zweifel das IMAP-App-Passwort per
+// `curl --url 'imaps://<host>:993/INBOX' --user '<user>:<app-passwort>'` direkt testen.
 //
 // Voraussetzung (einmalig): node_modules in diesen Ordner installieren - das Playwright-Image
 // bringt nur den Browser mit, nicht die npm-Pakete selbst:
