@@ -17,7 +17,11 @@
 //     -e BREVO_LOGIN_EMAIL=... -e BREVO_LOGIN_PASSWORD=... \
 //     mcr.microsoft.com/playwright:v1.62.1-noble node setup-session.mjs
 // Nicht-interaktive Aufrufe (per Cron, ohne -it) erwarten, dass das Geraet bereits als
-// vertrauenswuerdig gilt und daher KEIN Code angefordert wird - siehe TTY-Pruefung unten.
+// vertrauenswuerdig gilt und daher KEIN Code angefordert wird - siehe TTY-Pruefung unten. Dafuer
+// wird eine vorhandene storage-state.json als Ausgangs-Cookies wiederverwendet (nicht jedes Mal
+// ein komplett leerer Kontext) - die Geraete-Erkennung haengt vermutlich an einem langlebigen
+// Cookie (z.B. "did"), das sonst bei jedem Lauf verloren ginge und erneut den Code ausloesen
+// wuerde, obwohl das Geraet laut vorherigem Lauf bereits vertrauenswuerdig war.
 //
 // WICHTIG: Login-Formular-Selektoren sind nach bestem Wissen aus der oeffentlichen Brevo-
 // Hilfe-Dokumentation entwickelt, aber nicht gegen den echten Account getestet (kein Zugriff
@@ -27,6 +31,7 @@
 import { chromium } from 'playwright';
 import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
+import fs from 'node:fs';
 
 const EMAIL = process.env.BREVO_LOGIN_EMAIL;
 const PASSWORD = process.env.BREVO_LOGIN_PASSWORD;
@@ -51,7 +56,16 @@ let page;
 
 try {
   browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext();
+  // Vorhandene storage-state.json (falls da) als Ausgangs-Cookies wiederverwenden, statt IMMER
+  // mit einem komplett leeren Kontext zu starten: per Live-Test verifiziert, dass ein leerer
+  // Kontext bei jedem Lauf erneut den 6-stelligen Code auslöst, obwohl Brevo das Geraet beim
+  // vorherigen Lauf bereits als vertrauenswuerdig eingestuft hatte - vermutlich, weil die
+  // Geraete-Erkennung selbst an ein langlebiges Cookie (z.B. "did") gebunden ist, das ohne
+  // Wiederverwendung bei jedem Lauf verloren geht. Der eigentliche Login danach ersetzt/erneuert
+  // ohnehin die kurzlebigeren Session-Cookies (auth/ACCOUNTSESSID).
+  const context = await browser.newContext(
+    fs.existsSync(STORAGE_STATE_PATH) ? { storageState: STORAGE_STATE_PATH } : {}
+  );
   page = await context.newPage();
 
   console.log('Öffne Brevo-Login...');
