@@ -46,13 +46,32 @@ if [ "$CURRENT_IP" != "$LAST_IP" ]; then
       # Ausgabe zusaetzlich in eine feste Datei im gemounteten Volume schreiben - unabhaengig
       # davon, ob/wohin der aeussere Cron-Aufruf selbst umgeleitet wird, ist so nach jedem Lauf
       # (Erfolg oder Fehlschlag) die Playwright-/Node-Ausgabe an einem festen Ort nachvollziehbar.
+      #
+      # setup-session.mjs wird hier bewusst vor JEDEM update-ip.mjs-Lauf erneut ausgefuehrt (nicht
+      # mehr nur einmalig) - siehe dessen Kommentar: das eigentliche Session-Cookie hat eine
+      # kuerzere Gueltigkeit als die "vertrauenswuerdiges Geraet"-Erkennung, eine einmalig
+      # gespeicherte Sitzung wird sonst zwischen zwei IP-Aenderungen zuverlaessig ungueltig. Die
+      # innere Subshell mit "set -e" bricht ab, sobald setup-session.mjs scheitert, damit
+      # update-ip.mjs dann NICHT mit einer garantiert ungueltigen Sitzung versucht wird - $? nach
+      # der Subshell traegt in diesem Fall korrekt deren (nicht die letzte echo-Befehls-)
+      # Exit-Code weiter.
       set +e
-      docker run --rm \
-        -e BREVO_LOGIN_EMAIL="$BREVO_LOGIN_EMAIL" \
-        -e BREVO_LOGIN_PASSWORD="$(cat "$BREVO_PASSWORD_FILE")" \
-        -v "$SCRIPT_DIR/brevo-ip-updater:/work" -w /work \
-        mcr.microsoft.com/playwright:v1.62.1-noble \
-        node update-ip.mjs "$CURRENT_IP" > "$BREVO_UPDATER_LOG" 2>&1
+      (
+        set -e
+        echo "=== setup-session.mjs (Sitzung frisch holen) ==="
+        docker run --rm \
+          -e BREVO_LOGIN_EMAIL="$BREVO_LOGIN_EMAIL" \
+          -e BREVO_LOGIN_PASSWORD="$(cat "$BREVO_PASSWORD_FILE")" \
+          -v "$SCRIPT_DIR/brevo-ip-updater:/work" -w /work \
+          mcr.microsoft.com/playwright:v1.62.1-noble \
+          node setup-session.mjs
+        echo
+        echo "=== update-ip.mjs ==="
+        docker run --rm \
+          -v "$SCRIPT_DIR/brevo-ip-updater:/work" -w /work \
+          mcr.microsoft.com/playwright:v1.62.1-noble \
+          node update-ip.mjs "$CURRENT_IP"
+      ) > "$BREVO_UPDATER_LOG" 2>&1
       BREVO_EXIT_CODE=$?
       set -e
       cat "$BREVO_UPDATER_LOG"
