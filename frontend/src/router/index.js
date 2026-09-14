@@ -8,7 +8,6 @@ const OrganisatorDashboard = () => import('../views/OrganisatorDashboard.vue');
 const FreieSlotsReferenten = () => import('../views/report/FreieSlotsReferenten.vue');
 const LaufzettelTeilnehmer = () => import('../views/report/LaufzettelTeilnehmer.vue');
 const LaufzettelReferent = () => import('../views/report/LaufzettelReferent.vue');
-const Raumbelegungsplan = () => import('../views/report/Raumbelegungsplan.vue');
 const UebersichtRaeume = () => import('../views/report/UebersichtRaeume.vue');
 const Raumschilder = () => import('../views/report/Raumschilder.vue');
 const FreieSlotsTeilnehmer = () => import('../views/report/FreieSlotsTeilnehmer.vue');
@@ -65,12 +64,6 @@ const routes = [
         name: 'LaufzettelReferent',
         component: LaufzettelReferent,
         meta: { requiresAuth: true } // Accessible by both ORGANISATOR/ADMINISTRATOR and REFERENT
-    },
-    {
-        path: '/veranstaltung/:vid/raum/:rid/belegungsplan',
-        name: 'Raumbelegungsplan',
-        component: Raumbelegungsplan,
-        meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {
         path: '/organisator/veranstaltung/:vid/uebersicht-raeume',

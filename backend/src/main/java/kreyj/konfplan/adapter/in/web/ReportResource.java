@@ -20,7 +20,6 @@ import kreyj.konfplan.domain.service.DashboardService;
 import kreyj.konfplan.domain.service.PlanService;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Prioritaet;
-import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -133,22 +132,6 @@ public class ReportResource {
         }
         List<ReferentVortragDto> plan = planService.getPlanFuerReferent(referent, veranstaltung, isOrganisatorOderAdmin() ? ergebnisId : null);
         return Response.ok(new ReportDto.LaufzettelReferentDto(veranstaltung, referent, plan)).build();
-    }
-
-
-    @GET
-    @Path("/{vid}/raum/{rid}/belegungsplan-data")
-    @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
-    @Operation(summary = "Daten für Raumbelegungsplan (JSON)")
-    public Response getRaumbelegungsplanData(@PathParam("vid") Long vid, @PathParam("rid") Long rid, @QueryParam("ergebnisId") Long ergebnisId) {
-        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
-        Raum raum = Raum.findById(rid);
-        if (null == raum || null == veranstaltung) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-        Map<Long, Map<Long, RaumplanEintragDto>> belegung = planService.getRaumbelegungsplan(veranstaltung, ergebnisId);
-        return Response.ok(new ReportDto.RaumbelegungsplanDto(veranstaltung, RaumDto.from(raum), belegung)).build();
     }
 
 

@@ -13,7 +13,7 @@
     <div v-else>
       <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" />
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
-        <h1 class="h3">Raumschilder</h1>
+        <h1 class="h3">Raumbelegungen</h1>
         <button @click="handlePrint" class="btn btn-secondary">
           <i class="bi bi-printer"></i> Drucken
         </button>
@@ -96,7 +96,7 @@ onMounted(async () => {
     const url = `/api/reports/${veranstaltungId}/raumschilder-data` + (ergebnisId ? `?ergebnisId=${ergebnisId}` : '');
     const response = await api.get(url);
     reportData.value = response.data;
-    document.title = `${response.data.veranstaltung.name} - Raumschilder`;
+    document.title = `${response.data.veranstaltung.name} - Raumbelegungen`;
   } catch (err) {
     error.value = 'Fehler beim Laden der Daten: ' + (err.response?.data?.message || err.message);
   } finally {

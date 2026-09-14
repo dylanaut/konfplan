@@ -38,18 +38,6 @@ public class ReportDto {
         }
     }
 
-    public static class RaumbelegungsplanDto {
-        public final VeranstaltungDto veranstaltung;
-        public final RaumDto raum;
-        public final Map<Long, Map<Long, RaumplanEintragDto>> belegung;
-
-        public RaumbelegungsplanDto(Veranstaltung veranstaltung, RaumDto raum, Map<Long, Map<Long, RaumplanEintragDto>> belegung) {
-            this.veranstaltung = VeranstaltungDto.from(veranstaltung);
-            this.raum = raum;
-            this.belegung = belegung;
-        }
-    }
-
     public static class UebersichtRaeumeDto {
         public final VeranstaltungDto veranstaltung;
         public final List<RaumBelegungUebersicht> plan;

@@ -55,30 +55,6 @@ test.describe('Report-Generierung', () => {
     await expect(page.locator('table tbody tr').first().locator('td').nth(1)).toContainText('Moderne Web-Architekturen');
   });
 
-  test('sollte den Raumbelegungsplan korrekt rendern', async ({ page }) => {
-    const veranstaltungId = 1;
-    const raumId = 303;
-    // Absolutes Glob, da die Axios-Basis-URL (http://localhost:9000) von der
-    // Playwright-baseURL (Vite-Dev-Server) abweicht.
-    const apiUrl = `**/api/reports/${veranstaltungId}/raum/${raumId}/belegungsplan-data`;
-    const routeUrl = `/veranstaltung/${veranstaltungId}/raum/${raumId}/belegungsplan`;
-
-    // Die Route ist auth-geschützt: Login-Status vor dem Laden der Seite simulieren.
-    await page.addInitScript(() => {
-      localStorage.setItem('token', 'test-token');
-      localStorage.setItem('role', 'ORGANISATOR');
-    });
-
-    await page.route(apiUrl, async route => {
-      const json = (await import('./fixtures/raumbelegungsplan.json', { with: { type: 'json' } })).default;
-      await route.fulfill({ json });
-    });
-
-    await page.goto(routeUrl);
-    await expect(page.locator('h1').last()).toContainText('Belegungsplan für Forum');
-    await expect(page.locator('table tbody tr').first().locator('td').nth(1)).toContainText('Grundlagen des Projektmanagements');
-  });
-
   test('sollte die Raumübersicht korrekt rendern', async ({ page }) => {
     const veranstaltungId = 1;
     // Absolutes Glob, da die Axios-Basis-URL (http://localhost:9000) von der

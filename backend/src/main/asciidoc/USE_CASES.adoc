@@ -22,6 +22,7 @@ actor "REFERENT" as REFERENT
 actor "TEILNEHMER" as TEILNEHMER
 package "KonfPlan API" {
   (getInfo) as AppInfoResource_getInfo
+  (export) as DatabaseBackupResource_export
   (create) as GebaeudeResource_create
   (createRaum) as GebaeudeResource_createRaum
   (delete) as GebaeudeResource_delete
@@ -33,8 +34,12 @@ package "KonfPlan API" {
   (update) as GebaeudeResource_update
   (updateRaum) as GebaeudeResource_updateRaum
   (getNews) as LaufbandResource_getNews
+  (getEigene) as NachrichtResource_getEigene
+  (getUngeleseneAnzahl) as NachrichtResource_getUngeleseneAnzahl
+  (markiereAlsGelesen) as NachrichtResource_markiereAlsGelesen
   (getAll) as NeigungResource_getAll
   (get) as OnboardingStatusResource_get
+  (changeRole) as OrganisatorResource_changeRole
   (createGruppe) as OrganisatorResource_createGruppe
   (createUser) as OrganisatorResource_createUser
   (deleteGruppe) as OrganisatorResource_deleteGruppe
@@ -88,10 +93,11 @@ package "KonfPlan API" {
   (getLaufzettelReferentData) as ReportResource_getLaufzettelReferentData
   (getLaufzettelTeilnehmerData) as ReportResource_getLaufzettelTeilnehmerData
   (getPriosDashboardData) as ReportResource_getPriosDashboardData
-  (getRaumbelegungsplanData) as ReportResource_getRaumbelegungsplanData
   (getStundenplanData) as ReportResource_getStundenplanData
   (getTeilnehmerDashboardData) as ReportResource_getTeilnehmerDashboardData
   (getUebersichtRaeumeData) as ReportResource_getUebersichtRaeumeData
+  (getVortragAnmeldungenData) as ReportResource_getVortragAnmeldungenData
+  (getWahlvortraegeAnmeldungenUebersichtData) as ReportResource_getWahlvortraegeAnmeldungenUebersichtData
   (getAll) as SlotResource_getAll
   (createTeilnehmer) as TeilnehmerResource_createTeilnehmer
   (deleteTeilnehmer) as TeilnehmerResource_deleteTeilnehmer
@@ -117,6 +123,7 @@ package "KonfPlan API" {
   (deleteNutzer) as VeranstaltungResource_deleteNutzer
   (deleteSlot) as VeranstaltungResource_deleteSlot
   (deleteVortrag) as VeranstaltungResource_deleteVortrag
+  (getAktuelleZuweisungen) as VeranstaltungResource_getAktuelleZuweisungen
   (getAll) as VeranstaltungResource_getAll
   (getDetaillierterPlan) as VeranstaltungResource_getDetaillierterPlan
   (getGesamtplan) as VeranstaltungResource_getGesamtplan
@@ -126,17 +133,27 @@ package "KonfPlan API" {
   (getRaumVerfuegbarkeiten) as VeranstaltungResource_getRaumVerfuegbarkeiten
   (getSlots) as VeranstaltungResource_getSlots
   (getStats) as VeranstaltungResource_getStats
+  (getUmbuchungsOptionen) as VeranstaltungResource_getUmbuchungsOptionen
   (getVeranstaltungsVortrag) as VeranstaltungResource_getVeranstaltungsVortrag
   (getVortraege) as VeranstaltungResource_getVortraege
+  (getWahlvortragInstanzen) as VeranstaltungResource_getWahlvortragInstanzen
   (importReferenten) as VeranstaltungResource_importReferenten
   (importSlots) as VeranstaltungResource_importSlots
   (importVeranstaltungen) as VeranstaltungResource_importVeranstaltungen
   (importVortraege) as VeranstaltungResource_importVortraege
+  (listePlanungsergebnisse) as VeranstaltungResource_listePlanungsergebnisse
+  (loescheErgebnis) as VeranstaltungResource_loescheErgebnis
+  (publiziereErgebnis) as VeranstaltungResource_publiziereErgebnis
+  (sendeNachricht) as VeranstaltungResource_sendeNachricht
+  (teilnehmerNachbuchen) as VeranstaltungResource_teilnehmerNachbuchen
+  (teilnehmerUmbuchen) as VeranstaltungResource_teilnehmerUmbuchen
   (update) as VeranstaltungResource_update
   (updateNutzer) as VeranstaltungResource_updateNutzer
   (updateSlot) as VeranstaltungResource_updateSlot
   (updateVortrag) as VeranstaltungResource_updateVortrag
   (uploadTeilnehmerCsv) as VeranstaltungResource_uploadTeilnehmerCsv
+  (vortragsInstanzUmplanen) as VeranstaltungResource_vortragsInstanzUmplanen
+  (zurueckziehenErgebnis) as VeranstaltungResource_zurueckziehenErgebnis
   (create) as VerbesserungsvorschlagResource_create
   (delete) as VerbesserungsvorschlagResource_delete
   (getAll) as VerbesserungsvorschlagResource_getAll
@@ -148,6 +165,7 @@ package "KonfPlan API" {
   (getReferentKalender) as KalenderResource_getReferentKalender
   (getTeilnehmerKalender) as KalenderResource_getTeilnehmerKalender
 }
+ADMINISTRATOR --> DatabaseBackupResource_export
 ADMINISTRATOR --> GebaeudeResource_create
 ADMINISTRATOR --> GebaeudeResource_createRaum
 ADMINISTRATOR --> GebaeudeResource_delete
@@ -158,8 +176,12 @@ ADMINISTRATOR --> GebaeudeResource_getRaeumeByGebaeude
 ADMINISTRATOR --> GebaeudeResource_importGebaeude
 ADMINISTRATOR --> GebaeudeResource_update
 ADMINISTRATOR --> GebaeudeResource_updateRaum
+ADMINISTRATOR --> NachrichtResource_getEigene
+ADMINISTRATOR --> NachrichtResource_getUngeleseneAnzahl
+ADMINISTRATOR --> NachrichtResource_markiereAlsGelesen
 ADMINISTRATOR --> NeigungResource_getAll
 ADMINISTRATOR --> OnboardingStatusResource_get
+ADMINISTRATOR --> OrganisatorResource_changeRole
 ADMINISTRATOR --> OrganisatorResource_createGruppe
 ADMINISTRATOR --> OrganisatorResource_createUser
 ADMINISTRATOR --> OrganisatorResource_deleteGruppe
@@ -213,10 +235,11 @@ ADMINISTRATOR --> ReportResource_getFreieSlotsTeilnehmerData
 ADMINISTRATOR --> ReportResource_getLaufzettelReferentData
 ADMINISTRATOR --> ReportResource_getLaufzettelTeilnehmerData
 ADMINISTRATOR --> ReportResource_getPriosDashboardData
-ADMINISTRATOR --> ReportResource_getRaumbelegungsplanData
 ADMINISTRATOR --> ReportResource_getStundenplanData
 ADMINISTRATOR --> ReportResource_getTeilnehmerDashboardData
 ADMINISTRATOR --> ReportResource_getUebersichtRaeumeData
+ADMINISTRATOR --> ReportResource_getVortragAnmeldungenData
+ADMINISTRATOR --> ReportResource_getWahlvortraegeAnmeldungenUebersichtData
 ADMINISTRATOR --> SlotResource_getAll
 ADMINISTRATOR --> TeilnehmerResource_createTeilnehmer
 ADMINISTRATOR --> TeilnehmerResource_deleteTeilnehmer
@@ -235,6 +258,7 @@ ADMINISTRATOR --> VeranstaltungResource_delete
 ADMINISTRATOR --> VeranstaltungResource_deleteNutzer
 ADMINISTRATOR --> VeranstaltungResource_deleteSlot
 ADMINISTRATOR --> VeranstaltungResource_deleteVortrag
+ADMINISTRATOR --> VeranstaltungResource_getAktuelleZuweisungen
 ADMINISTRATOR --> VeranstaltungResource_getAll
 ADMINISTRATOR --> VeranstaltungResource_getDetaillierterPlan
 ADMINISTRATOR --> VeranstaltungResource_getGesamtplan
@@ -244,17 +268,27 @@ ADMINISTRATOR --> VeranstaltungResource_getPlanQualitaet
 ADMINISTRATOR --> VeranstaltungResource_getRaumVerfuegbarkeiten
 ADMINISTRATOR --> VeranstaltungResource_getSlots
 ADMINISTRATOR --> VeranstaltungResource_getStats
+ADMINISTRATOR --> VeranstaltungResource_getUmbuchungsOptionen
 ADMINISTRATOR --> VeranstaltungResource_getVeranstaltungsVortrag
 ADMINISTRATOR --> VeranstaltungResource_getVortraege
+ADMINISTRATOR --> VeranstaltungResource_getWahlvortragInstanzen
 ADMINISTRATOR --> VeranstaltungResource_importReferenten
 ADMINISTRATOR --> VeranstaltungResource_importSlots
 ADMINISTRATOR --> VeranstaltungResource_importVeranstaltungen
 ADMINISTRATOR --> VeranstaltungResource_importVortraege
+ADMINISTRATOR --> VeranstaltungResource_listePlanungsergebnisse
+ADMINISTRATOR --> VeranstaltungResource_loescheErgebnis
+ADMINISTRATOR --> VeranstaltungResource_publiziereErgebnis
+ADMINISTRATOR --> VeranstaltungResource_sendeNachricht
+ADMINISTRATOR --> VeranstaltungResource_teilnehmerNachbuchen
+ADMINISTRATOR --> VeranstaltungResource_teilnehmerUmbuchen
 ADMINISTRATOR --> VeranstaltungResource_update
 ADMINISTRATOR --> VeranstaltungResource_updateNutzer
 ADMINISTRATOR --> VeranstaltungResource_updateSlot
 ADMINISTRATOR --> VeranstaltungResource_updateVortrag
 ADMINISTRATOR --> VeranstaltungResource_uploadTeilnehmerCsv
+ADMINISTRATOR --> VeranstaltungResource_vortragsInstanzUmplanen
+ADMINISTRATOR --> VeranstaltungResource_zurueckziehenErgebnis
 ADMINISTRATOR --> VerbesserungsvorschlagResource_create
 ADMINISTRATOR --> VerbesserungsvorschlagResource_delete
 ADMINISTRATOR --> VerbesserungsvorschlagResource_getAll
@@ -273,8 +307,12 @@ ORGANISATOR --> GebaeudeResource_getRaeumeByGebaeude
 ORGANISATOR --> GebaeudeResource_importGebaeude
 ORGANISATOR --> GebaeudeResource_update
 ORGANISATOR --> GebaeudeResource_updateRaum
+ORGANISATOR --> NachrichtResource_getEigene
+ORGANISATOR --> NachrichtResource_getUngeleseneAnzahl
+ORGANISATOR --> NachrichtResource_markiereAlsGelesen
 ORGANISATOR --> NeigungResource_getAll
 ORGANISATOR --> OnboardingStatusResource_get
+ORGANISATOR --> OrganisatorResource_changeRole
 ORGANISATOR --> OrganisatorResource_createGruppe
 ORGANISATOR --> OrganisatorResource_createUser
 ORGANISATOR --> OrganisatorResource_deleteGruppe
@@ -328,10 +366,11 @@ ORGANISATOR --> ReportResource_getFreieSlotsTeilnehmerData
 ORGANISATOR --> ReportResource_getLaufzettelReferentData
 ORGANISATOR --> ReportResource_getLaufzettelTeilnehmerData
 ORGANISATOR --> ReportResource_getPriosDashboardData
-ORGANISATOR --> ReportResource_getRaumbelegungsplanData
 ORGANISATOR --> ReportResource_getStundenplanData
 ORGANISATOR --> ReportResource_getTeilnehmerDashboardData
 ORGANISATOR --> ReportResource_getUebersichtRaeumeData
+ORGANISATOR --> ReportResource_getVortragAnmeldungenData
+ORGANISATOR --> ReportResource_getWahlvortraegeAnmeldungenUebersichtData
 ORGANISATOR --> SlotResource_getAll
 ORGANISATOR --> TeilnehmerResource_createTeilnehmer
 ORGANISATOR --> TeilnehmerResource_deleteTeilnehmer
@@ -347,6 +386,7 @@ ORGANISATOR --> VeranstaltungResource_delete
 ORGANISATOR --> VeranstaltungResource_deleteNutzer
 ORGANISATOR --> VeranstaltungResource_deleteSlot
 ORGANISATOR --> VeranstaltungResource_deleteVortrag
+ORGANISATOR --> VeranstaltungResource_getAktuelleZuweisungen
 ORGANISATOR --> VeranstaltungResource_getAll
 ORGANISATOR --> VeranstaltungResource_getDetaillierterPlan
 ORGANISATOR --> VeranstaltungResource_getGesamtplan
@@ -356,17 +396,27 @@ ORGANISATOR --> VeranstaltungResource_getPlanQualitaet
 ORGANISATOR --> VeranstaltungResource_getRaumVerfuegbarkeiten
 ORGANISATOR --> VeranstaltungResource_getSlots
 ORGANISATOR --> VeranstaltungResource_getStats
+ORGANISATOR --> VeranstaltungResource_getUmbuchungsOptionen
 ORGANISATOR --> VeranstaltungResource_getVeranstaltungsVortrag
 ORGANISATOR --> VeranstaltungResource_getVortraege
+ORGANISATOR --> VeranstaltungResource_getWahlvortragInstanzen
 ORGANISATOR --> VeranstaltungResource_importReferenten
 ORGANISATOR --> VeranstaltungResource_importSlots
 ORGANISATOR --> VeranstaltungResource_importVeranstaltungen
 ORGANISATOR --> VeranstaltungResource_importVortraege
+ORGANISATOR --> VeranstaltungResource_listePlanungsergebnisse
+ORGANISATOR --> VeranstaltungResource_loescheErgebnis
+ORGANISATOR --> VeranstaltungResource_publiziereErgebnis
+ORGANISATOR --> VeranstaltungResource_sendeNachricht
+ORGANISATOR --> VeranstaltungResource_teilnehmerNachbuchen
+ORGANISATOR --> VeranstaltungResource_teilnehmerUmbuchen
 ORGANISATOR --> VeranstaltungResource_update
 ORGANISATOR --> VeranstaltungResource_updateNutzer
 ORGANISATOR --> VeranstaltungResource_updateSlot
 ORGANISATOR --> VeranstaltungResource_updateVortrag
 ORGANISATOR --> VeranstaltungResource_uploadTeilnehmerCsv
+ORGANISATOR --> VeranstaltungResource_vortragsInstanzUmplanen
+ORGANISATOR --> VeranstaltungResource_zurueckziehenErgebnis
 ORGANISATOR --> VerbesserungsvorschlagResource_create
 ORGANISATOR --> VerbesserungsvorschlagResource_delete
 ORGANISATOR --> VerbesserungsvorschlagResource_getAll
@@ -375,6 +425,9 @@ ORGANISATOR --> WartungshinweisResource_get
 ORGANISATOR --> KalenderResource_getOrganisatorKalender
 PUBLIC --> AppInfoResource_getInfo
 PUBLIC --> LaufbandResource_getNews
+REFERENT --> NachrichtResource_getEigene
+REFERENT --> NachrichtResource_getUngeleseneAnzahl
+REFERENT --> NachrichtResource_markiereAlsGelesen
 REFERENT --> NeigungResource_getAll
 REFERENT --> ReferentResource_cloneTalkForEvent
 REFERENT --> ReferentResource_createVortrag
@@ -396,6 +449,9 @@ REFERENT --> VeranstaltungResource_getVortraege
 REFERENT --> VerbesserungsvorschlagResource_create
 REFERENT --> WartungshinweisResource_get
 REFERENT --> KalenderResource_getReferentKalender
+TEILNEHMER --> NachrichtResource_getEigene
+TEILNEHMER --> NachrichtResource_getUngeleseneAnzahl
+TEILNEHMER --> NachrichtResource_markiereAlsGelesen
 TEILNEHMER --> NeigungResource_getAll
 TEILNEHMER --> PrioritaetenResource_getPrioritaeten
 TEILNEHMER --> PrioritaetenResource_updatePrioritaeten
@@ -428,6 +484,17 @@ TEILNEHMER --> KalenderResource_getTeilnehmerKalender
 | GET
 | `/api/info`
 | PUBLIC
+|===
+
+=== DatabaseBackupResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| export
+| GET
+| `/api/administrator/backup/export`
+| ADMINISTRATOR
 |===
 
 === GebaeudeResource
@@ -488,6 +555,25 @@ TEILNEHMER --> KalenderResource_getTeilnehmerKalender
 | PUBLIC
 |===
 
+=== NachrichtResource
+
+[cols="2,1,3,2", options="header"]
+|===
+| Aktion | Method | Pfad | Rollen
+| getEigene
+| GET
+| `/api/nachrichten`
+| ORGANISATOR, ADMINISTRATOR, REFERENT, TEILNEHMER
+| getUngeleseneAnzahl
+| GET
+| `/api/nachrichten/ungelesen-anzahl`
+| ORGANISATOR, ADMINISTRATOR, REFERENT, TEILNEHMER
+| markiereAlsGelesen
+| PUT
+| `/api/nachrichten/{id}/gelesen`
+| ORGANISATOR, ADMINISTRATOR, REFERENT, TEILNEHMER
+|===
+
 === NeigungResource
 
 [cols="2,1,3,2", options="header"]
@@ -515,6 +601,10 @@ TEILNEHMER --> KalenderResource_getTeilnehmerKalender
 [cols="2,1,3,2", options="header"]
 |===
 | Aktion | Method | Pfad | Rollen
+| changeRole
+| PUT
+| `/api/organisator/nutzer/{id}/rolle`
+| ORGANISATOR, ADMINISTRATOR
 | createGruppe
 | POST
 | `/api/organisator/veranstaltungen/{vid}/gruppen`
@@ -762,10 +852,6 @@ TEILNEHMER --> KalenderResource_getTeilnehmerKalender
 | GET
 | `/api/reports/{vid}/prios-dashboard-data`
 | ORGANISATOR, ADMINISTRATOR
-| getRaumbelegungsplanData
-| GET
-| `/api/reports/{vid}/raum/{rid}/belegungsplan-data`
-| ORGANISATOR, ADMINISTRATOR
 | getStundenplanData
 | GET
 | `/api/reports/{vid}/stundenplan-data`
@@ -777,6 +863,14 @@ TEILNEHMER --> KalenderResource_getTeilnehmerKalender
 | getUebersichtRaeumeData
 | GET
 | `/api/reports/{vid}/raeume-data`
+| ORGANISATOR, ADMINISTRATOR
+| getVortragAnmeldungenData
+| GET
+| `/api/reports/{vid}/vortrag/{vortragId}/anmeldungen-data`
+| ORGANISATOR, ADMINISTRATOR
+| getWahlvortraegeAnmeldungenUebersichtData
+| GET
+| `/api/reports/{vid}/wahlvortraege-anmeldungen-uebersicht-data`
 | ORGANISATOR, ADMINISTRATOR
 |===
 
@@ -906,6 +1000,10 @@ TEILNEHMER --> KalenderResource_getTeilnehmerKalender
 | DELETE
 | `/api/veranstaltungen/{vid}/vortraege/{id}`
 | ORGANISATOR, ADMINISTRATOR
+| getAktuelleZuweisungen
+| GET
+| `/api/veranstaltungen/{vid}/planungsergebnisse/{ergebnisId}/teilnehmer/{tid}/zuweisungen`
+| ORGANISATOR, ADMINISTRATOR
 | getAll
 | GET
 | `/api/veranstaltungen`
@@ -942,6 +1040,10 @@ TEILNEHMER --> KalenderResource_getTeilnehmerKalender
 | GET
 | `/api/veranstaltungen/{vid}/stats`
 | ORGANISATOR, ADMINISTRATOR
+| getUmbuchungsOptionen
+| GET
+| `/api/veranstaltungen/{vid}/planungsergebnisse/{ergebnisId}/teilnehmer/{tid}/umbuchen-optionen`
+| ORGANISATOR, ADMINISTRATOR
 | getVeranstaltungsVortrag
 | GET
 | `/api/veranstaltungen/{vid}/vortraege/{tid}`
@@ -950,6 +1052,10 @@ TEILNEHMER --> KalenderResource_getTeilnehmerKalender
 | GET
 | `/api/veranstaltungen/{vid}/vortraege`
 | ORGANISATOR, ADMINISTRATOR, TEILNEHMER, REFERENT
+| getWahlvortragInstanzen
+| GET
+| `/api/veranstaltungen/{vid}/planungsergebnisse/{ergebnisId}/instanzen`
+| ORGANISATOR, ADMINISTRATOR
 | importReferenten
 | POST
 | `/api/veranstaltungen/{vid}/referenten/import`
@@ -965,6 +1071,30 @@ TEILNEHMER --> KalenderResource_getTeilnehmerKalender
 | importVortraege
 | POST
 | `/api/veranstaltungen/{vid}/vortraege/import`
+| ORGANISATOR, ADMINISTRATOR
+| listePlanungsergebnisse
+| GET
+| `/api/veranstaltungen/{vid}/planungsergebnisse`
+| ORGANISATOR, ADMINISTRATOR
+| loescheErgebnis
+| DELETE
+| `/api/veranstaltungen/{vid}/planungsergebnisse/{ergebnisId}`
+| ORGANISATOR, ADMINISTRATOR
+| publiziereErgebnis
+| PUT
+| `/api/veranstaltungen/{vid}/planungsergebnisse/{ergebnisId}/publizieren`
+| ORGANISATOR, ADMINISTRATOR
+| sendeNachricht
+| POST
+| `/api/veranstaltungen/{vid}/nachrichten`
+| ORGANISATOR, ADMINISTRATOR
+| teilnehmerNachbuchen
+| POST
+| `/api/veranstaltungen/{vid}/teilnehmer/{tid}/nachbuchen`
+| ORGANISATOR, ADMINISTRATOR
+| teilnehmerUmbuchen
+| POST
+| `/api/veranstaltungen/{vid}/planungsergebnisse/{ergebnisId}/teilnehmer/{tid}/umbuchen`
 | ORGANISATOR, ADMINISTRATOR
 | update
 | PUT
@@ -985,6 +1115,14 @@ TEILNEHMER --> KalenderResource_getTeilnehmerKalender
 | uploadTeilnehmerCsv
 | POST
 | `/api/veranstaltungen/{vid}/teilnehmer/import`
+| ORGANISATOR, ADMINISTRATOR
+| vortragsInstanzUmplanen
+| POST
+| `/api/veranstaltungen/{vid}/planungsergebnisse/{ergebnisId}/umplanen`
+| ORGANISATOR, ADMINISTRATOR
+| zurueckziehenErgebnis
+| PUT
+| `/api/veranstaltungen/{vid}/planungsergebnisse/{ergebnisId}/zurueckziehen`
 | ORGANISATOR, ADMINISTRATOR
 |===
 

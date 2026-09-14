@@ -40,7 +40,7 @@ const reports = [
   { routeName: 'Stundenplan', label: 'Stundenplan' },
   { routeName: 'Prioritaeten', label: 'Prioritäten Auswertung' },
   { routeName: 'TeilnehmerZuordnungen', label: 'Teilnehmer-Zuordnungen' },
-  { routeName: 'Raumschilder', label: 'Raumschilder' },
+  { routeName: 'Raumschilder', label: 'Raumbelegungen' },
   { routeName: 'Anwesenheiten', label: 'Anwesenheiten' },
   { routeName: 'LaufzettelAlle', label: 'Laufzettel für Teilnehmer' },
   { routeName: 'LaufzettelAlleReferenten', label: 'Laufzettel für Referenten' },
