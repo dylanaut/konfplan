@@ -116,6 +116,9 @@ public class UmplanungService {
         // Kandidaten-Instanzen im selben Slot mit ihrer aktuellen Restkapazität ermitteln.
         Map<Instanz, Integer> restkapazitaet = new HashMap<>();
         for (int wIdx2 = 0; wIdx2 < wvOids.length; wIdx2++) {
+            if (null == wahlvortragByOid.get(wvOids[wIdx2])) {
+                continue;
+            }
             for (int iIdx2 = 0; iIdx2 < instanzSlot[wIdx2].length; iIdx2++) {
                 if (wIdx2 == wvIdx && iIdx2 == instanzIndex) {
                     continue;

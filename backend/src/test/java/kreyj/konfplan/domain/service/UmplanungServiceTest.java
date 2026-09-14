@@ -1,5 +1,6 @@
 package kreyj.konfplan.domain.service;
 
+import io.quarkus.hibernate.orm.panache.Panache;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -258,6 +259,55 @@ class UmplanungServiceTest extends DatabaseCleaner {
             new int[][]{{1}, {2}},
             new int[][]{{1}, {1}},
             new boolean[][][]{{{true}, {false}}}));
+
+        UmplanungErgebnisDto dto = umplanungService.vortragsInstanzUmplanen(veranstaltung, ergebnis.getId(), wvAusfall.getId(), 0, "organisator@test.com");
+
+        assertThat(dto.umverteilt).isEmpty();
+        assertThat(dto.nichtPlatziert).containsExactly(tn.getFullName());
+    }
+
+
+    /**
+     * Regressionstest fuer einen Produktions-NPE: Ein Kandidaten-Wahlvortrag im selben Slot wurde
+     * nach der Planerstellung geloescht, ohne den Plan neu zu berechnen. Sein OID steckt aber
+     * weiterhin im MinizincResult. waehleBestenKandidaten() griff dann direkt auf
+     * wahlvortragByOid.get(...) zu, das fuer diesen OID null liefert -> NPE bei
+     * kandidatVortrag.getNeigungen(). Der geloeschte Kandidat muss beim Aufbau der
+     * Restkapazitaet ignoriert werden.
+     */
+    @Test
+    @Transactional
+    void kandidatMitZwischenzeitlichGeloeschtemWahlvortrag_fuehrtZuNichtPlatziertOhneException() {
+        Veranstaltung veranstaltung = neueVeranstaltung("Umplanung-Test-4b");
+        Slot slot1 = neuerSlot(veranstaltung, 1);
+        Wahlvortrag wvAusfall = neuerWahlvortrag(veranstaltung, "Fällt aus");
+        Wahlvortrag wvGeloescht = neuerWahlvortrag(veranstaltung, "Wird geloescht");
+        Teilnehmer tn = neuerTeilnehmer(veranstaltung, "tn1@test.com");
+
+        Planungsergebnis ergebnis = persistiereErgebnis(veranstaltung, ergebnis(
+            new long[]{tn.getId()},
+            new long[]{wvAusfall.getId(), wvGeloescht.getId()},
+            new long[]{slot1.getId()},
+            new long[]{raumGrossId},
+            new int[][]{{1}, {1}},
+            new int[][]{{1}, {1}},
+            new boolean[][][]{{{true}, {false}}}));
+
+        // Simuliert: der Kandidaten-Wahlvortrag wird nachträglich geloescht, ohne den Plan neu zu
+        // berechnen - genau das loeste den Produktions-NPE aus. Native SQL statt wvGeloescht.delete():
+        // Panaches JPQL-Bulk-delete meldet in dieser Testumgebung faelschlich Erfolg, ohne die
+        // Zeile tatsaechlich zu entfernen (per Test verifiziert) - in Produktion passiert das
+        // Loeschen ohnehin ueber eine eigene, entkoppelte Transaktion. Das anschliessende
+        // clear() ist trotzdem noetig: Hibernates Session-Cache haelt sonst die bereits
+        // geladene Wahlvortrag-Instanz weiterhin fest, obwohl die Zeile in der DB laengst weg ist.
+        long wvGeloeschtId = wvGeloescht.getId();
+        Panache.getEntityManager()
+            .createNativeQuery("delete from Vortrag where id = ?1")
+            .setParameter(1, wvGeloeschtId)
+            .executeUpdate();
+        Panache.getEntityManager().clear();
+        veranstaltung = Veranstaltung.findById(veranstaltung.getId());
+        wvAusfall = Wahlvortrag.findById(wvAusfall.getId());
 
         UmplanungErgebnisDto dto = umplanungService.vortragsInstanzUmplanen(veranstaltung, ergebnis.getId(), wvAusfall.getId(), 0, "organisator@test.com");
 
