@@ -240,7 +240,11 @@ try {
   console.log(`Sitzung gespeichert in ${STORAGE_STATE_PATH}.`);
 } catch (e) {
   await saveErrorScreenshot(page, 'unexpected');
-  console.error('Setup fehlgeschlagen:', e.message);
+  // imapflow wirft bei einem fehlgeschlagenen IMAP-Kommando (z.B. Login/Auth abgelehnt) immer
+  // die generische Meldung "Command failed" - der eigentliche, vom Server gelieferte Klartext-
+  // Grund (z.B. "Invalid credentials") steckt in e.responseText, nicht in e.message. Beides
+  // ausgeben, damit ein Fehlschlag hier tatsaechlich diagnostizierbar ist.
+  console.error('Setup fehlgeschlagen:', e.message, e.responseText ? `(${e.responseText})` : '');
   process.exit(1);
 } finally {
   if (browser) {
