@@ -1,17 +1,26 @@
-// Einmaliges, interaktives Setup: loggt sich bei Brevo ein, fragt den beim ersten Login von
-// einem neuen Geraet per E-Mail zugestellten 6-stelligen Code ab und speichert die daraus
-// resultierende Browser-Sitzung (Cookies) dauerhaft in storage-state.json. Danach erkennt
-// Brevo dieses "Geraet" (= diese gespeicherte Sitzung) als vertrauenswuerdig, weitere Logins
-// ueber update-ip.mjs brauchen den Code nicht mehr.
+// Loggt sich bei Brevo ein und speichert die resultierende Browser-Sitzung (Cookies) in
+// storage-state.json. Wird von check-outbound-ip.sh AUTOMATISCH vor JEDEM update-ip.mjs-Lauf
+// erneut ausgefuehrt (nicht mehr nur einmalig) - per Live-Test verifiziert (siehe
+// error-api-*.json-Funde bei update-ip.mjs): das eigentliche Session-/auth-Cookie hat eine
+// deutlich kuerzere Gueltigkeit als die "vertrauenswuerdiges Geraet"-Erkennung selbst (die
+// den 6-stelligen Code erspart) - eine einmalig gespeicherte Sitzung wird deshalb zwischen
+// zwei IP-Aenderungen zuverlaessig ungueltig, auch wenn Brevo das Geraet weiterhin als
+// vertrauenswuerdig einstuft.
 //
 // Voraussetzung (einmalig): node_modules in diesen Ordner installieren - das Playwright-Image
 // bringt nur den Browser mit, nicht das npm-Paket selbst:
 //   docker run --rm -v "$(pwd):/work" -w /work mcr.microsoft.com/playwright:v1.62.1-noble npm install
 //
-// Aufruf (einmalig, manuell, NICHT per Cron):
+// Aufruf (manuell, z.B. fuer das allererste Login von einem neuen Geraet, das einen per E-Mail
+// zugestellten 6-stelligen Code verlangt - dafuer wird -it und ein echtes Terminal benoetigt):
 //   docker run --rm -it -v "$(pwd):/work" -w /work \
 //     -e BREVO_LOGIN_EMAIL=... -e BREVO_LOGIN_PASSWORD=... \
 //     mcr.microsoft.com/playwright:v1.62.1-noble node setup-session.mjs
+// Nicht-interaktive Aufrufe (per Cron, ohne -it) erwarten, dass das Geraet bereits als
+// vertrauenswuerdig gilt und daher KEIN Code angefordert wird - siehe TTY-Pruefung unten. Dafuer
+// wird gezielt NUR das Geraete-Erkennungs-Cookie ("did") aus einer vorhandenen storage-state.json
+// uebernommen (nicht die komplette alte Sitzung) - siehe Kommentar weiter unten fuer die
+// Begruendung (ein Live-Test mit der kompletten alten Sitzung schlug fehl).
 //
 // WICHTIG: Login-Formular-Selektoren sind nach bestem Wissen aus der oeffentlichen Brevo-
 // Hilfe-Dokumentation entwickelt, aber nicht gegen den echten Account getestet (kein Zugriff
@@ -21,11 +30,11 @@
 import { chromium } from 'playwright';
 import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
+import fs from 'node:fs';
 
 const EMAIL = process.env.BREVO_LOGIN_EMAIL;
 const PASSWORD = process.env.BREVO_LOGIN_PASSWORD;
 const STORAGE_STATE_PATH = './storage-state.json';
-const AUTHORIZED_IPS_URL = 'https://app.brevo.com/security/authorised_ips';
 
 if (!EMAIL || !PASSWORD) {
   console.error('BREVO_LOGIN_EMAIL/BREVO_LOGIN_PASSWORD nicht gesetzt.');
@@ -47,6 +56,27 @@ let page;
 try {
   browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
+
+  // NUR das Geraete-Erkennungs-Cookie ("did") aus einer vorhandenen storage-state.json
+  // uebernehmen - NICHT die komplette alte Sitzung. Per Live-Test verifiziert: ein
+  // Wiederverwenden ALLER alten Cookies (inkl. bereits abgelaufenem auth/loggedin) liess
+  // login.brevo.com direkt zum Dashboard durchleiten, OHNE das Login-Formular ueberhaupt zu
+  // zeigen - dadurch wurde nie ein echter Login durchgefuehrt und beim Speichern schlicht die-
+  // selbe, bereits als ungueltig bekannte Sitzung erneut gesichert (bewirkt also NICHTS). Ein
+  // komplett leerer Kontext (die vorherige Variante) zeigt zwar zuverlaessig das Formular, laesst
+  // Brevo aber bei jedem Lauf erneut den 6-stelligen Code anfordern, da "did" (vermutlich das
+  // eigentliche Geraete-Erkennungsmerkmal) fehlt. Nur "did" wiederzuverwenden vermeidet beides:
+  // das Formular erscheint normal (kein auth/loggedin vorhanden), der eigentliche Login-Vorgang
+  // laeuft echt durch und erneuert dabei auth/ACCOUNTSESSID, waehrend Brevo das Geraet ueber
+  // "did" trotzdem als bekannt/vertrauenswuerdig wiedererkennt.
+  if (fs.existsSync(STORAGE_STATE_PATH)) {
+    const previousState = JSON.parse(fs.readFileSync(STORAGE_STATE_PATH, 'utf-8'));
+    const deviceCookie = previousState.cookies?.find(c => c.name === 'did');
+    if (deviceCookie) {
+      await context.addCookies([deviceCookie]);
+    }
+  }
+
   page = await context.newPage();
 
   console.log('Öffne Brevo-Login...');
@@ -75,6 +105,17 @@ try {
   const codeFieldVisible = await codeInput.isVisible({ timeout: 5000 }).catch(() => false);
 
   if (codeFieldVisible) {
+    // Bei einem nicht-interaktiven Aufruf (per Cron, ohne -it) haette stdin kein TTY und
+    // rl.question() wuerde auf eine Eingabe warten, die nie kommt - der Prozess wuerde dann bis
+    // zu einem aeusseren Timeout haengen bleiben, statt klar zu scheitern. Stattdessen sofort mit
+    // einer eindeutigen Fehlermeldung abbrechen.
+    if (!input.isTTY) {
+      await saveErrorScreenshot(page, 'code-required-non-interactive');
+      console.error('Geraeteverifizierung (6-stelliger Code) erforderlich, aber nicht-interaktiver Aufruf (kein TTY) - '
+        + 'bitte einmalig manuell mit "docker run -it" ausführen, um das Geraet erneut als vertrauenswürdig einzustufen.');
+      process.exit(1);
+    }
+
     console.log('Geraeteverifizierung erforderlich - Code wurde per E-Mail an ' + EMAIL + ' geschickt.');
     const rl = readline.createInterface({ input, output });
     const code = await rl.question('Bitte den 6-stelligen Code eingeben: ');
@@ -93,20 +134,14 @@ try {
     process.exit(1);
   }
 
-  // Vor dem Speichern einmal die eigentliche Ziel-Seite besuchen: update-ip.mjs haengt dort
-  // reproduzierbar in einem Lade-Skeleton (siehe error-unexpected-1788334300621.html), obwohl
-  // dieselbe Sitzung in einem normalen Browser funktioniert. storageState() erfasst Cookies UND
-  // localStorage, aber NICHT sessionStorage/IndexedDB - falls Brevo dort beim ersten echten
-  // Besuch noetigen Init-State in localStorage ablegt, wird er so mitgespeichert. Falls die
-  // fehlende Initialisierung stattdessen ueber sessionStorage/IndexedDB laeuft, hilft das nicht.
-  console.log('Besuche Authorized-IPs-Seite einmal vor dem Speichern der Sitzung...');
-  await page.goto(AUTHORIZED_IPS_URL, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(e => {
-    console.log(`Besuch der Authorized-IPs-Seite fehlgeschlagen (${e.message}) - Sitzung wird trotzdem gespeichert.`);
-  });
-  await page.waitForTimeout(3000);
-
+  // Frueher wurde hier vor dem Speichern noch einmal die Authorized-IPs-Seite besucht (Theorie:
+  // notwendiger Init-State in localStorage). Diese Theorie ist inzwischen ueberholt - update-ip.mjs
+  // braucht nur noch die Cookies fuer einen direkten API-Call (siehe dessen Kommentar), kein
+  // Seiten-Besuch mehr noetig. Der Extra-Request entfaellt bewusst, da diese Seite bekanntermassen
+  // im headless Playwright haengen kann und dieser Lauf jetzt vor JEDEM update-ip.mjs-Aufruf
+  // erfolgt (Latenz zaehlt hier mehr als bei einem frueher wirklich einmaligen Setup).
   await context.storageState({ path: STORAGE_STATE_PATH });
-  console.log(`Sitzung gespeichert in ${STORAGE_STATE_PATH}. update-ip.mjs kann diese jetzt ohne erneute Geraeteverifizierung nutzen.`);
+  console.log(`Sitzung gespeichert in ${STORAGE_STATE_PATH}.`);
 } catch (e) {
   await saveErrorScreenshot(page, 'unexpected');
   console.error('Setup fehlgeschlagen:', e.message);
