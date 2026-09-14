@@ -3,13 +3,15 @@
 // noetig, solange Brevo das Geraet noch als vertrauenswuerdig einstuft.
 //
 // Aufruf: node update-ip.mjs <ip-adresse>
-// Exit-Code 0 = erfolgreich, ungleich 0 = Fehlschlag (siehe stderr + error-*.png/error-*.html).
+// Exit-Code 0 = erfolgreich, ungleich 0 = Fehlschlag (siehe stderr + error-*.png/error-*.html/error-*-diag.json).
 //
 // WICHTIG: Seiten-Selektoren sind nach bestem Wissen aus der oeffentlichen Brevo-Hilfe-
 // Dokumentation entwickelt, aber nicht gegen den echten Account getestet - bei Abweichungen
-// bitte mit einem Blick auf error-*.png UND das zugehoerige error-*.html (vollstaendiges
-// DOM zum Fehlerzeitpunkt, aussagekraeftiger als der Screenshot allein bei z.B. dauerhaften
-// Lade-Skeletons) gemeinsam nachjustieren.
+// bitte mit einem Blick auf error-*.png, error-*.html (vollstaendiges DOM zum Fehlerzeitpunkt,
+// aussagekraeftiger als der Screenshot allein bei z.B. dauerhaften Lade-Skeletons) UND
+// error-*-diag.json (Konsolen-Fehler/-Warnungen + fehlgeschlagene Netzwerk-Antworten waehrend
+// des gesamten Laufs - zeigt z.B. eine 401/403 auf einen API-Call, die im DOM-Snapshot allein
+// unsichtbar bleibt) gemeinsam nachjustieren.
 //
 // Bekannte Einschraenkung (per Live-Test verifiziert, siehe error-unexpected-1788333378470.html):
 // Die "Security"-Seite laedt im normalen Browser problemlos, bleibt aber im headless Playwright
@@ -37,6 +39,25 @@ if (!fs.existsSync(STORAGE_STATE_PATH)) {
   process.exit(1);
 }
 
+// Sammelt Konsolen-Meldungen und fehlgeschlagene (Status >= 400) Netzwerk-Antworten waehrend
+// der gesamten Laufzeit - bei einem haengenden Lade-Skeleton (siehe Kommentar oben) zeigt weder
+// Screenshot noch DOM-Snapshot, WARUM nichts rendert (z.B. eine 401/403 auf einen API-Call oder
+// ein JS-Fehler beim Mounten der Komponente). Muss vor page.goto() registriert werden.
+const diagnosticLog = { console: [], failedResponses: [] };
+
+function attachDiagnosticListeners(page) {
+  page.on('console', msg => {
+    if (['error', 'warning'].includes(msg.type())) {
+      diagnosticLog.console.push({ type: msg.type(), text: msg.text() });
+    }
+  });
+  page.on('response', response => {
+    if (response.status() >= 400) {
+      diagnosticLog.failedResponses.push({ url: response.url(), status: response.status() });
+    }
+  });
+}
+
 async function saveErrorDiagnostics(page, label) {
   if (!page) {
     return;
@@ -44,9 +65,11 @@ async function saveErrorDiagnostics(page, label) {
   const stamp = Date.now();
   const pngPath = `./error-${label}-${stamp}.png`;
   const htmlPath = `./error-${label}-${stamp}.html`;
+  const diagPath = `./error-${label}-${stamp}-diag.json`;
   await page.screenshot({ path: pngPath, fullPage: true }).catch(() => {});
   await page.content().then(html => fs.writeFileSync(htmlPath, html)).catch(() => {});
-  console.error(`Diagnose gespeichert: ${pngPath}, ${htmlPath}`);
+  fs.writeFileSync(diagPath, JSON.stringify(diagnosticLog, null, 2));
+  console.error(`Diagnose gespeichert: ${pngPath}, ${htmlPath}, ${diagPath}`);
   console.error(`Seite zum Zeitpunkt des Fehlers: url=${page.url()}, title=${await page.title().catch(() => '?')}`);
 }
 
@@ -66,11 +89,21 @@ try {
   // navigator.webdriver ist bei JEDEM CDP-automatisierten Chromium (auch headed) auf true
   // gesetzt und laesst sich nicht per Chromium-Flag abschalten - deshalb hier per Init-Script
   // VOR jedem Seiten-Skript ueberschrieben (muss vor page.goto() registriert werden, damit es
-  // bereits beim allerersten Skript-Lauf der Zielseite greift).
+  // bereits beim allerersten Skript-Lauf der Zielseite greift). navigator.plugins/.languages
+  // und window.chrome sind weitere gaengige Merkmale, an denen Frontends headless Chromium von
+  // einem echten Browser unterscheiden (leeres plugins-Array, fehlendes window.chrome-Objekt) -
+  // per Live-Test (siehe error-*-diag.json) noch nicht bestaetigt notwendig, aber Standard-
+  // Gegenmassnahme, falls das reine webdriver-Override allein nicht mehr reicht.
   await context.addInitScript(() => {
     Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+    Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+    Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+    if (!window.chrome) {
+      window.chrome = { runtime: {} };
+    }
   });
   page = await context.newPage();
+  attachDiagnosticListeners(page);
 
   // 'networkidle' statt 'domcontentloaded' faellt bei SPAs mit dauerhaften Verbindungen
   // (Websocket/Long-Polling fuer Live-Benachrichtigungen) leicht auf den Navigations-Timeout
