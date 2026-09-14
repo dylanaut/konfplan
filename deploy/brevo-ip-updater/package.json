@@ -4,8 +4,6 @@
   "type": "module",
   "description": "Traegt die aktuelle ausgehende Server-IP automatisch in Brevos Authorized-IPs-Liste ein, siehe Deployment-DockerCompose.adoc -> 'Ausgehende Server-IP ueberwachen'.",
   "dependencies": {
-    "playwright": "1.62.1",
-    "playwright-extra": "4.3.6",
-    "puppeteer-extra-plugin-stealth": "2.11.2"
+    "playwright": "1.62.1"
   }
 }
