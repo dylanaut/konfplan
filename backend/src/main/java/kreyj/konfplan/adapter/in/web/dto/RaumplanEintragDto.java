@@ -14,6 +14,7 @@ public class RaumplanEintragDto {
     public String slotZeit;
     public String vortragTitel;
     public String referentName;
+    public String referentOrganisation;
     public String vortragTyp;
     public List<TeilnehmerDto> teilnehmer;
 
@@ -29,6 +30,7 @@ public class RaumplanEintragDto {
                 "slotId=" + slotId +
                 ", titel='" + vortragTitel + '\'' +
                 ", ref='" + referentName + '\'' +
+                ", refOrg='" + referentOrganisation + '\'' +
                 ", vortragTyp='" + vortragTyp + '\'' +
                 ", teilnehmer=" + teilnehmer +
                 '}';

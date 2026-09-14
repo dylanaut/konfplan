@@ -23,7 +23,7 @@
         <div v-for="raum in sortedRaeume" :key="raum.id" class="col-12 page-break-after">
           <div class="card h-100">
             <div class="card-header text-center">
-              <h2>{{ raumLabel(raum) }}</h2>
+              <h2>{{ raumLabel(raum) }} <small class="text-muted">(Kapazität: {{ raum.kapazitaet }})</small></h2>
             </div>
             <div class="card-body">
               <table class="table table-striped">
@@ -32,6 +32,7 @@
                     <th>Zeit</th>
                     <th>Vortrag</th>
                     <th>Referent</th>
+                    <th>Teilnehmer</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -39,10 +40,14 @@
                     <td>{{ formatSlot(slot) }}</td>
                     <template v-if="reportData.raumplan[raum.id] && reportData.raumplan[raum.id][slot.id]">
                       <td>{{ reportData.raumplan[raum.id][slot.id].vortragTitel }}</td>
-                      <td>{{ reportData.raumplan[raum.id][slot.id].referentName }}</td>
+                      <td>
+                        {{ reportData.raumplan[raum.id][slot.id].referentName }}
+                        <template v-if="reportData.raumplan[raum.id][slot.id].referentOrganisation"><br>{{ reportData.raumplan[raum.id][slot.id].referentOrganisation }}</template>
+                      </td>
+                      <td>{{ (reportData.raumplan[raum.id][slot.id].teilnehmer || []).length }}</td>
                     </template>
                     <template v-else>
-                      <td colspan="2" class="text-muted">Frei</td>
+                      <td colspan="3" class="text-muted">Frei</td>
                     </template>
                   </tr>
                 </tbody>

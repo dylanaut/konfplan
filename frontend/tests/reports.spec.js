@@ -100,7 +100,11 @@ test.describe('Report-Generierung', () => {
     // Scoped auf ".card-header" - VeranstaltungHeader.vue rendert selbst ebenfalls ein <h2> mit
     // dem Veranstaltungsnamen, ein ungescoptes "h2" waere daher mehrdeutig.
     await expect(page.locator('.card-header h2')).toContainText('Forum');
+    await expect(page.locator('.card-header h2')).toContainText('Kapazität: 40');
     await expect(page.locator('table tbody tr').first().locator('td').nth(1)).toContainText('Grundlagen des Projektmanagements');
+    await expect(page.locator('table tbody tr').first().locator('td').nth(2)).toContainText('Tom Weber');
+    await expect(page.locator('table tbody tr').first().locator('td').nth(2)).toContainText('Musterfirma GmbH');
+    await expect(page.locator('table tbody tr').first().locator('td').nth(3)).toContainText('2');
   });
 
   test('sollte freie Slots für Referenten korrekt rendern', async ({ page }) => {

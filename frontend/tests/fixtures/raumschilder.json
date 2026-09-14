@@ -4,7 +4,7 @@
     "name": "Berufsorientierungstag 2025"
   },
   "raeume": [
-    { "id": 303, "name": "Forum" }
+    { "id": 303, "name": "Forum", "kapazitaet": 40 }
   ],
   "slots": [
     { "id": 1, "startTime": "2025-10-10T09:00:00", "endTime": "2025-10-10T10:00:00" }
@@ -13,7 +13,12 @@
     "303": {
       "1": {
         "vortragTitel": "Grundlagen des Projektmanagements",
-        "referentName": "Tom Weber"
+        "referentName": "Tom Weber",
+        "referentOrganisation": "Musterfirma GmbH",
+        "teilnehmer": [
+          { "id": 1, "firstName": "Anna", "lastName": "Muster" },
+          { "id": 2, "firstName": "Ben", "lastName": "Beispiel" }
+        ]
       }
     }
   }
