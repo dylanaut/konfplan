@@ -15,22 +15,32 @@
 //
 // Bekannte Einschraenkung: Die "Security"-Seite laedt im normalen Browser problemlos, bleibt
 // aber im headless Playwright dauerhaft im Lade-Skeleton haengen (Header/Nav rendern normal, nur
-// der "security-tabs"-Bereich nicht). Urspruenglich (siehe error-unexpected-1788333378470.html)
-// wurde das auf eine clientseitige navigator.webdriver-Pruefung zurueckgefuehrt - deshalb die
-// Gegenmassnahmen unten (Flag + navigator.webdriver/plugins/languages/window.chrome
-// ueberschreiben). Per Live-Test EINES SPAETEREN Fehlschlags (siehe error-*-diag.json) jedoch
-// als tatsaechliche Ursache verifiziert: eine abgelaufene Sitzung - app.brevo.com ist eine
-// Microfrontend-Architektur, bei der Konto-/Sidebar-Daten per Hintergrund-Fetch von eigenen
-// Subdomains nachgeladen werden; ist die Sitzung dort abgelaufen, liefern GENAU diese Calls 401,
-// waehrend die Haupt-Seiten-URL nie auf /login umleitet - das "security-tabs"-Widget haengt
-// dann dauerhaft im Lade-Skeleton, weil es auf Daten wartet, die nie ankommen. Die
-// Fingerprinting-Gegenmassnahmen schaden nicht, sind aber fuer DIESEN Fehlschlag nicht die
-// Ursache - die eigentliche Abhilfe ist ein erneuter Lauf von setup-session.mjs (siehe die
-// darauf abzielende Pruefung weiter unten). Falls doch einmal die Fingerprinting-Theorie
-// zutrifft, bleibt die manuelle Nachtrage laut Deployment-DockerCompose.adoc der Fallback.
-
-import { chromium } from 'playwright';
+// der "security-tabs"-Bereich nicht) - mehrere Live-Test-Runden zur Ursache, siehe
+// error-*-diag.json der jeweiligen Fehlschlaege:
+//   1. navigator.webdriver-Theorie (error-unexpected-1788333378470.html): einzelne
+//      navigator.*-Properties ueberschrieben - hat NICHT nachhaltig geholfen.
+//   2. Abgelaufene-Sitzung-Theorie: app.brevo.com ist eine Microfrontend-Architektur, bei der
+//      Konto-/Sidebar-Daten per Hintergrund-Fetch von eigenen Subdomains (account-app.brevo.com,
+//      sidebar-backend.brevo.com, ...) nachgeladen werden; diese Calls lieferten 401/403, waehrend
+//      die Haupt-Seiten-URL nie auf /login umleitete. WIDERLEGT: derselbe Fehler trat unmittelbar
+//      nach einem frischen setup-session.mjs-Lauf erneut auf - eine Sekunden alte Sitzung kann
+//      nicht "abgelaufen" sein. Per manuellem Vergleich (echter Inkognito-Browser, Cookies
+//      akzeptiert) verifiziert: dort liefern dieselben Calls 200, UND es gibt dort ebenfalls nur
+//      Cookies fuer app.brevo.com (keine separaten Cookies je Subdomain) - Cookies/Session sind
+//      also NICHT der Unterschied zwischen echtem Browser und Playwright.
+//   3. Also vermutlich eine Erkennung unterhalb der JS-Ebene (z.B. TLS-/Netzwerk-Fingerprinting),
+//      die einzelne navigator.*-Overrides grundsaetzlich nicht adressieren koennen - deshalb
+//      unten playwright-extra + puppeteer-extra-plugin-stealth statt des blossen
+//      'playwright'-Imports: patcht deutlich mehr, tiefer liegende Automatisierungsmerkmale
+//      (u.a. WebGL-Vendor/Renderer, chrome.runtime/csi/loadTimes, iframe.contentWindow,
+//      Permissions-API) als ein einzelnes addInitScript. NICHT bestaetigt, ob das die
+//      eigentliche (vermutete TLS-/Netzwerk-)Ursache tatsaechlich behebt - falls nicht, bleibt
+//      die manuelle Nachtrage laut Deployment-DockerCompose.adoc der Fallback.
+import { chromium } from 'playwright-extra';
+import stealth from 'puppeteer-extra-plugin-stealth';
 import fs from 'node:fs';
+
+chromium.use(stealth());
 
 const STORAGE_STATE_PATH = './storage-state.json';
 const AUTHORIZED_IPS_URL = 'https://app.brevo.com/security/authorised_ips';
@@ -93,22 +103,9 @@ try {
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
       + '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
   });
-  // navigator.webdriver ist bei JEDEM CDP-automatisierten Chromium (auch headed) auf true
-  // gesetzt und laesst sich nicht per Chromium-Flag abschalten - deshalb hier per Init-Script
-  // VOR jedem Seiten-Skript ueberschrieben (muss vor page.goto() registriert werden, damit es
-  // bereits beim allerersten Skript-Lauf der Zielseite greift). navigator.plugins/.languages
-  // und window.chrome sind weitere gaengige Merkmale, an denen Frontends headless Chromium von
-  // einem echten Browser unterscheiden (leeres plugins-Array, fehlendes window.chrome-Objekt) -
-  // per Live-Test (siehe error-*-diag.json) noch nicht bestaetigt notwendig, aber Standard-
-  // Gegenmassnahme, falls das reine webdriver-Override allein nicht mehr reicht.
-  await context.addInitScript(() => {
-    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-    Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-    Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
-    if (!window.chrome) {
-      window.chrome = { runtime: {} };
-    }
-  });
+  // navigator.webdriver/.plugins/.languages/window.chrome werden jetzt vom Stealth-Plugin
+  // (chromium.use(stealth()) oben) gepatcht - siehe Kommentar oben, warum das den manuellen
+  // addInitScript-Overrides von vorher vorgezogen wird.
   page = await context.newPage();
   attachDiagnosticListeners(page);
 
@@ -119,21 +116,20 @@ try {
   // grundsaetzlich haengt oder nur der reine Idle-Zustand nie eintritt.
   await page.goto(AUTHORIZED_IPS_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
-  // Per Live-Test (siehe error-*-diag.json) verifiziert: eine abgelaufene Sitzung zeigt sich NICHT
-  // zwingend an der Haupt-Seiten-URL (die bleibt auf /security/authorised_ips) - app.brevo.com ist
-  // eine Microfrontend-Architektur, bei der Konto-/Sidebar-Daten per Hintergrund-Fetch von
-  // eigenen Subdomains (account-app.brevo.com, sidebar-backend.brevo.com, ...) nachgeladen
-  // werden. Ist die Sitzung dort abgelaufen, liefern GENAU diese Calls 401, waehrend die
-  // Haupt-Seite selbst nie auf /login umleitet - und das "security-tabs"-Widget haengt
-  // deshalb dauerhaft im Lade-Skeleton (siehe Kommentar oben), was sonst als raetselhafter
-  // Button-Timeout erscheint. Kurze Wartezeit, damit diese Hintergrund-Calls Zeit hatten zu
-  // feuern, bevor wir pruefen.
-  await page.waitForTimeout(2000);
-  if (page.url().includes('login') || diagnosticLog.failedResponses.some(r => r.status === 401)) {
+  if (page.url().includes('login')) {
     await saveErrorDiagnostics(page, 'session-expired');
-    console.error('Gespeicherte Sitzung ist abgelaufen/ungültig (401 von einem Brevo-Backend-Call oder Weiterleitung zur Login-Seite) - bitte setup-session.mjs erneut ausführen.');
+    console.error('Gespeicherte Sitzung ist abgelaufen/ungültig (Weiterleitung zur Login-Seite) - bitte setup-session.mjs erneut ausführen.');
     process.exit(1);
   }
+
+  // Hintergrund-Calls zu Konto-/Sidebar-Subdomains (account-app.brevo.com, sidebar-backend.brevo.com,
+  // ...) lieferten in bisherigen Fehlschlaegen zuverlaessig 401/403 (siehe error-*-diag.json),
+  // OHNE dass die Haupt-Seiten-URL selbst je auf /login umleitete - das wurde faelschlich als
+  // "abgelaufene Sitzung" gedeutet und fuehrte zu einem verfruehten, fehlleitenden Abbruch hier
+  // (siehe Kommentar oben: per echtem Browser-Vergleich widerlegt). Bewusst KEIN Abbruch mehr
+  // allein auf Basis dieser Hintergrund-401s - stattdessen bleibt der explizite Warte-auf-Button-
+  // Schritt unten die einzige verlaessliche Quelle dafuer, ob die Seite tatsaechlich nutzbar ist;
+  // error-*-diag.json faengt die Hintergrund-401s weiterhin fuer die Post-mortem-Analyse ein.
 
   // Explizit auf den tatsaechlichen Button warten (statt dem impliziten Timeout von .click()),
   // damit ein Fehlschlag hier eindeutig "Button nie erschienen" bedeutet und nicht mit einem
