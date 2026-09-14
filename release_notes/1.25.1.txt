@@ -1,0 +1,17 @@
+Release Notes 1.25.1
+Released: 2026-09-14
+
+Changes:
+
+- Release-Notes fuer 1.25.0 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.25.1-SNAPSHOT)
+
+- Raumnamen in den Umplanungs-Tabellen um Gebäudekürzel qualifizieren
+  In "Vortrag umplanen" und "Raum umbuchen" wurde der Raumname bisher
+  unqualifiziert angezeigt. UmplanungInstanzDto liefert jetzt zusätzlich
+  das Gebäudekürzel, damit beide Tabellen wie die übrigen Reports das
+  Format "<Gebäudekürzel> <Raumname>" anzeigen.
+
+- Release 1.25.1
+
