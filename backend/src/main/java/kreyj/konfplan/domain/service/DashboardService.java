@@ -418,6 +418,11 @@ public class DashboardService {
 
                 for (int wvIdx = 0; wvIdx < dd.instanzSlot.length; wvIdx++) {
                     VortragDto wv = dd.wahlvortraege.get(dd.mzWahlvortragOids[wvIdx]);
+                    if (null == wv) {
+                        // Wahlvortrag war zum Zeitpunkt der Planerstellung noch Teil der
+                        // Veranstaltung, wurde seitdem aber entfernt (siehe berechneBelegungUndFreieSlots).
+                        continue;
+                    }
                     long wvOid = wv.id;
                     boolean[] tnVortragBesucht = dd.besucht[tnIdx][wvIdx];
                     int[] wahlRaumInstanz = dd.instanzRaum[wvIdx];

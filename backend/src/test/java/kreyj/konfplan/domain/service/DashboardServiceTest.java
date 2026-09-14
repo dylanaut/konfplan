@@ -1,5 +1,6 @@
 package kreyj.konfplan.domain.service;
 
+import io.quarkus.hibernate.orm.panache.Panache;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -7,6 +8,8 @@ import kreyj.konfplan.adapter.in.web.DatabaseCleaner;
 import kreyj.konfplan.adapter.in.web.dto.templating.BelegungDetail;
 import kreyj.konfplan.adapter.in.web.dto.templating.PrioReport;
 import kreyj.konfplan.adapter.in.web.dto.templating.Stundenplan;
+import kreyj.konfplan.adapter.in.web.dto.templating.TeilnehmerReport;
+import kreyj.konfplan.adapter.in.web.dto.templating.TeilnehmerSlotBelegung;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
 import kreyj.konfplan.persistence.Planungsergebnis;
@@ -205,5 +208,52 @@ class DashboardServiceTest extends DatabaseCleaner {
 
         PrioReport prioReport = dashboardService.getPrioReport(veranstaltung);
         assertThat(prioReport.num_instanzen_pro_wv()).containsExactly(0);
+    }
+
+
+    /**
+     * Regressionstest für einen Produktions-NPE in createTeilnehmerStundenplan: analog zum
+     * bereits behandelten Fall eines nachträglich entfernten Teilnehmers kann auch ein
+     * Wahlvortrag nach der Planerstellung aus der Veranstaltung entfernt (z.B. gelöscht) worden
+     * sein - dd.wahlvortraege.get(...) liefert dann null, ein direkter Feldzugriff darauf
+     * crasht den Teilnehmer-Report.
+     */
+    @Test
+    @Transactional
+    void teilnehmerReport_ueberstehtNachtraeglichEntferntenWahlvortrag() {
+        Veranstaltung veranstaltung = neueVeranstaltung("Dashboard-Test-3");
+        Slot slot1 = neuerSlot(veranstaltung, 1);
+        Wahlvortrag wv1 = neuerWahlvortrag(veranstaltung, "Wird geloescht");
+        Teilnehmer tn = neuerTeilnehmer(veranstaltung, "tn3@test.com");
+
+        persistiereVeroeffentlichtesErgebnis(veranstaltung, ergebnis(
+            new long[]{tn.getId()},
+            new long[]{wv1.getId()},
+            new long[]{slot1.getId()},
+            new long[]{raumGrossId},
+            new int[][]{{1}},
+            new int[][]{{1}},
+            new boolean[][][]{{{true}}}));
+
+        // Simuliert: der Wahlvortrag wird nachträglich geloescht, ohne den Plan neu zu
+        // berechnen - genau das loeste den Produktions-NPE aus. Native SQL statt wv1.delete():
+        // Panaches JPQL-Bulk-delete meldet in dieser Testumgebung faelschlich Erfolg, ohne die
+        // Zeile tatsaechlich zu entfernen (per Test verifiziert) - in Produktion passiert das
+        // Loeschen ohnehin ueber eine eigene, entkoppelte Transaktion. Das anschliessende
+        // clear() ist trotzdem noetig: Hibernates Session-Cache haelt sonst die bereits
+        // geladene Wahlvortrag-Instanz weiterhin fest, obwohl die Zeile in der DB laengst weg ist.
+        long wv1Id = wv1.getId();
+        Panache.getEntityManager()
+            .createNativeQuery("delete from Vortrag where id = ?1")
+            .setParameter(1, wv1Id)
+            .executeUpdate();
+        Panache.getEntityManager().clear();
+        veranstaltung = Veranstaltung.findById(veranstaltung.getId());
+        assertThat(veranstaltung.getWahlvortraege()).as("Wahlvortrag sollte nach dem Loeschen weg sein").isEmpty();
+
+        TeilnehmerReport report = dashboardService.getTeilnehmerReport(veranstaltung);
+
+        TeilnehmerSlotBelegung belegung = report.teilnehmer_stundenplan().get(0).tnSlotBelegungen().get(slot1.getId());
+        assertThat(belegung.typ()).isEqualTo("frei");
     }
 }
