@@ -3,6 +3,8 @@ package kreyj.konfplan.domain.service;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.NachbuchungsVorschlagDto;
+import kreyj.konfplan.adapter.in.web.dto.RaumUmbuchungErgebnisDto;
+import kreyj.konfplan.adapter.in.web.dto.RaumUmbuchungOptionDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerAktuelleZuweisungDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerUmbuchenAnfrageDto;
 import kreyj.konfplan.adapter.in.web.dto.UmbuchungOptionDto;
@@ -14,6 +16,7 @@ import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Raum;
+import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
@@ -22,8 +25,10 @@ import kreyj.konfplan.persistence.Wahlvortrag;
 import org.jboss.logging.Logger;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -193,6 +198,135 @@ public class UmplanungService {
 
     private Planungsergebnis.MinizincResult deserialisiere(Planungsergebnis ergebnis) {
         return Planungsergebnis.MinizincResult.fromJson(ergebnis.getJsonErgebnis());
+    }
+
+
+    /**
+     * Liefert freie Räume im selben Zeitslot wie die angegebene Wahlvortrag-Instanz, die
+     * mindestens die Kapazität des aktuellen Raums haben - als Auswahl für eine Raumumbuchung
+     * nach der Planerstellung (z.B. wenn sich nachträglich ein passenderer Raum ergibt). "Frei"
+     * bedeutet: von keinem anderen Wahl- oder Pflichtvortrag in diesem Zeitslot belegt und nicht
+     * durch eine andere Veranstaltung blockiert (siehe {@link RaumVerfuegbarkeit}).
+     */
+    @Transactional
+    public List<RaumUmbuchungOptionDto> getRaumUmbuchungOptionen(Veranstaltung veranstaltung, Long ergebnisId,
+                                                                   Long wahlvortragId, int instanzIndex) {
+        Planungsergebnis ergebnis = planService.ladeErgebnisFuer(veranstaltung, ergebnisId);
+        Planungsergebnis.MinizincResult result = planService.getMinizincResult(ergebnis);
+
+        long[] wvOids = result.wahlvortrag_oids;
+        int[][] instanzSlot = result.instanz_slot;
+
+        int wvIdx = indexOf(wvOids, wahlvortragId);
+        if (wvIdx < 0 || instanzIndex < 0 || instanzIndex >= instanzSlot[wvIdx].length || instanzSlot[wvIdx][instanzIndex] <= 0) {
+            throw new BusinessException("Instanz nicht gefunden.");
+        }
+
+        Map<Long, Raum> raumByOid = veranstaltung.getRaeume().stream().collect(toMap(IdEntity::getId, Function.identity()));
+        int rIdxAktuell = result.instanz_raum[wvIdx][instanzIndex] - 1;
+        Raum aktuellerRaum = rIdxAktuell < 0 ? null : raumByOid.get(result.raum_oids[rIdxAktuell]);
+        int mindestKapazitaet = null == aktuellerRaum ? 0 : aktuellerRaum.getKapazitaet();
+
+        int slotIdx1 = instanzSlot[wvIdx][instanzIndex];
+        long[] slotOids = result.slot_oids;
+        Slot slot = slotIdx1 - 1 < slotOids.length ? Slot.findById(slotOids[slotIdx1 - 1]) : null;
+
+        Set<Long> belegteRaumOids = ermittleBelegteRaeumeInSlot(veranstaltung, result, slotIdx1, wvIdx, instanzIndex);
+
+        return veranstaltung.getRaeume().stream()
+            .filter(r -> null == aktuellerRaum || !r.getId().equals(aktuellerRaum.getId()))
+            .filter(r -> r.getKapazitaet() >= mindestKapazitaet)
+            .filter(r -> !belegteRaumOids.contains(r.getId()))
+            .filter(r -> null == slot || RaumVerfuegbarkeit.isRaumVerfuegbar(r, slot, veranstaltung))
+            .sorted(Comparator.comparing(Raum::getName, String.CASE_INSENSITIVE_ORDER))
+            .map(r -> new RaumUmbuchungOptionDto(r.getId(), r.getName(),
+                null == r.getGebaeude() ? null : r.getGebaeude().getKuerzel(), r.getKapazitaet()))
+            .toList();
+    }
+
+
+    /**
+     * Verlegt eine Wahlvortrag-Instanz in einen anderen, im selben Zeitslot freien Raum mit
+     * mindestens derselben Kapazität (siehe {@link #getRaumUmbuchungOptionen}) - patcht wie
+     * {@link #vortragsInstanzUmplanen} das bereits gespeicherte, ggf. veröffentlichte
+     * Planungsergebnis in-place, ohne die Teilnehmer-Zuteilung selbst zu verändern.
+     */
+    @Transactional
+    public RaumUmbuchungErgebnisDto vortragsInstanzRaumUmbuchen(Veranstaltung veranstaltung, Long ergebnisId, Long wahlvortragId,
+                                                                  int instanzIndex, Long neuerRaumId, String username) {
+        Planungsergebnis ergebnis = planService.ladeErgebnisFuer(veranstaltung, ergebnisId);
+        // Bewusst frisch deserialisiert statt über den Cache - siehe Kommentar in
+        // vortragsInstanzUmplanen.
+        Planungsergebnis.MinizincResult result = deserialisiere(ergebnis);
+
+        long[] wvOids = result.wahlvortrag_oids;
+        int[][] instanzSlot = result.instanz_slot;
+
+        int wvIdx = indexOf(wvOids, wahlvortragId);
+        if (wvIdx < 0 || instanzIndex < 0 || instanzIndex >= instanzSlot[wvIdx].length || instanzSlot[wvIdx][instanzIndex] <= 0) {
+            throw new BusinessException("Instanz nicht gefunden.");
+        }
+        if (result.istAusgefallen(wvIdx, instanzIndex)) {
+            throw new BusinessException("Diese Instanz wurde bereits als ausgefallen markiert.");
+        }
+
+        Map<Long, Wahlvortrag> wahlvortragByOid = veranstaltung.getWahlvortraege().stream().collect(toMap(IdEntity::getId, Function.identity()));
+        Wahlvortrag vortrag = wahlvortragByOid.get(wahlvortragId);
+        if (null == vortrag) {
+            throw new BusinessException("Wahlvortrag ist nicht Teil dieses Planungsergebnisses.");
+        }
+
+        Map<Long, Raum> raumByOid = veranstaltung.getRaeume().stream().collect(toMap(IdEntity::getId, Function.identity()));
+        Raum neuerRaum = raumByOid.get(neuerRaumId);
+        if (null == neuerRaum) {
+            throw new BusinessException("Raum ist nicht Teil dieser Veranstaltung.");
+        }
+
+        int slotIdx1 = instanzSlot[wvIdx][instanzIndex];
+        int rIdxAlt = result.instanz_raum[wvIdx][instanzIndex] - 1;
+        Raum alterRaum = rIdxAlt < 0 ? null : raumByOid.get(result.raum_oids[rIdxAlt]);
+
+        if (null != alterRaum && alterRaum.getId().equals(neuerRaumId)) {
+            throw new BusinessException("Vortrag befindet sich bereits in diesem Raum.");
+        }
+        if (neuerRaum.getKapazitaet() < (null == alterRaum ? 0 : alterRaum.getKapazitaet())) {
+            throw new BusinessException("Der neue Raum hat eine geringere Kapazität als der bisherige Raum.");
+        }
+
+        Set<Long> belegteRaeume = ermittleBelegteRaeumeInSlot(veranstaltung, result, slotIdx1, wvIdx, instanzIndex);
+        if (belegteRaeume.contains(neuerRaumId)) {
+            throw new BusinessException("Der Raum ist in diesem Zeitslot bereits belegt.");
+        }
+
+        long[] slotOids = result.slot_oids;
+        Slot slot = slotIdx1 - 1 < slotOids.length ? Slot.findById(slotOids[slotIdx1 - 1]) : null;
+        if (null != slot && !RaumVerfuegbarkeit.isRaumVerfuegbar(neuerRaum, slot, veranstaltung)) {
+            throw new BusinessException("Der Raum ist in diesem Zeitslot durch eine andere Veranstaltung belegt.");
+        }
+
+        int neuerRaumIdx = indexOf(result.raum_oids, neuerRaumId);
+        if (neuerRaumIdx < 0) {
+            long[] erweitert = Arrays.copyOf(result.raum_oids, result.raum_oids.length + 1);
+            erweitert[erweitert.length - 1] = neuerRaumId;
+            result.raum_oids = erweitert;
+            neuerRaumIdx = erweitert.length - 1;
+        }
+        result.instanz_raum[wvIdx][instanzIndex] = neuerRaumIdx + 1;
+
+        ergebnis.setJsonErgebnis(result.toJson());
+
+        Referent referent = vortrag.getReferent();
+        if (null != referent) {
+            String inhalt = "Dein Wahlvortrag '" + vortrag.getTitel() + "' wurde vom Raum '"
+                + (null == alterRaum ? "-" : alterRaum.getName()) + "' in den Raum '" + neuerRaum.getName() + "' verlegt.";
+            nachrichtService.sendeNachricht(referent, "Dein Vortrag wurde in einen anderen Raum verlegt", inhalt,
+                NachrichtKategorie.VORTRAG_RAUM_GEAENDERT, veranstaltung.getId(), username);
+        }
+
+        LOG.infof("Wahlvortrag %d (Instanz %d) in Veranstaltung '%s' von Raum '%s' nach Raum '%s' umgebucht.",
+            wahlvortragId, instanzIndex, veranstaltung.getName(), null == alterRaum ? "-" : alterRaum.getName(), neuerRaum.getName());
+
+        return new RaumUmbuchungErgebnisDto(vortrag.getTitel(), null == alterRaum ? null : alterRaum.getName(), neuerRaum.getName());
     }
 
 
@@ -718,6 +852,47 @@ public class UmplanungService {
             }
         }
         return optionen;
+    }
+
+
+    /**
+     * Ermittelt die Raum-OIDs, die im angegebenen Zeitslot bereits durch eine andere
+     * Wahlvortrag-Instanz oder einen Pflichtvortrag belegt sind - gemeinsam genutzt von
+     * {@link #getRaumUmbuchungOptionen} und {@link #vortragsInstanzRaumUmbuchen}, um zu
+     * verhindern, dass ein Vortrag in einen bereits belegten Raum verlegt wird.
+     */
+    private Set<Long> ermittleBelegteRaeumeInSlot(Veranstaltung veranstaltung, Planungsergebnis.MinizincResult result,
+                                                    int slotIdx1, int ausschlussWvIdx, int ausschlussInstanzIdx) {
+        Set<Long> belegt = new HashSet<>();
+        long[] wvOids = result.wahlvortrag_oids;
+        long[] raumOids = result.raum_oids;
+        int[][] instanzSlot = result.instanz_slot;
+        int[][] instanzRaum = result.instanz_raum;
+
+        for (int wIdx = 0; wIdx < wvOids.length; wIdx++) {
+            for (int iIdx = 0; iIdx < instanzSlot[wIdx].length; iIdx++) {
+                if (wIdx == ausschlussWvIdx && iIdx == ausschlussInstanzIdx) {
+                    continue;
+                }
+                if (instanzSlot[wIdx][iIdx] != slotIdx1 || result.istAusgefallen(wIdx, iIdx)) {
+                    continue;
+                }
+                int rIdx = instanzRaum[wIdx][iIdx] - 1;
+                if (rIdx >= 0) {
+                    belegt.add(raumOids[rIdx]);
+                }
+            }
+        }
+
+        long[] slotOids = result.slot_oids;
+        if (slotIdx1 - 1 < slotOids.length) {
+            long slotId = slotOids[slotIdx1 - 1];
+            veranstaltung.getPflichtvortraege().stream()
+                .filter(pv -> null != pv.getPflichtslot() && pv.getPflichtslot().getId().equals(slotId))
+                .filter(pv -> null != pv.getPflichtraum())
+                .forEach(pv -> belegt.add(pv.getPflichtraum().getId()));
+        }
+        return belegt;
     }
 
 

@@ -130,6 +130,7 @@ package "KonfPlan API" {
   (getNutzer) as VeranstaltungResource_getNutzer
   (getOne) as VeranstaltungResource_getOne
   (getPlanQualitaet) as VeranstaltungResource_getPlanQualitaet
+  (getRaumUmbuchungOptionen) as VeranstaltungResource_getRaumUmbuchungOptionen
   (getRaumVerfuegbarkeiten) as VeranstaltungResource_getRaumVerfuegbarkeiten
   (getSlots) as VeranstaltungResource_getSlots
   (getStats) as VeranstaltungResource_getStats
@@ -152,6 +153,7 @@ package "KonfPlan API" {
   (updateSlot) as VeranstaltungResource_updateSlot
   (updateVortrag) as VeranstaltungResource_updateVortrag
   (uploadTeilnehmerCsv) as VeranstaltungResource_uploadTeilnehmerCsv
+  (vortragsInstanzRaumUmbuchen) as VeranstaltungResource_vortragsInstanzRaumUmbuchen
   (vortragsInstanzUmplanen) as VeranstaltungResource_vortragsInstanzUmplanen
   (zurueckziehenErgebnis) as VeranstaltungResource_zurueckziehenErgebnis
   (create) as VerbesserungsvorschlagResource_create
@@ -265,6 +267,7 @@ ADMINISTRATOR --> VeranstaltungResource_getGesamtplan
 ADMINISTRATOR --> VeranstaltungResource_getNutzer
 ADMINISTRATOR --> VeranstaltungResource_getOne
 ADMINISTRATOR --> VeranstaltungResource_getPlanQualitaet
+ADMINISTRATOR --> VeranstaltungResource_getRaumUmbuchungOptionen
 ADMINISTRATOR --> VeranstaltungResource_getRaumVerfuegbarkeiten
 ADMINISTRATOR --> VeranstaltungResource_getSlots
 ADMINISTRATOR --> VeranstaltungResource_getStats
@@ -287,6 +290,7 @@ ADMINISTRATOR --> VeranstaltungResource_updateNutzer
 ADMINISTRATOR --> VeranstaltungResource_updateSlot
 ADMINISTRATOR --> VeranstaltungResource_updateVortrag
 ADMINISTRATOR --> VeranstaltungResource_uploadTeilnehmerCsv
+ADMINISTRATOR --> VeranstaltungResource_vortragsInstanzRaumUmbuchen
 ADMINISTRATOR --> VeranstaltungResource_vortragsInstanzUmplanen
 ADMINISTRATOR --> VeranstaltungResource_zurueckziehenErgebnis
 ADMINISTRATOR --> VerbesserungsvorschlagResource_create
@@ -393,6 +397,7 @@ ORGANISATOR --> VeranstaltungResource_getGesamtplan
 ORGANISATOR --> VeranstaltungResource_getNutzer
 ORGANISATOR --> VeranstaltungResource_getOne
 ORGANISATOR --> VeranstaltungResource_getPlanQualitaet
+ORGANISATOR --> VeranstaltungResource_getRaumUmbuchungOptionen
 ORGANISATOR --> VeranstaltungResource_getRaumVerfuegbarkeiten
 ORGANISATOR --> VeranstaltungResource_getSlots
 ORGANISATOR --> VeranstaltungResource_getStats
@@ -415,6 +420,7 @@ ORGANISATOR --> VeranstaltungResource_updateNutzer
 ORGANISATOR --> VeranstaltungResource_updateSlot
 ORGANISATOR --> VeranstaltungResource_updateVortrag
 ORGANISATOR --> VeranstaltungResource_uploadTeilnehmerCsv
+ORGANISATOR --> VeranstaltungResource_vortragsInstanzRaumUmbuchen
 ORGANISATOR --> VeranstaltungResource_vortragsInstanzUmplanen
 ORGANISATOR --> VeranstaltungResource_zurueckziehenErgebnis
 ORGANISATOR --> VerbesserungsvorschlagResource_create
@@ -1028,6 +1034,10 @@ TEILNEHMER --> KalenderResource_getTeilnehmerKalender
 | GET
 | `/api/veranstaltungen/{vid}/plan/qualitaet`
 | ORGANISATOR, ADMINISTRATOR
+| getRaumUmbuchungOptionen
+| GET
+| `/api/veranstaltungen/{vid}/planungsergebnisse/{ergebnisId}/vortraege/{wahlvortragId}/instanzen/{instanzIndex}/raum-optionen`
+| ORGANISATOR, ADMINISTRATOR
 | getRaumVerfuegbarkeiten
 | GET
 | `/api/veranstaltungen/{vid}/raum-verfuegbarkeiten`
@@ -1115,6 +1125,10 @@ TEILNEHMER --> KalenderResource_getTeilnehmerKalender
 | uploadTeilnehmerCsv
 | POST
 | `/api/veranstaltungen/{vid}/teilnehmer/import`
+| ORGANISATOR, ADMINISTRATOR
+| vortragsInstanzRaumUmbuchen
+| POST
+| `/api/veranstaltungen/{vid}/planungsergebnisse/{ergebnisId}/raum-umbuchen`
 | ORGANISATOR, ADMINISTRATOR
 | vortragsInstanzUmplanen
 | POST

@@ -48,6 +48,10 @@
                     class="px-2 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
               Teilnehmer umbuchen
             </button>
+            <button @click="raumUmbuchenAnsehen(e)" :disabled="busyId !== null"
+                    class="px-2 py-1 bg-white text-gray-700 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
+              Raum umbuchen
+            </button>
             <button v-if="!e.publiziert" @click="publizieren(e)" :disabled="busyId !== null"
                     class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600 disabled:opacity-50">
               Veröffentlichen
@@ -210,6 +214,8 @@
                     @close="showBerichteModal = false"/>
     <TeilnehmerUmbuchenModal :isVisible="showUmbuchenModal" :vid="eventContext.selectedEvent?.id" :ergebnisId="umbuchenErgebnisId"
                     :teilnehmer="teilnehmer" @close="showUmbuchenModal = false"/>
+    <RaumUmbuchenModal :isVisible="showRaumUmbuchenModal" :vid="eventContext.selectedEvent?.id" :ergebnisId="raumUmbuchenErgebnisId"
+                    @close="showRaumUmbuchenModal = false" @umgebucht="stundenplanKey++"/>
   </section>
 </template>
 
@@ -220,6 +226,7 @@ import { AlertTriangle as AlertTriangleIcon, RefreshCw as RefreshCwIcon } from '
 import { useEventContextStore } from '../../../stores/eventContext';
 import Stundenplan from '../../../views/report/Stundenplan.vue';
 import TeilnehmerUmbuchenModal from './TeilnehmerUmbuchenModal.vue';
+import RaumUmbuchenModal from './RaumUmbuchenModal.vue';
 import UmplanungModal from './UmplanungModal.vue';
 import BerichteAuswahlModal from './BerichteAuswahlModal.vue';
 import api from '../../../api/axios';
@@ -253,6 +260,8 @@ const showBerichteModal = ref(false);
 const berichteErgebnisId = ref(null);
 const showUmbuchenModal = ref(false);
 const umbuchenErgebnisId = ref(null);
+const showRaumUmbuchenModal = ref(false);
+const raumUmbuchenErgebnisId = ref(null);
 const stundenplanKey = ref(0);
 
 const vortraegeAnsehen = (ergebnis) => {
@@ -263,6 +272,11 @@ const vortraegeAnsehen = (ergebnis) => {
 const teilnehmerUmbuchenAnsehen = (ergebnis) => {
   umbuchenErgebnisId.value = ergebnis.id;
   showUmbuchenModal.value = true;
+};
+
+const raumUmbuchenAnsehen = (ergebnis) => {
+  raumUmbuchenErgebnisId.value = ergebnis.id;
+  showRaumUmbuchenModal.value = true;
 };
 
 const berichteAnsehen = (ergebnis) => {
