@@ -19,9 +19,12 @@
 // Nicht-interaktive Aufrufe (per Cron, ohne -it) erwarten, dass das Geraet bereits als
 // vertrauenswuerdig gilt und daher KEIN Code angefordert wird - siehe TTY-Pruefung unten. Dafuer
 // werden alle Cookies aus einer vorhandenen storage-state.json AUSSER den drei session-
-// spezifischen (auth/ACCOUNTSESSID/loggedin) uebernommen - dritter Versuch nach zwei per
-// Live-Test widerlegten Varianten, siehe Kommentar weiter unten fuer Details. NICHT bestaetigt,
-// ob das die eigentliche Geraete-Erkennung trifft.
+// spezifischen (auth/ACCOUNTSESSID/loggedin) uebernommen. Per Live-Test verifiziert: WEDER
+// verschiedene Cookie-Kombinationen NOCH ein gleichbleibender IP-Wechsel (zwei unmittelbar
+// aufeinanderfolgende Laeufe von derselben IP loesten die Geraeteverifizierung beide aus)
+// erklaeren die wiederholten Fehlschlaege - der wahrscheinlichere gemeinsame Nenner ist die
+// Standard-UA von headless Playwright (enthaelt woertlich "HeadlessChrome", siehe UA-Override
+// unten). NICHT abschliessend bestaetigt.
 //
 // WICHTIG: Login-Formular-Selektoren sind nach bestem Wissen aus der oeffentlichen Brevo-
 // Hilfe-Dokumentation entwickelt, aber nicht gegen den echten Account getestet (kein Zugriff
@@ -56,7 +59,18 @@ let page;
 
 try {
   browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext();
+  // Playwrights Standard-UA im headless Modus enthaelt woertlich "HeadlessChrome/..." (per
+  // Live-Test verifiziert) - ein fuer JEDEN serverseitigen Check trivial erkennbares
+  // Automatisierungsmerkmal, UNABHAENGIG von Cookies. Da bislang JEDER nicht-interaktive Lauf
+  // (egal welche Cookies wiederverwendet wurden, sogar ohne IP-Wechsel zwischen zwei
+  // unmittelbar aufeinanderfolgenden Laeufen) die Geraeteverifizierung erneut ausloeste, ist das
+  // ein plausiblerer gemeinsamer Nenner als jede der bisherigen Cookie-Theorien - deshalb hier
+  // dieselbe realistische Desktop-Chrome-UA wie zuvor in update-ip.mjs (das sie inzwischen nicht
+  // mehr braucht, da kein Browser-Rendering mehr stattfindet).
+  const context = await browser.newContext({
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+      + '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  });
 
   // Alle Cookies aus einer vorhandenen storage-state.json AUSSER den drei session-spezifischen
   // (auth/ACCOUNTSESSID/loggedin) uebernehmen. Bisherige, per Live-Test widerlegte Varianten:
