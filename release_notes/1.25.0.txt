@@ -1,0 +1,203 @@
+Release Notes 1.25.0
+Released: 2026-09-14
+
+Changes:
+
+- Release-Notes fuer 1.24.3 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.24.4-SNAPSHOT)
+
+- UmplanungModal: Tabelle in den ersten vier Spalten sortierbar machen
+  Zeit, Vortrag, Referent und Raum sind jetzt klickbar sortierbar (Belegung
+  und Aktion bleiben unsortierbar) - uebernimmt das etablierte Sortier-
+  Pattern aus ProtokollTab.vue (sortKey/sortOrder-Refs, toggleSort(key),
+  getSortIcon(key) mit ArrowUpDown/ChevronUp/ChevronDown aus @lucide/vue).
+  Ohne aktive Sortierung bleibt die urspruengliche Server-Reihenfolge (nach
+  Slot-Startzeit, dann Raumname) erhalten.
+
+- Reports: Gruppen-Spalten ergaenzen, Raumbelegungsplan entfernen, Raumschilder umbenennen
+  * Reports: Gruppen-Spalten ergaenzen, Raumbelegungsplan entfernen, Raumschilder umbenennen
+  1. Anwesenheiten: neue Spalte "Gruppen" nach "Teilnehmer"; Raumbezeichnung
+     in der Kopfzeile jedes Vortrags um das Gebaeudekuerzel ergaenzt (analog
+     zum bereits etablierten raumLabel-Muster). RaumBelegungUebersicht hat
+     dafuer zwei neue Felder (raumGebaeudeKuerzel, teilnehmerGruppen).
+  2. Freie Slots (Teilnehmer): neue Spalte "Gruppen" nach dem Teilnehmer-
+     namen (NutzerDto.gruppen war bereits vorhanden, nur nicht angezeigt).
+  3. Raumbelegungsplan komplett entfernt (Frontend-Route/View, Backend-
+     Endpoint/DTO, Playwright-Test/Fixture, Doku-Bild+Text) - war ohnehin
+     nie ueber einen Button im Tab "Ergebnisse" erreichbar, nur per
+     direkter URL. PlanService.getRaumbelegungsplan(...) selbst bleibt
+     unveraendert - wird von getGesamtplan/getDetaillierterPlan/
+     getAlleRaumschilderData weiterhin gebraucht. USE_CASES.adoc per
+     UseCaseScanner neu generiert (dabei auch mehrere seit laengerem
+     nachtraeglich hinzugekommene Endpunkte nachgezogen, die dort noch
+     fehlten).
+  4. Raumschilder-Report in der UI in "Raumbelegungen" umbenannt - nur der
+     angezeigte Text, interner Routenname/Dateiname/API-Pfad unveraendert.
+  * Raumbelegungen-Report: Kapazität, Teilnehmerzahl und Referentenorganisation ergänzen
+  Zeigt in der Raumüberschrift die Kapazität des Raums an, fügt in der
+  Tabelle eine Spalte mit der Anzahl angemeldeter Teilnehmer pro Slot
+  hinzu und zeigt in der Referentenspalte die Organisation unterhalb
+  des Namens per Zeilenumbruch.
+  ---------
+
+- Fix: NPE bei kurzfristiger Umplanung durch geloeschten Kandidaten-Wahlvortrag
+  Beim Aufbau der Restkapazitaet aller Kandidaten-Instanzen im selben
+  Slot wurde nicht geprueft, ob der jeweilige Wahlvortrag noch
+  existiert. War er nach der Planerstellung geloescht worden, blieb
+  sein OID im gespeicherten MinizincResult zurueck und
+  waehleBestenKandidaten() stuerzte beim Zugriff auf den nicht mehr
+  vorhandenen Wahlvortrag ab. Der Kandidat wird nun uebersprungen,
+  analog zum bereits existierenden Null-Check in kandidatenInSlot()
+  und getAktuelleZuweisungen().
+
+- Bump com.github.spotbugs:spotbugs-maven-plugin from 4.10.4.0 to 4.10.4.1
+  Bumps [com.github.spotbugs:spotbugs-maven-plugin](https://github.com/spotbugs/spotbugs-maven-plugin) from 4.10.4.0 to 4.10.4.1.
+  - [Release notes](https://github.com/spotbugs/spotbugs-maven-plugin/releases)
+  - [Commits](https://github.com/spotbugs/spotbugs-maven-plugin/compare/spotbugs-maven-plugin-4.10.4.0...spotbugs-maven-plugin-4.10.4.1)
+  ---
+  updated-dependencies:
+  - dependency-name: com.github.spotbugs:spotbugs-maven-plugin
+    dependency-version: 4.10.4.1
+    dependency-type: direct:development
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump @lucide/vue from 1.33.0 to 1.43.0 in /frontend
+  Bumps [@lucide/vue](https://github.com/lucide-icons/lucide/tree/HEAD/packages/vue) from 1.33.0 to 1.43.0.
+  - [Release notes](https://github.com/lucide-icons/lucide/releases)
+  - [Commits](https://github.com/lucide-icons/lucide/commits/1.43.0/packages/vue)
+  ---
+  updated-dependencies:
+  - dependency-name: "@lucide/vue"
+    dependency-version: 1.43.0
+    dependency-type: direct:production
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump quarkus.platform.version from 3.39.1 to 3.39.2
+  Bumps `quarkus.platform.version` from 3.39.1 to 3.39.2.
+  Updates `io.quarkus.platform:quarkus-bom` from 3.39.1 to 3.39.2
+  - [Commits](https://github.com/quarkusio/quarkus-platform/compare/3.39.1...3.39.2)
+  Updates `io.quarkus.platform:quarkus-maven-plugin` from 3.39.1 to 3.39.2
+  - [Commits](https://github.com/quarkusio/quarkus-platform/compare/3.39.1...3.39.2)
+  ---
+  updated-dependencies:
+  - dependency-name: io.quarkus.platform:quarkus-bom
+    dependency-version: 3.39.2
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  - dependency-name: io.quarkus.platform:quarkus-maven-plugin
+    dependency-version: 3.39.2
+    dependency-type: direct:development
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump @capacitor/android from 8.5.0 to 8.5.1 in /frontend
+  Bumps [@capacitor/android](https://github.com/ionic-team/capacitor) from 8.5.0 to 8.5.1.
+  - [Release notes](https://github.com/ionic-team/capacitor/releases)
+  - [Changelog](https://github.com/ionic-team/capacitor/blob/main/CHANGELOG.md)
+  - [Commits](https://github.com/ionic-team/capacitor/compare/8.5.0...8.5.1)
+  ---
+  updated-dependencies:
+  - dependency-name: "@capacitor/android"
+    dependency-version: 8.5.1
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump @types/node from 26.4.1 to 26.5.0 in /frontend
+  Bumps [@types/node](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/HEAD/types/node) from 26.4.1 to 26.5.0.
+  - [Release notes](https://github.com/DefinitelyTyped/DefinitelyTyped/releases)
+  - [Commits](https://github.com/DefinitelyTyped/DefinitelyTyped/commits/HEAD/types/node)
+  ---
+  updated-dependencies:
+  - dependency-name: "@types/node"
+    dependency-version: 26.5.0
+    dependency-type: direct:development
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump @playwright/test from 1.62.1 to 1.63.0 in /frontend
+  Bumps [@playwright/test](https://github.com/microsoft/playwright) from 1.62.1 to 1.63.0.
+  - [Release notes](https://github.com/microsoft/playwright/releases)
+  - [Commits](https://github.com/microsoft/playwright/compare/v1.62.1...v1.63.0)
+  ---
+  updated-dependencies:
+  - dependency-name: "@playwright/test"
+    dependency-version: 1.63.0
+    dependency-type: direct:development
+    update-type: version-update:semver-minor
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump io.gatling:gatling-maven-plugin from 4.21.11 to 4.21.12
+  Bumps [io.gatling:gatling-maven-plugin](https://github.com/gatling/gatling-maven-plugin) from 4.21.11 to 4.21.12.
+  - [Commits](https://github.com/gatling/gatling-maven-plugin/compare/v4.21.11...v4.21.12)
+  ---
+  updated-dependencies:
+  - dependency-name: io.gatling:gatling-maven-plugin
+    dependency-version: 4.21.12
+    dependency-type: direct:development
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump actions/setup-java from 6.0.0 to 6.0.1
+  Bumps [actions/setup-java](https://github.com/actions/setup-java) from 6.0.0 to 6.0.1.
+  - [Release notes](https://github.com/actions/setup-java/releases)
+  - [Commits](https://github.com/actions/setup-java/compare/v6.0.0...v6.0.1)
+  ---
+  updated-dependencies:
+  - dependency-name: actions/setup-java
+    dependency-version: 6.0.1
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Bump io.netty:netty-bom from 4.2.17.Final to 4.2.18.Final
+  Bumps [io.netty:netty-bom](https://github.com/netty/netty) from 4.2.17.Final to 4.2.18.Final.
+  - [Release notes](https://github.com/netty/netty/releases)
+  - [Commits](https://github.com/netty/netty/compare/netty-4.2.17.Final...netty-4.2.18.Final)
+  ---
+  updated-dependencies:
+  - dependency-name: io.netty:netty-bom
+    dependency-version: 4.2.18.Final
+    dependency-type: direct:production
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Raumumbuchung: Wahlvortrag-Instanz nach Planerstellung in einen freien Raum verlegen
+  Neuer Button "Raum umbuchen" im ErgebnisseTab, analog zu "Vortrag
+  umplanen" und "Teilnehmer umbuchen": der Organisator wählt eine
+  Wahlvortrag-Instanz und bekommt alle im selben Zeitslot freien Räume
+  mit mindestens derselben Kapazität angezeigt - frei bedeutet weder
+  von einem anderen Wahl- oder Pflichtvortrag belegt noch durch eine
+  andere Veranstaltung blockiert (RaumVerfuegbarkeit). Die Auswahl
+  patcht wie bei der bestehenden Umplanung/Umbuchung das gespeicherte
+  Planungsergebnis in-place; der Referent wird über die Raumänderung
+  benachrichtigt.
+
+- Bump @vitejs/plugin-vue from 6.0.7 to 6.0.8 in /frontend
+  Bumps [@vitejs/plugin-vue](https://github.com/vitejs/vite-plugin-vue/tree/HEAD/packages/plugin-vue) from 6.0.7 to 6.0.8.
+  - [Release notes](https://github.com/vitejs/vite-plugin-vue/releases)
+  - [Changelog](https://github.com/vitejs/vite-plugin-vue/blob/main/packages/plugin-vue/CHANGELOG.md)
+  - [Commits](https://github.com/vitejs/vite-plugin-vue/commits/plugin-vue@6.0.8/packages/plugin-vue)
+  ---
+  updated-dependencies:
+  - dependency-name: "@vitejs/plugin-vue"
+    dependency-version: 6.0.8
+    dependency-type: direct:development
+    update-type: version-update:semver-patch
+  ...
+  Signed-off-by: dependabot[bot] <support@github.com>
+
+- Release 1.25.0
+
