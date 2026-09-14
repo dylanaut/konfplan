@@ -1,0 +1,22 @@
+Release Notes 1.25.2
+Released: 2026-09-14
+
+Changes:
+
+- Release-Notes fuer 1.25.1 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.25.2-SNAPSHOT)
+
+- Freie Slots Teilnehmer: Grund für freien Slot anzeigen (nicht verfügbar / nicht verplant)
+  Neue Spalte "Grund" im Report "Freie Slots (Teilnehmer)": pro freiem
+  Slot wird unterschieden, ob der Teilnehmer explizit als nicht
+  verfügbar markiert wurde (NutzerVerfuegbarkeit) oder ob er verfügbar
+  war, aber vom Solver in keinen Wahlvortrag verplant werden konnte.
+  PlanService.getFreieSlotsTeilnehmer liefert dafür pro Teilnehmer eine
+  Liste von FreierSlotDto (Slot + Grund) statt reiner SlotDtos; die
+  Verfügbarkeits-Daten werden einmal pro Veranstaltung geladen (analog
+  zum Muster in AuffuellungService) statt pro Teilnehmer einzeln
+  nachzuschlagen.
+
+- Release 1.25.2
+
