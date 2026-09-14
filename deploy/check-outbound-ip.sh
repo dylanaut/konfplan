@@ -48,13 +48,25 @@ if [ "$CURRENT_IP" != "$LAST_IP" ]; then
       # (Erfolg oder Fehlschlag) die Playwright-/Node-Ausgabe an einem festen Ort nachvollziehbar.
       #
       # setup-session.mjs wird hier bewusst vor JEDEM update-ip.mjs-Lauf erneut ausgefuehrt (nicht
-      # mehr nur einmalig) - siehe dessen Kommentar: das eigentliche Session-Cookie hat eine
-      # kuerzere Gueltigkeit als die "vertrauenswuerdiges Geraet"-Erkennung, eine einmalig
-      # gespeicherte Sitzung wird sonst zwischen zwei IP-Aenderungen zuverlaessig ungueltig. Die
-      # innere Subshell mit "set -e" bricht ab, sobald setup-session.mjs scheitert, damit
-      # update-ip.mjs dann NICHT mit einer garantiert ungueltigen Sitzung versucht wird - $? nach
-      # der Subshell traegt in diesem Fall korrekt deren (nicht die letzte echo-Befehls-)
-      # Exit-Code weiter.
+      # mehr nur einmalig) - siehe dessen Kommentar: Brevo verlangt bei diesem Login-Flow IMMER
+      # den 6-stelligen Code, eine gespeicherte Sitzung wird deshalb zwischen zwei IP-Aenderungen
+      # zuverlaessig ungueltig. Die innere Subshell mit "set -e" bricht ab, sobald setup-
+      # session.mjs scheitert, damit update-ip.mjs dann NICHT mit einer garantiert ungueltigen
+      # Sitzung versucht wird - $? nach der Subshell traegt in diesem Fall korrekt deren (nicht
+      # die letzte echo-Befehls-) Exit-Code weiter.
+      #
+      # BREVO_CODE_IMAP_*-Variablen (optional, siehe .env) - leer bleibt gleichbedeutend mit
+      # "nicht konfiguriert" (setup-session.mjs prueft selbst, ob alle drei nicht-leer sind).
+      # Immer alle drei Flags uebergeben (statt eine variable Liste per Word-Splitting
+      # zusammenzubauen, was bei Sonderzeichen im Mailbox-Passwort brechen wuerde) - ohne
+      # Konfiguration faellt setup-session.mjs nicht-interaktiv sofort mit einer klaren
+      # Fehlermeldung durch (kein Code lesbar), statt zu haengen.
+      BREVO_CODE_IMAP_MAILBOX_PASSWORD_FILE="$SCRIPT_DIR/secrets/brevo_code_mailbox_password.txt"
+      if [ -f "$BREVO_CODE_IMAP_MAILBOX_PASSWORD_FILE" ]; then
+        BREVO_CODE_IMAP_PASSWORD_VALUE="$(cat "$BREVO_CODE_IMAP_MAILBOX_PASSWORD_FILE")"
+      else
+        BREVO_CODE_IMAP_PASSWORD_VALUE=""
+      fi
       set +e
       (
         set -e
@@ -62,6 +74,10 @@ if [ "$CURRENT_IP" != "$LAST_IP" ]; then
         docker run --rm \
           -e BREVO_LOGIN_EMAIL="$BREVO_LOGIN_EMAIL" \
           -e BREVO_LOGIN_PASSWORD="$(cat "$BREVO_PASSWORD_FILE")" \
+          -e BREVO_CODE_IMAP_HOST="${BREVO_CODE_IMAP_HOST:-}" \
+          -e BREVO_CODE_IMAP_PORT="${BREVO_CODE_IMAP_PORT:-}" \
+          -e BREVO_CODE_IMAP_USER="${BREVO_CODE_IMAP_USER:-}" \
+          -e BREVO_CODE_IMAP_PASSWORD="$BREVO_CODE_IMAP_PASSWORD_VALUE" \
           -v "$SCRIPT_DIR/brevo-ip-updater:/work" -w /work \
           mcr.microsoft.com/playwright:v1.62.1-noble \
           node setup-session.mjs
