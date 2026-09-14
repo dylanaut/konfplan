@@ -74,6 +74,18 @@ public class ReportDto {
         }
     }
 
+    public static class FreieSlotsTeilnehmerDto {
+        public final VeranstaltungDto veranstaltung;
+        public final Map<Long, List<FreierSlotDto>> freieSlots;
+        public final List<NutzerDto> nutzer;
+
+        public FreieSlotsTeilnehmerDto(Veranstaltung veranstaltung, Map<Long, List<FreierSlotDto>> freieSlots, List<NutzerDto> nutzer) {
+            this.veranstaltung = VeranstaltungDto.from(veranstaltung);
+            this.freieSlots = freieSlots;
+            this.nutzer = nutzer;
+        }
+    }
+
     public static class LaufzettelAlleDto {
         public final VeranstaltungDto veranstaltung;
         public final Map<Long, List<ZuweisungDto>> plaene;

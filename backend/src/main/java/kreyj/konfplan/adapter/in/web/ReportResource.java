@@ -193,7 +193,7 @@ public class ReportResource {
         if (null == veranstaltung) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        return Response.ok(new ReportDto.FreieSlotsDto(veranstaltung,
+        return Response.ok(new ReportDto.FreieSlotsTeilnehmerDto(veranstaltung,
             planService.getFreieSlotsTeilnehmer(veranstaltung, ergebnisId),
             veranstaltung.teilnehmer().stream().map(NutzerDto::from).toList())).build();
     }

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.adapter.in.web.dto.FreierSlotDto;
+import kreyj.konfplan.adapter.in.web.dto.FreierSlotGrund;
 import kreyj.konfplan.adapter.in.web.dto.PlanQualitaetDto;
 import kreyj.konfplan.adapter.in.web.dto.PlanungsergebnisListDto;
 import kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht;
@@ -18,6 +20,7 @@ import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
 import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.domain.exception.EntityNotFoundException;
 import kreyj.konfplan.persistence.IdEntity;
+import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Raum;
@@ -798,14 +801,14 @@ public class PlanService {
 
 
     @Transactional
-    public Map<Long, List<SlotDto>> getFreieSlotsTeilnehmer(Veranstaltung veranstaltung) {
+    public Map<Long, List<FreierSlotDto>> getFreieSlotsTeilnehmer(Veranstaltung veranstaltung) {
         return getFreieSlotsTeilnehmer(veranstaltung, null);
     }
 
 
     @Transactional
-    public Map<Long, List<SlotDto>> getFreieSlotsTeilnehmer(Veranstaltung veranstaltung, Long ergebnisId) {
-        Map<Long, List<SlotDto>> freieSlotsTeilnehmer = new HashMap<>();
+    public Map<Long, List<FreierSlotDto>> getFreieSlotsTeilnehmer(Veranstaltung veranstaltung, Long ergebnisId) {
+        Map<Long, List<FreierSlotDto>> freieSlotsTeilnehmer = new HashMap<>();
         Planungsergebnis planungsergebnis = resolveErgebnis(veranstaltung, ergebnisId);
         if (null == planungsergebnis) {
             return Collections.emptyMap();
@@ -823,6 +826,13 @@ public class PlanService {
             List<Teilnehmer> vTeilnehmer = veranstaltung.teilnehmer();
             Set<Slot> alleSlots = veranstaltung.getSlots();
             List<Pflichtvortrag> pflichtvortraege = veranstaltung.getPflichtvortraege();
+
+            // Einmal fuer die gesamte Veranstaltung geladen statt pro Teilnehmer einzeln
+            // nachzuschlagen (analog zum Muster in AuffuellungService) - Grundlage, um "nicht
+            // verfuegbar" von "verfuegbar, aber vom Solver nicht verplant" zu unterscheiden.
+            Map<Long, NutzerVerfuegbarkeit> verfuegbarkeitByNutzerId =
+                NutzerVerfuegbarkeit.<NutzerVerfuegbarkeit>list("veranstaltungId = ?1", veranstaltung.getId())
+                    .stream().collect(toMap(NutzerVerfuegbarkeit::getNutzerId, Function.identity()));
 
             for (Teilnehmer teilnehmer : vTeilnehmer) {
                 Set<Long> belegteSlotIds = new HashSet<>();
@@ -850,10 +860,16 @@ public class PlanService {
                     }
                 }
 
-                List<SlotDto> freieSlots = alleSlots.stream()
+                NutzerVerfuegbarkeit verfuegbarkeit = verfuegbarkeitByNutzerId.get(teilnehmer.getId());
+
+                List<FreierSlotDto> freieSlots = alleSlots.stream()
                     .filter(slot -> !belegteSlotIds.contains(slot.getId()))
                     .sorted(comparing(Slot::getStartTime))
-                    .map(SlotDto::from)
+                    .map(slot -> {
+                        boolean istVerfuegbar = null == verfuegbarkeit || verfuegbarkeit.isVerfuegbar(slot);
+                        FreierSlotGrund grund = istVerfuegbar ? FreierSlotGrund.NICHT_VERPLANT : FreierSlotGrund.NICHT_VERFUEGBAR;
+                        return new FreierSlotDto(SlotDto.from(slot), grund);
+                    })
                     .toList();
                 freieSlotsTeilnehmer.put(teilnehmer.getId(), freieSlots);
             }
