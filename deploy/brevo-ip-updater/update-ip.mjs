@@ -3,22 +3,31 @@
 // noetig, solange Brevo das Geraet noch als vertrauenswuerdig einstuft.
 //
 // Aufruf: node update-ip.mjs <ip-adresse>
-// Exit-Code 0 = erfolgreich, ungleich 0 = Fehlschlag (siehe stderr + error-*.png/error-*.html).
+// Exit-Code 0 = erfolgreich, ungleich 0 = Fehlschlag (siehe stderr + error-*.png/error-*.html/error-*-diag.json).
 //
 // WICHTIG: Seiten-Selektoren sind nach bestem Wissen aus der oeffentlichen Brevo-Hilfe-
 // Dokumentation entwickelt, aber nicht gegen den echten Account getestet - bei Abweichungen
-// bitte mit einem Blick auf error-*.png UND das zugehoerige error-*.html (vollstaendiges
-// DOM zum Fehlerzeitpunkt, aussagekraeftiger als der Screenshot allein bei z.B. dauerhaften
-// Lade-Skeletons) gemeinsam nachjustieren.
+// bitte mit einem Blick auf error-*.png, error-*.html (vollstaendiges DOM zum Fehlerzeitpunkt,
+// aussagekraeftiger als der Screenshot allein bei z.B. dauerhaften Lade-Skeletons) UND
+// error-*-diag.json (Konsolen-Fehler/-Warnungen + fehlgeschlagene Netzwerk-Antworten waehrend
+// des gesamten Laufs - zeigt z.B. eine 401/403 auf einen API-Call, die im DOM-Snapshot allein
+// unsichtbar bleibt) gemeinsam nachjustieren.
 //
-// Bekannte Einschraenkung (per Live-Test verifiziert, siehe error-unexpected-1788333378470.html):
-// Die "Security"-Seite laedt im normalen Browser problemlos, bleibt aber im headless Playwright
-// dauerhaft im Lade-Skeleton haengen (Header/Nav rendern normal, nur der "security-tabs"-Bereich
-// nicht) - ohne jedes CAPTCHA-/Bot-Erkennungsskript im DOM. Das deutet auf eine clientseitige
-// Pruefung von navigator.webdriver (von JEDEM CDP-automatisierten Chromium unabhaengig vom
-// Headless-Modus auf true gesetzt) fuer diesen sicherheitsrelevanten Bereich hin - deshalb unten
-// die uebliche Minimal-Gegenmassnahme (Flag + navigator.webdriver ueberschreiben). Sollte das
-// nicht ausreichen, bleibt die manuelle Nachtrage laut Deployment-DockerCompose.adoc der Fallback.
+// Bekannte Einschraenkung: Die "Security"-Seite laedt im normalen Browser problemlos, bleibt
+// aber im headless Playwright dauerhaft im Lade-Skeleton haengen (Header/Nav rendern normal, nur
+// der "security-tabs"-Bereich nicht). Urspruenglich (siehe error-unexpected-1788333378470.html)
+// wurde das auf eine clientseitige navigator.webdriver-Pruefung zurueckgefuehrt - deshalb die
+// Gegenmassnahmen unten (Flag + navigator.webdriver/plugins/languages/window.chrome
+// ueberschreiben). Per Live-Test EINES SPAETEREN Fehlschlags (siehe error-*-diag.json) jedoch
+// als tatsaechliche Ursache verifiziert: eine abgelaufene Sitzung - app.brevo.com ist eine
+// Microfrontend-Architektur, bei der Konto-/Sidebar-Daten per Hintergrund-Fetch von eigenen
+// Subdomains nachgeladen werden; ist die Sitzung dort abgelaufen, liefern GENAU diese Calls 401,
+// waehrend die Haupt-Seiten-URL nie auf /login umleitet - das "security-tabs"-Widget haengt
+// dann dauerhaft im Lade-Skeleton, weil es auf Daten wartet, die nie ankommen. Die
+// Fingerprinting-Gegenmassnahmen schaden nicht, sind aber fuer DIESEN Fehlschlag nicht die
+// Ursache - die eigentliche Abhilfe ist ein erneuter Lauf von setup-session.mjs (siehe die
+// darauf abzielende Pruefung weiter unten). Falls doch einmal die Fingerprinting-Theorie
+// zutrifft, bleibt die manuelle Nachtrage laut Deployment-DockerCompose.adoc der Fallback.
 
 import { chromium } from 'playwright';
 import fs from 'node:fs';
@@ -37,6 +46,25 @@ if (!fs.existsSync(STORAGE_STATE_PATH)) {
   process.exit(1);
 }
 
+// Sammelt Konsolen-Meldungen und fehlgeschlagene (Status >= 400) Netzwerk-Antworten waehrend
+// der gesamten Laufzeit - bei einem haengenden Lade-Skeleton (siehe Kommentar oben) zeigt weder
+// Screenshot noch DOM-Snapshot, WARUM nichts rendert (z.B. eine 401/403 auf einen API-Call oder
+// ein JS-Fehler beim Mounten der Komponente). Muss vor page.goto() registriert werden.
+const diagnosticLog = { console: [], failedResponses: [] };
+
+function attachDiagnosticListeners(page) {
+  page.on('console', msg => {
+    if (['error', 'warning'].includes(msg.type())) {
+      diagnosticLog.console.push({ type: msg.type(), text: msg.text() });
+    }
+  });
+  page.on('response', response => {
+    if (response.status() >= 400) {
+      diagnosticLog.failedResponses.push({ url: response.url(), status: response.status() });
+    }
+  });
+}
+
 async function saveErrorDiagnostics(page, label) {
   if (!page) {
     return;
@@ -44,9 +72,11 @@ async function saveErrorDiagnostics(page, label) {
   const stamp = Date.now();
   const pngPath = `./error-${label}-${stamp}.png`;
   const htmlPath = `./error-${label}-${stamp}.html`;
+  const diagPath = `./error-${label}-${stamp}-diag.json`;
   await page.screenshot({ path: pngPath, fullPage: true }).catch(() => {});
   await page.content().then(html => fs.writeFileSync(htmlPath, html)).catch(() => {});
-  console.error(`Diagnose gespeichert: ${pngPath}, ${htmlPath}`);
+  fs.writeFileSync(diagPath, JSON.stringify(diagnosticLog, null, 2));
+  console.error(`Diagnose gespeichert: ${pngPath}, ${htmlPath}, ${diagPath}`);
   console.error(`Seite zum Zeitpunkt des Fehlers: url=${page.url()}, title=${await page.title().catch(() => '?')}`);
 }
 
@@ -66,11 +96,21 @@ try {
   // navigator.webdriver ist bei JEDEM CDP-automatisierten Chromium (auch headed) auf true
   // gesetzt und laesst sich nicht per Chromium-Flag abschalten - deshalb hier per Init-Script
   // VOR jedem Seiten-Skript ueberschrieben (muss vor page.goto() registriert werden, damit es
-  // bereits beim allerersten Skript-Lauf der Zielseite greift).
+  // bereits beim allerersten Skript-Lauf der Zielseite greift). navigator.plugins/.languages
+  // und window.chrome sind weitere gaengige Merkmale, an denen Frontends headless Chromium von
+  // einem echten Browser unterscheiden (leeres plugins-Array, fehlendes window.chrome-Objekt) -
+  // per Live-Test (siehe error-*-diag.json) noch nicht bestaetigt notwendig, aber Standard-
+  // Gegenmassnahme, falls das reine webdriver-Override allein nicht mehr reicht.
   await context.addInitScript(() => {
     Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+    Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+    Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+    if (!window.chrome) {
+      window.chrome = { runtime: {} };
+    }
   });
   page = await context.newPage();
+  attachDiagnosticListeners(page);
 
   // 'networkidle' statt 'domcontentloaded' faellt bei SPAs mit dauerhaften Verbindungen
   // (Websocket/Long-Polling fuer Live-Benachrichtigungen) leicht auf den Navigations-Timeout
@@ -79,9 +119,19 @@ try {
   // grundsaetzlich haengt oder nur der reine Idle-Zustand nie eintritt.
   await page.goto(AUTHORIZED_IPS_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
-  if (page.url().includes('login')) {
+  // Per Live-Test (siehe error-*-diag.json) verifiziert: eine abgelaufene Sitzung zeigt sich NICHT
+  // zwingend an der Haupt-Seiten-URL (die bleibt auf /security/authorised_ips) - app.brevo.com ist
+  // eine Microfrontend-Architektur, bei der Konto-/Sidebar-Daten per Hintergrund-Fetch von
+  // eigenen Subdomains (account-app.brevo.com, sidebar-backend.brevo.com, ...) nachgeladen
+  // werden. Ist die Sitzung dort abgelaufen, liefern GENAU diese Calls 401, waehrend die
+  // Haupt-Seite selbst nie auf /login umleitet - und das "security-tabs"-Widget haengt
+  // deshalb dauerhaft im Lade-Skeleton (siehe Kommentar oben), was sonst als raetselhafter
+  // Button-Timeout erscheint. Kurze Wartezeit, damit diese Hintergrund-Calls Zeit hatten zu
+  // feuern, bevor wir pruefen.
+  await page.waitForTimeout(2000);
+  if (page.url().includes('login') || diagnosticLog.failedResponses.some(r => r.status === 401)) {
     await saveErrorDiagnostics(page, 'session-expired');
-    console.error('Gespeicherte Sitzung ist abgelaufen/ungültig (Weiterleitung zur Login-Seite) - bitte setup-session.mjs erneut ausführen.');
+    console.error('Gespeicherte Sitzung ist abgelaufen/ungültig (401 von einem Brevo-Backend-Call oder Weiterleitung zur Login-Seite) - bitte setup-session.mjs erneut ausführen.');
     process.exit(1);
   }
 
