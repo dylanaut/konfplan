@@ -715,6 +715,7 @@ public class PlanService {
                     slot.getStartTime().format(TIME_FORMAT),
                     raum.getId(),
                     raum.getName(),
+                    raum.getGebaeude().getKuerzel(),
                     raum.getKapazitaet(),
                     belegteAnzahl,
                     result.istAusgefallen(wIdx, iIdx)

@@ -49,7 +49,7 @@
             <td class="px-3 py-2">{{ i.slotZeit }}</td>
             <td class="px-3 py-2" :class="{ 'line-through': i.ausgefallen }">{{ i.vortragTitel }}</td>
             <td class="px-3 py-2">{{ i.referentName }}</td>
-            <td class="px-3 py-2">{{ i.raumName }}</td>
+            <td class="px-3 py-2">{{ raumLabel({ name: i.raumName, gebaeudeKuerzel: i.raumGebaeudeKuerzel }) }}</td>
             <td class="px-3 py-2 text-right">
               <span v-if="i.ausgefallen" class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">Ausgefallen</span>
               <button v-else @click="instanzAuswaehlen(i)"
@@ -65,7 +65,7 @@
       <!-- Schritt 2: freien Zielraum wählen -->
       <template v-else>
         <div class="flex items-center justify-between mb-3 bg-gray-50 rounded-lg p-2 text-xs">
-          <span>Aktuell: <b>{{ ausgewaehlteInstanz.vortragTitel }}</b> ({{ ausgewaehlteInstanz.slotZeit }}, {{ ausgewaehlteInstanz.raumName }})</span>
+          <span>Aktuell: <b>{{ ausgewaehlteInstanz.vortragTitel }}</b> ({{ ausgewaehlteInstanz.slotZeit }}, {{ raumLabel({ name: ausgewaehlteInstanz.raumName, gebaeudeKuerzel: ausgewaehlteInstanz.raumGebaeudeKuerzel }) }})</span>
           <button @click="zurueckZurAuswahl" class="text-indigo-600 hover:underline">Anderen Vortrag wählen</button>
         </div>
 
@@ -103,6 +103,7 @@
 import { ref, computed, watch } from 'vue';
 import { ArrowUpDown, ChevronUp, ChevronDown } from '@lucide/vue';
 import api from '../../../api/axios';
+import { raumLabel } from '../../../utils/raumLabel';
 
 const props = defineProps({
   isVisible: { type: Boolean, required: true },

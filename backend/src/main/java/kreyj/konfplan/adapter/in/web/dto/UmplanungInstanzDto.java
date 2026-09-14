@@ -16,6 +16,7 @@ public class UmplanungInstanzDto {
     public String slotZeit;
     public Long raumId;
     public String raumName;
+    public String raumGebaeudeKuerzel;
     public int kapazitaet;
     public int belegteAnzahl;
     public boolean ausgefallen;

@@ -62,7 +62,7 @@
           <td class="px-3 py-2">{{ i.slotZeit }}</td>
           <td class="px-3 py-2" :class="{ 'line-through': i.ausgefallen }">{{ i.vortragTitel }}</td>
           <td class="px-3 py-2">{{ i.referentName }}</td>
-          <td class="px-3 py-2">{{ i.raumName }}</td>
+          <td class="px-3 py-2">{{ raumLabel({ name: i.raumName, gebaeudeKuerzel: i.raumGebaeudeKuerzel }) }}</td>
           <td class="px-3 py-2 text-center">{{ i.belegteAnzahl }} / {{ i.kapazitaet }}</td>
           <td class="px-3 py-2 text-right">
             <span v-if="i.ausgefallen" class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">Ausgefallen</span>
@@ -82,6 +82,7 @@
 import { ref, computed, watch } from 'vue';
 import { ArrowUpDown, ChevronUp, ChevronDown } from '@lucide/vue';
 import api from '../../../api/axios';
+import { raumLabel } from '../../../utils/raumLabel';
 
 const props = defineProps({
   isVisible: { type: Boolean, required: true },
