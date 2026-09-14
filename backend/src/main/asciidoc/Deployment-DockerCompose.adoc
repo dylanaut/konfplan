@@ -356,11 +356,11 @@ Das ist die einzige Warnung, falls der SMTP-Schlüssel jemals tatsächlich von e
 
 === Optional: Brevo-Eintragung automatisieren (Playwright)
 
-Falls sich die IP häufig/täglich ändert, kann `deploy/check-outbound-ip.sh` die neue IP zusätzlich automatisch bei Brevo eintragen (per Playwright, da Brevo dafür keine API bietet - nur die Web-Oberfläche). Der erste Login von einem neuen "Gerät" verlangt bei Brevo einen per E-Mail zugestellten 6-stelligen Code; danach gilt das Gerät (= die gespeicherte Sitzung) als vertrauenswürdig.
+Falls sich die IP häufig/täglich ändert, kann `deploy/check-outbound-ip.sh` die neue IP zusätzlich automatisch bei Brevo eintragen (per Playwright, da Brevo dafür keine API bietet - nur die Web-Oberfläche). Brevo verlangt bei diesem Login-Flow **bei jedem einzelnen Login** einen per E-Mail zugestellten 6-stelligen Code - eine dauerhafte "vertrauenswürdiges Gerät"-Erkennung, die den Code nach dem ersten Mal ersparen würde, existiert für diesen Flow nicht (mehrfach per Live-Test verifiziert, siehe unten). Für echte Automatisierung liest `setup-session.mjs` den Code deshalb per IMAP direkt aus dem Postfach aus, das die Code-Mails empfängt.
 
 [WARNING]
 ====
-Das erfordert das echte Brevo-Account-Passwort auf dem Server (nicht nur einen API-/SMTP-Schlüssel wie bisher) - eine größere Angriffsfläche.
+Das erfordert sowohl das echte Brevo-Account-Passwort ALS AUCH ein IMAP-Passwort für das Postfach, das die Code-Mails empfängt, auf dem Server (nicht nur einen API-/SMTP-Schlüssel wie bisher) - eine deutlich größere Angriffsfläche als die reine SMTP-Zugangsdaten-Speicherung. Bei den meisten Anbietern (z.B. Yahoo Mail) muss dafür ein eigenes IMAP-"App-Passwort" erzeugt werden (Account-Sicherheitseinstellungen), NICHT das normale Web-Login-Passwort - das App-Passwort lässt sich jederzeit einzeln widerrufen, ohne das Haupt-Passwort zu ändern.
 ====
 
 `update-ip.mjs` rendert die Brevo-Seite dabei bewusst NICHT mehr als vollständige Browser-Seite - mehrere Live-Test-Runden zeigten, dass die Brevo-„Security"-Seite (Authorized IPs) im headless Playwright reproduzierbar in einem Lade-Skeleton hängen bleibt, weil mehrere für diese Aktion UNBETEILIGTE Widgets (Chat, Marketing-Benachrichtigungen, Sidebar-App-Switcher auf eigenen Subdomains wie `account-app.brevo.com`/`sidebar-backend.brevo.com`) mit 401/403 fehlschlagen. Weder einzelne `navigator.*`-Overrides noch ein Stealth-Plugin (`playwright-extra` + `puppeteer-extra-plugin-stealth`) behoben das; ein manueller Vergleich mit einem echten Browser widerlegte sowohl eine reine Bot-Erkennung als auch eine abgelaufene Sitzung als Unterschied (dieselben Hintergrund-Calls liefern dort ebenfalls nur mit `app.brevo.com`-Cookies `200`).
@@ -372,7 +372,9 @@ Bei einem Fehlschlag: `error-api-*.json` prüfen (HTTP-Status + Response-Body de
 Einrichtung:
 
 . In `deploy/.env`: `BREVO_LOGIN_EMAIL=<login>`
-. Passwort ablegen: `echo '<passwort>' > deploy/secrets/brevo_login_password.txt && chmod 644 deploy/secrets/brevo_login_password.txt`
+. Brevo-Account-Passwort ablegen: `echo '<passwort>' > deploy/secrets/brevo_login_password.txt && chmod 644 deploy/secrets/brevo_login_password.txt`
+. In `deploy/.env`: `BREVO_CODE_IMAP_HOST=<imap-server, z.B. imap.mail.yahoo.com>`, `BREVO_CODE_IMAP_USER=<postfach-adresse>` und optional `BREVO_CODE_IMAP_PORT` (Standard `993`).
+. IMAP-Passwort (App-Passwort, siehe Warnung oben) ablegen: `echo '<imap-app-passwort>' > deploy/secrets/brevo_code_mailbox_password.txt && chmod 644 deploy/secrets/brevo_code_mailbox_password.txt`
 . `node_modules` in den gemounteten Ordner installieren (das Playwright-Docker-Image bringt nur den Browser mit, nicht die npm-Pakete selbst - der Ordner ist auf den Host gemountet, daher bleibt das dauerhaft erhalten). Nicht nur beim allerersten Einrichten nötig, sondern jedes Mal erneut, wenn sich `package.json` in diesem Ordner ändert (z.B. nach einem `git pull`, das eine Abhängigkeit ändert):
 +
 [source,bash]
@@ -380,17 +382,20 @@ Einrichtung:
 cd deploy/brevo-ip-updater
 docker run --rm -v "$(pwd):/work" -w /work mcr.microsoft.com/playwright:v1.62.1-noble npm install
 ----
-. Einmaliges, interaktives Erst-Setup (nur nötig, damit Brevo dieses Gerät als vertrauenswürdig einstuft und keinen 6-stelligen Code mehr verlangt):
+. Test-Lauf (optional, zur Kontrolle vor dem ersten echten Cron-Aufruf):
 +
 [source,bash]
 ----
-docker run --rm -it -v "$(pwd):/work" -w /work \
+docker run --rm -v "$(pwd):/work" -w /work \
   -e BREVO_LOGIN_EMAIL=<login> -e BREVO_LOGIN_PASSWORD=<passwort> \
+  -e BREVO_CODE_IMAP_HOST=<imap-server> -e BREVO_CODE_IMAP_USER=<postfach-adresse> -e BREVO_CODE_IMAP_PASSWORD=<imap-app-passwort> \
   mcr.microsoft.com/playwright:v1.62.1-noble node setup-session.mjs
 ----
-Fragt den per E-Mail zugestellten 6-stelligen Code interaktiv ab und speichert die resultierende Sitzung in `storage-state.json` (nicht committen, siehe `.gitignore`).
+Loggt sich ein, liest den zugestellten 6-stelligen Code automatisch per IMAP aus dem Postfach aus und speichert die resultierende Sitzung in `storage-state.json` (nicht committen, siehe `.gitignore`). Ohne die drei `BREVO_CODE_IMAP_*`-Variablen fragt das Skript den Code stattdessen interaktiv ab (braucht dann `-it`) - nützlich zum Testen ohne IMAP-Zugang, aber NICHT cron-taeglich.
 
-Ab dann holt `check-outbound-ip.sh` bei jeder erkannten IP-Änderung die Sitzung per `setup-session.mjs` (nicht-interaktiv, ohne `-it`) FRISCH, bevor es `update-ip.mjs` aufruft - per Live-Test verifiziert: das eigentliche Session-Cookie hat eine kürzere Gültigkeit als die "vertrauenswürdiges Gerät"-Erkennung selbst, eine einmalig gespeicherte Sitzung wird deshalb zwischen zwei IP-Änderungen zuverlässig ungültig. `setup-session.mjs` übernimmt dafür alle Cookies aus einer vorhandenen `storage-state.json` AUSSER den drei session-spezifischen (`auth`/`ACCOUNTSESSID`/`loggedin`). Zwei einfachere Varianten sind per Live-Test bereits widerlegt: ein komplett leerer Kontext löst bei jedem Lauf erneut den 6-stelligen Code aus; ein Wiederverwenden ALLER alten Cookies (inkl. `auth`/`loggedin`) lässt `login.brevo.com` direkt zum Dashboard durchleiten, ohne das Login-Formular zu zeigen - dadurch fand nie ein echter Login statt und die bereits ungültige Sitzung wurde beim Speichern unverändert erneut gesichert. Auch NUR das Geräte-Erkennungs-Cookie `did` alleine reichte nicht aus (forderte trotzdem wieder den Code an) - **nicht bestätigt, ob die aktuelle, größere Cookie-Teilmenge tatsächlich funktioniert.** Schlägt der nicht-interaktive `setup-session.mjs`-Lauf fehl (z.B. weil Brevo das Gerät nicht als vertrauenswürdig einstuft und einen Code verlangt), bricht `check-outbound-ip.sh` VOR `update-ip.mjs` ab und meldet das als Fehlschlag - bleibt die bisherige manuelle Nachtrage-Anleitung der Fallback; das obige interaktive Erst-Setup muss dann erneut ausgeführt werden.
+Ab dann holt `check-outbound-ip.sh` bei jeder erkannten IP-Änderung die Sitzung per `setup-session.mjs` (nicht-interaktiv, ohne `-it`) FRISCH, bevor es `update-ip.mjs` aufruft. Das ist zwingend nötig, nicht nur eine Optimierung: per Live-Test wurde abschließend geklärt, dass Brevo bei diesem Login-Flow **immer** den 6-stelligen Code verlangt - mehrere Theorien für eine dauerhafte "vertrauenswürdiges Gerät"-Erkennung wurden nacheinander widerlegt (weder verschiedene Cookie-Kombinationen noch ein gleichbleibender IP-Wechsel zwischen zwei unmittelbar aufeinanderfolgenden Läufen noch eine realistischere User-Agent vermieden die Geräteverifizierung). `setup-session.mjs` liest den Code deshalb bei jedem Lauf per IMAP aus der zugestellten E-Mail aus, statt auf eine dauerhafte Sitzung zu hoffen. Ein bereits zugestellter Code bleibt ca. 90 Sekunden gültig, danach schickt Brevo einen neuen - das IMAP-Polling wartet bis zu 90 Sekunden auf eine NEUE Mail (anhand der Postfach-UID zum Zeitpunkt des Login-Versuchs, um eine bereits im Postfach liegende alte Code-Mail nicht fälschlich wiederzuverwenden).
+
+Schlägt der `setup-session.mjs`-Lauf fehl (z.B. IMAP-Zugangsdaten falsch, kein Code innerhalb von 90s per Mail erhalten, oder Brevo-Account-Login selbst schlägt fehl), bricht `check-outbound-ip.sh` VOR `update-ip.mjs` ab und meldet das als Fehlschlag - bleibt die bisherige manuelle Nachtrage-Anleitung der Fallback.
 
 Die vollständige Konsolen-Ausgabe beider Skripte (`setup-session.mjs` + `update-ip.mjs`, per `===`-Markierung im Log unterscheidbar) landet bei jedem Lauf - Erfolg wie Fehlschlag - zusätzlich in `deploy/brevo-ip-updater/last-run.log`, unabhängig davon, wohin der äußere Cron-Aufruf selbst umgeleitet ist. Bei einem Fehlschlag hängt die ntfy-Meldung zusätzlich die letzten 2000 Byte dieses Logs direkt an den Push an (kein Server-Login nötig, um die Ursache zu sehen); ergänzend kann bei einem fehlgeschlagenen API-Call ein `error-api-*.json` oder bei einem fehlgeschlagenen Login ein `error-*.png`-Screenshot im selben Verzeichnis liegen.
 

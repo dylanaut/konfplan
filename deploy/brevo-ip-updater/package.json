@@ -4,6 +4,8 @@
   "type": "module",
   "description": "Traegt die aktuelle ausgehende Server-IP automatisch in Brevos Authorized-IPs-Liste ein, siehe Deployment-DockerCompose.adoc -> 'Ausgehende Server-IP ueberwachen'.",
   "dependencies": {
+    "imapflow": "1.7.8",
+    "mailparser": "3.9.26",
     "playwright": "1.62.1"
   }
 }
