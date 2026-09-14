@@ -36,16 +36,28 @@
       <table v-else class="min-w-full divide-y divide-gray-200 text-xs">
         <thead class="bg-gray-50 text-[9px] uppercase font-bold text-gray-500">
         <tr>
-          <th class="px-3 py-1.5 text-left font-bold">Zeit</th>
-          <th class="px-3 py-1.5 text-left font-bold">Vortrag</th>
-          <th class="px-3 py-1.5 text-left font-bold">Referent</th>
-          <th class="px-3 py-1.5 text-left font-bold">Raum</th>
+          <th @click="toggleSort('slotZeit')" class="sortable-header">
+            Zeit
+            <component :is="getSortIcon('slotZeit')" class="w-3 h-3 inline ml-0.5"/>
+          </th>
+          <th @click="toggleSort('vortragTitel')" class="sortable-header">
+            Vortrag
+            <component :is="getSortIcon('vortragTitel')" class="w-3 h-3 inline ml-0.5"/>
+          </th>
+          <th @click="toggleSort('referentName')" class="sortable-header">
+            Referent
+            <component :is="getSortIcon('referentName')" class="w-3 h-3 inline ml-0.5"/>
+          </th>
+          <th @click="toggleSort('raumName')" class="sortable-header">
+            Raum
+            <component :is="getSortIcon('raumName')" class="w-3 h-3 inline ml-0.5"/>
+          </th>
           <th class="px-3 py-1.5 text-center font-bold">Belegung</th>
           <th class="px-3 py-1.5 text-right font-bold">Aktion</th>
         </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
-        <tr v-for="i in instanzen" :key="`${i.wahlvortragId}-${i.instanzIndex}`"
+        <tr v-for="i in sortedInstanzen" :key="`${i.wahlvortragId}-${i.instanzIndex}`"
             :class="i.ausgefallen ? 'opacity-50' : 'hover:bg-gray-50'">
           <td class="px-3 py-2">{{ i.slotZeit }}</td>
           <td class="px-3 py-2" :class="{ 'line-through': i.ausgefallen }">{{ i.vortragTitel }}</td>
@@ -67,7 +79,8 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
+import { ArrowUpDown, ChevronUp, ChevronDown } from '@lucide/vue';
 import api from '../../../api/axios';
 
 const props = defineProps({
@@ -83,6 +96,38 @@ const loading = ref(false);
 const error = ref('');
 const busy = ref(false);
 const ergebnis = ref(null);
+
+// Sort State - Tabelle in den ersten vier Spalten sortierbar (Zeit, Vortrag, Referent, Raum).
+// null solange nicht sortiert = Server-Reihenfolge (nach Slot-Startzeit, dann Raumname) bleibt
+// unveraendert, bis der Nutzer explizit auf eine Spalte klickt.
+const sortKey = ref(null);
+const sortOrder = ref('asc');
+
+const toggleSort = (key) => {
+  if (sortKey.value === key) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortKey.value = key;
+    sortOrder.value = 'asc';
+  }
+};
+
+const getSortIcon = (key) => {
+  if (sortKey.value !== key) return ArrowUpDown;
+  return sortOrder.value === 'asc' ? ChevronUp : ChevronDown;
+};
+
+const sortedInstanzen = computed(() => {
+  if (!sortKey.value) {
+    return instanzen.value;
+  }
+  const result = [...instanzen.value];
+  result.sort((a, b) => {
+    const cmp = String(a[sortKey.value] ?? '').localeCompare(String(b[sortKey.value] ?? ''));
+    return sortOrder.value === 'asc' ? cmp : -cmp;
+  });
+  return result;
+});
 
 const ladeInstanzen = async () => {
   if (!props.vid || !props.ergebnisId) return;
@@ -127,3 +172,9 @@ watch(() => [props.isVisible, props.ergebnisId], ([visible]) => {
   }
 });
 </script>
+
+<style scoped>
+@reference "tailwindcss";
+
+.sortable-header { @apply px-3 py-1.5 text-left font-bold cursor-pointer hover:text-indigo-600 transition select-none; }
+</style>
