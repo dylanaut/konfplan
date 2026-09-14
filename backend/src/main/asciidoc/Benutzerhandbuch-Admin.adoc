@@ -646,9 +646,9 @@ image::30-report-teilnehmer-zuordnungen.png[Report Teilnehmer-Zuordnungen]
 
 Übersicht, welcher Teilnehmer welchem Vortrag/Slot/Raum zugeordnet ist.
 
-=== Raumschilder
+=== Raumbelegungen
 
-image::31-report-raumschilder.png[Report Raumschilder]
+image::31-report-raumschilder.png[Report Raumbelegungen]
 
 Druckfertige Raumschilder mit der Belegung je Zeit-Slot, ein Abschnitt pro Raum.
 
@@ -695,16 +695,12 @@ den Tab "Ergebnisse" erreichbar, sondern über den **Drucken**-Button im Tab "Vo
 
 === Weitere Reports (aktuell nicht per Button im Tab "Ergebnisse" verlinkt)
 
-Die folgenden zwei Reports existieren als eigene Ansichten und sind über eine direkte URL
-erreichbar, aber aktuell nicht über einen Button im Tab "Ergebnisse" verlinkt:
+Der folgende Report existiert als eigene Ansicht und ist über eine direkte URL erreichbar,
+aber aktuell nicht über einen Button im Tab "Ergebnisse" verlinkt:
 
 image::37-report-uebersicht-raeume.png[Report Übersicht Räume]
 
 **Übersicht Räume** – tabellarische Übersicht aller Räume mit ihrer Belegung.
-
-image::38-report-raumbelegungsplan.png[Report Raumbelegungsplan]
-
-**Raumbelegungsplan** – Belegungsplan für einen einzelnen, konkreten Raum.
 
 == Tab "Protokoll"
 

@@ -13,23 +13,29 @@ public class RaumBelegungUebersicht {
     public String slotZeit;
     public final Long raumId;
     public final String raumName;
+    public final String raumGebaeudeKuerzel;
     @Getter
     public String vortragTitel;
     public final String referentName;
     public final String vortragTyp; // "WAHL", "PFLICHT", "FREI"
     @Getter
     public List<String> teilnehmerNamen;
+    public List<String> teilnehmerGruppen;
     public final Integer kapazitaet;
 
-    public RaumBelegungUebersicht(Long slotId, String slotZeit, Long raumId, String raumName, String vortragTitel, String referentName, String vortragTyp, List<String> teilnehmerNamen, Integer kapazitaet) {
+    public RaumBelegungUebersicht(Long slotId, String slotZeit, Long raumId, String raumName, String raumGebaeudeKuerzel,
+                                  String vortragTitel, String referentName, String vortragTyp,
+                                  List<String> teilnehmerNamen, List<String> teilnehmerGruppen, Integer kapazitaet) {
         this.slotId = slotId;
         this.slotZeit = slotZeit;
         this.raumId = raumId;
         this.raumName = raumName;
+        this.raumGebaeudeKuerzel = raumGebaeudeKuerzel;
         this.vortragTitel = vortragTitel;
         this.referentName = referentName;
         this.vortragTyp = vortragTyp;
         this.teilnehmerNamen = teilnehmerNamen;
+        this.teilnehmerGruppen = teilnehmerGruppen;
         this.kapazitaet = kapazitaet;
     }
 

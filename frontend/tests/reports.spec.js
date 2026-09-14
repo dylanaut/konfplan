@@ -55,30 +55,6 @@ test.describe('Report-Generierung', () => {
     await expect(page.locator('table tbody tr').first().locator('td').nth(1)).toContainText('Moderne Web-Architekturen');
   });
 
-  test('sollte den Raumbelegungsplan korrekt rendern', async ({ page }) => {
-    const veranstaltungId = 1;
-    const raumId = 303;
-    // Absolutes Glob, da die Axios-Basis-URL (http://localhost:9000) von der
-    // Playwright-baseURL (Vite-Dev-Server) abweicht.
-    const apiUrl = `**/api/reports/${veranstaltungId}/raum/${raumId}/belegungsplan-data`;
-    const routeUrl = `/veranstaltung/${veranstaltungId}/raum/${raumId}/belegungsplan`;
-
-    // Die Route ist auth-geschützt: Login-Status vor dem Laden der Seite simulieren.
-    await page.addInitScript(() => {
-      localStorage.setItem('token', 'test-token');
-      localStorage.setItem('role', 'ORGANISATOR');
-    });
-
-    await page.route(apiUrl, async route => {
-      const json = (await import('./fixtures/raumbelegungsplan.json', { with: { type: 'json' } })).default;
-      await route.fulfill({ json });
-    });
-
-    await page.goto(routeUrl);
-    await expect(page.locator('h1').last()).toContainText('Belegungsplan für Forum');
-    await expect(page.locator('table tbody tr').first().locator('td').nth(1)).toContainText('Grundlagen des Projektmanagements');
-  });
-
   test('sollte die Raumübersicht korrekt rendern', async ({ page }) => {
     const veranstaltungId = 1;
     // Absolutes Glob, da die Axios-Basis-URL (http://localhost:9000) von der
@@ -124,7 +100,11 @@ test.describe('Report-Generierung', () => {
     // Scoped auf ".card-header" - VeranstaltungHeader.vue rendert selbst ebenfalls ein <h2> mit
     // dem Veranstaltungsnamen, ein ungescoptes "h2" waere daher mehrdeutig.
     await expect(page.locator('.card-header h2')).toContainText('Forum');
+    await expect(page.locator('.card-header h2')).toContainText('Kapazität: 40');
     await expect(page.locator('table tbody tr').first().locator('td').nth(1)).toContainText('Grundlagen des Projektmanagements');
+    await expect(page.locator('table tbody tr').first().locator('td').nth(2)).toContainText('Tom Weber');
+    await expect(page.locator('table tbody tr').first().locator('td').nth(2)).toContainText('Musterfirma GmbH');
+    await expect(page.locator('table tbody tr').first().locator('td').nth(3)).toContainText('2');
   });
 
   test('sollte freie Slots für Referenten korrekt rendern', async ({ page }) => {

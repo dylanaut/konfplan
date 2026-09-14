@@ -163,16 +163,23 @@ public class PlanService {
                     List<String> tnNamen = eintrag.teilnehmer != null
                         ? eintrag.teilnehmer.stream().map(TeilnehmerDto::getFullname).toList()
                         : new ArrayList<>();
+                    List<String> tnGruppen = eintrag.teilnehmer != null
+                        ? eintrag.teilnehmer.stream()
+                            .map(tn -> tn.gruppen.stream().sorted().collect(Collectors.joining(", ")))
+                            .toList()
+                        : new ArrayList<>();
 
                     detaillierterPlan.add(new RaumBelegungUebersicht(
                         slot.getId(),
                         slot.getStartTime().format(TIME_FORMAT),
                         raum.getId(),
                         raum.getName(),
+                        raum.getGebaeude().getKuerzel(),
                         eintrag.vortragTitel,
                         eintrag.referentName,
                         eintrag.vortragTyp,
                         tnNamen,
+                        tnGruppen,
                         raum.getKapazitaet()
                     ));
                 } else {
@@ -181,9 +188,11 @@ public class PlanService {
                         slot.getStartTime().format(TIME_FORMAT),
                         raum.getId(),
                         raum.getName(),
+                        raum.getGebaeude().getKuerzel(),
                         VORTRAG_TITEL_FREI,
                         null,
                         VORTRAG_TYP_FREI,
+                        new ArrayList<>(),
                         new ArrayList<>(),
                         raum.getKapazitaet()
                     ));
@@ -585,6 +594,7 @@ public class PlanService {
                     slot.getSlotZeit(),
                     truncTo(pv.getTitel()),
                     pv.getReferent().getFullName(),
+                    pv.getReferent().getOrganisation(),
                     "PFLICHT",
                     teilnehmerDtos);
                 raumplan.computeIfAbsent(raum.getId(), k -> new HashMap<>()).put(slot.getId(), eintrag);
@@ -625,6 +635,7 @@ public class PlanService {
                             slot.getSlotZeit(),
                             vortrag.getTitel(),
                             vortrag.getReferent().getFullName(),
+                            vortrag.getReferent().getOrganisation(),
                             "WAHL",
                             zugewieseneTeilnehmer);
                         raumplan.computeIfAbsent(raum.getId(), k -> new HashMap<>()).put(slot.getId(), eintrag);

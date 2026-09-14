@@ -31,12 +31,14 @@
         <thead class="table-dark">
           <tr>
             <th scope="col">Teilnehmer</th>
+            <th scope="col">Gruppen</th>
             <th scope="col">Freie Slots</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="teilnehmer in sortedTeilnehmer" :key="teilnehmer.id" class="page-break-inside-avoid">
             <td>{{ teilnehmer.firstName }} {{ teilnehmer.lastName }}</td>
+            <td>{{ (teilnehmer.gruppen || []).join(', ') }}</td>
             <td>
               <ul v-if="reportData.freieSlots[teilnehmer.id] && reportData.freieSlots[teilnehmer.id].length > 0" class="list-unstyled mb-0">
                 <li v-for="slot in sortedSlots(reportData.freieSlots[teilnehmer.id])" :key="slot.id">

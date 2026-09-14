@@ -22,7 +22,7 @@
       <div v-for="eintrag in vortraege" :key="`${eintrag.slotId}-${eintrag.raumId}`" class="page-break-after">
         <h4 class="mb-0">{{ eintrag.vortragTitel }}</h4>
         <p class="text-muted mb-3">
-          {{ eintrag.referentName }} &middot; {{ eintrag.slotZeit }} &middot; {{ eintrag.raumName }}
+          {{ eintrag.referentName }} &middot; {{ eintrag.slotZeit }} &middot; {{ raumLabel(eintrag) }}
         </p>
         <p v-if="!eintrag.teilnehmerNamen || eintrag.teilnehmerNamen.length === 0" class="text-muted">
           Keine Teilnehmer zugewiesen.
@@ -31,12 +31,14 @@
           <thead class="table-dark">
             <tr>
               <th scope="col">Teilnehmer</th>
+              <th scope="col">Gruppen</th>
               <th scope="col" class="text-center" style="width: 100px;">Anwesend</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="name in eintrag.teilnehmerNamen" :key="name">
+            <tr v-for="(name, idx) in eintrag.teilnehmerNamen" :key="idx">
               <td>{{ name }}</td>
+              <td>{{ eintrag.teilnehmerGruppen?.[idx] }}</td>
               <td class="text-center"><span class="checkbox-box"></span></td>
             </tr>
           </tbody>
@@ -58,6 +60,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
+import { raumLabel as formatRaumLabel } from '../../utils/raumLabel';
 
 const route = useRoute();
 const reportData = ref({ veranstaltung: {}, plan: [] });
@@ -65,6 +68,8 @@ const loading = ref(true);
 const error = ref(null);
 
 const handlePrint = () => window.print();
+
+const raumLabel = (eintrag) => formatRaumLabel({ name: eintrag.raumName, gebaeudeKuerzel: eintrag.raumGebaeudeKuerzel });
 
 const vortraege = computed(() => {
   if (!reportData.value.plan) return [];
