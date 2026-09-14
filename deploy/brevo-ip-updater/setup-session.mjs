@@ -18,10 +18,9 @@
 //     mcr.microsoft.com/playwright:v1.62.1-noble node setup-session.mjs
 // Nicht-interaktive Aufrufe (per Cron, ohne -it) erwarten, dass das Geraet bereits als
 // vertrauenswuerdig gilt und daher KEIN Code angefordert wird - siehe TTY-Pruefung unten. Dafuer
-// wird eine vorhandene storage-state.json als Ausgangs-Cookies wiederverwendet (nicht jedes Mal
-// ein komplett leerer Kontext) - die Geraete-Erkennung haengt vermutlich an einem langlebigen
-// Cookie (z.B. "did"), das sonst bei jedem Lauf verloren ginge und erneut den Code ausloesen
-// wuerde, obwohl das Geraet laut vorherigem Lauf bereits vertrauenswuerdig war.
+// wird gezielt NUR das Geraete-Erkennungs-Cookie ("did") aus einer vorhandenen storage-state.json
+// uebernommen (nicht die komplette alte Sitzung) - siehe Kommentar weiter unten fuer die
+// Begruendung (ein Live-Test mit der kompletten alten Sitzung schlug fehl).
 //
 // WICHTIG: Login-Formular-Selektoren sind nach bestem Wissen aus der oeffentlichen Brevo-
 // Hilfe-Dokumentation entwickelt, aber nicht gegen den echten Account getestet (kein Zugriff
@@ -56,16 +55,28 @@ let page;
 
 try {
   browser = await chromium.launch({ headless: true });
-  // Vorhandene storage-state.json (falls da) als Ausgangs-Cookies wiederverwenden, statt IMMER
-  // mit einem komplett leeren Kontext zu starten: per Live-Test verifiziert, dass ein leerer
-  // Kontext bei jedem Lauf erneut den 6-stelligen Code auslöst, obwohl Brevo das Geraet beim
-  // vorherigen Lauf bereits als vertrauenswuerdig eingestuft hatte - vermutlich, weil die
-  // Geraete-Erkennung selbst an ein langlebiges Cookie (z.B. "did") gebunden ist, das ohne
-  // Wiederverwendung bei jedem Lauf verloren geht. Der eigentliche Login danach ersetzt/erneuert
-  // ohnehin die kurzlebigeren Session-Cookies (auth/ACCOUNTSESSID).
-  const context = await browser.newContext(
-    fs.existsSync(STORAGE_STATE_PATH) ? { storageState: STORAGE_STATE_PATH } : {}
-  );
+  const context = await browser.newContext();
+
+  // NUR das Geraete-Erkennungs-Cookie ("did") aus einer vorhandenen storage-state.json
+  // uebernehmen - NICHT die komplette alte Sitzung. Per Live-Test verifiziert: ein
+  // Wiederverwenden ALLER alten Cookies (inkl. bereits abgelaufenem auth/loggedin) liess
+  // login.brevo.com direkt zum Dashboard durchleiten, OHNE das Login-Formular ueberhaupt zu
+  // zeigen - dadurch wurde nie ein echter Login durchgefuehrt und beim Speichern schlicht die-
+  // selbe, bereits als ungueltig bekannte Sitzung erneut gesichert (bewirkt also NICHTS). Ein
+  // komplett leerer Kontext (die vorherige Variante) zeigt zwar zuverlaessig das Formular, laesst
+  // Brevo aber bei jedem Lauf erneut den 6-stelligen Code anfordern, da "did" (vermutlich das
+  // eigentliche Geraete-Erkennungsmerkmal) fehlt. Nur "did" wiederzuverwenden vermeidet beides:
+  // das Formular erscheint normal (kein auth/loggedin vorhanden), der eigentliche Login-Vorgang
+  // laeuft echt durch und erneuert dabei auth/ACCOUNTSESSID, waehrend Brevo das Geraet ueber
+  // "did" trotzdem als bekannt/vertrauenswuerdig wiedererkennt.
+  if (fs.existsSync(STORAGE_STATE_PATH)) {
+    const previousState = JSON.parse(fs.readFileSync(STORAGE_STATE_PATH, 'utf-8'));
+    const deviceCookie = previousState.cookies?.find(c => c.name === 'did');
+    if (deviceCookie) {
+      await context.addCookies([deviceCookie]);
+    }
+  }
+
   page = await context.newPage();
 
   console.log('Öffne Brevo-Login...');
