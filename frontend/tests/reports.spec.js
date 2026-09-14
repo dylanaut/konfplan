@@ -170,6 +170,7 @@ test.describe('Report-Generierung', () => {
     await expect(page.locator('table tbody tr')).toHaveCount(2);
     // Sortiert nach Nachname: "Beispiel" vor "Mustermann".
     await expect(page.locator('table tbody tr').first().locator('td').nth(0)).toContainText('Anna Beispiel');
+    await expect(page.locator('table tbody tr').first().locator('td').nth(3)).toContainText('Nicht verplant');
 
     await page.getByLabel('Teilnehmer ohne freie Slots ausblenden').check();
     await expect(page.locator('table tbody tr')).toHaveCount(1);

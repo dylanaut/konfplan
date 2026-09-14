@@ -33,6 +33,7 @@
             <th scope="col">Teilnehmer</th>
             <th scope="col">Gruppen</th>
             <th scope="col">Freie Slots</th>
+            <th scope="col">Grund</th>
           </tr>
         </thead>
         <tbody>
@@ -40,12 +41,20 @@
             <td>{{ teilnehmer.firstName }} {{ teilnehmer.lastName }}</td>
             <td>{{ (teilnehmer.gruppen || []).join(', ') }}</td>
             <td>
-              <ul v-if="reportData.freieSlots[teilnehmer.id] && reportData.freieSlots[teilnehmer.id].length > 0" class="list-unstyled mb-0">
-                <li v-for="slot in sortedSlots(reportData.freieSlots[teilnehmer.id])" :key="slot.id">
-                  {{ formatSlot(slot) }}
+              <ul v-if="sortedFreieSlots(teilnehmer.id).length > 0" class="list-unstyled mb-0">
+                <li v-for="eintrag in sortedFreieSlots(teilnehmer.id)" :key="eintrag.slot.id">
+                  {{ formatSlot(eintrag.slot) }}
                 </li>
               </ul>
               <span v-else class="text-muted">Keine freien Slots</span>
+            </td>
+            <td>
+              <ul v-if="sortedFreieSlots(teilnehmer.id).length > 0" class="list-unstyled mb-0">
+                <li v-for="eintrag in sortedFreieSlots(teilnehmer.id)" :key="eintrag.slot.id">
+                  {{ formatGrund(eintrag.grund) }}
+                </li>
+              </ul>
+              <span v-else class="text-muted">-</span>
             </td>
           </tr>
         </tbody>
@@ -86,9 +95,12 @@ const sortedTeilnehmer = computed(() => {
   });
 });
 
-const sortedSlots = (slots) => {
-  return [...slots].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+const sortedFreieSlots = (teilnehmerId) => {
+  const eintraege = reportData.value.freieSlots[teilnehmerId] || [];
+  return [...eintraege].sort((a, b) => new Date(a.slot.startTime) - new Date(b.slot.startTime));
 };
+
+const formatGrund = (grund) => grund === 'NICHT_VERFUEGBAR' ? 'Nicht verfügbar' : 'Nicht verplant';
 
 onMounted(async () => {
   const veranstaltungId = route.params.vid;

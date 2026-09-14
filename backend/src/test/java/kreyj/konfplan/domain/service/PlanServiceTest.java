@@ -4,6 +4,8 @@ import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.adapter.in.web.dto.FreierSlotDto;
+import kreyj.konfplan.adapter.in.web.dto.FreierSlotGrund;
 import kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht;
 import kreyj.konfplan.adapter.in.web.dto.SolverConfig;
 import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
@@ -22,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -257,6 +260,47 @@ public class PlanServiceTest extends DatabaseCleaner {
 
         Planungsergebnis.MinizincResult veroeffentlicht = planService.getMinizincResult(veranstaltung);
         assertThat(veroeffentlicht.teilnehmer_oids).isEmpty();
+    }
+
+
+    @Test
+    @Transactional
+    public void testGetFreieSlotsTeilnehmer_unterscheidetNichtVerfuegbarVonNichtVerplant() {
+        // Beide Teilnehmer sind im (leeren) Fixture-Planungsergebnis keinem Wahl- oder
+        // Pflichtvortrag zugeteilt - der Slot ist fuer beide "frei". Der Grund muss sich dennoch
+        // unterscheiden: wer explizit als nicht verfuegbar markiert wurde, darf nicht wie jemand
+        // erscheinen, der lediglich vom Solver nicht verplant werden konnte.
+        //
+        // veranstaltung frisch nachladen: das Feld stammt aus der @BeforeEach-Transaktion und ist
+        // in dieser Test-Transaktion detached - Nutzer.veranstaltungen cascade-persisted (PERSIST)
+        // beim ersten addVeranstaltung(...) sonst ein detached Entity.
+        veranstaltung = Veranstaltung.findById(veranstaltung.getId());
+
+        Slot slot = new Slot("Slot 1", LocalDateTime.of(2024, 1, 1, 9, 0), LocalDateTime.of(2024, 1, 1, 10, 0), veranstaltung);
+        slot.persist();
+        veranstaltung.addSlot(slot);
+
+        Teilnehmer verfuegbar = new Teilnehmer();
+        verfuegbar.assignLoginName("teilnehmer.verfuegbar");
+        verfuegbar.setEmail("teilnehmer.verfuegbar@example.com");
+        verfuegbar.persist();
+        verfuegbar.addVeranstaltung(veranstaltung);
+
+        Teilnehmer nichtVerfuegbar = new Teilnehmer();
+        nichtVerfuegbar.assignLoginName("teilnehmer.nichtverfuegbar");
+        nichtVerfuegbar.setEmail("teilnehmer.nichtverfuegbar@example.com");
+        nichtVerfuegbar.persist();
+        nichtVerfuegbar.addVeranstaltung(veranstaltung);
+        nichtVerfuegbar.updateVerfuegbarkeit(slot, veranstaltung, false);
+
+        Map<Long, List<FreierSlotDto>> freieSlots = planService.getFreieSlotsTeilnehmer(veranstaltung);
+
+        assertThat(freieSlots.get(verfuegbar.getId()))
+            .extracting(f -> f.grund)
+            .containsExactly(FreierSlotGrund.NICHT_VERPLANT);
+        assertThat(freieSlots.get(nichtVerfuegbar.getId()))
+            .extracting(f -> f.grund)
+            .containsExactly(FreierSlotGrund.NICHT_VERFUEGBAR);
     }
 
 
