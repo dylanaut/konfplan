@@ -1,0 +1,207 @@
+Release Notes 1.24.3
+Released: 2026-09-14
+
+Changes:
+
+- Release-Notes fuer 1.24.2 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.24.3-SNAPSHOT)
+
+- brevo-ip-updater: erneutem Lade-Skeleton-Hang mit mehr Diagnose begegnen
+  * brevo-ip-updater: erneutem Lade-Skeleton-Hang mit mehr Diagnose begegnen
+  update-ip.mjs schlaegt wieder mit "Authorize IP addresses"-Button-Timeout fehl.
+  Laut error-*.html rendert der komplette security-tabs-Inhaltsbereich gar nicht
+  (dasselbe Symptom wie das in #385 behobene Lade-Skeleton-Problem) - kein reiner
+  Text-/Selektor-Wechsel.
+  Ergaenzt die bestehende navigator.webdriver-Gegenmassnahme um weitere gaengige
+  Headless-Fingerprinting-Merkmale (plugins, languages, window.chrome) und
+  schreibt bei jedem Fehlschlag zusaetzlich error-*-diag.json (Konsolen-Fehler/
+  -Warnungen + fehlgeschlagene Netzwerk-Antworten waehrend des gesamten Laufs) -
+  zeigt beim naechsten Fehlschlag konkret die Ursache (z.B. 401/403 auf einen
+  internen API-Call), statt nur "nichts rendert".
+  * brevo-ip-updater: abgelaufene Sitzung als eigentliche Ursache erkennen
+  Der neue error-*-diag.json aus PR #644 zeigt fuer den naechsten Fehlschlag:
+  kein Fingerprinting-Problem, sondern eine abgelaufene Sitzung - 401 auf
+  conversations-app.brevo.com und 403 auf sidebar-backend.brevo.com, ausserdem
+  ein Redirect auf account-app.brevo.com/account/login. Die Haupt-Seiten-URL
+  bleibt dabei auf /security/authorised_ips, da app.brevo.com eine
+  Microfrontend-Architektur ist und Konto-/Sidebar-Daten per Hintergrund-Fetch
+  von eigenen Subdomains nachlaedt - deshalb griff die bisherige
+  Login-Redirect-Erkennung nicht, und der Lauf endete stattdessen in einem
+  verwirrenden 45s-Button-Timeout.
+  update-ip.mjs bricht jetzt zusaetzlich ab, wenn ein Hintergrund-Call mit 401
+  fehlschlaegt, mit einer eindeutigen "Sitzung abgelaufen"-Meldung statt eines
+  Timeouts.
+  ---------
+
+- brevo-ip-updater: playwright-extra + stealth-Plugin gegen anhaltendes Lade-Skeleton
+  Die "abgelaufene Sitzung"-Theorie aus #643 ist widerlegt: derselbe 401/403-
+  Fehler auf Konto-/Sidebar-Subdomains (account-app.brevo.com,
+  sidebar-backend.brevo.com) trat unmittelbar nach einem frischen
+  setup-session.mjs-Lauf erneut auf. Manueller Vergleich mit einem echten
+  Inkognito-Browser (Cookies akzeptiert) zeigt: dieselben Calls liefern dort
+  200, und es gibt dort ebenfalls nur Cookies fuer app.brevo.com - Cookies/
+  Session sind also nicht der Unterschied zwischen echtem Browser und
+  Playwright. Arbeitshypothese jetzt: eine Erkennung unterhalb der JS-Ebene
+  (z.B. TLS-/Netzwerk-Fingerprinting), die einzelne navigator.*-Overrides
+  nicht adressieren.
+  update-ip.mjs nutzt deshalb playwright-extra + puppeteer-extra-plugin-stealth
+  statt des blossen playwright-Pakets - patcht deutlich mehr, tiefer liegende
+  Automatisierungsmerkmale als die bisherigen einzelnen navigator.*-Overrides
+  (entfernt, da redundant). Ausserdem die aus #643 stammende, jetzt als
+  fehlleitend erkannte "Sitzung abgelaufen"-Erkennung anhand blosser
+  Hintergrund-401s entfernt - nur ein echter Redirect der Haupt-Seite auf
+  /login gilt noch als abgelaufene Sitzung.
+  Nicht bestaetigt, ob das Stealth-Plugin die eigentliche Ursache behebt -
+  kein Zugriff auf den echten Account.
+
+- brevo-ip-updater: direkter authentifizierter API-Call statt Browser-Rendering
+  Fuenf Fehlschlags-Versuche (#643, #645) zeigten: das vollstaendige Browser-
+  Rendering der Brevo-"Security"-Seite ist grundsaetzlich unzuverlaessig im
+  headless Playwright, weil mehrere fuer die eigentliche Aktion UNBETEILIGTE
+  Widgets (Chat, Marketing-Benachrichtigungen, Sidebar-App-Switcher) mit
+  401/403 fehlschlagen und das Rendering blockieren - weder navigator.*-
+  Overrides noch ein Stealth-Plugin behoben das.
+  Per Netzwerk-Tab-Mitschnitt eines echten Browsers verifiziert: der Button
+  "Authorize IP addresses" loest lediglich einen simplen, rein cookie-
+  authentifizierten POST an ato-manager.brevo.com/ips/bulk-create aus - eine
+  bislang nie fehlgeschlagene Subdomain, kein Auth-Header, kein CSRF-Token
+  noetig. update-ip.mjs macht jetzt nur noch diesen einen API-Call ueber
+  Playwrights request-Kontext (Cookies aus storage-state.json) - kein
+  Seiten-Rendering mehr, damit entfaellt die gesamte Klasse von Lade-Skeleton-
+  /Fingerprinting-Problemen. playwright-extra/puppeteer-extra-plugin-stealth
+  entfernt (nicht mehr benoetigt).
+
+- brevo-ip-updater: Sitzung vor jedem Lauf frisch holen statt langlebig speichern
+  * brevo-ip-updater: Sitzung vor jedem Lauf frisch holen statt langlebig speichern
+  Auch nach #647 (direkter API-Call statt Browser-Rendering) schlug
+  update-ip.mjs mit 403 auth_required fehl. Verifiziert: derselbe Request mit
+  frisch aus dem Browser kopierten Cookies funktioniert einwandfrei - die in
+  storage-state.json gespeicherte Sitzung war schlicht abgelaufen. Brevos
+  "vertrauenswuerdiges Geraet"-Erkennung (spart den 6-stelligen E-Mail-Code)
+  und das eigentliche Session-Cookie haben unterschiedliche Gueltigkeits-
+  dauern - eine einmalig gespeicherte Sitzung wird zwischen zwei
+  IP-Aenderungen zuverlaessig ungueltig.
+  check-outbound-ip.sh ruft setup-session.mjs deshalb jetzt vor JEDEM
+  update-ip.mjs-Lauf erneut auf (nicht-interaktiv, ohne -it). setup-session.mjs
+  bricht dabei sofort mit einer eindeutigen Fehlermeldung ab, falls Brevo doch
+  einen 6-stelligen Code verlangt, aber kein Terminal fuer die Eingabe da ist
+  (TTY-Pruefung) - statt auf eine Eingabe zu warten, die nie kommt. Ausserdem
+  den mittlerweile ueberholten Vorab-Besuch der Authorized-IPs-Seite entfernt.
+  * setup-session.mjs: vorhandene Sitzung als Ausgangs-Cookies wiederverwenden
+  Per Live-Test auf dem Server verifiziert: die TTY-Sicherung aus diesem PR
+  griff korrekt (kein Haengen mehr), zeigte aber ein echtes Problem auf -
+  setup-session.mjs startete bislang IMMER mit einem komplett leeren
+  Browser-Kontext, wodurch das langlebige Geraete-Erkennungs-Cookie (z.B.
+  "did") bei jedem Lauf verloren ging und Brevo prompt wieder den
+  6-stelligen Code verlangte, obwohl das Geraet beim vorherigen Lauf bereits
+  als vertrauenswuerdig eingestuft worden war.
+  Laedt jetzt die vorhandene storage-state.json (falls da) als Ausgangs-
+  Cookies, bevor der Login-Flow die kurzlebigeren Session-Cookies erneuert -
+  damit bleibt die Geraete-Erkennung ueber wiederholte, nicht-interaktive
+  Laeufe hinweg erhalten.
+  * setup-session.mjs: nur das did-Cookie wiederverwenden, nicht die ganze alte Sitzung
+  Per Live-Test auf dem Server verifiziert: das Wiederverwenden der KOMPLETTEN
+  alten Sitzung liess login.brevo.com direkt zum Dashboard durchleiten, ohne
+  das Login-Formular ueberhaupt zu zeigen - dadurch fand nie ein echter Login
+  statt, storageState() sicherte am Ende schlicht dieselbe, bereits als
+  ungueltig bekannte Sitzung erneut (bewirkt nichts).
+  Jetzt wird gezielt NUR das Geraete-Erkennungs-Cookie "did" uebernommen -
+  das Formular erscheint dadurch normal (kein auth/loggedin vorhanden), der
+  Login laeuft echt durch und erneuert auth/ACCOUNTSESSID, waehrend Brevo das
+  Geraet ueber "did" trotzdem als bekannt wiedererkennt.
+  ---------
+
+- setup-session.mjs: alle Cookies ausser den drei Session-Markern wiederverwenden
+  did-Cookie allein reichte nicht: Brevo verlangte weiterhin bei jedem
+  nicht-interaktiven Lauf den 6-stelligen Code (per Live-Test verifiziert).
+  Dritter Versuch: alle Cookies aus einer vorhandenen storage-state.json
+  ausser den drei session-spezifischen (auth/ACCOUNTSESSID/loggedin)
+  uebernehmen, um zu testen, ob die Geraete-Erkennung an einer Kombination
+  mehrerer Cookies haengt statt an did allein.
+  Nicht bestaetigt, ob das funktioniert - kein Zugriff auf den echten Account.
+
+- brevo-ip-updater: 6-stelligen Code automatisch per IMAP auslesen (+ UA-Fix)
+  * setup-session.mjs: realistische User-Agent statt Playwright-Standard-UA setzen
+  Auch nach #651 verlangte Brevo weiterhin bei jedem nicht-interaktiven Lauf
+  den 6-stelligen Code. Per Live-Test verifiziert: selbst zwei unmittelbar
+  aufeinanderfolgende Laeufe von derselben unveraenderten IP loesten die
+  Geraeteverifizierung beide erneut aus - schliesst sowohl IP-Bindung als
+  auch die Cookie-Auswahl als alleinige Ursache aus.
+  Playwrights Standard-UA im headless Modus enthaelt woertlich
+  "HeadlessChrome/..." - ein fuer jeden serverseitigen Check trivial
+  erkennbares Automatisierungsmerkmal, unabhaengig von Cookies/IP.
+  setup-session.mjs setzte (im Gegensatz zum alten, browserbasierten
+  update-ip.mjs) bislang nie eine eigene User-Agent. Setzt jetzt dieselbe
+  realistische Desktop-Chrome-UA.
+  Nicht abschliessend bestaetigt, ob das die Ursache behebt.
+  * brevo-ip-updater: 6-stelligen Code automatisch per IMAP auslesen
+  Per Live-Test abschliessend geklaert: Brevo verlangt bei diesem Login-Flow
+  BEI JEDEM Login den 6-stelligen Code - unabhaengig von Cookies, User-Agent
+  oder IP (mehrere Theorien dazu wurden nacheinander widerlegt, siehe
+  Historie in #643/#645/#649/#651/#653). Es gibt fuer diesen Flow keine
+  dauerhafte "vertrauenswuerdiges Geraet"-Erkennung. Ein bereits zugestellter
+  Code bleibt ca. 90s gueltig, danach schickt Brevo eine neue Mail mit
+  neuem Code.
+  setup-session.mjs liest den Code deshalb jetzt automatisch per IMAP aus
+  dem Postfach aus (neue Abhaengigkeiten imapflow + mailparser), statt einen
+  Menschen am Terminal zu fragen. Erfasst vor dem Login-Versuch die
+  aktuelle Postfach-UID (damit eine bereits im Postfach liegende alte
+  Code-Mail nicht faelschlich wiederverwendet wird) und pollt bis zu 90s auf
+  eine neue Mail. Ohne konfigurierte BREVO_CODE_IMAP_*-Variablen faellt das
+  Skript weiterhin auf den bisherigen interaktiven Prompt zurueck (oder
+  scheitert klar, wenn nicht-interaktiv).
+  check-outbound-ip.sh gibt die neuen BREVO_CODE_IMAP_*-Variablen an
+  setup-session.mjs weiter. Neues Secret: deploy/secrets/
+  brevo_code_mailbox_password.txt (IMAP-App-Passwort, nicht das normale
+  Postfach-Passwort).
+  ---------
+
+- setup-session.mjs: IMAP-Fehlermeldung um responseText ergaenzen
+  imapflow wirft bei einem fehlgeschlagenen IMAP-Kommando (z.B. Login/Auth
+  abgelehnt) immer die generische Meldung "Command failed" - der
+  eigentliche, vom Server gelieferte Klartext-Grund (z.B. "Invalid
+  credentials") steckt in e.responseText, nicht in e.message. Per Live-Test
+  auf dem Server bestaetigt: die bisherige Fehlermeldung war nicht
+  diagnostizierbar.
+  Zusaetzlich .env.example um Beispielwerte fuer BREVO_CODE_IMAP_* ergaenzt.
+
+- brevo-ip-updater: Doku klarstellen - BREVO_CODE_IMAP_USER muss primaerer Account sein
+  Per Live-Test auf dem Server: IMAP-Login schlug mit "Invalid credentials"
+  fehl, wenn BREVO_CODE_IMAP_USER auf eine Alias-/Zusatzadresse gesetzt
+  war (die die Brevo-Code-Mails empfaengt), obwohl das App-Passwort korrekt
+  war. Mit dem PRIMAEREN Account-Login stattdessen funktionierte der
+  IMAP-Zugriff sofort - Yahoos IMAP-Login akzeptiert nur den primaeren
+  Benutzernamen, Mail an Aliase landet aber trotzdem im selben Postfach.
+  Reine Doku-Korrektur (.env.example, Deployment-DockerCompose.adoc),
+  kein Code betroffen.
+
+- brevo-ip-updater: falsche 'primaerer Account'-Annahme fuer IMAP-User korrigieren
+  #657 nahm an, BREVO_CODE_IMAP_USER muesse der primaere Account-Login sein,
+  nicht eine Alias-Adresse - basierend auf der Vermutung, konfplan@yahoo.com
+  sei ein Yahoo-Alias unter juergenkrey@yahoo.de mit gemeinsamem Posteingang.
+  Per Live-Test widerlegt: es ist ein eigenstaendiges Postfach mit eigenem
+  App-Passwort.
+  Doku korrigiert: BREVO_CODE_IMAP_USER muss der IMAP-Login des Postfachs
+  sein, das die Code-Mails TATSAECHLICH empfaengt - ob das bei einer
+  Alias-Adresse ein eigenstaendiges oder gemeinsames Postfach ist, haengt
+  vom Anbieter ab, keine Annahme treffen. Curl-basierter Verifikationsschritt
+  vor dem eigentlichen Test-Lauf ergaenzt.
+  Die gesamte Automatisierungskette (Login -> IMAP-Code-Abruf ->
+  update-ip.mjs) wurde inzwischen End-zu-Ende erfolgreich getestet.
+
+- fix/660 dashboard npe geloeschter wahlvortrag
+  * removed import-dev.sql
+  * DashboardService: NPE bei geloeschtem Wahlvortrag in createTeilnehmerStundenplan beheben
+  Produktionsfehler: dd.wahlvortraege.get(...) liefert null, wenn ein
+  Wahlvortrag nach der Planerstellung aus der Veranstaltung entfernt/
+  geloescht wurde, ohne den Plan neu zu berechnen - dasselbe bekannte Muster
+  (MiniZinc-Ergebnis ist eine eingefrorene Momentaufnahme), das an anderer
+  Stelle in dieser Klasse fuer entfernte Teilnehmer bereits behandelt wird,
+  hier aber fuer Wahlvortraege fehlte.
+  Analoger Null-Check ergaenzt. Regressionstest ergaenzt (verifiziert:
+  schlaegt ohne den Fix mit derselben NPE fehl wie in Produktion beobachtet).
+  ---------
+
+- Release 1.24.3
+
