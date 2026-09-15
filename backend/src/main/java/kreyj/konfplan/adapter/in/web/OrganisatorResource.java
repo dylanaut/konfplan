@@ -502,6 +502,7 @@ public class OrganisatorResource {
 
     @POST
     @Path("/gruppenkategorien/{kategorieId}/werte")
+    @Consumes(MediaType.TEXT_PLAIN)
     @Operation(summary = "Einen neuen Wert zum Wertebereich einer Gruppenkategorie hinzufügen")
     public Response addGruppenkategorieWert(@PathParam("kategorieId") Long kategorieId,
                                              @RequestBody(description = "Der neue Wert") String wert) {
@@ -512,6 +513,7 @@ public class OrganisatorResource {
 
     @PUT
     @Path("/gruppenkategorien/werte/{wertId}")
+    @Consumes(MediaType.TEXT_PLAIN)
     @Operation(summary = "Einen Gruppenkategorie-Wert umbenennen")
     public GruppenkategorieWertDto renameGruppenkategorieWert(@PathParam("wertId") Long wertId,
                                                                 @RequestBody(description = "Der neue Wert") String neuerWert) {
