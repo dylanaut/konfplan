@@ -32,13 +32,15 @@
           <thead class="table-dark">
             <tr>
               <th scope="col">Teilnehmer</th>
-              <th scope="col">Gruppen</th>
+              <th scope="col" style="width: 30%;">Unterschrift</th>
+              <th scope="col" style="width: 15%;">Gruppen</th>
               <th scope="col" class="text-center" style="width: 100px;">Anwesend</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(name, idx) in eintrag.teilnehmerNamen" :key="idx">
               <td>{{ name }}</td>
+              <td></td>
               <td>{{ eintrag.teilnehmerGruppen?.[idx] }}</td>
               <td class="text-center"><span class="checkbox-box"></span></td>
             </tr>
