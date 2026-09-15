@@ -1,0 +1,33 @@
+Release Notes 1.25.5
+Released: 2026-09-15
+
+Changes:
+
+- Release-Notes fuer 1.25.4 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.25.5-SNAPSHOT)
+
+- VortragEditorModal: Referenten sortieren + Auswahl bei veröffentlichtem Plan einschränken (#692)
+  Referenten-Dropdown im Vortrag-Editor wird jetzt alphabetisch nach
+  (Nachname, Vorname) sortiert angezeigt statt in Backend-Reihenfolge.
+  Wird der Referent eines bestehenden Wahlvortrags geändert und existiert
+  für die Veranstaltung bereits ein veröffentlichter Plan, wird die Auswahl
+  auf Referenten eingeschränkt, die für JEDE laut Plan tatsächlich
+  geplante Instanz dieses Vortrags (nicht ausgefallene Zeitslots) sowohl
+  verfügbar sind als auch nicht bereits mit einem anderen Vortrag
+  (Wahl- oder Pflichtvortrag) verplant sind. Der aktuell zugewiesene
+  Referent bleibt dabei immer in der Auswahl sichtbar. Ohne veröffentlichten
+  Plan bzw. bei neu angelegten Vorträgen bleibt die Auswahl unverändert
+  unbeschränkt; Pflichtvorträge bleiben unverändert nicht änderbar.
+  Datengrundlage: Verfügbarkeit kommt aus dem bereits dashboard-weit
+  geladenen availability-Store; freie/belegte Zeitslots aus den
+  tatsächlichen Plan-Instanzen (GET .../planungsergebnisse/{id}/instanzen)
+  kombiniert mit den statischen Pflichtvortrag-Zuweisungen der
+  Veranstaltung. UmplanungInstanzDto bekommt dafür ein referentId-Feld
+  zusätzlich zum bisherigen referentName, um Referenten zuverlässig per Id
+  statt per Namensvergleich zu matchen.
+
+- Release 1.25.5
+  Enthält den Fix für #692: Referenten-Sortierung und Auswahl-Einschränkung
+  bei veröffentlichtem Plan im Vortrag-Editor (#693).
+

@@ -222,7 +222,7 @@
     <UserEditorModal :isVisible="showUserModal" :nutzer="selectedUser" :eventSlots="eventSlots" :fixedRole="newUserFixedRole"
                      @close="showUserModal = false" @save="handleSaveUser"/>
     <OrganisatorVortragEditorModal :isVisible="showVortragModal" :vortrag="selectedVortrag" :referenten="referenten"
-                             :raeume="filteredRaeume" :slots="eventSlots" :participantGroups="teilnehmerGruppen"
+                             :raeume="filteredRaeume" :slots="eventSlots" :participantGroups="teilnehmerGruppen" :vortraege="vortraege"
                              :error="vortragModalError" @close="closeVortragModal" @save="handleSaveVortrag"/>
     <EventSlotEditorModal :isVisible="showSlotModal" :slot="selectedSlot" @close="showSlotModal = false"
                           @save="handleSaveSlot"/>

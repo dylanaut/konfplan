@@ -713,6 +713,7 @@ public class PlanService {
                     iIdx,
                     vortrag.getTitel(),
                     vortrag.getReferent().getFullName(),
+                    vortrag.getReferent().getId(),
                     slot.getId(),
                     slot.getStartTime().format(TIME_FORMAT),
                     raum.getId(),
