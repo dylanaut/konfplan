@@ -69,6 +69,62 @@
                   </div>
                 </div>
 
+                <!-- Gruppenkategorien (#690) -->
+                <div class="space-y-2">
+                  <button @click="expandedSections.gruppenkategorien = !expandedSections.gruppenkategorien"
+                          class="w-full flex items-center gap-3 text-[10px] font-black text-indigo-700 uppercase tracking-widest border-b border-indigo-100 pb-1 hover:bg-indigo-50 transition-colors">
+                    <ChevronDownIcon v-if="!expandedSections.gruppenkategorien" class="w-3 h-3 shrink-0"/>
+                    <ChevronUpIcon v-else class="w-3 h-3 shrink-0"/>
+                    <div class="flex items-center gap-2">
+                      <TagsIcon class="w-3 h-3"/> Gruppenkategorien ({{ gruppenkategorieStore.gruppenkategorien.length }})
+                    </div>
+                  </button>
+                  <div v-if="expandedSections.gruppenkategorien" class="animate-fade-in space-y-3 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+                    <div class="flex justify-end">
+                      <button @click="openGruppenkategorieEditor(null)" class="btn-secondary text-xs py-1 px-3">+ Neue Kategorie</button>
+                    </div>
+                    <div v-if="gruppenkategorieStore.gruppenkategorien.length > 0" class="space-y-2">
+                      <div v-for="kat in gruppenkategorieStore.gruppenkategorien" :key="kat.id" class="border border-gray-200 rounded-lg overflow-hidden">
+                        <div class="flex items-center justify-between p-2 bg-gray-50">
+                          <button @click="toggleKategorie(kat.id)" class="flex items-center gap-2 text-xs font-bold text-gray-800">
+                            <ChevronRightIcon v-if="!expandedKategorien[kat.id]" class="w-3 h-3"/>
+                            <ChevronDownIcon v-else class="w-3 h-3"/>
+                            {{ kat.name }}
+                            <span class="text-[9px] font-normal px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">{{ kat.mehrwertig ? 'Mehrwertig' : 'Einwertig' }}</span>
+                            <span class="text-[9px] font-normal px-1.5 py-0.5 rounded-full" :class="kat.pflicht ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'">{{ kat.pflicht ? 'Pflicht' : 'Kann' }}</span>
+                            <span class="text-[9px] font-normal text-gray-400">({{ kat.werte.length }} Werte)</span>
+                          </button>
+                          <div class="space-x-2">
+                            <button @click="openGruppenkategorieEditor(kat)" class="text-gray-500 hover:text-indigo-600" title="Kategorie bearbeiten" aria-label="Kategorie bearbeiten">
+                              <PencilIcon class="w-3.5 h-3.5"/>
+                            </button>
+                            <button @click="handleDeleteGruppenkategorie(kat)" class="text-gray-500 hover:text-red-600" title="Kategorie löschen" aria-label="Kategorie löschen">
+                              <Trash2Icon class="w-3.5 h-3.5"/>
+                            </button>
+                          </div>
+                        </div>
+                        <div v-if="expandedKategorien[kat.id]" class="p-3 space-y-2">
+                          <div class="flex gap-2">
+                            <input v-model="newWertByKategorie[kat.id]" @keyup.enter="handleAddWert(kat)" placeholder="Neuer Wert..." class="input-field text-xs flex-grow"/>
+                            <button @click="handleAddWert(kat)" class="btn-secondary text-xs py-1 px-3">Hinzufügen</button>
+                          </div>
+                          <ul v-if="kat.werte.length > 0" class="space-y-1 text-xs">
+                            <li v-for="wert in kat.werte" :key="wert.id" class="flex justify-between items-center p-1.5 bg-gray-50 rounded">
+                              <span>{{ wert.wert }}</span>
+                              <div class="space-x-2">
+                                <button @click="handleRenameWert(wert)" class="text-gray-500 hover:text-indigo-600"><PencilIcon class="w-3 h-3"/></button>
+                                <button @click="handleRemoveWert(wert)" class="text-gray-500 hover:text-red-600"><Trash2Icon class="w-3 h-3"/></button>
+                              </div>
+                            </li>
+                          </ul>
+                          <div v-else class="text-center text-gray-400 text-[10px]">Keine Werte definiert.</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div v-else class="text-center text-gray-400 text-[10px]">Keine Gruppenkategorien definiert.</div>
+                  </div>
+                </div>
+
                 <!-- Vorträge & Referenten -->
                 <div class="space-y-2">
                   <button @click="expandedSections.vortraege = !expandedSections.vortraege"
@@ -153,24 +209,31 @@
       </table>
       <PaginationControls v-model:currentPage="pages.veranstaltungen" :totalItems="filteredVeranstaltungen.length" :pageSize="pageSize"/>
     </div>
+
+    <GruppenkategorieEditorModal :isVisible="showGruppenkategorieModal" :kategorie="selectedKategorie"
+                                  @close="showGruppenkategorieModal = false" @save="handleSaveGruppenkategorie"/>
   </section>
 </template>
 
 <script setup>
 import { computed, reactive, ref, watch } from 'vue';
 import { useGroupStore } from '../../../stores/group';
+import { useGruppenkategorieStore } from '../../../stores/gruppenkategorie';
 import {
   ArrowUpDown as ArrowUpDownIcon,
   ChevronDown as ChevronDownIcon,
+  ChevronRight as ChevronRightIcon,
   ChevronUp as ChevronUpIcon,
   FileText as FileTextIcon,
   Pencil as PencilIcon,
+  Tags as TagsIcon,
   Trash2 as Trash2Icon,
   Upload as UploadIcon,
   Users as UsersIcon,
   Users2 as Users2Icon,
 } from '@lucide/vue';
 import PaginationControls from '../../PaginationControls.vue';
+import GruppenkategorieEditorModal from './GruppenkategorieEditorModal.vue';
 
 const props = defineProps({
   veranstaltungen: Array,
@@ -185,6 +248,12 @@ const emit = defineEmits(['triggerUpload', 'openVeranstaltungEditor', 'deleteVer
 
 const groupStore = useGroupStore();
 const newGroupName = ref('');
+
+const gruppenkategorieStore = useGruppenkategorieStore();
+const expandedKategorien = reactive({});
+const newWertByKategorie = reactive({});
+const showGruppenkategorieModal = ref(false);
+const selectedKategorie = ref(null);
 
 const pages = reactive({
   veranstaltungen: 1,
@@ -204,6 +273,7 @@ const sorts = reactive({
 
 const expandedSections = reactive({
   gruppen: false,
+  gruppenkategorien: false,
   vortraege: false,
   teilnehmer: false
 });
@@ -234,6 +304,51 @@ const handleRenameGroup = async (alterName) => {
 const handleDeleteGroup = async (gruppenName) => {
   if (confirm(`Soll die Gruppe "${gruppenName}" wirklich gelöscht werden? Sie wird von allen Teilnehmern entfernt.`)) {
     await groupStore.deleteGruppe(props.selectedVid, gruppenName);
+  }
+};
+
+const toggleKategorie = (id) => {
+  expandedKategorien[id] = !expandedKategorien[id];
+};
+
+const openGruppenkategorieEditor = (kat) => {
+  selectedKategorie.value = kat;
+  showGruppenkategorieModal.value = true;
+};
+
+const handleSaveGruppenkategorie = async (form) => {
+  const ok = form.id
+      ? await gruppenkategorieStore.updateGruppenkategorie(props.selectedVid, form.id, form)
+      : await gruppenkategorieStore.createGruppenkategorie(props.selectedVid, form);
+  if (ok) {
+    showGruppenkategorieModal.value = false;
+  }
+};
+
+const handleDeleteGruppenkategorie = async (kat) => {
+  if (confirm(`Soll die Gruppenkategorie "${kat.name}" wirklich gelöscht werden? Alle Zuordnungen bei Teilnehmern werden entfernt.`)) {
+    await gruppenkategorieStore.deleteGruppenkategorie(props.selectedVid, kat);
+  }
+};
+
+const handleAddWert = async (kat) => {
+  const wert = (newWertByKategorie[kat.id] || '').trim();
+  if (wert) {
+    await gruppenkategorieStore.addWert(props.selectedVid, kat.id, wert);
+    newWertByKategorie[kat.id] = '';
+  }
+};
+
+const handleRenameWert = async (wert) => {
+  const neuerWert = prompt(`Wert "${wert.wert}" umbenennen in:`, wert.wert);
+  if (neuerWert && neuerWert.trim() && neuerWert.trim() !== wert.wert) {
+    await gruppenkategorieStore.renameWert(props.selectedVid, wert, neuerWert.trim());
+  }
+};
+
+const handleRemoveWert = async (wert) => {
+  if (confirm(`Soll der Wert "${wert.wert}" wirklich gelöscht werden? Er wird von allen Teilnehmern entfernt.`)) {
+    await gruppenkategorieStore.removeWert(props.selectedVid, wert);
   }
 };
 

@@ -272,6 +272,7 @@ import { extractErrorMessage } from '../utils/errorMessage';
 import {useEventContextStore} from '../stores/eventContext';
 import {useAvailabilityStore} from '../stores/availability';
 import { useGroupStore } from '../stores/group';
+import { useGruppenkategorieStore } from '../stores/gruppenkategorie';
 import { useAuthStore } from '../stores/auth';
 import { useUnsavedChangesStore } from '../stores/unsavedChanges';
 import {
@@ -316,6 +317,7 @@ const eventContext = useEventContextStore();
 const availabilityStore = useAvailabilityStore();
 const unsavedChanges = useUnsavedChangesStore();
 const groupStore = useGroupStore();
+const gruppenkategorieStore = useGruppenkategorieStore();
 const auth = useAuthStore();
 
 const tabLabels = {
@@ -641,7 +643,8 @@ const loadData = async () => {
       api.get(`${base}/plan/details`),
       api.get(`${base}/plan/qualitaet`),
       api.get('/api/organisator/nutzer'),
-      groupStore.fetchGruppen(selectedVid.value)
+      groupStore.fetchGruppen(selectedVid.value),
+      gruppenkategorieStore.fetchGruppenkategorien(selectedVid.value)
     ]);
 
     await availabilityStore.fetchAvailabilities(selectedVid.value);
