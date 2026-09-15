@@ -441,4 +441,80 @@ class OrganisatorResourceTest extends DatabaseCleaner {
             .statusCode(OK.getStatusCode())
             .body("size()", is(0));
     }
+
+
+    // --- GRUPPENKATEGORIEN API TESTS (siehe #690) ---
+
+    /**
+     * Regressionstest: die Kategorie und ihr Wert werden bewusst in einer eigenen, bereits
+     * committeten Transaktion angelegt (statt im selben Request) - nur so bleibt
+     * {@code Gruppenkategorie.werte} beim GET-Request tatsächlich eine noch nicht initialisierte
+     * lazy Collection, wie es bei echten (z.B. per Migration eingespielten) Bestandsdaten der Fall
+     * ist. Reproduziert damit exakt die Bedingung, unter der der Endpunkt zuvor mit
+     * LazyInitializationException fehlschlug, weil das Mapping außerhalb der (Service-eigenen)
+     * Transaktion erfolgte.
+     */
+    @Test
+    void testGetGruppenkategorien_mitBestehendenWerten() {
+        Long vId = QuarkusTransaction.requiringNew().call(() -> {
+            Veranstaltung v = new Veranstaltung();
+            v.setName("Gruppenkategorien Test Event");
+            v.setBeginntAm(LocalDateTime.now());
+            v.setEndetAm(LocalDateTime.now().plusDays(1));
+            v.persist();
+
+            kreyj.konfplan.persistence.Gruppenkategorie kategorie =
+                new kreyj.konfplan.persistence.Gruppenkategorie(v, "Klasse", false, true);
+            kategorie.persist();
+            kreyj.konfplan.persistence.GruppenkategorieWert wert =
+                new kreyj.konfplan.persistence.GruppenkategorieWert(kategorie, "10a");
+            wert.persist();
+
+            return v.getId();
+        });
+
+        given()
+            .when().get("/veranstaltungen/{vid}/gruppenkategorien", vId)
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body("size()", is(1))
+            .body("[0].name", is("Klasse"))
+            .body("[0].werte.size()", is(1))
+            .body("[0].werte[0].wert", is("10a"));
+    }
+
+
+    @Test
+    void testUpdateGruppenkategorie_mitBestehendenWerten() {
+        Long kategorieId = QuarkusTransaction.requiringNew().call(() -> {
+            Veranstaltung v = new Veranstaltung();
+            v.setName("Gruppenkategorien Update Test Event");
+            v.setBeginntAm(LocalDateTime.now());
+            v.setEndetAm(LocalDateTime.now().plusDays(1));
+            v.persist();
+
+            kreyj.konfplan.persistence.Gruppenkategorie kategorie =
+                new kreyj.konfplan.persistence.Gruppenkategorie(v, "Klasse", false, true);
+            kategorie.persist();
+            kreyj.konfplan.persistence.GruppenkategorieWert wert =
+                new kreyj.konfplan.persistence.GruppenkategorieWert(kategorie, "10a");
+            wert.persist();
+
+            return kategorie.getId();
+        });
+
+        kreyj.konfplan.adapter.in.web.dto.GruppenkategorieAnfrageDto anfrage =
+            new kreyj.konfplan.adapter.in.web.dto.GruppenkategorieAnfrageDto();
+        anfrage.name = "Klasse (umbenannt)";
+        anfrage.mehrwertig = false;
+        anfrage.pflicht = true;
+
+        given().contentType(ContentType.JSON)
+            .body(anfrage)
+            .when().put("/gruppenkategorien/{kategorieId}", kategorieId)
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body("name", is("Klasse (umbenannt)"))
+            .body("werte.size()", is(1));
+    }
 }

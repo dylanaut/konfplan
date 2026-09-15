@@ -455,7 +455,13 @@ public class OrganisatorResource {
     @GET
     @Path("/veranstaltungen/{vid}/gruppenkategorien")
     @Operation(summary = "Alle Gruppenkategorien einer Veranstaltung abrufen")
+    @Transactional
     public List<GruppenkategorieDto> getGruppenkategorien(@PathParam("vid") Long vid) {
+        // @Transactional haelt die Hibernate-Session ueber den Service-Aufruf hinaus offen, da
+        // GruppenkategorieDto.from(...) hier - ausserhalb des Service - auf die lazy Gruppenkategorie.werte-
+        // Collection zugreift; ohne dies schlaegt das bei Kategorien mit Werten mit
+        // LazyInitializationException fehl (Session ist beim Verlassen der @Transactional-
+        // Service-Methode bereits geschlossen).
         return gruppenkategorieService.getGruppenkategorien(vid).stream().map(GruppenkategorieDto::from).toList();
     }
 
@@ -463,6 +469,7 @@ public class OrganisatorResource {
     @POST
     @Path("/veranstaltungen/{vid}/gruppenkategorien")
     @Operation(summary = "Eine neue Gruppenkategorie zu einer Veranstaltung hinzufügen")
+    @Transactional
     public Response createGruppenkategorie(@PathParam("vid") Long vid,
                                             @RequestBody(description = "Name, Kardinalität und Pflicht/Kann der neuen Kategorie") GruppenkategorieAnfrageDto anfrage) {
         var kategorie = gruppenkategorieService.createGruppenkategorie(vid, anfrage.name, anfrage.mehrwertig, anfrage.pflicht);
@@ -473,8 +480,12 @@ public class OrganisatorResource {
     @PUT
     @Path("/gruppenkategorien/{kategorieId}")
     @Operation(summary = "Eine Gruppenkategorie ändern (Name, Kardinalität, Pflicht/Kann)")
+    @Transactional
     public GruppenkategorieDto updateGruppenkategorie(@PathParam("kategorieId") Long kategorieId,
                                                         @RequestBody(description = "Die aktualisierten Kategorie-Daten") GruppenkategorieAnfrageDto anfrage) {
+        // Siehe getGruppenkategorien: eine bereits bestehende Kategorie mit Werten wuerde ohne
+        // @Transactional beim Mapping (GruppenkategorieDto.from -> kategorie.getWerte()) außerhalb
+        // der Service-Transaktion ebenfalls mit LazyInitializationException scheitern.
         var kategorie = gruppenkategorieService.updateGruppenkategorie(kategorieId, anfrage.name, anfrage.mehrwertig, anfrage.pflicht);
         return GruppenkategorieDto.from(kategorie);
     }
