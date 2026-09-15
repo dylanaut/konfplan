@@ -1,0 +1,34 @@
+Release Notes 1.25.8
+Released: 2026-09-15
+
+Changes:
+
+- Release-Notes fuer 1.25.7 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.25.8-SNAPSHOT)
+
+- Reports: einheitliche Druck-Fußzeile + wiederholender Kopfbereich (#704)
+  Alle 16 Report-Druckansichten erhalten jetzt eine einheitliche Fußzeile
+  (Veranstaltung | Report-Titel | Seite/Datum/© KonfPlan) über die neue
+  gemeinsame Komponente ReportFooter.vue. Reports mit einer Druckseite pro
+  Entität (Raum, Vortrag, Teilnehmer/Referent) zeigen eine fortlaufende
+  Seitenzahl; durchgängig fließende Reports zeigen nur das Druckdatum, da
+  die tatsächliche Gesamtseitenzahl im Browser-Druck nicht zuverlässig
+  bekannt ist.
+  Zusätzlich wiederholt sich der VeranstaltungHeader (Name, Zeitraum, Logo,
+  Organisatoren) jetzt auf jeder gedruckten Seite:
+  - Für Reports mit einer Druckseite pro Entität (Raumbelegungen,
+    Anwesenheiten) steht der Header als erstes Element in jedem
+    Entitäts-Block.
+  - Für durchgängig fließende Einzeltabellen-Reports (Laufzettel für
+    Referent/Teilnehmer) steht der Header als eigene, per CSS
+    print-only eingeblendete erste Zeile im <thead> - das nutzt die
+    native Browser-Wiederholung von <thead> beim Seitenumbruch, statt
+    position:fixed, das bei fortlaufenden Tabellen nur auf der ersten
+    Seite korrekt Platz reserviert und ab Seite 2 mit dem Tabelleninhalt
+    überlappt.
+  Verifiziert per Playwright-generierten Druck-PDFs gegen echte und
+  simulierte Mehrseiten-Daten für alle betroffenen Reports.
+
+- Release 1.25.8
+
