@@ -36,7 +36,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="slot in sortedSlots" :key="slot.id">
+                  <tr v-for="slot in sortedSlots" :key="slot.id" class="page-break-inside-avoid">
                     <td>{{ formatSlot(slot) }}</td>
                     <template v-if="reportData.raumplan[raum.id] && reportData.raumplan[raum.id][slot.id]">
                       <td>{{ reportData.raumplan[raum.id][slot.id].vortragTitel }}</td>
@@ -137,6 +137,16 @@ const formatSlot = (slot) => {
   }
   .page-break-after {
     page-break-after: always;
+  }
+  /* Wiederholt die Tabellen-Kopfzeile (Zeit/Vortrag/Referent/Teilnehmer) auf jeder neuen
+     Druckseite, wenn die Belegung eines Raums über eine Seite hinaus geht - dafür darf keine
+     einzelne Zeile über einen Seitenumbruch gerissen werden, sonst unterbleibt die native
+     Thead-Wiederholung des Browsers. */
+  .page-break-inside-avoid {
+    page-break-inside: avoid;
+  }
+  thead {
+    display: table-header-group;
   }
   body {
     background-color: #fff;
