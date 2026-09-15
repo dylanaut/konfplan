@@ -37,6 +37,11 @@
           <option value="">Alle Gruppen</option>
           <option v-for="g in teilnehmerGruppen" :key="g" :value="g">{{ g }}</option>
         </select>
+        <select v-for="kat in gruppenkategorieStore.gruppenkategorien" :key="kat.id"
+                v-model="filters.kategorien[kat.id]" class="input-field text-xs py-1 px-2 pr-8">
+          <option value="">Alle {{ kat.name }}</option>
+          <option v-for="wert in kat.werte" :key="wert.id" :value="wert.wert">{{ wert.wert }}</option>
+        </select>
         <label v-if="sortedWahlvortraege.length > 0"
                class="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap px-1">
           <input type="checkbox" v-model="filters.ohnePrioritaeten" class="rounded border-gray-300"/>
@@ -207,6 +212,11 @@
                   class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Gruppen
                 <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/>
               </th>
+              <th v-for="kat in gruppenkategorieStore.gruppenkategorien" :key="kat.id"
+                  @click="toggleSort('teilnehmer', `gk:${kat.name}`)"
+                  class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">{{ kat.name }}
+                <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/>
+              </th>
               <th @click="toggleSort('teilnehmer', 'isActive')"
                   class="px-4 py-1.5 text-center cursor-pointer hover:text-indigo-600 transition font-bold">Aktiv
                 <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/>
@@ -231,6 +241,9 @@
                 <span class="block font-normal text-gray-400">{{ u.loginName }}</span>
               </td>
               <td class="px-4 py-2 text-gray-500">{{ (u.gruppen || []).slice().sort().join(', ') }}</td>
+              <td v-for="kat in gruppenkategorieStore.gruppenkategorien" :key="kat.id" class="px-4 py-2 text-gray-500">
+                {{ (u.gruppenwerteByKategorie?.[kat.name] || []).join(', ') }}
+              </td>
               <td class="px-4 py-2 text-center">
                 <div @click="emit('toggleParticipantActive', u)" class="cursor-pointer">
                   <CheckIcon v-if="u.isActive" class="w-4 h-4 text-green-500 mx-auto"/>
@@ -308,6 +321,7 @@ import {
 import PaginationControls from '../../PaginationControls.vue';
 import TeilnehmerNachbuchenModal from './TeilnehmerNachbuchenModal.vue';
 import {useAvailabilityStore} from '../../../stores/availability';
+import {useGruppenkategorieStore} from '../../../stores/gruppenkategorie';
 
 const props = defineProps({
   teilnehmer: Array,
@@ -330,6 +344,7 @@ const emit = defineEmits([
 ]);
 
 const availabilityStore = useAvailabilityStore();
+const gruppenkategorieStore = useGruppenkategorieStore();
 const router = useRouter();
 
 const pages = reactive({
@@ -346,7 +361,9 @@ watch(localPageSize, () => {
 const filters = reactive({
   teilnehmer: '',
   gruppen: '',
-  ohnePrioritaeten: false
+  ohnePrioritaeten: false,
+  // Gewählter Wert je Gruppenkategorie-Id (#690), z.B. { 12: 'M_1' } - leerer String = kein Filter.
+  kategorien: {}
 });
 
 const sorts = reactive({
@@ -386,6 +403,10 @@ watch(() => filters.ohnePrioritaeten, () => {
   pages.teilnehmer = 1;
   selectedParticipantIds.value = [];
 });
+watch(() => filters.kategorien, () => {
+  pages.teilnehmer = 1;
+  selectedParticipantIds.value = [];
+}, {deep: true});
 
 const teilnehmerGruppen = computed(() => {
   const groups = new Set(props.teilnehmer.flatMap(t => t.gruppen || []).filter(Boolean));
@@ -395,6 +416,16 @@ const teilnehmerGruppen = computed(() => {
 const sortedWahlvortraege = computed(() => {
   return [...props.wahlvortraege].sort((a, b) => a.titel.localeCompare(b.titel));
 });
+
+// Sortierschlüssel für Gruppenkategorien (#690) werden als "gk:<Kategorie-Name>" kodiert, da die
+// Werte je Teilnehmer verschachtelt unter gruppenwerteByKategorie[Kategorie-Name] liegen statt als
+// eigenes flaches Feld - andere Schlüssel greifen weiterhin direkt auf das Feld zu.
+const getSortValue = (item, key) => {
+  if (key.startsWith('gk:')) {
+    return (item.gruppenwerteByKategorie?.[key.slice(3)] || []).join(', ');
+  }
+  return item[key] || '';
+};
 
 const processList = (list, filterText, sortConfig) => {
   let result = [...list];
@@ -418,8 +449,8 @@ const processList = (list, filterText, sortConfig) => {
   }
 
   result.sort((a, b) => {
-    const valA = a[sortConfig.key] || '';
-    const valB = b[sortConfig.key] || '';
+    const valA = getSortValue(a, sortConfig.key);
+    const valB = getSortValue(b, sortConfig.key);
     if (typeof valA === 'number' && typeof valB === 'number') {
       return sortConfig.dir === 'asc' ? valA - valB : valB - valA;
     }
@@ -448,6 +479,12 @@ const filteredParticipants = computed(() => {
   let list = props.teilnehmer.filter(t => t && t.veranstaltungIds && Array.isArray(t.veranstaltungIds) && t.veranstaltungIds.includes(props.selectedVid));
   if (filters.gruppen) {
     list = list.filter(t => (t.gruppen || []).includes(filters.gruppen));
+  }
+  for (const kat of gruppenkategorieStore.gruppenkategorien) {
+    const gewaehlterWert = filters.kategorien[kat.id];
+    if (gewaehlterWert) {
+      list = list.filter(t => (t.gruppenwerteByKategorie?.[kat.name] || []).includes(gewaehlterWert));
+    }
   }
   if (filters.ohnePrioritaeten) {
     list = list.filter(t => hasNoPriorities(t.id));
