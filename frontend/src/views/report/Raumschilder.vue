@@ -20,7 +20,7 @@
       </div>
 
       <div class="row">
-        <div v-for="raum in sortedRaeume" :key="raum.id" class="col-12 page-break-after">
+        <div v-for="(raum, index) in sortedRaeume" :key="raum.id" class="col-12 page-break-after">
           <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" class="print-only" />
           <div class="card h-100">
             <div class="card-header text-center">
@@ -55,14 +55,10 @@
               </table>
             </div>
           </div>
+          <ReportFooter :veranstaltung-name="reportData.veranstaltung.name" report-titel="Raumbelegungen" :seite="index + 1" />
         </div>
       </div>
     </div>
-
-    <!-- Druck-spezifischer Footer -->
-    <footer class="print-footer">
-      Gedruckt am {{ new Date().toLocaleDateString('de-DE') }} - KonfPlan
-    </footer>
   </div>
 </template>
 
@@ -71,6 +67,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
+import ReportFooter from '../../components/ReportFooter.vue';
 import { raumLabel } from '../../utils/raumLabel';
 
 const route = useRoute();
@@ -124,15 +121,6 @@ const formatSlot = (slot) => {
   .no-print {
     display: none !important;
   }
-  .print-footer {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    text-align: center;
-    font-size: 0.8rem;
-    color: #6c757d;
-    display: block !important;
-  }
   .print-only {
     display: block !important;
   }
@@ -164,7 +152,7 @@ const formatSlot = (slot) => {
   }
 }
 
-.print-footer, .print-only {
+.print-only {
   display: none;
 }
 </style>

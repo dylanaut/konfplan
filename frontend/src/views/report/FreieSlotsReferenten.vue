@@ -50,10 +50,7 @@
       </table>
     </div>
 
-    <!-- Druck-spezifischer Footer -->
-    <footer class="print-footer">
-      Gedruckt am {{ new Date().toLocaleDateString('de-DE') }} - KonfPlan
-    </footer>
+    <ReportFooter :veranstaltung-name="reportData.veranstaltung.name" report-titel="Freie Slots für Referenten" />
   </div>
 </template>
 
@@ -62,6 +59,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
+import ReportFooter from '../../components/ReportFooter.vue';
 
 const route = useRoute();
 const reportData = ref({ veranstaltung: {}, freieSlots: {}, nutzer: [] });
@@ -140,17 +138,6 @@ const formatSlot = (slot) => {
     display: none !important;
   }
 
-  /* Stellt sicher, dass der Druck-Footer nur beim Drucken sichtbar ist */
-  .print-footer {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    text-align: center;
-    font-size: 0.8rem;
-    color: #6c757d;
-    display: block !important;
-  }
-
   .print-only {
     display: block !important;
   }
@@ -177,7 +164,7 @@ const formatSlot = (slot) => {
 }
 
 /* Standardmäßig sind Druck-spezifische Elemente versteckt */
-.print-footer, .print-only {
+.print-only {
   display: none;
 }
 

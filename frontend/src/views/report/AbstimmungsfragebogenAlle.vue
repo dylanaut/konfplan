@@ -18,7 +18,7 @@
         </button>
       </div>
 
-      <div v-for="t in reportData.teilnehmer" :key="t.id" class="page-break-after fragebogen-seite">
+      <div v-for="(t, index) in reportData.teilnehmer" :key="t.id" class="page-break-after fragebogen-seite">
         <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" />
         <h4 class="mb-4">
           {{ t.firstName }} {{ t.lastName }}
@@ -51,13 +51,9 @@
         <p class="small text-muted">
           leer oder 0 =&gt; kein Interesse, ... , 10 =&gt; höchstes Interesse
         </p>
+        <ReportFooter :veranstaltung-name="reportData.veranstaltung.name" report-titel="Abstimmungsfragebögen für alle Teilnehmer" :seite="index + 1" />
       </div>
     </div>
-
-    <!-- Druck-spezifischer Footer -->
-    <footer class="print-footer">
-      Gedruckt am {{ new Date().toLocaleDateString('de-DE') }} - KonfPlan
-    </footer>
   </div>
 </template>
 
@@ -66,6 +62,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
+import ReportFooter from '../../components/ReportFooter.vue';
 
 const SPALTEN_PRO_ZEILE = 30;
 
@@ -118,15 +115,6 @@ onMounted(async () => {
   .no-print {
     display: none !important;
   }
-  .print-footer {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    text-align: center;
-    font-size: 0.8rem;
-    color: #6c757d;
-    display: block !important;
-  }
   .page-break-after {
     page-break-after: always;
   }
@@ -143,9 +131,5 @@ onMounted(async () => {
   .prio-tabelle {
     font-size: 8pt;
   }
-}
-
-.print-footer {
-  display: none;
 }
 </style>
