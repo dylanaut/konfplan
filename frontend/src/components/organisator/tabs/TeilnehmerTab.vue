@@ -39,7 +39,7 @@
         </select>
         <select v-for="kat in gruppenkategorieStore.gruppenkategorien" :key="kat.id"
                 v-model="filters.kategorien[kat.id]" class="input-field text-xs py-1 px-2 pr-8">
-          <option value="">Alle {{ kat.name }}</option>
+          <option value="">{{ kat.name }}</option>
           <option v-for="wert in kat.werte" :key="wert.id" :value="wert.wert">{{ wert.wert }}</option>
         </select>
         <label v-if="sortedWahlvortraege.length > 0"
