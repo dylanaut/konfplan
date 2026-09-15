@@ -1,0 +1,118 @@
+= KonfPlan: Migration lokal mit PROD-Daten testen (ohne PROD zu gefährden)
+:toc: left
+:toc-title: Inhalt
+:toclevels: 2
+:icons: font
+:sectnums:
+
+Diese Anleitung beschreibt, wie eine neue Flyway-Migration (hier als Beispiel: `V28__gruppenkategorien.sql`, Feature #690) vorab lokal gegen eine Kopie der echten PROD-Datenbank getestet und überprüft werden kann - ohne die produktive Datenbank selbst anzufassen. Das Verfahren ist unabhängig von der konkreten Migration und kann für künftige Migrationen wiederverwendet werden.
+
+[WARNING]
+====
+Der erzeugte Datenbank-Export enthält echte personenbezogene Daten (Namen, E-Mail-Adressen, Schulzugehörigkeit von Teilnehmern). Die Export-Datei nur lokal und temporär aufbewahren, nicht ins Repository committen, nicht in Cloud-Speicher oder Chats hochladen, und nach dem Test sicher löschen (siehe Schritt 6).
+====
+
+== 1. PROD-Datenbestand exportieren (rein lesend, unkritisch)
+
+Im Organisator-Dashboard auf PROD als *Administrator* anmelden, Tab *"Datenbank-Export"* öffnen und *"Backup herunterladen"* klicken.
+
+Dahinter steckt `GET /api/administrator/backup/export` (`DatabaseBackupResource.java`), das serverseitig einen `pg_dump -Fc` (Postgres-Custom-Format) ausführt und als ZIP liefert:
+
+[cols="1,3",options="header"]
+|===
+| Datei im ZIP | Inhalt
+| `konfplan.dump` | Vollständiger Dump der KonfPlan-Datenbank
+| `keycloak.dump` | Vollständiger Dump der Keycloak-Datenbank (für diesen Test nicht benötigt)
+|===
+
+Dieser Export ist ein reiner Lesevorgang - er verändert PROD nicht.
+
+== 2. Lokale, isolierte Postgres-Instanz starten
+
+Das Repo bringt dafür bereits ein Skript mit, das eine Wegwerf-Postgres-Instanz mit derselben Major-Version wie PROD (`postgres:18`) startet:
+
+[source,bash]
+----
+cd /Users/kreyj/Java/berufsorientierung/KonfPlan
+DB_PASSWORD='ein-wegwerf-passwort' ./db/ensure_prod_db.sh
+----
+
+Ergebnis: Container `konfplan_prod` mit leerer Datenbank `konfplan` auf `localhost:5432` - unabhängig von der Dev-Datenbank.
+
+== 3. PROD-Dump in die lokale Instanz einspielen
+
+[source,bash]
+----
+unzip konfplan-backup_*.zip -d /tmp/konfplan-restore
+docker cp /tmp/konfplan-restore/konfplan.dump konfplan_prod:/tmp/konfplan.dump
+docker exec -i konfplan_prod pg_restore -U postgres -d konfplan --clean --if-exists /tmp/konfplan.dump
+----
+
+Die Datei `keycloak.dump` wird für diesen Test nicht gebraucht.
+
+Die lokale Instanz enthält danach exakt den aktuellen PROD-Stand - inklusive der `flyway_schema_history`, also allem *bis, aber ohne* die zu testende neue Migration (da diese in PROD noch nicht ausgerollt ist).
+
+== 4. Migration anwenden und Ergebnis prüfen
+
+Es gibt in diesem Projekt kein Flyway-Maven-Plugin - Flyway läuft ausschließlich als Quarkus-Runtime-Extension beim App-Start (`%prod.quarkus.flyway.migrate-at-start=true`). Für einen reinen Migrations-Test ist es daher am schnellsten und sichersten, die SQL-Datei direkt anzuwenden:
+
+[source,bash]
+----
+docker exec -i konfplan_prod psql -U postgres -d konfplan \
+  < backend/src/main/resources/db/migration/V28__gruppenkategorien.sql
+----
+
+Anschließend interaktiv prüfen:
+
+[source,bash]
+----
+docker exec -it konfplan_prod psql -U postgres -d konfplan
+----
+
+Beispiel-Prüfabfragen für die Gruppenkategorien-Migration (analog für andere Migrationen anpassen):
+
+[source,sql]
+----
+-- Übersicht der angelegten Kategorien
+select veranstaltung_id, name, mehrwertig, pflicht from "Gruppenkategorie";
+
+-- Werte je Kategorie
+select gk.name, gkw.wert from "GruppenkategorieWert" gkw
+  join "Gruppenkategorie" gk on gk.id = gkw.gruppenkategorie_id
+  order by gk.name, gkw.wert;
+
+-- Werte, die KEINEM der drei Muster entsprechen und daher nicht migriert wurden
+-- (laut Annahme sollte diese Abfrage keine Zeilen liefern)
+select distinct tg.gruppen from teilnehmer_gruppen tg
+  where tg.gruppen not in ('RKS','MGL')
+    and tg.gruppen not like 'M\_%'
+    and tg.gruppen !~ '^[0-9]';
+
+-- Plausibilitätscheck: Anzahl migrierter Zuordnungen vs. Ausgangsdaten
+select count(*) from teilnehmer_gruppenwert;
+select count(*) from teilnehmer_gruppen;
+
+-- Bestätigung der akzeptierten Einschränkung aus Slice 1: kein Teilnehmer sollte
+-- aktuell in mehreren Veranstaltungen gleichzeitig Mitglied sein
+select nutzer_id, count(*) from "Nutzer_Veranstaltung"
+  group by nutzer_id having count(*) > 1;
+----
+
+== 5. Optional: die App selbst gegen die migrierten Daten laufen lassen
+
+Für einen vollständigen Klick-Test der betroffenen UI gegen echte Daten bringt das Repo `db/ensure_prod_infra.sh` mit (startet zusätzlich Keycloak und Mailpit) sowie den passenden Start-Befehl für den gebauten Runner.
+
+[IMPORTANT]
+====
+Dafür **nicht** `mvnw quarkus:dev` verwenden! Der Dev-Modus nutzt `drop-and-create` für das Schema und würde die wiederhergestellten Daten sofort überschreiben, statt die Flyway-Migration auszuführen.
+====
+
+== 6. Aufräumen
+
+[source,bash]
+----
+docker rm -f konfplan_prod
+rm -rf /tmp/konfplan-restore konfplan-backup_*.zip
+----
+
+Damit verbleiben keine Kopien der PROD-Daten auf der lokalen Maschine.

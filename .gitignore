@@ -84,3 +84,8 @@ build/
 /backend/laufband.txt
 /deploy/brevo-ip-updater/package-lock.json
 /db_backups/
+
+### Lokale PROD-Datenbank-Backups/-Dumps (siehe Migration-Lokal-Mit-Prod-Daten-Testen.adoc) -
+### enthalten echte personenbezogene Daten, duerfen nie ins Repo gelangen.
+*.dump
+konfplan-backup_*.zip
