@@ -1,0 +1,23 @@
+Release Notes 1.25.3
+Released: 2026-09-15
+
+Changes:
+
+- Release-Notes fuer 1.25.2 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.25.3-SNAPSHOT)
+
+- Fix: NachrichtKategorie VORTRAG_RAUM_GEAENDERT fehlte im DB-CHECK-Constraint
+  Beim Raumumbuchen (UmplanungService#vortragsInstanzRaumUmbuchen)
+  scheiterte die Benachrichtigung des Referenten in Produktion mit
+  einer ConstraintViolationException: die Nachrichtenkategorie
+  VORTRAG_RAUM_GEAENDERT wurde nur im Java-Enum ergänzt, nie aber per
+  Flyway-Migration in den Postgres-CHECK-Constraint
+  nachricht_kategorie_check übernommen - dadurch schlug die gesamte
+  Transaktion (nicht nur die Benachrichtigung) fehl.
+  Im Testsuite unsichtbar, weil %test.quarkus.flyway.enabled=false ist -
+  das H2-Testschema stammt aus Hibernate/JPA, nicht aus den
+  Flyway-Migrationen.
+
+- Release 1.25.3
+
