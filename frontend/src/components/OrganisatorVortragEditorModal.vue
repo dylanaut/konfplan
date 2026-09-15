@@ -45,12 +45,16 @@
           <label class="block text-sm font-medium text-gray-700 mb-1">Referent</label>
           <select v-model="form.referentId" class="input-field" required :disabled="form.vortrag_typ === 'PFLICHT'">
             <option :value="null">Bitte wählen...</option>
-            <option v-for="r in referenten" :key="r.id" :value="r.id">
+            <option v-for="r in auswaehlbareReferenten" :key="r.id" :value="r.id">
               {{ r.firstName }} {{ r.lastName }}
             </option>
           </select>
           <p v-if="form.vortrag_typ === 'PFLICHT'" class="text-[10px] text-gray-500 mt-1 italic">
             Referent bei Pflichtvorträgen nicht änderbar.
+          </p>
+          <p v-else-if="restriktionAktiv && eigeneInstanzSlots.length > 0" class="text-[10px] text-gray-500 mt-1 italic">
+            Es existiert ein veröffentlichter Plan: nur Referenten, die in allen geplanten Zeitslots dieses Vortrags
+            verfügbar und nicht bereits mit einem anderen Vortrag verplant sind, stehen zur Auswahl.
           </p>
         </div>
 
@@ -128,11 +132,14 @@
 </template>
 
 <script setup>
-import { reactive, watch, ref } from 'vue';
+import { reactive, watch, ref, computed } from 'vue';
 import { useNeigungStore } from '../stores/neigung';
+import { useAvailabilityStore } from '../stores/availability';
+import api from '../api/axios';
 
 const neigungStore = useNeigungStore();
 neigungStore.fetchNeigungen();
+const availabilityStore = useAvailabilityStore();
 
 const ABSCHLUSSTYPEN = [
     'Berufsreife',
@@ -149,6 +156,7 @@ const props = defineProps({
   raeume: { type: Array, default: () => [] },
   slots: { type: Array, default: () => [] },
   participantGroups: { type: Array, default: () => [] },
+  vortraege: { type: Array, default: () => [] },
   error: { type: String, default: '' }
 });
 
@@ -173,6 +181,66 @@ const form = reactive({
   neigungen: [],
 });
 
+// Referenten-Auswahl bei veröffentlichtem Plan einschränken (#692): sobald für einen bestehenden
+// Wahlvortrag der Referent geändert wird, dürfen nur Referenten wählbar sein, die für JEDE laut
+// veröffentlichtem Plan tatsächlich geplante Instanz dieses Vortrags verfügbar und nicht bereits
+// mit einem anderen Vortrag verplant sind.
+const restriktionAktiv = ref(false);
+const instanzen = ref([]);
+
+const sortedReferenten = computed(() =>
+    [...props.referenten].sort((a, b) =>
+        (a.lastName || '').localeCompare(b.lastName || '', 'de') ||
+        (a.firstName || '').localeCompare(b.firstName || '', 'de'))
+);
+
+const eigeneInstanzSlots = computed(() => [...new Set(
+    instanzen.value
+        .filter(i => i.wahlvortragId === form.id && !i.ausgefallen)
+        .map(i => i.slotId)
+)]);
+
+const referentIstFreiInSlot = (referentId, slotId) => {
+  const belegtDurchAnderenWahlvortrag = instanzen.value.some(i =>
+      i.slotId === slotId && !i.ausgefallen && i.wahlvortragId !== form.id && i.referentId === referentId);
+  if (belegtDurchAnderenWahlvortrag) {
+    return false;
+  }
+  return !props.vortraege.some(v =>
+      v.istPflicht && v.id !== form.id && v.referentId === referentId && v.pflichtSlotId === slotId);
+};
+
+const auswaehlbareReferenten = computed(() => {
+  if (!restriktionAktiv.value || eigeneInstanzSlots.value.length === 0) {
+    return sortedReferenten.value;
+  }
+  return sortedReferenten.value.filter(r =>
+      r.id === form.referentId ||
+      eigeneInstanzSlots.value.every(slotId =>
+          availabilityStore.isUserAvailable(r.id, slotId) && referentIstFreiInSlot(r.id, slotId)));
+});
+
+const ladeReferentenRestriktion = async (veranstaltungId, vortragId) => {
+  restriktionAktiv.value = false;
+  instanzen.value = [];
+  if (!veranstaltungId || !vortragId) {
+    return;
+  }
+  try {
+    const ergebnisseRes = await api.get(`/api/veranstaltungen/${veranstaltungId}/planungsergebnisse`);
+    const publiziert = ergebnisseRes.data.find(e => e.publiziert);
+    if (!publiziert) {
+      return;
+    }
+    const instanzenRes = await api.get(`/api/veranstaltungen/${veranstaltungId}/planungsergebnisse/${publiziert.id}/instanzen`);
+    instanzen.value = instanzenRes.data;
+    restriktionAktiv.value = true;
+  } catch {
+    restriktionAktiv.value = false;
+    instanzen.value = [];
+  }
+};
+
 watch(
     () => props.vortrag,
     (val) => {
@@ -192,6 +260,13 @@ watch(
       form.maxWiederholungen = val?.maxWiederholungen ?? 1;
       form.neigungen = val?.neigungen ? [...val.neigungen] : [];
       selectedWahlslotIds.value = val?.istPflicht ? [] : [...(val?.verfuegbareSlotIds ?? [])];
+
+      if (val?.id && !val?.istPflicht) {
+        ladeReferentenRestriktion(val.veranstaltungId, val.id);
+      } else {
+        restriktionAktiv.value = false;
+        instanzen.value = [];
+      }
     },
     { immediate: true }
 );
