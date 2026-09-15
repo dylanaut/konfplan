@@ -9,7 +9,7 @@ Diese Anleitung beschreibt, wie eine neue Flyway-Migration (hier als Beispiel: `
 
 [WARNING]
 ====
-Der erzeugte Datenbank-Export enthält echte personenbezogene Daten (Namen, E-Mail-Adressen, Schulzugehörigkeit von Teilnehmern). Die Export-Datei nur lokal und temporär aufbewahren, nicht ins Repository committen, nicht in Cloud-Speicher oder Chats hochladen, und nach dem Test sicher löschen (siehe Schritt 5).
+Der erzeugte Datenbank-Export enthält echte personenbezogene Daten (Namen, E-Mail-Adressen, Schulzugehörigkeit von Teilnehmern). Die Export-Datei nur lokal und temporär aufbewahren, nicht ins Repository committen, nicht in Cloud-Speicher oder Chats hochladen, und nach dem Test sicher löschen (siehe Schritt 6).
 ====
 
 == 1. PROD-Datenbestand exportieren (rein lesend, unkritisch)
@@ -131,12 +131,17 @@ Dafür **nicht** `mvnw quarkus:dev` verwenden! Der Dev-Modus nutzt `drop-and-cre
 
 [IMPORTANT]
 ====
-Vor dem Start sicherstellen, dass `backend/target/quarkus-app` **aktuell** ist - ein reines `mvnw test`/`compile` aktualisiert nur `target/classes`, nicht `target/quarkus-app` (das tatsächlich zur Laufzeit verwendete Layout). Im Zweifel neu bauen:
+Vor dem Start sicherstellen, dass `backend/target/quarkus-app` **aktuell** ist - ein reines `mvnw test`/`compile` aktualisiert nur `target/classes`, nicht `target/quarkus-app` (das tatsächlich zur Laufzeit verwendete Layout). Im Zweifel neu bauen.
+
+Für einen Login über den Browser zusätzlich `VITE_KEYCLOAK_URL` beim Bauen auf die tatsächliche lokale Keycloak-Adresse setzen (siehe Erklärung unten) - `frontend/src/keycloak.js` baut den Provider-Endpunkt in einem Prod-Build sonst fest auf `window.location.origin + "/auth"` (den Pfad, den nur der reale Caddy-Reverse-Proxy aus `deploy/` bereitstellt), was hier ins Leere läuft:
 
 [source,bash]
 ----
-cd backend && ../mvnw -q package -DskipTests
+cd backend && ../mvnw -q package -DskipTests \
+  -Dquarkus.quinoa.package-manager-command.build-env.VITE_KEYCLOAK_URL=http://localhost:8080
 ----
+
+`VITE_KEYCLOAK_URL` ist eine Vite-Build-Zeit-Variable - sie wird beim `npm run build` fest in das JS-Bundle eingebacken und lässt sich danach NICHT mehr per Laufzeit-Umgebungsvariable überschreiben. Ohne diesen Login-Test (z.B. bei einer rein API-basierten Prüfung) kann der Build ohne diesen Parameter erfolgen.
 ====
 
 Start (Beispielwerte, siehe von `ensure_prod_infra.sh` ausgegebene `export`-Zeilen für die tatsächlichen Ports/Secrets):
@@ -152,7 +157,55 @@ java -jar backend/target/quarkus-app/quarkus-run.jar
 
 Das Log sollte `Migrating schema "public" to version "28 - ..."` und `Successfully applied 1 migration` zeigen. Die App ist danach unter `http://localhost:9000` erreichbar.
 
-== 5. Aufräumen
+== 5. Als echter Nutzer einloggen (ohne Keycloak-Datenbank wiederherzustellen)
+
+`ensure_prod_infra.sh` erzeugt ein frisches, leeres Keycloak-Realm (Bootstrap-Login `admin`/`admin`) - die in der wiederhergestellten `konfplan`-Datenbank stehenden echten Nutzer haben zwar Datensätze, aber (noch) keinen passenden Keycloak-Account in dieser lokalen Instanz, da ihre `keycloak_id`-Spalte auf die *echte* PROD-Keycloak-Instanz verweist, die hier nicht existiert.
+
+Um trotzdem als ein bestimmter, bereits real existierender Nutzer einloggen zu können, ohne dafür `keycloak.dump` wiederherzustellen (siehe Warnhinweis unten für den Vollständigkeits-Fall), reicht es, für genau diesen einen Nutzer lokal einen neuen Keycloak-Account anzulegen und die `keycloak_id` in Postgres darauf umzubiegen:
+
+[source,bash]
+----
+# 1. Passenden echten Nutzer auswählen
+docker exec konfplan_prod psql -U postgres -d konfplan -tAc \
+  "select id, login_name, email, role from nutzer where role in ('ORGANISATOR','ADMINISTRATOR') order by role;"
+
+# 2. Admin-Token vom lokalen (frischen) Keycloak holen
+TOKEN=$(curl -s -X POST "http://localhost:8080/realms/master/protocol/openid-connect/token" \
+  -d "client_id=admin-cli" -d "username=admin" -d "password=admin" -d "grant_type=password" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+
+# 3. Keycloak-User anlegen (loginName/email/Namen aus Schritt 1 einsetzen)
+curl -s -i -X POST "http://localhost:8080/admin/realms/konfplan/users" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"username":"<loginName>","email":"<email>","firstName":"<Vorname>","lastName":"<Nachname>","enabled":true,"emailVerified":true}'
+# -> Location-Header der Antwort enthält die neue Keycloak-User-Id
+
+# 4. Passwort setzen (nicht-temporär, damit kein Zwangs-Passwortwechsel beim Login kommt)
+USER_ID="<neue-keycloak-user-id-aus-schritt-3>"
+curl -s -X PUT "http://localhost:8080/admin/realms/konfplan/users/$USER_ID/reset-password" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"type":"password","value":"Konfplan1!","temporary":false}'
+
+# 5. Passende Realm-Rolle zuweisen (ORGANISATOR/ADMINISTRATOR/REFERENT/TEILNEHMER)
+ROLE_ID=$(curl -s "http://localhost:8080/admin/realms/konfplan/roles/ADMINISTRATOR" \
+  -H "Authorization: Bearer $TOKEN" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+curl -s -X POST "http://localhost:8080/admin/realms/konfplan/users/$USER_ID/role-mappings/realm" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d "[{\"id\":\"$ROLE_ID\",\"name\":\"ADMINISTRATOR\"}]"
+
+# 6. Nutzer-Datensatz in Postgres auf die neue Keycloak-Id verknüpfen
+docker exec konfplan_prod psql -U postgres -d konfplan -c \
+  "update nutzer set keycloak_id = '$USER_ID' where login_name = '<loginName>';"
+----
+
+Danach Login mit `<loginName>` / `Konfplan1!` möglich - mit vollem Zugriff auf die echten, wiederherstellten Daten dieses Nutzers.
+
+[NOTE]
+====
+Für einen vollständigen Restore der echten Keycloak-Datenbank (alle Nutzer inkl. ihrer echten Passwort-Hashes, keine manuelle Einzelanlage nötig) siehe stattdessen die Restore-Prozedur für `keycloak.dump` - das bringt allerdings zwei Fallstricke mit: der `master`-Realm-Bootstrap-Login (`admin`/`admin`) funktioniert danach nicht mehr (die echten PROD-Master-Credentials wären nötig), und der `admin-cli`-Client-Secret muss nach dem Restore im lokalen Realm neu gesetzt und mit `KC_ADMIN_CLI_SECRET` synchron gehalten werden, da der App-eigene Keycloak-Admin-REST-Client sonst nicht mehr authentifizieren kann.
+====
+
+== 6. Aufräumen
 
 [source,bash]
 ----
