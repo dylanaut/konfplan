@@ -386,8 +386,7 @@ public class PlanService {
             List<ZuweisungDto> zuweisungen = new ArrayList<>();
 
             for (Pflichtvortrag pv : veranstaltung.getPflichtvortraege()) {
-                Set<String> tnGruppe = teilnehmer.getGruppen();
-                if (tnGruppe != null && tnGruppe.contains(pv.getPflichtgruppe())) {
+                if (teilnehmer.istInGruppe(pv.getPflichtgruppe(), veranstaltung)) {
                     zuweisungen.add(new ZuweisungDto(
                         teilnehmer.getFullName(),
                         pv.getTitel(),
@@ -840,8 +839,7 @@ public class PlanService {
 
                 // Pflichtvorträge des Teilnehmers
                 for (Pflichtvortrag pv : pflichtvortraege) {
-                    Set<String> tnGruppe = teilnehmer.getGruppen();
-                    if (tnGruppe != null && tnGruppe.contains(pv.getPflichtgruppe())) {
+                    if (teilnehmer.istInGruppe(pv.getPflichtgruppe(), veranstaltung)) {
                         belegteSlotIds.add(pv.getPflichtslot().getId());
                     }
                 }

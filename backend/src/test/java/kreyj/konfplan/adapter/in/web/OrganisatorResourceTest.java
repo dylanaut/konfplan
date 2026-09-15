@@ -397,8 +397,12 @@ class OrganisatorResourceTest extends DatabaseCleaner {
         });
 
         // 1. Create a new group
+        // ContentType.TEXT statt JSON, weil der reale Frontend-Store (stores/group.js) den
+        // Gruppennamen mit Content-Type: text/plain sendet - mit JSON haette dieser Test den
+        // fehlenden @Consumes(TEXT_PLAIN)-Override an createGruppe nie aufgedeckt (siehe #690-
+        // Testing, derselbe Fallstrick bei den neuen Gruppenkategorie-Wert-Endpunkten).
         given()
-            .contentType(ContentType.JSON)
+            .contentType(ContentType.TEXT)
             .body("Gruppe Alpha")
             .when().post("/veranstaltungen/{vid}/gruppen", vId)
             .then()
@@ -440,5 +444,142 @@ class OrganisatorResourceTest extends DatabaseCleaner {
             .then()
             .statusCode(OK.getStatusCode())
             .body("size()", is(0));
+    }
+
+
+    // --- GRUPPENKATEGORIEN API TESTS (siehe #690) ---
+
+    /**
+     * Regressionstest: die Kategorie und ihr Wert werden bewusst in einer eigenen, bereits
+     * committeten Transaktion angelegt (statt im selben Request) - nur so bleibt
+     * {@code Gruppenkategorie.werte} beim GET-Request tatsächlich eine noch nicht initialisierte
+     * lazy Collection, wie es bei echten (z.B. per Migration eingespielten) Bestandsdaten der Fall
+     * ist. Reproduziert damit exakt die Bedingung, unter der der Endpunkt zuvor mit
+     * LazyInitializationException fehlschlug, weil das Mapping außerhalb der (Service-eigenen)
+     * Transaktion erfolgte.
+     */
+    @Test
+    void testGetGruppenkategorien_mitBestehendenWerten() {
+        Long vId = QuarkusTransaction.requiringNew().call(() -> {
+            Veranstaltung v = new Veranstaltung();
+            v.setName("Gruppenkategorien Test Event");
+            v.setBeginntAm(LocalDateTime.now());
+            v.setEndetAm(LocalDateTime.now().plusDays(1));
+            v.persist();
+
+            kreyj.konfplan.persistence.Gruppenkategorie kategorie =
+                new kreyj.konfplan.persistence.Gruppenkategorie(v, "Klasse", false, true);
+            kategorie.persist();
+            kreyj.konfplan.persistence.GruppenkategorieWert wert =
+                new kreyj.konfplan.persistence.GruppenkategorieWert(kategorie, "10a");
+            wert.persist();
+
+            return v.getId();
+        });
+
+        given()
+            .when().get("/veranstaltungen/{vid}/gruppenkategorien", vId)
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body("size()", is(1))
+            .body("[0].name", is("Klasse"))
+            .body("[0].werte.size()", is(1))
+            .body("[0].werte[0].wert", is("10a"));
+    }
+
+
+    @Test
+    void testUpdateGruppenkategorie_mitBestehendenWerten() {
+        Long kategorieId = QuarkusTransaction.requiringNew().call(() -> {
+            Veranstaltung v = new Veranstaltung();
+            v.setName("Gruppenkategorien Update Test Event");
+            v.setBeginntAm(LocalDateTime.now());
+            v.setEndetAm(LocalDateTime.now().plusDays(1));
+            v.persist();
+
+            kreyj.konfplan.persistence.Gruppenkategorie kategorie =
+                new kreyj.konfplan.persistence.Gruppenkategorie(v, "Klasse", false, true);
+            kategorie.persist();
+            kreyj.konfplan.persistence.GruppenkategorieWert wert =
+                new kreyj.konfplan.persistence.GruppenkategorieWert(kategorie, "10a");
+            wert.persist();
+
+            return kategorie.getId();
+        });
+
+        kreyj.konfplan.adapter.in.web.dto.GruppenkategorieAnfrageDto anfrage =
+            new kreyj.konfplan.adapter.in.web.dto.GruppenkategorieAnfrageDto();
+        anfrage.name = "Klasse (umbenannt)";
+        anfrage.mehrwertig = false;
+        anfrage.pflicht = true;
+
+        given().contentType(ContentType.JSON)
+            .body(anfrage)
+            .when().put("/gruppenkategorien/{kategorieId}", kategorieId)
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body("name", is("Klasse (umbenannt)"))
+            .body("werte.size()", is(1));
+    }
+
+
+    /**
+     * Regressionstest: der Frontend-Store (stores/gruppenkategorie.js) sendet den Wert bewusst
+     * als reinen Text mit explizitem {@code Content-Type: text/plain} (wie schon die ältere,
+     * gleichartige flache Gruppen-Verwaltung) - die Klasse ist aber mit
+     * {@code @Consumes(MediaType.APPLICATION_JSON)} annotiert. Ohne einen Methoden-eigenen
+     * {@code @Consumes(TEXT_PLAIN)}-Override lehnt der Server den Request mit HTTP 415 ab, noch
+     * bevor die Methode überhaupt aufgerufen wird - ein einfacher REST-assured-Aufruf ohne
+     * explizit gesetzten Content-Type deckt das nicht auf, da RestAssured dann gar keinen
+     * (oder einen abweichenden) Content-Type-Header sendet.
+     */
+    @Test
+    void testAddGruppenkategorieWert_akzeptiertTextPlain() {
+        Long kategorieId = QuarkusTransaction.requiringNew().call(() -> {
+            Veranstaltung v = new Veranstaltung();
+            v.setName("Gruppenkategorien Wert Test Event");
+            v.setBeginntAm(LocalDateTime.now());
+            v.setEndetAm(LocalDateTime.now().plusDays(1));
+            v.persist();
+
+            kreyj.konfplan.persistence.Gruppenkategorie kategorie =
+                new kreyj.konfplan.persistence.Gruppenkategorie(v, "Messe", true, false);
+            kategorie.persist();
+            return kategorie.getId();
+        });
+
+        given().contentType(ContentType.TEXT)
+            .body("M_1")
+            .when().post("/gruppenkategorien/{kategorieId}/werte", kategorieId)
+            .then()
+            .statusCode(CREATED.getStatusCode())
+            .body("wert", is("M_1"));
+    }
+
+
+    @Test
+    void testRenameGruppenkategorieWert_akzeptiertTextPlain() {
+        Long wertId = QuarkusTransaction.requiringNew().call(() -> {
+            Veranstaltung v = new Veranstaltung();
+            v.setName("Gruppenkategorien Wert Rename Test Event");
+            v.setBeginntAm(LocalDateTime.now());
+            v.setEndetAm(LocalDateTime.now().plusDays(1));
+            v.persist();
+
+            kreyj.konfplan.persistence.Gruppenkategorie kategorie =
+                new kreyj.konfplan.persistence.Gruppenkategorie(v, "Messe", true, false);
+            kategorie.persist();
+            kreyj.konfplan.persistence.GruppenkategorieWert wert =
+                new kreyj.konfplan.persistence.GruppenkategorieWert(kategorie, "M_1");
+            wert.persist();
+            return wert.getId();
+        });
+
+        given().contentType(ContentType.TEXT)
+            .body("M_1_neu")
+            .when().put("/gruppenkategorien/werte/{wertId}", wertId)
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body("wert", is("M_1_neu"));
     }
 }

@@ -17,6 +17,7 @@ import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import kreyj.konfplan.adapter.in.web.dto.csv.TeilnehmerCsvDto;
 import kreyj.konfplan.application.port.in.TeilnehmerServiceInterface;
 import kreyj.konfplan.persistence.Organisator;
+import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Pflichtvortrag;
@@ -127,12 +128,11 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         }
 
         Set<Vortrag> alleVortraege = veranstaltung.getVortraege();
-        Set<String> teilnehmerGruppen = teilnehmer.getGruppen();
 
         return alleVortraege.stream()
             .filter(vortrag -> {
                 if (vortrag instanceof Pflichtvortrag pv) {
-                    return teilnehmerGruppen.contains(pv.getPflichtgruppe());
+                    return teilnehmer.istInGruppe(pv.getPflichtgruppe(), veranstaltung);
                 } else {
                     return true;
                 }
@@ -234,6 +234,15 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
                                     + v.getName() + "' angelegt.");
                             }
                             tn.addGruppe(gruppe);
+
+                            // Additiv (siehe #690): entspricht der importierte Wert bereits einem
+                            // Wert einer strukturierten Gruppenkategorie dieser Veranstaltung, wird
+                            // er dem Teilnehmer auch dort zugeordnet - ohne das flache Modell zu
+                            // ersetzen.
+                            GruppenkategorieWert strukturierterWert = GruppenkategorieWert.findByWertUndVeranstaltung(gruppe, v);
+                            if (null != strukturierterWert) {
+                                tn.addGruppenwert(strukturierterWert);
+                            }
                         }
                     }
 

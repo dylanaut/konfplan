@@ -4,6 +4,8 @@ import io.quarkus.hibernate.orm.panache.Panache;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Gebaeude;
+import kreyj.konfplan.persistence.Gruppenkategorie;
+import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.Nachricht;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
@@ -36,10 +38,13 @@ public abstract class DatabaseCleaner {
         Verbesserungsvorschlag.deleteAll();
         Nachricht.deleteAll();
         Wartungshinweis.deleteAll();
-        // @ElementCollection-Tabellen auf Subklassen (Wahlvortrag/Teilnehmer) werden bei einem
-        // Bulk-Delete auf der Basisklasse nicht automatisch mitgeloescht.
+        // @ElementCollection-/@ManyToMany-Jointabellen auf Subklassen (Wahlvortrag/Teilnehmer)
+        // werden bei einem Bulk-Delete auf der Basisklasse nicht automatisch mitgeloescht.
         Panache.getEntityManager().createNativeQuery("delete from wahlvortrag_neigungen").executeUpdate();
         Panache.getEntityManager().createNativeQuery("delete from teilnehmer_neigungen").executeUpdate();
+        Panache.getEntityManager().createNativeQuery("delete from teilnehmer_gruppenwert").executeUpdate();
+        GruppenkategorieWert.deleteAll();
+        Gruppenkategorie.deleteAll();
         Vortrag.deleteAll();
         Nutzer.deleteAll();
         Slot.deleteAll();

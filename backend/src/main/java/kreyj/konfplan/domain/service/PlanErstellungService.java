@@ -502,7 +502,7 @@ public class PlanErstellungService {
             }
             for (Pflichtvortrag pv : pflichtvortraege) {
                 Slot pflichtslot = pv.getPflichtslot();
-                if (tn.gehoertZuGruppe(pv.getPflichtgruppe())
+                if (tn.istInGruppe(pv.getPflichtgruppe(), veranstaltung)
                     && nv.getVerfuegbareSlotIds().contains(pflichtslot.getId())) {
                     String tnName = StringUtils.strip(tn.getFullName());
                     if (StringUtils.isBlank(tnName)) {

@@ -29,6 +29,7 @@ import kreyj.konfplan.domain.exception.UpdateVortragException;
 import kreyj.konfplan.domain.exception.VeranstaltungException;
 import kreyj.konfplan.persistence.AbschlussTyp;
 import kreyj.konfplan.persistence.Gebaeude;
+import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
@@ -720,7 +721,12 @@ public class OrganisatorService implements OrganisatorServiceInterface {
                                 PV_FAIL_MESSAGE);
                             continue;
                         } else {
-                            if (veranstaltung.getGruppen().contains(csvDto.pflichtGruppe)) {
+                            // Additiv (siehe #690): eine Pflichtgruppe gilt auch als bekannt, wenn sie
+                            // einem Wert einer strukturierten Gruppenkategorie dieser Veranstaltung
+                            // entspricht - nicht mehr nur, wenn sie im bisherigen flachen Modell steht.
+                            boolean bekannteGruppe = veranstaltung.getGruppen().contains(csvDto.pflichtGruppe)
+                                || null != GruppenkategorieWert.findByWertUndVeranstaltung(csvDto.pflichtGruppe, veranstaltung);
+                            if (bekannteGruppe) {
                                 dto.pflichtGruppe = csvDto.pflichtGruppe;
                             } else {
                                 LOG.warn("Unbekannte Gruppe '" + csvDto.pflichtGruppe + "' für '" +
