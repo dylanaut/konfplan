@@ -13,6 +13,32 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Skript aufgerufen, nicht ge-source-t.
 DB_PASSWORD="${DB_PASSWORD:-vm4HjK\$26}"
 
+# Wartet bis unter der angegebenen URL erfolgreich (HTTP 2xx) geantwortet wird - bricht nach
+# TIMEOUT_SEKUNDEN oder sobald der Container gar nicht mehr laeuft (z.B. wegen einer falschen
+# Umgebungsvariable abgestuerzt) mit einer Fehlermeldung ab, statt wie zuvor unbegrenzt zu haengen.
+warte_auf_url() {
+    local url="$1"
+    local beschreibung="$2"
+    local container_name="$3"
+    local timeout_sekunden="${4:-60}"
+    local vergangen=0
+
+    until curl -sf "$url" > /dev/null 2>&1; do
+        if ! docker ps -q --filter "name=^${container_name}$" | grep -q .; then
+            echo "❌ Container '$container_name' läuft nicht mehr (abgestürzt?)."
+            echo "   Logs prüfen: docker logs $container_name"
+            exit 1
+        fi
+        if (( vergangen >= timeout_sekunden )); then
+            echo "❌ Timeout (${timeout_sekunden}s): $beschreibung wurde nicht bereit."
+            echo "   Logs prüfen: docker logs $container_name"
+            exit 1
+        fi
+        sleep 1
+        vergangen=$((vergangen + 1))
+    done
+}
+
 # --- MiniZinc ---
 # Wird von PlanErstellungService als externer Prozess über den absoluten Pfad
 # aus 'minizinc.path' (application.properties) aufgerufen, nicht über PATH-Suche.
@@ -113,9 +139,7 @@ else
 fi
 
 echo "🕒 Warte auf Keycloak-Bereitschaft..."
-until curl -sf "http://localhost:$KEYCLOAK_PORT/realms/konfplan" > /dev/null 2>&1; do
-    sleep 1
-done
+warte_auf_url "http://localhost:$KEYCLOAK_PORT/realms/konfplan" "Keycloak" "$KEYCLOAK_CONTAINER_NAME"
 
 echo "🔐 Keycloak ist bereit unter http://localhost:$KEYCLOAK_PORT (Realm 'konfplan')."
 
@@ -153,9 +177,7 @@ else
 fi
 
 echo "🕒 Warte auf Mailpit-Bereitschaft..."
-until curl -sf "http://localhost:$MAILPIT_UI_PORT/" > /dev/null 2>&1; do
-    sleep 1
-done
+warte_auf_url "http://localhost:$MAILPIT_UI_PORT/" "Mailpit" "$MAILPIT_CONTAINER_NAME"
 
 echo "📬 Mailpit ist bereit."
 echo "   SMTP:   localhost:$MAILPIT_SMTP_PORT"
@@ -178,6 +200,5 @@ export QUARKUS_MAILER_PORT=1025
 export QUARKUS_MAILER_START_TLS=DISABLED
 export QUARKUS_MAILER_USERNAME=test
 export QUARKUS_MAILER_PASSWORD=test
-./backend/target/konfplan-backend-1.0.0-SNAPSHOT-runner
-
+$SCRIPT_DIR/../backend/target/backend-1.25.6-SNAPSHOT-runner
 EOF
