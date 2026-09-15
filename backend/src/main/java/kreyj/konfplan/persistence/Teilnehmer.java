@@ -10,6 +10,8 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import org.apache.commons.lang3.StringUtils;
 
@@ -23,10 +25,24 @@ import java.util.Set;
 @DiscriminatorValue("TEILNEHMER")
 public class Teilnehmer extends Nutzer {
 
+    /**
+     * @deprecated Wird durch {@link #gruppenwerte} (strukturierte Gruppenkategorien, siehe #690)
+     * abgelöst. Bleibt vorerst additiv bestehen, bis alle Konsumenten (Pflichtvortrag-Matching,
+     * Reports, Frontend) umgestellt sind.
+     */
+    @Deprecated
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "teilnehmer_gruppen", joinColumns = @JoinColumn(name = "teilnehmer_id"))
     @Column(name = "gruppen")
     private Set<String> gruppen = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "teilnehmer_gruppenwert",
+        joinColumns = @JoinColumn(name = "teilnehmer_id"),
+        inverseJoinColumns = @JoinColumn(name = "gruppenkategoriewert_id")
+    )
+    private Set<GruppenkategorieWert> gruppenwerte = new HashSet<>();
 
     @OneToMany(mappedBy = "teilnehmer", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Prioritaet> prioritaeten = new HashSet<>();
@@ -87,6 +103,40 @@ public class Teilnehmer extends Nutzer {
         if (null != neueGruppen) {
             neueGruppen.forEach(this::addGruppe);
         }
+    }
+
+
+    public Set<GruppenkategorieWert> getGruppenwerte() {
+        return Collections.unmodifiableSet(gruppenwerte);
+    }
+
+
+    public boolean hatGruppenwert(GruppenkategorieWert wert) {
+        return null != wert && gruppenwerte.contains(wert);
+    }
+
+
+    /**
+     * Ordnet dem Teilnehmer einen Gruppenwert zu. Ist die Kategorie nicht
+     * {@link Gruppenkategorie#isMehrwertig() mehrwertig}, ersetzt der neue Wert einen ggf. bereits
+     * zugeordneten Wert derselben Kategorie (max. ein Wert pro einwertiger Kategorie).
+     */
+    public void addGruppenwert(GruppenkategorieWert wert) {
+        if (null == wert) {
+            return;
+        }
+        if (!wert.getGruppenkategorie().isMehrwertig()) {
+            gruppenwerte.removeIf(vorhandener -> vorhandener.getGruppenkategorie().getId().equals(wert.getGruppenkategorie().getId()));
+        }
+        gruppenwerte.add(wert);
+    }
+
+
+    public void removeGruppenwert(GruppenkategorieWert wert) {
+        if (null == wert) {
+            return;
+        }
+        gruppenwerte.remove(wert);
     }
 
 
