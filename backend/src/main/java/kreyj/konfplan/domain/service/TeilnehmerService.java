@@ -127,12 +127,11 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         }
 
         Set<Vortrag> alleVortraege = veranstaltung.getVortraege();
-        Set<String> teilnehmerGruppen = teilnehmer.getGruppen();
 
         return alleVortraege.stream()
             .filter(vortrag -> {
                 if (vortrag instanceof Pflichtvortrag pv) {
-                    return teilnehmerGruppen.contains(pv.getPflichtgruppe());
+                    return teilnehmer.istInGruppe(pv.getPflichtgruppe(), veranstaltung);
                 } else {
                     return true;
                 }

@@ -74,14 +74,6 @@ public class Teilnehmer extends Nutzer {
     }
 
 
-    public boolean gehoertZuGruppe(String gruppe) {
-        if (null == gruppe) {
-            return false;
-        }
-        return gruppen.contains(gruppe);
-    }
-
-
     public void addGruppe(String gruppe) {
         if (StringUtils.isBlank(gruppe)) {
             return;
@@ -149,11 +141,34 @@ public class Teilnehmer extends Nutzer {
     }
 
 
+    /**
+     * Prüft die Gruppenmitgliedschaft gegen BEIDE Modelle: das bisherige flache {@link #gruppen}
+     * und die neuen strukturierten {@link #gruppenwerte} (siehe #690) - damit Pflichtvortrag-
+     * Zuordnungen unabhängig davon greifen, über welches der beiden Systeme einem Teilnehmer
+     * diese Gruppe zugewiesen wurde. {@code gruppenwerte} wird dabei nur innerhalb derselben
+     * Veranstaltung berücksichtigt (ein Wert gehört zu genau einer Gruppenkategorie einer
+     * Veranstaltung).
+     */
+    public boolean istInGruppe(String gruppenName, Veranstaltung veranstaltung) {
+        if (null == gruppenName) {
+            return false;
+        }
+        if (gruppen.contains(gruppenName)) {
+            return true;
+        }
+        return gruppenwerte.stream().anyMatch(wert -> wert.getWert().equals(gruppenName)
+            && wert.getGruppenkategorie().getVeranstaltung().getId().equals(veranstaltung.getId()));
+    }
+
+
     public static List<Teilnehmer> getGruppenTeilnehmer(String gruppenName, Veranstaltung veranstaltung) {
-        return Teilnehmer.find("SELECT tn from Teilnehmer tn " +
+        return Teilnehmer.find("SELECT DISTINCT tn from Teilnehmer tn " +
                 " JOIN tn.veranstaltungen v " +
-                " WHERE ?1 MEMBER OF tn.gruppen " +
-                " AND v = ?2 and tn.isActive = true",
+                " WHERE v = ?2 AND tn.isActive = true " +
+                " AND (?1 MEMBER OF tn.gruppen " +
+                "      OR EXISTS (SELECT gkw FROM GruppenkategorieWert gkw " +
+                "                 WHERE gkw MEMBER OF tn.gruppenwerte " +
+                "                 AND gkw.wert = ?1 AND gkw.gruppenkategorie.veranstaltung = v))",
             gruppenName, veranstaltung).list();
     }
 

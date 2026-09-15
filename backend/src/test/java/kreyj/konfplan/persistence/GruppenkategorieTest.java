@@ -7,6 +7,7 @@ import kreyj.konfplan.adapter.in.web.DatabaseCleaner;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -14,8 +15,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class GruppenkategorieTest extends DatabaseCleaner {
 
     private Veranstaltung neueVeranstaltung() {
+        return neueVeranstaltung("Gruppenkategorie-Test");
+    }
+
+
+    private Veranstaltung neueVeranstaltung(String name) {
         Veranstaltung veranstaltung = new Veranstaltung();
-        veranstaltung.setName("Gruppenkategorie-Test");
+        veranstaltung.setName(name + "-" + System.nanoTime());
         veranstaltung.setBeginntAm(LocalDateTime.now());
         veranstaltung.persist();
         return veranstaltung;
@@ -141,5 +147,63 @@ class GruppenkategorieTest extends DatabaseCleaner {
         GruppenkategorieWert geloeschterWert = GruppenkategorieWert.findById(zehnA.getId());
         assertThat(geloeschteKategorie).isNull();
         assertThat(geloeschterWert).isNull();
+    }
+
+
+    /**
+     * Slice 3 (#690): Pflichtvortrag-Matching muss unabhängig davon greifen, ob ein Teilnehmer
+     * über das alte flache Modell oder über das neue Gruppenkategorien-Modell derselben Gruppe
+     * zugeordnet ist - sonst hätte die Verwaltungs-API aus Slice 2 keine tatsächliche Wirkung.
+     */
+    @Test
+    @Transactional
+    void istInGruppe_erkenntSowohlAltesAlsAuchNeuesModell() {
+        Veranstaltung veranstaltung = neueVeranstaltung();
+        Gruppenkategorie klasse = new Gruppenkategorie(veranstaltung, "Klasse", false, true);
+        klasse.persist();
+        GruppenkategorieWert zehnA = new GruppenkategorieWert(klasse, "10a");
+        zehnA.persist();
+
+        Teilnehmer altesModell = neuerTeilnehmer("tn-altes-modell@test.com");
+        altesModell.addGruppe("10a");
+
+        Teilnehmer neuesModell = neuerTeilnehmer("tn-neues-modell@test.com");
+        neuesModell.addGruppenwert(zehnA);
+
+        Teilnehmer keineGruppe = neuerTeilnehmer("tn-keine-gruppe@test.com");
+
+        assertThat(altesModell.istInGruppe("10a", veranstaltung)).isTrue();
+        assertThat(neuesModell.istInGruppe("10a", veranstaltung)).isTrue();
+        assertThat(keineGruppe.istInGruppe("10a", veranstaltung)).isFalse();
+        assertThat(altesModell.istInGruppe(null, veranstaltung)).isFalse();
+    }
+
+
+    @Test
+    @Transactional
+    void getGruppenTeilnehmer_findetTeilnehmerUeberBeideModelleUndScoptAufVeranstaltung() {
+        Veranstaltung veranstaltung = neueVeranstaltung();
+        Gruppenkategorie klasse = new Gruppenkategorie(veranstaltung, "Klasse", false, true);
+        klasse.persist();
+        GruppenkategorieWert zehnA = new GruppenkategorieWert(klasse, "10a");
+        zehnA.persist();
+
+        Teilnehmer altesModell = neuerTeilnehmer("tn-ggt-alt@test.com");
+        altesModell.addGruppe("10a");
+        altesModell.addVeranstaltung(veranstaltung);
+
+        Teilnehmer neuesModell = neuerTeilnehmer("tn-ggt-neu@test.com");
+        neuesModell.addGruppenwert(zehnA);
+        neuesModell.addVeranstaltung(veranstaltung);
+
+        // Gleicher Gruppenname "10a", aber in einer ANDEREN Veranstaltung - darf nicht gefunden werden.
+        Veranstaltung zweiteVeranstaltung = neueVeranstaltung();
+        Teilnehmer andereVeranstaltung = neuerTeilnehmer("tn-ggt-andere@test.com");
+        andereVeranstaltung.addGruppe("10a");
+        andereVeranstaltung.addVeranstaltung(zweiteVeranstaltung);
+
+        List<Teilnehmer> gefunden = Teilnehmer.getGruppenTeilnehmer("10a", veranstaltung);
+
+        assertThat(gefunden).containsExactlyInAnyOrder(altesModell, neuesModell);
     }
 }
