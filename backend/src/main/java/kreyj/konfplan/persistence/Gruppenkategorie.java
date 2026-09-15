@@ -55,4 +55,17 @@ public class Gruppenkategorie extends VersionedEntity {
     public Set<GruppenkategorieWert> getWerte() {
         return Collections.unmodifiableSet(werte);
     }
+
+
+    /**
+     * Hält die inverse Seite der {@link #werte}-Assoziation synchron - von
+     * {@link GruppenkategorieWert}s Konstruktor aufgerufen. Ohne diesen expliziten Java-seitigen
+     * Sync bleibt die Kollektion, sobald sie einmal (lazy) initialisiert ist, gegenüber neu
+     * angelegten Werten inkonsistent, bis sie neu geladen wird - u.a. verwechselt Hibernates
+     * Cascade-Verarbeitung beim Löschen der Kategorie einen so übersehenen Wert sonst mit einer
+     * verwaisten, transienten Referenz (TransientPropertyValueException).
+     */
+    void nimmWertAuf(GruppenkategorieWert wert) {
+        werte.add(wert);
+    }
 }

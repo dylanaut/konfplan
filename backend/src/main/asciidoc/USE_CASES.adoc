@@ -39,15 +39,21 @@ package "KonfPlan API" {
   (markiereAlsGelesen) as NachrichtResource_markiereAlsGelesen
   (getAll) as NeigungResource_getAll
   (get) as OnboardingStatusResource_get
+  (addGruppenkategorieWert) as OrganisatorResource_addGruppenkategorieWert
   (changeRole) as OrganisatorResource_changeRole
   (createGruppe) as OrganisatorResource_createGruppe
+  (createGruppenkategorie) as OrganisatorResource_createGruppenkategorie
   (createUser) as OrganisatorResource_createUser
   (deleteGruppe) as OrganisatorResource_deleteGruppe
+  (deleteGruppenkategorie) as OrganisatorResource_deleteGruppenkategorie
+  (deleteGruppenkategorieWert) as OrganisatorResource_deleteGruppenkategorieWert
   (deleteUser) as OrganisatorResource_deleteUser
   (generateTeilnehmerPasswortZip) as OrganisatorResource_generateTeilnehmerPasswortZip
   (getAllUsers) as OrganisatorResource_getAllUsers
   (getGruppen) as OrganisatorResource_getGruppen
+  (getGruppenkategorien) as OrganisatorResource_getGruppenkategorien
   (getRaumVerfuegbarkeiten) as OrganisatorResource_getRaumVerfuegbarkeiten
+  (getTeilnehmerGruppenwerte) as OrganisatorResource_getTeilnehmerGruppenwerte
   (getUser) as OrganisatorResource_getUser
   (getVerfuegbarkeiten) as OrganisatorResource_getVerfuegbarkeiten
   (importOrganisatoren) as OrganisatorResource_importOrganisatoren
@@ -56,8 +62,12 @@ package "KonfPlan API" {
   (importReferentenVerfuegbarkeiten) as OrganisatorResource_importReferentenVerfuegbarkeiten
   (importTeilnehmerVerfuegbarkeiten) as OrganisatorResource_importTeilnehmerVerfuegbarkeiten
   (inviteUser) as OrganisatorResource_inviteUser
+  (removeTeilnehmerGruppenwert) as OrganisatorResource_removeTeilnehmerGruppenwert
   (renameGruppe) as OrganisatorResource_renameGruppe
+  (renameGruppenkategorieWert) as OrganisatorResource_renameGruppenkategorieWert
   (resetPassword) as OrganisatorResource_resetPassword
+  (setTeilnehmerGruppenwert) as OrganisatorResource_setTeilnehmerGruppenwert
+  (updateGruppenkategorie) as OrganisatorResource_updateGruppenkategorie
   (updateRaumVerfuegbarkeit) as OrganisatorResource_updateRaumVerfuegbarkeit
   (updateTeilnehmerPrioritaet) as OrganisatorResource_updateTeilnehmerPrioritaet
   (updateUser) as OrganisatorResource_updateUser
@@ -183,15 +193,21 @@ ADMINISTRATOR --> NachrichtResource_getUngeleseneAnzahl
 ADMINISTRATOR --> NachrichtResource_markiereAlsGelesen
 ADMINISTRATOR --> NeigungResource_getAll
 ADMINISTRATOR --> OnboardingStatusResource_get
+ADMINISTRATOR --> OrganisatorResource_addGruppenkategorieWert
 ADMINISTRATOR --> OrganisatorResource_changeRole
 ADMINISTRATOR --> OrganisatorResource_createGruppe
+ADMINISTRATOR --> OrganisatorResource_createGruppenkategorie
 ADMINISTRATOR --> OrganisatorResource_createUser
 ADMINISTRATOR --> OrganisatorResource_deleteGruppe
+ADMINISTRATOR --> OrganisatorResource_deleteGruppenkategorie
+ADMINISTRATOR --> OrganisatorResource_deleteGruppenkategorieWert
 ADMINISTRATOR --> OrganisatorResource_deleteUser
 ADMINISTRATOR --> OrganisatorResource_generateTeilnehmerPasswortZip
 ADMINISTRATOR --> OrganisatorResource_getAllUsers
 ADMINISTRATOR --> OrganisatorResource_getGruppen
+ADMINISTRATOR --> OrganisatorResource_getGruppenkategorien
 ADMINISTRATOR --> OrganisatorResource_getRaumVerfuegbarkeiten
+ADMINISTRATOR --> OrganisatorResource_getTeilnehmerGruppenwerte
 ADMINISTRATOR --> OrganisatorResource_getUser
 ADMINISTRATOR --> OrganisatorResource_getVerfuegbarkeiten
 ADMINISTRATOR --> OrganisatorResource_importOrganisatoren
@@ -200,8 +216,12 @@ ADMINISTRATOR --> OrganisatorResource_importRaumVerfuegbarkeiten
 ADMINISTRATOR --> OrganisatorResource_importReferentenVerfuegbarkeiten
 ADMINISTRATOR --> OrganisatorResource_importTeilnehmerVerfuegbarkeiten
 ADMINISTRATOR --> OrganisatorResource_inviteUser
+ADMINISTRATOR --> OrganisatorResource_removeTeilnehmerGruppenwert
 ADMINISTRATOR --> OrganisatorResource_renameGruppe
+ADMINISTRATOR --> OrganisatorResource_renameGruppenkategorieWert
 ADMINISTRATOR --> OrganisatorResource_resetPassword
+ADMINISTRATOR --> OrganisatorResource_setTeilnehmerGruppenwert
+ADMINISTRATOR --> OrganisatorResource_updateGruppenkategorie
 ADMINISTRATOR --> OrganisatorResource_updateRaumVerfuegbarkeit
 ADMINISTRATOR --> OrganisatorResource_updateTeilnehmerPrioritaet
 ADMINISTRATOR --> OrganisatorResource_updateUser
@@ -316,15 +336,21 @@ ORGANISATOR --> NachrichtResource_getUngeleseneAnzahl
 ORGANISATOR --> NachrichtResource_markiereAlsGelesen
 ORGANISATOR --> NeigungResource_getAll
 ORGANISATOR --> OnboardingStatusResource_get
+ORGANISATOR --> OrganisatorResource_addGruppenkategorieWert
 ORGANISATOR --> OrganisatorResource_changeRole
 ORGANISATOR --> OrganisatorResource_createGruppe
+ORGANISATOR --> OrganisatorResource_createGruppenkategorie
 ORGANISATOR --> OrganisatorResource_createUser
 ORGANISATOR --> OrganisatorResource_deleteGruppe
+ORGANISATOR --> OrganisatorResource_deleteGruppenkategorie
+ORGANISATOR --> OrganisatorResource_deleteGruppenkategorieWert
 ORGANISATOR --> OrganisatorResource_deleteUser
 ORGANISATOR --> OrganisatorResource_generateTeilnehmerPasswortZip
 ORGANISATOR --> OrganisatorResource_getAllUsers
 ORGANISATOR --> OrganisatorResource_getGruppen
+ORGANISATOR --> OrganisatorResource_getGruppenkategorien
 ORGANISATOR --> OrganisatorResource_getRaumVerfuegbarkeiten
+ORGANISATOR --> OrganisatorResource_getTeilnehmerGruppenwerte
 ORGANISATOR --> OrganisatorResource_getUser
 ORGANISATOR --> OrganisatorResource_getVerfuegbarkeiten
 ORGANISATOR --> OrganisatorResource_importOrganisatoren
@@ -333,8 +359,12 @@ ORGANISATOR --> OrganisatorResource_importRaumVerfuegbarkeiten
 ORGANISATOR --> OrganisatorResource_importReferentenVerfuegbarkeiten
 ORGANISATOR --> OrganisatorResource_importTeilnehmerVerfuegbarkeiten
 ORGANISATOR --> OrganisatorResource_inviteUser
+ORGANISATOR --> OrganisatorResource_removeTeilnehmerGruppenwert
 ORGANISATOR --> OrganisatorResource_renameGruppe
+ORGANISATOR --> OrganisatorResource_renameGruppenkategorieWert
 ORGANISATOR --> OrganisatorResource_resetPassword
+ORGANISATOR --> OrganisatorResource_setTeilnehmerGruppenwert
+ORGANISATOR --> OrganisatorResource_updateGruppenkategorie
 ORGANISATOR --> OrganisatorResource_updateRaumVerfuegbarkeit
 ORGANISATOR --> OrganisatorResource_updateTeilnehmerPrioritaet
 ORGANISATOR --> OrganisatorResource_updateUser
@@ -607,6 +637,10 @@ TEILNEHMER --> KalenderResource_getTeilnehmerKalender
 [cols="2,1,3,2", options="header"]
 |===
 | Aktion | Method | Pfad | Rollen
+| addGruppenkategorieWert
+| POST
+| `/api/organisator/gruppenkategorien/{kategorieId}/werte`
+| ORGANISATOR, ADMINISTRATOR
 | changeRole
 | PUT
 | `/api/organisator/nutzer/{id}/rolle`
@@ -615,6 +649,10 @@ TEILNEHMER --> KalenderResource_getTeilnehmerKalender
 | POST
 | `/api/organisator/veranstaltungen/{vid}/gruppen`
 | ORGANISATOR, ADMINISTRATOR
+| createGruppenkategorie
+| POST
+| `/api/organisator/veranstaltungen/{vid}/gruppenkategorien`
+| ORGANISATOR, ADMINISTRATOR
 | createUser
 | POST
 | `/api/organisator/nutzer`
@@ -622,6 +660,14 @@ TEILNEHMER --> KalenderResource_getTeilnehmerKalender
 | deleteGruppe
 | DELETE
 | `/api/organisator/veranstaltungen/{vid}/gruppen/{gruppenName}`
+| ORGANISATOR, ADMINISTRATOR
+| deleteGruppenkategorie
+| DELETE
+| `/api/organisator/gruppenkategorien/{kategorieId}`
+| ORGANISATOR, ADMINISTRATOR
+| deleteGruppenkategorieWert
+| DELETE
+| `/api/organisator/gruppenkategorien/werte/{wertId}`
 | ORGANISATOR, ADMINISTRATOR
 | deleteUser
 | DELETE
@@ -639,9 +685,17 @@ TEILNEHMER --> KalenderResource_getTeilnehmerKalender
 | GET
 | `/api/organisator/veranstaltungen/{vid}/gruppen`
 | ORGANISATOR, ADMINISTRATOR
+| getGruppenkategorien
+| GET
+| `/api/organisator/veranstaltungen/{vid}/gruppenkategorien`
+| ORGANISATOR, ADMINISTRATOR
 | getRaumVerfuegbarkeiten
 | GET
 | `/api/organisator/veranstaltungen/{vid}/raeume/verfuegbarkeiten`
+| ORGANISATOR, ADMINISTRATOR
+| getTeilnehmerGruppenwerte
+| GET
+| `/api/organisator/teilnehmer/{tid}/gruppenwerte`
 | ORGANISATOR, ADMINISTRATOR
 | getUser
 | GET
@@ -675,13 +729,29 @@ TEILNEHMER --> KalenderResource_getTeilnehmerKalender
 | POST
 | `/api/organisator/nutzer/{userId}/einladen/{eventId}`
 | ORGANISATOR, ADMINISTRATOR
+| removeTeilnehmerGruppenwert
+| DELETE
+| `/api/organisator/teilnehmer/{tid}/gruppenwerte/{wertId}`
+| ORGANISATOR, ADMINISTRATOR
 | renameGruppe
 | PUT
 | `/api/organisator/veranstaltungen/{vid}/gruppen`
 | ORGANISATOR, ADMINISTRATOR
+| renameGruppenkategorieWert
+| PUT
+| `/api/organisator/gruppenkategorien/werte/{wertId}`
+| ORGANISATOR, ADMINISTRATOR
 | resetPassword
 | POST
 | `/api/organisator/nutzer/{id}/reset-password`
+| ORGANISATOR, ADMINISTRATOR
+| setTeilnehmerGruppenwert
+| POST
+| `/api/organisator/teilnehmer/{tid}/gruppenwerte/{wertId}`
+| ORGANISATOR, ADMINISTRATOR
+| updateGruppenkategorie
+| PUT
+| `/api/organisator/gruppenkategorien/{kategorieId}`
 | ORGANISATOR, ADMINISTRATOR
 | updateRaumVerfuegbarkeit
 | POST

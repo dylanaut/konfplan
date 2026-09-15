@@ -46,10 +46,26 @@ public class GruppenkategorieWert extends VersionedEntity {
     public GruppenkategorieWert(Gruppenkategorie gruppenkategorie, String wert) {
         this.gruppenkategorie = gruppenkategorie;
         this.wert = wert;
+        gruppenkategorie.nimmWertAuf(this);
     }
 
 
     public Set<Teilnehmer> getTeilnehmer() {
         return Collections.unmodifiableSet(teilnehmer);
+    }
+
+
+    /**
+     * Hält die inverse Seite der {@code Teilnehmer.gruppenwerte}-Assoziation synchron - von
+     * {@link Teilnehmer#addGruppenwert} aufgerufen (siehe {@link Gruppenkategorie#nimmWertAuf}
+     * für dieselbe Notwendigkeit bei der anderen Assoziation dieser Klasse).
+     */
+    void nimmTeilnehmerAuf(Teilnehmer teilnehmer) {
+        this.teilnehmer.add(teilnehmer);
+    }
+
+
+    void entferneTeilnehmer(Teilnehmer teilnehmer) {
+        this.teilnehmer.remove(teilnehmer);
     }
 }

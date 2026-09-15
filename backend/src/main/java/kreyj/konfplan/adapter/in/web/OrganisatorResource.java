@@ -17,6 +17,9 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.VortragPrioDto;
 import kreyj.konfplan.adapter.in.web.dto.OrganisatorPasswordResetDto;
+import kreyj.konfplan.adapter.in.web.dto.GruppenkategorieAnfrageDto;
+import kreyj.konfplan.adapter.in.web.dto.GruppenkategorieDto;
+import kreyj.konfplan.adapter.in.web.dto.GruppenkategorieWertDto;
 import kreyj.konfplan.adapter.in.web.dto.ImportResultDto;
 import kreyj.konfplan.adapter.in.web.dto.NachbuchungsVorschlagDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
@@ -27,6 +30,7 @@ import kreyj.konfplan.adapter.in.web.dto.TeilnehmerPasswortZipRequestDto;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.SecurityContext;
 import kreyj.konfplan.application.port.in.OrganisatorServiceInterface;
+import kreyj.konfplan.domain.service.GruppenkategorieService;
 import kreyj.konfplan.domain.service.MailService;
 import kreyj.konfplan.domain.service.PrioritaetService;
 import kreyj.konfplan.domain.service.TeilnehmerPasswortZipResult;
@@ -69,14 +73,18 @@ public class OrganisatorResource {
 
     private final UmplanungService umplanungService;
 
+    private final GruppenkategorieService gruppenkategorieService;
+
 
     public OrganisatorResource(OrganisatorServiceInterface organisatorService, PrioritaetService prioritaetService, MailService mailService,
-                          TeilnehmerPasswortZipService teilnehmerPasswortZipService, UmplanungService umplanungService) {
+                          TeilnehmerPasswortZipService teilnehmerPasswortZipService, UmplanungService umplanungService,
+                          GruppenkategorieService gruppenkategorieService) {
         this.organisatorService = organisatorService;
         this.prioritaetService = prioritaetService;
         this.mailService = mailService;
         this.teilnehmerPasswortZipService = teilnehmerPasswortZipService;
         this.umplanungService = umplanungService;
+        this.gruppenkategorieService = gruppenkategorieService;
     }
 
 
@@ -439,5 +447,102 @@ public class OrganisatorResource {
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
+    }
+
+    // --- GRUPPENKATEGORIEN-VERWALTUNG (siehe #690) ---
+
+
+    @GET
+    @Path("/veranstaltungen/{vid}/gruppenkategorien")
+    @Operation(summary = "Alle Gruppenkategorien einer Veranstaltung abrufen")
+    public List<GruppenkategorieDto> getGruppenkategorien(@PathParam("vid") Long vid) {
+        return gruppenkategorieService.getGruppenkategorien(vid).stream().map(GruppenkategorieDto::from).toList();
+    }
+
+
+    @POST
+    @Path("/veranstaltungen/{vid}/gruppenkategorien")
+    @Operation(summary = "Eine neue Gruppenkategorie zu einer Veranstaltung hinzufügen")
+    public Response createGruppenkategorie(@PathParam("vid") Long vid,
+                                            @RequestBody(description = "Name, Kardinalität und Pflicht/Kann der neuen Kategorie") GruppenkategorieAnfrageDto anfrage) {
+        var kategorie = gruppenkategorieService.createGruppenkategorie(vid, anfrage.name, anfrage.mehrwertig, anfrage.pflicht);
+        return Response.status(Response.Status.CREATED).entity(GruppenkategorieDto.from(kategorie)).build();
+    }
+
+
+    @PUT
+    @Path("/gruppenkategorien/{kategorieId}")
+    @Operation(summary = "Eine Gruppenkategorie ändern (Name, Kardinalität, Pflicht/Kann)")
+    public GruppenkategorieDto updateGruppenkategorie(@PathParam("kategorieId") Long kategorieId,
+                                                        @RequestBody(description = "Die aktualisierten Kategorie-Daten") GruppenkategorieAnfrageDto anfrage) {
+        var kategorie = gruppenkategorieService.updateGruppenkategorie(kategorieId, anfrage.name, anfrage.mehrwertig, anfrage.pflicht);
+        return GruppenkategorieDto.from(kategorie);
+    }
+
+
+    @DELETE
+    @Path("/gruppenkategorien/{kategorieId}")
+    @Operation(summary = "Eine Gruppenkategorie löschen")
+    public Response deleteGruppenkategorie(@PathParam("kategorieId") Long kategorieId) {
+        gruppenkategorieService.deleteGruppenkategorie(kategorieId);
+        return Response.noContent().build();
+    }
+
+
+    @POST
+    @Path("/gruppenkategorien/{kategorieId}/werte")
+    @Operation(summary = "Einen neuen Wert zum Wertebereich einer Gruppenkategorie hinzufügen")
+    public Response addGruppenkategorieWert(@PathParam("kategorieId") Long kategorieId,
+                                             @RequestBody(description = "Der neue Wert") String wert) {
+        var neuerWert = gruppenkategorieService.addWert(kategorieId, wert);
+        return Response.status(Response.Status.CREATED).entity(GruppenkategorieWertDto.from(neuerWert)).build();
+    }
+
+
+    @PUT
+    @Path("/gruppenkategorien/werte/{wertId}")
+    @Operation(summary = "Einen Gruppenkategorie-Wert umbenennen")
+    public GruppenkategorieWertDto renameGruppenkategorieWert(@PathParam("wertId") Long wertId,
+                                                                @RequestBody(description = "Der neue Wert") String neuerWert) {
+        return GruppenkategorieWertDto.from(gruppenkategorieService.renameWert(wertId, neuerWert));
+    }
+
+
+    @DELETE
+    @Path("/gruppenkategorien/werte/{wertId}")
+    @Operation(summary = "Einen Gruppenkategorie-Wert löschen")
+    public Response deleteGruppenkategorieWert(@PathParam("wertId") Long wertId) {
+        gruppenkategorieService.removeWert(wertId);
+        return Response.noContent().build();
+    }
+
+
+    @GET
+    @Path("/teilnehmer/{tid}/gruppenwerte")
+    @Operation(summary = "Die aktuell zugeordneten Gruppenwerte eines Teilnehmers abrufen")
+    public List<GruppenkategorieWertDto> getTeilnehmerGruppenwerte(@PathParam("tid") Long tid) {
+        Teilnehmer teilnehmer = Teilnehmer.findById(tid);
+        if (null == teilnehmer) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        }
+        return teilnehmer.getGruppenwerte().stream().map(GruppenkategorieWertDto::from).toList();
+    }
+
+
+    @POST
+    @Path("/teilnehmer/{tid}/gruppenwerte/{wertId}")
+    @Operation(summary = "Einem Teilnehmer einen Gruppenwert zuordnen")
+    public Response setTeilnehmerGruppenwert(@PathParam("tid") Long tid, @PathParam("wertId") Long wertId) {
+        gruppenkategorieService.setGruppenwert(tid, wertId);
+        return Response.noContent().build();
+    }
+
+
+    @DELETE
+    @Path("/teilnehmer/{tid}/gruppenwerte/{wertId}")
+    @Operation(summary = "Einem Teilnehmer einen Gruppenwert entziehen")
+    public Response removeTeilnehmerGruppenwert(@PathParam("tid") Long tid, @PathParam("wertId") Long wertId) {
+        gruppenkategorieService.removeGruppenwert(tid, wertId);
+        return Response.noContent().build();
     }
 }

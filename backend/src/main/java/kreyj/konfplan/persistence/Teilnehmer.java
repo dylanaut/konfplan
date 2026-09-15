@@ -126,9 +126,16 @@ public class Teilnehmer extends Nutzer {
             return;
         }
         if (!wert.getGruppenkategorie().isMehrwertig()) {
-            gruppenwerte.removeIf(vorhandener -> vorhandener.getGruppenkategorie().getId().equals(wert.getGruppenkategorie().getId()));
+            gruppenwerte.removeIf(vorhandener -> {
+                boolean gleicheKategorie = vorhandener.getGruppenkategorie().getId().equals(wert.getGruppenkategorie().getId());
+                if (gleicheKategorie) {
+                    vorhandener.entferneTeilnehmer(this);
+                }
+                return gleicheKategorie;
+            });
         }
         gruppenwerte.add(wert);
+        wert.nimmTeilnehmerAuf(this);
     }
 
 
@@ -136,7 +143,9 @@ public class Teilnehmer extends Nutzer {
         if (null == wert) {
             return;
         }
-        gruppenwerte.remove(wert);
+        if (gruppenwerte.remove(wert)) {
+            wert.entferneTeilnehmer(this);
+        }
     }
 
 

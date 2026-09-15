@@ -114,4 +114,32 @@ class GruppenkategorieTest extends DatabaseCleaner {
         assertThat(tn.hatGruppenwert(zehnA)).isFalse();
         assertThat(tn.getGruppenwerte()).isEmpty();
     }
+
+
+    /**
+     * Regressionstest: solange {@code Gruppenkategorie.werte} nie explizit angefasst wurde (z.B.
+     * per direktem {@code new GruppenkategorieWert(kategorie, ...)} statt über eine Kategorie-
+     * seitige Hinzufügemethode), sah Hibernates Cascade-Verarbeitung beim Löschen der Kategorie
+     * die noch nicht in der Java-Kollektion nachgezogene Wert-Zeile faelschlich als verwaiste,
+     * transiente Referenz an (TransientPropertyValueException statt kaskadierendem Löschen) -
+     * behoben durch expliziten Sync der inversen Seite in {@code Gruppenkategorie#nimmWertAuf}.
+     */
+    @Test
+    @Transactional
+    void kategorieLoeschen_kaskadiertZumWert_ohneDassWerteZuvorGelesenWurde() {
+        Veranstaltung veranstaltung = neueVeranstaltung();
+        Gruppenkategorie klasse = new Gruppenkategorie(veranstaltung, "Klasse", false, true);
+        klasse.persist();
+        GruppenkategorieWert zehnA = new GruppenkategorieWert(klasse, "10a");
+        zehnA.persist();
+        Panache.getEntityManager().flush();
+
+        klasse.delete();
+        Panache.getEntityManager().flush();
+
+        Gruppenkategorie geloeschteKategorie = Gruppenkategorie.findById(klasse.getId());
+        GruppenkategorieWert geloeschterWert = GruppenkategorieWert.findById(zehnA.getId());
+        assertThat(geloeschteKategorie).isNull();
+        assertThat(geloeschterWert).isNull();
+    }
 }
