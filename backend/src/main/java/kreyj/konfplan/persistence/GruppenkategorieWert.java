@@ -56,6 +56,17 @@ public class GruppenkategorieWert extends VersionedEntity {
 
 
     /**
+     * Sucht über alle Gruppenkategorien einer Veranstaltung hinweg nach einem Wert mit exakt
+     * diesem Namen (siehe #690, u.a. für den CSV-Import: ein importierter Gruppen-/Pflichtgruppen-
+     * Name kann zusätzlich zum bisherigen flachen Modell auch einer strukturierten Kategorie
+     * entsprechen).
+     */
+    public static GruppenkategorieWert findByWertUndVeranstaltung(String wert, Veranstaltung veranstaltung) {
+        return find("wert = ?1 and gruppenkategorie.veranstaltung = ?2", wert, veranstaltung).firstResult();
+    }
+
+
+    /**
      * Hält die inverse Seite der {@code Teilnehmer.gruppenwerte}-Assoziation synchron - von
      * {@link Teilnehmer#addGruppenwert} aufgerufen (siehe {@link Gruppenkategorie#nimmWertAuf}
      * für dieselbe Notwendigkeit bei der anderen Assoziation dieser Klasse).
