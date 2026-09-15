@@ -381,35 +381,40 @@ class UmplanungServiceTest extends DatabaseCleaner {
 
     @Test
     @Transactional
-    void getRaumUmbuchungOptionen_liefertNurFreieRaeumeMitAusreichenderKapazitaet() {
+    void getRaumUmbuchungOptionen_liefertNurFreieRaeumeMitAusreichenderKapazitaetFuerTatsaechlicheTeilnehmerzahl() {
         Veranstaltung veranstaltung = neueVeranstaltung("Raumumbuchung-Test-1");
         Slot slot1 = neuerSlot(veranstaltung, 1);
-        Raum raumKlein = new Raum("Raum Klein", 5);
-        raumKlein.persist();
-        Gebaeude.<Gebaeude>findById(schuleId).addRaum(raumKlein);
-        Raum raumGleich = new Raum("Raum Gleich", 10);
-        raumGleich.persist();
-        Gebaeude.<Gebaeude>findById(schuleId).addRaum(raumGleich);
+        // raumGrossId (Kapazität 10) ist der aktuelle Raum, aber nur mit 3 Teilnehmern belegt -
+        // massgeblich fuer die Auswahl ist diese tatsaechliche Belegung, nicht die nominale
+        // Kapazitaet des aktuellen Raums.
+        Raum raumZuKlein = new Raum("Raum Zu Klein", 2);
+        raumZuKlein.persist();
+        Gebaeude.<Gebaeude>findById(schuleId).addRaum(raumZuKlein);
+        Raum raumPassend = new Raum("Raum Passend", 3);
+        raumPassend.persist();
+        Gebaeude.<Gebaeude>findById(schuleId).addRaum(raumPassend);
         Raum raumBelegt = new Raum("Raum Belegt", 20);
         raumBelegt.persist();
         Gebaeude.<Gebaeude>findById(schuleId).addRaum(raumBelegt);
 
         Wahlvortrag wv1 = neuerWahlvortrag(veranstaltung, "Vortrag 1");
         Wahlvortrag wv2 = neuerWahlvortrag(veranstaltung, "Vortrag 2");
-        Teilnehmer tn = neuerTeilnehmer(veranstaltung, "tn1@test.com");
+        Teilnehmer tn1 = neuerTeilnehmer(veranstaltung, "tn1@test.com");
+        Teilnehmer tn2 = neuerTeilnehmer(veranstaltung, "tn2@test.com");
+        Teilnehmer tn3 = neuerTeilnehmer(veranstaltung, "tn3@test.com");
 
         Planungsergebnis ergebnis = persistiereErgebnis(veranstaltung, ergebnis(
-            new long[]{tn.getId()},
+            new long[]{tn1.getId(), tn2.getId(), tn3.getId()},
             new long[]{wv1.getId(), wv2.getId()},
             new long[]{slot1.getId()},
             new long[]{raumGrossId, raumBelegt.getId()},
             new int[][]{{1}, {1}},
             new int[][]{{1}, {2}},
-            new boolean[][][]{{{true}, {false}}}));
+            new boolean[][][]{{{true}, {false}}, {{true}, {false}}, {{true}, {false}}}));
 
         List<RaumUmbuchungOptionDto> optionen = umplanungService.getRaumUmbuchungOptionen(veranstaltung, ergebnis.getId(), wv1.getId(), 0);
 
-        assertThat(optionen).extracting(o -> o.raumName).containsExactly("Raum Gleich");
+        assertThat(optionen).extracting(o -> o.raumName).containsExactly("Raum Passend");
     }
 
 
@@ -481,29 +486,31 @@ class UmplanungServiceTest extends DatabaseCleaner {
 
     @Test
     @Transactional
-    void vortragsInstanzRaumUmbuchen_beiGeringererKapazitaetDesZielraums_wirftBusinessException() {
+    void vortragsInstanzRaumUmbuchen_beiNichtAusreichenderKapazitaetFuerTeilnehmerzahl_wirftBusinessException() {
         Veranstaltung veranstaltung = neueVeranstaltung("Raumumbuchung-Test-4");
         Slot slot1 = neuerSlot(veranstaltung, 1);
-        Raum raumKlein = new Raum("Raum Klein", 5);
-        raumKlein.persist();
-        Gebaeude.<Gebaeude>findById(schuleId).addRaum(raumKlein);
+        Raum raumZuKlein = new Raum("Raum Zu Klein", 2);
+        raumZuKlein.persist();
+        Gebaeude.<Gebaeude>findById(schuleId).addRaum(raumZuKlein);
 
         Wahlvortrag wv1 = neuerWahlvortrag(veranstaltung, "Vortrag 1");
-        Teilnehmer tn = neuerTeilnehmer(veranstaltung, "tn1@test.com");
+        Teilnehmer tn1 = neuerTeilnehmer(veranstaltung, "tn1@test.com");
+        Teilnehmer tn2 = neuerTeilnehmer(veranstaltung, "tn2@test.com");
+        Teilnehmer tn3 = neuerTeilnehmer(veranstaltung, "tn3@test.com");
 
         Planungsergebnis ergebnis = persistiereErgebnis(veranstaltung, ergebnis(
-            new long[]{tn.getId()},
+            new long[]{tn1.getId(), tn2.getId(), tn3.getId()},
             new long[]{wv1.getId()},
             new long[]{slot1.getId()},
             new long[]{raumGrossId},
             new int[][]{{1}},
             new int[][]{{1}},
-            new boolean[][][]{{{true}}}));
+            new boolean[][][]{{{true}}, {{true}}, {{true}}}));
 
         assertThatThrownBy(() -> umplanungService.vortragsInstanzRaumUmbuchen(
-            veranstaltung, ergebnis.getId(), wv1.getId(), 0, raumKlein.getId(), "organisator@test.com"))
+            veranstaltung, ergebnis.getId(), wv1.getId(), 0, raumZuKlein.getId(), "organisator@test.com"))
             .isInstanceOf(BusinessException.class)
-            .hasMessageContaining("geringere Kapazität");
+            .hasMessageContaining("nicht genug Kapazität");
     }
 
 

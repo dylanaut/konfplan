@@ -202,9 +202,12 @@ public class UmplanungService {
 
 
     /**
-     * Liefert freie Räume im selben Zeitslot wie die angegebene Wahlvortrag-Instanz, die
-     * mindestens die Kapazität des aktuellen Raums haben - als Auswahl für eine Raumumbuchung
-     * nach der Planerstellung (z.B. wenn sich nachträglich ein passenderer Raum ergibt). "Frei"
+     * Liefert freie Räume im selben Zeitslot wie die angegebene Wahlvortrag-Instanz, deren
+     * Kapazität für die aktuell zugewiesenen Teilnehmer ausreicht - als Auswahl für eine
+     * Raumumbuchung nach der Planerstellung (z.B. wenn sich nachträglich ein passenderer Raum
+     * ergibt). Massgeblich ist die tatsächliche Belegung der Instanz, nicht die nominale
+     * Kapazität des bisherigen Raums - sonst würde ein groß dimensionierter, aber nur schwach
+     * belegter Raum die Auswahl unnötig auf wenige, ebenso große Räume einschränken. "Frei"
      * bedeutet: von keinem anderen Wahl- oder Pflichtvortrag in diesem Zeitslot belegt und nicht
      * durch eine andere Veranstaltung blockiert (siehe {@link RaumVerfuegbarkeit}).
      */
@@ -216,6 +219,7 @@ public class UmplanungService {
 
         long[] wvOids = result.wahlvortrag_oids;
         int[][] instanzSlot = result.instanz_slot;
+        boolean[][][] besucht = result.besucht;
 
         int wvIdx = indexOf(wvOids, wahlvortragId);
         if (wvIdx < 0 || instanzIndex < 0 || instanzIndex >= instanzSlot[wvIdx].length || instanzSlot[wvIdx][instanzIndex] <= 0) {
@@ -225,7 +229,14 @@ public class UmplanungService {
         Map<Long, Raum> raumByOid = veranstaltung.getRaeume().stream().collect(toMap(IdEntity::getId, Function.identity()));
         int rIdxAktuell = result.instanz_raum[wvIdx][instanzIndex] - 1;
         Raum aktuellerRaum = rIdxAktuell < 0 ? null : raumByOid.get(result.raum_oids[rIdxAktuell]);
-        int mindestKapazitaet = null == aktuellerRaum ? 0 : aktuellerRaum.getKapazitaet();
+
+        int zaehlerBelegt = 0;
+        for (int pIdx = 0; pIdx < besucht.length; pIdx++) {
+            if (besucht[pIdx][wvIdx][instanzIndex]) {
+                zaehlerBelegt++;
+            }
+        }
+        final int belegteAnzahl = zaehlerBelegt;
 
         int slotIdx1 = instanzSlot[wvIdx][instanzIndex];
         long[] slotOids = result.slot_oids;
@@ -235,7 +246,7 @@ public class UmplanungService {
 
         return veranstaltung.getRaeume().stream()
             .filter(r -> null == aktuellerRaum || !r.getId().equals(aktuellerRaum.getId()))
-            .filter(r -> r.getKapazitaet() >= mindestKapazitaet)
+            .filter(r -> r.getKapazitaet() >= belegteAnzahl)
             .filter(r -> !belegteRaumOids.contains(r.getId()))
             .filter(r -> null == slot || RaumVerfuegbarkeit.isRaumVerfuegbar(r, slot, veranstaltung))
             .sorted(Comparator.comparing(Raum::getName, String.CASE_INSENSITIVE_ORDER))
@@ -247,9 +258,10 @@ public class UmplanungService {
 
     /**
      * Verlegt eine Wahlvortrag-Instanz in einen anderen, im selben Zeitslot freien Raum mit
-     * mindestens derselben Kapazität (siehe {@link #getRaumUmbuchungOptionen}) - patcht wie
-     * {@link #vortragsInstanzUmplanen} das bereits gespeicherte, ggf. veröffentlichte
-     * Planungsergebnis in-place, ohne die Teilnehmer-Zuteilung selbst zu verändern.
+     * ausreichender Kapazität für die aktuell zugewiesenen Teilnehmer (siehe
+     * {@link #getRaumUmbuchungOptionen}) - patcht wie {@link #vortragsInstanzUmplanen} das
+     * bereits gespeicherte, ggf. veröffentlichte Planungsergebnis in-place, ohne die
+     * Teilnehmer-Zuteilung selbst zu verändern.
      */
     @Transactional
     public RaumUmbuchungErgebnisDto vortragsInstanzRaumUmbuchen(Veranstaltung veranstaltung, Long ergebnisId, Long wahlvortragId,
@@ -261,6 +273,7 @@ public class UmplanungService {
 
         long[] wvOids = result.wahlvortrag_oids;
         int[][] instanzSlot = result.instanz_slot;
+        boolean[][][] besucht = result.besucht;
 
         int wvIdx = indexOf(wvOids, wahlvortragId);
         if (wvIdx < 0 || instanzIndex < 0 || instanzIndex >= instanzSlot[wvIdx].length || instanzSlot[wvIdx][instanzIndex] <= 0) {
@@ -289,8 +302,15 @@ public class UmplanungService {
         if (null != alterRaum && alterRaum.getId().equals(neuerRaumId)) {
             throw new BusinessException("Vortrag befindet sich bereits in diesem Raum.");
         }
-        if (neuerRaum.getKapazitaet() < (null == alterRaum ? 0 : alterRaum.getKapazitaet())) {
-            throw new BusinessException("Der neue Raum hat eine geringere Kapazität als der bisherige Raum.");
+
+        int belegteAnzahl = 0;
+        for (int pIdx = 0; pIdx < besucht.length; pIdx++) {
+            if (besucht[pIdx][wvIdx][instanzIndex]) {
+                belegteAnzahl++;
+            }
+        }
+        if (neuerRaum.getKapazitaet() < belegteAnzahl) {
+            throw new BusinessException("Der neue Raum hat nicht genug Kapazität für die " + belegteAnzahl + " zugewiesenen Teilnehmer.");
         }
 
         Set<Long> belegteRaeume = ermittleBelegteRaeumeInSlot(veranstaltung, result, slotIdx1, wvIdx, instanzIndex);
