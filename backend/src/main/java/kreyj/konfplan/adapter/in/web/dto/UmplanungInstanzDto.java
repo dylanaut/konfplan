@@ -12,6 +12,7 @@ public class UmplanungInstanzDto {
     public int instanzIndex;
     public String vortragTitel;
     public String referentName;
+    public Long referentId;
     public Long slotId;
     public String slotZeit;
     public Long raumId;
