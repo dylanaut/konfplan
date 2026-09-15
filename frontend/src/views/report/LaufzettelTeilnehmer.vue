@@ -22,7 +22,7 @@
       <table class="table table-striped table-bordered">
         <thead class="table-dark">
           <tr class="print-header-row">
-            <th colspan="4" class="p-0 border-0 bg-white">
+            <th colspan="4" class="p-0 border-0 bg-white text-body">
               <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" class="print-only mb-0" />
             </th>
           </tr>
