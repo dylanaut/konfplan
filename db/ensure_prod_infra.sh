@@ -184,7 +184,8 @@ echo "   SMTP:   localhost:$MAILPIT_SMTP_PORT"
 echo "   Web UI: http://localhost:$MAILPIT_UI_PORT"
 
 echo ""
-echo "✅ Infrastruktur bereit. Native-Runner z.B. so starten:"
+echo "✅ Infrastruktur bereit. Ein normaler '../mvnw package'-Build (JVM/Fast-Jar, kein Native"
+echo "   Image nötig) lässt sich z.B. so starten:"
 cat <<EOF
 
 export DB_HOST=localhost
@@ -200,5 +201,10 @@ export QUARKUS_MAILER_PORT=1025
 export QUARKUS_MAILER_START_TLS=DISABLED
 export QUARKUS_MAILER_USERNAME=test
 export QUARKUS_MAILER_PASSWORD=test
-$SCRIPT_DIR/../backend/target/backend-1.25.6-SNAPSHOT-runner
+java -jar backend/target/quarkus-app/quarkus-run.jar
 EOF
+echo ""
+echo "   (Für einen echten Native-Image-Runner statt des JVM-Jars: '../mvnw package -Pnative'"
+echo "   - benötigt lokal installiertes GraalVM/Mandrel, oder '-Dquarkus.native.container-build=true'"
+echo "   für einen Docker-basierten Native-Build ohne lokales GraalVM. Ergebnis dann unter"
+echo "   backend/target/backend-\$(Version)-runner.)"

@@ -9,7 +9,7 @@ Diese Anleitung beschreibt, wie eine neue Flyway-Migration (hier als Beispiel: `
 
 [WARNING]
 ====
-Der erzeugte Datenbank-Export enthält echte personenbezogene Daten (Namen, E-Mail-Adressen, Schulzugehörigkeit von Teilnehmern). Die Export-Datei nur lokal und temporär aufbewahren, nicht ins Repository committen, nicht in Cloud-Speicher oder Chats hochladen, und nach dem Test sicher löschen (siehe Schritt 6).
+Der erzeugte Datenbank-Export enthält echte personenbezogene Daten (Namen, E-Mail-Adressen, Schulzugehörigkeit von Teilnehmern). Die Export-Datei nur lokal und temporär aufbewahren, nicht ins Repository committen, nicht in Cloud-Speicher oder Chats hochladen, und nach dem Test sicher löschen (siehe Schritt 5).
 ====
 
 == 1. PROD-Datenbestand exportieren (rein lesend, unkritisch)
@@ -54,7 +54,14 @@ Die lokale Instanz enthält danach exakt den aktuellen PROD-Stand - inklusive de
 
 == 4. Migration anwenden und Ergebnis prüfen
 
-Es gibt in diesem Projekt kein Flyway-Maven-Plugin - Flyway läuft ausschließlich als Quarkus-Runtime-Extension beim App-Start (`%prod.quarkus.flyway.migrate-at-start=true`). Für einen reinen Migrations-Test ist es daher am schnellsten und sichersten, die SQL-Datei direkt anzuwenden:
+[IMPORTANT]
+====
+Die beiden folgenden Wege (4a: nur SQL, 4b: komplette App) schließen sich auf **derselben** wiederhergestellten Kopie gegenseitig aus: Wendet man die Migration erst manuell per `psql` an (4a) und startet danach die App (4b), versucht Flyway dieselbe Migration ein zweites Mal auszuführen - das schlägt mit `relation "..." already exists` fehl, weil Flyway von der manuellen Anwendung nichts weiß (`flyway_schema_history` wurde dabei nicht aktualisiert). Vor einem Wechsel von 4a zu 4b daher **Schritt 3 (Restore) erneut ausführen**, um wieder beim PROD-Stand ohne die neue Migration zu starten (siehe Hinweis am Ende von 4a).
+====
+
+=== 4a. Schneller Weg: nur die SQL-Datei anwenden und per psql prüfen
+
+Es gibt in diesem Projekt kein Flyway-Maven-Plugin - Flyway läuft ausschließlich als Quarkus-Runtime-Extension beim App-Start (`%prod.quarkus.flyway.migrate-at-start=true`). Für einen reinen Migrations-Test reicht es, die SQL-Datei direkt anzuwenden:
 
 [source,bash]
 ----
@@ -69,16 +76,21 @@ Anschließend interaktiv prüfen:
 docker exec -it konfplan_prod psql -U postgres -d konfplan
 ----
 
+[TIP]
+====
+Tabellennamen in Postgres sind hier klein geschrieben (`gruppenkategorie`, nicht `"Gruppenkategorie"`) - Hibernates physische Namensstrategie in diesem Projekt lowercased alle unquoted Identifier. Mit `\dt` in `psql` die tatsächlichen Namen prüfen, falls unsicher.
+====
+
 Beispiel-Prüfabfragen für die Gruppenkategorien-Migration (analog für andere Migrationen anpassen):
 
 [source,sql]
 ----
 -- Übersicht der angelegten Kategorien
-select veranstaltung_id, name, mehrwertig, pflicht from "Gruppenkategorie";
+select veranstaltung_id, name, mehrwertig, pflicht from gruppenkategorie;
 
 -- Werte je Kategorie
-select gk.name, gkw.wert from "GruppenkategorieWert" gkw
-  join "Gruppenkategorie" gk on gk.id = gkw.gruppenkategorie_id
+select gk.name, gkw.wert from gruppenkategoriewert gkw
+  join gruppenkategorie gk on gk.id = gkw.gruppenkategorie_id
   order by gk.name, gkw.wert;
 
 -- Werte, die KEINEM der drei Muster entsprechen und daher nicht migriert wurden
@@ -94,24 +106,57 @@ select count(*) from teilnehmer_gruppen;
 
 -- Bestätigung der akzeptierten Einschränkung aus Slice 1: kein Teilnehmer sollte
 -- aktuell in mehreren Veranstaltungen gleichzeitig Mitglied sein
-select nutzer_id, count(*) from "Nutzer_Veranstaltung"
+select nutzer_id, count(*) from nutzer_veranstaltung
   group by nutzer_id having count(*) > 1;
 ----
 
-== 5. Optional: die App selbst gegen die migrierten Daten laufen lassen
+Danach für 4b wieder bei PROD-Stand starten (falls gewünscht):
 
-Für einen vollständigen Klick-Test der betroffenen UI gegen echte Daten bringt das Repo `db/ensure_prod_infra.sh` mit (startet zusätzlich Keycloak und Mailpit) sowie den passenden Start-Befehl für den gebauten Runner.
+[source,bash]
+----
+docker exec konfplan_prod psql -U postgres -d konfplan -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+docker exec -i konfplan_prod pg_restore -U postgres -d konfplan --no-owner /tmp/konfplan.dump
+----
+
+`DROP SCHEMA ... CASCADE` statt `pg_restore --clean`, weil `--clean` beim erneuten Restore die neuen, per Migration hinzugekommenen Tabellen (die ja nicht im Dump stehen) nicht kennt und an deren Fremdschlüssel-Abhängigkeiten auf `nutzer`/`veranstaltung` scheitert.
+
+=== 4b. Vollständiger Weg: die App selbst starten, Flyway migriert automatisch
+
+Für einen Klick-Test der betroffenen UI gegen echte Daten (oder um die Migration inklusive korrekter `flyway_schema_history`-Buchführung zu testen) bringt das Repo `db/ensure_prod_infra.sh` mit (startet zusätzlich Keycloak und Mailpit) sowie den passenden Start-Befehl.
 
 [IMPORTANT]
 ====
 Dafür **nicht** `mvnw quarkus:dev` verwenden! Der Dev-Modus nutzt `drop-and-create` für das Schema und würde die wiederhergestellten Daten sofort überschreiben, statt die Flyway-Migration auszuführen.
 ====
 
-== 6. Aufräumen
+[IMPORTANT]
+====
+Vor dem Start sicherstellen, dass `backend/target/quarkus-app` **aktuell** ist - ein reines `mvnw test`/`compile` aktualisiert nur `target/classes`, nicht `target/quarkus-app` (das tatsächlich zur Laufzeit verwendete Layout). Im Zweifel neu bauen:
 
 [source,bash]
 ----
-docker rm -f konfplan_prod
+cd backend && ../mvnw -q package -DskipTests
+----
+====
+
+Start (Beispielwerte, siehe von `ensure_prod_infra.sh` ausgegebene `export`-Zeilen für die tatsächlichen Ports/Secrets):
+
+[source,bash]
+----
+DB_HOST=localhost DB_PORT=5432 DB_NAME=konfplan DB_USER=postgres DB_PASSWORD=postgres \
+KC_SERVER_URL=http://localhost:8080 KC_REALM=konfplan KC_ADMIN_CLI_SECRET=local-native-test-secret \
+QUARKUS_MAILER_HOST=localhost QUARKUS_MAILER_PORT=1025 QUARKUS_MAILER_START_TLS=DISABLED \
+QUARKUS_MAILER_USERNAME=test QUARKUS_MAILER_PASSWORD=test \
+java -jar backend/target/quarkus-app/quarkus-run.jar
+----
+
+Das Log sollte `Migrating schema "public" to version "28 - ..."` und `Successfully applied 1 migration` zeigen. Die App ist danach unter `http://localhost:9000` erreichbar.
+
+== 5. Aufräumen
+
+[source,bash]
+----
+docker rm -f konfplan_prod konfplan_prod_keycloak konfplan_prod_mailpit
 rm -rf /tmp/konfplan-restore konfplan-backup_*.zip
 ----
 
