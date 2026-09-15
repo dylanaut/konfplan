@@ -11,7 +11,7 @@
     </div>
 
     <div v-else>
-      <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" />
+      <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" class="no-print" />
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
         <h1 class="h3">Raumbelegungen</h1>
         <button @click="handlePrint" class="btn btn-secondary">
@@ -21,6 +21,7 @@
 
       <div class="row">
         <div v-for="raum in sortedRaeume" :key="raum.id" class="col-12 page-break-after">
+          <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" class="print-only" />
           <div class="card h-100">
             <div class="card-header text-center">
               <h2>{{ raumLabel(raum) }} <small class="text-muted">(Kapazität: {{ raum.kapazitaet }})</small></h2>
