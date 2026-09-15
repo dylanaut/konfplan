@@ -413,6 +413,7 @@ public class OrganisatorResource {
 
     @POST
     @Path("/veranstaltungen/{vid}/gruppen")
+    @Consumes(MediaType.TEXT_PLAIN)
     @Operation(summary = "Eine neue Gruppe zu einer Veranstaltung hinzufügen")
     public Response createGruppe(@PathParam("vid") Long vid, @RequestBody(description = "Der Name der neuen Gruppe") String gruppenName) {
         try {

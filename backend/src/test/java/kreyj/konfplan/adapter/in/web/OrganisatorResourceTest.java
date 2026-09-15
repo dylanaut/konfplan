@@ -397,8 +397,12 @@ class OrganisatorResourceTest extends DatabaseCleaner {
         });
 
         // 1. Create a new group
+        // ContentType.TEXT statt JSON, weil der reale Frontend-Store (stores/group.js) den
+        // Gruppennamen mit Content-Type: text/plain sendet - mit JSON haette dieser Test den
+        // fehlenden @Consumes(TEXT_PLAIN)-Override an createGruppe nie aufgedeckt (siehe #690-
+        // Testing, derselbe Fallstrick bei den neuen Gruppenkategorie-Wert-Endpunkten).
         given()
-            .contentType(ContentType.JSON)
+            .contentType(ContentType.TEXT)
             .body("Gruppe Alpha")
             .when().post("/veranstaltungen/{vid}/gruppen", vId)
             .then()
