@@ -1,0 +1,23 @@
+Release Notes 1.25.9
+Released: 2026-09-15
+
+Changes:
+
+- Release-Notes fuer 1.25.8 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.25.9-SNAPSHOT)
+
+- Laufzettel Referent/Teilnehmer: wiederholenden Kopfbereich sichtbar machen
+  Der VeranstaltungHeader im print-only <thead>-Zeilen war weiß auf weiß,
+  weil die table-dark-Klasse des <thead> die Textfarbe an alle Nachkommen
+  vererbt und nur die gedämpften Zeilen (text-muted, Link) das explizit
+  überschrieben haben - der schlichte <h2>-Titel blieb unsichtbar. text-body
+  auf der umschließenden <th> setzt die Textfarbe zurück.
+
+- Anwesenheiten: Spalte 'Unterschrift' ergänzen
+  Neue, breite Spalte "Unterschrift" hinter dem Teilnehmer-Namen für die
+  handschriftliche Unterschrift beim Ausdruck. Dafür die Gruppen-Spalte
+  auf die Hälfte ihrer Breite reduziert.
+
+- Release 1.25.9
+
