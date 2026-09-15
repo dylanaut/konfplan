@@ -6,7 +6,7 @@
 
     <groupId>kreyj.konfplan</groupId>
     <artifactId>konfplan</artifactId>
-    <version>1.25.8</version>
+    <version>1.25.9-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
