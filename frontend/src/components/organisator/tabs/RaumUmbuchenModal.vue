@@ -9,7 +9,7 @@
       <p class="text-xs text-gray-500 mb-4">
         Verlegt eine Wahlvortrag-Instanz in einen anderen Raum im selben Zeitslot - z.B. wenn sich
         nachträglich ein passenderer Raum ergibt. Es werden nur Räume angeboten, die in diesem
-        Zeitslot frei sind und mindestens die Kapazität des bisherigen Raums haben.
+        Zeitslot frei sind und deren Kapazität für die aktuell zugewiesenen Teilnehmer ausreicht.
       </p>
 
       <div v-if="error" class="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl p-3 mb-4">{{ error }}</div>

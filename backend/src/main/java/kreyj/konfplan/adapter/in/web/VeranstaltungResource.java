@@ -535,8 +535,8 @@ public class VeranstaltungResource {
     @Path("/{vid}/planungsergebnisse/{ergebnisId}/vortraege/{wahlvortragId}/instanzen/{instanzIndex}/raum-optionen")
     @Operation(summary = "Freie Räume für eine Raumumbuchung ermitteln",
         description = "Listet Räume, die im selben Zeitslot wie die angegebene Wahlvortrag-Instanz frei sind "
-            + "(nicht durch einen anderen Vortrag oder eine andere Veranstaltung belegt) und mindestens die "
-            + "Kapazität des aktuellen Raums haben - als Auswahl für eine Raumumbuchung nach der Planerstellung.")
+            + "(nicht durch einen anderen Vortrag oder eine andere Veranstaltung belegt) und deren Kapazität für "
+            + "die aktuell zugewiesenen Teilnehmer ausreicht - als Auswahl für eine Raumumbuchung nach der Planerstellung.")
     public Response getRaumUmbuchungOptionen(@PathParam("vid") Long vid, @PathParam("ergebnisId") Long ergebnisId,
                                               @PathParam("wahlvortragId") Long wahlvortragId, @PathParam("instanzIndex") int instanzIndex) {
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
@@ -552,7 +552,7 @@ public class VeranstaltungResource {
     @Path("/{vid}/planungsergebnisse/{ergebnisId}/raum-umbuchen")
     @Operation(summary = "Wahlvortrag-Instanz in einen anderen Raum umbuchen",
         description = "Verlegt eine Wahlvortrag-Instanz in einen anderen, im selben Zeitslot freien Raum mit "
-            + "mindestens derselben Kapazität wie der bisherige Raum - der Referent wird über die Raumänderung benachrichtigt.")
+            + "ausreichender Kapazität für die aktuell zugewiesenen Teilnehmer - der Referent wird über die Raumänderung benachrichtigt.")
     public Response vortragsInstanzRaumUmbuchen(@PathParam("vid") Long vid, @PathParam("ergebnisId") Long ergebnisId,
                                                  @RequestBody(description = "Die umzubuchende Wahlvortrag-Instanz und der Ziel-Raum") RaumUmbuchungAnfrageDto anfrage,
                                                  @Context SecurityContext securityContext) {
