@@ -1,0 +1,18 @@
+Release Notes 1.25.4
+Released: 2026-09-15
+
+Changes:
+
+- Release-Notes fuer 1.25.3 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.25.4-SNAPSHOT)
+
+- Raumumbuchung: Kapazitätsvergleich auf tatsächliche Teilnehmerzahl umstellen
+  Bisher wurde die Ziel-Raum-Kapazität gegen die nominale Kapazität des
+  BISHERIGEN Raums verglichen. Sitzt ein Vortrag in einem großen Raum,
+  aber nur schwach belegt, qualifizierten sich dadurch in der Praxis
+  kaum andere Räume - siehe Prod-Rückmeldung. Massgeblich ist jetzt die
+  tatsächliche Anzahl der aktuell im Vortrag zugewiesenen Teilnehmer.
+
+- Release 1.25.4
+
