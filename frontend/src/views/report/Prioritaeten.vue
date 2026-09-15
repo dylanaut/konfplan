@@ -90,9 +90,7 @@
         </div>
       </div>
 
-      <footer class="text-center py-2 text-muted small print-footer">
-        <span class="badge bg-secondary">Stand: {{ reportData.geplantAm }}</span>
-      </footer>
+      <ReportFooter :veranstaltung-name="reportData.veranstaltung.name" report-titel="Prioritätenanalyse" />
     </template>
   </div>
 </template>
@@ -103,6 +101,7 @@ import { useRoute } from 'vue-router';
 import { Maximize as MaximizeIcon, Minimize as MinimizeIcon } from '@lucide/vue';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
+import ReportFooter from '../../components/ReportFooter.vue';
 
 const route = useRoute();
 const reportData = ref(null);
@@ -213,12 +212,10 @@ const getSlotInfo = (wvs, wv_oid) => {
 /* Globale Druck-Styles */
 @media print {
   .no-print { display: none !important; }
-  .print-footer { display: block !important; position: fixed; bottom: 0; width: 100%; text-align: center; font-size: 0.8rem; color: #6c757d; }
   body { background-color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .container-fluid { width: 100% !important; padding: 0 !important; margin: 0 !important; }
   .table { font-size: 9pt; }
 }
-.print-footer { display: none; }
 
 /* Spezifische Styles aus dem Template */
 body {
