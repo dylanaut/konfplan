@@ -16,7 +16,12 @@ format_commit() {
   body=$(git -C "$REPO_ROOT" log -1 --format=%B "$hash")
 
   local subject
-  subject=$(echo "$body" | head -1 | sed -E 's/ \(#[0-9]+\)$//')
+  # head -1 <<< "$body" statt "echo "$body" | head -1": bei einer langen Commit-Message (mehrere
+  # Kilobyte, z.B. ein umfassender Slice-Beschreibungstext) beendet sich head nach der ersten
+  # Zeile, wodurch echo mitten im Schreiben ein SIGPIPE (Broken pipe) treffen kann - unter
+  # "set -o pipefail" bricht das den ganzen Job ab. Ein Here-String schreibt stattdessen in eine
+  # temporäre Datei/einen Puffer statt in eine lebende Pipe und ist davon nicht betroffen.
+  subject=$(head -1 <<< "$body" | sed -E 's/ \(#[0-9]+\)$//')
 
   echo "- ${subject}"
   echo "$body" | tail -n +2 | sed '/^[[:space:]]*$/d' | { grep -viE '^(co-authored-by:|closes #[0-9]+$)' || true; } | sed 's/^/  /'
