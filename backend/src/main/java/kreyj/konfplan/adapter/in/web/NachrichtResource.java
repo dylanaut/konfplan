@@ -18,7 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import java.util.List;
 
 @Path("/api/nachrichten")
-@RolesAllowed({"ORGANISATOR", "ADMINISTRATOR", "REFERENT", "TEILNEHMER"})
+@RolesAllowed({"ORGANISATOR", "ADMINISTRATOR", "REFERENT", "TEILNEHMER", "BETRACHTER"})
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "Nachrichten", description = "In-App-Postfach (MessageBox) des angemeldeten Nutzers")
 public class NachrichtResource {
