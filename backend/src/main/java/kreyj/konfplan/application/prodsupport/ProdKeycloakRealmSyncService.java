@@ -48,6 +48,9 @@ public class ProdKeycloakRealmSyncService {
     private static final String ADMINISTRATOR_ROLE = "ADMINISTRATOR";
     private static final String ADMINISTRATOR_ROLE_DESCRIPTION =
         "Administrator (Organisator mit exklusiven Rechten für Wartungshinweis und Verzeichnis-Import)";
+    private static final String BETRACHTER_ROLE = "BETRACHTER";
+    private static final String BETRACHTER_ROLE_DESCRIPTION =
+        "Betrachter (nur lesender Zugriff auf zugewiesene Gruppen)";
 
     @Inject
     Keycloak keycloak;
@@ -83,7 +86,7 @@ public class ProdKeycloakRealmSyncService {
         try {
             syncRoles(realmResource);
         } catch (Exception e) {
-            Log.warn("Konnte die Keycloak-Realm-Rollen (ORGANISATOR/ADMINISTRATOR) nicht synchronisieren.", e);
+            Log.warn("Konnte die Keycloak-Realm-Rollen (ORGANISATOR/ADMINISTRATOR/BETRACHTER) nicht synchronisieren.", e);
         }
 
         try {
@@ -216,10 +219,10 @@ public class ProdKeycloakRealmSyncService {
     /**
      * Benennt die Realm-Rolle {@code ADMIN} bei bereits bestehenden Deployments idempotent in
      * {@code ORGANISATOR} um (Keycloak referenziert Rollen intern ueber ihre ID, nicht ueber den
-     * Namen - bestehende Nutzer-Rollenzuweisungen bleiben dadurch erhalten) und legt die neue
-     * Rolle {@code ADMINISTRATOR} an, falls sie noch nicht existiert. Auf frisch importierten
-     * Realms ist beides bereits ueber {@code deploy/keycloak-realm.template.json} korrekt, hier
-     * greift nur der Rename-Zweig nicht (kein {@code ADMIN} mehr vorhanden).
+     * Namen - bestehende Nutzer-Rollenzuweisungen bleiben dadurch erhalten) und legt neu
+     * hinzugekommene Rollen ({@code ADMINISTRATOR}, {@code BETRACHTER}) an, falls sie noch nicht
+     * existieren - {@code deploy/keycloak-realm.template.json} wirkt sich sonst nur auf frisch
+     * importierte Realms aus (siehe #723/#725), nicht auf bereits laufende Deployments.
      */
     private void syncRoles(RealmResource realmResource) {
         List<String> roleNames = realmResource.roles().list().stream().map(RoleRepresentation::getName).toList();
@@ -234,13 +237,20 @@ public class ProdKeycloakRealmSyncService {
             roleNames = realmResource.roles().list().stream().map(RoleRepresentation::getName).toList();
         }
 
-        if (!roleNames.contains(ADMINISTRATOR_ROLE)) {
-            RoleRepresentation administratorRole = new RoleRepresentation();
-            administratorRole.setName(ADMINISTRATOR_ROLE);
-            administratorRole.setDescription(ADMINISTRATOR_ROLE_DESCRIPTION);
-            realmResource.roles().create(administratorRole);
-            Log.infof("Keycloak-Realm-Rolle '%s' angelegt.", ADMINISTRATOR_ROLE);
+        createRoleIfMissing(realmResource, roleNames, ADMINISTRATOR_ROLE, ADMINISTRATOR_ROLE_DESCRIPTION);
+        createRoleIfMissing(realmResource, roleNames, BETRACHTER_ROLE, BETRACHTER_ROLE_DESCRIPTION);
+    }
+
+
+    private void createRoleIfMissing(RealmResource realmResource, List<String> roleNames, String name, String description) {
+        if (roleNames.contains(name)) {
+            return;
         }
+        RoleRepresentation role = new RoleRepresentation();
+        role.setName(name);
+        role.setDescription(description);
+        realmResource.roles().create(role);
+        Log.infof("Keycloak-Realm-Rolle '%s' angelegt.", name);
     }
 
 
