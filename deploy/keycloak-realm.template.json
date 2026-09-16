@@ -103,6 +103,7 @@
                 "realm-management": [
                     "manage-users",
                     "view-users",
+                    "view-clients",
                     "view-realm",
                     "manage-realm",
                     "view-events"
