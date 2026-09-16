@@ -37,10 +37,7 @@
       </div>
     </div>
 
-    <!-- Druck-spezifischer Footer -->
-    <footer class="print-footer">
-      Gedruckt am {{ new Date().toLocaleDateString('de-DE') }} - KonfPlan
-    </footer>
+    <ReportFooter :veranstaltung-name="veranstaltung.name" report-titel="Wahlvorträge - Übersicht" />
   </div>
 </template>
 
@@ -49,6 +46,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
+import ReportFooter from '../../components/ReportFooter.vue';
 import { useNeigungStore } from '../../stores/neigung';
 import { extractErrorMessage } from '../../utils/errorMessage';
 
@@ -101,15 +99,6 @@ onMounted(async () => {
   .no-print {
     display: none !important;
   }
-  .print-footer {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    text-align: center;
-    font-size: 0.8rem;
-    color: #6c757d;
-    display: block !important;
-  }
   .vortrag-eintrag {
     break-inside: avoid;
   }
@@ -123,9 +112,5 @@ onMounted(async () => {
     padding: 0 !important;
     margin: 0 !important;
   }
-}
-
-.print-footer {
-  display: none;
 }
 </style>

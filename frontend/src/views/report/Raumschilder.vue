@@ -11,7 +11,7 @@
     </div>
 
     <div v-else>
-      <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" />
+      <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" class="no-print" />
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
         <h1 class="h3">Raumbelegungen</h1>
         <button @click="handlePrint" class="btn btn-secondary">
@@ -20,7 +20,8 @@
       </div>
 
       <div class="row">
-        <div v-for="raum in sortedRaeume" :key="raum.id" class="col-12 page-break-after">
+        <div v-for="(raum, index) in sortedRaeume" :key="raum.id" class="col-12 page-break-after">
+          <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" class="print-only" />
           <div class="card h-100">
             <div class="card-header text-center">
               <h2>{{ raumLabel(raum) }} <small class="text-muted">(Kapazität: {{ raum.kapazitaet }})</small></h2>
@@ -36,7 +37,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="slot in sortedSlots" :key="slot.id">
+                  <tr v-for="slot in sortedSlots" :key="slot.id" class="page-break-inside-avoid">
                     <td>{{ formatSlot(slot) }}</td>
                     <template v-if="reportData.raumplan[raum.id] && reportData.raumplan[raum.id][slot.id]">
                       <td>{{ reportData.raumplan[raum.id][slot.id].vortragTitel }}</td>
@@ -54,14 +55,10 @@
               </table>
             </div>
           </div>
+          <ReportFooter :veranstaltung-name="reportData.veranstaltung.name" report-titel="Raumbelegungen" :seite="index + 1" />
         </div>
       </div>
     </div>
-
-    <!-- Druck-spezifischer Footer -->
-    <footer class="print-footer">
-      Gedruckt am {{ new Date().toLocaleDateString('de-DE') }} - KonfPlan
-    </footer>
   </div>
 </template>
 
@@ -70,6 +67,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
+import ReportFooter from '../../components/ReportFooter.vue';
 import { raumLabel } from '../../utils/raumLabel';
 
 const route = useRoute();
@@ -123,20 +121,21 @@ const formatSlot = (slot) => {
   .no-print {
     display: none !important;
   }
-  .print-footer {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    text-align: center;
-    font-size: 0.8rem;
-    color: #6c757d;
-    display: block !important;
-  }
   .print-only {
     display: block !important;
   }
   .page-break-after {
     page-break-after: always;
+  }
+  /* Wiederholt die Tabellen-Kopfzeile (Zeit/Vortrag/Referent/Teilnehmer) auf jeder neuen
+     Druckseite, wenn die Belegung eines Raums über eine Seite hinaus geht - dafür darf keine
+     einzelne Zeile über einen Seitenumbruch gerissen werden, sonst unterbleibt die native
+     Thead-Wiederholung des Browsers. */
+  .page-break-inside-avoid {
+    page-break-inside: avoid;
+  }
+  thead {
+    display: table-header-group;
   }
   body {
     background-color: #fff;
@@ -153,7 +152,7 @@ const formatSlot = (slot) => {
   }
 }
 
-.print-footer, .print-only {
+.print-only {
   display: none;
 }
 </style>

@@ -19,7 +19,7 @@
         </button>
       </div>
 
-      <div v-for="(plan, referentId) in sortedPlaene" :key="referentId" class="page-break-after">
+      <div v-for="(plan, referentId, index) in sortedPlaene" :key="referentId" class="page-break-after">
         <h4>
           {{ referentInfo(referentId).firstName }} {{ referentInfo(referentId).lastName }}
           <small v-if="referentInfo(referentId).organisation" class="text-muted">({{ referentInfo(referentId).organisation }})</small>
@@ -41,13 +41,9 @@
             </tr>
           </tbody>
         </table>
+        <ReportFooter :veranstaltung-name="reportData.veranstaltung.name" report-titel="Laufzettel für alle Referenten" :seite="index + 1" />
       </div>
     </div>
-
-    <!-- Druck-spezifischer Footer -->
-    <footer class="print-footer">
-      Gedruckt am {{ new Date().toLocaleDateString('de-DE') }} - KonfPlan
-    </footer>
   </div>
 </template>
 
@@ -56,6 +52,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
+import ReportFooter from '../../components/ReportFooter.vue';
 
 const route = useRoute();
 const reportData = ref({ veranstaltung: {}, plaene: {}, referenten: [] });
@@ -109,15 +106,6 @@ const formatSlot = (eintrag) => {
   .no-print {
     display: none !important;
   }
-  .print-footer {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    text-align: center;
-    font-size: 0.8rem;
-    color: #6c757d;
-    display: block !important;
-  }
   .print-only {
     display: block !important;
   }
@@ -139,7 +127,7 @@ const formatSlot = (eintrag) => {
   }
 }
 
-.print-footer, .print-only {
+.print-only {
   display: none;
 }
 </style>

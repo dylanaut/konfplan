@@ -1,0 +1,31 @@
+Release Notes 1.25.7
+Released: 2026-09-15
+
+Changes:
+
+- Release-Notes fuer 1.25.6 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.25.7-SNAPSHOT)
+
+- Raumbelegungen-Report: Veranstaltungs-Header auf jeder Raum-Seite wiederholen (#700)
+  Nachtrag zu #696/#697: der vorherige Fix adressierte die Tabellen-
+  Spaltenkopfzeile, tatsächlich gemeint war der Veranstaltungs-Header
+  (Name, Datum/Zeitraum, Logo, Organisatoren), der bisher nur auf der
+  allerersten Druckseite erschien.
+  VeranstaltungHeader wird jetzt zusätzlich innerhalb jedes Raum-Blocks
+  gerendert (per print-only-Klasse nur beim Drucken sichtbar), sodass
+  jede neue Raum-Seite oben zuerst den vollständigen Veranstaltungs-
+  Header und darunter den Raum-Header (Gebäudekürzel/Raum/Kapazität)
+  zeigt. Die ursprüngliche Instanz am Dokumentanfang bleibt für die
+  Bildschirmansicht erhalten, wird aber beim Drucken (no-print)
+  ausgeblendet, um keine Dopplung auf der ersten Seite zu erzeugen.
+  Verifiziert per Playwright-generiertem Druck-PDF gegen die echte
+  Komponente mit echten Report-Daten (59 Räume/Seiten): jede Seite
+  zeigt oben den vollständigen Veranstaltungs-Header, darunter den
+  jeweiligen Raum-Header.
+
+- Release 1.25.7
+  Enthält den korrigierten Fix für #700: Veranstaltungs-Header erscheint
+  beim Drucken jetzt tatsächlich auf jeder Raum-Seite des Raumbelegungen-
+  Reports, nicht nur auf der ersten Seite (#701).
+

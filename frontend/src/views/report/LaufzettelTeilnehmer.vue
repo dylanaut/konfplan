@@ -11,7 +11,7 @@
     </div>
 
     <div v-else>
-      <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" />
+      <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" class="no-print" />
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
         <h1 class="h3">Laufzettel für {{ reportData.teilnehmer.firstName }} {{ reportData.teilnehmer.lastName }}</h1>
         <button @click="handlePrint" class="btn btn-secondary">
@@ -21,6 +21,11 @@
 
       <table class="table table-striped table-bordered">
         <thead class="table-dark">
+          <tr class="print-header-row">
+            <th colspan="4" class="p-0 border-0 bg-white text-body">
+              <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" class="print-only mb-0" />
+            </th>
+          </tr>
           <tr>
             <th scope="col">Zeit</th>
             <th scope="col">Vortrag</th>
@@ -39,10 +44,8 @@
       </table>
     </div>
 
-    <!-- Druck-spezifischer Footer -->
-    <footer class="print-footer">
-      Gedruckt am {{ new Date().toLocaleDateString('de-DE') }} - KonfPlan
-    </footer>
+    <ReportFooter :veranstaltung-name="reportData.veranstaltung.name"
+                  :report-titel="`Laufzettel für ${reportData.teilnehmer.firstName} ${reportData.teilnehmer.lastName}`" />
   </div>
 </template>
 
@@ -51,6 +54,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
+import ReportFooter from '../../components/ReportFooter.vue';
 
 const route = useRoute();
 const reportData = ref({ veranstaltung: {}, teilnehmer: {}, plan: [] });
@@ -98,17 +102,11 @@ const formatSlot = (eintrag) => {
   .no-print {
     display: none !important;
   }
-  .print-footer {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    text-align: center;
-    font-size: 0.8rem;
-    color: #6c757d;
-    display: block !important;
-  }
   .print-only {
     display: block !important;
+  }
+  .print-header-row {
+    display: table-row !important;
   }
   .page-break-inside-avoid {
     page-break-inside: avoid;
@@ -128,7 +126,11 @@ const formatSlot = (eintrag) => {
   }
 }
 
-.print-footer, .print-only {
+.print-only {
+  display: none;
+}
+
+.print-header-row {
   display: none;
 }
 </style>

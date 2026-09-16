@@ -41,10 +41,7 @@
       </table>
     </div>
 
-    <!-- Druck-spezifischer Footer -->
-    <footer class="print-footer">
-      Gedruckt am {{ new Date().toLocaleDateString('de-DE') }} - KonfPlan
-    </footer>
+    <ReportFooter :veranstaltung-name="reportData.veranstaltung.name" report-titel="Raumübersicht" />
   </div>
 </template>
 
@@ -53,6 +50,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
+import ReportFooter from '../../components/ReportFooter.vue';
 
 const route = useRoute();
 const reportData = ref({ veranstaltung: {}, plan: [] });
@@ -101,15 +99,6 @@ onMounted(async () => {
   .no-print {
     display: none !important;
   }
-  .print-footer {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    text-align: center;
-    font-size: 0.8rem;
-    color: #6c757d;
-    display: block !important;
-  }
   .print-only {
     display: block !important;
   }
@@ -131,7 +120,7 @@ onMounted(async () => {
   }
 }
 
-.print-footer, .print-only {
+.print-only {
   display: none;
 }
 </style>

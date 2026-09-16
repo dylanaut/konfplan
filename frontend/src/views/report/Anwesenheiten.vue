@@ -11,7 +11,7 @@
     </div>
 
     <div v-else>
-      <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" />
+      <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" class="no-print" />
       <div class="d-flex justify-content-between align-items-center mb-4 no-print">
         <h1 class="h3">Anwesenheiten</h1>
         <button @click="handlePrint" class="btn btn-secondary">
@@ -19,7 +19,8 @@
         </button>
       </div>
 
-      <div v-for="eintrag in vortraege" :key="`${eintrag.slotId}-${eintrag.raumId}`" class="page-break-after">
+      <div v-for="(eintrag, index) in vortraege" :key="`${eintrag.slotId}-${eintrag.raumId}`" class="page-break-after">
+        <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" class="print-only" />
         <h4 class="mb-0">{{ eintrag.vortragTitel }}</h4>
         <p class="text-muted mb-3">
           {{ eintrag.referentName }} &middot; {{ eintrag.slotZeit }} &middot; {{ raumLabel(eintrag) }}
@@ -31,27 +32,25 @@
           <thead class="table-dark">
             <tr>
               <th scope="col">Teilnehmer</th>
-              <th scope="col">Gruppen</th>
+              <th scope="col" style="width: 30%;">Unterschrift</th>
+              <th scope="col" style="width: 15%;">Gruppen</th>
               <th scope="col" class="text-center" style="width: 100px;">Anwesend</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(name, idx) in eintrag.teilnehmerNamen" :key="idx">
               <td>{{ name }}</td>
+              <td></td>
               <td>{{ eintrag.teilnehmerGruppen?.[idx] }}</td>
               <td class="text-center"><span class="checkbox-box"></span></td>
             </tr>
           </tbody>
         </table>
+        <ReportFooter :veranstaltung-name="reportData.veranstaltung.name" report-titel="Anwesenheiten" :seite="index + 1" />
       </div>
 
       <p v-if="vortraege.length === 0" class="text-muted">Keine Vorträge vorhanden.</p>
     </div>
-
-    <!-- Druck-spezifischer Footer -->
-    <footer class="print-footer">
-      Gedruckt am {{ new Date().toLocaleDateString('de-DE') }} - KonfPlan
-    </footer>
   </div>
 </template>
 
@@ -60,6 +59,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
+import ReportFooter from '../../components/ReportFooter.vue';
 import { raumLabel as formatRaumLabel } from '../../utils/raumLabel';
 
 const route = useRoute();
@@ -105,15 +105,6 @@ onMounted(async () => {
   .no-print {
     display: none !important;
   }
-  .print-footer {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    text-align: center;
-    font-size: 0.8rem;
-    color: #6c757d;
-    display: block !important;
-  }
   .print-only {
     display: block !important;
   }
@@ -135,7 +126,7 @@ onMounted(async () => {
   }
 }
 
-.print-footer, .print-only {
+.print-only {
   display: none;
 }
 
