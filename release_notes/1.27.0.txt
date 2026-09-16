@@ -1,0 +1,96 @@
+Release Notes 1.27.0
+Released: 2026-09-16
+
+Changes:
+
+- generate-release-notes.sh: Broken-Pipe bei langer Commit-Message beheben
+  subject=$(echo "$body" | head -1 | ...) beendet head nach der ersten
+  Zeile - ist $body groß genug für mehrere write()-Aufrufe von echo,
+  schließt head die Pipe bereits vorher, der naechste write() trifft ein
+  SIGPIPE, und set -o pipefail bricht den ganzen Job ab. Ausgelöst durch
+  den Squash-Merge-Commit von PR #691, dessen Message-Body außergewöhnlich
+  lang ist. head -1 <<< "$body" (Here-String statt lebender Pipe) ist von
+  diesem Risiko nicht betroffen.
+
+- Release-Notes fuer 1.26.0 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.26.1-SNAPSHOT)
+
+- Neue Rolle Betrachter: lesender Gruppenzugriff
+  * Betrachter: Domänenmodell, Migration und Keycloak-Rolle
+  Neue Nutzer-Subklasse Betrachter (SINGLE_TABLE-Geschwister von Referent/
+  Teilnehmer) mit m:n-Zuordnung zu GruppenkategorieWert, um den lesenden
+  Zugriff auf konkrete Gruppen (z.B. eine Klasse) zu modellieren. Anders
+  als bei Teilnehmer.addGruppenwert gibt es keine Einwertigkeits-Regel -
+  ein Betrachter darf auch innerhalb einer nicht mehrwertigen Kategorie
+  mehrere Werte zugewiesen bekommen.
+  Refs #718
+  * Betrachter: CRUD-Wiring über die bestehende rollen-generische Nutzerverwaltung
+  OrganisatorService.createUser/updateUser sind bereits rollen-generisch
+  (dispatchen anhand von NutzerDto.role) - Betrachter braucht daher keine
+  eigene CRUD-Resource, nur zusätzliche Zweige für die Gruppenwerte-
+  Zuordnung (analog Teilnehmer.applyGruppenwerteByKategorie, aber ohne
+  Einwertigkeits-Regel). GruppenkategorieService räumt beim Löschen einer
+  Kategorie/eines Wertes jetzt auch Betrachter-Zuordnungen auf.
+  Beim Testen von GruppenkategorieService.removeWert() (Löschen eines
+  einzelnen Wertes) fiel ein vorbestehender, von Betrachter unabhängiger
+  Bug auf: die Löschung eines Wertes schlägt fehl, weil der Wert weiterhin
+  in der cascade=ALL-Collection Gruppenkategorie.werte referenziert wird
+  und beim Flush wieder auferstehen. Das ist außerhalb des Scopes dieser
+  Änderung und wird separat gemeldet statt hier mitgefixt.
+  Refs #718
+  * Betrachter: rein lesende REST-Endpunkte für Teilnehmer, Verfügbarkeiten und Buchungen
+  Neuer BetrachterService kapselt die Gruppen-Scoping-Logik (sichtbare
+  Teilnehmer = Schnittmenge aus tn.gruppenwerte und betrachter.gruppenwerte
+  innerhalb derselben Veranstaltung) sowie die abgeleiteten Verfügbarkeits-
+  und Zuweisungs-Daten. Die neue BetrachterResource (/api/betrachter/...)
+  ist strikt lesend, greift für Buchungen bewusst nur auf den 2-Parameter-
+  Overload von PlanService.getPlanFuerTeilnehmer zurück (liefert immer nur
+  das veröffentlichte Planungsergebnis) und prüft vor jedem Zugriff, dass
+  die angefragte Veranstaltung tatsächlich zu den eigenen Veranstaltungen
+  des Betrachters gehört. SlotResource ist für BETRACHTER freigegeben, da
+  sie nur Zeit-Metadaten liefert.
+  Refs #718
+  * Betrachter: Dev-Account für lokales Testen anlegen
+  Analog zum bestehenden festen Administrator-Account ein Betrachter-
+  Account (loginName "betrachter") in DevDataInitService, damit sich die
+  neue Rolle lokal ohne manuelle Keycloak-/DB-Handgriffe testen lässt.
+  Ohne Gruppenzuordnung, da die aktuell geladenen Dev-DataSets ihre
+  Gruppenkategorien nicht importieren - Zuordnung erfolgt lokal manuell
+  über den neuen Betrachter-Tab.
+  Refs #718
+  * Betrachter: Zugriff auf globale Wartungshinweis-/Nachrichten-Endpunkte
+  App.vue ruft für jeden eingeloggten Nutzer unabhängig von der Rolle
+  den Wartungshinweis (Banner) und das Nachrichten-Postfach ab; beide
+  Endpunkte kannten die neue Rolle BETRACHTER noch nicht und lieferten
+  403. Beim manuellen End-to-End-Test im laufenden quarkus:dev als
+  Betrachter eingeloggt aufgefallen. Beide Endpunkte sind rein lesend
+  bzw. auf den eigenen Nutzer beschränkt (NachrichtResource scoped
+  bereits über den JWT-Principal), daher risikolos erweiterbar.
+  Refs #718
+  * Betrachter: Rollenunterstützung und Verwaltungs-Tab im Organisator-Dashboard
+  - stores/auth.js: BETRACHTER zu KNOWN_ROLES ergänzt (sonst wird die
+    Rolle beim Login-Parsing stillschweigend verworfen) + isViewer-Getter.
+  - router/index.js, Redirecting.vue: neue Route /betrachter, Redirect
+    nach Login.
+  - UserEditorModal.vue: Rollenauswahl und Gruppenzuweisungs-Block für
+    Betrachter (immer als Checkbox-Grid, da - anders als bei Teilnehmer -
+    auch mehrere Werte innerhalb einer nicht mehrwertigen Kategorie
+    erlaubt sind).
+  - Neuer BetrachterTab.vue (analog ReferentenTab.vue) zur Verwaltung von
+    Betrachter-Konten samt Anzeige der zugewiesenen Gruppen, eingebunden
+    in OrganisatorDashboard.vue und OrganisatorSidebarNav.vue.
+  Refs #718
+  * Betrachter: eigenes rein lesendes Dashboard
+  Neue View /betrachter: zeigt für die eigenen Veranstaltungen die
+  Teilnehmer der zugewiesenen Gruppen mit Verfügbarkeit je Slot,
+  Prioritäten und Buchungen (nur veröffentlichter Plan). Rein lesend,
+  keine Bearbeiten-/Lösch-Aktionen. Manuell im laufenden quarkus:dev
+  end-to-end verifiziert: Login als Betrachter, korrekte Weiterleitung,
+  korrekt auf die zugewiesene Gruppe beschränkte Anzeige, keine
+  Schreibzugriffe möglich (403 auf Organisator-Endpunkte).
+  Refs #718
+  ---------
+
+- Release 1.27.0
+
