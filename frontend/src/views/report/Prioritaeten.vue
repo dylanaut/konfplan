@@ -21,14 +21,14 @@
 
       <section class="mt-4" :class="{ 'report-fullwindow': isExpanded }">
         <div class="row mb-3 align-items-center no-print">
-          <div class="col-md-4">
-            <label for="classFilter" class="form-label small fw-bold text-muted">Gruppe filtern:</label>
-            <select id="classFilter" class="form-select shadow-sm" v-model="selectedGruppe">
-              <option value="all">Alle Gruppen anzeigen</option>
-              <option v-for="gruppe in reportData.gruppen" :key="gruppe" :value="gruppe">{{ gruppe }}</option>
+          <div class="col-md-3" v-for="(werte, kategorieName) in reportData.gruppen" :key="kategorieName">
+            <label class="form-label small fw-bold text-muted">{{ kategorieName }} filtern:</label>
+            <select class="form-select shadow-sm" v-model="selectedGruppen[kategorieName]">
+              <option value="">Alle anzeigen</option>
+              <option v-for="wert in werte" :key="wert" :value="wert">{{ wert }}</option>
             </select>
           </div>
-          <div class="col-md-8 text-end pt-4">
+          <div class="col text-end pt-4">
             <span class="badge bg-light text-dark border" id="visibleCount">
               {{ visibleCountText }}
             </span>
@@ -54,8 +54,8 @@
               <tr v-for="tn_erf in filteredTeilnehmer" :key="tn_erf.teilnehmer.id" class="participant-row">
                 <td class="fw-bold border-end bg-light">
                   {{ tn_erf.teilnehmer.fullname }}
-                  <div v-if="tn_erf.teilnehmer.gruppen && tn_erf.teilnehmer.gruppen.length" class="small text-muted fw-normal">
-                    {{ tn_erf.teilnehmer.gruppen.join(', ') }}
+                  <div v-if="formatGruppenSummary(tn_erf.teilnehmer)" class="small text-muted fw-normal">
+                    {{ formatGruppenSummary(tn_erf.teilnehmer) }}
                   </div>
                 </td>
                 <td v-for="wv_oid in sortedWvOids" :key="wv_oid" class="text-center p-2" :class="getStatusClass(tn_erf.wvStatuus[wv_oid])">
@@ -96,19 +96,23 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
+import { ref, reactive, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { Maximize as MaximizeIcon, Minimize as MinimizeIcon } from '@lucide/vue';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
 import ReportFooter from '../../components/ReportFooter.vue';
+import { matchesGruppenkategorieFilter } from '../../composables/useGruppenkategorieColumns';
 
 const route = useRoute();
 const reportData = ref(null);
 const loading = ref(true);
 const error = ref(null);
-const selectedGruppe = ref('all');
+// Gewählter Wert je Gruppenkategorie-Name (#690), z.B. { Klasse: '10a' } - leerer String = kein Filter.
+const selectedGruppen = reactive({});
 const isExpanded = ref(false);
+
+const formatGruppenSummary = (t) => Object.values(t.gruppenwerteByKategorie || {}).flat().join(', ');
 
 // Body-Scroll sperren, solange die Tabelle das Browser-Fenster ausfüllt (sonst zwei
 // verschachtelte Scrollbalken), und mit Escape wieder verkleinerbar machen.
@@ -149,20 +153,21 @@ onMounted(async () => {
   }
 });
 
+const hatAktivenGruppenfilter = computed(() => Object.values(selectedGruppen).some(Boolean));
+
 const filteredTeilnehmer = computed(() => {
   if (!reportData.value || !reportData.value.teilnehmer_erfuellung) return [];
-  if (selectedGruppe.value === 'all') {
-    return reportData.value.teilnehmer_erfuellung;
-  }
-  return reportData.value.teilnehmer_erfuellung.filter(tn => tn.teilnehmer.gruppen.includes(selectedGruppe.value));
+  return reportData.value.teilnehmer_erfuellung.filter(tn =>
+    Object.entries(selectedGruppen).every(([kategorieName, gewaehlterWert]) =>
+      matchesGruppenkategorieFilter(tn.teilnehmer, kategorieName, gewaehlterWert)));
 });
 
 const visibleCountText = computed(() => {
   if (!reportData.value) return '';
-  if (selectedGruppe.value === 'all') {
+  if (!hatAktivenGruppenfilter.value) {
     return `Zeige alle ${reportData.value.teilnehmer_erfuellung.length} Teilnehmer`;
   }
-  return `Gruppe ${selectedGruppe.value}: ${filteredTeilnehmer.value.length} Teilnehmer`;
+  return `${filteredTeilnehmer.value.length} von ${reportData.value.teilnehmer_erfuellung.length} Teilnehmern`;
 });
 
 const getWvTitle = (wv) => {

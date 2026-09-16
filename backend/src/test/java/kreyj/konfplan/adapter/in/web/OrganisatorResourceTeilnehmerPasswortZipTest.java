@@ -11,6 +11,8 @@ import io.quarkus.test.security.TestSecurity;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerPasswortZipRequestDto;
 import kreyj.konfplan.domain.exception.KeycloakProvisioningException;
 import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
+import kreyj.konfplan.persistence.Gruppenkategorie;
+import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -66,14 +68,23 @@ class OrganisatorResourceTeilnehmerPasswortZipTest extends DatabaseCleaner {
             veranstaltungId = v.getId();
             admin.addVeranstaltung(v);
 
+            Gruppenkategorie klasse = new Gruppenkategorie(v, "Klasse", false, false);
+            klasse.persist();
+            GruppenkategorieWert siebenA = new GruppenkategorieWert(klasse, "7a");
+            siebenA.persist();
+            Gruppenkategorie ag = new Gruppenkategorie(v, "AG", false, false);
+            ag.persist();
+            GruppenkategorieWert technik = new GruppenkategorieWert(ag, "Technik");
+            technik.persist();
+
             Teilnehmer t1 = new Teilnehmer();
             t1.assignLoginName("zip.teilnehmer1");
             t1.setFirstName("Erika");
             t1.setLastName("Musterfrau");
-            t1.addGruppe("Klasse 7a");
-            t1.addGruppe("AG Technik");
             t1.persist();
             t1.addVeranstaltung(v);
+            t1.addGruppenwert(siebenA);
+            t1.addGruppenwert(technik);
             teilnehmer1Id = t1.getId();
 
             Teilnehmer t2 = new Teilnehmer();
@@ -132,15 +143,16 @@ class OrganisatorResourceTeilnehmerPasswortZipTest extends DatabaseCleaner {
         assertThat(zip).isNotEmpty();
 
         List<String[]> rows = readCsvFromZip(zip, "geheimgeheim", tempDir);
-        // Header + 2 Datenzeilen; positionsbasierte Gruppen-Spalten: max. Gruppenanzahl ist 2
-        // (Teilnehmer1 hat 2 Gruppen, Teilnehmer2 keine).
-        assertThat(rows.get(0)).containsExactly("Name", "Login", "Temporäres Passwort", "Gruppe 1", "Gruppe 2");
+        // Header + 2 Datenzeilen; eine Spalte je Gruppenkategorie (#690, alphabetisch sortiert)
+        // statt positionsbasierter "Gruppe 1".."Gruppe N"-Spalten.
+        assertThat(rows.get(0)).containsExactly("Name", "Login", "Temporäres Passwort", "AG", "Klasse");
         assertThat(rows).hasSize(3);
 
         String[] zeile1 = rows.stream().filter(r -> r[1].equals("zip.teilnehmer1")).findFirst().orElseThrow();
         assertThat(zeile1[0]).isEqualTo("Musterfrau, Erika");
         assertThat(zeile1[2]).isNotBlank();
-        assertThat(zeile1).contains("AG Technik", "Klasse 7a");
+        assertThat(zeile1[3]).isEqualTo("Technik");
+        assertThat(zeile1[4]).isEqualTo("7a");
 
         String[] zeile2 = rows.stream().filter(r -> r[1].equals("zip.teilnehmer2")).findFirst().orElseThrow();
         assertThat(zeile2[3]).isEmpty();

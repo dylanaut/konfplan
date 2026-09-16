@@ -22,7 +22,7 @@
         <VeranstaltungHeader :veranstaltung="reportData.veranstaltung" />
         <h4 class="mb-4">
           {{ t.firstName }} {{ t.lastName }}
-          <small v-if="t.gruppen?.length" class="text-muted">({{ t.gruppen.join(', ') }})</small>
+          <small v-if="formatGruppenSummary(t)" class="text-muted">({{ formatGruppenSummary(t) }})</small>
         </h4>
 
         <h5>Wahlvorträge</h5>
@@ -81,6 +81,8 @@ const legendeChunks = computed(() => {
 });
 
 const handlePrint = () => window.print();
+
+const formatGruppenSummary = (t) => Object.values(t.gruppenwerteByKategorie || {}).flat().join(', ');
 
 onMounted(async () => {
   const veranstaltungId = route.params.vid;

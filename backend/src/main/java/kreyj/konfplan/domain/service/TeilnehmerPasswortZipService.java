@@ -5,6 +5,7 @@ import com.opencsv.ICSVWriter;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.domain.exception.BusinessException;
+import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -18,7 +19,8 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TreeSet;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Erzeugt fuer eine ausgewaehlte Menge von Teilnehmern je ein neues temporaeres Passwort (setzt
@@ -46,11 +48,11 @@ public class TeilnehmerPasswortZipService {
     }
 
 
-    protected record Kandidat(String loginName, String fullName, List<String> gruppen, Teilnehmer nutzer) {
+    protected record Kandidat(String loginName, String fullName, Map<String, List<String>> gruppenwerteByKategorie, Teilnehmer nutzer) {
     }
 
 
-    private record ReportZeile(String fullName, String loginName, String password, List<String> gruppen) {
+    private record ReportZeile(String fullName, String loginName, String password, Map<String, List<String>> gruppenwerteByKategorie) {
     }
 
 
@@ -70,11 +72,11 @@ public class TeilnehmerPasswortZipService {
 
         List<Kandidat> ergebnis = new ArrayList<>();
         for (Teilnehmer t : teilnehmerListe) {
-            // getGruppen() liefert ein Set ohne garantierte Reihenfolge - fuer positionsbasierte
-            // "Gruppe 1".."Gruppe N"-Spalten wird eine deterministische (alphabetische) Sortierung
-            // waehrend der noch offenen Session gelesen.
+            Map<String, List<String>> gruppenwerteByKategorie = t.getGruppenwerte().stream()
+                .collect(Collectors.groupingBy(w -> w.getGruppenkategorie().getName(),
+                    Collectors.mapping(GruppenkategorieWert::getWert, Collectors.toList())));
             ergebnis.add(new Kandidat(t.getLoginName(), t.getLastName() + ", " + t.getFirstName(),
-                new ArrayList<>(new TreeSet<>(t.getGruppen())), t));
+                gruppenwerteByKategorie, t));
         }
         return ergebnis;
     }
@@ -97,7 +99,7 @@ public class TeilnehmerPasswortZipService {
             String neuesPasswort = PasswordGenerator.generate();
             try {
                 keycloakUserProvisioningService.resetPassword(k.nutzer(), neuesPasswort);
-                erfolgsZeilen.add(new ReportZeile(k.fullName(), k.loginName(), neuesPasswort, k.gruppen()));
+                erfolgsZeilen.add(new ReportZeile(k.fullName(), k.loginName(), neuesPasswort, k.gruppenwerteByKategorie()));
             } catch (Exception e) {
                 LOG.warn("Passwort-Reset für '" + k.loginName() + "' fehlgeschlagen: " + e.getMessage());
                 fehlgeschlagen.add(k.loginName());
@@ -127,12 +129,14 @@ public class TeilnehmerPasswortZipService {
 
 
     private byte[] buildCsv(List<ReportZeile> zeilen) throws IOException {
-        int maxGruppen = zeilen.stream().mapToInt(z -> z.gruppen().size()).max().orElse(0);
+        List<String> kategorieNamen = zeilen.stream()
+            .flatMap(z -> z.gruppenwerteByKategorie().keySet().stream())
+            .distinct()
+            .sorted()
+            .toList();
 
         List<String> header = new ArrayList<>(List.of("Name", "Login", "Temporäres Passwort"));
-        for (int i = 1; i <= maxGruppen; i++) {
-            header.add("Gruppe " + i);
-        }
+        header.addAll(kategorieNamen);
 
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             os.write(UTF8_BOM);
@@ -141,9 +145,8 @@ public class TeilnehmerPasswortZipService {
                 csvWriter.writeNext(header.toArray(new String[0]));
                 for (ReportZeile z : zeilen) {
                     List<String> zeile = new ArrayList<>(List.of(z.fullName(), z.loginName(), z.password()));
-                    zeile.addAll(z.gruppen());
-                    while (zeile.size() < header.size()) {
-                        zeile.add("");
+                    for (String kategorieName : kategorieNamen) {
+                        zeile.add(String.join(", ", z.gruppenwerteByKategorie().getOrDefault(kategorieName, List.of())));
                     }
                     csvWriter.writeNext(zeile.toArray(new String[0]));
                 }
