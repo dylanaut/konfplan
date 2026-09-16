@@ -6,7 +6,7 @@ import { useToast } from 'vue-toastification';
 import { useEventContextStore } from './eventContext';
 import keycloak from '../keycloak';
 
-const KNOWN_ROLES = ['ORGANISATOR', 'ADMINISTRATOR', 'REFERENT', 'TEILNEHMER'];
+const KNOWN_ROLES = ['ORGANISATOR', 'ADMINISTRATOR', 'REFERENT', 'TEILNEHMER', 'BETRACHTER'];
 
 export const useAuthStore = defineStore('auth', () => {
     const token = ref(localStorage.getItem('token') || null);
@@ -21,6 +21,7 @@ export const useAuthStore = defineStore('auth', () => {
     const isAdministrator = computed(() => userRole.value === 'ADMINISTRATOR');
     const isSpeaker = computed(() => userRole.value === 'REFERENT');
     const isParticipant = computed(() => userRole.value === 'TEILNEHMER');
+    const isViewer = computed(() => userRole.value === 'BETRACHTER');
 
     // Wird nach erfolgreicher Keycloak-Anmeldung (main.js, keycloak.js-Token-Refresh) mit dem
     // rohen Access-Token und dem von keycloak-js bereits dekodierten Payload aufgerufen.
@@ -99,6 +100,7 @@ export const useAuthStore = defineStore('auth', () => {
         isAdministrator,
         isSpeaker,
         isParticipant,
+        isViewer,
         login,
         requireLogin,
         logout,

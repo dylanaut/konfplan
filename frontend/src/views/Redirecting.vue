@@ -30,6 +30,8 @@ onMounted(() => {
     router.replace('/referent');
   } else if (authStore.isParticipant) {
     router.replace('/teilnehmer');
+  } else if (authStore.isViewer) {
+    router.replace('/betrachter');
   }
 });
 </script>
