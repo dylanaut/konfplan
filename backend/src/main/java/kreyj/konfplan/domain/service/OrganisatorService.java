@@ -28,6 +28,7 @@ import kreyj.konfplan.domain.exception.UpdateNutzerException;
 import kreyj.konfplan.domain.exception.UpdateVortragException;
 import kreyj.konfplan.domain.exception.VeranstaltungException;
 import kreyj.konfplan.persistence.AbschlussTyp;
+import kreyj.konfplan.persistence.Betrachter;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gruppenkategorie;
 import kreyj.konfplan.persistence.GruppenkategorieWert;
@@ -152,6 +153,8 @@ public class OrganisatorService implements OrganisatorServiceInterface {
             nutzer = new Referent();
         } else if ("TEILNEHMER".equals(dto.role)) {
             nutzer = new Teilnehmer();
+        } else if ("BETRACHTER".equals(dto.role)) {
+            nutzer = new Betrachter();
         } else if ("ADMINISTRATOR".equals(dto.role)) {
             nutzer = new Administrator();
         } else {
@@ -224,6 +227,8 @@ public class OrganisatorService implements OrganisatorServiceInterface {
         // erlaubten Kategorien/Werte werden anhand von t.getVeranstaltungen() aufgelöst.
         if (nutzer instanceof Teilnehmer t && null != dto.gruppenwerteByKategorie) {
             applyGruppenwerteByKategorie(t, dto.gruppenwerteByKategorie);
+        } else if (nutzer instanceof Betrachter b && null != dto.gruppenwerteByKategorie) {
+            applyGruppenwerteByKategorieBetrachter(b, dto.gruppenwerteByKategorie);
         }
 
         // Send registration confirmation email
@@ -329,6 +334,8 @@ public class OrganisatorService implements OrganisatorServiceInterface {
                     }
                 });
             }
+        } else if (nutzer instanceof Betrachter b && null != dto.gruppenwerteByKategorie) {
+            applyGruppenwerteByKategorieBetrachter(b, dto.gruppenwerteByKategorie);
         }
 
         nutzer.persistAndFlush();
@@ -847,6 +854,33 @@ public class OrganisatorService implements OrganisatorServiceInterface {
                 GruppenkategorieWert wert = GruppenkategorieWert.findByWertUndKategorie(wertName, kategorie);
                 if (null != wert) {
                     t.addGruppenwert(wert);
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Wie {@link #applyGruppenwerteByKategorie}, aber für einen Betrachter statt einen
+     * Teilnehmer - ohne Sonderbehandlung für nicht {@link Gruppenkategorie#isMehrwertig()
+     * mehrwertige} Kategorien, da ein Betrachter (anders als ein Teilnehmer) auch dort mehrere
+     * Werte gleichzeitig zugewiesen bekommen darf (siehe #718, z.B. zwei Klassen).
+     */
+    private void applyGruppenwerteByKategorieBetrachter(Betrachter b, Map<String, List<String>> gewaehltNachKategorie) {
+        List<Gruppenkategorie> kategorien = Gruppenkategorie.<Gruppenkategorie>find(
+            "veranstaltung in ?1", b.getVeranstaltungen()).list();
+        for (Gruppenkategorie kategorie : kategorien) {
+            Set<String> gewaehlteWerte = new HashSet<>(gewaehltNachKategorie.getOrDefault(kategorie.getName(), List.of()));
+            for (GruppenkategorieWert vorhanden : new HashSet<>(b.getGruppenwerte())) {
+                if (vorhanden.getGruppenkategorie().getId().equals(kategorie.getId())
+                        && !gewaehlteWerte.contains(vorhanden.getWert())) {
+                    b.removeGruppenwert(vorhanden);
+                }
+            }
+            for (String wertName : gewaehlteWerte) {
+                GruppenkategorieWert wert = GruppenkategorieWert.findByWertUndKategorie(wertName, kategorie);
+                if (null != wert) {
+                    b.addGruppenwert(wert);
                 }
             }
         }

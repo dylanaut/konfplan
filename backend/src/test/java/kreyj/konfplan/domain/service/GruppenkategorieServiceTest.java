@@ -5,6 +5,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.DatabaseCleaner;
 import kreyj.konfplan.domain.exception.BusinessException;
+import kreyj.konfplan.persistence.Betrachter;
 import kreyj.konfplan.persistence.Gruppenkategorie;
 import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.Teilnehmer;
@@ -53,6 +54,16 @@ class GruppenkategorieServiceTest extends DatabaseCleaner {
         // PlanServiceTest dieser Session).
         tn.addVeranstaltung(Veranstaltung.findById(veranstaltungId));
         return tn;
+    }
+
+
+    private Betrachter neuerBetrachter(String email) {
+        Betrachter b = new Betrachter();
+        b.assignLoginName(email);
+        b.setEmail(email);
+        b.persist();
+        b.addVeranstaltung(Veranstaltung.findById(veranstaltungId));
+        return b;
     }
 
 
@@ -173,6 +184,25 @@ class GruppenkategorieServiceTest extends DatabaseCleaner {
         assertThat(geloeschteKategorie).isNull();
         assertThat(geloeschterWert).isNull();
         Teilnehmer aktualisiert = Teilnehmer.findById(tn.getId());
+        assertThat(aktualisiert.getGruppenwerte()).isEmpty();
+    }
+
+
+    @Test
+    @Transactional
+    void deleteGruppenkategorie_entferntAuchZuordnungenBeiBetrachtern() {
+        Gruppenkategorie klasse = gruppenkategorieService.createGruppenkategorie(veranstaltungId, "Klasse", false, true);
+        GruppenkategorieWert zehnA = gruppenkategorieService.addWert(klasse.getId(), "10a");
+        Betrachter betrachter = neuerBetrachter("b-service-delete@test.com");
+        betrachter.addGruppenwert(zehnA);
+
+        gruppenkategorieService.deleteGruppenkategorie(klasse.getId());
+
+        Gruppenkategorie geloeschteKategorie = Gruppenkategorie.findById(klasse.getId());
+        GruppenkategorieWert geloeschterWert = GruppenkategorieWert.findById(zehnA.getId());
+        assertThat(geloeschteKategorie).isNull();
+        assertThat(geloeschterWert).isNull();
+        Betrachter aktualisiert = Betrachter.findById(betrachter.getId());
         assertThat(aktualisiert.getGruppenwerte()).isEmpty();
     }
 

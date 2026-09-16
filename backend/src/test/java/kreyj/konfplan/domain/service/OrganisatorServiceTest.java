@@ -11,6 +11,7 @@ import kreyj.konfplan.domain.exception.CreateVortragException;
 import kreyj.konfplan.domain.exception.UpdateNutzerException;
 import kreyj.konfplan.domain.exception.UpdateVortragException;
 import kreyj.konfplan.persistence.Administrator;
+import kreyj.konfplan.persistence.Betrachter;
 import kreyj.konfplan.persistence.Gruppenkategorie;
 import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.IdEntity;
@@ -322,6 +323,69 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         organisatorService.updateUser(tnId, dto2, null);
 
         Teilnehmer updated2 = Teilnehmer.findById(tnId);
+        assertThat(updated2.getGruppenwerte()).isEmpty();
+    }
+
+
+    @Test
+    @Transactional
+    public void testCreateUser_BetrachterWithGruppenwerte_Succeeds() {
+        Gruppenkategorie klasse = new Gruppenkategorie(veranstaltung, "Klasse", false, false);
+        klasse.persist();
+        GruppenkategorieWert gruppeA = new GruppenkategorieWert(klasse, "Gruppe A");
+        gruppeA.persist();
+        GruppenkategorieWert gruppeB = new GruppenkategorieWert(klasse, "Gruppe B");
+        gruppeB.persist();
+
+        NutzerDto dto = new NutzerDto("BETRACHTER", "betrachter@example.com", "Lisa", "Lehrer", true);
+        dto.loginName = "lisa.lehrer";
+        // "Klasse" ist NICHT mehrwertig - fuer einen Teilnehmer wuerde nur einer der beiden Werte
+        // uebernommen; ein Betrachter darf beide gleichzeitig sehen (siehe #718).
+        dto.gruppenwerteByKategorie = Map.of("Klasse", List.of("Gruppe A", "Gruppe B"));
+
+        NutzerDto created = organisatorService.createUser(dto, List.of(veranstaltung.getId()));
+
+        Betrachter persisted = Betrachter.findById(created.id);
+        assertThat(persisted.getGruppenwerte()).containsExactlyInAnyOrder(gruppeA, gruppeB);
+        assertThat(created.gruppenwerteByKategorie.get("Klasse")).containsExactlyInAnyOrder("Gruppe A", "Gruppe B");
+    }
+
+
+    @Test
+    @Transactional
+    public void testUpdateUser_BetrachterGruppenwerteByKategorie_ReplacesExistingSet() {
+        Gruppenkategorie klasse = new Gruppenkategorie(veranstaltung, "Klasse", false, false);
+        klasse.persist();
+        GruppenkategorieWert gruppeA = new GruppenkategorieWert(klasse, "Gruppe A");
+        gruppeA.persist();
+        GruppenkategorieWert gruppeB = new GruppenkategorieWert(klasse, "Gruppe B");
+        gruppeB.persist();
+
+        Betrachter betrachter = new Betrachter();
+        betrachter.assignLoginName("betrachterexample");
+        betrachter.setEmail("betrachter@example.com");
+        betrachter.setFirstName("Lisa");
+        betrachter.setLastName("Lehrer");
+        betrachter.persist();
+        // veranstaltung stammt aus der @BeforeEach-Transaktion und ist in dieser Test-Transaktion
+        // detached - Nutzer.veranstaltungen cascade-persisted (PERSIST) beim addVeranstaltung(...)
+        // sonst ein detached Entity.
+        betrachter.addVeranstaltung(Veranstaltung.findById(veranstaltung.getId()));
+        betrachter.addGruppenwert(gruppeA);
+        Long betrachterId = betrachter.getId();
+
+        NutzerDto dto = NutzerDto.from(Betrachter.findById(betrachterId));
+        dto.gruppenwerteByKategorie = Map.of("Klasse", List.of("Gruppe B"));
+        organisatorService.updateUser(betrachterId, dto, null);
+
+        Betrachter updated = Betrachter.findById(betrachterId);
+        assertThat(updated.getGruppenwerte()).containsExactly(gruppeB);
+
+        NutzerDto dto2 = NutzerDto.from(Betrachter.findById(betrachterId));
+        dto2.gruppenwerteByKategorie = Map.of("Klasse", List.of());
+        organisatorService.updateUser(betrachterId, dto2, null);
+
+        Betrachter updated2 = Betrachter.findById(betrachterId);
         assertThat(updated2.getGruppenwerte()).isEmpty();
     }
 

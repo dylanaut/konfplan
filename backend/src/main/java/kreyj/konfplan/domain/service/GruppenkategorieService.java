@@ -7,6 +7,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.csv.GruppenkategorieCsvDto;
 import kreyj.konfplan.domain.exception.BusinessException;
+import kreyj.konfplan.persistence.Betrachter;
 import kreyj.konfplan.persistence.Gruppenkategorie;
 import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.ProtokollKategorie;
@@ -114,6 +115,7 @@ public class GruppenkategorieService {
         // notwendigen bidirektionalen Java-Sync, der das zuverlaessig macht).
         for (GruppenkategorieWert wert : new HashSet<>(kategorie.getWerte())) {
             entferneVonAllenTeilnehmern(wert);
+            entferneVonAllenBetrachtern(wert);
         }
         kategorie.delete();
 
@@ -171,6 +173,7 @@ public class GruppenkategorieService {
         Gruppenkategorie kategorie = wert.getGruppenkategorie();
 
         entferneVonAllenTeilnehmern(wert);
+        entferneVonAllenBetrachtern(wert);
         wert.delete();
 
         protokollService.log(ProtokollKategorie.STAMMDATEN, "Gruppenkategorie-Wert gelöscht",
@@ -285,6 +288,13 @@ public class GruppenkategorieService {
     private void entferneVonAllenTeilnehmern(GruppenkategorieWert wert) {
         for (Teilnehmer teilnehmer : new HashSet<>(wert.getTeilnehmer())) {
             teilnehmer.removeGruppenwert(wert);
+        }
+    }
+
+
+    private void entferneVonAllenBetrachtern(GruppenkategorieWert wert) {
+        for (Betrachter betrachter : new HashSet<>(wert.getBetrachter())) {
+            betrachter.removeGruppenwert(wert);
         }
     }
 
