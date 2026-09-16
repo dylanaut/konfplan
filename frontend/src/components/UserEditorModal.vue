@@ -73,12 +73,22 @@
         <!-- Rollenspezifische Felder: TEILNEHMER -->
         <div v-if="form.role === 'TEILNEHMER'" class="md:col-span-2 bg-green-50 p-4 rounded-lg">
           <h3 class="text-xs font-bold text-green-700 uppercase tracking-wider mb-3">Gruppenzugehörigkeit</h3>
-          <div class="space-y-2">
-            <p v-if="groupStore.gruppen.length === 0" class="text-xs text-gray-500">Für die ausgewählte Veranstaltung sind keine Gruppen definiert.</p>
-            <div v-else class="grid grid-cols-2 md:grid-cols-3 gap-2">
-              <div v-for="gruppe in groupStore.gruppen" :key="gruppe" class="flex items-center gap-2 bg-white p-2 rounded-md border">
-                <input :id="`gruppe-${gruppe}`" type="checkbox" :value="gruppe" v-model="form.gruppen" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300">
-                <label :for="`gruppe-${gruppe}`" class="text-sm font-medium text-gray-700">{{ gruppe }}</label>
+          <div class="space-y-3">
+            <p v-if="gruppenkategorieStore.gruppenkategorien.length === 0" class="text-xs text-gray-500">Für die ausgewählte Veranstaltung sind keine Gruppenkategorien definiert.</p>
+            <div v-for="kat in gruppenkategorieStore.gruppenkategorien" :key="kat.id">
+              <label class="block text-xs font-bold text-gray-600 mb-1">{{ kat.name }}</label>
+              <select v-if="!kat.mehrwertig"
+                      :value="(form.gruppenwerteByKategorie[kat.name] || [])[0] || ''"
+                      @change="setEinwertigerWert(kat.name, $event.target.value)"
+                      class="input-field">
+                <option value="">-</option>
+                <option v-for="wert in kat.werte" :key="wert.id" :value="wert.wert">{{ wert.wert }}</option>
+              </select>
+              <div v-else class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <div v-for="wert in kat.werte" :key="wert.id" class="flex items-center gap-2 bg-white p-2 rounded-md border">
+                  <input :id="`gkwert-${wert.id}`" type="checkbox" :value="wert.wert" v-model="form.gruppenwerteByKategorie[kat.name]" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                  <label :for="`gkwert-${wert.id}`" class="text-sm font-medium text-gray-700">{{ wert.wert }}</label>
+                </div>
               </div>
             </div>
           </div>
@@ -112,7 +122,7 @@
 
 <script setup>
 import { reactive, computed, watch } from 'vue';
-import { useGroupStore } from '../stores/group';
+import { useGruppenkategorieStore } from '../stores/gruppenkategorie';
 import { useNeigungStore } from '../stores/neigung';
 
 const ROLLEN_NAMEN = { TEILNEHMER: 'Teilnehmer', REFERENT: 'Referent', ORGANISATOR: 'Organisator', ADMINISTRATOR: 'Administrator' };
@@ -128,7 +138,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close', 'save']);
-const groupStore = useGroupStore();
+const gruppenkategorieStore = useGruppenkategorieStore();
 const neigungStore = useNeigungStore();
 neigungStore.fetchNeigungen();
 
@@ -156,19 +166,10 @@ const form = reactive({
   isActive: true,
   jobRole: '',
   organisation: '',
-  gruppen: [],
+  gruppenwerteByKategorie: {},
   neigungen: [],
   version: null,
 });
-
-watch(
-    [() => props.isVisible, () => props.selectedVid],
-    ([visible, selectedVid]) => {
-      if (visible && selectedVid) {
-        groupStore.fetchGruppen(selectedVid);
-      }
-    }
-);
 
 watch(
     () => props.nutzer,
@@ -183,11 +184,19 @@ watch(
       form.isActive = val?.isActive ?? true;
       form.jobRole = val?.jobRole ?? '';
       form.organisation = val?.organisation ?? '';
-      form.gruppen = val?.gruppen ? [...val.gruppen] : [];
+      const gruppenwerteByKategorie = {};
+      for (const kat of gruppenkategorieStore.gruppenkategorien) {
+        gruppenwerteByKategorie[kat.name] = [...(val?.gruppenwerteByKategorie?.[kat.name] || [])];
+      }
+      form.gruppenwerteByKategorie = gruppenwerteByKategorie;
       form.neigungen = val?.neigungen ? [...val.neigungen] : [];
     },
     { immediate: true, deep: false }
 );
+
+const setEinwertigerWert = (kategorieName, wert) => {
+  form.gruppenwerteByKategorie[kategorieName] = wert ? [wert] : [];
+};
 
 const save = () => {
   emit('save', { ...form });

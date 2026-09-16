@@ -11,6 +11,8 @@ import kreyj.konfplan.domain.exception.CreateVortragException;
 import kreyj.konfplan.domain.exception.UpdateNutzerException;
 import kreyj.konfplan.domain.exception.UpdateVortragException;
 import kreyj.konfplan.persistence.Administrator;
+import kreyj.konfplan.persistence.Gruppenkategorie;
+import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Nachricht;
 import kreyj.konfplan.persistence.Organisator;
@@ -30,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -291,26 +294,35 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
 
     @Test
     @Transactional
-    public void testUpdateUser_TeilnehmerGruppen_ReplacesExistingSet() {
+    public void testUpdateUser_TeilnehmerGruppenwerteByKategorie_ReplacesExistingSet() {
+        Gruppenkategorie klasse = new Gruppenkategorie(veranstaltung, "Klasse", true, false);
+        klasse.persist();
+        GruppenkategorieWert gruppeA = new GruppenkategorieWert(klasse, "Gruppe A");
+        gruppeA.persist();
+        GruppenkategorieWert gruppeB = new GruppenkategorieWert(klasse, "Gruppe B");
+        gruppeB.persist();
+        GruppenkategorieWert gruppeC = new GruppenkategorieWert(klasse, "Gruppe C");
+        gruppeC.persist();
+
         Teilnehmer tn = Teilnehmer.findById(tnId);
-        tn.addGruppe("Gruppe A");
-        tn.addGruppe("Gruppe B");
+        tn.addGruppenwert(gruppeA);
+        tn.addGruppenwert(gruppeB);
 
         // Bearbeiten-Dialog: "Gruppe B" wird abgewaehlt, "Gruppe C" wird neu angehakt.
         NutzerDto dto = NutzerDto.from(tn);
-        dto.gruppen = List.of("Gruppe A", "Gruppe C");
+        dto.gruppenwerteByKategorie = Map.of("Klasse", List.of("Gruppe A", "Gruppe C"));
         organisatorService.updateUser(tnId, dto, null);
 
         Teilnehmer updated = Teilnehmer.findById(tnId);
-        assertThat(updated.getGruppen()).containsExactlyInAnyOrder("Gruppe A", "Gruppe C");
+        assertThat(updated.getGruppenwerte()).containsExactlyInAnyOrder(gruppeA, gruppeC);
 
         // Alle Haken entfernen muss ebenfalls moeglich sein, nicht nur Hinzufuegen.
         NutzerDto dto2 = NutzerDto.from(Teilnehmer.findById(tnId));
-        dto2.gruppen = List.of();
+        dto2.gruppenwerteByKategorie = Map.of("Klasse", List.of());
         organisatorService.updateUser(tnId, dto2, null);
 
         Teilnehmer updated2 = Teilnehmer.findById(tnId);
-        assertThat(updated2.getGruppen()).isEmpty();
+        assertThat(updated2.getGruppenwerte()).isEmpty();
     }
 
 

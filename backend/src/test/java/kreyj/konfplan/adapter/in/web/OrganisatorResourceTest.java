@@ -13,6 +13,8 @@ import kreyj.konfplan.adapter.in.web.dto.OrganisatorPasswordResetDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
+import kreyj.konfplan.persistence.Gruppenkategorie;
+import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
@@ -119,9 +121,13 @@ class OrganisatorResourceTest extends DatabaseCleaner {
         assertThat(created.email).isEqualTo(oldEmail);
         assertThat(created.version).isEqualTo(0L);
 
+        Long veranstaltungId = anlegeVeranstaltungMitGruppenkategorie("Klasse", "New Group");
+
         String newEmail = "updated@test.de";
-        NutzerDto tnUpdate = NutzerDto.teilnehmer(newEmail, "Max", "Mustermann", List.of("New Group"), emptyList());
+        NutzerDto tnUpdate = NutzerDto.teilnehmer(newEmail, "Max", "Mustermann", emptyList(), emptyList());
         tnUpdate.version = created.version;
+        tnUpdate.veranstaltungIds = List.of(veranstaltungId);
+        tnUpdate.gruppenwerteByKategorie = java.util.Map.of("Klasse", List.of("New Group"));
 
         NutzerDto updated =
             given().contentType(ContentType.JSON)
@@ -137,8 +143,23 @@ class OrganisatorResourceTest extends DatabaseCleaner {
 
         Nutzer user = Nutzer.findById(updated.id);
         assertThat(user.getEmail()).isEqualTo(newEmail);
-        assertThat(((Teilnehmer) user).getGruppen()).contains("New Group");
+        assertThat(((Teilnehmer) user).getGruppenwerte()).extracting(GruppenkategorieWert::getWert).contains("New Group");
         verify(keycloakUserProvisioningService).updateUser(user);
+    }
+
+
+    @Transactional
+    Long anlegeVeranstaltungMitGruppenkategorie(String kategorieName, String wert) {
+        Veranstaltung veranstaltung = new Veranstaltung();
+        veranstaltung.setName("OrganisatorResourceTest-Veranstaltung");
+        veranstaltung.setBeginntAm(LocalDateTime.now());
+        veranstaltung.persist();
+
+        Gruppenkategorie kategorie = new Gruppenkategorie(veranstaltung, kategorieName, false, false);
+        kategorie.persist();
+        new GruppenkategorieWert(kategorie, wert).persist();
+
+        return veranstaltung.getId();
     }
 
 

@@ -33,10 +33,6 @@
         </div>
       </div>
       <div class="flex gap-2">
-        <select v-model="filters.gruppen" class="input-field text-xs py-1 px-2 pr-8">
-          <option value="">Alle Gruppen</option>
-          <option v-for="g in teilnehmerGruppen" :key="g" :value="g">{{ g }}</option>
-        </select>
         <select v-for="kat in gruppenkategorieStore.gruppenkategorien" :key="kat.id"
                 v-model="filters.kategorien[kat.id]" class="input-field text-xs py-1 px-2 pr-8">
           <option value="">{{ kat.name }}</option>
@@ -111,10 +107,8 @@
               <th class="px-4 py-1.5 text-left font-bold sticky left-0 bg-gray-50 z-10 w-48 border-r border-gray-100">
                 Name
               </th>
-              <th @click="toggleSort('teilnehmer', 'gruppen')"
-                  class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold sticky left-48 bg-gray-50 z-10 w-32 border-r border-gray-100">
+              <th class="px-4 py-1.5 text-left font-bold sticky left-48 bg-gray-50 z-10 w-32 border-r border-gray-100">
                 Gruppen
-                <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/>
               </th>
               <th v-for="(vortrag, index) in sortedWahlvortraege" :key="vortrag.id"
                   class="px-1 py-2 text-center text-[9px] font-black text-indigo-600 w-14 min-w-[56px] border-r border-gray-100"
@@ -146,7 +140,7 @@
               </td>
               <td class="px-4 py-2 text-gray-500 sticky left-48 z-10 w-32 border-r border-gray-100"
                   :class="hasNoPriorities(u.id) ? 'bg-amber-100 hover:bg-gray-50' : 'bg-white hover:bg-gray-50'">
-                <span class="block truncate" :title="(u.gruppen || []).slice().sort().join(', ')">{{ (u.gruppen || []).slice().sort().join(', ') }}</span>
+                <span class="block truncate" :title="formatGruppenSummary(u)">{{ formatGruppenSummary(u) }}</span>
               </td>
               <td v-for="vortrag in sortedWahlvortraege" :key="'prio-'+u.id+'-'+vortrag.id"
                   class="px-1 py-1 text-center border-r border-gray-50">
@@ -208,10 +202,6 @@
                   class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Name
                 <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/>
               </th>
-              <th @click="toggleSort('teilnehmer', 'gruppen')"
-                  class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">Gruppen
-                <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/>
-              </th>
               <th v-for="kat in gruppenkategorieStore.gruppenkategorien" :key="kat.id"
                   @click="toggleSort('teilnehmer', `gk:${kat.name}`)"
                   class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition font-bold">{{ kat.name }}
@@ -240,9 +230,8 @@
                 {{ u.firstName }} {{ u.lastName }}
                 <span class="block font-normal text-gray-400">{{ u.loginName }}</span>
               </td>
-              <td class="px-4 py-2 text-gray-500">{{ (u.gruppen || []).slice().sort().join(', ') }}</td>
               <td v-for="kat in gruppenkategorieStore.gruppenkategorien" :key="kat.id" class="px-4 py-2 text-gray-500">
-                {{ (u.gruppenwerteByKategorie?.[kat.name] || []).join(', ') }}
+                {{ getGruppenkategorieWerte(u, kat.name).join(', ') }}
               </td>
               <td class="px-4 py-2 text-center">
                 <div @click="emit('toggleParticipantActive', u)" class="cursor-pointer">
@@ -322,6 +311,13 @@ import PaginationControls from '../../PaginationControls.vue';
 import TeilnehmerNachbuchenModal from './TeilnehmerNachbuchenModal.vue';
 import {useAvailabilityStore} from '../../../stores/availability';
 import {useGruppenkategorieStore} from '../../../stores/gruppenkategorie';
+import {
+  getGruppenkategorieSortValue,
+  getGruppenkategorieWerte,
+  gruppenkategorieNameFromSortKey,
+  isGruppenkategorieSortKey,
+  matchesGruppenkategorieFilter,
+} from '../../../composables/useGruppenkategorieColumns';
 
 const props = defineProps({
   teilnehmer: Array,
@@ -360,7 +356,6 @@ watch(localPageSize, () => {
 
 const filters = reactive({
   teilnehmer: '',
-  gruppen: '',
   ohnePrioritaeten: false,
   // Gewählter Wert je Gruppenkategorie-Id (#690), z.B. { 12: 'M_1' } - leerer String = kein Filter.
   kategorien: {}
@@ -395,10 +390,6 @@ watch(() => props.selectedVid, (newVid) => {
 watch(() => filters.teilnehmer, () => {
   pages.teilnehmer = 1;
 });
-watch(() => filters.gruppen, () => {
-  pages.teilnehmer = 1;
-  selectedParticipantIds.value = [];
-});
 watch(() => filters.ohnePrioritaeten, () => {
   pages.teilnehmer = 1;
   selectedParticipantIds.value = [];
@@ -408,10 +399,12 @@ watch(() => filters.kategorien, () => {
   selectedParticipantIds.value = [];
 }, {deep: true});
 
-const teilnehmerGruppen = computed(() => {
-  const groups = new Set(props.teilnehmer.flatMap(t => t.gruppen || []).filter(Boolean));
-  return Array.from(groups).sort();
-});
+const formatGruppenSummary = (u) => {
+  return gruppenkategorieStore.gruppenkategorien
+    .map(kat => getGruppenkategorieWerte(u, kat.name).join('/'))
+    .filter(Boolean)
+    .join(' · ');
+};
 
 const sortedWahlvortraege = computed(() => {
   return [...props.wahlvortraege].sort((a, b) => a.titel.localeCompare(b.titel));
@@ -421,8 +414,8 @@ const sortedWahlvortraege = computed(() => {
 // Werte je Teilnehmer verschachtelt unter gruppenwerteByKategorie[Kategorie-Name] liegen statt als
 // eigenes flaches Feld - andere Schlüssel greifen weiterhin direkt auf das Feld zu.
 const getSortValue = (item, key) => {
-  if (key.startsWith('gk:')) {
-    return (item.gruppenwerteByKategorie?.[key.slice(3)] || []).join(', ');
+  if (isGruppenkategorieSortKey(key)) {
+    return getGruppenkategorieSortValue(item, gruppenkategorieNameFromSortKey(key));
   }
   return item[key] || '';
 };
@@ -477,14 +470,9 @@ const toggleSort = (key, field) => {
 
 const filteredParticipants = computed(() => {
   let list = props.teilnehmer.filter(t => t && t.veranstaltungIds && Array.isArray(t.veranstaltungIds) && t.veranstaltungIds.includes(props.selectedVid));
-  if (filters.gruppen) {
-    list = list.filter(t => (t.gruppen || []).includes(filters.gruppen));
-  }
   for (const kat of gruppenkategorieStore.gruppenkategorien) {
     const gewaehlterWert = filters.kategorien[kat.id];
-    if (gewaehlterWert) {
-      list = list.filter(t => (t.gruppenwerteByKategorie?.[kat.name] || []).includes(gewaehlterWert));
-    }
+    list = list.filter(t => matchesGruppenkategorieFilter(t, kat.name, gewaehlterWert));
   }
   if (filters.ohnePrioritaeten) {
     list = list.filter(t => hasNoPriorities(t.id));

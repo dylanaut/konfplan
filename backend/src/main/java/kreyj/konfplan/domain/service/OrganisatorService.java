@@ -29,6 +29,7 @@ import kreyj.konfplan.domain.exception.UpdateVortragException;
 import kreyj.konfplan.domain.exception.VeranstaltungException;
 import kreyj.konfplan.persistence.AbschlussTyp;
 import kreyj.konfplan.persistence.Gebaeude;
+import kreyj.konfplan.persistence.Gruppenkategorie;
 import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Nutzer;
@@ -188,9 +189,6 @@ public class OrganisatorService implements OrganisatorServiceInterface {
             r.setJobRole(dto.jobRole);
             r.setOrganisation(dto.organisation);
         } else if (nutzer instanceof Teilnehmer t) {
-            if (null != dto.gruppen) {
-                dto.gruppen.forEach(t::addGruppe);
-            }
             if (null != dto.neigungen) {
                 t.setNeigungen(dto.neigungen);
             }
@@ -220,6 +218,12 @@ public class OrganisatorService implements OrganisatorServiceInterface {
                     nutzer.addVeranstaltung(v);
                 }
             }
+        }
+
+        // Gruppenkategorie-Zuordnungen erst NACH obiger Veranstaltungs-Zuordnung anwenden - die
+        // erlaubten Kategorien/Werte werden anhand von t.getVeranstaltungen() aufgelöst.
+        if (nutzer instanceof Teilnehmer t && null != dto.gruppenwerteByKategorie) {
+            applyGruppenwerteByKategorie(t, dto.gruppenwerteByKategorie);
         }
 
         // Send registration confirmation email
@@ -304,11 +308,11 @@ public class OrganisatorService implements OrganisatorServiceInterface {
             r.setJobRole(dto.jobRole);
             r.setOrganisation(dto.organisation);
         } else if (nutzer instanceof Teilnehmer t) {
-            if (null != dto.gruppen) {
-                // Voller Ersatz statt nur Hinzufuegen - sonst bleiben im Modal abgewaehlte
-                // Gruppen unveraendert bestehen (siehe Bugreport: Gruppenzugehoerigkeit liess
-                // sich ueber den Bearbeiten-Dialog nicht mehr entfernen).
-                t.setGruppen(dto.gruppen);
+            if (null != dto.gruppenwerteByKategorie) {
+                // Voller Ersatz statt nur Hinzufuegen - sonst bleiben im Modal abgewaehlte Werte
+                // unveraendert bestehen (siehe Bugreport zum vormaligen flachen Modell:
+                // Gruppenzugehoerigkeit liess sich ueber den Bearbeiten-Dialog nicht entfernen).
+                applyGruppenwerteByKategorie(t, dto.gruppenwerteByKategorie);
             }
             if (null != dto.neigungen) {
                 t.setNeigungen(dto.neigungen);
@@ -819,6 +823,33 @@ public class OrganisatorService implements OrganisatorServiceInterface {
         }
         LOG.info("Vortrag-Import abgeschlossen: " + count + " Vorträge aus " + csvFilePath + " importiert.");
         return count;
+    }
+
+
+    /**
+     * Setzt die Gruppenkategorie-Zuordnungen eines Teilnehmers je Kategorie seiner Veranstaltungen
+     * vollständig auf die übergebene Auswahl (siehe #690) - analog zum vormaligen flachen Modell
+     * (Teilnehmer#setGruppen): im UserEditorModal abgewählte Werte werden entfernt, neu gewählte
+     * hinzugefügt, statt nur additiv zu ergänzen.
+     */
+    private void applyGruppenwerteByKategorie(Teilnehmer t, Map<String, List<String>> gewaehltNachKategorie) {
+        List<Gruppenkategorie> kategorien = Gruppenkategorie.<Gruppenkategorie>find(
+            "veranstaltung in ?1", t.getVeranstaltungen()).list();
+        for (Gruppenkategorie kategorie : kategorien) {
+            Set<String> gewaehlteWerte = new HashSet<>(gewaehltNachKategorie.getOrDefault(kategorie.getName(), List.of()));
+            for (GruppenkategorieWert vorhanden : new HashSet<>(t.getGruppenwerte())) {
+                if (vorhanden.getGruppenkategorie().getId().equals(kategorie.getId())
+                        && !gewaehlteWerte.contains(vorhanden.getWert())) {
+                    t.removeGruppenwert(vorhanden);
+                }
+            }
+            for (String wertName : gewaehlteWerte) {
+                GruppenkategorieWert wert = GruppenkategorieWert.findByWertUndKategorie(wertName, kategorie);
+                if (null != wert) {
+                    t.addGruppenwert(wert);
+                }
+            }
+        }
     }
 
 
