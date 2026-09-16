@@ -2,6 +2,7 @@ package kreyj.konfplan.adapter.in.web.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import kreyj.konfplan.persistence.Betrachter;
 import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Nutzer;
@@ -116,6 +117,11 @@ public class NutzerDto extends AbstractVersionedDto {
             if (!mappedPrios.isEmpty()) {
                 dto.prioritaeten = mappedPrios;
             }
+        } else if (u instanceof Betrachter b) {
+            dto.gruppenwerteByKategorie = b.getGruppenwerte().stream()
+                .collect(Collectors.groupingBy(w -> w.getGruppenkategorie().getName(),
+                    Collectors.mapping(GruppenkategorieWert::getWert, Collectors.toList())));
+            dto.gruppenwerteByKategorie.values().forEach(werte -> werte.sort(StringHelper.NUM_OR_ALPHA_COMPARATOR));
         }
         return dto;
     }

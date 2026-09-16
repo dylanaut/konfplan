@@ -42,6 +42,11 @@ public class GruppenkategorieWert extends VersionedEntity {
     @Setter(AccessLevel.NONE)
     private Set<Teilnehmer> teilnehmer = new HashSet<>();
 
+    @JsonIgnore
+    @ManyToMany(mappedBy = "gruppenwerte")
+    @Setter(AccessLevel.NONE)
+    private Set<Betrachter> betrachter = new HashSet<>();
+
 
     public GruppenkategorieWert(Gruppenkategorie gruppenkategorie, String wert) {
         this.gruppenkategorie = gruppenkategorie;
@@ -52,6 +57,11 @@ public class GruppenkategorieWert extends VersionedEntity {
 
     public Set<Teilnehmer> getTeilnehmer() {
         return Collections.unmodifiableSet(teilnehmer);
+    }
+
+
+    public Set<Betrachter> getBetrachter() {
+        return Collections.unmodifiableSet(betrachter);
     }
 
 
@@ -89,5 +99,20 @@ public class GruppenkategorieWert extends VersionedEntity {
 
     void entferneTeilnehmer(Teilnehmer teilnehmer) {
         this.teilnehmer.remove(teilnehmer);
+    }
+
+
+    /**
+     * Hält die inverse Seite der {@code Betrachter.gruppenwerte}-Assoziation synchron - von
+     * {@link Betrachter#addGruppenwert} aufgerufen (siehe {@link #nimmTeilnehmerAuf} für dieselbe
+     * Notwendigkeit bei der analogen Teilnehmer-Assoziation).
+     */
+    void nimmBetrachterAuf(Betrachter betrachter) {
+        this.betrachter.add(betrachter);
+    }
+
+
+    void entferneBetrachter(Betrachter betrachter) {
+        this.betrachter.remove(betrachter);
     }
 }

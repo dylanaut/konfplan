@@ -154,6 +154,15 @@
                      @openInviteModal="openInviteModal"
       />
 
+      <BetrachterTab v-if="activeTab === 'betrachter' && selectedVid"
+                     :betrachter="betrachter"
+                     :selectedVid="selectedVid"
+                     :pageSize="pageSize"
+                     @openUserModal="openUserModal"
+                     @deleteUser="deleteUser"
+                     @openInviteModal="openInviteModal"
+      />
+
       <VortraegeTab v-if="activeTab === 'vortraege' && selectedVid"
                     :vortraege="vortraege"
                     :selectedVid="selectedVid"
@@ -292,6 +301,7 @@ import GebaeudeTab from '../components/organisator/tabs/GebaeudeTab.vue';
 import OrganisatorenTab from '../components/organisator/tabs/OrganisatorenTab.vue';
 import TeilnehmerTab from '../components/organisator/tabs/TeilnehmerTab.vue';
 import ReferentenTab from '../components/organisator/tabs/ReferentenTab.vue';
+import BetrachterTab from '../components/organisator/tabs/BetrachterTab.vue';
 import VortraegeTab from '../components/organisator/tabs/VortraegeTab.vue';
 import SlotsTab from '../components/organisator/tabs/SlotsTab.vue';
 import PlanungTab from '../components/organisator/tabs/PlanungTab.vue';
@@ -326,6 +336,7 @@ const tabLabels = {
   datenbankExport: 'Datenbank-Export',
   teilnehmer: 'Teilnehmer',
   referenten: 'Referenten',
+  betrachter: 'Betrachter',
   vortraege: 'Vorträge',
   slots: 'Zeit-Slots',
   planung: 'Planerstellung',
@@ -396,7 +407,7 @@ const csvFeedback = reactive({
 
 const visibleTabs = computed(() => {
   const tabs = selectedVid.value ? ['organisatoren', 'gebaeude',
-    'teilnehmer', 'referenten', 'vortraege',
+    'teilnehmer', 'referenten', 'betrachter', 'vortraege',
     'veranstaltungen', 'veranstaltungImport', 'datenbankExport', 'slots',
     'planung', 'ergebnisse', 'nachrichten',
     'protokoll', 'feedback', 'onboarding'] : ['organisatoren', 'gebaeude', 'referenten',
@@ -429,6 +440,7 @@ const planErstellt = computed(() => belegungsplan.value && belegungsplan.value.l
 const admins = computed(() => users.value.filter(u => u.role === 'ORGANISATOR' || u.role === 'ADMINISTRATOR'));
 const referenten = computed(() => users.value.filter(u => u.role === 'REFERENT'));
 const teilnehmer = computed(() => users.value.filter(u => u.role === 'TEILNEHMER'));
+const betrachter = computed(() => users.value.filter(u => u.role === 'BETRACHTER'));
 
 // Organisatoren: bei ausgewählter Veranstaltung nur deren Organisatoren, sonst alle
 const veranstaltungsAdmins = computed(() => {

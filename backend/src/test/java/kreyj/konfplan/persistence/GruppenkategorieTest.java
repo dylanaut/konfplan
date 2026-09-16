@@ -37,6 +37,15 @@ class GruppenkategorieTest extends DatabaseCleaner {
     }
 
 
+    private Betrachter neuerBetrachter(String email) {
+        Betrachter b = new Betrachter();
+        b.assignLoginName(email);
+        b.setEmail(email);
+        b.persist();
+        return b;
+    }
+
+
     @Test
     @Transactional
     void gruppenkategorieUndWerte_werdenPersistiertUndSindUeberVeranstaltungErreichbar() {
@@ -100,6 +109,50 @@ class GruppenkategorieTest extends DatabaseCleaner {
         tn.addGruppenwert(m2);
 
         assertThat(tn.getGruppenwerte()).containsExactlyInAnyOrder(m1, m2);
+    }
+
+
+    @Test
+    @Transactional
+    void addGruppenwert_beiBetrachter_erlaubtMehrereWerteAuchInEinwertigerKategorie() {
+        // Anders als bei Teilnehmer.addGruppenwert gibt es fuer Betrachter keine
+        // Einwertigkeits-Regel (siehe #718): ein Betrachter darf z.B. zwei Klassen zugleich sehen.
+        Veranstaltung veranstaltung = neueVeranstaltung();
+        Gruppenkategorie klasse = new Gruppenkategorie(veranstaltung, "Klasse", false, true);
+        klasse.persist();
+        GruppenkategorieWert zehnA = new GruppenkategorieWert(klasse, "10a");
+        zehnA.persist();
+        GruppenkategorieWert zehnB = new GruppenkategorieWert(klasse, "10b");
+        zehnB.persist();
+
+        Betrachter betrachter = neuerBetrachter("betrachter-mehrere-klassen@test.com");
+        betrachter.addGruppenwert(zehnA);
+        betrachter.addGruppenwert(zehnB);
+
+        assertThat(betrachter.getGruppenwerte()).containsExactlyInAnyOrder(zehnA, zehnB);
+        assertThat(zehnA.getBetrachter()).containsExactly(betrachter);
+    }
+
+
+    @Test
+    @Transactional
+    void removeGruppenwert_beiBetrachter_entferntGenauDiesenWert() {
+        Veranstaltung veranstaltung = neueVeranstaltung();
+        Gruppenkategorie klasse = new Gruppenkategorie(veranstaltung, "Klasse", false, true);
+        klasse.persist();
+        GruppenkategorieWert zehnA = new GruppenkategorieWert(klasse, "10a");
+        zehnA.persist();
+        GruppenkategorieWert zehnB = new GruppenkategorieWert(klasse, "10b");
+        zehnB.persist();
+
+        Betrachter betrachter = neuerBetrachter("betrachter-remove@test.com");
+        betrachter.addGruppenwert(zehnA);
+        betrachter.addGruppenwert(zehnB);
+
+        betrachter.removeGruppenwert(zehnA);
+
+        assertThat(betrachter.getGruppenwerte()).containsExactly(zehnB);
+        assertThat(zehnA.getBetrachter()).isEmpty();
     }
 
 

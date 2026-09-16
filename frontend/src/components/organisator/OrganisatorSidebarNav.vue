@@ -54,6 +54,7 @@ import {
   KeyRound as KeyRoundIcon,
   Download as DownloadIcon,
   Send as SendIcon,
+  Eye as EyeIcon,
 } from '@lucide/vue';
 
 const tabIcons = {
@@ -63,6 +64,7 @@ const tabIcons = {
   organisatoren: UsersIcon,
   teilnehmer: UserIcon,
   referenten: PresentationIcon,
+  betrachter: EyeIcon,
   vortraege: BookOpenIcon,
   slots: ClockIcon,
   planung: CalendarClockIcon,
@@ -84,7 +86,7 @@ const emit = defineEmits(['tab-click']);
 // Gruppierung der Organisator-Tabs - rein navigatorisch, unabhaengig von visibleTabs (welche Tabs
 // ueberhaupt zur Auswahl stehen haengt weiterhin von OrganisatorDashboard.vue's Veranstaltungs-Logik ab).
 const groups = [
-  { name: 'Stammdaten', tabs: ['veranstaltungen', 'veranstaltungImport', 'gebaeude', 'organisatoren', 'teilnehmer', 'referenten', 'vortraege'] },
+  { name: 'Stammdaten', tabs: ['veranstaltungen', 'veranstaltungImport', 'gebaeude', 'organisatoren', 'teilnehmer', 'referenten', 'betrachter', 'vortraege'] },
   { name: 'Planung', tabs: ['slots', 'planung', 'ergebnisse'] },
   { name: 'Administration', tabs: ['onboarding', 'protokoll', 'feedback', 'nachrichten', 'datenbankExport'] },
 ];

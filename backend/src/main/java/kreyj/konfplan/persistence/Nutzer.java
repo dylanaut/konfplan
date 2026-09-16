@@ -40,7 +40,8 @@ import static kreyj.konfplan.persistence.NutzerVerfuegbarkeitId.nvId;
     @JsonSubTypes.Type(value = Organisator.class, name = "ORGANISATOR"),
     @JsonSubTypes.Type(value = Administrator.class, name = "ADMINISTRATOR"),
     @JsonSubTypes.Type(value = Referent.class, name = "REFERENT"),
-    @JsonSubTypes.Type(value = Teilnehmer.class, name = "TEILNEHMER")
+    @JsonSubTypes.Type(value = Teilnehmer.class, name = "TEILNEHMER"),
+    @JsonSubTypes.Type(value = Betrachter.class, name = "BETRACHTER")
 })
 public abstract class Nutzer extends VersionedEntity {
     @NaturalId
@@ -92,6 +93,8 @@ public abstract class Nutzer extends VersionedEntity {
         veranstaltungen.add(v);
         v.nutzer.add(this);
 
+        // Betrachter ist absichtlich ausgenommen: er nimmt an keiner Planung/Verfuegbarkeit
+        // teil, sondern liest nur die Daten der ihm zugewiesenen Gruppen.
         if (this instanceof Referent || this instanceof Teilnehmer) {
             NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvId(this, v));
             Set<Long> slotIds = v.getSlotIds();

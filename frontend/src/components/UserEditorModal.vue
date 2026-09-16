@@ -54,6 +54,7 @@
             <option value="TEILNEHMER">Teilnehmer</option>
             <option value="REFERENT">Referent</option>
             <option value="ORGANISATOR">Organisator</option>
+            <option value="BETRACHTER">Betrachter</option>
           </select>
         </div>
 
@@ -94,6 +95,23 @@
           </div>
         </div>
 
+        <!-- Rollenspezifische Felder: BETRACHTER -->
+        <div v-if="form.role === 'BETRACHTER'" class="md:col-span-2 bg-purple-50 p-4 rounded-lg">
+          <h3 class="text-xs font-bold text-purple-700 uppercase tracking-wider mb-3">Sichtbare Gruppen</h3>
+          <div class="space-y-3">
+            <p v-if="gruppenkategorieStore.gruppenkategorien.length === 0" class="text-xs text-gray-500">Für die ausgewählte Veranstaltung sind keine Gruppenkategorien definiert.</p>
+            <div v-for="kat in gruppenkategorieStore.gruppenkategorien" :key="kat.id">
+              <label class="block text-xs font-bold text-gray-600 mb-1">{{ kat.name }}</label>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <div v-for="wert in kat.werte" :key="wert.id" class="flex items-center gap-2 bg-white p-2 rounded-md border">
+                  <input :id="`betrachter-gkwert-${wert.id}`" type="checkbox" :value="wert.wert" v-model="form.gruppenwerteByKategorie[kat.name]" class="h-4 w-4 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                  <label :for="`betrachter-gkwert-${wert.id}`" class="text-sm font-medium text-gray-700">{{ wert.wert }}</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div v-if="form.role === 'TEILNEHMER'" class="md:col-span-2 bg-amber-50 p-4 rounded-lg">
           <h3 class="text-xs font-bold text-amber-700 uppercase tracking-wider mb-3">Neigungen</h3>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -125,7 +143,7 @@ import { reactive, computed, watch } from 'vue';
 import { useGruppenkategorieStore } from '../stores/gruppenkategorie';
 import { useNeigungStore } from '../stores/neigung';
 
-const ROLLEN_NAMEN = { TEILNEHMER: 'Teilnehmer', REFERENT: 'Referent', ORGANISATOR: 'Organisator', ADMINISTRATOR: 'Administrator' };
+const ROLLEN_NAMEN = { TEILNEHMER: 'Teilnehmer', REFERENT: 'Referent', ORGANISATOR: 'Organisator', ADMINISTRATOR: 'Administrator', BETRACHTER: 'Betrachter' };
 
 const props = defineProps({
   isVisible: { type: Boolean, required: true },

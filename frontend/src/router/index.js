@@ -5,6 +5,7 @@ const Redirecting = () => import('../views/Redirecting.vue');
 const TeilnehmerDashboard = () => import('../views/TeilnehmerDashboard.vue');
 const ReferentDashboard = () => import('../views/ReferentDashboard.vue');
 const OrganisatorDashboard = () => import('../views/OrganisatorDashboard.vue');
+const BetrachterDashboard = () => import('../views/BetrachterDashboard.vue');
 const FreieSlotsReferenten = () => import('../views/report/FreieSlotsReferenten.vue');
 const LaufzettelTeilnehmer = () => import('../views/report/LaufzettelTeilnehmer.vue');
 const LaufzettelReferent = () => import('../views/report/LaufzettelReferent.vue');
@@ -46,6 +47,12 @@ const routes = [
         name: 'Organisator',
         component: OrganisatorDashboard,
         meta: { requiresAuth: true, role: 'ORGANISATOR' }
+    },
+    {
+        path: '/betrachter',
+        name: 'Betrachter',
+        component: BetrachterDashboard,
+        meta: { requiresAuth: true, role: 'BETRACHTER' }
     },
     {
         path: '/organisator/veranstaltung/:vid/freie-slots-referenten',
@@ -162,7 +169,8 @@ const ROLE_CHECKS = {
     ORGANISATOR: (authStore) => authStore.isOrganisator,
     ADMINISTRATOR: (authStore) => authStore.isAdministrator,
     REFERENT: (authStore) => authStore.isSpeaker,
-    TEILNEHMER: (authStore) => authStore.isParticipant
+    TEILNEHMER: (authStore) => authStore.isParticipant,
+    BETRACHTER: (authStore) => authStore.isViewer
 };
 
 router.beforeEach((to, from, next) => {

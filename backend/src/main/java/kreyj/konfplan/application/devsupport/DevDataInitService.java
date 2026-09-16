@@ -88,6 +88,17 @@ public class DevDataInitService {
             adminService.createUser(admin, List.of());
         }
 
+        // Dev-only: ein fester Betrachter-Account (siehe #718), analog zum Administrator-Account
+        // oben - ohne Gruppenzuordnung, da die hier geladenen DataSets ihre Gruppenkategorien
+        // aktuell nicht importieren (GruppenkategorieService#importFromCsv wird unten nicht
+        // aufgerufen). Zuordnung kann lokal manuell über den Betrachter-Tab im Organisator-
+        // Dashboard vorgenommen werden.
+        if (null == Nutzer.findByLoginName("betrachter")) {
+            NutzerDto betrachter = new NutzerDto("BETRACHTER", "betrachter@konfplan.de", "Lisa", "Lehrer", true);
+            betrachter.loginName = "betrachter";
+            adminService.createUser(betrachter, List.of());
+        }
+
         Set<Long> importierteVeranstaltungen = new HashSet<>();
 
         for (String dataSet : dataSets) {

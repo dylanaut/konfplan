@@ -17,7 +17,8 @@
       { "name": "ORGANISATOR", "description": "Organisator" },
       { "name": "ADMINISTRATOR", "description": "Administrator (Organisator mit exklusiven Rechten für Wartungshinweis und Verzeichnis-Import)" },
       { "name": "REFERENT", "description": "Referent (Vortragender)" },
-      { "name": "TEILNEHMER", "description": "Teilnehmer" }
+      { "name": "TEILNEHMER", "description": "Teilnehmer" },
+      { "name": "BETRACHTER", "description": "Betrachter (nur lesender Zugriff auf zugewiesene Gruppen)" }
     ]
   },
   "clients": [
