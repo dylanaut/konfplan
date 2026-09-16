@@ -10,6 +10,8 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import org.apache.commons.lang3.StringUtils;
 
@@ -23,10 +25,24 @@ import java.util.Set;
 @DiscriminatorValue("TEILNEHMER")
 public class Teilnehmer extends Nutzer {
 
+    /**
+     * @deprecated Wird durch {@link #gruppenwerte} (strukturierte Gruppenkategorien, siehe #690)
+     * abgelöst. Bleibt vorerst additiv bestehen, bis alle Konsumenten (Pflichtvortrag-Matching,
+     * Reports, Frontend) umgestellt sind.
+     */
+    @Deprecated
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "teilnehmer_gruppen", joinColumns = @JoinColumn(name = "teilnehmer_id"))
     @Column(name = "gruppen")
     private Set<String> gruppen = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "teilnehmer_gruppenwert",
+        joinColumns = @JoinColumn(name = "teilnehmer_id"),
+        inverseJoinColumns = @JoinColumn(name = "gruppenkategoriewert_id")
+    )
+    private Set<GruppenkategorieWert> gruppenwerte = new HashSet<>();
 
     @OneToMany(mappedBy = "teilnehmer", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Prioritaet> prioritaeten = new HashSet<>();
@@ -58,14 +74,6 @@ public class Teilnehmer extends Nutzer {
     }
 
 
-    public boolean gehoertZuGruppe(String gruppe) {
-        if (null == gruppe) {
-            return false;
-        }
-        return gruppen.contains(gruppe);
-    }
-
-
     public void addGruppe(String gruppe) {
         if (StringUtils.isBlank(gruppe)) {
             return;
@@ -90,11 +98,77 @@ public class Teilnehmer extends Nutzer {
     }
 
 
+    public Set<GruppenkategorieWert> getGruppenwerte() {
+        return Collections.unmodifiableSet(gruppenwerte);
+    }
+
+
+    public boolean hatGruppenwert(GruppenkategorieWert wert) {
+        return null != wert && gruppenwerte.contains(wert);
+    }
+
+
+    /**
+     * Ordnet dem Teilnehmer einen Gruppenwert zu. Ist die Kategorie nicht
+     * {@link Gruppenkategorie#isMehrwertig() mehrwertig}, ersetzt der neue Wert einen ggf. bereits
+     * zugeordneten Wert derselben Kategorie (max. ein Wert pro einwertiger Kategorie).
+     */
+    public void addGruppenwert(GruppenkategorieWert wert) {
+        if (null == wert) {
+            return;
+        }
+        if (!wert.getGruppenkategorie().isMehrwertig()) {
+            gruppenwerte.removeIf(vorhandener -> {
+                boolean gleicheKategorie = vorhandener.getGruppenkategorie().getId().equals(wert.getGruppenkategorie().getId());
+                if (gleicheKategorie) {
+                    vorhandener.entferneTeilnehmer(this);
+                }
+                return gleicheKategorie;
+            });
+        }
+        gruppenwerte.add(wert);
+        wert.nimmTeilnehmerAuf(this);
+    }
+
+
+    public void removeGruppenwert(GruppenkategorieWert wert) {
+        if (null == wert) {
+            return;
+        }
+        if (gruppenwerte.remove(wert)) {
+            wert.entferneTeilnehmer(this);
+        }
+    }
+
+
+    /**
+     * Prüft die Gruppenmitgliedschaft gegen BEIDE Modelle: das bisherige flache {@link #gruppen}
+     * und die neuen strukturierten {@link #gruppenwerte} (siehe #690) - damit Pflichtvortrag-
+     * Zuordnungen unabhängig davon greifen, über welches der beiden Systeme einem Teilnehmer
+     * diese Gruppe zugewiesen wurde. {@code gruppenwerte} wird dabei nur innerhalb derselben
+     * Veranstaltung berücksichtigt (ein Wert gehört zu genau einer Gruppenkategorie einer
+     * Veranstaltung).
+     */
+    public boolean istInGruppe(String gruppenName, Veranstaltung veranstaltung) {
+        if (null == gruppenName) {
+            return false;
+        }
+        if (gruppen.contains(gruppenName)) {
+            return true;
+        }
+        return gruppenwerte.stream().anyMatch(wert -> wert.getWert().equals(gruppenName)
+            && wert.getGruppenkategorie().getVeranstaltung().getId().equals(veranstaltung.getId()));
+    }
+
+
     public static List<Teilnehmer> getGruppenTeilnehmer(String gruppenName, Veranstaltung veranstaltung) {
-        return Teilnehmer.find("SELECT tn from Teilnehmer tn " +
+        return Teilnehmer.find("SELECT DISTINCT tn from Teilnehmer tn " +
                 " JOIN tn.veranstaltungen v " +
-                " WHERE ?1 MEMBER OF tn.gruppen " +
-                " AND v = ?2 and tn.isActive = true",
+                " WHERE v = ?2 AND tn.isActive = true " +
+                " AND (?1 MEMBER OF tn.gruppen " +
+                "      OR EXISTS (SELECT gkw FROM GruppenkategorieWert gkw " +
+                "                 WHERE gkw MEMBER OF tn.gruppenwerte " +
+                "                 AND gkw.wert = ?1 AND gkw.gruppenkategorie.veranstaltung = v))",
             gruppenName, veranstaltung).list();
     }
 

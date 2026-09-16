@@ -7,7 +7,9 @@ import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
+import kreyj.konfplan.domain.service.GruppenkategorieService;
 import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Gebaeude;
@@ -39,6 +41,8 @@ class CsvFileImportTest extends DatabaseCleaner {
 
     @InjectMock
     KeycloakUserProvisioningService keycloakUserProvisioningService;
+    @Inject
+    GruppenkategorieService gruppenkategorieService;
     public static final String CSV_DIR = "csv_import/import-test/";
 
     @TestHTTPResource
@@ -134,7 +138,9 @@ class CsvFileImportTest extends DatabaseCleaner {
 
 
     @Test
-    void testImportTeilnehmer() {
+    void testImportTeilnehmer() throws Exception {
+        gruppenkategorieService.importFromCsv(getCsvFile("gruppenkategorien.csv").toPath(), testVid);
+
         given()
             .multiPart("file", getCsvFile("teilnehmer.csv"))
             .when().post("/{vid}/teilnehmer/import", testVid)
@@ -143,7 +149,8 @@ class CsvFileImportTest extends DatabaseCleaner {
 
         Teilnehmer t = (Teilnehmer) Nutzer.findByEmail("hayal.yaldir@rks-linz.de");
         assertThat(t).isNotNull();
-        assertThat(t.getGruppen()).contains("9.1");
+        assertThat(t.getGruppenwerte())
+            .anyMatch(wert -> "9.1".equals(wert.getWert()) && "Klasse".equals(wert.getGruppenkategorie().getName()));
     }
 
 

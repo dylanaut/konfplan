@@ -34,6 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -169,12 +171,20 @@ public class DashboardService {
     }
 
 
-    private List<String> computeGruppen(DashboardData dd) {
-        return dd.teilnehmer.values().stream()
-            .flatMap(tn -> tn.gruppen.stream())
-            .distinct()
-            .sorted()
-            .toList();
+    /**
+     * Gruppenkategorie-Werte, die mindestens ein Teilnehmer dieser Veranstaltung besitzt, nach
+     * Gruppenkategorie-Name gruppiert (siehe #690) - für Filter-Dropdowns, die je Kategorie
+     * eigene Optionen anbieten, statt eines einzigen, kategorieübergreifend gemischten Dropdowns.
+     */
+    private Map<String, List<String>> computeGruppen(DashboardData dd) {
+        Map<String, TreeSet<String>> werteByKategorie = new TreeMap<>();
+        for (TeilnehmerDto tn : dd.teilnehmer.values()) {
+            tn.gruppenwerteByKategorie.forEach((kategorie, werte) ->
+                werteByKategorie.computeIfAbsent(kategorie, k -> new TreeSet<>()).addAll(werte));
+        }
+        Map<String, List<String>> result = new LinkedHashMap<>();
+        werteByKategorie.forEach((kategorie, werte) -> result.put(kategorie, new ArrayList<>(werte)));
+        return result;
     }
 
 
@@ -316,7 +326,7 @@ public class DashboardService {
 
             List<String> namen = new ArrayList<>();
             for (TeilnehmerDto tn : dd.teilnehmer.values()) {
-                if (tn.gruppen.contains(pflichtGruppe)) {
+                if (tn.istInGruppe(pflichtGruppe)) {
                     namen.add(tn.getFullname());
                     verplanteTnProSlot.get(pflSlotId).add(tn.id);
                 }
@@ -396,7 +406,6 @@ public class DashboardService {
                 continue;
             }
             long tnOid = tn.id;
-            Set<String> tnGruppen = tn.gruppen;
             Map<Long, Integer> wvPrios = dd.getPrioritaeten(tnOid);
             Map<Long, TeilnehmerSlotBelegung> tnSlotsBelegungen = new LinkedHashMap<>();
 
@@ -410,7 +419,7 @@ public class DashboardService {
                 }
 
                 for (VortragDto pv : dd.pflichtvortraege.values()) {
-                    if (tnGruppen.contains(pv.pflichtGruppe) && Objects.equals(slotOid, pv.pflichtSlotId)) {
+                    if (tn.istInGruppe(pv.pflichtGruppe) && Objects.equals(slotOid, pv.pflichtSlotId)) {
                         belegung = new TeilnehmerSlotBelegung(pv.titel,
                             raumLabel(dd.raeume.get(pv.pflichtRaumId)), "pflicht");
                     }

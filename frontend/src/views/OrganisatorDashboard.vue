@@ -271,7 +271,7 @@ import api from '../api/axios';
 import { extractErrorMessage } from '../utils/errorMessage';
 import {useEventContextStore} from '../stores/eventContext';
 import {useAvailabilityStore} from '../stores/availability';
-import { useGroupStore } from '../stores/group';
+import { useGruppenkategorieStore } from '../stores/gruppenkategorie';
 import { useAuthStore } from '../stores/auth';
 import { useUnsavedChangesStore } from '../stores/unsavedChanges';
 import {
@@ -315,7 +315,7 @@ import MaintenanceAnnouncementModal from '../components/MaintenanceAnnouncementM
 const eventContext = useEventContextStore();
 const availabilityStore = useAvailabilityStore();
 const unsavedChanges = useUnsavedChangesStore();
-const groupStore = useGroupStore();
+const gruppenkategorieStore = useGruppenkategorieStore();
 const auth = useAuthStore();
 
 const tabLabels = {
@@ -446,8 +446,12 @@ const filteredTeilnehmer = computed(() => {
   return teilnehmer.value.filter(t => t.veranstaltungIds.includes(selectedVid.value));
 });
 
+// Flache Liste aller Gruppenkategorie-Werte über alle Teilnehmer hinweg (#690) - als Dropdown-
+// Optionen für die Pflichtgruppe eines Pflichtvortrags (weiterhin ein einzelnes freies String-
+// Feld, siehe Pflichtvortrag#pflichtgruppe; Teilnehmer#istInGruppe matcht dagegen bereits sowohl
+// gegen das alte flache als auch gegen das neue strukturierte Modell).
 const teilnehmerGruppen = computed(() => {
-  const groups = new Set(teilnehmer.value.flatMap(t => t.gruppen).filter(Boolean));
+  const groups = new Set(teilnehmer.value.flatMap(t => Object.values(t.gruppenwerteByKategorie || {}).flat()).filter(Boolean));
   return Array.from(groups).sort();
 });
 
@@ -641,7 +645,7 @@ const loadData = async () => {
       api.get(`${base}/plan/details`),
       api.get(`${base}/plan/qualitaet`),
       api.get('/api/organisator/nutzer'),
-      groupStore.fetchGruppen(selectedVid.value)
+      gruppenkategorieStore.fetchGruppenkategorien(selectedVid.value)
     ]);
 
     await availabilityStore.fetchAvailabilities(selectedVid.value);
@@ -781,7 +785,7 @@ const openUserModal = (u) => {
     email: '',
     role: u?.role || 'TEILNEHMER',
     isActive: true,
-    gruppen: [],
+    gruppenwerteByKategorie: {},
     veranstaltungIds: selectedVid.value ? [selectedVid.value] : []
   };
   showUserModal.value = true;

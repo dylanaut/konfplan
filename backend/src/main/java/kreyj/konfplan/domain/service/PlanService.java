@@ -166,10 +166,8 @@ public class PlanService {
                     List<String> tnNamen = eintrag.teilnehmer != null
                         ? eintrag.teilnehmer.stream().map(TeilnehmerDto::getFullname).toList()
                         : new ArrayList<>();
-                    List<String> tnGruppen = eintrag.teilnehmer != null
-                        ? eintrag.teilnehmer.stream()
-                            .map(tn -> tn.gruppen.stream().sorted().collect(Collectors.joining(", ")))
-                            .toList()
+                    List<Map<String, List<String>>> tnGruppenwerteByKategorie = eintrag.teilnehmer != null
+                        ? eintrag.teilnehmer.stream().map(tn -> tn.gruppenwerteByKategorie).toList()
                         : new ArrayList<>();
 
                     detaillierterPlan.add(new RaumBelegungUebersicht(
@@ -182,7 +180,7 @@ public class PlanService {
                         eintrag.referentName,
                         eintrag.vortragTyp,
                         tnNamen,
-                        tnGruppen,
+                        tnGruppenwerteByKategorie,
                         raum.getKapazitaet()
                     ));
                 } else {
@@ -386,8 +384,7 @@ public class PlanService {
             List<ZuweisungDto> zuweisungen = new ArrayList<>();
 
             for (Pflichtvortrag pv : veranstaltung.getPflichtvortraege()) {
-                Set<String> tnGruppe = teilnehmer.getGruppen();
-                if (tnGruppe != null && tnGruppe.contains(pv.getPflichtgruppe())) {
+                if (teilnehmer.istInGruppe(pv.getPflichtgruppe(), veranstaltung)) {
                     zuweisungen.add(new ZuweisungDto(
                         teilnehmer.getFullName(),
                         pv.getTitel(),
@@ -840,8 +837,7 @@ public class PlanService {
 
                 // Pflichtvorträge des Teilnehmers
                 for (Pflichtvortrag pv : pflichtvortraege) {
-                    Set<String> tnGruppe = teilnehmer.getGruppen();
-                    if (tnGruppe != null && tnGruppe.contains(pv.getPflichtgruppe())) {
+                    if (teilnehmer.istInGruppe(pv.getPflichtgruppe(), veranstaltung)) {
                         belegteSlotIds.add(pv.getPflichtslot().getId());
                     }
                 }

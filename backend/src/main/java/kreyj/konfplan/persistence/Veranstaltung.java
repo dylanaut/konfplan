@@ -69,14 +69,27 @@ public class Veranstaltung extends VersionedEntity {
     /** Ob Teilnehmer ihre persönlichen Verfügbarkeiten im Teilnehmer-Dashboard selbst ändern dürfen. */
     private boolean teilnehmerAendernVerfuegbarkeit = false;
 
+    /**
+     * @deprecated Wird durch {@link #gruppenkategorien} (siehe #690) abgelöst. Bleibt vorerst
+     * additiv bestehen, bis alle Konsumenten umgestellt sind.
+     */
+    @Deprecated
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "veranstaltung_gruppen", joinColumns = @JoinColumn(name = "veranstaltung_id"))
     @Column(name = "gruppen")
     private Set<String> gruppen = new HashSet<>();
 
+    @OneToMany(mappedBy = "veranstaltung", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Set<Gruppenkategorie> gruppenkategorien = new HashSet<>();
+
 
     public Set<String> getGruppen() {
         return Collections.unmodifiableSet(gruppen);
+    }
+
+
+    public Set<Gruppenkategorie> getGruppenkategorien() {
+        return Collections.unmodifiableSet(gruppenkategorien);
     }
 
 

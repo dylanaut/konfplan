@@ -2,6 +2,7 @@ package kreyj.konfplan.adapter.in.web.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.IdEntity;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Prioritaet;
@@ -13,7 +14,9 @@ import kreyj.konfplan.util.StringHelper;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
 
@@ -34,6 +37,9 @@ public class NutzerDto extends AbstractVersionedDto {
 
     // Teilnehmer-spezifisch
     public List<String> gruppen;
+    /** Werte aus dem strukturierten Gruppenkategorien-Modell (siehe #690), gruppiert nach
+     * Kategorie-Name - für die Anzeige als separate Spalten im Organisator-Dashboard. */
+    public Map<String, List<String>> gruppenwerteByKategorie;
     public List<VortragPrioDto> prioritaeten;
     public Set<Neigung> neigungen;
 
@@ -97,6 +103,10 @@ public class NutzerDto extends AbstractVersionedDto {
             dto.organisation = r.getOrganisation();
         } else if (u instanceof Teilnehmer tn) {
             dto.gruppen = tn.getGruppen().stream().sorted(StringHelper.NUM_OR_ALPHA_COMPARATOR).toList();
+            dto.gruppenwerteByKategorie = tn.getGruppenwerte().stream()
+                .collect(Collectors.groupingBy(w -> w.getGruppenkategorie().getName(),
+                    Collectors.mapping(GruppenkategorieWert::getWert, Collectors.toList())));
+            dto.gruppenwerteByKategorie.values().forEach(werte -> werte.sort(StringHelper.NUM_OR_ALPHA_COMPARATOR));
             dto.neigungen = tn.getNeigungen();
             Set<Prioritaet> tnPrioritaeten = tn.getPrioritaeten();
             List<VortragPrioDto> mappedPrios = tnPrioritaeten.stream()

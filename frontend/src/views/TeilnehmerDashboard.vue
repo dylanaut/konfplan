@@ -89,9 +89,9 @@
             Änderungen an E-Mail-Adresse und Passwort erfolgen über das Keycloak-Benutzerkonto.
           </p>
         </div>
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">Gruppen</label>
-          <input :value="profile.gruppen.join(', ')" type="text" class="input-field" disabled />
+        <div class="md:col-span-2" v-for="kategorieName in gruppenkategorieNamen" :key="kategorieName">
+          <label class="block text-sm font-medium text-gray-700">{{ kategorieName }}</label>
+          <input :value="getGruppenkategorieWerte(profile, kategorieName).join(', ')" type="text" class="input-field" disabled />
         </div>
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-2">Meine Neigungen</label>
@@ -323,6 +323,7 @@ import { extractErrorMessage } from '../utils/errorMessage';
 import { useNeigungStore } from '../stores/neigung';
 import { useUnsavedChangesStore } from '../stores/unsavedChanges';
 import EventLogo from '../components/EventLogo.vue';
+import { getGruppenkategorieWerte } from '../composables/useGruppenkategorieColumns';
 import {
   User as UserIcon,
   CalendarCheck as CalendarCheckIcon,
@@ -357,12 +358,14 @@ const profile = ref({
   firstName: '',
   lastName: '',
   email: '',
-  gruppen: [],
+  gruppenwerteByKategorie: {},
   neigungen: [],
   version: 0
 });
 const neigungStore = useNeigungStore();
 neigungStore.fetchNeigungen();
+
+const gruppenkategorieNamen = computed(() => Object.keys(profile.value.gruppenwerteByKategorie || {}).sort());
 
 const hasAvailabilityChanges = computed(() => {
   return JSON.stringify(availabilities.value) !== JSON.stringify(initialAvailabilities.value);

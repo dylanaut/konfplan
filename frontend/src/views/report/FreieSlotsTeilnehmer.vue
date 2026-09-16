@@ -31,7 +31,7 @@
         <thead class="table-dark">
           <tr>
             <th scope="col">Teilnehmer</th>
-            <th scope="col">Gruppen</th>
+            <th v-for="kat in gruppenkategorieStore.gruppenkategorien" :key="kat.id" scope="col">{{ kat.name }}</th>
             <th scope="col">Freie Slots</th>
             <th scope="col">Grund</th>
           </tr>
@@ -39,7 +39,9 @@
         <tbody>
           <tr v-for="teilnehmer in sortedTeilnehmer" :key="teilnehmer.id" class="page-break-inside-avoid">
             <td>{{ teilnehmer.firstName }} {{ teilnehmer.lastName }}</td>
-            <td>{{ (teilnehmer.gruppen || []).join(', ') }}</td>
+            <td v-for="kat in gruppenkategorieStore.gruppenkategorien" :key="kat.id">
+              {{ getGruppenkategorieWerte(teilnehmer, kat.name).join(', ') }}
+            </td>
             <td>
               <ul v-if="sortedFreieSlots(teilnehmer.id).length > 0" class="list-unstyled mb-0">
                 <li v-for="eintrag in sortedFreieSlots(teilnehmer.id)" :key="eintrag.slot.id">
@@ -71,11 +73,14 @@ import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
 import ReportFooter from '../../components/ReportFooter.vue';
+import { useGruppenkategorieStore } from '../../stores/gruppenkategorie';
+import { getGruppenkategorieWerte } from '../../composables/useGruppenkategorieColumns';
 
 const route = useRoute();
 const reportData = ref({ veranstaltung: {}, freieSlots: {}, nutzer: [] });
 const loading = ref(true);
 const error = ref(null);
+const gruppenkategorieStore = useGruppenkategorieStore();
 
 const handlePrint = () => window.print();
 
@@ -113,6 +118,7 @@ onMounted(async () => {
     const response = await api.get(url);
     reportData.value = response.data;
     document.title = `${response.data.veranstaltung.name} - Freie Slots (Teilnehmer)`;
+    await gruppenkategorieStore.fetchGruppenkategorien(veranstaltungId);
   } catch (err) {
     error.value = 'Fehler beim Laden der Daten: ' + (err.response?.data?.message || err.message);
   } finally {

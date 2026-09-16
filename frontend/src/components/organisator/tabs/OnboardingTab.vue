@@ -34,7 +34,9 @@
         <tr>
           <th @click="toggleSort('loginName')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition">LoginName <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
           <th @click="toggleSort('role')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition">Rolle <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
-          <th @click="toggleSort('gruppenText')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition">Gruppen <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
+          <th v-for="kategorieName in gruppenkategorieNamen" :key="kategorieName"
+              @click="toggleSort(gruppenkategorieSortKey(kategorieName))"
+              class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition">{{ kategorieName }} <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
           <th @click="toggleSort('email')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition">E-Mail <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
           <th @click="toggleSort('hatEchtesPasswort')" class="px-4 py-1.5 text-left cursor-pointer hover:text-indigo-600 transition">Status <ArrowUpDownIcon class="w-3 h-3 inline ml-0.5"/></th>
         </tr>
@@ -45,7 +47,10 @@
             class="hover:bg-gray-50 transition-colors">
           <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-900 font-medium">{{ n.loginName }}</td>
           <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-600">{{ n.role }}</td>
-          <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-600">{{ n.gruppenText || '—' }}</td>
+          <td v-for="kategorieName in gruppenkategorieNamen" :key="kategorieName"
+              class="px-4 py-2 whitespace-nowrap text-xs text-gray-600">
+            {{ getGruppenkategorieWerte(n, kategorieName).join(', ') || '—' }}
+          </td>
           <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-600">{{ n.email || '—' }}</td>
           <td class="px-4 py-2 whitespace-nowrap">
               <span :class="n.hatEchtesPasswort ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'"
@@ -65,6 +70,13 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import api from '../../../api/axios';
 import { extractErrorMessage } from '../../../utils/errorMessage';
 import { RefreshCw as RefreshCwIcon, ArrowUpDown as ArrowUpDownIcon } from '@lucide/vue';
+import {
+  getGruppenkategorieSortValue,
+  getGruppenkategorieWerte,
+  gruppenkategorieNameFromSortKey,
+  gruppenkategorieSortKey,
+  isGruppenkategorieSortKey,
+} from '../../../composables/useGruppenkategorieColumns';
 
 const status = ref([]);
 const loading = ref(false);
@@ -75,8 +87,27 @@ const sortConfig = reactive({ key: 'loginName', dir: 'asc' });
 
 const ohneEchtesPasswort = computed(() => status.value.filter(n => !n.hatEchtesPasswort));
 
-// gruppenText als vorberechnetes Sortier-/Suchfeld, da gruppen ein Array ist.
-const angereichert = computed(() => status.value.map(n => ({ ...n, gruppenText: (n.gruppen || []).join(', ') })));
+// Gruppenkategorie-Namen (#690), über alle Nutzer hinweg, für die dynamischen Spalten.
+const gruppenkategorieNamen = computed(() => {
+  const namen = new Set();
+  status.value.forEach(n => Object.keys(n.gruppenwerteByKategorie || {}).forEach(name => namen.add(name)));
+  return Array.from(namen).sort();
+});
+
+// gruppenSearchText als vorberechnetes, rein für die Volltextsuche genutztes Feld, da die
+// Gruppenkategorie-Werte verschachtelt unter gruppenwerteByKategorie liegen statt als flaches
+// Array/String.
+const angereichert = computed(() => status.value.map(n => ({
+  ...n,
+  gruppenSearchText: Object.values(n.gruppenwerteByKategorie || {}).flat().join(', '),
+})));
+
+const getSortValue = (item, key) => {
+  if (isGruppenkategorieSortKey(key)) {
+    return getGruppenkategorieSortValue(item, gruppenkategorieNameFromSortKey(key));
+  }
+  return item[key];
+};
 
 const displayStatus = computed(() => {
   let list = nurOhneEchtesPasswort.value
@@ -89,8 +120,8 @@ const displayStatus = computed(() => {
   }
 
   return [...list].sort((a, b) => {
-    const valA = a[sortConfig.key];
-    const valB = b[sortConfig.key];
+    const valA = getSortValue(a, sortConfig.key);
+    const valB = getSortValue(b, sortConfig.key);
     if (typeof valA === 'boolean' && typeof valB === 'boolean') {
       return sortConfig.dir === 'asc' ? Number(valA) - Number(valB) : Number(valB) - Number(valA);
     }

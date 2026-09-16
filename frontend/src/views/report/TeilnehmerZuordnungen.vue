@@ -21,14 +21,14 @@
 
       <section class="mt-5">
         <div class="row mb-3 align-items-center no-print">
-          <div class="col-md-4">
-            <label for="classFilter" class="form-label small fw-bold text-muted">Gruppe filtern:</label>
-            <select id="classFilter" class="form-select shadow-sm" v-model="selectedGruppe">
-              <option value="all">Alle Gruppen anzeigen</option>
-              <option v-for="gruppe in reportData.gruppen" :key="gruppe" :value="gruppe">{{ gruppe }}</option>
+          <div class="col-md-3" v-for="(werte, kategorieName) in reportData.gruppen" :key="kategorieName">
+            <label class="form-label small fw-bold text-muted">{{ kategorieName }} filtern:</label>
+            <select class="form-select shadow-sm" v-model="selectedGruppen[kategorieName]">
+              <option value="">Alle anzeigen</option>
+              <option v-for="wert in werte" :key="wert" :value="wert">{{ wert }}</option>
             </select>
           </div>
-          <div class="col-md-8 text-end pt-4">
+          <div class="col text-end pt-4">
             <span class="badge bg-light text-dark border">
               {{ visibleCountText }}
             </span>
@@ -92,17 +92,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
 import ReportFooter from '../../components/ReportFooter.vue';
+import { matchesGruppenkategorieFilter } from '../../composables/useGruppenkategorieColumns';
 
 const route = useRoute();
 const reportData = ref(null);
 const loading = ref(true);
 const error = ref(null);
-const selectedGruppe = ref('all');
+// Gewählter Wert je Gruppenkategorie-Name (#690), z.B. { Klasse: '10a' } - leerer String = kein Filter.
+const selectedGruppen = reactive({});
 
 // Ursprüngliche Spaltenbreite war 200px (min-width) - ein Drittel davon als neuer Startwert,
 // per Drag-Handle im Header (startResize) frei nachjustierbar.
@@ -148,20 +150,21 @@ onMounted(async () => {
   }
 });
 
+const hatAktivenGruppenfilter = computed(() => Object.values(selectedGruppen).some(Boolean));
+
 const filteredTeilnehmer = computed(() => {
   if (!reportData.value || !reportData.value.teilnehmer_stundenplan) return [];
-  if (selectedGruppe.value === 'all') {
-    return reportData.value.teilnehmer_stundenplan;
-  }
-  return reportData.value.teilnehmer_stundenplan.filter(tn => tn.teilnehmer.gruppen.includes(selectedGruppe.value));
+  return reportData.value.teilnehmer_stundenplan.filter(tn =>
+    Object.entries(selectedGruppen).every(([kategorieName, gewaehlterWert]) =>
+      matchesGruppenkategorieFilter(tn.teilnehmer, kategorieName, gewaehlterWert)));
 });
 
 const visibleCountText = computed(() => {
   if (!reportData.value) return '';
-  if (selectedGruppe.value === 'all') {
+  if (!hatAktivenGruppenfilter.value) {
     return `Zeige alle ${reportData.value.teilnehmer_stundenplan.length} Teilnehmer`;
   }
-  return `Gruppe ${selectedGruppe.value}: ${filteredTeilnehmer.value.length} Teilnehmer`;
+  return `${filteredTeilnehmer.value.length} von ${reportData.value.teilnehmer_stundenplan.length} Teilnehmern`;
 });
 
 const getStatusClass = (sb) => {

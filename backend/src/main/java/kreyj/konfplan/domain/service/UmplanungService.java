@@ -792,7 +792,7 @@ public class UmplanungService {
 
     private boolean pflichtvortragDecktSlotAb(Veranstaltung veranstaltung, Teilnehmer teilnehmer, Long slotId) {
         return veranstaltung.getPflichtvortraege().stream()
-            .anyMatch(pv -> teilnehmer.getGruppen().contains(pv.getPflichtgruppe()) && pv.getPflichtslot().getId().equals(slotId));
+            .anyMatch(pv -> teilnehmer.istInGruppe(pv.getPflichtgruppe(), veranstaltung) && pv.getPflichtslot().getId().equals(slotId));
     }
 
 

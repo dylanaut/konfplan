@@ -22,7 +22,7 @@
       <div v-for="(plan, teilnehmerId, index) in sortedPlaene" :key="teilnehmerId" class="page-break-after">
         <h4>
           {{ teilnehmerInfo(teilnehmerId).firstName }} {{ teilnehmerInfo(teilnehmerId).lastName }}
-          <small v-if="teilnehmerInfo(teilnehmerId).gruppen?.length" class="text-muted">({{ teilnehmerInfo(teilnehmerId).gruppen.join(', ') }})</small>
+          <small v-if="formatGruppenSummary(teilnehmerInfo(teilnehmerId))" class="text-muted">({{ formatGruppenSummary(teilnehmerInfo(teilnehmerId)) }})</small>
         </h4>
         <p v-if="plan.length === 0" class="text-muted">Keine Zuweisungen.</p>
         <table v-else class="table table-striped table-bordered table-sm">
@@ -73,6 +73,8 @@ const sortedPlaene = computed(() => {
 });
 
 const teilnehmerInfo = (teilnehmerId) => reportData.value.teilnehmer?.find(t => String(t.id) === String(teilnehmerId)) || {};
+
+const formatGruppenSummary = (t) => Object.values(t.gruppenwerteByKategorie || {}).flat().join(', ');
 
 onMounted(async () => {
   const veranstaltungId = route.params.vid;

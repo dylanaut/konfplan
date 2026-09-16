@@ -43,7 +43,7 @@ public class VeranstaltungImportService implements VeranstaltungImportServiceInt
 
     private static final List<String> ALL_KNOWN_FILES = List.of(
         "gebaeude.csv", "organisatoren.csv", "veranstaltungen.csv", "slots.csv", "referenten.csv",
-        "teilnehmer.csv", WAHL_VORTRAEGE_CSV, PFLICHT_VORTRAEGE_CSV, "tn_prios.csv",
+        "gruppenkategorien.csv", "teilnehmer.csv", WAHL_VORTRAEGE_CSV, PFLICHT_VORTRAEGE_CSV, "tn_prios.csv",
         "raum_verfuegbarkeiten.csv", "teilnehmer_verfuegbarkeiten.csv", "ref_verfuegbarkeiten.csv");
 
     private static final int MAX_ZIP_ENTRIES = 200;
@@ -57,16 +57,18 @@ public class VeranstaltungImportService implements VeranstaltungImportServiceInt
     private final VeranstaltungService veranstaltungService;
     private final ReferentService referentService;
     private final TeilnehmerService teilnehmerService;
+    private final GruppenkategorieService gruppenkategorieService;
 
 
     public VeranstaltungImportService(GebaeudeService gebaeudeService, OrganisatorService adminService,
                                       VeranstaltungService veranstaltungService, ReferentService referentService,
-                                      TeilnehmerService teilnehmerService) {
+                                      TeilnehmerService teilnehmerService, GruppenkategorieService gruppenkategorieService) {
         this.gebaeudeService = gebaeudeService;
         this.adminService = adminService;
         this.veranstaltungService = veranstaltungService;
         this.referentService = referentService;
         this.teilnehmerService = teilnehmerService;
+        this.gruppenkategorieService = gruppenkategorieService;
     }
 
 
@@ -212,6 +214,13 @@ public class VeranstaltungImportService implements VeranstaltungImportServiceInt
         Path referentenCsv = dir.resolve("referenten.csv");
         int anzahlReferenten = referentService.importFromCsv(referentenCsv, vid);
         requirePositive(referentenCsv, anzahlReferenten, "referenten.csv enthielt keine gültigen Zeilen.");
+
+        // 5b. Gruppenkategorien (optional, muss vor dem Teilnehmer-Import vorhanden sein, damit
+        // dessen Gruppenkategorie-Spalten bereits Werte zum Zuordnen vorfinden).
+        Path gruppenkategorienCsv = dir.resolve("gruppenkategorien.csv");
+        if (Files.exists(gruppenkategorienCsv)) {
+            gruppenkategorieService.importFromCsv(gruppenkategorienCsv, vid);
+        }
 
         // 6. Teilnehmer (Pflicht)
         Path teilnehmerCsv = dir.resolve("teilnehmer.csv");

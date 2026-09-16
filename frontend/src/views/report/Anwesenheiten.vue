@@ -32,8 +32,8 @@
           <thead class="table-dark">
             <tr>
               <th scope="col">Teilnehmer</th>
-              <th scope="col" style="width: 30%;">Unterschrift</th>
-              <th scope="col" style="width: 15%;">Gruppen</th>
+              <th scope="col" style="width: 25%;">Unterschrift</th>
+              <th v-for="kat in gruppenkategorieStore.gruppenkategorien" :key="kat.id" scope="col" style="width: 12%;">{{ kat.name }}</th>
               <th scope="col" class="text-center" style="width: 100px;">Anwesend</th>
             </tr>
           </thead>
@@ -41,7 +41,9 @@
             <tr v-for="(name, idx) in eintrag.teilnehmerNamen" :key="idx">
               <td>{{ name }}</td>
               <td></td>
-              <td>{{ eintrag.teilnehmerGruppen?.[idx] }}</td>
+              <td v-for="kat in gruppenkategorieStore.gruppenkategorien" :key="kat.id">
+                {{ teilnehmerGruppenwerte(eintrag, idx, kat.name).join(', ') }}
+              </td>
               <td class="text-center"><span class="checkbox-box"></span></td>
             </tr>
           </tbody>
@@ -61,15 +63,20 @@ import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
 import ReportFooter from '../../components/ReportFooter.vue';
 import { raumLabel as formatRaumLabel } from '../../utils/raumLabel';
+import { useGruppenkategorieStore } from '../../stores/gruppenkategorie';
 
 const route = useRoute();
 const reportData = ref({ veranstaltung: {}, plan: [] });
 const loading = ref(true);
 const error = ref(null);
+const gruppenkategorieStore = useGruppenkategorieStore();
 
 const handlePrint = () => window.print();
 
 const raumLabel = (eintrag) => formatRaumLabel({ name: eintrag.raumName, gebaeudeKuerzel: eintrag.raumGebaeudeKuerzel });
+
+const teilnehmerGruppenwerte = (eintrag, idx, kategorieName) =>
+  eintrag.teilnehmerGruppenwerteByKategorie?.[idx]?.[kategorieName] || [];
 
 const vortraege = computed(() => {
   if (!reportData.value.plan) return [];
@@ -91,6 +98,7 @@ onMounted(async () => {
     const response = await api.get(url);
     reportData.value = response.data;
     document.title = `${response.data.veranstaltung.name} - Anwesenheiten`;
+    await gruppenkategorieStore.fetchGruppenkategorien(veranstaltungId);
   } catch (err) {
     error.value = 'Fehler beim Laden der Daten: ' + (err.response?.data?.message || err.message);
   } finally {

@@ -13,7 +13,10 @@ import kreyj.konfplan.persistence.AbschlussTyp;
 import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
+import kreyj.konfplan.persistence.Gruppenkategorie;
+import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.Nutzer;
+import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
@@ -233,7 +236,34 @@ class CsvImportTest extends DatabaseCleaner {
     @TestHTTPEndpoint(VeranstaltungResource.class)
     void testImportTeilnehmer() {
         String tnEmail = "tom@stud.de";
-        String csv = "Vorname;Nachname;Email;Gruppen;LoginName\n" +
+        String csv = "Vorname;Nachname;Email;LoginName\n" +
+            "Tom;Student;" + tnEmail + ";tom";
+
+        given()
+            .multiPart("file", "teilnehmer.csv", csv.getBytes())
+            .when().post("/{vid}/teilnehmer/import", testVid)
+            .then()
+            .statusCode(OK.getStatusCode());
+
+        Teilnehmer t = (Teilnehmer) Nutzer.findByEmail(tnEmail);
+        assertThat(t).isNotNull();
+        assertThat(t.getFirstName()).isEqualTo("Tom");
+    }
+
+
+    /**
+     * Siehe #690: Gruppenkategorie-Werte werden über eine gleichnamige CSV-Spalte zugeordnet
+     * (die Kategorie muss - z.B. über gruppenkategorien.csv - vorher angelegt sein), nicht mehr
+     * über ein einziges flaches "Gruppen"-Feld.
+     */
+    @Test
+    @TestHTTPEndpoint(VeranstaltungResource.class)
+    void testImportTeilnehmer_ordnetGruppenkategorieWerteUeberGleichnamigeSpalteZu() {
+        Veranstaltung veranstaltung = Veranstaltung.findById(testVid);
+        addGruppenkategorieWert(veranstaltung, "Klasse", "10b");
+
+        String tnEmail = "tom@stud.de";
+        String csv = "Vorname;Nachname;Email;Klasse;LoginName\n" +
             "Tom;Student;" + tnEmail + ";10b;tom";
 
         given()
@@ -244,7 +274,17 @@ class CsvImportTest extends DatabaseCleaner {
 
         Teilnehmer t = (Teilnehmer) Nutzer.findByEmail(tnEmail);
         assertThat(t).isNotNull();
-        assertThat(t.getGruppen()).contains("10b");
+        assertThat(t.getGruppenwerte()).extracting(GruppenkategorieWert::getWert).contains("10b");
+    }
+
+
+    @Transactional
+    GruppenkategorieWert addGruppenkategorieWert(Veranstaltung veranstaltung, String kategorieName, String wert) {
+        Gruppenkategorie kategorie = new Gruppenkategorie(veranstaltung, kategorieName, false, true);
+        kategorie.persist();
+        GruppenkategorieWert gruppenkategorieWert = new GruppenkategorieWert(kategorie, wert);
+        gruppenkategorieWert.persist();
+        return gruppenkategorieWert;
     }
 
 
@@ -287,6 +327,38 @@ class CsvImportTest extends DatabaseCleaner {
             wvTitel + "' sollte Beamer als Ausstattung haben").isEqualTo("Beamer");
         assertThat(wv.isWiederholbar()).isTrue();
         assertThat(wv.getMaxWiederholungen()).isEqualTo(2);
+    }
+
+
+    /**
+     * Additiv (siehe #690): eine Pflichtgruppe gilt beim Vortrag-Import auch dann als bekannt,
+     * wenn sie einem Wert einer strukturierten Gruppenkategorie entspricht - unabhängig davon,
+     * ob sie zusätzlich im bisherigen flachen Modell (Veranstaltung.getGruppen()) steht.
+     */
+    @Test
+    @TestHTTPEndpoint(VeranstaltungResource.class)
+    void testImportVortraege_akzeptiertPflichtgruppeAusStrukturierterGruppenkategorie() {
+        Veranstaltung veranstaltung = Veranstaltung.findById(testVid);
+        addGruppenkategorieWert(veranstaltung, "Klasse", "10a");
+
+        String pvTitel = "Nur strukturiert bekannt";
+        String csv = "istPflicht;Titel;Referent_LoginName;Inhalt;Pflichtgruppe;wiederholbar;maxWiederholungen;Pflichtraum;" +
+            "Pflichtslot;Ausstattung\n" +
+            "true;" + pvTitel + ";vortrag;Pflichtinhalt;10a;false;1;A101;Slot 1;";
+
+        given()
+            .multiPart("file", "vortraege.csv", csv.getBytes())
+            .when().post("/{vid}/vortraege/import", testVid)
+            .then()
+            .statusCode(OK.getStatusCode());
+
+        Pflichtvortrag pv = Pflichtvortrag.find("titel", pvTitel).firstResult();
+        assertThat(pv).describedAs("Pflichtvortrag '" + pvTitel +
+            "' sollte trotz rein strukturiert bekannter Pflichtgruppe importiert worden sein").isNotNull();
+        assertThat(pv.getPflichtgruppe()).isEqualTo("10a");
+        Veranstaltung nachImport = Veranstaltung.findById(testVid);
+        assertThat(nachImport.getGruppen()).describedAs("flaches Modell bleibt unverändert")
+            .doesNotContain("10a");
     }
 
 

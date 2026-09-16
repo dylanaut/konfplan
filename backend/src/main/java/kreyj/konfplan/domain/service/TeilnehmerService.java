@@ -1,7 +1,9 @@
 package kreyj.konfplan.domain.service;
 
-import com.opencsv.bean.CsvToBean;
-import com.opencsv.bean.CsvToBeanBuilder;
+import com.opencsv.CSVParser;
+import com.opencsv.CSVParserBuilder;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
@@ -14,9 +16,10 @@ import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.OrganisatorDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerVeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
-import kreyj.konfplan.adapter.in.web.dto.csv.TeilnehmerCsvDto;
 import kreyj.konfplan.application.port.in.TeilnehmerServiceInterface;
 import kreyj.konfplan.persistence.Organisator;
+import kreyj.konfplan.persistence.Gruppenkategorie;
+import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Pflichtvortrag;
@@ -35,7 +38,9 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -127,12 +132,11 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         }
 
         Set<Vortrag> alleVortraege = veranstaltung.getVortraege();
-        Set<String> teilnehmerGruppen = teilnehmer.getGruppen();
 
         return alleVortraege.stream()
             .filter(vortrag -> {
                 if (vortrag instanceof Pflichtvortrag pv) {
-                    return teilnehmerGruppen.contains(pv.getPflichtgruppe());
+                    return teilnehmer.istInGruppe(pv.getPflichtgruppe(), veranstaltung);
                 } else {
                     return true;
                 }
@@ -187,53 +191,82 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
             throw new IllegalArgumentException("Veranstaltung nicht gefunden.");
         }
 
+        // Gruppenkategorien dieser Veranstaltung einmalig laden (siehe #690): statt eines
+        // einzigen flachen "Gruppen"-Feldes hat die CSV nun eine eigene Spalte je bereits
+        // angelegter Kategorie (siehe GruppenkategorieService#importFromCsv, muss vorher laufen).
+        // Wird hier bewusst nicht per Bean-Mapping (CsvToBean) gelesen, weil die Menge und Namen
+        // dieser Spalten je Veranstaltung variieren - eine feste DTO-Klasse kann das nicht
+        // abbilden. Ein manueller Einzeldurchlauf vermeidet außerdem das Risiko, mit einem
+        // zweiten, unabhängig gefilterten Lesevorgang zeilenweise aus dem Takt zu geraten.
+        List<Gruppenkategorie> kategorien = Gruppenkategorie.<Gruppenkategorie>find("veranstaltung", v).list();
+
         int count = 0;
-        try (Reader reader = CsvHelper.openCsvReader(csvFilePath)) {
-            CsvToBean<TeilnehmerCsvDto> csvToBean = new CsvToBeanBuilder<TeilnehmerCsvDto>(reader)
-                .withType(TeilnehmerCsvDto.class)
-                .withFilter(line -> line.length > 0 && !line[0].startsWith("#"))
-                .withIgnoreEmptyLine(true)
-                .withIgnoreLeadingWhiteSpace(true)
-                .withSeparator(';')
-                .withThrowExceptions(false).build();
+        CSVParser parser = new CSVParserBuilder().withSeparator(';').withIgnoreLeadingWhiteSpace(true).build();
+        try (Reader reader = CsvHelper.openCsvReader(csvFilePath);
+             CSVReader csvReader = new CSVReaderBuilder(reader).withCSVParser(parser).build()) {
 
-            List<TeilnehmerCsvDto> beans = csvToBean.parse();
+            String[] header = csvReader.readNext();
+            if (null == header) {
+                LOG.warn("CSV-Datei " + csvFilePath.getFileName() + " enthielt keine Kopfzeile.");
+                return 0;
+            }
+            Map<String, Integer> spaltenIndex = new HashMap<>();
+            for (int i = 0; i < header.length; i++) {
+                spaltenIndex.put(header[i].trim(), i);
+            }
+            Integer vornameIdx = spaltenIndex.get("Vorname");
+            Integer nachnameIdx = spaltenIndex.get("Nachname");
+            Integer loginNameIdx = spaltenIndex.get("LoginName");
+            Integer emailIdx = spaltenIndex.get("Email");
 
-            csvToBean.getCapturedExceptions().forEach(e -> {
-                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage());
-                protokollService.log(ProtokollKategorie.SYSTEM, "CSV-Parsing-Fehler", "Teilnehmer-Import: " + e.getMessage() + " in Zeile " + e.getLineNumber(), null, veranstaltungId);
-            });
-
-            for (TeilnehmerCsvDto csvDto : beans) {
-                if (StringUtils.isBlank(csvDto.loginName)) {
-                    LOG.warn("Teilnehmer-Zeile übersprungen: loginName fehlt.");
-                    protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Import übersprungen", "loginName fehlte in CSV-Zeile.", null, veranstaltungId);
+            String[] line;
+            while ((line = csvReader.readNext()) != null) {
+                if (line.length == 0 || line[0].startsWith("#") || (line.length == 1 && StringUtils.isBlank(line[0]))) {
                     continue;
                 }
 
-                String loginName = csvDto.loginName.trim().toLowerCase();
-                if (Nutzer.findByLoginNameOrEmail(loginName, csvDto.email) == null) {
+                String vorname = zelle(line, vornameIdx);
+                String nachname = zelle(line, nachnameIdx);
+                String loginNameRoh = zelle(line, loginNameIdx);
+                String email = zelle(line, emailIdx);
+
+                if (StringUtils.isBlank(vorname) || StringUtils.isBlank(nachname) || StringUtils.isBlank(loginNameRoh)) {
+                    LOG.warn("Teilnehmer-Zeile übersprungen: Vorname/Nachname/loginName fehlt.");
+                    protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Import übersprungen", "Vorname/Nachname/loginName fehlte in CSV-Zeile.", null, veranstaltungId);
+                    continue;
+                }
+
+                String loginName = loginNameRoh.trim().toLowerCase();
+                if (Nutzer.findByLoginNameOrEmail(loginName, email) == null) {
                     Teilnehmer tn = new Teilnehmer();
                     tn.assignLoginName(loginName);
-                    if (StringUtils.isNotBlank(csvDto.email)) {
-                        tn.setEmail(csvDto.email.trim().toLowerCase());
+                    if (StringUtils.isNotBlank(email)) {
+                        tn.setEmail(email.trim().toLowerCase());
                     }
-                    tn.setFirstName(csvDto.vorname);
-                    tn.setLastName(csvDto.nachname);
+                    tn.setFirstName(vorname);
+                    tn.setLastName(nachname);
 
-                    if (StringUtils.isNotBlank(csvDto.gruppen)) {
-                        for (String splitter : csvDto.gruppen.split("\\|")) {
-                            String gruppe = splitter.trim();
-                            if (StringUtils.isBlank(gruppe)) {
+                    for (Gruppenkategorie kategorie : kategorien) {
+                        Integer spalte = spaltenIndex.get(kategorie.getName());
+                        if (null == spalte) {
+                            continue;
+                        }
+                        String zellwert = zelle(line, spalte);
+                        if (StringUtils.isBlank(zellwert)) {
+                            continue;
+                        }
+                        for (String splitter : zellwert.split("\\|")) {
+                            String wertName = splitter.trim();
+                            if (StringUtils.isBlank(wertName)) {
                                 continue;
                             }
-                            // Unbekannte Gruppe automatisch in der Veranstaltung anlegen.
-                            if (!v.getGruppen().contains(gruppe)) {
-                                v.addGruppe(gruppe);
-                                LOG.info("Neue Gruppe '" + gruppe + "' beim Import für Veranstaltung '"
-                                    + v.getName() + "' angelegt.");
+                            GruppenkategorieWert wert = GruppenkategorieWert.findByWertUndKategorie(wertName, kategorie);
+                            if (null != wert) {
+                                tn.addGruppenwert(wert);
+                            } else {
+                                LOG.warn("Unbekannter Gruppenkategorie-Wert '" + wertName + "' für Kategorie '"
+                                    + kategorie.getName() + "' beim Import übersprungen.");
                             }
-                            tn.addGruppe(gruppe);
                         }
                     }
 
@@ -257,6 +290,14 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         LOG.info("CSV-Import abgeschlossen: " + count + " Teilnehmer aus " + csvFilePath + " importiert.");
         protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Import abgeschlossen", count + " Teilnehmer importiert für Veranstaltung " + v.getName() + ".", null, veranstaltungId);
         return count;
+    }
+
+
+    private static String zelle(String[] zeile, Integer spalte) {
+        if (null == spalte || spalte >= zeile.length) {
+            return null;
+        }
+        return zeile[spalte];
     }
 
 
