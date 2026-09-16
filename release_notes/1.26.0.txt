@@ -1,0 +1,364 @@
+Release Notes 1.26.0
+Released: 2026-09-16
+
+Changes:
+
+- Release-Notes fuer 1.25.9 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.25.10-SNAPSHOT)
+
+- Gruppenkategorien: Domänenmodell, Migration, Verwaltung, Matching, UI, CSV-Import & Reports (Slice 1-9/n)
+  * Gruppenkategorien: Domänenmodell + PROD-Datenmigration (Slice 1/n)
+  Erster Schritt des Umbaus von Teilnehmer.gruppen (flache, unstrukturierte
+  Set<String>) zu strukturierten Gruppenkategorien mit Key-Value-Semantik
+  (siehe #690):
+  - Neue Entities Gruppenkategorie (Name, mehrwertig/einwertig,
+    Pflicht/Kann, gehört zu einer Veranstaltung) und GruppenkategorieWert
+    (ein erlaubter Wert des Wertebereichs einer Kategorie).
+  - Teilnehmer.gruppenwerte (ManyToMany zu GruppenkategorieWert) und
+    Veranstaltung.gruppenkategorien (OneToMany) ergänzen additiv die
+    bestehenden Felder Teilnehmer.gruppen/Veranstaltung.gruppen - diese
+    bleiben vorerst unverändert in Nutzung, bis alle Konsumenten
+    (Pflichtvortrag-Matching, Reports, CSV-Import, REST, Frontend) in
+    Folge-PRs umgestellt sind.
+  - Flyway-Migration V28: legt das neue Schema an und migriert die in
+    PROD bestehenden flachen teilnehmer_gruppen-Werte anhand ihrer
+    Werte-Syntax in die drei impliziten Kategorien "Schule" (RKS/MGL,
+    einwertig, Pflicht), "Messe" (Präfix "M_", mehrwertig, Kann) und
+    "Klasse" (beginnt mit einer Ziffer, einwertig, Pflicht). Werte, die
+    keinem Muster entsprechen, werden nicht migriert und bleiben
+    unverändert in teilnehmer_gruppen stehen.
+  - Migration wurde gegen einen frischen lokalen Postgres-Container mit
+    repräsentativen Beispieldaten (inkl. eines nicht klassifizierbaren
+    Edge-Case-Werts) end-to-end verifiziert, da Flyway im Testprofil
+    deaktiviert ist (%test.quarkus.flyway.enabled=false) und diese Art
+    Datenmigration von der automatisierten Testsuite nicht abgedeckt
+    werden kann.
+  Bekannte Einschränkung der Migration: ein Teilnehmer-Gruppenwert war
+  bisher nicht auf eine einzelne Veranstaltung skaliert. Die Migration
+  ordnet ihn jeder Veranstaltung zu, der der Teilnehmer zugeordnet ist -
+  für Teilnehmer mit Mitgliedschaft in genau einer Veranstaltung (der
+  Normalfall) korrekt.
+  Refs #690
+  * Gruppenkategorien: Verwaltungs-API für Organisatoren (Slice 2/n)
+  Zweiter Schritt von #690: Organisatoren/Administratoren können
+  Gruppenkategorien einer Veranstaltung anlegen/ändern/löschen, ihren
+  Wertebereich pflegen und Teilnehmern Werte zuordnen/entziehen - alles
+  über einen neuen, dedizierten GruppenkategorieService plus REST-
+  Endpunkte in OrganisatorResource (dieselbe @RolesAllowed-Absicherung
+  wie die bestehende flache Gruppen-Verwaltung).
+  Zwei Bugs an den neuen Entities gefunden und gefixt, beide durch
+  gezielte Isolationstests nachgewiesen:
+  - Uniqueness-/Aggregat-Prüfungen im Service navigierten anfangs
+    gecachte Hibernate-Kollektionen (Veranstaltung.gruppenkategorien,
+    Gruppenkategorie.werte), die nach einem Sibling-Insert innerhalb
+    derselben Transaktion nicht automatisch aktualisiert werden - eine
+    Query loest dagegen automatisch einen Auto-Flush aus. Auf direkte
+    count()/JPQL-Queries umgestellt.
+  - Gruppenkategorie.werte und GruppenkategorieWert.teilnehmer (beide
+    inverse Seiten von bidirektionalen Assoziationen) wurden beim
+    Anlegen des jeweiligen Kindes nie Java-seitig synchronisiert -
+    Hibernates Cascade-Verarbeitung beim Löschen des Elternteils
+    verwechselte einen so übersehenen, noch nie gelesenen Kind-Eintrag
+    mit einer verwaisten, transienten Referenz
+    (TransientPropertyValueException). Behoben durch expliziten Sync in
+    den jeweiligen Konstruktoren/Zuordnungsmethoden.
+  Refs #690
+  * Gruppenkategorien: Pflichtvortrag-Matching gegen beide Modelle absichern (Slice 3/n)
+  Teilnehmer.istInGruppe(gruppenName, veranstaltung) prueft sowohl das
+  bisherige flache "gruppen"-Set als auch die neuen strukturierten
+  Gruppenkategorien-Werte (additiv, per OR) - damit Pflichtvortrag-
+  Zuordnungen unabhaengig davon greifen, ueber welches der beiden Systeme
+  einem Teilnehmer eine Gruppe zugewiesen wurde. Das macht die
+  Verwaltungs-API aus Slice 2 erstmals funktional wirksam, ohne
+  Migrationsrisiko fuer bestehende Daten (100% abwaertskompatibel).
+  getGruppenTeilnehmer(gruppenName, veranstaltung) wurde entsprechend auf
+  eine einzige JPQL-Abfrage umgestellt, die beide Modelle abdeckt. Dadurch
+  mussten Pflichtvortrag.java, PlanService.java und OrganisatorService.java
+  NICHT direkt angefasst werden - sie delegieren bereits an diese
+  statische Hilfsmethode.
+  Direkte Aufrufstellen angepasst: PlanService (Plan-Anzeige, belegte
+  Slots), UmplanungService (Slot-Abdeckungspruefung), PlanErstellungService
+  (Kollisionspruefung), TeilnehmerService (Vortragsliste), DashboardService
+  (Gruppen-Uebersicht, Belegung, Stundenplan). TeilnehmerDto bekommt ein
+  gruppenwerte-Feld samt eigenem istInGruppe() fuer das Frontend.
+  CSV-Import (TeilnehmerCsvDto/VortragCsvDto) und die Veranstaltung-Ebene
+  (renameGruppe) bleiben bewusst unveraendert - sie betreffen die alte
+  Gruppen-Verwaltung, nicht das Teilnehmer<->Pflichtvortrag-Matching.
+  Zwei neue Regressionstests in GruppenkategorieTest belegen die
+  Cross-Modell-Zuordnung sowie die korrekte Veranstaltungs-Scope-Grenze.
+  * Gruppenkategorien: Verwaltungs-UI für Organisatoren (Slice 4/n)
+  Neue Sektion "Gruppenkategorien" im VeranstaltungenTab, direkt neben der
+  bestehenden flachen "Gruppen"-Verwaltung (gleiche Auf-/Zuklapp-UX):
+  Organisatoren/Admins können pro Veranstaltung Kategorien anlegen,
+  umbenennen, Mehrwertig/Einwertig und Pflicht/Kann umschalten sowie löschen
+  (GruppenkategorieEditorModal), und je Kategorie ihre Werte pflegen
+  (Hinzufügen/Umbenennen/Löschen, analog zur bisherigen Gruppen-Liste).
+  Neuer Pinia-Store stores/gruppenkategorie.js kapselt die Slice-2-
+  Management-API (GET/POST/PUT/DELETE .../gruppenkategorien[/werte]) nach
+  demselben Muster wie stores/group.js, nutzt aber extractErrorMessage
+  statt error.response?.data direkt, da die neuen Endpunkte über
+  BusinessException JSON-Fehler ({"error": ...}) statt Plain-Text liefern.
+  Das Laden erfolgt zentral in OrganisatorDashboard.loadData() analog zu
+  groupStore.fetchGruppen.
+  Rollen-Beschränkung ("nur Admin/Organisator") ergibt sich bereits aus der
+  Platzierung innerhalb des Organisator-Dashboards sowie dem bestehenden
+  @RolesAllowed auf OrganisatorResource - keine zusätzliche Prüfung nötig.
+  Teilnehmer-seitige Anzeige der Gruppenkategorien als sortierbare/
+  filterbare Spalten (ursprüngliche Anforderung aus #690) folgt in einer
+  späteren Slice, da sie eine Erweiterung von NutzerDto voraussetzt.
+  * Gruppenkategorien: sortierbare/filterbare Spalten im Teilnehmer-Dashboard (Slice 5/n)
+  NutzerDto bekommt ein gruppenwerteByKategorie-Feld (Map<Kategorie-Name,
+  List<Wert>>), additiv neben dem bisherigen flachen gruppen-Feld - befüllt
+  für Teilnehmer aus Teilnehmer.getGruppenwerte(), gruppiert nach dem Namen
+  ihrer Gruppenkategorie. Beide bereits genutzten Nutzer-Listen-Endpunkte
+  (OrganisatorService.getAllUsers(), VeranstaltungResource "/{vid}/nutzer")
+  liefern das Feld automatisch mit, da sie über NutzerDto.from() mappen.
+  TeilnehmerTab zeigt im Organisator-Dashboard jetzt für jede definierte
+  Gruppenkategorie der Veranstaltung eine eigene Spalte in der
+  Verfügbarkeits-Matrix-Tabelle (sortierbar über den bestehenden
+  toggleSort-Mechanismus mit kodiertem Schlüssel "gk:<Kategorie-Name>",
+  da die Werte verschachtelt statt als flaches Feld vorliegen) sowie ein
+  Filter-Dropdown je Kategorie (Werte aus dem definierten Wertebereich der
+  Kategorie, nicht nur den tatsächlich vergebenen). Die bestehende flache
+  "Gruppen"-Spalte/-Filter bleibt unverändert erhalten.
+  Bewusst nur in der Verfügbarkeits-Matrix ergänzt, nicht in der separaten
+  Prioritäten-Matrix-Tabelle - deren Name-/Gruppen-Spalten sind sticky mit
+  fester Breite für die vielen Wahlvortrag-Prioritäts-Spalten ausgelegt,
+  zusätzliche Kategorie-Spalten würden dort das Layout sprengen.
+  * Gruppenkategorien: CSV-Import additiv auf strukturiertes Modell erweitern (Slice 6/n)
+  Neuer Helper GruppenkategorieWert.findByWertUndVeranstaltung(wert,
+  veranstaltung) sucht über alle Gruppenkategorien einer Veranstaltung
+  hinweg nach einem Wert mit exaktem Namen.
+  Teilnehmer-Import (TeilnehmerService.importFromCsv): ein importierter
+  Gruppen-Wert wird weiterhin unverändert dem flachen Modell zugeordnet
+  (inkl. automatischem Anlegen unbekannter flacher Gruppen); entspricht er
+  zusätzlich einem Wert einer bereits definierten Gruppenkategorie, wird
+  der Teilnehmer additiv auch dort zugeordnet.
+  Vortrag-Import (OrganisatorService.importVortraegeFromCsv): eine
+  Pflichtgruppe gilt jetzt auch dann als bekannt (und führt nicht mehr zum
+  Überspringen der Zeile), wenn sie einem Wert einer strukturierten
+  Gruppenkategorie entspricht - unabhängig davon, ob sie zusätzlich im
+  bisherigen flachen Veranstaltung.gruppen-Modell steht. Organisatoren
+  können Pflichtgruppen damit rein über Gruppenkategorien definieren, ohne
+  parallel einen flachen Eintrag pflegen zu müssen.
+  Beide Änderungen sind rein additiv (OR-Verknüpfung, wie schon in Slice 3
+  für das Pflichtvortrag-Matching) - bestehendes Verhalten und bestehende
+  Tests bleiben unverändert grün.
+  Zwei neue Tests in CsvImportTest belegen: (1) ein importierter
+  Gruppen-Wert landet zusätzlich im strukturierten Modell, wenn ein
+  passender Gruppenkategorie-Wert existiert; (2) eine Pflichtgruppe, die
+  NUR strukturiert (nicht im flachen Modell) bekannt ist, wird beim
+  Vortrag-Import akzeptiert.
+  * Runbook: Migration lokal mit PROD-Daten testen + PROD-Dumps gitignored
+  Dokumentiert das Verfahren, eine neue Flyway-Migration (Beispiel: V28
+  Gruppenkategorien, #690) vorab gegen eine per Admin-Export gezogene
+  Kopie der echten PROD-Datenbank zu testen, ohne PROD selbst
+  anzufassen - wiederverwendbar für künftige Migrationen.
+  *.dump und konfplan-backup_*.zip werden zusätzlich per .gitignore
+  ausgeschlossen, da solche lokalen Kopien echte personenbezogene
+  Teilnehmerdaten enthalten und nie versehentlich committet werden
+  dürfen.
+  * ensure_prod_infra.sh: Timeout statt endloses Warten bei Keycloak/Mailpit
+  Die bisherigen "until curl ...; done"-Schleifen hatten kein Timeout und
+  keine Fehlerausgabe - schlug z.B. Keycloak wegen eines falschen
+  KC_DB_PASSWORD fehl (Container beendet sich), haengte das Skript
+  unbegrenzt bei "Warte auf ... Bereitschaft" ohne jeden Hinweis auf die
+  Ursache.
+  Neue Helper-Funktion warte_auf_url() bricht jetzt nach 60s ODER sofort,
+  wenn der betroffene Container gar nicht mehr laeuft, mit einer klaren
+  Fehlermeldung samt "docker logs"-Hinweis ab.
+  Zusaetzlich: Pfad zum Native-Runner im abschliessenden Beispiel-Befehl
+  auf den aktuellen Artefaktnamen (backend-1.25.6-SNAPSHOT-runner statt
+  des veralteten konfplan-backend-1.0.0-SNAPSHOT-runner) korrigiert.
+  * ensure_prod_infra.sh: JVM-Jar statt Native-Runner + Runbook-Korrekturen
+  Der abschliessend ausgegebene Start-Befehl verwies auf einen Native-
+  Image-Runner (Suffix "-runner", kein .jar), den ein normaler
+  'mvnw package'-Build gar nicht erzeugt (nur ein Native-Build mit
+  -Pnative/GraalVM tut das) - stattdessen jetzt der tatsaechlich erzeugte
+  JVM-Fast-Jar-Pfad (backend/target/quarkus-app/quarkus-run.jar), mit
+  Hinweis auf den optionalen Native-Weg.
+  Migration-Lokal-Mit-Prod-Daten-Testen.adoc entsprechend korrigiert und
+  um zwei beim tatsaechlichen Durchspielen gefundene Fallstricke ergaenzt:
+  - Manuelles psql-Anwenden der Migration (4a) und anschliessendes
+    Starten der App (4b) schliessen sich auf derselben wiederhergestellten
+    Kopie aus - Flyway versucht die Migration sonst ein zweites Mal
+    auszufuehren und scheitert an "relation already exists", da es von
+    der manuellen Anwendung nichts weiss. Abschnitt 4 dokumentiert jetzt
+    beide Wege als Alternativen inkl. Reset-Befehl zwischen ihnen.
+  - Tabellennamen in den Beispiel-Abfragen auf die tatsaechliche
+    (kleingeschriebene) Postgres-Schreibweise korrigiert.
+  * Runbook: VITE_KEYCLOAK_URL-Override + Einzel-Test-User-Technik ergänzen
+  Beim tatsächlichen Durchspielen des Runbooks gegen echte PROD-Daten
+  gefunden: ein Prod-Build der Frontend erwartet Keycloak fest unter
+  window.location.origin + "/auth" (nur durch den echten Caddy-Reverse-
+  Proxy aus deploy/ erfüllt) - lokal ohne diesen Proxy führt "Anmelden"
+  sonst zu einem Redirect zurück auf die App-URL statt zum Login. Fix:
+  VITE_KEYCLOAK_URL als Quinoa-Build-Env-Var setzen (dokumentiert in 4b).
+  Neuer Abschnitt 5 dokumentiert die leichtgewichtige Alternative zu einem
+  vollen keycloak.dump-Restore: für genau einen bereits real existierenden
+  Nutzer per Keycloak-Admin-REST-API einen lokalen Account anlegen und
+  Nutzer.keycloak_id darauf verknüpfen - inklusive Warnhinweis auf die
+  beiden Fallstricke eines vollen Restores (verlorener Master-Realm-
+  Bootstrap-Login, admin-cli-Secret-Mismatch).
+  * Fix: Gruppenkategorien-Endpunkte werfen LazyInitializationException
+  GET/POST/PUT .../gruppenkategorien mappten Gruppenkategorie-Entities
+  außerhalb der Service-eigenen @Transactional-Grenze auf DTOs. Solange
+  Gruppenkategorie.werte (lazy @OneToMany) nie innerhalb derselben
+  Transaktion angefasst wurde - der Normalfall bei Bestandsdaten, z.B.
+  per Migration eingespielt statt live in derselben Session erzeugt -
+  schlug GruppenkategorieDto.from(...) mit LazyInitializationException
+  fehl, da die Hibernate-Session beim Verlassen der Service-Methode
+  bereits geschlossen war.
+  Beim Testen von Slice 1 der #690-Migration gegen echte, per PROD-Dump
+  wiederhergestellte Daten reproduziert: GET .../gruppenkategorien lieferte
+  HTTP 500, wodurch im Organisator-Dashboard sowohl die Gruppenkategorien-
+  Verwaltung (VeranstaltungenTab, Slice 4) als auch die Kategorie-Spalten
+  im TeilnehmerTab (Slice 5) leer blieben - beide lesen aus demselben
+  Pinia-Store, dessen Fetch am selben 500 scheiterte.
+  Von GruppenkategorieServiceTest (Slice 2) nicht erkannt, da dort nur die
+  Service-Methode direkt innerhalb EINER offenen Transaktion getestet
+  wird, nie die REST-Schicht mit ihrer eigenen Transaktionsgrenze.
+  Fix: @Transactional auf den drei betroffenen Resource-Methoden
+  (getGruppenkategorien, createGruppenkategorie, updateGruppenkategorie),
+  damit die Session bis zum DTO-Mapping offen bleibt.
+  Zwei neue REST-Level-Regressionstests legen Kategorie+Wert bewusst in
+  einer separaten, bereits committeten Transaktion an (QuarkusTransaction.
+  requiringNew()), um exakt die reale Fehlerbedingung nachzustellen -
+  beide vor dem Fix reproduzierbar mit derselben LazyInitializationException
+  fehlgeschlagen, nach dem Fix grün (343 Tests gesamt, 0 Fehler).
+  * Fix: Gruppenkategorie-Wert-Endpunkte lehnen text/plain-Body mit 415 ab
+  OrganisatorResource ist klassenweit auf @Consumes(APPLICATION_JSON)
+  festgelegt. addGruppenkategorieWert und renameGruppenkategorieWert
+  nehmen aber bewusst einen rohen String-Body entgegen (wie schon die
+  ältere, gleichartige flache Gruppen-Verwaltung) - der zugehörige
+  Frontend-Store (stores/gruppenkategorie.js) sendet ihn konsequent mit
+  Content-Type: text/plain, analog zu stores/group.js. Ohne einen
+  methodeneigenen @Consumes(TEXT_PLAIN)-Override lehnte der Server jeden
+  echten Request mit HTTP 415 ab, bevor die Methode überhaupt aufgerufen
+  wurde - das "Wert hinzufügen"/"Wert umbenennen" in der Gruppenkategorien-
+  Verwaltungs-UI (Slice 4) war damit für jeden echten Client komplett
+  funktionslos.
+  Beim manuellen Durchtesten aller Gruppenkategorien-Endpunkte gegen die
+  wiederherstellte PROD-Kopie entdeckt: ein per REST-assured ohne
+  expliziten Content-Type gesendeter Request verschleiert das Problem
+  (RestAssured setzt dabei keinen abweichenden Header), ein Client mit
+  demselben Content-Type wie das echte Frontend deckt es sofort auf.
+  Fix: @Consumes(MediaType.TEXT_PLAIN) an beiden Methoden ergänzt. Zwei
+  neue Regressionstests setzen bewusst .contentType(TEXT), um exakt das
+  reale Client-Verhalten nachzustellen - beide vor dem Fix mit HTTP 415
+  fehlgeschlagen, danach grün (345 Tests gesamt, 0 Fehler).
+  Hinweis: dieselbe Klasse hat denselben Fallstrick schon länger bei der
+  älteren, unabhängigen flachen Gruppen-Verwaltung (createGruppe, POST
+  .../gruppen) - dort vorhanden seit Commit 85528fa, also unabhängig von
+  #690. Bewusst nicht in diesem Fix mitkorrigiert (siehe PR-Beschreibung/
+  Nutzerhinweis) - falls gewünscht als separate Aufgabe zu beheben.
+  * Fix: createGruppe (flache Gruppen-Verwaltung) lehnt text/plain mit 415 ab
+  Derselbe Fallstrick wie im vorigen Commit, aber unabhängig von #690:
+  OrganisatorResource ist klassenweit @Consumes(APPLICATION_JSON), doch
+  createGruppe nimmt einen rohen String-Body entgegen. stores/group.js
+  sendet den Gruppennamen mit Content-Type: text/plain - ohne einen
+  methodeneigenen @Consumes(TEXT_PLAIN)-Override lehnte der Server jeden
+  echten Request mit HTTP 415 ab. "Neue Gruppe hinzufügen" in der
+  Veranstaltungen-Verwaltung war damit für jeden echten Client
+  funktionslos, seit die Klasse in Commit 85528fa auf @Consumes(JSON)
+  festgelegt wurde.
+  Der bestehende Test testGruppenApiLifecycle deckte das nie auf, weil er
+  den Request mit ContentType.JSON sendete - also genau nicht das, was
+  der reale Frontend-Store tatsächlich schickt. Auf ContentType.TEXT
+  korrigiert (wie schon für die neuen Gruppenkategorie-Wert-Tests) und vor
+  dem Fix als tatsächlich fehlschlagend (415) verifiziert.
+  Beim Durchtesten von #690 gegen echte, wiederhergestellte PROD-Daten
+  gefunden und - mit Zustimmung - gleich mitbehoben, obwohl inhaltlich
+  unabhängig vom Gruppenkategorien-Feature.
+  * TeilnehmerTab: "Alle "-Präfix bei Gruppenkategorie-Filtern entfernen
+  Die Filter-Dropdowns je Gruppenkategorie zeigen als Reset-Option jetzt
+  nur noch den Kategorie-Namen selbst (z.B. "Klasse") statt "Alle
+  Klasse" - die bestehende, unabhängige "Alle Gruppen"-Auswahl für das
+  alte flache Modell bleibt unverändert.
+  * Slice 7: CSV-Import auf Gruppenkategorien umstellen
+  CSV-Import kennt jetzt explizite Gruppenkategorien statt eines einzigen
+  flachen, pipe-getrennten "Gruppen"-Feldes:
+  - Neue optionale gruppenkategorien.csv (Kategorie;Mehrwertig;Pflicht;
+    Werte) pro Import-Datensatz legt Gruppenkategorien+Werte an, bevor
+    teilnehmer.csv importiert wird (VeranstaltungImportService).
+  - teilnehmer.csv hat jetzt eine Spalte je Gruppenkategorie (statt eines
+    flachen "Gruppen"-Feldes) - TeilnehmerService#importFromCsv liest die
+    Datei dafür manuell zeilenweise (CSVReader statt CsvToBean/DTO), weil
+    Spaltenmenge und -namen je Veranstaltung variieren und ein zweiter,
+    unabhängig gefilterter Lesevorgang zeilenweise aus dem Takt geraten
+    könnte.
+  - GruppenkategorieWert.findByWertUndKategorie ersetzt die bisherige
+    veranstaltungsweite, kategorieübergreifende Wertsuche - eindeutig auch
+    bei gleich benannten Werten in unterschiedlichen Kategorien.
+  - Das bisherige flache Gruppen-Modell wird beim CSV-Import nicht mehr
+    befüllt (TeilnehmerCsvDto entfernt).
+  - Alle 5 Test-Datensätze (import-test, karrierekompass-linz-2026, klein,
+    kompass-demo, medium) auf das neue Format migriert.
+  * Slice 8: Reports/Dashboard liefern Gruppenkategorie-Daten statt flacher Liste
+  - TeilnehmerDto.gruppenwerteByKategorie (Map<Kategorie,Werte>) ergänzt,
+    analog zu NutzerDto.
+  - RaumBelegungUebersicht (Anwesenheiten-Report/PlanService) trägt jetzt
+    je Teilnehmer eine gruppenwerteByKategorie-Map statt einer flachen,
+    bereits zu einem String zusammengefügten Gruppen-Liste.
+  - DashboardService#computeGruppen liefert für den "Gruppe filtern"-
+    Dropdown von Prioritäten/Teilnehmer-Zuordnungen jetzt eine
+    Map<Kategorie,Werte> statt einer einzigen, kategorieübergreifend
+    gemischten Werteliste (TeilnehmerReport/PrioReport.gruppen()
+    entsprechend angepasst).
+  Bereitet Slice 9 (Frontend: je Gruppenkategorie eine eigene, sortier-
+  und filterbare Spalte statt einer flachen Gruppen-Spalte) vor.
+  * Slice 9 (Teil 1): TeilnehmerTab/OnboardingTab/VeranstaltungenTab/
+  UserEditorModal/OrganisatorDashboard/TeilnehmerDashboard auf
+  Gruppenkategorien umstellen
+  Neue gemeinsame Helfer (frontend/src/composables/useGruppenkategorieColumns.js),
+  verallgemeinert aus dem in TeilnehmerTab.vue bereits vorhandenen Muster
+  (gk:<Kategorie>-Sortierschlüssel, gruppenwerteByKategorie-Lookups) -
+  angewendet auf:
+  - TeilnehmerTab.vue: alte flache Gruppen-Spalte/Filter entfernt, nur
+    noch die bereits vorhandene per-Kategorie-Darstellung.
+  - OnboardingTab.vue: flache "Gruppen"-Spalte durch eine Spalte je
+    Gruppenkategorie ersetzt (dynamisch, sortierbar).
+  - VeranstaltungenTab.vue: flache Gruppen-CRUD-Verwaltung entfernt
+    (Gruppenkategorien-CRUD ist der einzige verbleibende Weg); die
+    Teilnehmer-Unterliste zeigt jetzt eine Spalte je Gruppenkategorie.
+  - UserEditorModal.vue: die Checkbox-Liste aller flachen Gruppen ersetzt
+    durch einen Steuerelement je Gruppenkategorie (Select für einwertige,
+    Checkboxen für mehrwertige Kategorien).
+  - OrganisatorService#createUser/updateUser: übernehmen jetzt
+    dto.gruppenwerteByKategorie (voller Ersatz je Kategorie) statt des
+    flachen dto.gruppen-Feldes.
+  - OrganisatorDashboard.vue: teilnehmerGruppen (Pflichtgruppen-Dropdown
+    für Pflichtvorträge) leitet sich jetzt aus gruppenwerteByKategorie ab.
+  - TeilnehmerDashboard.vue: das eigene Profil zeigt eine Zeile je
+    Gruppenkategorie statt einer flachen "Gruppen"-Zeile.
+  - Nicht mehr benötigten frontend/src/stores/group.js entfernt.
+  * Slice 9 (Teil 2): Report-Views + Passwort-ZIP auf Gruppenkategorien
+  umstellen
+  - AbstimmungsfragebogenAlle.vue, LaufzettelAlle.vue: flache Gruppen-
+    Zusammenfassung neben dem Teilnehmer-Namen durch eine über alle
+    Gruppenkategorien zusammengefasste Anzeige ersetzt.
+  - Anwesenheiten.vue: die durch Slice 8 umbenannte
+    teilnehmerGruppenwerteByKategorie-Struktur (statt der nicht mehr
+    existierenden teilnehmerGruppen) korrekt angebunden - eine Spalte je
+    Gruppenkategorie statt der zuvor stillschweigend leeren "Gruppen"-Spalte.
+  - FreieSlotsTeilnehmer.vue: flache "Gruppen"-Spalte durch eine Spalte je
+    Gruppenkategorie ersetzt.
+  - Prioritaeten.vue, TeilnehmerZuordnungen.vue: der "Gruppe filtern"-
+    Dropdown (zuvor auf reportData.gruppen als flache Liste angewiesen,
+    seit Slice 8 aber eine Map<Kategorie,Werte>) durch einen Dropdown je
+    Gruppenkategorie ersetzt; Anzeige/Filterung nutzen jetzt
+    gruppenwerteByKategorie.
+  - TeilnehmerPasswortZipService: das per "Passwörter (ZIP)"-Button
+    erzeugte CSV hatte positionsbasierte "Gruppe 1".."Gruppe N"-Spalten
+    aus dem flachen Modell - jetzt eine benannte Spalte je
+    Gruppenkategorie.
+  Alle Änderungen gegen echte, wiederhergestellte PROD-Daten (Veranstaltung
+  251, Kategorien Klasse/Messe/Schule) per Playwright verifiziert:
+  TeilnehmerTab-Spalten+Filter, Anwesenheiten-Druckansicht (alle 3
+  Kategorien + Anwesend-Spalte korrekt pro Zeile), Prioritäten-Filter
+  (710 → 298 Teilnehmer bei Schule=RKS, alle Treffer geprüft).
+  ---------
+
+- Release 1.26.0
+
