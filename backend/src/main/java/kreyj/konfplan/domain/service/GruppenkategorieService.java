@@ -1,16 +1,23 @@
 package kreyj.konfplan.domain.service;
 
+import com.opencsv.bean.CsvToBean;
+import com.opencsv.bean.CsvToBeanBuilder;
 import io.quarkus.hibernate.orm.panache.Panache;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.adapter.in.web.dto.csv.GruppenkategorieCsvDto;
 import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.persistence.Gruppenkategorie;
 import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.util.CsvHelper;
 import org.apache.commons.lang3.StringUtils;
+import org.jboss.logging.Logger;
 
+import java.io.Reader;
+import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -24,6 +31,8 @@ import java.util.List;
  */
 @ApplicationScoped
 public class GruppenkategorieService {
+
+    private static final Logger LOG = Logger.getLogger(GruppenkategorieService.class);
 
     private final ProtokollService protokollService;
 
@@ -194,6 +203,67 @@ public class GruppenkategorieService {
         protokollService.log(ProtokollKategorie.STAMMDATEN, "Teilnehmer-Gruppenwert entfernt",
             teilnehmer.getFullName() + " -/-> '" + wert.getWert() + "' (" + wert.getGruppenkategorie().getName() + ")",
             teilnehmerId, wert.getGruppenkategorie().getVeranstaltung().getId());
+    }
+
+
+    /**
+     * Importiert Gruppenkategorien samt Werten aus einer CSV-Datei (Spalten Kategorie;Mehrwertig;
+     * Pflicht;Werte, Werte getrennt durch '|') - siehe #690. Muss vor dem Teilnehmer-Import
+     * laufen, damit dessen Gruppenkategorie-Spalten (eine Spalte je hier angelegter Kategorie)
+     * bereits Werte zum Zuordnen vorfinden. Idempotent: bereits vorhandene Kategorien/Werte
+     * gleichen Namens werden übersprungen, nicht dupliziert.
+     */
+    @Transactional
+    public int importFromCsv(Path csvFilePath, Long veranstaltungId) throws Exception {
+        Veranstaltung veranstaltung = ladeVeranstaltung(veranstaltungId);
+
+        int anzahlNeueKategorien = 0;
+        try (Reader reader = CsvHelper.openCsvReader(csvFilePath)) {
+            CsvToBean<GruppenkategorieCsvDto> csvToBean = new CsvToBeanBuilder<GruppenkategorieCsvDto>(reader)
+                .withType(GruppenkategorieCsvDto.class)
+                .withFilter(line -> line.length > 0 && !line[0].startsWith("#"))
+                .withIgnoreEmptyLine(true)
+                .withIgnoreLeadingWhiteSpace(true)
+                .withSeparator(';')
+                .withThrowExceptions(false).build();
+
+            List<GruppenkategorieCsvDto> beans = csvToBean.parse();
+
+            csvToBean.getCapturedExceptions().forEach(e ->
+                LOG.error("CSV-Parsing-Fehler in " + csvFilePath.getFileName() + " (Zeile " + e.getLineNumber() + "): " + e.getMessage()));
+
+            for (GruppenkategorieCsvDto dto : beans) {
+                if (StringUtils.isBlank(dto.kategorie)) {
+                    continue;
+                }
+                String name = dto.kategorie.trim();
+
+                Gruppenkategorie kategorie = Gruppenkategorie.<Gruppenkategorie>find(
+                    "veranstaltung = ?1 and name = ?2", veranstaltung, name).firstResult();
+                if (null == kategorie) {
+                    kategorie = new Gruppenkategorie(veranstaltung, name, dto.mehrwertig, dto.pflicht);
+                    kategorie.persist();
+                    anzahlNeueKategorien++;
+                }
+
+                if (StringUtils.isNotBlank(dto.werte)) {
+                    for (String token : dto.werte.split("\\|")) {
+                        String wert = token.trim();
+                        if (StringUtils.isBlank(wert)) {
+                            continue;
+                        }
+                        if (GruppenkategorieWert.count("gruppenkategorie = ?1 and wert = ?2", kategorie, wert) == 0) {
+                            new GruppenkategorieWert(kategorie, wert).persist();
+                        }
+                    }
+                }
+            }
+        }
+
+        protokollService.log(ProtokollKategorie.STAMMDATEN, "Gruppenkategorien importiert",
+            anzahlNeueKategorien + " Gruppenkategorie(n) aus " + csvFilePath.getFileName()
+                + " für Veranstaltung '" + veranstaltung.getName() + "' importiert.", null, veranstaltungId);
+        return anzahlNeueKategorien;
     }
 
 

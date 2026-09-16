@@ -11,7 +11,11 @@ import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -170,5 +174,54 @@ class GruppenkategorieServiceTest extends DatabaseCleaner {
         assertThat(geloeschterWert).isNull();
         Teilnehmer aktualisiert = Teilnehmer.findById(tn.getId());
         assertThat(aktualisiert.getGruppenwerte()).isEmpty();
+    }
+
+
+    @Test
+    @Transactional
+    void importFromCsv_legtKategorienUndWerteAn(@TempDir Path tempDir) throws Exception {
+        Path csv = tempDir.resolve("gruppenkategorien.csv");
+        Files.writeString(csv, """
+            Kategorie;Mehrwertig;Pflicht;Werte
+            Klasse;false;true;9a|9b|10a
+            Schule;true;false;MGL|RKS
+            """, StandardCharsets.UTF_8);
+
+        int anzahl = gruppenkategorieService.importFromCsv(csv, veranstaltungId);
+
+        assertThat(anzahl).isEqualTo(2);
+        List<Gruppenkategorie> kategorien = gruppenkategorieService.getGruppenkategorien(veranstaltungId);
+        assertThat(kategorien).extracting(Gruppenkategorie::getName).containsExactlyInAnyOrder("Klasse", "Schule");
+
+        Gruppenkategorie klasse = kategorien.stream().filter(k -> "Klasse".equals(k.getName())).findFirst().orElseThrow();
+        assertThat(klasse.isMehrwertig()).isFalse();
+        assertThat(klasse.isPflicht()).isTrue();
+        assertThat(klasse.getWerte()).extracting(GruppenkategorieWert::getWert).containsExactlyInAnyOrder("9a", "9b", "10a");
+
+        Gruppenkategorie schule = kategorien.stream().filter(k -> "Schule".equals(k.getName())).findFirst().orElseThrow();
+        assertThat(schule.isMehrwertig()).isTrue();
+        assertThat(schule.getWerte()).extracting(GruppenkategorieWert::getWert).containsExactlyInAnyOrder("MGL", "RKS");
+    }
+
+
+    @Test
+    @Transactional
+    void importFromCsv_istIdempotent_beiWiederholtemImport(@TempDir Path tempDir) throws Exception {
+        Path csv = tempDir.resolve("gruppenkategorien.csv");
+        Files.writeString(csv, """
+            Kategorie;Mehrwertig;Pflicht;Werte
+            Klasse;false;true;9a|9b
+            """, StandardCharsets.UTF_8);
+
+        gruppenkategorieService.importFromCsv(csv, veranstaltungId);
+        int anzahlZweiterLauf = gruppenkategorieService.importFromCsv(csv, veranstaltungId);
+
+        assertThat(anzahlZweiterLauf)
+            .describedAs("bereits vorhandene Kategorie darf beim zweiten Import nicht erneut gezaehlt/angelegt werden")
+            .isZero();
+        List<Gruppenkategorie> kategorien = gruppenkategorieService.getGruppenkategorien(veranstaltungId);
+        assertThat(kategorien).hasSize(1);
+        assertThat(kategorien.get(0).getWerte()).extracting(GruppenkategorieWert::getWert)
+            .containsExactlyInAnyOrder("9a", "9b");
     }
 }

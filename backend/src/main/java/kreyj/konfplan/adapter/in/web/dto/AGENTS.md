@@ -29,7 +29,7 @@ DTOs (Data Transfer Objects) entkoppeln die API-Schicht von den JPA-Entitäten. 
 ### CSV-Import-DTOs (OpenCSV-Mapping)
 | DTO                    | Trennzeichen | Zweck                          |
 |------------------------|--------------|--------------------------------|
-| `TeilnehmerCsvDto`     | `;`          | Teilnehmer aus CSV importieren |
+| `GruppenkategorieCsvDto` | `;`        | Gruppenkategorien+Werte aus CSV importieren (Teilnehmer selbst werden manuell geparst, siehe `TeilnehmerService#importFromCsv` - die Spaltenmenge variiert je Veranstaltung, eine feste Bean-Klasse kann das nicht abbilden) |
 | `ReferentCsvDto`       | `;`          | Referenten aus CSV importieren |
 | `VortragCsvDto`        | `;`          | Vorträge aus CSV importieren   |
 | `VeranstaltungCsvDto`  | `;`          | Veranstaltungen importieren    |

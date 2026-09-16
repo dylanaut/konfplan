@@ -236,8 +236,8 @@ class CsvImportTest extends DatabaseCleaner {
     @TestHTTPEndpoint(VeranstaltungResource.class)
     void testImportTeilnehmer() {
         String tnEmail = "tom@stud.de";
-        String csv = "Vorname;Nachname;Email;Gruppen;LoginName\n" +
-            "Tom;Student;" + tnEmail + ";10b;tom";
+        String csv = "Vorname;Nachname;Email;LoginName\n" +
+            "Tom;Student;" + tnEmail + ";tom";
 
         given()
             .multiPart("file", "teilnehmer.csv", csv.getBytes())
@@ -247,23 +247,23 @@ class CsvImportTest extends DatabaseCleaner {
 
         Teilnehmer t = (Teilnehmer) Nutzer.findByEmail(tnEmail);
         assertThat(t).isNotNull();
-        assertThat(t.getGruppen()).contains("10b");
+        assertThat(t.getFirstName()).isEqualTo("Tom");
     }
 
 
     /**
-     * Additiv (siehe #690): entspricht ein importierter Gruppen-Wert bereits einem Wert einer
-     * strukturierten Gruppenkategorie der Veranstaltung, wird der Teilnehmer diesem Wert
-     * zusätzlich zum bisherigen flachen Modell zugeordnet.
+     * Siehe #690: Gruppenkategorie-Werte werden über eine gleichnamige CSV-Spalte zugeordnet
+     * (die Kategorie muss - z.B. über gruppenkategorien.csv - vorher angelegt sein), nicht mehr
+     * über ein einziges flaches "Gruppen"-Feld.
      */
     @Test
     @TestHTTPEndpoint(VeranstaltungResource.class)
-    void testImportTeilnehmer_ordnetAuchStrukturierteGruppenkategorieWerteZu() {
+    void testImportTeilnehmer_ordnetGruppenkategorieWerteUeberGleichnamigeSpalteZu() {
         Veranstaltung veranstaltung = Veranstaltung.findById(testVid);
         addGruppenkategorieWert(veranstaltung, "Klasse", "10b");
 
         String tnEmail = "tom@stud.de";
-        String csv = "Vorname;Nachname;Email;Gruppen;LoginName\n" +
+        String csv = "Vorname;Nachname;Email;Klasse;LoginName\n" +
             "Tom;Student;" + tnEmail + ";10b;tom";
 
         given()
@@ -274,9 +274,7 @@ class CsvImportTest extends DatabaseCleaner {
 
         Teilnehmer t = (Teilnehmer) Nutzer.findByEmail(tnEmail);
         assertThat(t).isNotNull();
-        assertThat(t.getGruppen()).describedAs("flaches Modell bleibt unverändert befüllt").contains("10b");
-        assertThat(t.getGruppenwerte()).describedAs("strukturiertes Modell wird additiv mitbefüllt")
-            .extracting(GruppenkategorieWert::getWert).contains("10b");
+        assertThat(t.getGruppenwerte()).extracting(GruppenkategorieWert::getWert).contains("10b");
     }
 
 
