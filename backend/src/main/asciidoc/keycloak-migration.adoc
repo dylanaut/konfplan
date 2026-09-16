@@ -767,4 +767,23 @@ docker compose -f deploy/docker-compose.yml exec keycloak sh -c '
 
 Bei einer frischen Installation ist das nicht nötig - die Rolle ist bereits Teil von
 `deploy/keycloak-realm.template.json`.
+
+Derselbe Sonderfall gilt für die Client-Rolle `view-clients` auf `realm-management`: sie wird von
+`grantViewEventsToAdminCliServiceAccount()` benötigt (`ClientsResource#findByClientId`, um die
+Client-UUIDs von `konfplan-admin-cli`/`realm-management` aufzulösen, bevor `view-events` zugewiesen
+werden kann - siehe #723). Fehlt sie, schlägt `syncFailedLoginEventsConfig` komplett mit 403 fehl
+(ebenfalls nur als Warnung geloggt). Für ein bereits bestehendes Deployment einmalig per `kcadm.sh`:
+
+[source,bash]
+----
+docker compose -f deploy/docker-compose.yml exec keycloak sh -c '
+  /opt/keycloak/bin/kcadm.sh config credentials --server http://localhost:8080/auth --realm master --user admin --password "$(cat /run/secrets/keycloak_admin_password)" &&
+  /opt/keycloak/bin/kcadm.sh add-roles -r konfplan --uusername service-account-konfplan-admin-cli --cclientid realm-management --rolename view-clients
+'
+----
+
+...oder über die Admin Console: Realm `konfplan` auswählen → **Clients** → `konfplan-admin-cli` →
+Capability config prüfen, dass **Service accounts roles** aktiviert ist → Tab **Service accounts
+roles** → **Assign role** → Filter auf "Filter by clients" umstellen → `realm-management` →
+`view-clients` auswählen → **Assign**.
 ====
