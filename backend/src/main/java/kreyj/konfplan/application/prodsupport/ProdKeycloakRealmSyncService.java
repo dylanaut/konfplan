@@ -38,7 +38,7 @@ public class ProdKeycloakRealmSyncService {
     private static final String UPDATE_PASSWORD_ALIAS = "UPDATE_PASSWORD";
     private static final String LOGIN_TEXTS_LOCALE = "de";
     private static final String PASSWORD_POLICY = "length(8) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1)";
-    private static final int ACTION_TOKEN_LIFESPAN_SECONDS = 60 * 60 * 36;
+    private static final int ACTION_TOKEN_LIFESPAN_SECONDS = 60 * 10;
     private static final long FAILED_LOGIN_EVENTS_EXPIRATION_SECONDS = 60L * 60 * 24 * 30;
     private static final String REALM_MANAGEMENT_CLIENT_ID = "realm-management";
     private static final String VIEW_EVENTS_ROLE = "view-events";
@@ -140,9 +140,8 @@ public class ProdKeycloakRealmSyncService {
 
     /**
      * Begrenzt die Gueltigkeitsdauer nutzer-initiierter Action-Tokens (u.a. der
-     * Passwort-Reset-Link) auf 36 Stunden statt Keycloaks Default von 5 Minuten. Keycloaks
-     * Standard-Mailtext rendert die tatsaechlich konfigurierte Lebensdauer automatisch mit ein,
-     * kein zusaetzlicher Theme-Eingriff noetig.
+     * Passwort-Reset-Link) auf 10 Minuten. Keycloaks Standard-Mailtext rendert die tatsaechlich
+     * konfigurierte Lebensdauer automatisch mit ein, kein zusaetzlicher Theme-Eingriff noetig.
      */
     private void syncActionTokenLifespan(RealmResource realmResource) {
         RealmRepresentation realmRepresentation = realmResource.toRepresentation();
