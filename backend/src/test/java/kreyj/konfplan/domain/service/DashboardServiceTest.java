@@ -12,6 +12,8 @@ import kreyj.konfplan.adapter.in.web.dto.templating.TeilnehmerReport;
 import kreyj.konfplan.adapter.in.web.dto.templating.TeilnehmerSlotBelegung;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
+import kreyj.konfplan.persistence.Gruppenkategorie;
+import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Referent;
@@ -255,5 +257,44 @@ class DashboardServiceTest extends DatabaseCleaner {
 
         TeilnehmerSlotBelegung belegung = report.teilnehmer_stundenplan().get(0).tnSlotBelegungen().get(slot1.getId());
         assertThat(belegung.typ()).isEqualTo("frei");
+    }
+
+
+    /**
+     * Siehe #690: der "Gruppe filtern"-Dropdown von Prioritäten/Teilnehmer-Zuordnungen soll je
+     * Gruppenkategorie eigene Optionen anbieten, statt eines einzigen, kategorieübergreifend
+     * gemischten Dropdowns - computeGruppen() muss die Werte daher nach Kategorie-Name gruppieren.
+     */
+    @Test
+    @Transactional
+    void getPrioReport_gruppiertGruppenkategorieWerteNachKategorie() {
+        Veranstaltung veranstaltung = neueVeranstaltung("Dashboard-Test-4");
+        Slot slot1 = neuerSlot(veranstaltung, 1);
+        Wahlvortrag wv1 = neuerWahlvortrag(veranstaltung, "Wahlvortrag 4");
+        Teilnehmer tn1 = neuerTeilnehmer(veranstaltung, "tn4a@test.com");
+        Teilnehmer tn2 = neuerTeilnehmer(veranstaltung, "tn4b@test.com");
+
+        Gruppenkategorie klasse = new Gruppenkategorie(veranstaltung, "Klasse", false, true);
+        klasse.persist();
+        GruppenkategorieWert zehnA = new GruppenkategorieWert(klasse, "10a");
+        zehnA.persist();
+        GruppenkategorieWert zehnB = new GruppenkategorieWert(klasse, "10b");
+        zehnB.persist();
+        tn1.addGruppenwert(zehnA);
+        tn2.addGruppenwert(zehnB);
+
+        persistiereVeroeffentlichtesErgebnis(veranstaltung, ergebnis(
+            new long[]{tn1.getId(), tn2.getId()},
+            new long[]{wv1.getId()},
+            new long[]{slot1.getId()},
+            new long[]{raumGrossId},
+            new int[][]{{1}},
+            new int[][]{{1}},
+            new boolean[][][]{{{true}}, {{true}}}));
+
+        PrioReport prioReport = dashboardService.getPrioReport(veranstaltung);
+
+        assertThat(prioReport.gruppen()).containsKey("Klasse");
+        assertThat(prioReport.gruppen().get("Klasse")).containsExactly("10a", "10b");
     }
 }

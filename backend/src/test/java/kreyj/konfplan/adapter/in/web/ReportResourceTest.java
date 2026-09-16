@@ -323,7 +323,7 @@ class ReportResourceTest {
         PanacheMock.mock(Veranstaltung.class);
         Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
         Mockito.when(dashboardService.getTeilnehmerReport(any(), any())).thenReturn(
-            new TeilnehmerReport(null, null, Collections.emptyMap(), Collections.emptyList(), Collections.emptyList()));
+            new TeilnehmerReport(null, null, Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap()));
 
         given()
                 .when().get("1/teilnehmer-dashboard-data")
@@ -339,7 +339,7 @@ class ReportResourceTest {
         PanacheMock.mock(Veranstaltung.class);
         Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
         Mockito.when(dashboardService.getTeilnehmerReport(any(), any())).thenReturn(
-            new TeilnehmerReport(null, null, Collections.emptyMap(), Collections.emptyList(), Collections.emptyList()));
+            new TeilnehmerReport(null, null, Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap()));
 
         given()
                 .when().get("1/teilnehmer-dashboard-data")
@@ -371,7 +371,7 @@ class ReportResourceTest {
         PanacheMock.mock(Veranstaltung.class);
         Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
         Mockito.when(dashboardService.getTeilnehmerReport(any(), any())).thenReturn(
-            new TeilnehmerReport(null, null, Collections.emptyMap(), Collections.emptyList(), Collections.emptyList()));
+            new TeilnehmerReport(null, null, Collections.emptyMap(), Collections.emptyList(), Collections.emptyMap()));
 
         given()
                 .queryParam("ergebnisId", 42L)

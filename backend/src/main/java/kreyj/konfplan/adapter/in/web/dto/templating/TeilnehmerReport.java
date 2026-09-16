@@ -11,5 +11,5 @@ import java.util.Map;
 
 @RegisterForReflection
 public record TeilnehmerReport(VeranstaltungDto veranstaltung, TeilnehmerDto teilnehmer, Map<Long, SlotDto> slots,
-                               List<TeilnehmerStundenplan> teilnehmer_stundenplan, List<String> gruppen) {
+                               List<TeilnehmerStundenplan> teilnehmer_stundenplan, Map<String, List<String>> gruppen) {
 }

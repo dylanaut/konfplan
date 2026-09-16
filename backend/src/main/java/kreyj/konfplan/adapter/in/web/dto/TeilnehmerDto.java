@@ -7,6 +7,8 @@ import kreyj.konfplan.util.StringHelper;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -22,6 +24,10 @@ public class TeilnehmerDto {
     /** Werte aus dem strukturierten Gruppenkategorien-Modell (siehe #690), als Wert-Strings für
      * den Übergang neben {@link #gruppen} - siehe {@link #istInGruppe(String)}. */
     public Set<String> gruppenwerte;
+    /** Wie {@link #gruppenwerte}, aber nach Gruppenkategorie-Name gruppiert (siehe #690) - für
+     * Reports/UIs, die je Gruppenkategorie eine eigene, sortier- und filterbare Spalte statt
+     * einer einzigen flachen Gruppen-Liste anzeigen sollen. */
+    public Map<String, List<String>> gruppenwerteByKategorie;
 
 
     public String getFullname() {
@@ -61,6 +67,10 @@ public class TeilnehmerDto {
 
     public static TeilnehmerDto from(Teilnehmer tn) {
         Set<String> gruppenwerte = tn.getGruppenwerte().stream().map(GruppenkategorieWert::getWert).collect(Collectors.toSet());
-        return new TeilnehmerDto(tn.getId(), tn.getFirstName(), tn.getLastName(), tn.getEmail(), tn.getGruppen(), gruppenwerte);
+        Map<String, List<String>> gruppenwerteByKategorie = tn.getGruppenwerte().stream()
+            .collect(Collectors.groupingBy(w -> w.getGruppenkategorie().getName(),
+                Collectors.mapping(GruppenkategorieWert::getWert, Collectors.toList())));
+        return new TeilnehmerDto(tn.getId(), tn.getFirstName(), tn.getLastName(), tn.getEmail(), tn.getGruppen(),
+            gruppenwerte, gruppenwerteByKategorie);
     }
 }
