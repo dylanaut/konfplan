@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 
 const Redirecting = () => import('../views/Redirecting.vue');
+const CheckinView = () => import('../views/CheckinView.vue');
 const TeilnehmerDashboard = () => import('../views/TeilnehmerDashboard.vue');
 const ReferentDashboard = () => import('../views/ReferentDashboard.vue');
 const OrganisatorDashboard = () => import('../views/OrganisatorDashboard.vue');
@@ -34,6 +35,12 @@ const routes = [
         path: '/teilnehmer',
         name: 'Teilnehmer',
         component: TeilnehmerDashboard,
+        meta: { requiresAuth: true, role: 'TEILNEHMER' }
+    },
+    {
+        path: '/checkin/:vid/:raumId',
+        name: 'Checkin',
+        component: CheckinView,
         meta: { requiresAuth: true, role: 'TEILNEHMER' }
     },
     {
