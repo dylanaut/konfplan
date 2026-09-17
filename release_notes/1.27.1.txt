@@ -1,0 +1,58 @@
+Release Notes 1.27.1
+Released: 2026-09-17
+
+Changes:
+
+- Release-Notes fuer 1.27.0 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.27.1-SNAPSHOT)
+
+- Keycloak-Realm-Template: view-clients für Admin-CLI-Service-Account
+  * Keycloak-Realm-Template: view-clients für Admin-CLI-Service-Account ergänzen
+  ProdKeycloakRealmSyncService.grantViewEventsToAdminCliServiceAccount()
+  ruft ClientsResource#findByClientId auf, um die Client-UUIDs von
+  konfplan-admin-cli und realm-management aufzulösen - das benötigt die
+  Client-Rolle view-clients auf realm-management, die dem Service-Account
+  bisher fehlte. Ohne sie schlägt der komplette
+  syncFailedLoginEventsConfig-Schritt mit 403 fehl (nur als Warnung
+  geloggt, kein Startup-Abbruch).
+  Refs #723
+  * Doku: einmaligen view-clients-Grant für bestehende Deployments beschreiben
+  Ergänzt den bestehenden manage-realm-Sonderfall in keycloak-migration.adoc
+  um denselben Hinweis für view-clients (kcadm.sh + Admin-Console-Schritte)
+  und verlinkt ihn aus der Troubleshooting-Sektion in
+  Deployment-DockerCompose.adoc.
+  Refs #723
+  ---------
+
+- Betrachter-Rolle in Prod nutzbar machen: Keycloak-Realmrolle + DB-Check-Constraint
+  Anlegen eines Betrachters schlug in Prod in zwei Schritten fehl:
+  1. Die Keycloak-Realmrolle BETRACHTER fehlte in
+     deploy/keycloak-realm.template.json (nur im Dev-Realm-JSON ergänzt) -
+     KeycloakUserProvisioningService.assignRealmRole schlug mit 404
+     "Couldn't find Role" fehl. ProdKeycloakRealmSyncService.syncRoles()
+     legt sie jetzt zusätzlich idempotent an (self-healing für bereits
+     laufende Deployments, analog zu ADMINISTRATOR), das Template deckt
+     Neuinstallationen ab.
+  2. Nachdem die Keycloak-Rolle manuell nachgezogen wurde, schlug das
+     Anlegen weiterhin mit 500 fehl: der in V14 eingeführte
+     nutzer_role_check-CHECK-Constraint auf der Postgres-Spalte
+     Nutzer.role kennt nur REFERENT/ORGANISATOR/ADMINISTRATOR/TEILNEHMER.
+     Da %test.quarkus.flyway.enabled=false ist und die H2-Testdatenbank
+     ihr Schema stattdessen aus den Hibernate-Annotations ableitet, ist
+     dieser rein SQL-seitige Constraint in keinem Test sichtbar - lokal
+     gegen eine echte Postgres-Instanz mit demselben Constraint
+     reproduziert und die Migration V30 dagegen verifiziert (Fehler vor
+     der Migration, erfolgreicher Insert danach, bestehende Rollen sowie
+     eine ungültige Rolle weiterhin korrekt abgelehnt).
+  Refs #725
+
+- Gültigkeitsdauer des Passwort-Reset-Links auf 10 Minuten reduzieren
+  ProdKeycloakRealmSyncService.ACTION_TOKEN_LIFESPAN_SECONDS überschrieb
+  bei jedem App-Start den bereits kürzeren Wert (600s) aus
+  deploy/keycloak-realm.template.json wieder auf 36 Stunden. Dev-Realm
+  (konfplan-realm.json) analog auf 600s angeglichen (Dev/Prod-Parität).
+  Refs #727
+
+- Release 1.27.1
+
