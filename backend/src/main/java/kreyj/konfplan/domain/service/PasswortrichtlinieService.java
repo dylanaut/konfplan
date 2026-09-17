@@ -25,8 +25,13 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class PasswortrichtlinieService {
 
+    /**
+     * ADMINISTRATOR ist bewusst ausgenommen: gilt immer als {@link Passwortrichtlinie#STANDARD}
+     * und ist nicht konfigurierbar - taucht daher weder in {@link #getRichtlinien} (und damit
+     * nicht in der GUI) auf, noch lässt sich per {@link #save} eine Zeile dafür anlegen.
+     */
     private static final Set<String> GUELTIGE_ROLLEN =
-        Set.of("ORGANISATOR", "ADMINISTRATOR", "REFERENT", "TEILNEHMER", "BETRACHTER");
+        Set.of("ORGANISATOR", "REFERENT", "TEILNEHMER", "BETRACHTER");
 
     /**
      * Muss mit dem {@code passwordPolicy}-Sockel in {@code konfplan-realm.json} bzw.

@@ -251,7 +251,7 @@ class OrganisatorResourceTest extends DatabaseCleaner {
             .when().get("/veranstaltungen/{vid}/passwortrichtlinien", vid)
             .then()
             .statusCode(OK.getStatusCode())
-            .body("size()", is(5));
+            .body("size()", is(4));
     }
 
 
