@@ -19,11 +19,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static jakarta.ws.rs.core.Response.Status.FORBIDDEN;
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 import static jakarta.ws.rs.core.Response.Status.OK;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 
@@ -170,5 +172,41 @@ class BetrachterResourceTest extends DatabaseCleaner {
             .when().get("/veranstaltungen/{vid}/vortraege", fremdeVeranstaltungId)
             .then()
             .statusCode(NOT_FOUND.getStatusCode());
+    }
+
+
+    @Test
+    @TestSecurity(user = "betrachter.rest@test.de", roles = "BETRACHTER")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "betrachter.rest@test.de")})
+    void getTeilnehmerVortraege_liefertNurFuerSichtbareTeilnehmer() {
+        Map<String, Object> vortraegeByTeilnehmer = given()
+            .when().get("/veranstaltungen/{vid}/teilnehmer-vortraege", eigeneVeranstaltungId)
+            .then()
+            .statusCode(OK.getStatusCode())
+            .extract().body().jsonPath().getMap("$");
+
+        assertThat(vortraegeByTeilnehmer).containsOnlyKeys(sichtbarerTeilnehmerId.toString());
+    }
+
+
+    @Test
+    @TestSecurity(user = "betrachter.rest@test.de", roles = "BETRACHTER")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "betrachter.rest@test.de")})
+    void getTeilnehmerVortraege_verweigertZugriffAufFremdeVeranstaltung() {
+        given()
+            .when().get("/veranstaltungen/{vid}/teilnehmer-vortraege", fremdeVeranstaltungId)
+            .then()
+            .statusCode(NOT_FOUND.getStatusCode());
+    }
+
+
+    @Test
+    @TestSecurity(user = "teilnehmer.rest@test.de", roles = "TEILNEHMER")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "teilnehmer.rest@test.de")})
+    void getTeilnehmerVortraege_alsAndereRolleVerboten() {
+        given()
+            .when().get("/veranstaltungen/{vid}/teilnehmer-vortraege", eigeneVeranstaltungId)
+            .then()
+            .statusCode(FORBIDDEN.getStatusCode());
     }
 }

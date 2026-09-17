@@ -8,6 +8,7 @@ import kreyj.konfplan.adapter.in.web.dto.FreierSlotDto;
 import kreyj.konfplan.adapter.in.web.dto.FreierSlotGrund;
 import kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht;
 import kreyj.konfplan.adapter.in.web.dto.SolverConfig;
+import kreyj.konfplan.adapter.in.web.dto.TeilnehmerVortragZuweisungDto;
 import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gebaeudetyp;
@@ -18,6 +19,7 @@ import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.adapter.in.web.DatabaseCleaner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -203,6 +205,77 @@ public class PlanServiceTest extends DatabaseCleaner {
 
         assertThat(plan).hasSize(1);
         assertThat(plan.get(0).vortragTitel).isEqualTo("Pflichtvortrag Gruppe A");
+    }
+
+
+    @Test
+    @Transactional
+    public void testGetPlanFuerTeilnehmerDetailliert_liefertIdsUndTypJeZuweisung() {
+        Gebaeude gebaeude = new Gebaeude();
+        gebaeude.setName("Hauptgebäude");
+        gebaeude.setTyp(Gebaeudetyp.SCHULE);
+        gebaeude.setPostleitzahl("12345");
+        gebaeude.setOrt("Testort");
+        gebaeude.setStrasse("Teststraße");
+        gebaeude.persist();
+
+        Raum raum = new Raum();
+        raum.setName("Raum 1");
+        raum.setKapazitaet(30);
+        raum.persist();
+        gebaeude.addRaum(raum);
+        veranstaltung.addGebaeude(gebaeude);
+
+        Slot slotPflicht = new Slot("Slot Pflicht", LocalDateTime.of(2024, 1, 1, 9, 0), LocalDateTime.of(2024, 1, 1, 10, 0), veranstaltung);
+        slotPflicht.persist();
+        veranstaltung.addSlot(slotPflicht);
+
+        Slot slotWahl = new Slot("Slot Wahl", LocalDateTime.of(2024, 1, 1, 10, 0), LocalDateTime.of(2024, 1, 1, 11, 0), veranstaltung);
+        slotWahl.persist();
+        veranstaltung.addSlot(slotWahl);
+
+        Referent referent = new Referent();
+        referent.assignLoginName("referent.detail");
+        referent.setEmail("referent.detail@example.com");
+        referent.persist();
+
+        Pflichtvortrag.create("Pflichtvortrag Gruppe A", "Inhalt", referent, "Gruppe A", raum, slotPflicht, veranstaltung);
+        Wahlvortrag wahlvortrag = Wahlvortrag.create("Wahlvortrag X", "Inhalt", referent, false, 1, veranstaltung);
+
+        Teilnehmer teilnehmer = new Teilnehmer();
+        teilnehmer.assignLoginName("teilnehmer.detail");
+        teilnehmer.setEmail("teilnehmer.detail@example.com");
+        teilnehmer.addGruppe("Gruppe A");
+        teilnehmer.persist();
+
+        Planungsergebnis ergebnis = Planungsergebnis.find("veranstaltung = ?1", veranstaltung).firstResult();
+        Planungsergebnis.MinizincResult result = new Planungsergebnis.MinizincResult();
+        result.teilnehmer_oids = new long[]{teilnehmer.getId()};
+        result.wahlvortrag_oids = new long[]{wahlvortrag.getId()};
+        result.slot_oids = new long[]{slotWahl.getId()};
+        result.raum_oids = new long[]{raum.getId()};
+        result.instanz_slot = new int[][]{{1}};
+        result.instanz_raum = new int[][]{{1}};
+        result.besucht = new boolean[][][]{{{true}}};
+        ergebnis.setJsonErgebnis(result.toJson());
+        ergebnis.persistAndFlush();
+
+        List<TeilnehmerVortragZuweisungDto> plan = planService.getPlanFuerTeilnehmerDetailliert(teilnehmer, veranstaltung);
+
+        assertThat(plan).hasSize(2);
+
+        TeilnehmerVortragZuweisungDto pflicht = plan.get(0);
+        assertThat(pflicht.vortragTyp).isEqualTo("PFLICHT");
+        assertThat(pflicht.vortragTitel).isEqualTo("Pflichtvortrag Gruppe A");
+        assertThat(pflicht.slotId).isEqualTo(slotPflicht.getId());
+        assertThat(pflicht.raumId).isEqualTo(raum.getId());
+
+        TeilnehmerVortragZuweisungDto wahl = plan.get(1);
+        assertThat(wahl.vortragTyp).isEqualTo("WAHL");
+        assertThat(wahl.vortragId).isEqualTo(wahlvortrag.getId());
+        assertThat(wahl.vortragTitel).isEqualTo("Wahlvortrag X");
+        assertThat(wahl.slotId).isEqualTo(slotWahl.getId());
+        assertThat(wahl.raumId).isEqualTo(raum.getId());
     }
 
 
