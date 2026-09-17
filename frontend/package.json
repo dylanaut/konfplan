@@ -15,6 +15,7 @@
     "bootstrap": "^5.3.8",
     "keycloak-js": "^26.0.0",
     "pinia": "^4.0.3",
+    "qrcode": "^1.5.4",
     "vue": "^3.5.41",
     "vue-router": "^5.3.1",
     "vue-toastification": "^2.0.0-rc.5"
