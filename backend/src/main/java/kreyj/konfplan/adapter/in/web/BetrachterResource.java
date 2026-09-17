@@ -8,6 +8,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import kreyj.konfplan.adapter.in.web.dto.BetrachterTeilnehmerVortragDto;
 import kreyj.konfplan.adapter.in.web.dto.BetrachterVeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
@@ -133,6 +134,20 @@ public class BetrachterResource {
         Betrachter betrachter = aktuellerBetrachter();
         Map<Long, List<ZuweisungDto>> zuweisungen = betrachterService.getZuweisungen(betrachter, veranstaltung);
         return Response.ok(zuweisungen).build();
+    }
+
+
+    @GET
+    @Path("/veranstaltungen/{vid}/teilnehmer-vortraege")
+    @Operation(summary = "Vorträge je Teilnehmer mit Prio- und Anwesenheitsstatus abrufen")
+    public Response getTeilnehmerVortraege(@PathParam("vid") Long vid) {
+        Veranstaltung veranstaltung = veranstaltungFuerBetrachter(vid);
+        if (null == veranstaltung) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        Betrachter betrachter = aktuellerBetrachter();
+        Map<Long, List<BetrachterTeilnehmerVortragDto>> teilnehmerVortraege = betrachterService.getTeilnehmerVortraege(betrachter, veranstaltung);
+        return Response.ok(teilnehmerVortraege).build();
     }
 
 

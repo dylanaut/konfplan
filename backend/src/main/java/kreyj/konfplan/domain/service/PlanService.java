@@ -15,6 +15,7 @@ import kreyj.konfplan.adapter.in.web.dto.RaumplanEintragDto;
 import kreyj.konfplan.adapter.in.web.dto.ReferentVortragDto;
 import kreyj.konfplan.adapter.in.web.dto.SlotDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerDto;
+import kreyj.konfplan.adapter.in.web.dto.TeilnehmerVortragZuweisungDto;
 import kreyj.konfplan.adapter.in.web.dto.UmplanungInstanzDto;
 import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
 import kreyj.konfplan.domain.exception.BusinessException;
@@ -351,6 +352,28 @@ public class PlanService {
 
     @Transactional
     public List<ZuweisungDto> getPlanFuerTeilnehmer(Teilnehmer teilnehmer, Veranstaltung veranstaltung, Long ergebnisId) {
+        return ermittlePlanFuerTeilnehmer(teilnehmer, veranstaltung, ergebnisId).stream()
+            .map(z -> new ZuweisungDto(
+                teilnehmer.getFullName(), z.vortragTitel, z.slotBeginn, z.slotEnde, z.raumName, z.gebaeudeName, z.referentName))
+            .toList();
+    }
+
+
+    /**
+     * Wie {@link #getPlanFuerTeilnehmer(Teilnehmer, Veranstaltung)}, aber mit den Ids von
+     * Vortrag/Slot/Raum sowie dem Vortragstyp - benötigt, um eine Zuweisung z.B. gegen
+     * {@link kreyj.konfplan.persistence.Prioritaet}- oder
+     * {@link kreyj.konfplan.persistence.Anwesenheit}-Datensätze abzugleichen (siehe #737, Betrachter-
+     * Ansicht). Liefert absichtlich nur den veröffentlichten Plan (keine ergebnisId), analog zu
+     * {@link #getPlanFuerTeilnehmer(Teilnehmer, Veranstaltung)}.
+     */
+    @Transactional
+    public List<TeilnehmerVortragZuweisungDto> getPlanFuerTeilnehmerDetailliert(Teilnehmer teilnehmer, Veranstaltung veranstaltung) {
+        return ermittlePlanFuerTeilnehmer(teilnehmer, veranstaltung, null);
+    }
+
+
+    private List<TeilnehmerVortragZuweisungDto> ermittlePlanFuerTeilnehmer(Teilnehmer teilnehmer, Veranstaltung veranstaltung, Long ergebnisId) {
         Objects.requireNonNull(veranstaltung);
         if (null == teilnehmer) {
             return Collections.emptyList();
@@ -381,15 +404,18 @@ public class PlanService {
             Map<Long, Slot> slotMap = vSlots.stream().collect(toMap(IdEntity::getId, Function.identity()));
             Map<Long, Raum> raumMap = vRaeume.stream().collect(toMap(IdEntity::getId, Function.identity()));
 
-            List<ZuweisungDto> zuweisungen = new ArrayList<>();
+            List<TeilnehmerVortragZuweisungDto> zuweisungen = new ArrayList<>();
 
             for (Pflichtvortrag pv : veranstaltung.getPflichtvortraege()) {
                 if (teilnehmer.istInGruppe(pv.getPflichtgruppe(), veranstaltung)) {
-                    zuweisungen.add(new ZuweisungDto(
-                        teilnehmer.getFullName(),
+                    zuweisungen.add(new TeilnehmerVortragZuweisungDto(
+                        pv.getId(),
+                        "PFLICHT",
                         pv.getTitel(),
+                        pv.getPflichtslot().getId(),
                         pv.getPflichtslot().getStartTime(),
                         pv.getPflichtslot().getEndTime(),
+                        pv.getPflichtraum().getId(),
                         pv.getPflichtraum().getName(),
                         pv.getPflichtraum().getGebaeude().getName(),
                         pv.getReferent().getFullName()
@@ -422,11 +448,14 @@ public class PlanService {
                                 Raum raum = raumMap.get(raumId);
 
                                 if (slot != null && raum != null) {
-                                    zuweisungen.add(new ZuweisungDto(
-                                        teilnehmer.getFullName(),
+                                    zuweisungen.add(new TeilnehmerVortragZuweisungDto(
+                                        vortragId,
+                                        "WAHL",
                                         vortrag.getTitel(),
+                                        slot.getId(),
                                         slot.getStartTime(),
                                         slot.getEndTime(),
+                                        raum.getId(),
                                         raum.getName(),
                                         raum.getGebaeude().getName(),
                                         vortrag.getReferent().getFullName()
@@ -438,7 +467,7 @@ public class PlanService {
                 }
             }
             return zuweisungen.stream()
-                .sorted(comparing(d -> d.slotBeginn))
+                .sorted(comparing(z -> z.slotBeginn))
                 .toList();
 
         } catch (Exception e) {
