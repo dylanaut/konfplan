@@ -37,7 +37,7 @@ public class ProdKeycloakRealmSyncService {
 
     private static final String UPDATE_PASSWORD_ALIAS = "UPDATE_PASSWORD";
     private static final String LOGIN_TEXTS_LOCALE = "de";
-    private static final String PASSWORD_POLICY = "length(8) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1)";
+    private static final String PASSWORD_POLICY = "length(6)";
     private static final int ACTION_TOKEN_LIFESPAN_SECONDS = 60 * 10;
     private static final long FAILED_LOGIN_EVENTS_EXPIRATION_SECONDS = 60L * 60 * 24 * 30;
     private static final String REALM_MANAGEMENT_CLIENT_ID = "realm-management";
@@ -152,10 +152,15 @@ public class ProdKeycloakRealmSyncService {
 
 
     /**
-     * Erzwingt eine Mindest-Passwortstaerke (Laenge 8, je mind. 1 Gross-/Kleinbuchstabe, 1 Ziffer,
-     * 1 Sonderzeichen) fuer jedes neu gesetzte Passwort - egal ob per Selbst-Reset ueber den
-     * "Erstanmeldung / Passwort vergessen"-Link oder durch einen Organisator im KonfPlan-Organisatorbereich
-     * (beide Wege laufen ueber Keycloaks Credential-API, die die Realm-Policy serverseitig prueft).
+     * Setzt nur noch einen niedrigen Mindestlaengen-Sockel (Laenge 6) durch, der fuer JEDES neu
+     * gesetzte Passwort gilt - egal ob per Selbst-Reset ueber den "Erstanmeldung / Passwort
+     * vergessen"-Link oder durch einen Organisator im KonfPlan-Organisatorbereich (beide Wege
+     * laufen ueber Keycloaks Credential-API, die die Realm-Policy serverseitig prueft, auch fuer
+     * Admin-gesetzte Passwoerter - Keycloak kennt keine Ausnahme dafuer). Die eigentliche, je
+     * Veranstaltung und Rolle konfigurierbare Passwort-Staerke (siehe #741,
+     * {@link kreyj.konfplan.domain.service.PasswortrichtlinieService}) wird ausschliesslich
+     * App-seitig durchgesetzt, BEVOR ein admin-gesetztes Passwort ueberhaupt bei Keycloak
+     * ankommt - Selbst-Reset-Passwoerter unterliegen dagegen nur noch diesem niedrigen Sockel.
      * Wirkt NICHT rueckwirkend auf bereits gesetzte Passwoerter - nur beim naechsten Setzen.
      */
     private void syncPasswordPolicy(RealmResource realmResource) {

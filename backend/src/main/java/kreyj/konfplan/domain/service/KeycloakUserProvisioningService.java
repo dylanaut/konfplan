@@ -151,9 +151,13 @@ public class KeycloakUserProvisioningService {
         try {
             userResource.resetPassword(cred);
         } catch (jakarta.ws.rs.WebApplicationException e) {
+            // Sollte praktisch nie greifen: PasswortrichtlinieService validiert admin-gesetzte
+            // Passwoerter bereits VOR diesem Aufruf gegen die konfigurierte Richtlinie, die immer
+            // mind. so streng wie Keycloaks eigener, niedriger Realm-Policy-Sockel sein muss
+            // (siehe PasswortrichtlinieService.KEYCLOAK_MINDESTLAENGE) - dieser Fallback bleibt nur
+            // fuer den Fall, dass Keycloak selbst aus anderem Grund ablehnt.
             throw new KeycloakProvisioningException(
-                "Das neue Passwort erfüllt nicht die Mindestanforderungen (mind. 8 Zeichen, davon je "
-                    + "mindestens ein Großbuchstabe, ein Kleinbuchstabe, eine Ziffer und ein Sonderzeichen).", e);
+                "Das neue Passwort wurde von Keycloak abgelehnt.", e);
         }
 
         UserRepresentation kcUser = userResource.toRepresentation();

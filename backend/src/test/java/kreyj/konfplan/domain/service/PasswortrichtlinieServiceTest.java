@@ -89,11 +89,11 @@ class PasswortrichtlinieServiceTest extends DatabaseCleaner {
     @Test
     @Transactional
     void save_erneuterAufrufAktualisiertBestehendeZeileStattNeueAnzulegen() {
+        passwortrichtlinieService.save(veranstaltung, "TEILNEHMER", juniorPin(8));
         passwortrichtlinieService.save(veranstaltung, "TEILNEHMER", juniorPin(6));
-        passwortrichtlinieService.save(veranstaltung, "TEILNEHMER", juniorPin(4));
 
         assertThat(Passwortrichtlinie.count()).isEqualTo(1);
-        assertThat(passwortrichtlinieService.resolve(veranstaltung, "TEILNEHMER").getMinLaenge()).isEqualTo(4);
+        assertThat(passwortrichtlinieService.resolve(veranstaltung, "TEILNEHMER").getMinLaenge()).isEqualTo(6);
     }
 
 

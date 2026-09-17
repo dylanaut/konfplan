@@ -19,8 +19,8 @@
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Mindestlänge</label>
-            <input v-model.number="form.minLaenge" type="number" min="1" class="input-field" required />
+            <label class="block text-sm font-medium text-gray-700 mb-1">Mindestlänge (Keycloak erlaubt mind. 6)</label>
+            <input v-model.number="form.minLaenge" type="number" min="6" class="input-field" required />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Maximallänge (leer = unbegrenzt)</label>

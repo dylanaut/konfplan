@@ -135,7 +135,7 @@ views/*.vue           # Top-Level-Seiten-Komponenten geroutet von Vue Router
 - **Code-Stil:** `.editorconfig` im Root-Verzeichnis — 4 Leerzeichen für Java/XML, 2 für JS/TS/Vue.
 - **Identität/Passwörter liegen in Keycloak**, nicht in der Datenbank — `Nutzer` trägt nur `keycloakId` als Verknüpfung. `KeycloakUserProvisioningService` (`domain/service`) ist die einzige Stelle, die den Keycloak Admin REST Client aufruft.
 - **Standard-Passwort** bei Nutzer-Erstellung/Import: `Konfplan1!` (nicht temporär) im Dev/Test-Modus, ein zufälliges UUID-Passwort (temporär, erzwingt Keycloak-seitig eine Änderung beim ersten Login) in Produktion.
-- **Passwort-Policy** (Keycloak-Realm-Ebene, gilt für jedes neu gesetzte Passwort — Selbst-Reset wie Organisator-gesetzt, nicht rückwirkend auf bestehende Passwörter): mind. 8 Zeichen, je mind. ein Groß-/Kleinbuchstabe, eine Ziffer, ein Sonderzeichen.
+- **Passwort-Policy ist zweistufig** (siehe #741): Keycloaks Realm-Policy ist nur noch ein niedriger Sockel (`length(6)`), der für jedes neu gesetzte Passwort gilt (Selbst-Reset wie admin-gesetzt — Keycloak setzt seine Realm-Policy unabhängig vom Aufrufer durch, keine Ausnahme für Admin-Aktionen). Die eigentliche Stärke für admin-gesetzte Passwörter (Einzel-Reset, ZIP-Bulk) erzwingt `PasswortrichtlinieService` App-seitig, konfigurierbar je Veranstaltung und Rolle (Fallback: 8 Zeichen, alle vier Zeichenklassen). Keycloaks Self-Service-Flow ("Passwort vergessen") unterliegt nur dem niedrigen Sockel.
 
 ## Bekannte Besonderheiten & Infrastruktur-Notizen
 

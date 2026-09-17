@@ -28,6 +28,16 @@ public class PasswortrichtlinieService {
     private static final Set<String> GUELTIGE_ROLLEN =
         Set.of("ORGANISATOR", "ADMINISTRATOR", "REFERENT", "TEILNEHMER", "BETRACHTER");
 
+    /**
+     * Muss mit dem {@code passwordPolicy}-Sockel in {@code konfplan-realm.json} bzw.
+     * {@code ProdKeycloakRealmSyncService.PASSWORD_POLICY} übereinstimmen: Keycloak lehnt JEDES
+     * neu gesetzte Passwort unterhalb dieser Länge ab, unabhängig davon, ob es per Selbst-Reset
+     * oder admin-gesetzt (Einzel-Reset, ZIP-Bulk) zustande kommt - eine hier konfigurierte
+     * Richtlinie mit kleinerer Mindestlänge würde also von der App akzeptiert, aber anschließend
+     * von Keycloak zurückgewiesen.
+     */
+    private static final int KEYCLOAK_MINDESTLAENGE = 6;
+
 
     @Transactional
     public List<PasswortrichtlinieDto> getRichtlinien(Veranstaltung veranstaltung) {
@@ -45,8 +55,9 @@ public class PasswortrichtlinieService {
     @Transactional
     public Passwortrichtlinie save(Veranstaltung veranstaltung, String rolle, PasswortrichtlinieAnfrageDto dto) {
         validiereRolle(rolle);
-        if (dto.minLaenge < 1) {
-            throw new BusinessException("Die Mindestlänge muss mindestens 1 betragen.");
+        if (dto.minLaenge < KEYCLOAK_MINDESTLAENGE) {
+            throw new BusinessException("Die Mindestlänge muss mindestens " + KEYCLOAK_MINDESTLAENGE
+                + " betragen (Keycloaks eigene Passwort-Policy erzwingt diesen Sockel für jedes neu gesetzte Passwort).");
         }
         if (null != dto.maxLaenge && dto.maxLaenge < dto.minLaenge) {
             throw new BusinessException("Die Maximallänge darf nicht kleiner als die Mindestlänge sein.");
