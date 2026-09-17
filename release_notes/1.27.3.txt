@@ -1,0 +1,90 @@
+Release Notes 1.27.3
+Released: 2026-09-17
+
+Changes:
+
+- Release-Notes fuer 1.27.2 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.27.3-SNAPSHOT)
+
+- Anwesenheitserfassung per QR-Code für Teilnehmer + Auswertung für Organisatoren
+  * Anwesenheit: Domänenmodell und Service für QR-Code-Check-in
+  Neue Entity Anwesenheit (Teilnehmer, Veranstaltung, Slot, Raum,
+  Zeitpunkt) - ein Teilnehmer hat höchstens eine Zeile pro Slot,
+  erneutes Scannen aktualisiert Raum/Zeitpunkt statt eine zweite Zeile
+  anzulegen. Ein QR-Code kodiert bewusst nur (Veranstaltung, Raum), keine
+  Vortragsinstanz - Wahlvortrag-Instanzen haben keine über einen
+  Solver-Lauf hinweg stabile ID (siehe Planungsergebnis.MinizincResult),
+  ein Raum ist aber je Slot immer eindeutig einem Vortrag zugeordnet.
+  AnwesenheitService.checkIn() löst den aktuell aktiven Slot serverseitig
+  anhand der Uhrzeit auf (±5 Minuten Toleranz) statt sich auf eine vom
+  Client mitgeschickte Vortragsinstanz zu verlassen. getAuswertung()
+  vergleicht die Check-ins je Vortragstermin gegen den zum
+  Abfragezeitpunkt geplanten Stand aus PlanService.getRaumbelegungsplan
+  (bereits vorhandene, ungeänderte Ableitungslogik - deren
+  RaumplanEintragDto trägt schon Teilnehmer-IDs, nicht nur Namen).
+  DatabaseCleaner: Anwesenheit zur Testdaten-Bereinigung ergänzt: zudem
+  eine fehlende Bereinigung von betrachter_gruppenwert nachgetragen (beim
+  Debuggen dieser Änderung aufgefallener, unabhängiger Lücke aus #720 -
+  ohne Bereinigung schlägt Nutzer.deleteAll() im nächsten Test mit einer
+  FK-Verletzung fehl, falls ein vorheriger Test einen Betrachter mit
+  zugewiesenen Gruppenwerten anlegt).
+  Refs #735
+  * Anwesenheit: REST-Endpunkte für Check-in und Organisator-Auswertung
+  Teilnehmer registrieren ihre Anwesenheit selbst über POST
+  /api/teilnehmer/veranstaltungen/{vid}/anwesenheit (raumId als Query-Param), der Teilnehmer
+  wird ausschließlich über den JWT-Claim aufgelöst, nie über eine Client-Eingabe. Der
+  Endpunkt lehnt Räume ab, die nicht zur Veranstaltung gehören, und Veranstaltungen, an
+  denen der Teilnehmer nicht teilnimmt.
+  Organisatoren/Administratoren erhalten die Auswertung über GET
+  /api/reports/{vid}/anwesenheiten-auswertung-data, analog zu den bestehenden
+  -data-Endpunkten in ReportResource.
+  Refs #735
+  * Anwesenheit: Check-in-View im Frontend
+  Neue Route /checkin/:vid/:raumId (TEILNEHMER-geschützt) - beim Scannen des
+  raumgebundenen QR-Codes landet der Teilnehmer nach Keycloak-Login automatisch hier,
+  die View postet sofort an den neuen Check-in-Endpunkt und zeigt Vortrag/Raum/Zeit
+  oder eine neutrale "kein aktiver Termin"-Meldung.
+  Refs #735
+  * Anwesenheit: QR-Code im Raumschilder-Ausdruck
+  Jedes Raumschild bekommt einen QR-Code, der auf die neue Check-in-Route
+  (/checkin/{veranstaltungId}/{raumId}) verweist - Teilnehmer scannen ihn mit der
+  normalen Handykamera, um ihre Anwesenheit für den dort gerade laufenden Vortrag zu
+  registrieren. QR-Codes werden rein clientseitig via 'qrcode' erzeugt, kein
+  Backend-Bedarf.
+  Refs #735
+  * Anwesenheit: Auswertungs-Report für Organisatoren
+  Neue Report-View AnwesenheitenAuswertung.vue, analog zu Anwesenheiten.vue aufgebaut,
+  zeigt je Vortragstermin drei echte Namenslisten (war da / fehlte / unangemeldet) statt
+  leerer Unterschriften-Checkboxen - direkte digitale Ablösung des Papier-Zettels.
+  Route registriert und im Berichte-Auswahl-Dialog verlinkt.
+  Refs #735
+  ---------
+
+- Betrachter-Ansicht: Vorträge je Teilnehmer mit Prio- und Anwesenheitsstatus
+  * Betrachter: Vorträge je Teilnehmer mit Prio- und Anwesenheitsstatus
+  Neuer Endpunkt GET /api/betrachter/veranstaltungen/{vid}/teilnehmer-vortraege liefert je
+  sichtbarem Teilnehmer eine Liste seiner Vorträge (Pflicht, priorisierter oder per Neigung
+  aufgefüllter Wahlvortrag, oder unangemeldeter QR-Code-Besuch), zusammen mit der jeweiligen
+  Priorität ("Pflicht"/"Füll"/Zahl) und dem per QR-Code erfassten Anwesenheitsstatus.
+  "Füll" wird angezeigt, wenn für eine zugewiesene Wahlvortrag-Zuweisung keine eigene
+  Prioritaet-Zeile existiert - der Solver kann einen Wahlvortrag nur zuweisen, wenn entweder
+  eine explizite Prioritaet vorliegt oder die Zuweisung nachträglich per Neigungs-/Zufalls-
+  Auffüllung erfolgte (siehe AuffuellungService), was per Definition ohne Prioritaet-Zeile
+  geschieht.
+  PlanService.getPlanFuerTeilnehmer intern in einen privaten Kern (ermittlePlanFuerTeilnehmer)
+  und die öffentliche ZuweisungDto-Projektion aufgeteilt, ergänzt um eine neue
+  getPlanFuerTeilnehmerDetailliert-Variante, die zusätzlich Ids und Vortragstyp liefert -
+  ZuweisungDto selbst bleibt unverändert, da es an vielen Stellen als reines Anzeige-DTO
+  verwendet wird.
+  Refs #737
+  * Betrachter: Vorträge-Subtabelle mit Prio- und Anwesenheitsstatus im Frontend
+  Ersetzt die bisherige flache "Buchungen"-Spalte durch eine Subtabelle je Teilnehmer mit
+  den Spalten Vorträge/Prio/besucht, gespeist vom neuen teilnehmer-vortraege-Endpunkt -
+  zeigt für jeden Vortrag, ob er Pflicht, priorisiert oder aufgefüllt war, sowie ob und wo
+  er per QR-Code als besucht bestätigt wurde.
+  Refs #737
+  ---------
+
+- Release 1.27.3
+
