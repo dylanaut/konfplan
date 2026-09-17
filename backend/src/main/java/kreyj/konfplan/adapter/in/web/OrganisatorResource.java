@@ -24,6 +24,8 @@ import kreyj.konfplan.adapter.in.web.dto.ImportResultDto;
 import kreyj.konfplan.adapter.in.web.dto.NachbuchungsVorschlagDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
+import kreyj.konfplan.adapter.in.web.dto.PasswortrichtlinieAnfrageDto;
+import kreyj.konfplan.adapter.in.web.dto.PasswortrichtlinieDto;
 import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.RoleChangeDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerPasswortZipRequestDto;
@@ -32,10 +34,12 @@ import jakarta.ws.rs.core.SecurityContext;
 import kreyj.konfplan.application.port.in.OrganisatorServiceInterface;
 import kreyj.konfplan.domain.service.GruppenkategorieService;
 import kreyj.konfplan.domain.service.MailService;
+import kreyj.konfplan.domain.service.PasswortrichtlinieService;
 import kreyj.konfplan.domain.service.PrioritaetService;
 import kreyj.konfplan.domain.service.TeilnehmerPasswortZipResult;
 import kreyj.konfplan.domain.service.TeilnehmerPasswortZipService;
 import kreyj.konfplan.domain.service.UmplanungService;
+import kreyj.konfplan.persistence.Administrator;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
@@ -75,16 +79,19 @@ public class OrganisatorResource {
 
     private final GruppenkategorieService gruppenkategorieService;
 
+    private final PasswortrichtlinieService passwortrichtlinieService;
+
 
     public OrganisatorResource(OrganisatorServiceInterface organisatorService, PrioritaetService prioritaetService, MailService mailService,
                           TeilnehmerPasswortZipService teilnehmerPasswortZipService, UmplanungService umplanungService,
-                          GruppenkategorieService gruppenkategorieService) {
+                          GruppenkategorieService gruppenkategorieService, PasswortrichtlinieService passwortrichtlinieService) {
         this.organisatorService = organisatorService;
         this.prioritaetService = prioritaetService;
         this.mailService = mailService;
         this.teilnehmerPasswortZipService = teilnehmerPasswortZipService;
         this.umplanungService = umplanungService;
         this.gruppenkategorieService = gruppenkategorieService;
+        this.passwortrichtlinieService = passwortrichtlinieService;
     }
 
 
@@ -159,10 +166,11 @@ public class OrganisatorResource {
 
 
     @POST
-    @Path("/nutzer/{id}/reset-password")
-    @Operation(summary = "Passwort eines Nutzers zurücksetzen", description = "Setzt das Passwort eines beliebigen Nutzers direkt - Rettungsweg für Konten ohne (funktionierende) E-Mail-Adresse, die den Self-Service-Reset nicht nutzen können.")
-    public Response resetPassword(@PathParam("id") Long id, @RequestBody(description = "Das neue Passwort") OrganisatorPasswordResetDto dto) {
-        boolean reset = organisatorService.resetPassword(id, dto.newPassword);
+    @Path("/veranstaltungen/{vid}/nutzer/{id}/reset-password")
+    @Operation(summary = "Passwort eines Nutzers zurücksetzen", description = "Setzt das Passwort eines beliebigen Nutzers direkt - Rettungsweg für Konten ohne (funktionierende) E-Mail-Adresse, die den Self-Service-Reset nicht nutzen können. Das Passwort muss die für diese Veranstaltung und die Rolle des Nutzers konfigurierte Passwortrichtlinie erfüllen.")
+    public Response resetPassword(@PathParam("vid") Long vid, @PathParam("id") Long id,
+                                   @RequestBody(description = "Das neue Passwort") OrganisatorPasswordResetDto dto) {
+        boolean reset = organisatorService.resetPassword(vid, id, dto.newPassword);
         if (!reset) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
@@ -558,5 +566,70 @@ public class OrganisatorResource {
     public Response removeTeilnehmerGruppenwert(@PathParam("tid") Long tid, @PathParam("wertId") Long wertId) {
         gruppenkategorieService.removeGruppenwert(tid, wertId);
         return Response.noContent().build();
+    }
+
+    // --- PASSWORTRICHTLINIEN-VERWALTUNG (siehe #741) ---
+
+
+    @GET
+    @Path("/veranstaltungen/{vid}/passwortrichtlinien")
+    @Operation(summary = "Passwortrichtlinien einer Veranstaltung abrufen", description = "Liefert je Rolle die konfigurierte Richtlinie oder den Standard, falls nichts konfiguriert ist.")
+    public Response getPasswortrichtlinien(@PathParam("vid") Long vid, @Context SecurityContext securityContext) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        if (!darfPasswortrichtlinieBearbeiten(veranstaltung, securityContext)) {
+            return Response.status(Response.Status.FORBIDDEN).build();
+        }
+        return Response.ok(passwortrichtlinieService.getRichtlinien(veranstaltung)).build();
+    }
+
+
+    @PUT
+    @Path("/veranstaltungen/{vid}/passwortrichtlinien/{rolle}")
+    @Operation(summary = "Passwortrichtlinie für eine Rolle setzen")
+    public Response savePasswortrichtlinie(@PathParam("vid") Long vid, @PathParam("rolle") String rolle,
+                                            @RequestBody(description = "Die neue Passwortrichtlinie") PasswortrichtlinieAnfrageDto anfrage,
+                                            @Context SecurityContext securityContext) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        if (!darfPasswortrichtlinieBearbeiten(veranstaltung, securityContext)) {
+            return Response.status(Response.Status.FORBIDDEN).build();
+        }
+        passwortrichtlinieService.save(veranstaltung, rolle, anfrage);
+        return Response.ok(PasswortrichtlinieDto.from(rolle, passwortrichtlinieService.resolve(veranstaltung, rolle))).build();
+    }
+
+
+    @DELETE
+    @Path("/veranstaltungen/{vid}/passwortrichtlinien/{rolle}")
+    @Operation(summary = "Passwortrichtlinie für eine Rolle auf den Standard zurücksetzen")
+    public Response deletePasswortrichtlinie(@PathParam("vid") Long vid, @PathParam("rolle") String rolle,
+                                              @Context SecurityContext securityContext) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        if (!darfPasswortrichtlinieBearbeiten(veranstaltung, securityContext)) {
+            return Response.status(Response.Status.FORBIDDEN).build();
+        }
+        passwortrichtlinieService.deleteRichtlinie(veranstaltung, rolle);
+        return Response.noContent().build();
+    }
+
+
+    /**
+     * Ein Administrator darf die Passwortrichtlinie jeder Veranstaltung bearbeiten (globale
+     * Sonderrolle, konsistent mit seinen übrigen systemweiten Rechten) - ein Organisator nur die
+     * Richtlinie einer Veranstaltung, der er selbst zugeordnet ist. Anders als die übrigen
+     * Organisator-Endpunkte in dieser Klasse prüft {@code @RolesAllowed} hier bewusst nicht aus,
+     * da es keinen Veranstaltungsbezug ausdrücken kann.
+     */
+    private boolean darfPasswortrichtlinieBearbeiten(Veranstaltung veranstaltung, SecurityContext securityContext) {
+        Nutzer nutzer = Nutzer.findByLoginName(securityContext.getUserPrincipal().getName());
+        return nutzer instanceof Administrator || veranstaltung.organisatoren().contains(nutzer);
     }
 }

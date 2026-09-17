@@ -12,7 +12,9 @@ import jakarta.transaction.Transactional;
 import kreyj.konfplan.adapter.in.web.dto.OrganisatorPasswordResetDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
+import kreyj.konfplan.adapter.in.web.dto.PasswortrichtlinieAnfrageDto;
 import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
+import kreyj.konfplan.persistence.Administrator;
 import kreyj.konfplan.persistence.Gruppenkategorie;
 import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.Organisator;
@@ -165,6 +167,7 @@ class OrganisatorResourceTest extends DatabaseCleaner {
 
     @Test
     void testResetPassword() {
+        Long vid = anlegeVeranstaltungMitGruppenkategorie("Klasse", "Gruppe A");
         NutzerDto dto = NutzerDto.teilnehmer("reset.me@test.de", "Reset", "Me");
         dto.loginName = "reset.me";
         NutzerDto created =
@@ -177,24 +180,154 @@ class OrganisatorResourceTest extends DatabaseCleaner {
 
         given()
             .contentType(ContentType.JSON)
-            .body(new OrganisatorPasswordResetDto("einNeuesPasswort123"))
-            .when().post("/nutzer/{id}/reset-password", created.id)
+            .body(new OrganisatorPasswordResetDto("einNeuesPasswort123!"))
+            .when().post("/veranstaltungen/{vid}/nutzer/{id}/reset-password", vid, created.id)
             .then()
             .statusCode(OK.getStatusCode());
 
         Nutzer updated = Nutzer.findById(created.id);
-        verify(keycloakUserProvisioningService).resetPassword(eq(updated), eq("einNeuesPasswort123"));
+        verify(keycloakUserProvisioningService).resetPassword(eq(updated), eq("einNeuesPasswort123!"));
     }
 
 
     @Test
     void testResetPassword_UnknownUser_ReturnsNotFound() {
+        Long vid = anlegeVeranstaltungMitGruppenkategorie("Klasse", "Gruppe A");
         given()
             .contentType(ContentType.JSON)
-            .body(new OrganisatorPasswordResetDto("einNeuesPasswort123"))
-            .when().post("/nutzer/{id}/reset-password", -1L)
+            .body(new OrganisatorPasswordResetDto("einNeuesPasswort123!"))
+            .when().post("/veranstaltungen/{vid}/nutzer/{id}/reset-password", vid, -1L)
             .then()
             .statusCode(NOT_FOUND.getStatusCode());
+    }
+
+
+    @Test
+    void testResetPassword_VerletztKonfigurierteRichtlinie_liefertBadRequest() {
+        Long vid = anlegeVeranstaltungMitGruppenkategorie("Klasse", "Gruppe A");
+        QuarkusTransaction.requiringNew().run(() -> {
+            Organisator admin = Organisator.findById(adminId);
+            admin.addVeranstaltung(Veranstaltung.findById(vid));
+        });
+
+        NutzerDto dto = NutzerDto.teilnehmer("reset.richtlinie@test.de", "Reset", "Richtlinie");
+        dto.loginName = "reset.richtlinie";
+        NutzerDto created =
+            given().contentType(ContentType.JSON)
+                .body(dto)
+                .when().post("/nutzer")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .extract().as(NutzerDto.class);
+
+        PasswortrichtlinieAnfrageDto richtlinie = new PasswortrichtlinieAnfrageDto();
+        richtlinie.minLaenge = 6;
+        richtlinie.maxLaenge = 6;
+        richtlinie.nurZiffern = true;
+        given().contentType(ContentType.JSON)
+            .body(richtlinie)
+            .when().put("/veranstaltungen/{vid}/passwortrichtlinien/{rolle}", vid, "TEILNEHMER")
+            .then()
+            .statusCode(OK.getStatusCode());
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(new OrganisatorPasswordResetDto("keineZiffernPin"))
+            .when().post("/veranstaltungen/{vid}/nutzer/{id}/reset-password", vid, created.id)
+            .then()
+            .statusCode(BAD_REQUEST.getStatusCode());
+    }
+
+
+    @Test
+    void testGetPasswortrichtlinien_alsOrganisatorDerEigenenVeranstaltung_liefertStandardFuerAlleRollen() {
+        Long vid = anlegeVeranstaltungMitGruppenkategorie("Klasse", "Gruppe A");
+        QuarkusTransaction.requiringNew().run(() -> {
+            Organisator admin = Organisator.findById(adminId);
+            admin.addVeranstaltung(Veranstaltung.findById(vid));
+        });
+
+        given()
+            .when().get("/veranstaltungen/{vid}/passwortrichtlinien", vid)
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body("size()", is(5));
+    }
+
+
+    @Test
+    void testGetPasswortrichtlinien_alsOrganisatorEinerFremdenVeranstaltung_liefertForbidden() {
+        Long vid = anlegeVeranstaltungMitGruppenkategorie("Klasse", "Gruppe A");
+        // admin ist bewusst NICHT der Veranstaltung zugeordnet.
+
+        given()
+            .when().get("/veranstaltungen/{vid}/passwortrichtlinien", vid)
+            .then()
+            .statusCode(FORBIDDEN.getStatusCode());
+    }
+
+
+    @Test
+    @TestSecurity(user = "irgendein.admin@example.com", roles = "ADMINISTRATOR")
+    void testGetPasswortrichtlinien_alsAdministrator_darfJedeVeranstaltungSehen() {
+        Long vid = anlegeVeranstaltungMitGruppenkategorie("Klasse", "Gruppe A");
+        // kein Administrator ist dieser Veranstaltung zugeordnet - globale Sonderrolle greift trotzdem.
+        QuarkusTransaction.requiringNew().run(() -> {
+            Administrator administrator = new Administrator();
+            administrator.assignLoginName("irgendein.admin@example.com");
+            administrator.setEmail("irgendein.admin@example.com");
+            administrator.persist();
+        });
+
+        given()
+            .when().get("/veranstaltungen/{vid}/passwortrichtlinien", vid)
+            .then()
+            .statusCode(OK.getStatusCode());
+    }
+
+
+    @Test
+    void testSavePasswortrichtlinie_alsOrganisatorEinerFremdenVeranstaltung_liefertForbidden() {
+        Long vid = anlegeVeranstaltungMitGruppenkategorie("Klasse", "Gruppe A");
+        PasswortrichtlinieAnfrageDto richtlinie = new PasswortrichtlinieAnfrageDto();
+        richtlinie.minLaenge = 6;
+        richtlinie.maxLaenge = 6;
+        richtlinie.nurZiffern = true;
+
+        given().contentType(ContentType.JSON)
+            .body(richtlinie)
+            .when().put("/veranstaltungen/{vid}/passwortrichtlinien/{rolle}", vid, "TEILNEHMER")
+            .then()
+            .statusCode(FORBIDDEN.getStatusCode());
+    }
+
+
+    @Test
+    void testDeletePasswortrichtlinie_setztAufStandardZurueck() {
+        Long vid = anlegeVeranstaltungMitGruppenkategorie("Klasse", "Gruppe A");
+        QuarkusTransaction.requiringNew().run(() -> {
+            Organisator admin = Organisator.findById(adminId);
+            admin.addVeranstaltung(Veranstaltung.findById(vid));
+        });
+
+        PasswortrichtlinieAnfrageDto richtlinie = new PasswortrichtlinieAnfrageDto();
+        richtlinie.minLaenge = 6;
+        richtlinie.maxLaenge = 6;
+        richtlinie.nurZiffern = true;
+        given().contentType(ContentType.JSON).body(richtlinie)
+            .when().put("/veranstaltungen/{vid}/passwortrichtlinien/{rolle}", vid, "TEILNEHMER")
+            .then().statusCode(OK.getStatusCode());
+
+        given()
+            .when().delete("/veranstaltungen/{vid}/passwortrichtlinien/{rolle}", vid, "TEILNEHMER")
+            .then()
+            .statusCode(NO_CONTENT.getStatusCode());
+
+        given()
+            .when().get("/veranstaltungen/{vid}/passwortrichtlinien", vid)
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body("find { it.rolle == 'TEILNEHMER' }.istStandard", is(true));
     }
 
 

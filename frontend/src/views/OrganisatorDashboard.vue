@@ -923,7 +923,7 @@ const openPasswordResetModal = (u) => {
 };
 const handleResetPassword = async ({userId, newPassword}) => {
   try {
-    await api.post(`/api/organisator/nutzer/${userId}/reset-password`, {newPassword});
+    await api.post(`/api/organisator/veranstaltungen/${selectedVid.value}/nutzer/${userId}/reset-password`, {newPassword});
     alert("Passwort erfolgreich zurückgesetzt!");
     showPasswordResetModal.value = false;
   } catch (e) {
