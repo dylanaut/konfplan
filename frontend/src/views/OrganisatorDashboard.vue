@@ -237,7 +237,7 @@
                           @save="handleSaveSlot"/>
     <InviteUserModal :isVisible="showInviteModal" :nutzer="selectedUserForInvite" :futureEvents="futureEvents"
                      @close="showInviteModal = false" @invite="handleInviteUser"/>
-    <PasswordResetModal :isVisible="showPasswordResetModal" :nutzer="selectedUserForPasswordReset"
+    <PasswordResetModal :isVisible="showPasswordResetModal" :nutzer="selectedUserForPasswordReset" :vid="selectedVid"
                      @close="showPasswordResetModal = false" @reset="handleResetPassword"/>
     <GeneratePasswordsZipModal :isVisible="showGeneratePasswordsZipModal" :count="selectedIdsForZip.length"
                      @close="showGeneratePasswordsZipModal = false" @generate="handleGeneratePasswordsZip"/>
@@ -923,7 +923,7 @@ const openPasswordResetModal = (u) => {
 };
 const handleResetPassword = async ({userId, newPassword}) => {
   try {
-    await api.post(`/api/organisator/nutzer/${userId}/reset-password`, {newPassword});
+    await api.post(`/api/organisator/veranstaltungen/${selectedVid.value}/nutzer/${userId}/reset-password`, {newPassword});
     alert("Passwort erfolgreich zurückgesetzt!");
     showPasswordResetModal.value = false;
   } catch (e) {

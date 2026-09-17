@@ -71,9 +71,14 @@ kreyj/konfplan/
 - Passwort-Konvention beim Anlegen: `Konfplan1!` (nicht-temporär) in Dev/Test, eine zufällige UUID
   (`temporary=true`, `requiredActions=["UPDATE_PASSWORD"]`) in Prod - Keycloak erzwingt dort eine
   Passwortänderung beim ersten Login.
-- Passwort-Policy (Keycloak-Realm-Ebene, `ProdKeycloakRealmSyncService`/`konfplan-realm.json`):
-  mind. 8 Zeichen, je mind. ein Groß-/Kleinbuchstabe, eine Ziffer, ein Sonderzeichen - gilt für
-  jedes neu gesetzte Passwort, nicht rückwirkend.
+- Passwort-Policy ist zweistufig (siehe #741): Keycloaks Realm-Policy (`ProdKeycloakRealmSyncService`/
+  `konfplan-realm.json`) ist nur noch ein niedriger Sockel (`length(6)`) - gilt für JEDES neu
+  gesetzte Passwort inkl. admin-gesetzter, da Keycloak seine Realm-Policy unabhängig vom Aufrufer
+  durchsetzt und keine rollenabhängige Ausnahme kennt. Die eigentliche Stärke für admin-gesetzte
+  Passwörter (Einzel-Reset, ZIP-Bulk) erzwingt vollständig App-seitig `PasswortrichtlinieService`,
+  konfigurierbar je Veranstaltung und Rolle (Fallback `Passwortrichtlinie.STANDARD`: 8 Zeichen,
+  alle vier Zeichenklassen). Keycloaks eigener Self-Service-Flow ("Passwort vergessen") unterliegt
+  nur dem niedrigen Realm-Sockel, nicht der Passwortrichtlinie.
 
 ### Organisator-Konten ohne E-Mail (Lockout-Schutz)
 

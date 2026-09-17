@@ -94,15 +94,17 @@ public class OrganisatorService implements OrganisatorServiceInterface {
     private final ProtokollService protokollService;
     private final KeycloakUserProvisioningService keycloakUserProvisioningService;
     private final NachrichtService nachrichtService;
+    private final PasswortrichtlinieService passwortrichtlinieService;
 
 
     public OrganisatorService(MailService mailService, ProtokollService protokollService,
                         KeycloakUserProvisioningService keycloakUserProvisioningService,
-                        NachrichtService nachrichtService) {
+                        NachrichtService nachrichtService, PasswortrichtlinieService passwortrichtlinieService) {
         this.mailService = mailService;
         this.protokollService = protokollService;
         this.keycloakUserProvisioningService = keycloakUserProvisioningService;
         this.nachrichtService = nachrichtService;
+        this.passwortrichtlinieService = passwortrichtlinieService;
     }
 
 
@@ -465,14 +467,19 @@ public class OrganisatorService implements OrganisatorServiceInterface {
      */
     @Transactional
     @Override
-    public boolean resetPassword(Long id, String newPassword) {
+    public boolean resetPassword(Long vid, Long id, String newPassword) {
         Nutzer nutzer = Nutzer.findById(id);
         if (null == nutzer) {
             return false;
         }
-        if (StringUtils.isBlank(newPassword) || newPassword.length() < 8) {
-            throw new BusinessException("Das neue Passwort muss mindestens 8 Zeichen lang sein.");
+        if (StringUtils.isBlank(newPassword)) {
+            throw new BusinessException("Das neue Passwort darf nicht leer sein.");
         }
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            throw new EntityNotFoundException(Veranstaltung.class, "Veranstaltung " + vid + " nicht gefunden.");
+        }
+        passwortrichtlinieService.validate(veranstaltung, nutzer, newPassword);
 
         keycloakUserProvisioningService.resetPassword(nutzer, newPassword);
         protokollService.log(ProtokollKategorie.SECURITY, "Passwort durch Organisator zurückgesetzt",

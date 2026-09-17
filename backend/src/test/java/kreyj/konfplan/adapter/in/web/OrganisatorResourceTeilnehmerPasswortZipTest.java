@@ -8,6 +8,7 @@ import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.h2.H2DatabaseTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
+import kreyj.konfplan.adapter.in.web.dto.PasswortrichtlinieAnfrageDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerPasswortZipRequestDto;
 import kreyj.konfplan.domain.exception.KeycloakProvisioningException;
 import kreyj.konfplan.domain.service.KeycloakUserProvisioningService;
@@ -225,5 +226,23 @@ class OrganisatorResourceTeilnehmerPasswortZipTest extends DatabaseCleaner {
             .when().post("/veranstaltungen/{vid}/teilnehmer/passwoerter/zip", veranstaltungId)
             .then()
             .statusCode(BAD_REQUEST.getStatusCode());
+    }
+
+
+    @Test
+    void mitKonfigurierterJuniorPinRichtlinie_erzeugtSechsstelligeZiffernPasswoerter(@TempDir Path tempDir) throws Exception {
+        PasswortrichtlinieAnfrageDto richtlinie = new PasswortrichtlinieAnfrageDto();
+        richtlinie.minLaenge = 6;
+        richtlinie.maxLaenge = 6;
+        richtlinie.nurZiffern = true;
+        given().contentType("application/json").body(richtlinie)
+            .when().put("/veranstaltungen/{vid}/passwortrichtlinien/{rolle}", veranstaltungId, "TEILNEHMER")
+            .then().statusCode(OK.getStatusCode());
+
+        byte[] zip = downloadZip(List.of(teilnehmer1Id), "geheimgeheim");
+        List<String[]> rows = readCsvFromZip(zip, "geheimgeheim", tempDir);
+
+        String[] zeile1 = rows.stream().filter(r -> r[1].equals("zip.teilnehmer1")).findFirst().orElseThrow();
+        assertThat(zeile1[2]).matches("\\d{6}");
     }
 }

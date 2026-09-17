@@ -33,7 +33,7 @@ public interface OrganisatorServiceInterface {
 
     boolean deleteUser(Long id);
 
-    boolean resetPassword(Long id, String newPassword);
+    boolean resetPassword(Long vid, Long id, String newPassword);
 
     void toggleUserStatus(Long id);
 

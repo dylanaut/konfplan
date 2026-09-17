@@ -215,17 +215,17 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
 
     @Test
     public void testResetPassword_Success() {
-        boolean result = organisatorService.resetPassword(testUserId, "einNeuesPasswort123");
+        boolean result = organisatorService.resetPassword(veranstaltung.getId(), testUserId, "einNeuesPasswort123!");
 
         assertThat(result).isTrue();
         Nutzer updated = Nutzer.findById(testUserId);
-        verify(keycloakUserProvisioningService).resetPassword(eq(updated), eq("einNeuesPasswort123"));
+        verify(keycloakUserProvisioningService).resetPassword(eq(updated), eq("einNeuesPasswort123!"));
     }
 
 
     @Test
     public void testResetPassword_UnknownUser_ReturnsFalse() {
-        boolean result = organisatorService.resetPassword(-1L, "einNeuesPasswort123");
+        boolean result = organisatorService.resetPassword(veranstaltung.getId(), -1L, "einNeuesPasswort123!");
 
         assertThat(result).isFalse();
     }
@@ -234,7 +234,7 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
     @Test
     public void testResetPassword_PasswordTooShort_ThrowsException() {
         assertThatExceptionOfType(BusinessException.class)
-            .isThrownBy(() -> organisatorService.resetPassword(testUserId, "kurz"));
+            .isThrownBy(() -> organisatorService.resetPassword(veranstaltung.getId(), testUserId, "kurz"));
     }
 
 

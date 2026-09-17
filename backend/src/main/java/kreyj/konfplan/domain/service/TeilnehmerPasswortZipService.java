@@ -6,6 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.persistence.GruppenkategorieWert;
+import kreyj.konfplan.persistence.Passwortrichtlinie;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -38,13 +39,16 @@ public class TeilnehmerPasswortZipService {
     private final KeycloakUserProvisioningService keycloakUserProvisioningService;
     private final ProtokollService protokollService;
     private final ZipService zipService;
+    private final PasswortrichtlinieService passwortrichtlinieService;
 
     public TeilnehmerPasswortZipService(KeycloakUserProvisioningService keycloakUserProvisioningService,
                                          ProtokollService protokollService,
-                                         ZipService zipService) {
+                                         ZipService zipService,
+                                         PasswortrichtlinieService passwortrichtlinieService) {
         this.keycloakUserProvisioningService = keycloakUserProvisioningService;
         this.protokollService = protokollService;
         this.zipService = zipService;
+        this.passwortrichtlinieService = passwortrichtlinieService;
     }
 
 
@@ -91,12 +95,14 @@ public class TeilnehmerPasswortZipService {
         }
 
         List<Kandidat> kandidaten = ladeUndValidiere(veranstaltungId, nutzerIds);
+        Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
+        Passwortrichtlinie richtlinie = passwortrichtlinieService.resolve(veranstaltung, "TEILNEHMER");
 
         List<ReportZeile> erfolgsZeilen = new ArrayList<>();
         List<String> fehlgeschlagen = new ArrayList<>();
 
         for (Kandidat k : kandidaten) {
-            String neuesPasswort = PasswordGenerator.generate();
+            String neuesPasswort = PasswordGenerator.generate(richtlinie);
             try {
                 keycloakUserProvisioningService.resetPassword(k.nutzer(), neuesPasswort);
                 erfolgsZeilen.add(new ReportZeile(k.fullName(), k.loginName(), neuesPasswort, k.gruppenwerteByKategorie()));

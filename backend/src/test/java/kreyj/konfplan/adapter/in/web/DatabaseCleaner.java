@@ -10,6 +10,7 @@ import kreyj.konfplan.persistence.GruppenkategorieWert;
 import kreyj.konfplan.persistence.Nachricht;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
+import kreyj.konfplan.persistence.Passwortrichtlinie;
 import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Raum;
@@ -33,6 +34,7 @@ public abstract class DatabaseCleaner {
     @Transactional
     public void cleanDatabase() {
         Anwesenheit.deleteAll();
+        Passwortrichtlinie.deleteAll();
         NutzerVerfuegbarkeit.deleteAll();
         RaumVerfuegbarkeit.deleteAll();
         VortragVerfuegbarkeit.deleteAll();
