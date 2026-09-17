@@ -1,0 +1,22 @@
+Release Notes 1.27.2
+Released: 2026-09-17
+
+Changes:
+
+- Release-Notes fuer 1.27.1 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.27.2-SNAPSHOT)
+
+- Betrachter-Dashboard: Vortragstitel statt Vortrag-ID in Prioritäten anzeigen
+  Neuer rein lesender Endpunkt GET /api/betrachter/veranstaltungen/{vid}/vortraege
+  liefert Titel der Wahlvorträge - bewusst als eigene, kleine DTO
+  (VortragTitelDto) statt die bestehende VortragPrioDto zu erweitern, die
+  an anderer Stelle über eine Panache-Projection-Query mit einem festen
+  Konstruktor genutzt wird.
+  BetrachterDashboard.vue: Prioritäten je Teilnehmer jetzt absteigend nach
+  Priorität sortiert und zeilenweise mit den ersten Wörtern des
+  Vortragstitels statt der technischen ID dargestellt.
+  Refs #731
+
+- Release 1.27.2
+
