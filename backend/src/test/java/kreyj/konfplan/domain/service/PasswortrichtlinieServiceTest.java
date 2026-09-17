@@ -53,7 +53,7 @@ class PasswortrichtlinieServiceTest extends DatabaseCleaner {
     void getRichtlinien_ohneKonfiguration_liefertStandardFuerAlleRollen() {
         List<PasswortrichtlinieDto> richtlinien = passwortrichtlinieService.getRichtlinien(veranstaltung);
 
-        assertThat(richtlinien).hasSize(5);
+        assertThat(richtlinien).hasSize(4);
         assertThat(richtlinien).allMatch(r -> r.istStandard);
         assertThat(richtlinien).allSatisfy(r -> {
             assertThat(r.minLaenge).isEqualTo(8);
