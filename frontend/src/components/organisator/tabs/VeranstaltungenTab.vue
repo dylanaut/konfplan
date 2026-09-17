@@ -97,6 +97,48 @@
                   </div>
                 </div>
 
+                <!-- Passwortrichtlinien (#741) -->
+                <div class="space-y-2">
+                  <button @click="expandedSections.passwortrichtlinien = !expandedSections.passwortrichtlinien"
+                          class="w-full flex items-center gap-3 text-[10px] font-black text-indigo-700 uppercase tracking-widest border-b border-indigo-100 pb-1 hover:bg-indigo-50 transition-colors">
+                    <ChevronDownIcon v-if="!expandedSections.passwortrichtlinien" class="w-3 h-3 shrink-0"/>
+                    <ChevronUpIcon v-else class="w-3 h-3 shrink-0"/>
+                    <div class="flex items-center gap-2">
+                      <KeyIcon class="w-3 h-3"/> Passwortrichtlinien
+                    </div>
+                  </button>
+                  <div v-if="expandedSections.passwortrichtlinien" class="animate-fade-in bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                    <table class="min-w-full divide-y divide-gray-200 text-[10px]">
+                      <thead class="bg-gray-50 text-[8px] uppercase font-bold text-gray-500">
+                      <tr>
+                        <th class="px-3 py-1.5 text-left">Rolle</th>
+                        <th class="px-3 py-1.5 text-left">Anforderung</th>
+                        <th class="px-3 py-1.5 text-right">Aktionen</th>
+                      </tr>
+                      </thead>
+                      <tbody class="divide-y divide-gray-100">
+                      <tr v-for="r in passwortrichtlinieStore.richtlinien" :key="r.rolle" class="hover:bg-indigo-50/30 transition">
+                        <td class="px-3 py-1.5 font-semibold text-gray-800">{{ r.rolle }}</td>
+                        <td class="px-3 py-1.5 text-gray-600">
+                          <span v-if="r.istStandard" class="text-[9px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">Standard</span>
+                          <span v-else class="text-[9px] px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                            {{ r.nurZiffern ? `${r.minLaenge}-stellige Ziffern-PIN` : `mind. ${r.minLaenge} Zeichen` }}
+                          </span>
+                        </td>
+                        <td class="px-3 py-1.5 text-right space-x-2">
+                          <button @click="openPasswortrichtlinieEditor(r)" class="text-gray-600" title="Bearbeiten" aria-label="Bearbeiten">
+                            <PencilIcon class="w-3.5 h-3.5 inline"/>
+                          </button>
+                          <button v-if="!r.istStandard" @click="handleResetPasswortrichtlinie(r)" class="text-red-600" title="Auf Standard zurücksetzen" aria-label="Auf Standard zurücksetzen">
+                            <Trash2Icon class="w-3.5 h-3.5 inline"/>
+                          </button>
+                        </td>
+                      </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
                 <!-- Vorträge & Referenten -->
                 <div class="space-y-2">
                   <button @click="expandedSections.vortraege = !expandedSections.vortraege"
@@ -187,18 +229,23 @@
 
     <GruppenkategorieEditorModal :isVisible="showGruppenkategorieModal" :kategorie="selectedKategorie"
                                   @close="showGruppenkategorieModal = false" @save="handleSaveGruppenkategorie"/>
+    <PasswortrichtlinieEditorModal :isVisible="showPasswortrichtlinieModal" :rolle="selectedRichtlinie?.rolle"
+                                    :richtlinie="selectedRichtlinie"
+                                    @close="showPasswortrichtlinieModal = false" @save="handleSavePasswortrichtlinie"/>
   </section>
 </template>
 
 <script setup>
 import { computed, reactive, ref, watch } from 'vue';
 import { useGruppenkategorieStore } from '../../../stores/gruppenkategorie';
+import { usePasswortrichtlinieStore } from '../../../stores/passwortrichtlinie';
 import {
   ArrowUpDown as ArrowUpDownIcon,
   ChevronDown as ChevronDownIcon,
   ChevronRight as ChevronRightIcon,
   ChevronUp as ChevronUpIcon,
   FileText as FileTextIcon,
+  Key as KeyIcon,
   Pencil as PencilIcon,
   Tags as TagsIcon,
   Trash2 as Trash2Icon,
@@ -207,6 +254,7 @@ import {
 } from '@lucide/vue';
 import PaginationControls from '../../PaginationControls.vue';
 import GruppenkategorieEditorModal from './GruppenkategorieEditorModal.vue';
+import PasswortrichtlinieEditorModal from './PasswortrichtlinieEditorModal.vue';
 import {
   getGruppenkategorieSortValue,
   getGruppenkategorieWerte,
@@ -227,10 +275,13 @@ const props = defineProps({
 const emit = defineEmits(['triggerUpload', 'openVeranstaltungEditor', 'deleteVeranstaltung', 'selectVeranstaltung', 'openUserModal']);
 
 const gruppenkategorieStore = useGruppenkategorieStore();
+const passwortrichtlinieStore = usePasswortrichtlinieStore();
 const expandedKategorien = reactive({});
 const newWertByKategorie = reactive({});
 const showGruppenkategorieModal = ref(false);
 const selectedKategorie = ref(null);
+const showPasswortrichtlinieModal = ref(false);
+const selectedRichtlinie = ref(null);
 
 const pages = reactive({
   veranstaltungen: 1,
@@ -250,6 +301,7 @@ const sorts = reactive({
 
 const expandedSections = reactive({
   gruppenkategorien: false,
+  passwortrichtlinien: false,
   vortraege: false,
   teilnehmer: false
 });
@@ -259,6 +311,10 @@ watch(() => props.selectedVid, (newVid) => {
     expandedSections.vortraege = true;
   }
 });
+
+watch(() => props.selectedVid, (newVid) => {
+  passwortrichtlinieStore.fetchRichtlinien(newVid);
+}, { immediate: true });
 
 watch(() => filters.veranstaltungen, () => { pages.veranstaltungen = 1; });
 
@@ -304,6 +360,24 @@ const handleRenameWert = async (wert) => {
 const handleRemoveWert = async (wert) => {
   if (confirm(`Soll der Wert "${wert.wert}" wirklich gelöscht werden? Er wird von allen Teilnehmern entfernt.`)) {
     await gruppenkategorieStore.removeWert(props.selectedVid, wert);
+  }
+};
+
+const openPasswortrichtlinieEditor = (richtlinie) => {
+  selectedRichtlinie.value = richtlinie;
+  showPasswortrichtlinieModal.value = true;
+};
+
+const handleSavePasswortrichtlinie = async (form) => {
+  const ok = await passwortrichtlinieStore.saveRichtlinie(props.selectedVid, selectedRichtlinie.value.rolle, form);
+  if (ok) {
+    showPasswortrichtlinieModal.value = false;
+  }
+};
+
+const handleResetPasswortrichtlinie = async (richtlinie) => {
+  if (confirm(`Soll die Passwortrichtlinie für '${richtlinie.rolle}' wirklich auf den Standard zurückgesetzt werden?`)) {
+    await passwortrichtlinieStore.resetRichtlinie(props.selectedVid, richtlinie.rolle);
   }
 };
 
