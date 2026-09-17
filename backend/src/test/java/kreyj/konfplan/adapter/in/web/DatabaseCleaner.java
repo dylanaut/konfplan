@@ -3,6 +3,7 @@ package kreyj.konfplan.adapter.in.web;
 import io.quarkus.hibernate.orm.panache.Panache;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.transaction.Transactional;
+import kreyj.konfplan.persistence.Anwesenheit;
 import kreyj.konfplan.persistence.Gebaeude;
 import kreyj.konfplan.persistence.Gruppenkategorie;
 import kreyj.konfplan.persistence.GruppenkategorieWert;
@@ -31,6 +32,7 @@ public abstract class DatabaseCleaner {
     @BeforeEach
     @Transactional
     public void cleanDatabase() {
+        Anwesenheit.deleteAll();
         NutzerVerfuegbarkeit.deleteAll();
         RaumVerfuegbarkeit.deleteAll();
         VortragVerfuegbarkeit.deleteAll();
@@ -43,6 +45,7 @@ public abstract class DatabaseCleaner {
         Panache.getEntityManager().createNativeQuery("delete from wahlvortrag_neigungen").executeUpdate();
         Panache.getEntityManager().createNativeQuery("delete from teilnehmer_neigungen").executeUpdate();
         Panache.getEntityManager().createNativeQuery("delete from teilnehmer_gruppenwert").executeUpdate();
+        Panache.getEntityManager().createNativeQuery("delete from betrachter_gruppenwert").executeUpdate();
         GruppenkategorieWert.deleteAll();
         Gruppenkategorie.deleteAll();
         Vortrag.deleteAll();
