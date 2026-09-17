@@ -237,7 +237,7 @@
                           @save="handleSaveSlot"/>
     <InviteUserModal :isVisible="showInviteModal" :nutzer="selectedUserForInvite" :futureEvents="futureEvents"
                      @close="showInviteModal = false" @invite="handleInviteUser"/>
-    <PasswordResetModal :isVisible="showPasswordResetModal" :nutzer="selectedUserForPasswordReset"
+    <PasswordResetModal :isVisible="showPasswordResetModal" :nutzer="selectedUserForPasswordReset" :vid="selectedVid"
                      @close="showPasswordResetModal = false" @reset="handleResetPassword"/>
     <GeneratePasswordsZipModal :isVisible="showGeneratePasswordsZipModal" :count="selectedIdsForZip.length"
                      @close="showGeneratePasswordsZipModal = false" @generate="handleGeneratePasswordsZip"/>

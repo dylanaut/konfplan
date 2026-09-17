@@ -27,7 +27,7 @@
             </button>
           </div>
           <p class="text-[10px] mt-1" :class="newPassword.length === 0 ? 'text-gray-400' : isPasswordCompliant ? 'text-green-600' : 'text-red-600'">
-            Mind. 8 Zeichen, je mind. ein Groß-/Kleinbuchstabe, eine Ziffer und ein Sonderzeichen.
+            {{ hinweisText }}
           </p>
         </div>
 
@@ -57,10 +57,12 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { X as XIcon, Info as InfoIcon, Loader as LoaderIcon, Eye as EyeIcon, EyeOff as EyeOffIcon } from '@lucide/vue';
+import api from '../api/axios';
 
 const props = defineProps({
   isVisible: Boolean,
-  nutzer: Object
+  nutzer: Object,
+  vid: [Number, String],
 });
 
 const emit = defineEmits(['close', 'reset']);
@@ -68,16 +70,58 @@ const emit = defineEmits(['close', 'reset']);
 const newPassword = ref('');
 const isSubmitting = ref(false);
 const showPassword = ref(false);
+// Standard-Regel als Default, solange die tatsächlich konfigurierte Richtlinie noch geladen
+// wird oder (z.B. ohne vid) nicht ermittelt werden kann - identisch zum Server-seitigen Fallback
+// Passwortrichtlinie.STANDARD.
+const STANDARD_RICHTLINIE = {
+  minLaenge: 8, maxLaenge: null,
+  erfordertGrossbuchstabe: true, erfordertKleinbuchstabe: true, erfordertZiffer: true, erfordertSonderzeichen: true,
+  nurZiffern: false,
+};
+const richtlinie = ref(STANDARD_RICHTLINIE);
 
 const isPasswordCompliant = computed(() => {
   const pw = newPassword.value;
-  return pw.length >= 8 && /[A-Z]/.test(pw) && /[a-z]/.test(pw) && /[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw);
+  const r = richtlinie.value;
+  if (pw.length < r.minLaenge) return false;
+  if (r.maxLaenge && pw.length > r.maxLaenge) return false;
+  if (r.nurZiffern) return /^\d+$/.test(pw);
+  return (!r.erfordertGrossbuchstabe || /[A-Z]/.test(pw))
+    && (!r.erfordertKleinbuchstabe || /[a-z]/.test(pw))
+    && (!r.erfordertZiffer || /[0-9]/.test(pw))
+    && (!r.erfordertSonderzeichen || /[^A-Za-z0-9]/.test(pw));
 });
 
-watch(() => props.isVisible, (visible) => {
-  if (visible) {
-    newPassword.value = '';
-    showPassword.value = false;
+const hinweisText = computed(() => {
+  const r = richtlinie.value;
+  if (r.nurZiffern) {
+    return r.maxLaenge && r.maxLaenge !== r.minLaenge
+      ? `Nur Ziffern, ${r.minLaenge}-${r.maxLaenge} Zeichen.`
+      : `Nur Ziffern, genau ${r.minLaenge} Zeichen.`;
+  }
+  const teile = [];
+  if (r.erfordertGrossbuchstabe) teile.push('ein Großbuchstabe');
+  if (r.erfordertKleinbuchstabe) teile.push('ein Kleinbuchstabe');
+  if (r.erfordertZiffer) teile.push('eine Ziffer');
+  if (r.erfordertSonderzeichen) teile.push('ein Sonderzeichen');
+  return `Mind. ${r.minLaenge} Zeichen` + (teile.length ? `, je mind. ${teile.join(', ')}.` : '.');
+});
+
+watch(() => props.isVisible, async (visible) => {
+  if (!visible) return;
+  newPassword.value = '';
+  showPassword.value = false;
+  richtlinie.value = STANDARD_RICHTLINIE;
+
+  if (!props.vid || !props.nutzer?.role) return;
+  try {
+    const response = await api.get(`/api/organisator/veranstaltungen/${props.vid}/passwortrichtlinien`);
+    const gefunden = response.data.find(r => r.rolle === props.nutzer.role);
+    if (gefunden) {
+      richtlinie.value = gefunden;
+    }
+  } catch (e) {
+    console.error('Passwortrichtlinie konnte nicht geladen werden, verwende Standard.', e);
   }
 });
 
