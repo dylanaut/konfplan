@@ -35,7 +35,7 @@
                   {{ formatTime(slot.startTime) }}
                 </th>
                 <th class="px-3 py-2 text-left">Prioritäten</th>
-                <th class="px-3 py-2 text-left">Buchungen</th>
+                <th class="px-3 py-2 text-left">Vorträge</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -57,12 +57,23 @@
                   </ul>
                 </td>
                 <td class="px-3 py-2 text-gray-500">
-                  <span v-if="!zuweisungenByTeilnehmer[t.id] || zuweisungenByTeilnehmer[t.id].length === 0">–</span>
-                  <ul v-else class="space-y-0.5">
-                    <li v-for="(z, idx) in zuweisungenByTeilnehmer[t.id]" :key="idx">
-                      {{ z.vortragTitel }} ({{ formatTime(z.slotBeginn) }}–{{ formatTime(z.slotEnde) }}, {{ z.raumName }})
-                    </li>
-                  </ul>
+                  <span v-if="!teilnehmerVortraegeByTeilnehmer[t.id] || teilnehmerVortraegeByTeilnehmer[t.id].length === 0">–</span>
+                  <table v-else class="text-[10px]">
+                    <thead>
+                      <tr class="text-left text-gray-400">
+                        <th class="pr-2 font-medium">Vorträge</th>
+                        <th class="pr-2 font-medium">Prio</th>
+                        <th class="font-medium">besucht</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(v, idx) in teilnehmerVortraegeByTeilnehmer[t.id]" :key="idx">
+                        <td class="pr-2">{{ v.vortragTitel }}</td>
+                        <td class="pr-2">{{ v.prioAnzeige }}</td>
+                        <td>{{ v.besuchtAnzeige }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </td>
               </tr>
             </tbody>
@@ -83,7 +94,7 @@ const veranstaltungen = ref([]);
 const selectedVid = ref(null);
 const teilnehmer = ref([]);
 const verfuegbarkeiten = ref([]);
-const zuweisungenByTeilnehmer = ref({});
+const teilnehmerVortraegeByTeilnehmer = ref({});
 const slots = ref([]);
 const vortraege = ref([]);
 
@@ -130,16 +141,16 @@ const formatTime = (d) => d ? new Date(d).toLocaleTimeString('de-DE', { hour: '2
 
 const loadVeranstaltungsDaten = async (vid) => {
   if (!vid) return;
-  const [teilnehmerRes, verfuegbarkeitenRes, zuweisungenRes, slotsRes, vortraegeRes] = await Promise.all([
+  const [teilnehmerRes, verfuegbarkeitenRes, teilnehmerVortraegeRes, slotsRes, vortraegeRes] = await Promise.all([
     api.get(`/api/betrachter/veranstaltungen/${vid}/teilnehmer`),
     api.get(`/api/betrachter/veranstaltungen/${vid}/verfuegbarkeiten`),
-    api.get(`/api/betrachter/veranstaltungen/${vid}/zuweisungen`),
+    api.get(`/api/betrachter/veranstaltungen/${vid}/teilnehmer-vortraege`),
     api.get('/api/slots'),
     api.get(`/api/betrachter/veranstaltungen/${vid}/vortraege`),
   ]);
   teilnehmer.value = teilnehmerRes.data;
   verfuegbarkeiten.value = verfuegbarkeitenRes.data;
-  zuweisungenByTeilnehmer.value = zuweisungenRes.data;
+  teilnehmerVortraegeByTeilnehmer.value = teilnehmerVortraegeRes.data;
   slots.value = slotsRes.data;
   vortraege.value = vortraegeRes.data;
 };
