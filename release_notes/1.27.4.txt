@@ -1,0 +1,79 @@
+Release Notes 1.27.4
+Released: 2026-09-17
+
+Changes:
+
+- Release-Notes fuer 1.27.3 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.27.4-SNAPSHOT)
+
+- Konfigurierbare Passwort-Richtlinien je Veranstaltung und Rolle
+  * Passwortrichtlinien: Domänenmodell, Migration und Service
+  Neue Entity Passwortrichtlinie je (Veranstaltung, Rolle) mit konfigurierbarer
+  Mindest-/Maximallänge, Zeichenklassen-Anforderungen und einem "nur Ziffern"-PIN-Modus. Ist
+  für ein (Veranstaltung, Rolle)-Paar nichts konfiguriert, gilt Passwortrichtlinie.STANDARD
+  (identisch zur heutigen einzigen realm-weiten Keycloak-Policy) - reines Opt-in-Feature ohne
+  Verhaltensänderung für bestehende Veranstaltungen.
+  PasswortrichtlinieService kapselt CRUD sowie validate(), das eine Richtlinie für
+  (Veranstaltung, Nutzerrolle) auflöst und ein Passwort dagegen prüft - Basis für die
+  Durchsetzung in den admin-getriebenen Passwort-Setz-Stellen (Einzel-Reset,
+  ZIP-Bulk-Generierung), die in den nächsten Commits angebunden werden. Deckt bewusst nicht
+  Keycloaks eigenen Self-Service-Flow ab, der weiterhin der realm-weiten Policy unterliegt.
+  Refs #741
+  * Passwortrichtlinien: REST-Endpunkte, Autorisierung und Durchsetzung beim Einzel-Reset
+  Neue CRUD-Endpunkte unter /api/organisator/veranstaltungen/{vid}/passwortrichtlinien(/{rolle})
+  - editierbar nur von einem Administrator (global) oder dem Organisator der jeweiligen
+  Veranstaltung. Da @RolesAllowed keinen Veranstaltungsbezug ausdrücken kann, prüft ein neuer
+  lokaler Check (darfPasswortrichtlinieBearbeiten) das explizit im Methodenkörper - alle
+  übrigen Organisator-Endpunkte bleiben unverändert global.
+  OrganisatorService.resetPassword bekommt eine vid und validiert das neue Passwort jetzt
+  gegen die für (Veranstaltung, Rolle) konfigurierte Richtlinie statt nur gegen den
+  bisherigen schwachen length()<8-Check. Endpunkt entsprechend zu
+  /veranstaltungen/{vid}/nutzer/{id}/reset-password verschoben, Frontend-Aufruf angepasst
+  (selectedVid war am Aufrufort bereits im Scope vorhanden).
+  Refs #741
+  * Passwortrichtlinien: Durchsetzung bei der ZIP-Bulk-Generierung
+  PasswordGenerator bekommt einen neuen, richtlinien-bewussten generate(Passwortrichtlinie)-
+  Overload, der Mindest-/Maximallänge, geforderte Zeichenklassen und den Nur-Ziffern-PIN-Modus
+  garantiert erfüllt (anders als die bestehenden generate()/generate(int)-Methoden, die zwar
+  ein reiches Alphabet nutzen, aber keine Zeichenklasse explizit garantieren - bleiben
+  unverändert).
+  TeilnehmerPasswortZipService löst vor der Bulk-Generierung die für (Veranstaltung,
+  TEILNEHMER) konfigurierte Richtlinie auf und generiert damit konforme Passwörter statt des
+  bisherigen festen Alphabets.
+  Refs #741
+  * Passwortrichtlinien: Verwaltungs-UI je Veranstaltung
+  Neue Subtabelle "Passwortrichtlinien" im Veranstaltungen-Tab (analog zu Gruppenkategorien):
+  zeigt für alle 5 Rollen Standard oder eine konfigurierte Abweichung, mit Bearbeiten-/
+  Zurücksetzen-Aktionen. Der Editor bietet zwei Schnellwahl-Buttons (Standard, Junior-PIN),
+  die die strukturierten Felder (Mindest-/Maximallänge, Zeichenklassen, Nur-Ziffern-Modus)
+  vorbefüllen, plus manuelle Feinjustierung.
+  Refs #741
+  * Passwortrichtlinien: Frontend-Früh-Validierung an konfigurierte Richtlinie anbinden
+  PasswordResetModal.vue lädt beim Öffnen die für (Veranstaltung, Zielrolle) konfigurierte
+  Passwortrichtlinie und validiert dagegen, statt gegen die bisher hartkodierte "Standard"-
+  Regex - Hinweistext und Compliance-Check passen sich damit z.B. an eine für Teilnehmer
+  konfigurierte Junior-PIN-Regel an. Fällt ohne vid/Richtlinie auf dieselbe Standard-Regel
+  zurück wie der Server (Passwortrichtlinie.STANDARD).
+  Refs #741
+  * Passwortrichtlinien: Keycloak-Realm-Policy auf niedrigen Sockel absenken
+  Manuelle Verifikation gegen einen echten Dev-Keycloak zeigte einen Denkfehler: Keycloak setzt
+  seine realm-weite Passwort-Policy für JEDEN Credential-Aufruf durch, auch admin-gesetzte
+  (Einzel-Reset, ZIP-Bulk) - nicht nur für Self-Service. Eine schwächere Rollen-Richtlinie (z.B.
+  die 6-stellige Teilnehmer-PIN) wurde dadurch von der neuen App-Validierung akzeptiert, aber
+  anschließend von Keycloak selbst zurückgewiesen.
+  Keycloaks realm-weite Policy wird daher auf einen niedrigen Sockel (nur Mindestlänge 6)
+  abgesenkt - die eigentliche, differenzierte Stärke für admin-gesetzte Passwörter erzwingt
+  vollständig PasswortrichtlinieService, bevor ein Passwort überhaupt bei Keycloak ankommt.
+  Keycloaks eigener Self-Service-Flow ("Passwort vergessen") unterliegt fortan nur noch diesem
+  niedrigeren Sockel, für alle Rollen - ein bewusst in Kauf genommener Nebeneffekt, da Keycloak
+  keine rollen-/veranstaltungsabhängige Policy kennt.
+  PasswortrichtlinieService.save() validiert dementsprechend jetzt gegen diesen Keycloak-Sockel
+  (mind. 6) statt gegen die ursprüngliche, zu niedrige Grenze von 1. Dokumentation
+  (CLAUDE.md/AGENTS.md/Benutzerhandbuch-Admin.adoc) und Fehlermeldungen entsprechend
+  aktualisiert.
+  Refs #741
+  ---------
+
+- Release 1.27.4
+
