@@ -49,8 +49,12 @@
                   <XIcon v-else class="w-3.5 h-3.5 inline text-gray-300" />
                 </td>
                 <td class="px-3 py-2 text-gray-500">
-                  <span v-if="!t.prioritaeten || t.prioritaeten.length === 0">–</span>
-                  <span v-else>{{ t.prioritaeten.map(p => `#${p.vortragId}: ${p.prioWert}`).join(', ') }}</span>
+                  <span v-if="sortiertePrioritaeten(t).length === 0">–</span>
+                  <ul v-else class="space-y-0.5">
+                    <li v-for="p in sortiertePrioritaeten(t)" :key="p.vortragId">
+                      {{ kurzerVortragTitel(p.vortragId) }}: {{ p.prioWert }}
+                    </li>
+                  </ul>
                 </td>
                 <td class="px-3 py-2 text-gray-500">
                   <span v-if="!zuweisungenByTeilnehmer[t.id] || zuweisungenByTeilnehmer[t.id].length === 0">–</span>
@@ -81,6 +85,7 @@ const teilnehmer = ref([]);
 const verfuegbarkeiten = ref([]);
 const zuweisungenByTeilnehmer = ref({});
 const slots = ref([]);
+const vortraege = ref([]);
 
 const selectedVeranstaltung = computed(() => veranstaltungen.value.find(v => v.id === selectedVid.value) ?? null);
 const sortedSlots = computed(() =>
@@ -91,6 +96,25 @@ const sortedSlots = computed(() =>
 
 const alleGruppenwerte = (t) =>
   Object.keys(t?.gruppenwerteByKategorie || {}).flatMap(name => getGruppenkategorieWerte(t, name));
+
+const ANZAHL_TITELWOERTER = 4;
+const vortragTitelById = computed(() => {
+  const map = {};
+  for (const v of vortraege.value) {
+    map[v.id] = v.titel;
+  }
+  return map;
+});
+const kurzerVortragTitel = (vortragId) => {
+  const titel = vortragTitelById.value[vortragId];
+  if (!titel) return `#${vortragId}`;
+  const woerter = titel.split(/\s+/);
+  return woerter.length > ANZAHL_TITELWOERTER
+    ? woerter.slice(0, ANZAHL_TITELWOERTER).join(' ') + '…'
+    : titel;
+};
+const sortiertePrioritaeten = (t) =>
+  [...(t.prioritaeten || [])].sort((a, b) => b.prioWert - a.prioWert);
 
 const verfuegbarkeitByTeilnehmer = computed(() => {
   const map = {};
@@ -106,16 +130,18 @@ const formatTime = (d) => d ? new Date(d).toLocaleTimeString('de-DE', { hour: '2
 
 const loadVeranstaltungsDaten = async (vid) => {
   if (!vid) return;
-  const [teilnehmerRes, verfuegbarkeitenRes, zuweisungenRes, slotsRes] = await Promise.all([
+  const [teilnehmerRes, verfuegbarkeitenRes, zuweisungenRes, slotsRes, vortraegeRes] = await Promise.all([
     api.get(`/api/betrachter/veranstaltungen/${vid}/teilnehmer`),
     api.get(`/api/betrachter/veranstaltungen/${vid}/verfuegbarkeiten`),
     api.get(`/api/betrachter/veranstaltungen/${vid}/zuweisungen`),
     api.get('/api/slots'),
+    api.get(`/api/betrachter/veranstaltungen/${vid}/vortraege`),
   ]);
   teilnehmer.value = teilnehmerRes.data;
   verfuegbarkeiten.value = verfuegbarkeitenRes.data;
   zuweisungenByTeilnehmer.value = zuweisungenRes.data;
   slots.value = slotsRes.data;
+  vortraege.value = vortraegeRes.data;
 };
 
 watch(selectedVid, (vid) => { loadVeranstaltungsDaten(vid); });

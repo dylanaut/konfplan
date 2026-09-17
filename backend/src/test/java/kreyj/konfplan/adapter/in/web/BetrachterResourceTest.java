@@ -11,8 +11,10 @@ import jakarta.transaction.Transactional;
 import kreyj.konfplan.persistence.Betrachter;
 import kreyj.konfplan.persistence.Gruppenkategorie;
 import kreyj.konfplan.persistence.GruppenkategorieWert;
+import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Wahlvortrag;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +35,7 @@ class BetrachterResourceTest extends DatabaseCleaner {
     Long eigeneVeranstaltungId;
     Long fremdeVeranstaltungId;
     Long sichtbarerTeilnehmerId;
+    Long wahlvortragId;
 
     @BeforeEach
     @Transactional
@@ -70,6 +73,13 @@ class BetrachterResourceTest extends DatabaseCleaner {
         sichtbar.addVeranstaltung(eigene);
         sichtbar.addGruppenwert(gruppeA);
         sichtbarerTeilnehmerId = sichtbar.getId();
+
+        Referent referent = new Referent();
+        referent.assignLoginName("referent.vortraege@test.de");
+        referent.setEmail("referent.vortraege@test.de");
+        referent.persist();
+        Wahlvortrag wahlvortrag = Wahlvortrag.create("Einführung in die Robotik", "Inhalt", referent, false, 1, eigene);
+        wahlvortragId = wahlvortrag.getId();
 
         Teilnehmer unsichtbar = new Teilnehmer();
         unsichtbar.assignLoginName("tn-unsichtbar@test.de");
@@ -136,5 +146,29 @@ class BetrachterResourceTest extends DatabaseCleaner {
             .when().get("/veranstaltungen/{vid}/teilnehmer", eigeneVeranstaltungId)
             .then()
             .statusCode(FORBIDDEN.getStatusCode());
+    }
+
+
+    @Test
+    @TestSecurity(user = "betrachter.rest@test.de", roles = "BETRACHTER")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "betrachter.rest@test.de")})
+    void getVortraege_liefertTitelDerWahlvortraege() {
+        given()
+            .when().get("/veranstaltungen/{vid}/vortraege", eigeneVeranstaltungId)
+            .then()
+            .statusCode(OK.getStatusCode())
+            .body("id", contains(wahlvortragId.intValue()))
+            .body("titel", contains("Einführung in die Robotik"));
+    }
+
+
+    @Test
+    @TestSecurity(user = "betrachter.rest@test.de", roles = "BETRACHTER")
+    @OidcSecurity(claims = {@Claim(key = "preferred_username", value = "betrachter.rest@test.de")})
+    void getVortraege_verweigertZugriffAufFremdeVeranstaltung() {
+        given()
+            .when().get("/veranstaltungen/{vid}/vortraege", fremdeVeranstaltungId)
+            .then()
+            .statusCode(NOT_FOUND.getStatusCode());
     }
 }

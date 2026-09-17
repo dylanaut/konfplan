@@ -11,11 +11,13 @@ import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.BetrachterVeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerVerfuegbarkeitDto;
+import kreyj.konfplan.adapter.in.web.dto.VortragTitelDto;
 import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
 import kreyj.konfplan.domain.service.BetrachterService;
 import kreyj.konfplan.persistence.Betrachter;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Veranstaltung;
+import kreyj.konfplan.persistence.Wahlvortrag;
 import kreyj.konfplan.util.JwtHelper;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -102,6 +104,21 @@ public class BetrachterResource {
         Betrachter betrachter = aktuellerBetrachter();
         List<NutzerVerfuegbarkeitDto> verfuegbarkeiten = betrachterService.getVerfuegbarkeiten(betrachter, veranstaltung);
         return Response.ok(verfuegbarkeiten).build();
+    }
+
+
+    @GET
+    @Path("/veranstaltungen/{vid}/vortraege")
+    @Operation(summary = "Titel der Wahlvorträge abrufen (für die Anzeige der Prioritäten)")
+    public Response getVortraege(@PathParam("vid") Long vid) {
+        Veranstaltung veranstaltung = veranstaltungFuerBetrachter(vid);
+        if (null == veranstaltung) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        List<VortragTitelDto> vortraege = Wahlvortrag.<Wahlvortrag>find("veranstaltung", veranstaltung).stream()
+            .map(v -> new VortragTitelDto(v.getId(), v.getTitel()))
+            .toList();
+        return Response.ok(vortraege).build();
     }
 
 
