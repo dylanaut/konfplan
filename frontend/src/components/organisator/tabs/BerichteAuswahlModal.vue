@@ -42,6 +42,7 @@ const reports = [
   { routeName: 'TeilnehmerZuordnungen', label: 'Teilnehmer-Zuordnungen' },
   { routeName: 'Raumschilder', label: 'Raumbelegungen' },
   { routeName: 'Anwesenheiten', label: 'Anwesenheiten' },
+  { routeName: 'AnwesenheitenAuswertung', label: 'Anwesenheiten-Auswertung' },
   { routeName: 'LaufzettelAlle', label: 'Laufzettel für Teilnehmer' },
   { routeName: 'LaufzettelAlleReferenten', label: 'Laufzettel für Referenten' },
   { routeName: 'FreieSlotsReferenten', label: 'Freie Slots (Referenten)' },

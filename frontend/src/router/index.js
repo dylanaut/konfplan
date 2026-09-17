@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 
 const Redirecting = () => import('../views/Redirecting.vue');
+const CheckinView = () => import('../views/CheckinView.vue');
 const TeilnehmerDashboard = () => import('../views/TeilnehmerDashboard.vue');
 const ReferentDashboard = () => import('../views/ReferentDashboard.vue');
 const OrganisatorDashboard = () => import('../views/OrganisatorDashboard.vue');
@@ -19,6 +20,7 @@ const AbstimmungsfragebogenAlle = () => import('../views/report/Abstimmungsfrage
 const LaufzettelAlleReferenten = () => import('../views/report/LaufzettelAlleReferenten.vue');
 const Stundenplan = () => import('../views/report/Stundenplan.vue');
 const Anwesenheiten = () => import('../views/report/Anwesenheiten.vue');
+const AnwesenheitenAuswertung = () => import('../views/report/AnwesenheitenAuswertung.vue');
 const WahlvortraegeUebersicht = () => import('../views/report/WahlvortraegeUebersicht.vue');
 const VortragAnmeldungen = () => import('../views/report/VortragAnmeldungen.vue');
 const WahlvortraegeAnmeldungenUebersicht = () => import('../views/report/WahlvortraegeAnmeldungenUebersicht.vue');
@@ -34,6 +36,12 @@ const routes = [
         path: '/teilnehmer',
         name: 'Teilnehmer',
         component: TeilnehmerDashboard,
+        meta: { requiresAuth: true, role: 'TEILNEHMER' }
+    },
+    {
+        path: '/checkin/:vid/:raumId',
+        name: 'Checkin',
+        component: CheckinView,
         meta: { requiresAuth: true, role: 'TEILNEHMER' }
     },
     {
@@ -131,6 +139,12 @@ const routes = [
         path: '/organisator/veranstaltung/:vid/anwesenheiten',
         name: 'Anwesenheiten',
         component: Anwesenheiten,
+        meta: { requiresAuth: true, role: 'ORGANISATOR' }
+    },
+    {
+        path: '/organisator/veranstaltung/:vid/anwesenheiten-auswertung',
+        name: 'AnwesenheitenAuswertung',
+        component: AnwesenheitenAuswertung,
         meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {

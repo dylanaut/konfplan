@@ -25,6 +25,8 @@
           <div class="card h-100">
             <div class="card-header text-center">
               <h2>{{ raumLabel(raum) }} <small class="text-muted">(Kapazität: {{ raum.kapazitaet }})</small></h2>
+              <img v-if="qrCodes[raum.id]" :src="qrCodes[raum.id]" alt="QR-Code zum Einchecken" class="qr-code" />
+              <p class="small text-muted mb-0">Anwesenheit per QR-Code-Scan registrieren</p>
             </div>
             <div class="card-body">
               <table class="table table-striped">
@@ -65,6 +67,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
+import QRCode from 'qrcode';
 import api from '../../api/axios';
 import VeranstaltungHeader from '../../components/VeranstaltungHeader.vue';
 import ReportFooter from '../../components/ReportFooter.vue';
@@ -74,6 +77,7 @@ const route = useRoute();
 const reportData = ref({ veranstaltung: {}, raumplan: {}, raeume: [], slots: [] });
 const loading = ref(true);
 const error = ref(null);
+const qrCodes = ref({});
 
 const handlePrint = () => window.print();
 
@@ -100,6 +104,11 @@ onMounted(async () => {
     const response = await api.get(url);
     reportData.value = response.data;
     document.title = `${response.data.veranstaltung.name} - Raumbelegungen`;
+
+    for (const raum of response.data.raeume || []) {
+      const checkinUrl = `${window.location.origin}/checkin/${veranstaltungId}/${raum.id}`;
+      qrCodes.value[raum.id] = await QRCode.toDataURL(checkinUrl, { width: 160, margin: 1 });
+    }
   } catch (err) {
     error.value = 'Fehler beim Laden der Daten: ' + (err.response?.data?.message || err.message);
   } finally {
@@ -154,5 +163,11 @@ const formatSlot = (slot) => {
 
 .print-only {
   display: none;
+}
+
+.qr-code {
+  width: 120px;
+  height: 120px;
+  margin: 0.5rem auto;
 }
 </style>

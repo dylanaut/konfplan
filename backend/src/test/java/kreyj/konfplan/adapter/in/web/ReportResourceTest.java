@@ -11,6 +11,7 @@ import io.quarkus.test.security.TestSecurity;
 import jakarta.ws.rs.core.MediaType;
 import kreyj.konfplan.adapter.in.web.ReportResource;
 import kreyj.konfplan.adapter.in.web.dto.templating.TeilnehmerReport;
+import kreyj.konfplan.domain.service.AnwesenheitService;
 import kreyj.konfplan.domain.service.DashboardService;
 import kreyj.konfplan.domain.service.PlanService;
 import kreyj.konfplan.persistence.Prioritaet;
@@ -44,6 +45,9 @@ class ReportResourceTest {
 
     @InjectMock
     DashboardService dashboardService;
+
+    @InjectMock
+    AnwesenheitService anwesenheitService;
 
     private Veranstaltung mockVeranstaltung;
     private Teilnehmer mockTeilnehmer;
@@ -261,6 +265,64 @@ class ReportResourceTest {
     void getUebersichtRaeumeData_asNonAdmin_shouldBeForbidden() {
         given()
                 .when().get("1/raeume-data")
+                .then()
+                .statusCode(403);
+    }
+
+
+    // --- Anwesenheiten-Auswertung ---
+
+
+    @Test
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
+    void getAnwesenheitenAuswertungData_asAdmin_shouldSucceed() {
+        PanacheMock.mock(Veranstaltung.class);
+        Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
+        Mockito.when(anwesenheitService.getAuswertung(any(), any())).thenReturn(Collections.emptyList());
+
+        given()
+                .when().get("1/anwesenheiten-auswertung-data")
+                .then()
+                .statusCode(200)
+                .contentType(MediaType.APPLICATION_JSON);
+    }
+
+
+    @Test
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
+    void getAnwesenheitenAuswertungData_mitErgebnisId_wirdDurchgereicht() {
+        PanacheMock.mock(Veranstaltung.class);
+        Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
+        Mockito.when(anwesenheitService.getAuswertung(any(), any())).thenReturn(Collections.emptyList());
+
+        given()
+                .queryParam("ergebnisId", 7L)
+                .when().get("1/anwesenheiten-auswertung-data")
+                .then()
+                .statusCode(200);
+
+        Mockito.verify(anwesenheitService).getAuswertung(mockVeranstaltung, 7L);
+    }
+
+
+    @Test
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
+    void getAnwesenheitenAuswertungData_unbekannteVeranstaltung_liefert404() {
+        PanacheMock.mock(Veranstaltung.class);
+        Mockito.when(Veranstaltung.findById(999L)).thenReturn(null);
+
+        given()
+                .when().get("999/anwesenheiten-auswertung-data")
+                .then()
+                .statusCode(404);
+    }
+
+
+    @Test
+    @TestSecurity(user = "testUser", roles = "TEILNEHMER")
+    void getAnwesenheitenAuswertungData_asNonAdmin_shouldBeForbidden() {
+        given()
+                .when().get("1/anwesenheiten-auswertung-data")
                 .then()
                 .statusCode(403);
     }

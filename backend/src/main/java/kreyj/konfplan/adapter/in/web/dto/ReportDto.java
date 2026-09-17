@@ -48,6 +48,16 @@ public class ReportDto {
         }
     }
 
+    public static class AnwesenheitenAuswertungDto {
+        public final VeranstaltungDto veranstaltung;
+        public final List<AnwesenheitAuswertungEintragDto> auswertung;
+
+        public AnwesenheitenAuswertungDto(Veranstaltung veranstaltung, List<AnwesenheitAuswertungEintragDto> auswertung) {
+            this.veranstaltung = VeranstaltungDto.from(veranstaltung);
+            this.auswertung = auswertung;
+        }
+    }
+
     public static class RaumschilderDto {
         public final VeranstaltungDto veranstaltung;
         public final Map<Long, Map<Long, RaumplanEintragDto>> raumplan;

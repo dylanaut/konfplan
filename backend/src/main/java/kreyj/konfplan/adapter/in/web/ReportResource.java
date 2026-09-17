@@ -16,6 +16,7 @@ import kreyj.konfplan.adapter.in.web.dto.ReferentVortragDto;
 import kreyj.konfplan.adapter.in.web.dto.ReportDto;
 import kreyj.konfplan.adapter.in.web.dto.SlotDto;
 import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
+import kreyj.konfplan.domain.service.AnwesenheitService;
 import kreyj.konfplan.domain.service.DashboardService;
 import kreyj.konfplan.domain.service.PlanService;
 import kreyj.konfplan.persistence.IdEntity;
@@ -43,12 +44,14 @@ public class ReportResource {
 
     private final DashboardService dashboardService;
     private final PlanService planService;
+    private final AnwesenheitService anwesenheitService;
     private final JsonWebToken jwt;
 
     @SuppressWarnings("CdiInjectionPointsInspection")
-    public ReportResource(DashboardService dashboardService, PlanService planService, JsonWebToken jwt) {
+    public ReportResource(DashboardService dashboardService, PlanService planService, AnwesenheitService anwesenheitService, JsonWebToken jwt) {
         this.dashboardService = dashboardService;
         this.planService = planService;
+        this.anwesenheitService = anwesenheitService;
         this.jwt = jwt;
     }
 
@@ -146,6 +149,20 @@ public class ReportResource {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         return Response.ok(new ReportDto.UebersichtRaeumeDto(veranstaltung, planService.getDetaillierterPlan(veranstaltung, ergebnisId))).build();
+    }
+
+
+    @GET
+    @Path("/{vid}/anwesenheiten-auswertung-data")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
+    @Operation(summary = "Daten für die Anwesenheiten-Auswertung (JSON)")
+    public Response getAnwesenheitenAuswertungData(@PathParam("vid") Long vid, @QueryParam("ergebnisId") Long ergebnisId) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(new ReportDto.AnwesenheitenAuswertungDto(veranstaltung, anwesenheitService.getAuswertung(veranstaltung, ergebnisId))).build();
     }
 
 
