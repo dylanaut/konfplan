@@ -20,6 +20,7 @@ const AbstimmungsfragebogenAlle = () => import('../views/report/Abstimmungsfrage
 const LaufzettelAlleReferenten = () => import('../views/report/LaufzettelAlleReferenten.vue');
 const Stundenplan = () => import('../views/report/Stundenplan.vue');
 const Anwesenheiten = () => import('../views/report/Anwesenheiten.vue');
+const AnwesenheitenAuswertung = () => import('../views/report/AnwesenheitenAuswertung.vue');
 const WahlvortraegeUebersicht = () => import('../views/report/WahlvortraegeUebersicht.vue');
 const VortragAnmeldungen = () => import('../views/report/VortragAnmeldungen.vue');
 const WahlvortraegeAnmeldungenUebersicht = () => import('../views/report/WahlvortraegeAnmeldungenUebersicht.vue');
@@ -138,6 +139,12 @@ const routes = [
         path: '/organisator/veranstaltung/:vid/anwesenheiten',
         name: 'Anwesenheiten',
         component: Anwesenheiten,
+        meta: { requiresAuth: true, role: 'ORGANISATOR' }
+    },
+    {
+        path: '/organisator/veranstaltung/:vid/anwesenheiten-auswertung',
+        name: 'AnwesenheitenAuswertung',
+        component: AnwesenheitenAuswertung,
         meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {
