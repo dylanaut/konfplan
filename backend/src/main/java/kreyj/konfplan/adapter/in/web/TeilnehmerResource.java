@@ -23,9 +23,11 @@ import kreyj.konfplan.adapter.in.web.dto.TeilnehmerVeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
 import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
 import kreyj.konfplan.application.port.in.TeilnehmerServiceInterface;
+import kreyj.konfplan.domain.service.AnwesenheitService;
 import kreyj.konfplan.domain.service.PlanService;
 import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
+import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.util.JwtHelper;
@@ -48,12 +50,15 @@ public class TeilnehmerResource {
     private final JsonWebToken jwt;
     private final TeilnehmerServiceInterface teilnehmerService;
     private final PlanService planService;
+    private final AnwesenheitService anwesenheitService;
 
     @SuppressWarnings("CdiInjectionPointsInspection")
-    public TeilnehmerResource(JsonWebToken jwt, TeilnehmerServiceInterface teilnehmerService, PlanService planService) {
+    public TeilnehmerResource(JsonWebToken jwt, TeilnehmerServiceInterface teilnehmerService, PlanService planService,
+                              AnwesenheitService anwesenheitService) {
         this.jwt = jwt;
         this.teilnehmerService = teilnehmerService;
         this.planService = planService;
+        this.anwesenheitService = anwesenheitService;
     }
 
 
@@ -244,5 +249,33 @@ public class TeilnehmerResource {
     public Response updateVerfuegbarkeit(@PathParam("vid") Long vid, @RequestBody(description = "Die Verfügbarkeitsdaten") NutzerVerfuegbarkeitDto dto) {
         teilnehmerService.updateVerfuegbarkeit(vid, dto, JwtHelper.getUserPrincipalName(jwt));
         return Response.ok().build();
+    }
+
+
+    /**
+     * Anwesenheit per QR-Code-Scan registrieren (siehe #735): der QR-Code kodiert nur
+     * Veranstaltung+Raum, der aktuell aktive Slot wird serverseitig anhand der Uhrzeit bestimmt
+     * ({@link AnwesenheitService#checkIn}) - unabhängig davon, ob der Teilnehmer für den dort
+     * laufenden Vortrag überhaupt eingeplant war (das prüft erst die Auswertung).
+     */
+    @POST
+    @Path("/veranstaltungen/{vid}/anwesenheit")
+    @RolesAllowed("TEILNEHMER")
+    @Operation(summary = "Anwesenheit per QR-Code-Scan registrieren")
+    public Response checkIn(@PathParam("vid") Long vid, @QueryParam("raumId") Long raumId) {
+        Nutzer nutzer = Nutzer.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
+        if (!(nutzer instanceof Teilnehmer teilnehmer)) {
+            throw new WebApplicationException("Nutzer ist kein Teilnehmer", FORBIDDEN.getStatusCode());
+        }
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        Raum raum = Raum.findById(raumId);
+        if (null == veranstaltung || null == raum || !veranstaltung.getRaeume().contains(raum)) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        if (!teilnehmer.getVeranstaltungen().contains(veranstaltung)) {
+            return Response.status(FORBIDDEN.getStatusCode()).build();
+        }
+
+        return Response.ok(anwesenheitService.checkIn(teilnehmer, veranstaltung, raum)).build();
     }
 }
