@@ -49,6 +49,7 @@ import {
   Clock as ClockIcon,
   CalendarClock as CalendarClockIcon,
   ClipboardCheck as ClipboardCheckIcon,
+  ChartBar as ChartBarIcon,
   ScrollText as ScrollTextIcon,
   MessageSquare as MessageSquareIcon,
   KeyRound as KeyRoundIcon,
@@ -67,6 +68,7 @@ const tabIcons = {
   betrachter: EyeIcon,
   vortraege: BookOpenIcon,
   slots: ClockIcon,
+  anmeldungen: ChartBarIcon,
   planung: CalendarClockIcon,
   ergebnisse: ClipboardCheckIcon,
   protokoll: ScrollTextIcon,
@@ -87,7 +89,7 @@ const emit = defineEmits(['tab-click']);
 // ueberhaupt zur Auswahl stehen haengt weiterhin von OrganisatorDashboard.vue's Veranstaltungs-Logik ab).
 const groups = [
   { name: 'Stammdaten', tabs: ['veranstaltungen', 'veranstaltungImport', 'gebaeude', 'organisatoren', 'teilnehmer', 'referenten', 'betrachter', 'vortraege'] },
-  { name: 'Planung', tabs: ['slots', 'planung', 'ergebnisse'] },
+  { name: 'Planung', tabs: ['slots', 'anmeldungen', 'planung', 'ergebnisse'] },
   { name: 'Administration', tabs: ['onboarding', 'protokoll', 'feedback', 'nachrichten', 'datenbankExport'] },
 ];
 

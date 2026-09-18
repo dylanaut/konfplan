@@ -10,6 +10,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.ws.rs.core.MediaType;
 import kreyj.konfplan.adapter.in.web.ReportResource;
+import kreyj.konfplan.adapter.in.web.dto.PlanQualitaetDto;
 import kreyj.konfplan.adapter.in.web.dto.templating.TeilnehmerReport;
 import kreyj.konfplan.domain.service.AnwesenheitService;
 import kreyj.konfplan.domain.service.DashboardService;
@@ -257,6 +258,49 @@ class ReportResourceTest {
                 .statusCode(200);
 
         Mockito.verify(planService).getDetaillierterPlan(mockVeranstaltung, 7L);
+    }
+
+
+    @Test
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
+    void getStatistikData_asAdmin_shouldSucceed() {
+        PanacheMock.mock(Veranstaltung.class);
+        Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
+        Mockito.when(planService.getPlanQualitaet(any(), any())).thenReturn(new PlanQualitaetDto(80, 12, 3, "Planerstellung abgeschlossen", false));
+
+        given()
+                .when().get("1/statistik-data")
+                .then()
+                .statusCode(200)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("qualitaet.guete", is(80));
+    }
+
+
+    @Test
+    @TestSecurity(user = "testAdmin", roles = "ORGANISATOR")
+    void getStatistikData_mitErgebnisId_wirdDurchgereicht() {
+        PanacheMock.mock(Veranstaltung.class);
+        Mockito.when(Veranstaltung.findById(1L)).thenReturn(mockVeranstaltung);
+        Mockito.when(planService.getPlanQualitaet(any(), any())).thenReturn(new PlanQualitaetDto(80, 12, 3, "Planerstellung abgeschlossen", false));
+
+        given()
+                .queryParam("ergebnisId", 7L)
+                .when().get("1/statistik-data")
+                .then()
+                .statusCode(200);
+
+        Mockito.verify(planService).getPlanQualitaet(mockVeranstaltung, 7L);
+    }
+
+
+    @Test
+    @TestSecurity(user = "testUser", roles = "TEILNEHMER")
+    void getStatistikData_asNonAdmin_shouldBeForbidden() {
+        given()
+                .when().get("1/statistik-data")
+                .then()
+                .statusCode(403);
     }
 
 
