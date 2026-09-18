@@ -24,7 +24,9 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -309,5 +311,61 @@ class KeycloakUserProvisioningServiceTest {
         assertThat(admin.getKeycloakId()).isEqualTo("nachgelegt-1");
         verify(roleScopeResource).remove(List.of(organisatorRole));
         verify(roleScopeResource).add(List.of(administratorRole));
+    }
+
+
+    @Test
+    void grantRealmRole_weistZusatzrolleAdditivZu_ohneVorhandeneRollenZuEntfernen() {
+        Organisator admin = admin();
+        admin.setKeycloakId("kc-id-1");
+
+        RolesResource rolesResource = mock(RolesResource.class);
+        when(realmResource.roles()).thenReturn(rolesResource);
+        RoleRepresentation referentRole = stubRole(rolesResource, "REFERENT");
+        RoleScopeResource roleScopeResource = stubUserRoleScope("kc-id-1");
+
+        service.grantRealmRole(admin, "REFERENT");
+
+        verify(roleScopeResource).add(List.of(referentRole));
+        verify(roleScopeResource, never()).remove(any());
+    }
+
+
+    @Test
+    void grantRealmRole_ohneKeycloakId_ueberspringtKeycloakSync() {
+        Organisator admin = admin();
+        assertThat(admin.getKeycloakId()).isNull();
+
+        service.grantRealmRole(admin, "REFERENT");
+
+        verify(usersResource, never()).get(anyString());
+    }
+
+
+    @Test
+    void revokeRealmRole_entferntNurDieZusatzrolle_ohneAndereRollenAnzutasten() {
+        Organisator admin = admin();
+        admin.setKeycloakId("kc-id-1");
+
+        RolesResource rolesResource = mock(RolesResource.class);
+        when(realmResource.roles()).thenReturn(rolesResource);
+        RoleRepresentation referentRole = stubRole(rolesResource, "REFERENT");
+        RoleScopeResource roleScopeResource = stubUserRoleScope("kc-id-1");
+
+        service.revokeRealmRole(admin, "REFERENT");
+
+        verify(roleScopeResource).remove(List.of(referentRole));
+        verify(roleScopeResource, never()).add(any());
+    }
+
+
+    @Test
+    void revokeRealmRole_ohneKeycloakId_ueberspringtKeycloakSync() {
+        Organisator admin = admin();
+        assertThat(admin.getKeycloakId()).isNull();
+
+        service.revokeRealmRole(admin, "REFERENT");
+
+        verify(usersResource, never()).get(anyString());
     }
 }

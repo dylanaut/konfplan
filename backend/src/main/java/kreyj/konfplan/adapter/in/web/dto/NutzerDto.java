@@ -29,6 +29,7 @@ public class NutzerDto extends AbstractVersionedDto {
     public String firstName;
     public String lastName;
     public String role;
+    public Set<String> zusatzRollen;
     public boolean isActive;
     public List<Long> veranstaltungIds;
 
@@ -95,6 +96,7 @@ public class NutzerDto extends AbstractVersionedDto {
         dto.firstName = u.getFirstName();
         dto.lastName = u.getLastName();
         dto.role = u.getRole();
+        dto.zusatzRollen = u.getZusatzRollen();
         dto.isActive = u.isActive();
         Set<Veranstaltung> veranstaltungen = u.getVeranstaltungen();
         dto.veranstaltungIds = null != veranstaltungen ? veranstaltungen.stream().map(IdEntity::getId).toList() : emptyList();

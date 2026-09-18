@@ -29,6 +29,10 @@ public interface OrganisatorServiceInterface {
 
     NutzerDto changeRole(Long id, String newRole);
 
+    NutzerDto grantZusatzrolle(Long targetId, String role, String callerLoginName);
+
+    NutzerDto revokeZusatzrolle(Long targetId, String role, String callerLoginName);
+
     void inviteUserToEvent(Long nutzerId, Long veranstaltungId);
 
     boolean deleteUser(Long id);

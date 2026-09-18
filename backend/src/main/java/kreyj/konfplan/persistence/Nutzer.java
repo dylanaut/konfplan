@@ -94,8 +94,11 @@ public abstract class Nutzer extends VersionedEntity {
      * BETRACHTER sind als Zusatzrolle vergebbar (DB-seitig per CHECK-Constraint in
      * V33__nutzer_zusatzrollen.sql erzwungen). Prüfung/Mutation ausschließlich über
      * {@link #hatRolle(String)}/{@link #addZusatzrolle(String)}/{@link #removeZusatzrolle(String)} -
-     * nie direkt über den Getter, um die Konsistenz mit Keycloak (siehe
-     * KeycloakUserProvisioningService#grantRealmRole) nicht zu gefährden.
+     * nie direkt über den Getter. Die Autorisierung (wer darf wem welche Zusatzrolle geben) liegt
+     * bewusst NICHT hier, sondern in {@code OrganisatorService#validateGrantMatrix} - die Mutatoren
+     * setzen nur die DB-Konsistenz voraus, dass der Aufrufer bereits geprüft hat, dass sowohl die
+     * Rolle erlaubt ist als auch parallel {@code KeycloakUserProvisioningService#grantRealmRole}/
+     * {@code #revokeRealmRole} aufgerufen wird, damit App-DB und Keycloak nicht divergieren.
      */
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "nutzer_zusatzrolle", joinColumns = @JoinColumn(name = "nutzer_id"))
@@ -117,7 +120,7 @@ public abstract class Nutzer extends VersionedEntity {
 
     @OneToMany(mappedBy = "referent", cascade = CascadeType.ALL, orphanRemoval = true)
     @Setter(AccessLevel.NONE)
-    private Set<Vortrag> vortraege = new HashSet<>();
+    Set<Vortrag> vortraege = new HashSet<>();
 
     // -------------------------------------------------------------------
     // Von Teilnehmer hochgezogen (siehe #751)
@@ -232,12 +235,12 @@ public abstract class Nutzer extends VersionedEntity {
     }
 
 
-    void addZusatzrolle(String rolle) {
+    public void addZusatzrolle(String rolle) {
         zusatzRollen.add(rolle);
     }
 
 
-    void removeZusatzrolle(String rolle) {
+    public void removeZusatzrolle(String rolle) {
         zusatzRollen.remove(rolle);
     }
 
