@@ -38,6 +38,7 @@ const router = useRouter();
 
 const reports = [
   { routeName: 'Stundenplan', label: 'Stundenplan' },
+  { routeName: 'Statistik', label: 'Statistik' },
   { routeName: 'Prioritaeten', label: 'Prioritäten Auswertung' },
   { routeName: 'TeilnehmerZuordnungen', label: 'Teilnehmer-Zuordnungen' },
   { routeName: 'Raumschilder', label: 'Raumbelegungen' },

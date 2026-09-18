@@ -106,33 +106,19 @@
       <p class="text-xs mt-1">Bitte erstellen Sie zuerst einen Plan im Tab "Planerstellung".</p>
     </div>
 
-    <!-- Planqualität -->
-    <div v-if="belegungsPlan && belegungsPlan.length > 0" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 no-print">
-      <h3 class="text-sm font-bold mb-3">Planqualität</h3>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-        <div class="p-3 bg-gray-50 rounded-lg">
-          <p class="text-gray-500">Güte</p>
-          <p class="font-semibold text-sm">{{ qualitaet.guete }}</p>
-        </div>
-        <div class="p-3 bg-gray-50 rounded-lg">
-          <p class="text-gray-500">Zuweisungen</p>
-          <p class="font-semibold text-sm">{{ qualitaet.zuweisungen }}</p>
-        </div>
-        <div class="p-3 bg-gray-50 rounded-lg">
-          <p class="text-gray-500">Raumwechsel</p>
-          <p class="font-semibold text-sm">{{ qualitaet.raumwechsel }}</p>
-        </div>
-        <div class="p-3 bg-gray-50 rounded-lg">
-          <p class="text-gray-500">Status</p>
-          <p class="font-semibold text-sm">{{ qualitaet.status }}</p>
-        </div>
-      </div>
-    </div>
-
     <!-- Artefakte -->
     <div v-if="belegungsPlan && belegungsPlan.length > 0" class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 no-print">
       <h3 class="text-sm font-bold mb-3">Berichte</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div class="flex items-center space-x-2">
+            <img src="/logo/konfplan-light_footer.svg" alt="Icon" class="w-5 h-5"/>
+            <span class="font-semibold">Statistik</span>
+          </div>
+          <div class="space-x-2">
+            <button @click="navigateToReport('Statistik')" class="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600">Anzeigen</button>
+          </div>
+        </div>
         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div class="flex items-center space-x-2">
             <img src="/logo/konfplan-light_footer.svg" alt="Icon" class="w-5 h-5"/>

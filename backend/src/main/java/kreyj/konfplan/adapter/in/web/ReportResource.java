@@ -153,6 +153,20 @@ public class ReportResource {
 
 
     @GET
+    @Path("/{vid}/statistik-data")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})
+    @Operation(summary = "Daten für die Planqualitäts-Statistik (JSON)")
+    public Response getStatistikData(@PathParam("vid") Long vid, @QueryParam("ergebnisId") Long ergebnisId) {
+        Veranstaltung veranstaltung = Veranstaltung.findById(vid);
+        if (null == veranstaltung) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        return Response.ok(new ReportDto.StatistikDto(veranstaltung, planService.getPlanQualitaet(veranstaltung, ergebnisId))).build();
+    }
+
+
+    @GET
     @Path("/{vid}/anwesenheiten-auswertung-data")
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})

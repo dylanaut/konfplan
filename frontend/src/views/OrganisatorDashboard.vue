@@ -276,6 +276,7 @@
 
 <script setup>
 import {computed, onMounted, onUnmounted, reactive, ref, nextTick} from 'vue';
+import { useRouter } from 'vue-router';
 import api from '../api/axios';
 import { extractErrorMessage } from '../utils/errorMessage';
 import {useEventContextStore} from '../stores/eventContext';
@@ -322,6 +323,7 @@ import PasswordResetModal from '../components/PasswordResetModal.vue';
 import GeneratePasswordsZipModal from '../components/GeneratePasswordsZipModal.vue';
 import MaintenanceAnnouncementModal from '../components/MaintenanceAnnouncementModal.vue';
 
+const router = useRouter();
 const eventContext = useEventContextStore();
 const availabilityStore = useAvailabilityStore();
 const unsavedChanges = useUnsavedChangesStore();
@@ -339,6 +341,7 @@ const tabLabels = {
   betrachter: 'Betrachter',
   vortraege: 'Vorträge',
   slots: 'Zeit-Slots',
+  anmeldungen: 'Anmeldungen',
   planung: 'Planerstellung',
   ergebnisse: 'Ergebnisse',
   nachrichten: 'Nachrichten',
@@ -409,7 +412,7 @@ const visibleTabs = computed(() => {
   const tabs = selectedVid.value ? ['organisatoren', 'gebaeude',
     'teilnehmer', 'referenten', 'betrachter', 'vortraege',
     'veranstaltungen', 'veranstaltungImport', 'datenbankExport', 'slots',
-    'planung', 'ergebnisse', 'nachrichten',
+    'anmeldungen', 'planung', 'ergebnisse', 'nachrichten',
     'protokoll', 'feedback', 'onboarding'] : ['organisatoren', 'gebaeude', 'referenten',
     'veranstaltungen', 'veranstaltungImport', 'datenbankExport',
     'protokoll', 'feedback', 'onboarding'];
@@ -637,6 +640,16 @@ const handleVeranstaltungSelection = (vid) => {
 };
 
 const handleTabClick = (tab) => {
+  // "anmeldungen" ist kein echter Dashboard-Tab, sondern oeffnet direkt den bestehenden
+  // Anmeldungen-Bericht (wie der gleichnamige Button im Vortraege-Tab) in einem neuen Tab -
+  // activeTab bleibt daher unveraendert.
+  if (tab === 'anmeldungen') {
+    if (selectedVid.value) {
+      const route = router.resolve({ name: 'WahlvortraegeAnmeldungen', params: { vid: selectedVid.value } });
+      window.open(route.href, '_blank');
+    }
+    return;
+  }
   activeTab.value = tab;
   if (tab === 'protokoll') {
     refreshProtokolle();

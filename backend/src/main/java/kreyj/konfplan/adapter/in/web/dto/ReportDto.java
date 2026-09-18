@@ -48,6 +48,16 @@ public class ReportDto {
         }
     }
 
+    public static class StatistikDto {
+        public final VeranstaltungDto veranstaltung;
+        public final PlanQualitaetDto qualitaet;
+
+        public StatistikDto(Veranstaltung veranstaltung, PlanQualitaetDto qualitaet) {
+            this.veranstaltung = VeranstaltungDto.from(veranstaltung);
+            this.qualitaet = qualitaet;
+        }
+    }
+
     public static class AnwesenheitenAuswertungDto {
         public final VeranstaltungDto veranstaltung;
         public final List<AnwesenheitAuswertungEintragDto> auswertung;

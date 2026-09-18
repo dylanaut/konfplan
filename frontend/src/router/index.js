@@ -11,6 +11,7 @@ const FreieSlotsReferenten = () => import('../views/report/FreieSlotsReferenten.
 const LaufzettelTeilnehmer = () => import('../views/report/LaufzettelTeilnehmer.vue');
 const LaufzettelReferent = () => import('../views/report/LaufzettelReferent.vue');
 const UebersichtRaeume = () => import('../views/report/UebersichtRaeume.vue');
+const Statistik = () => import('../views/report/Statistik.vue');
 const Raumschilder = () => import('../views/report/Raumschilder.vue');
 const FreieSlotsTeilnehmer = () => import('../views/report/FreieSlotsTeilnehmer.vue');
 const TeilnehmerZuordnungen = () => import('../views/report/TeilnehmerZuordnungen.vue');
@@ -84,6 +85,12 @@ const routes = [
         path: '/organisator/veranstaltung/:vid/uebersicht-raeume',
         name: 'UebersichtRaeume',
         component: UebersichtRaeume,
+        meta: { requiresAuth: true, role: 'ORGANISATOR' }
+    },
+    {
+        path: '/organisator/veranstaltung/:vid/statistik',
+        name: 'Statistik',
+        component: Statistik,
         meta: { requiresAuth: true, role: 'ORGANISATOR' }
     },
     {
