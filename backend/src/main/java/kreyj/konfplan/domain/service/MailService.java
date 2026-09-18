@@ -7,7 +7,6 @@ import io.quarkus.qute.Location;
 import jakarta.enterprise.context.ApplicationScoped;
 import kreyj.konfplan.persistence.Organisator;
 import kreyj.konfplan.persistence.Nutzer;
-import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.persistence.Vortrag;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -45,12 +44,12 @@ public class MailService {
     }
 
 
-    public void sendVortragsRegistrierung(Veranstaltung v, Referent referent, Vortrag vortrag, boolean isAdded) {
+    public void sendVortragsRegistrierung(Veranstaltung v, Nutzer referent, Vortrag vortrag, boolean isAdded) {
         v.organisatoren().forEach(admin -> sendVortragsRegistrierung(admin, v, referent, vortrag, isAdded));
     }
 
 
-    public void sendVortragsRegistrierung(Organisator organisator, Veranstaltung v, Referent referent, Vortrag vortrag, boolean isAdded) {
+    public void sendVortragsRegistrierung(Organisator organisator, Veranstaltung v, Nutzer referent, Vortrag vortrag, boolean isAdded) {
         if (organisator.getEmail() == null) {
             return;
         }

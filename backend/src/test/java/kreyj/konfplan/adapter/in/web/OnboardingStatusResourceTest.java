@@ -44,8 +44,8 @@ class OnboardingStatusResourceTest extends DatabaseCleaner {
         t.setEmail("gruppen.teilnehmer@test.de");
         t.persist();
         t.addVeranstaltung(veranstaltung);
-        t.addGruppenwert(zebra);
-        t.addGruppenwert(anton);
+        t.addTeilnehmerGruppenwert(zebra);
+        t.addTeilnehmerGruppenwert(anton);
 
         Organisator a = new Organisator();
         a.assignLoginName("ohne.gruppen.admin");

@@ -104,7 +104,7 @@ public class NutzerDto extends AbstractVersionedDto {
             dto.organisation = r.getOrganisation();
         } else if (u instanceof Teilnehmer tn) {
             dto.gruppen = tn.getGruppen().stream().sorted(StringHelper.NUM_OR_ALPHA_COMPARATOR).toList();
-            dto.gruppenwerteByKategorie = tn.getGruppenwerte().stream()
+            dto.gruppenwerteByKategorie = tn.getTeilnehmerGruppenwerte().stream()
                 .collect(Collectors.groupingBy(w -> w.getGruppenkategorie().getName(),
                     Collectors.mapping(GruppenkategorieWert::getWert, Collectors.toList())));
             dto.gruppenwerteByKategorie.values().forEach(werte -> werte.sort(StringHelper.NUM_OR_ALPHA_COMPARATOR));
@@ -118,7 +118,7 @@ public class NutzerDto extends AbstractVersionedDto {
                 dto.prioritaeten = mappedPrios;
             }
         } else if (u instanceof Betrachter b) {
-            dto.gruppenwerteByKategorie = b.getGruppenwerte().stream()
+            dto.gruppenwerteByKategorie = b.getBetrachterGruppenwerte().stream()
                 .collect(Collectors.groupingBy(w -> w.getGruppenkategorie().getName(),
                     Collectors.mapping(GruppenkategorieWert::getWert, Collectors.toList())));
             dto.gruppenwerteByKategorie.values().forEach(werte -> werte.sort(StringHelper.NUM_OR_ALPHA_COMPARATOR));

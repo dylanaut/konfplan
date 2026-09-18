@@ -66,8 +66,8 @@ public class TeilnehmerDto {
 
 
     public static TeilnehmerDto from(Teilnehmer tn) {
-        Set<String> gruppenwerte = tn.getGruppenwerte().stream().map(GruppenkategorieWert::getWert).collect(Collectors.toSet());
-        Map<String, List<String>> gruppenwerteByKategorie = tn.getGruppenwerte().stream()
+        Set<String> gruppenwerte = tn.getTeilnehmerGruppenwerte().stream().map(GruppenkategorieWert::getWert).collect(Collectors.toSet());
+        Map<String, List<String>> gruppenwerteByKategorie = tn.getTeilnehmerGruppenwerte().stream()
             .collect(Collectors.groupingBy(w -> w.getGruppenkategorie().getName(),
                 Collectors.mapping(GruppenkategorieWert::getWert, Collectors.toList())));
         return new TeilnehmerDto(tn.getId(), tn.getFirstName(), tn.getLastName(), tn.getEmail(), tn.getGruppen(),

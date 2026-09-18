@@ -12,8 +12,7 @@ import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.domain.service.ReferentService;
 import kreyj.konfplan.domain.service.TeilnehmerService;
 import kreyj.konfplan.domain.service.KalenderService;
-import kreyj.konfplan.persistence.Referent;
-import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import kreyj.konfplan.util.DateHelper;
 import net.fortuna.ical4j.model.Calendar;
@@ -64,7 +63,7 @@ public class KalenderResource {
             return Response.status(Response.Status.NOT_FOUND).entity("Veranstaltung nicht gefunden").build();
         }
         String tnLoginName = jwt.getName();
-        Teilnehmer teilnehmer = teilnehmerService.findByLoginName(tnLoginName);
+        Nutzer teilnehmer = teilnehmerService.findByLoginName(tnLoginName);
         if (null == teilnehmer) {
             return Response.status(Response.Status.NOT_FOUND)
                 .entity("Teilnehmer '" + tnLoginName + "' nicht gefunden.")
@@ -90,7 +89,7 @@ public class KalenderResource {
             return Response.status(Response.Status.NOT_FOUND).entity("Veranstaltung nicht gefunden").build();
         }
         String refLoginName = jwt.getName();
-        Referent referent = referentService.findByLoginName(refLoginName);
+        Nutzer referent = referentService.findByLoginName(refLoginName);
         if (null == referent) {
             return Response.status(Response.Status.NOT_FOUND)
                 .entity("Referent '" + refLoginName + "' nicht gefunden").build();

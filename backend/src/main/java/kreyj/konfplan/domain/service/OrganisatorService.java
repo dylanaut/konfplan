@@ -851,16 +851,16 @@ public class OrganisatorService implements OrganisatorServiceInterface {
             "veranstaltung in ?1", t.getVeranstaltungen()).list();
         for (Gruppenkategorie kategorie : kategorien) {
             Set<String> gewaehlteWerte = new HashSet<>(gewaehltNachKategorie.getOrDefault(kategorie.getName(), List.of()));
-            for (GruppenkategorieWert vorhanden : new HashSet<>(t.getGruppenwerte())) {
+            for (GruppenkategorieWert vorhanden : new HashSet<>(t.getTeilnehmerGruppenwerte())) {
                 if (vorhanden.getGruppenkategorie().getId().equals(kategorie.getId())
                         && !gewaehlteWerte.contains(vorhanden.getWert())) {
-                    t.removeGruppenwert(vorhanden);
+                    t.removeTeilnehmerGruppenwert(vorhanden);
                 }
             }
             for (String wertName : gewaehlteWerte) {
                 GruppenkategorieWert wert = GruppenkategorieWert.findByWertUndKategorie(wertName, kategorie);
                 if (null != wert) {
-                    t.addGruppenwert(wert);
+                    t.addTeilnehmerGruppenwert(wert);
                 }
             }
         }
@@ -878,16 +878,16 @@ public class OrganisatorService implements OrganisatorServiceInterface {
             "veranstaltung in ?1", b.getVeranstaltungen()).list();
         for (Gruppenkategorie kategorie : kategorien) {
             Set<String> gewaehlteWerte = new HashSet<>(gewaehltNachKategorie.getOrDefault(kategorie.getName(), List.of()));
-            for (GruppenkategorieWert vorhanden : new HashSet<>(b.getGruppenwerte())) {
+            for (GruppenkategorieWert vorhanden : new HashSet<>(b.getBetrachterGruppenwerte())) {
                 if (vorhanden.getGruppenkategorie().getId().equals(kategorie.getId())
                         && !gewaehlteWerte.contains(vorhanden.getWert())) {
-                    b.removeGruppenwert(vorhanden);
+                    b.removeBetrachterGruppenwert(vorhanden);
                 }
             }
             for (String wertName : gewaehlteWerte) {
                 GruppenkategorieWert wert = GruppenkategorieWert.findByWertUndKategorie(wertName, kategorie);
                 if (null != wert) {
-                    b.addGruppenwert(wert);
+                    b.addBetrachterGruppenwert(wert);
                 }
             }
         }

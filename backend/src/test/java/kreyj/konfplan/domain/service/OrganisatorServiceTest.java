@@ -306,8 +306,8 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         gruppeC.persist();
 
         Teilnehmer tn = Teilnehmer.findById(tnId);
-        tn.addGruppenwert(gruppeA);
-        tn.addGruppenwert(gruppeB);
+        tn.addTeilnehmerGruppenwert(gruppeA);
+        tn.addTeilnehmerGruppenwert(gruppeB);
 
         // Bearbeiten-Dialog: "Gruppe B" wird abgewaehlt, "Gruppe C" wird neu angehakt.
         NutzerDto dto = NutzerDto.from(tn);
@@ -315,7 +315,7 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         organisatorService.updateUser(tnId, dto, null);
 
         Teilnehmer updated = Teilnehmer.findById(tnId);
-        assertThat(updated.getGruppenwerte()).containsExactlyInAnyOrder(gruppeA, gruppeC);
+        assertThat(updated.getTeilnehmerGruppenwerte()).containsExactlyInAnyOrder(gruppeA, gruppeC);
 
         // Alle Haken entfernen muss ebenfalls moeglich sein, nicht nur Hinzufuegen.
         NutzerDto dto2 = NutzerDto.from(Teilnehmer.findById(tnId));
@@ -323,7 +323,7 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         organisatorService.updateUser(tnId, dto2, null);
 
         Teilnehmer updated2 = Teilnehmer.findById(tnId);
-        assertThat(updated2.getGruppenwerte()).isEmpty();
+        assertThat(updated2.getTeilnehmerGruppenwerte()).isEmpty();
     }
 
 
@@ -346,7 +346,7 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         NutzerDto created = organisatorService.createUser(dto, List.of(veranstaltung.getId()));
 
         Betrachter persisted = Betrachter.findById(created.id);
-        assertThat(persisted.getGruppenwerte()).containsExactlyInAnyOrder(gruppeA, gruppeB);
+        assertThat(persisted.getBetrachterGruppenwerte()).containsExactlyInAnyOrder(gruppeA, gruppeB);
         assertThat(created.gruppenwerteByKategorie.get("Klasse")).containsExactlyInAnyOrder("Gruppe A", "Gruppe B");
     }
 
@@ -371,7 +371,7 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         // detached - Nutzer.veranstaltungen cascade-persisted (PERSIST) beim addVeranstaltung(...)
         // sonst ein detached Entity.
         betrachter.addVeranstaltung(Veranstaltung.findById(veranstaltung.getId()));
-        betrachter.addGruppenwert(gruppeA);
+        betrachter.addBetrachterGruppenwert(gruppeA);
         Long betrachterId = betrachter.getId();
 
         NutzerDto dto = NutzerDto.from(Betrachter.findById(betrachterId));
@@ -379,14 +379,14 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         organisatorService.updateUser(betrachterId, dto, null);
 
         Betrachter updated = Betrachter.findById(betrachterId);
-        assertThat(updated.getGruppenwerte()).containsExactly(gruppeB);
+        assertThat(updated.getBetrachterGruppenwerte()).containsExactly(gruppeB);
 
         NutzerDto dto2 = NutzerDto.from(Betrachter.findById(betrachterId));
         dto2.gruppenwerteByKategorie = Map.of("Klasse", List.of());
         organisatorService.updateUser(betrachterId, dto2, null);
 
         Betrachter updated2 = Betrachter.findById(betrachterId);
-        assertThat(updated2.getGruppenwerte()).isEmpty();
+        assertThat(updated2.getBetrachterGruppenwerte()).isEmpty();
     }
 
 

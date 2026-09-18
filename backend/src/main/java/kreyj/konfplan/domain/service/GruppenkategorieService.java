@@ -10,6 +10,7 @@ import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.persistence.Betrachter;
 import kreyj.konfplan.persistence.Gruppenkategorie;
 import kreyj.konfplan.persistence.GruppenkategorieWert;
+import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
@@ -184,11 +185,11 @@ public class GruppenkategorieService {
 
     @Transactional
     public void setGruppenwert(Long teilnehmerId, Long wertId) {
-        Teilnehmer teilnehmer = ladeTeilnehmer(teilnehmerId);
+        Nutzer teilnehmer = ladeTeilnehmer(teilnehmerId);
         GruppenkategorieWert wert = ladeWert(wertId);
         pruefeVeranstaltungszugehoerigkeit(teilnehmer, wert);
 
-        teilnehmer.addGruppenwert(wert);
+        teilnehmer.addTeilnehmerGruppenwert(wert);
 
         protokollService.log(ProtokollKategorie.STAMMDATEN, "Teilnehmer-Gruppenwert gesetzt",
             teilnehmer.getFullName() + " -> '" + wert.getWert() + "' (" + wert.getGruppenkategorie().getName() + ")",
@@ -198,10 +199,10 @@ public class GruppenkategorieService {
 
     @Transactional
     public void removeGruppenwert(Long teilnehmerId, Long wertId) {
-        Teilnehmer teilnehmer = ladeTeilnehmer(teilnehmerId);
+        Nutzer teilnehmer = ladeTeilnehmer(teilnehmerId);
         GruppenkategorieWert wert = ladeWert(wertId);
 
-        teilnehmer.removeGruppenwert(wert);
+        teilnehmer.removeTeilnehmerGruppenwert(wert);
 
         protokollService.log(ProtokollKategorie.STAMMDATEN, "Teilnehmer-Gruppenwert entfernt",
             teilnehmer.getFullName() + " -/-> '" + wert.getWert() + "' (" + wert.getGruppenkategorie().getName() + ")",
@@ -277,7 +278,7 @@ public class GruppenkategorieService {
 
     private boolean hatTeilnehmerMitMehrerenWerten(Long kategorieId) {
         List<Long> teilnehmerMitMehrerenWerten = Panache.getEntityManager().createQuery(
-                "select t.id from Teilnehmer t join t.gruppenwerte w where w.gruppenkategorie.id = :kategorieId "
+                "select t.id from Teilnehmer t join t.teilnehmerGruppenwerte w where w.gruppenkategorie.id = :kategorieId "
                     + "group by t.id having count(w) > 1", Long.class)
             .setParameter("kategorieId", kategorieId)
             .getResultList();
@@ -286,20 +287,20 @@ public class GruppenkategorieService {
 
 
     private void entferneVonAllenTeilnehmern(GruppenkategorieWert wert) {
-        for (Teilnehmer teilnehmer : new HashSet<>(wert.getTeilnehmer())) {
-            teilnehmer.removeGruppenwert(wert);
+        for (Nutzer teilnehmer : new HashSet<>(wert.getTeilnehmer())) {
+            teilnehmer.removeTeilnehmerGruppenwert(wert);
         }
     }
 
 
     private void entferneVonAllenBetrachtern(GruppenkategorieWert wert) {
-        for (Betrachter betrachter : new HashSet<>(wert.getBetrachter())) {
-            betrachter.removeGruppenwert(wert);
+        for (Nutzer betrachter : new HashSet<>(wert.getBetrachter())) {
+            betrachter.removeBetrachterGruppenwert(wert);
         }
     }
 
 
-    private void pruefeVeranstaltungszugehoerigkeit(Teilnehmer teilnehmer, GruppenkategorieWert wert) {
+    private void pruefeVeranstaltungszugehoerigkeit(Nutzer teilnehmer, GruppenkategorieWert wert) {
         Veranstaltung veranstaltung = wert.getGruppenkategorie().getVeranstaltung();
         if (!teilnehmer.getVeranstaltungen().contains(veranstaltung)) {
             throw new BusinessException("Teilnehmer ist nicht Teil der Veranstaltung, zu der diese Gruppenkategorie gehört.");
@@ -334,9 +335,9 @@ public class GruppenkategorieService {
     }
 
 
-    private Teilnehmer ladeTeilnehmer(Long teilnehmerId) {
-        Teilnehmer teilnehmer = Teilnehmer.findById(teilnehmerId);
-        if (null == teilnehmer) {
+    private Nutzer ladeTeilnehmer(Long teilnehmerId) {
+        Nutzer teilnehmer = Nutzer.findById(teilnehmerId);
+        if (null == teilnehmer || !teilnehmer.hatRolle("TEILNEHMER")) {
             throw new BusinessException("Teilnehmer mit ID " + teilnehmerId + " nicht gefunden.");
         }
         return teilnehmer;

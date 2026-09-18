@@ -60,9 +60,9 @@ public abstract class Vortrag extends VersionedEntity {
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "referent_id")
     @JsonIgnoreProperties("vortraege")
-    Referent referent; // Pflege über Referent.addVortrag()
+    Nutzer referent; // Pflege über Nutzer.addVortrag() - Nutzer statt Referent-Subtyp seit #751, damit auch ein Nutzer mit REFERENT nur als Zusatzrolle als Referent eingetragen werden kann
 
-    public void setReferent(Referent aReferent) {
+    public void setReferent(Nutzer aReferent) {
         if (null == aReferent) {
             throw new IllegalArgumentException("Referent darf nicht null sein");
         } else {
@@ -97,7 +97,7 @@ public abstract class Vortrag extends VersionedEntity {
     // Konstruktoren
     // -------------------------------------------------------------------
 
-    protected Vortrag(String titel, String inhalt, Referent referent, Veranstaltung veranstaltung) {
+    protected Vortrag(String titel, String inhalt, Nutzer referent, Veranstaltung veranstaltung) {
         this.titel = titel;
         this.inhalt = inhalt;
         this.referent = referent;

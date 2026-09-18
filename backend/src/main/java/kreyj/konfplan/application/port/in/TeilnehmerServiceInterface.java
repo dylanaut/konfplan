@@ -16,7 +16,7 @@ public interface TeilnehmerServiceInterface {
 
     Teilnehmer findById(Long id);
 
-    Teilnehmer findByLoginName(String loginName);
+    Nutzer findByLoginName(String loginName);
 
     List<TeilnehmerVeranstaltungDto> getTeilnehmerVeranstaltungen(String loginName);
 
@@ -31,7 +31,7 @@ public interface TeilnehmerServiceInterface {
     void toggleActive(Nutzer nutzer);
 
 
-    Teilnehmer updateTeilnehmerProfile(Teilnehmer teilnehmer, NutzerDto dto);
+    Nutzer updateTeilnehmerProfile(Nutzer teilnehmer, NutzerDto dto);
 
     Teilnehmer updateTeilnehmer(Long id, NutzerDto tnDto, Long veranstaltungId);
 

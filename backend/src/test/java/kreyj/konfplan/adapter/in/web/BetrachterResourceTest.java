@@ -66,14 +66,14 @@ class BetrachterResourceTest extends DatabaseCleaner {
         betrachter.setEmail("betrachter.rest@test.de");
         betrachter.persist();
         betrachter.addVeranstaltung(eigene);
-        betrachter.addGruppenwert(gruppeA);
+        betrachter.addBetrachterGruppenwert(gruppeA);
 
         Teilnehmer sichtbar = new Teilnehmer();
         sichtbar.assignLoginName("tn-sichtbar@test.de");
         sichtbar.setEmail("tn-sichtbar@test.de");
         sichtbar.persist();
         sichtbar.addVeranstaltung(eigene);
-        sichtbar.addGruppenwert(gruppeA);
+        sichtbar.addTeilnehmerGruppenwert(gruppeA);
         sichtbarerTeilnehmerId = sichtbar.getId();
 
         Referent referent = new Referent();
@@ -88,7 +88,7 @@ class BetrachterResourceTest extends DatabaseCleaner {
         unsichtbar.setEmail("tn-unsichtbar@test.de");
         unsichtbar.persist();
         unsichtbar.addVeranstaltung(eigene);
-        unsichtbar.addGruppenwert(gruppeB);
+        unsichtbar.addTeilnehmerGruppenwert(gruppeB);
     }
 
 

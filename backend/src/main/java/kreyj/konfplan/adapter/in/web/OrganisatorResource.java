@@ -543,11 +543,11 @@ public class OrganisatorResource {
     @Path("/teilnehmer/{tid}/gruppenwerte")
     @Operation(summary = "Die aktuell zugeordneten Gruppenwerte eines Teilnehmers abrufen")
     public List<GruppenkategorieWertDto> getTeilnehmerGruppenwerte(@PathParam("tid") Long tid) {
-        Teilnehmer teilnehmer = Teilnehmer.findById(tid);
-        if (null == teilnehmer) {
+        Nutzer teilnehmer = Nutzer.findById(tid);
+        if (null == teilnehmer || !teilnehmer.hatRolle("TEILNEHMER")) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
-        return teilnehmer.getGruppenwerte().stream().map(GruppenkategorieWertDto::from).toList();
+        return teilnehmer.getTeilnehmerGruppenwerte().stream().map(GruppenkategorieWertDto::from).toList();
     }
 
 

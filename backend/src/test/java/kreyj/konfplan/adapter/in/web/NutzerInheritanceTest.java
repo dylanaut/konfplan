@@ -114,7 +114,7 @@ class NutzerInheritanceTest extends DatabaseCleaner {
         assertNotNull(Veranstaltung.findById(testVid), "Veranstaltung %d sollte in der DB existieren".formatted(testVid));
         assertNotNull(tn.getVeranstaltungen(), "Veranstaltung des Teilnehmers sollte nicht leer sein");
         assertThat(tn.getVeranstaltungen().iterator().next().getId()).isEqualTo(testVid);
-        assertThat(tn.getGruppenwerte()).extracting(GruppenkategorieWert::getWert).contains("10.3");
+        assertThat(tn.getTeilnehmerGruppenwerte()).extracting(GruppenkategorieWert::getWert).contains("10.3");
     }
 
 
