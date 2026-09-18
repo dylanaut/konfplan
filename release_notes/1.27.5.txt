@@ -1,0 +1,17 @@
+Release Notes 1.27.5
+Released: 2026-09-18
+
+Changes:
+
+- Release-Notes fuer 1.27.4 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.27.5-SNAPSHOT)
+
+- Passwortrichtlinien: ADMINISTRATOR ist nicht konfigurierbar
+  ADMINISTRATOR gilt immer als Passwortrichtlinie.STANDARD und nicht änderbar - aus
+  GUELTIGE_ROLLEN entfernt, wodurch die Rolle weder in getRichtlinien() (und damit nicht in
+  der GUI) auftaucht, noch sich per save() eine Zeile dafür anlegen lässt.
+  Refs #741
+
+- Release 1.27.5
+
