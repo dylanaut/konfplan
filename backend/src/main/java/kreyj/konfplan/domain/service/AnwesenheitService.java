@@ -8,9 +8,9 @@ import kreyj.konfplan.adapter.in.web.dto.RaumBelegungUebersicht;
 import kreyj.konfplan.adapter.in.web.dto.RaumplanEintragDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerDto;
 import kreyj.konfplan.persistence.Anwesenheit;
+import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.Slot;
-import kreyj.konfplan.persistence.Teilnehmer;
 import kreyj.konfplan.persistence.Veranstaltung;
 
 import java.time.Duration;
@@ -47,7 +47,7 @@ public class AnwesenheitService {
 
 
     @Transactional
-    public AnwesenheitCheckinResultDto checkIn(Teilnehmer teilnehmer, Veranstaltung veranstaltung, Raum raum) {
+    public AnwesenheitCheckinResultDto checkIn(Nutzer teilnehmer, Veranstaltung veranstaltung, Raum raum) {
         LocalDateTime jetzt = LocalDateTime.now();
         Slot aktiverSlot = findeAktivenSlot(veranstaltung, jetzt);
         if (null == aktiverSlot) {
@@ -107,7 +107,7 @@ public class AnwesenheitService {
                 Set<Long> geplantIds = geplant.stream().map(t -> t.id).collect(Collectors.toCollection(LinkedHashSet::new));
 
                 List<Anwesenheit> checkins = checkinsByRaumUndSlot.getOrDefault(schluessel(slot.getId(), raum.getId()), List.of());
-                Map<Long, Teilnehmer> eingechecktById = checkins.stream()
+                Map<Long, Nutzer> eingechecktById = checkins.stream()
                     .collect(Collectors.toMap(a -> a.getTeilnehmer().getId(), Anwesenheit::getTeilnehmer, (a, b) -> a));
 
                 List<String> warDa = geplant.stream()

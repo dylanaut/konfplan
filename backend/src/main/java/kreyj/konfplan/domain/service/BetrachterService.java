@@ -47,13 +47,13 @@ public class BetrachterService {
 
     @Transactional
     public List<Teilnehmer> getSichtbareTeilnehmer(Betrachter betrachter, Veranstaltung veranstaltung) {
-        if (betrachter.getGruppenwerte().isEmpty()) {
+        if (betrachter.getBetrachterGruppenwerte().isEmpty()) {
             return List.of();
         }
         return Teilnehmer.find(
-            "SELECT DISTINCT tn FROM Teilnehmer tn JOIN tn.gruppenwerte gkw JOIN tn.veranstaltungen v "
+            "SELECT DISTINCT tn FROM Teilnehmer tn JOIN tn.teilnehmerGruppenwerte gkw JOIN tn.veranstaltungen v "
                 + "WHERE v = ?1 AND gkw IN ?2 AND tn.isActive = true",
-            veranstaltung, betrachter.getGruppenwerte()).list();
+            veranstaltung, betrachter.getBetrachterGruppenwerte()).list();
     }
 
 

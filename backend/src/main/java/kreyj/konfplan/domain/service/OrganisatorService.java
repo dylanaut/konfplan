@@ -6,6 +6,8 @@ import io.quarkus.hibernate.orm.panache.Panache;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import kreyj.konfplan.adapter.in.web.dto.ImportResultDto;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
@@ -390,6 +392,97 @@ public class OrganisatorService implements OrganisatorServiceInterface {
         protokollService.log(ProtokollKategorie.NUTZER, "Rolle geändert",
             "Nutzer '" + updated.getLoginName() + "' von '" + oldRole + "' zu '" + newRole + "' umgestuft.", id);
         return NutzerDto.from(updated);
+    }
+
+
+    private static final Set<String> VERGEBBARE_ZUSATZROLLEN = Set.of("TEILNEHMER", "REFERENT", "BETRACHTER");
+
+
+    @Transactional
+    @Override
+    public NutzerDto grantZusatzrolle(Long targetId, String role, String callerLoginName) {
+        Nutzer caller = Nutzer.findByLoginName(callerLoginName);
+        Nutzer target = Nutzer.findById(targetId);
+        if (null == caller || null == target) {
+            throw new EntityNotFoundException(Nutzer.class, "Nutzer nicht gefunden.");
+        }
+        validateGrantMatrix(caller, target, role);
+
+        if (target.hatRolle(role)) {
+            // Bereits gehaltene Rolle erneut vergeben ist ein No-op (analog changeRole).
+            return NutzerDto.from(target);
+        }
+
+        target.addZusatzrolle(role);
+        keycloakUserProvisioningService.grantRealmRole(target, role);
+        protokollService.log(ProtokollKategorie.NUTZER, "Zusatzrolle vergeben",
+            "Nutzer '" + target.getLoginName() + "' hat die Zusatzrolle '" + role + "' erhalten (vergeben durch '"
+                + caller.getLoginName() + "').", target.getId());
+        return NutzerDto.from(target);
+    }
+
+
+    @Transactional
+    @Override
+    public NutzerDto revokeZusatzrolle(Long targetId, String role, String callerLoginName) {
+        Nutzer caller = Nutzer.findByLoginName(callerLoginName);
+        Nutzer target = Nutzer.findById(targetId);
+        if (null == caller || null == target) {
+            throw new EntityNotFoundException(Nutzer.class, "Nutzer nicht gefunden.");
+        }
+        validateGrantMatrix(caller, target, role);
+
+        if (!target.hatRolle(role)) {
+            // Nicht (mehr) gehaltene Rolle erneut entziehen ist ein No-op.
+            return NutzerDto.from(target);
+        }
+
+        if ("REFERENT".equals(role) && !target.getVortraege().isEmpty()) {
+            throw new UpdateNutzerException("Die Zusatzrolle REFERENT kann nicht entzogen werden, solange dem Nutzer "
+                + "noch Vorträge zugeordnet sind - erst umverteilen oder löschen.");
+        }
+        if ("TEILNEHMER".equals(role) && !target.getPrioritaeten().isEmpty()) {
+            throw new UpdateNutzerException("Die Zusatzrolle TEILNEHMER kann nicht entzogen werden, solange der Nutzer "
+                + "noch Prioritäten vergeben hat - diese erst löschen.");
+        }
+
+        target.removeZusatzrolle(role);
+        keycloakUserProvisioningService.revokeRealmRole(target, role);
+        protokollService.log(ProtokollKategorie.NUTZER, "Zusatzrolle entzogen",
+            "Nutzer '" + target.getLoginName() + "' hat die Zusatzrolle '" + role + "' verloren (entzogen durch '"
+                + caller.getLoginName() + "').", target.getId());
+        return NutzerDto.from(target);
+    }
+
+
+    /**
+     * Autorisierungsmatrix für Zusatzrollen (siehe #751): ein Administrator darf TEILNEHMER/
+     * REFERENT/BETRACHTER an sich selbst oder einen Organisator/Administrator vergeben; ein
+     * (einfacher) Organisator darf nur REFERENT an sich selbst oder einen Teilnehmer vergeben.
+     * ORGANISATOR/ADMINISTRATOR selbst sind nie als Zusatzrolle vergebbar - das wäre eine
+     * Primärrollen-Umstufung, siehe {@link #changeRole}.
+     */
+    private void validateGrantMatrix(Nutzer caller, Nutzer target, String role) {
+        if (!VERGEBBARE_ZUSATZROLLEN.contains(role)) {
+            throw new WebApplicationException("Ungültige Zusatzrolle: " + role, Response.Status.BAD_REQUEST);
+        }
+        if (caller instanceof Administrator) {
+            if (target instanceof Organisator) {
+                return;
+            }
+            throw new WebApplicationException(
+                "Ein Administrator darf Zusatzrollen nur sich selbst oder einem Organisator/Administrator zuweisen.",
+                Response.Status.FORBIDDEN);
+        }
+        if (caller instanceof Organisator) {
+            if ("REFERENT".equals(role) && (target.getId().equals(caller.getId()) || target instanceof Teilnehmer)) {
+                return;
+            }
+            throw new WebApplicationException(
+                "Ein Organisator darf nur die Zusatzrolle REFERENT an sich selbst oder einen Teilnehmer vergeben.",
+                Response.Status.FORBIDDEN);
+        }
+        throw new WebApplicationException("Nur Organisatoren/Administratoren dürfen Zusatzrollen vergeben.", Response.Status.FORBIDDEN);
     }
 
 
@@ -851,16 +944,16 @@ public class OrganisatorService implements OrganisatorServiceInterface {
             "veranstaltung in ?1", t.getVeranstaltungen()).list();
         for (Gruppenkategorie kategorie : kategorien) {
             Set<String> gewaehlteWerte = new HashSet<>(gewaehltNachKategorie.getOrDefault(kategorie.getName(), List.of()));
-            for (GruppenkategorieWert vorhanden : new HashSet<>(t.getGruppenwerte())) {
+            for (GruppenkategorieWert vorhanden : new HashSet<>(t.getTeilnehmerGruppenwerte())) {
                 if (vorhanden.getGruppenkategorie().getId().equals(kategorie.getId())
                         && !gewaehlteWerte.contains(vorhanden.getWert())) {
-                    t.removeGruppenwert(vorhanden);
+                    t.removeTeilnehmerGruppenwert(vorhanden);
                 }
             }
             for (String wertName : gewaehlteWerte) {
                 GruppenkategorieWert wert = GruppenkategorieWert.findByWertUndKategorie(wertName, kategorie);
                 if (null != wert) {
-                    t.addGruppenwert(wert);
+                    t.addTeilnehmerGruppenwert(wert);
                 }
             }
         }
@@ -878,16 +971,16 @@ public class OrganisatorService implements OrganisatorServiceInterface {
             "veranstaltung in ?1", b.getVeranstaltungen()).list();
         for (Gruppenkategorie kategorie : kategorien) {
             Set<String> gewaehlteWerte = new HashSet<>(gewaehltNachKategorie.getOrDefault(kategorie.getName(), List.of()));
-            for (GruppenkategorieWert vorhanden : new HashSet<>(b.getGruppenwerte())) {
+            for (GruppenkategorieWert vorhanden : new HashSet<>(b.getBetrachterGruppenwerte())) {
                 if (vorhanden.getGruppenkategorie().getId().equals(kategorie.getId())
                         && !gewaehlteWerte.contains(vorhanden.getWert())) {
-                    b.removeGruppenwert(vorhanden);
+                    b.removeBetrachterGruppenwert(vorhanden);
                 }
             }
             for (String wertName : gewaehlteWerte) {
                 GruppenkategorieWert wert = GruppenkategorieWert.findByWertUndKategorie(wertName, kategorie);
                 if (null != wert) {
-                    b.addGruppenwert(wert);
+                    b.addBetrachterGruppenwert(wert);
                 }
             }
         }

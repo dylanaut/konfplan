@@ -64,12 +64,9 @@ public class ReferentService implements ReferentServiceInterface {
 
     @Transactional
     @Override
-    public Referent findByLoginName(String loginName) {
+    public Nutzer findByLoginName(String loginName) {
         Nutzer nutzer = Nutzer.findByLoginName(loginName);
-        if (nutzer instanceof Referent) {
-            return (Referent) nutzer;
-        }
-        return null;
+        return (null != nutzer && nutzer.hatRolle("REFERENT")) ? nutzer : null;
     }
 
 
@@ -85,21 +82,21 @@ public class ReferentService implements ReferentServiceInterface {
         if (!Objects.equals(nutzer.getVersion(), dto.version)) {
             throw new OptimisticLockException("Der Nutzer wurde zwischenzeitlich von Dritten geändert. Bitte aktualisieren Sie die Daten und versuchen Sie es erneut.");
         }
-        if (nutzer instanceof Referent referent) {
-            referent.setJobRole(dto.jobRole);
-            referent.setOrganisation(dto.organisation);
-            referent.setFirstName(dto.firstName);
-            referent.setLastName(dto.lastName);
-            referent.setEmail(dto.email);
-            keycloakUserProvisioningService.updateUser(referent);
-            protokollService.log(ProtokollKategorie.NUTZER, "Profil aktualisiert", "Referenten-Profil '" + loginName + "' aktualisiert.", referent.getId());
+        if (nutzer.hatRolle("REFERENT")) {
+            nutzer.setJobRole(dto.jobRole);
+            nutzer.setOrganisation(dto.organisation);
+            nutzer.setFirstName(dto.firstName);
+            nutzer.setLastName(dto.lastName);
+            nutzer.setEmail(dto.email);
+            keycloakUserProvisioningService.updateUser(nutzer);
+            protokollService.log(ProtokollKategorie.NUTZER, "Profil aktualisiert", "Referenten-Profil '" + loginName + "' aktualisiert.", nutzer.getId());
         }
     }
 
 
     @Override
     public List<VortragDto> getReferentVortraege(String loginName) {
-        Referent referent = Referent.find("loginName", loginName).firstResult();
+        Nutzer referent = findByLoginName(loginName);
         if (null == referent) {
             return new ArrayList<>();
         }
@@ -110,7 +107,7 @@ public class ReferentService implements ReferentServiceInterface {
 
 
     @Override
-    public List<ReferentVeranstaltungDto> getReferentVeranstaltungen(Referent referent) {
+    public List<ReferentVeranstaltungDto> getReferentVeranstaltungen(Nutzer referent) {
         if (null == referent) {
             return new ArrayList<>();
         }
@@ -146,7 +143,7 @@ public class ReferentService implements ReferentServiceInterface {
     @Transactional
     @Override
     public VortragDto createVortrag(String loginName, VortragDto dto) {
-        Referent referent = Referent.find("loginName", loginName).firstResult();
+        Nutzer referent = findByLoginName(loginName);
         if (null == referent) {
             return null;
         }
@@ -176,7 +173,7 @@ public class ReferentService implements ReferentServiceInterface {
     @Transactional
     @Override
     public VortragDto updateVortrag(String loginName, Long vortragId, VortragDto dto) {
-        Referent referent = Referent.find("loginName", loginName).firstResult();
+        Nutzer referent = findByLoginName(loginName);
         Vortrag vortrag = Vortrag.findById(vortragId);
 
         if (null == vortrag || !vortrag.getReferent().getId().equals(referent.getId())) {
@@ -198,7 +195,7 @@ public class ReferentService implements ReferentServiceInterface {
     @Transactional
     @Override
     public void meldeVortragFuerVeranstaltungAn(String loginName, Long vortragId, Long veranstaltungId) {
-        Referent referent = Referent.find("loginName", loginName).firstResult();
+        Nutzer referent = findByLoginName(loginName);
         Vortrag vortrag = Vortrag.findById(vortragId);
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
 
@@ -250,7 +247,7 @@ public class ReferentService implements ReferentServiceInterface {
     @Transactional
     @Override
     public VortragDto uebernimmVortragInVeranstaltung(String loginName, Long sourceVortragId, Long veranstaltungId) {
-        Referent referent = Referent.find("loginName", loginName).firstResult();
+        Nutzer referent = findByLoginName(loginName);
         if (null == referent) {
             throw new WebApplicationException("Referent nicht gefunden.", Response.Status.NOT_FOUND);
         }
@@ -316,7 +313,7 @@ public class ReferentService implements ReferentServiceInterface {
     @Transactional
     @Override
     public void meldeVortragFuerVeranstaltungAb(String loginName, Long vortragId, Long veranstaltungId) {
-        Referent referent = Referent.find("loginName", loginName).firstResult();
+        Nutzer referent = findByLoginName(loginName);
         Vortrag vortrag = Vortrag.findById(vortragId);
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);
 
@@ -381,7 +378,7 @@ public class ReferentService implements ReferentServiceInterface {
     @Transactional
     @Override
     public boolean deleteVortrag(String loginName, Long vortragId) {
-        Referent referent = Referent.find("loginName", loginName).firstResult();
+        Nutzer referent = findByLoginName(loginName);
         Vortrag vortrag = Vortrag.findById(vortragId);
 
         if (null == vortrag || !vortrag.getReferent().getId().equals(referent.getId())) {

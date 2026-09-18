@@ -4,6 +4,7 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.WebApplicationException;
 import kreyj.konfplan.adapter.in.web.DatabaseCleaner;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.domain.exception.BusinessException;
@@ -41,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @QuarkusTest
@@ -306,8 +308,8 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         gruppeC.persist();
 
         Teilnehmer tn = Teilnehmer.findById(tnId);
-        tn.addGruppenwert(gruppeA);
-        tn.addGruppenwert(gruppeB);
+        tn.addTeilnehmerGruppenwert(gruppeA);
+        tn.addTeilnehmerGruppenwert(gruppeB);
 
         // Bearbeiten-Dialog: "Gruppe B" wird abgewaehlt, "Gruppe C" wird neu angehakt.
         NutzerDto dto = NutzerDto.from(tn);
@@ -315,7 +317,7 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         organisatorService.updateUser(tnId, dto, null);
 
         Teilnehmer updated = Teilnehmer.findById(tnId);
-        assertThat(updated.getGruppenwerte()).containsExactlyInAnyOrder(gruppeA, gruppeC);
+        assertThat(updated.getTeilnehmerGruppenwerte()).containsExactlyInAnyOrder(gruppeA, gruppeC);
 
         // Alle Haken entfernen muss ebenfalls moeglich sein, nicht nur Hinzufuegen.
         NutzerDto dto2 = NutzerDto.from(Teilnehmer.findById(tnId));
@@ -323,7 +325,7 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         organisatorService.updateUser(tnId, dto2, null);
 
         Teilnehmer updated2 = Teilnehmer.findById(tnId);
-        assertThat(updated2.getGruppenwerte()).isEmpty();
+        assertThat(updated2.getTeilnehmerGruppenwerte()).isEmpty();
     }
 
 
@@ -346,7 +348,7 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         NutzerDto created = organisatorService.createUser(dto, List.of(veranstaltung.getId()));
 
         Betrachter persisted = Betrachter.findById(created.id);
-        assertThat(persisted.getGruppenwerte()).containsExactlyInAnyOrder(gruppeA, gruppeB);
+        assertThat(persisted.getBetrachterGruppenwerte()).containsExactlyInAnyOrder(gruppeA, gruppeB);
         assertThat(created.gruppenwerteByKategorie.get("Klasse")).containsExactlyInAnyOrder("Gruppe A", "Gruppe B");
     }
 
@@ -371,7 +373,7 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         // detached - Nutzer.veranstaltungen cascade-persisted (PERSIST) beim addVeranstaltung(...)
         // sonst ein detached Entity.
         betrachter.addVeranstaltung(Veranstaltung.findById(veranstaltung.getId()));
-        betrachter.addGruppenwert(gruppeA);
+        betrachter.addBetrachterGruppenwert(gruppeA);
         Long betrachterId = betrachter.getId();
 
         NutzerDto dto = NutzerDto.from(Betrachter.findById(betrachterId));
@@ -379,14 +381,14 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         organisatorService.updateUser(betrachterId, dto, null);
 
         Betrachter updated = Betrachter.findById(betrachterId);
-        assertThat(updated.getGruppenwerte()).containsExactly(gruppeB);
+        assertThat(updated.getBetrachterGruppenwerte()).containsExactly(gruppeB);
 
         NutzerDto dto2 = NutzerDto.from(Betrachter.findById(betrachterId));
         dto2.gruppenwerteByKategorie = Map.of("Klasse", List.of());
         organisatorService.updateUser(betrachterId, dto2, null);
 
         Betrachter updated2 = Betrachter.findById(betrachterId);
-        assertThat(updated2.getGruppenwerte()).isEmpty();
+        assertThat(updated2.getBetrachterGruppenwerte()).isEmpty();
     }
 
 
@@ -590,5 +592,263 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         assertThat(deleted).isTrue();
         assertThat(Nachricht.findFuerEmpfaenger(organisator)).hasSize(1);
         assertThat(Nachricht.findFuerEmpfaenger(Teilnehmer.findById(tnId))).hasSize(1);
+    }
+
+    // -------------------------------------------------------------------
+    // Zusatzrollen (siehe #751)
+    // -------------------------------------------------------------------
+
+
+    private Referent persistedReferent(String loginName) {
+        Referent referent = new Referent();
+        referent.assignLoginName(loginName);
+        referent.setEmail(loginName + "@example.com");
+        referent.persist();
+        return referent;
+    }
+
+
+    private Betrachter persistedBetrachter(String loginName) {
+        Betrachter betrachter = new Betrachter();
+        betrachter.assignLoginName(loginName);
+        betrachter.setEmail(loginName + "@example.com");
+        betrachter.persist();
+        return betrachter;
+    }
+
+
+    @Test
+    @Transactional
+    public void grantZusatzrolle_administratorAnSichSelbst_erlaubtAlleDrei() {
+        Administrator admin = persistedAdministrator("admin.sich.selbst");
+
+        for (String role : List.of("TEILNEHMER", "REFERENT", "BETRACHTER")) {
+            NutzerDto updated = organisatorService.grantZusatzrolle(admin.getId(), role, admin.getLoginName());
+            assertThat(updated.zusatzRollen).contains(role);
+        }
+        assertThat(Nutzer.<Nutzer>findById(admin.getId()).hatRolle("TEILNEHMER")).isTrue();
+        assertThat(Nutzer.<Nutzer>findById(admin.getId()).hatRolle("REFERENT")).isTrue();
+        assertThat(Nutzer.<Nutzer>findById(admin.getId()).hatRolle("BETRACHTER")).isTrue();
+        verify(keycloakUserProvisioningService).grantRealmRole(any(), eq("TEILNEHMER"));
+        verify(keycloakUserProvisioningService).grantRealmRole(any(), eq("REFERENT"));
+        verify(keycloakUserProvisioningService).grantRealmRole(any(), eq("BETRACHTER"));
+    }
+
+
+    @Test
+    @Transactional
+    public void grantZusatzrolle_administratorAnOrganisator_erlaubt() {
+        Administrator admin = persistedAdministrator("admin.vergibt");
+        Organisator organisator = Nutzer.findById(testUserId);
+
+        organisatorService.grantZusatzrolle(organisator.getId(), "REFERENT", admin.getLoginName());
+
+        assertThat(Nutzer.<Nutzer>findById(testUserId).hatRolle("REFERENT")).isTrue();
+    }
+
+
+    @Test
+    @Transactional
+    public void grantZusatzrolle_administratorAnAnderenAdministrator_erlaubt() {
+        Administrator admin = persistedAdministrator("admin.vergibt.2");
+        Administrator zielAdmin = persistedAdministrator("admin.ziel");
+
+        organisatorService.grantZusatzrolle(zielAdmin.getId(), "BETRACHTER", admin.getLoginName());
+
+        assertThat(Nutzer.<Nutzer>findById(zielAdmin.getId()).hatRolle("BETRACHTER")).isTrue();
+    }
+
+
+    @Test
+    @Transactional
+    public void grantZusatzrolle_administratorAnTeilnehmer_wirdAbgelehnt() {
+        Administrator admin = persistedAdministrator("admin.verweigert");
+
+        assertThatExceptionOfType(WebApplicationException.class)
+            .isThrownBy(() -> organisatorService.grantZusatzrolle(tnId, "REFERENT", admin.getLoginName()))
+            .satisfies(e -> assertThat(e.getResponse().getStatus()).isEqualTo(403));
+
+        assertThat(Nutzer.<Nutzer>findById(tnId).hatRolle("REFERENT")).isFalse();
+    }
+
+
+    @Test
+    @Transactional
+    public void grantZusatzrolle_organisatorAnSichSelbst_referentErlaubt() {
+        Organisator organisator = Nutzer.findById(testUserId);
+
+        organisatorService.grantZusatzrolle(testUserId, "REFERENT", organisator.getLoginName());
+
+        assertThat(Nutzer.<Nutzer>findById(testUserId).hatRolle("REFERENT")).isTrue();
+    }
+
+
+    @Test
+    @Transactional
+    public void grantZusatzrolle_organisatorAnTeilnehmer_referentErlaubt() {
+        Organisator organisator = Nutzer.findById(testUserId);
+
+        organisatorService.grantZusatzrolle(tnId, "REFERENT", organisator.getLoginName());
+
+        assertThat(Nutzer.<Nutzer>findById(tnId).hatRolle("REFERENT")).isTrue();
+    }
+
+
+    @Test
+    @Transactional
+    public void grantZusatzrolle_organisatorAnTeilnehmer_teilnehmerRolleWirdAbgelehnt() {
+        Organisator organisator = Nutzer.findById(testUserId);
+
+        assertThatExceptionOfType(WebApplicationException.class)
+            .isThrownBy(() -> organisatorService.grantZusatzrolle(tnId, "BETRACHTER", organisator.getLoginName()))
+            .satisfies(e -> assertThat(e.getResponse().getStatus()).isEqualTo(403));
+    }
+
+
+    @Test
+    @Transactional
+    public void grantZusatzrolle_organisatorAnAnderenOrganisator_wirdAbgelehnt() {
+        Organisator organisator = Nutzer.findById(testUserId);
+        Organisator zielOrganisator = new Organisator();
+        zielOrganisator.assignLoginName("ziel.organisator");
+        zielOrganisator.setEmail("ziel.organisator@example.com");
+        zielOrganisator.persist();
+
+        assertThatExceptionOfType(WebApplicationException.class)
+            .isThrownBy(() -> organisatorService.grantZusatzrolle(zielOrganisator.getId(), "REFERENT", organisator.getLoginName()))
+            .satisfies(e -> assertThat(e.getResponse().getStatus()).isEqualTo(403));
+    }
+
+
+    @Test
+    @Transactional
+    public void grantZusatzrolle_ungueltigeRolle_wirdAbgelehnt() {
+        Administrator admin = persistedAdministrator("admin.ungueltig");
+
+        assertThatExceptionOfType(WebApplicationException.class)
+            .isThrownBy(() -> organisatorService.grantZusatzrolle(testUserId, "ORGANISATOR", admin.getLoginName()))
+            .satisfies(e -> assertThat(e.getResponse().getStatus()).isEqualTo(400));
+    }
+
+
+    @Test
+    @Transactional
+    public void grantZusatzrolle_bereitsGehalteneRolle_istNoOp() {
+        Administrator admin = persistedAdministrator("admin.noop");
+        organisatorService.grantZusatzrolle(admin.getId(), "REFERENT", admin.getLoginName());
+
+        NutzerDto updated = organisatorService.grantZusatzrolle(admin.getId(), "REFERENT", admin.getLoginName());
+
+        assertThat(updated.zusatzRollen).containsExactly("REFERENT");
+        verify(keycloakUserProvisioningService, times(1)).grantRealmRole(any(), eq("REFERENT"));
+    }
+
+
+    @Test
+    @Transactional
+    public void revokeZusatzrolle_referentMitVortrag_wirdAbgelehnt() {
+        Organisator organisator = Nutzer.findById(testUserId);
+        Veranstaltung v = Veranstaltung.findById(veranstaltung.getId());
+
+        Nutzer teilnehmer = Nutzer.findById(tnId);
+        organisatorService.grantZusatzrolle(tnId, "REFERENT", organisator.getLoginName());
+        teilnehmer = Nutzer.findById(tnId);
+
+        Wahlvortrag wv = new Wahlvortrag();
+        wv.setTitel("Vortrag des Zusatz-Referenten");
+        wv.setReferent(teilnehmer);
+        wv.setVeranstaltung(v);
+        wv.persist();
+
+        assertThatExceptionOfType(UpdateNutzerException.class)
+            .isThrownBy(() -> organisatorService.revokeZusatzrolle(tnId, "REFERENT", organisator.getLoginName()));
+
+        assertThat(Nutzer.<Nutzer>findById(tnId).hatRolle("REFERENT")).isTrue();
+    }
+
+
+    @Test
+    @Transactional
+    public void revokeZusatzrolle_referentOhneVortrag_erlaubt() {
+        Organisator organisator = Nutzer.findById(testUserId);
+        organisatorService.grantZusatzrolle(tnId, "REFERENT", organisator.getLoginName());
+
+        organisatorService.revokeZusatzrolle(tnId, "REFERENT", organisator.getLoginName());
+
+        assertThat(Nutzer.<Nutzer>findById(tnId).hatRolle("REFERENT")).isFalse();
+        verify(keycloakUserProvisioningService).revokeRealmRole(any(), eq("REFERENT"));
+    }
+
+
+    @Test
+    @Transactional
+    public void revokeZusatzrolle_teilnehmerMitPrioritaeten_wirdAbgelehnt() {
+        Administrator admin = persistedAdministrator("admin.entzieht");
+        Organisator organisator = Nutzer.findById(testUserId);
+        Veranstaltung v = Veranstaltung.findById(veranstaltung.getId());
+        organisatorService.grantZusatzrolle(organisator.getId(), "TEILNEHMER", admin.getLoginName());
+        Nutzer organisatorAlsTeilnehmer = Nutzer.findById(testUserId);
+
+        Referent referent = persistedReferent("referent.fuer.prio.test");
+        Wahlvortrag wv = new Wahlvortrag();
+        wv.setTitel("Wahlvortrag für Prio-Test");
+        wv.setReferent(referent);
+        wv.setVeranstaltung(v);
+        wv.persist();
+        new Prioritaet(organisatorAlsTeilnehmer, wv, 5).persist();
+
+        assertThatExceptionOfType(UpdateNutzerException.class)
+            .isThrownBy(() -> organisatorService.revokeZusatzrolle(testUserId, "TEILNEHMER", admin.getLoginName()));
+
+        assertThat(Nutzer.<Nutzer>findById(testUserId).hatRolle("TEILNEHMER")).isTrue();
+    }
+
+
+    @Test
+    @Transactional
+    public void revokeZusatzrolle_betrachterRolle_istImmerErlaubt() {
+        Administrator admin = persistedAdministrator("admin.entzieht.betrachter");
+        organisatorService.grantZusatzrolle(admin.getId(), "BETRACHTER", admin.getLoginName());
+
+        organisatorService.revokeZusatzrolle(admin.getId(), "BETRACHTER", admin.getLoginName());
+
+        assertThat(Nutzer.<Nutzer>findById(admin.getId()).hatRolle("BETRACHTER")).isFalse();
+    }
+
+
+    @Test
+    @Transactional
+    public void revokeZusatzrolle_nichtGehalteneRolle_istNoOpUndRuftKeycloakNichtAuf() {
+        Administrator admin = persistedAdministrator("admin.revoke.noop");
+
+        organisatorService.revokeZusatzrolle(admin.getId(), "REFERENT", admin.getLoginName());
+
+        verify(keycloakUserProvisioningService, never()).revokeRealmRole(any(), any());
+    }
+
+
+    /**
+     * Integrationstest fuer die verbreiterte Relation (siehe #751 Stufe 1): ein Teilnehmer mit
+     * der Zusatzrolle REFERENT muss als {@code Vortrag.referent} persistieren koennen, exakt wie
+     * ein primaerer Referent - das ist der eigentliche Zweck des Datenmodell-Umbaus aus Commit 1.
+     */
+    @Test
+    @Transactional
+    public void grantZusatzrolle_referentAnTeilnehmer_ermoeglichtVortragMitDiesemReferenten() {
+        Organisator organisator = Nutzer.findById(testUserId);
+        Veranstaltung v = Veranstaltung.findById(veranstaltung.getId());
+
+        organisatorService.grantZusatzrolle(tnId, "REFERENT", organisator.getLoginName());
+        Nutzer teilnehmerAlsReferent = Nutzer.findById(tnId);
+
+        Wahlvortrag wv = new Wahlvortrag();
+        wv.setTitel("Vortrag des Teilnehmer-Referenten");
+        wv.setReferent(teilnehmerAlsReferent);
+        wv.setVeranstaltung(v);
+        wv.persistAndFlush();
+
+        Wahlvortrag reloaded = Wahlvortrag.findById(wv.getId());
+        assertThat(reloaded.getReferent().getId()).isEqualTo(tnId);
+        assertThat(reloaded.getReferent()).isInstanceOf(Teilnehmer.class);
     }
 }

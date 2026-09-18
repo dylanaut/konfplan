@@ -22,6 +22,7 @@ import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.ProtokollKategorie;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
+import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
@@ -537,7 +538,7 @@ public class PlanErstellungService {
 
         // Referenten-Verfügbarkeit für ihren eigenen Pflichtvortrag prüfen.
         for (Pflichtvortrag pv : pflichtvortraege) {
-            Referent referent = pv.getReferent();
+            Nutzer referent = pv.getReferent();
             Slot pflichtslot = pv.getPflichtslot();
             NutzerVerfuegbarkeit nv = nvMap.get(referent.getId());
             if (null != nv && nv.getVerfuegbareSlotIds().contains(pflichtslot.getId())) {
@@ -861,7 +862,7 @@ public class PlanErstellungService {
         sb.append("%In welchen Slots der Referent eines Wahlvortrags verfügbar ist (Pflichtvortrag-Kollisionen):\n");
         // Reihenfolge MUSS mit appendWahlvortraege's refMap übereinstimmen: dieselbe 'wahlvortraege'-Liste,
         // distinct() auf geordnetem Stream erhält First-Encounter-Reihenfolge -> identische 1-basierte Indizes.
-        List<Referent> referenten = wahlvortraege.stream().map(Wahlvortrag::getReferent).distinct().toList();
+        List<Nutzer> referenten = wahlvortraege.stream().map(Wahlvortrag::getReferent).distinct().toList();
         int refSize = referenten.size();
         int slotSize = slots.size();
         Map<Long, NutzerVerfuegbarkeit> nvMap =
@@ -870,7 +871,7 @@ public class PlanErstellungService {
 
         int refIdx = 0;
         sb.append("referent_verfuegbar = [| %% Slot 1..").append(slots.size());
-        for (Referent referent : referenten) {
+        for (Nutzer referent : referenten) {
             sb.append("\n");
             Set<Long> verfSlotIds = nvMap.get(referent.getId()).getVerfuegbareSlotIds();
             int sIdx = 0;

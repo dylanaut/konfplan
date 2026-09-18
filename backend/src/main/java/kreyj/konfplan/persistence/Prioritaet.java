@@ -25,7 +25,7 @@ public class Prioritaet extends IdEntity {
     public static final int PRIO_MAX = 10;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    private Teilnehmer teilnehmer;
+    private Nutzer teilnehmer; // Nutzer statt Teilnehmer-Subtyp seit #751, siehe Vortrag.referent
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Wahlvortrag vortrag;
@@ -35,7 +35,7 @@ public class Prioritaet extends IdEntity {
     private int prioWert;
 
 
-    public Prioritaet(Teilnehmer teilnehmer, Wahlvortrag wahlvortrag, int prioWert) {
+    public Prioritaet(Nutzer teilnehmer, Wahlvortrag wahlvortrag, int prioWert) {
         this.teilnehmer = teilnehmer;
         this.vortrag = wahlvortrag;
         this.prioWert = prioWert;

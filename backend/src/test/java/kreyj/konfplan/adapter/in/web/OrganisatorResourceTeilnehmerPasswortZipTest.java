@@ -84,8 +84,8 @@ class OrganisatorResourceTeilnehmerPasswortZipTest extends DatabaseCleaner {
             t1.setLastName("Musterfrau");
             t1.persist();
             t1.addVeranstaltung(v);
-            t1.addGruppenwert(siebenA);
-            t1.addGruppenwert(technik);
+            t1.addTeilnehmerGruppenwert(siebenA);
+            t1.addTeilnehmerGruppenwert(technik);
             teilnehmer1Id = t1.getId();
 
             Teilnehmer t2 = new Teilnehmer();

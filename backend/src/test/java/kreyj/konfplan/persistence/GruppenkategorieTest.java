@@ -85,11 +85,11 @@ class GruppenkategorieTest extends DatabaseCleaner {
         mgl.persist();
 
         Teilnehmer tn = neuerTeilnehmer("tn-einwertig@test.com");
-        tn.addGruppenwert(rks);
-        assertThat(tn.getGruppenwerte()).containsExactly(rks);
+        tn.addTeilnehmerGruppenwert(rks);
+        assertThat(tn.getTeilnehmerGruppenwerte()).containsExactly(rks);
 
-        tn.addGruppenwert(mgl);
-        assertThat(tn.getGruppenwerte()).describedAs("einwertige Kategorie: neuer Wert ersetzt den alten").containsExactly(mgl);
+        tn.addTeilnehmerGruppenwert(mgl);
+        assertThat(tn.getTeilnehmerGruppenwerte()).describedAs("einwertige Kategorie: neuer Wert ersetzt den alten").containsExactly(mgl);
     }
 
 
@@ -105,10 +105,10 @@ class GruppenkategorieTest extends DatabaseCleaner {
         m2.persist();
 
         Teilnehmer tn = neuerTeilnehmer("tn-mehrwertig@test.com");
-        tn.addGruppenwert(m1);
-        tn.addGruppenwert(m2);
+        tn.addTeilnehmerGruppenwert(m1);
+        tn.addTeilnehmerGruppenwert(m2);
 
-        assertThat(tn.getGruppenwerte()).containsExactlyInAnyOrder(m1, m2);
+        assertThat(tn.getTeilnehmerGruppenwerte()).containsExactlyInAnyOrder(m1, m2);
     }
 
 
@@ -126,10 +126,10 @@ class GruppenkategorieTest extends DatabaseCleaner {
         zehnB.persist();
 
         Betrachter betrachter = neuerBetrachter("betrachter-mehrere-klassen@test.com");
-        betrachter.addGruppenwert(zehnA);
-        betrachter.addGruppenwert(zehnB);
+        betrachter.addBetrachterGruppenwert(zehnA);
+        betrachter.addBetrachterGruppenwert(zehnB);
 
-        assertThat(betrachter.getGruppenwerte()).containsExactlyInAnyOrder(zehnA, zehnB);
+        assertThat(betrachter.getBetrachterGruppenwerte()).containsExactlyInAnyOrder(zehnA, zehnB);
         assertThat(zehnA.getBetrachter()).containsExactly(betrachter);
     }
 
@@ -146,12 +146,12 @@ class GruppenkategorieTest extends DatabaseCleaner {
         zehnB.persist();
 
         Betrachter betrachter = neuerBetrachter("betrachter-remove@test.com");
-        betrachter.addGruppenwert(zehnA);
-        betrachter.addGruppenwert(zehnB);
+        betrachter.addBetrachterGruppenwert(zehnA);
+        betrachter.addBetrachterGruppenwert(zehnB);
 
-        betrachter.removeGruppenwert(zehnA);
+        betrachter.removeBetrachterGruppenwert(zehnA);
 
-        assertThat(betrachter.getGruppenwerte()).containsExactly(zehnB);
+        assertThat(betrachter.getBetrachterGruppenwerte()).containsExactly(zehnB);
         assertThat(zehnA.getBetrachter()).isEmpty();
     }
 
@@ -166,12 +166,12 @@ class GruppenkategorieTest extends DatabaseCleaner {
         zehnA.persist();
 
         Teilnehmer tn = neuerTeilnehmer("tn-remove@test.com");
-        tn.addGruppenwert(zehnA);
+        tn.addTeilnehmerGruppenwert(zehnA);
         assertThat(tn.hatGruppenwert(zehnA)).isTrue();
 
-        tn.removeGruppenwert(zehnA);
+        tn.removeTeilnehmerGruppenwert(zehnA);
         assertThat(tn.hatGruppenwert(zehnA)).isFalse();
-        assertThat(tn.getGruppenwerte()).isEmpty();
+        assertThat(tn.getTeilnehmerGruppenwerte()).isEmpty();
     }
 
 
@@ -221,7 +221,7 @@ class GruppenkategorieTest extends DatabaseCleaner {
         altesModell.addGruppe("10a");
 
         Teilnehmer neuesModell = neuerTeilnehmer("tn-neues-modell@test.com");
-        neuesModell.addGruppenwert(zehnA);
+        neuesModell.addTeilnehmerGruppenwert(zehnA);
 
         Teilnehmer keineGruppe = neuerTeilnehmer("tn-keine-gruppe@test.com");
 
@@ -246,7 +246,7 @@ class GruppenkategorieTest extends DatabaseCleaner {
         altesModell.addVeranstaltung(veranstaltung);
 
         Teilnehmer neuesModell = neuerTeilnehmer("tn-ggt-neu@test.com");
-        neuesModell.addGruppenwert(zehnA);
+        neuesModell.addTeilnehmerGruppenwert(zehnA);
         neuesModell.addVeranstaltung(veranstaltung);
 
         // Gleicher Gruppenname "10a", aber in einer ANDEREN Veranstaltung - darf nicht gefunden werden.

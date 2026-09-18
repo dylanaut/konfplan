@@ -21,6 +21,7 @@ import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
 import kreyj.konfplan.domain.exception.BusinessException;
 import kreyj.konfplan.domain.exception.EntityNotFoundException;
 import kreyj.konfplan.persistence.IdEntity;
+import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.NutzerVerfuegbarkeit;
 import kreyj.konfplan.persistence.Pflichtvortrag;
 import kreyj.konfplan.persistence.Planungsergebnis;
@@ -345,13 +346,13 @@ public class PlanService {
 
 
     @Transactional
-    public List<ZuweisungDto> getPlanFuerTeilnehmer(Teilnehmer teilnehmer, Veranstaltung veranstaltung) {
+    public List<ZuweisungDto> getPlanFuerTeilnehmer(Nutzer teilnehmer, Veranstaltung veranstaltung) {
         return getPlanFuerTeilnehmer(teilnehmer, veranstaltung, null);
     }
 
 
     @Transactional
-    public List<ZuweisungDto> getPlanFuerTeilnehmer(Teilnehmer teilnehmer, Veranstaltung veranstaltung, Long ergebnisId) {
+    public List<ZuweisungDto> getPlanFuerTeilnehmer(Nutzer teilnehmer, Veranstaltung veranstaltung, Long ergebnisId) {
         return ermittlePlanFuerTeilnehmer(teilnehmer, veranstaltung, ergebnisId).stream()
             .map(z -> new ZuweisungDto(
                 teilnehmer.getFullName(), z.vortragTitel, z.slotBeginn, z.slotEnde, z.raumName, z.gebaeudeName, z.referentName))
@@ -368,12 +369,12 @@ public class PlanService {
      * {@link #getPlanFuerTeilnehmer(Teilnehmer, Veranstaltung)}.
      */
     @Transactional
-    public List<TeilnehmerVortragZuweisungDto> getPlanFuerTeilnehmerDetailliert(Teilnehmer teilnehmer, Veranstaltung veranstaltung) {
+    public List<TeilnehmerVortragZuweisungDto> getPlanFuerTeilnehmerDetailliert(Nutzer teilnehmer, Veranstaltung veranstaltung) {
         return ermittlePlanFuerTeilnehmer(teilnehmer, veranstaltung, null);
     }
 
 
-    private List<TeilnehmerVortragZuweisungDto> ermittlePlanFuerTeilnehmer(Teilnehmer teilnehmer, Veranstaltung veranstaltung, Long ergebnisId) {
+    private List<TeilnehmerVortragZuweisungDto> ermittlePlanFuerTeilnehmer(Nutzer teilnehmer, Veranstaltung veranstaltung, Long ergebnisId) {
         Objects.requireNonNull(veranstaltung);
         if (null == teilnehmer) {
             return Collections.emptyList();
@@ -478,13 +479,13 @@ public class PlanService {
 
 
     @Transactional
-    public List<ReferentVortragDto> getPlanFuerReferent(Referent referent, Veranstaltung veranstaltung) {
+    public List<ReferentVortragDto> getPlanFuerReferent(Nutzer referent, Veranstaltung veranstaltung) {
         return getPlanFuerReferent(referent, veranstaltung, null);
     }
 
 
     @Transactional
-    public List<ReferentVortragDto> getPlanFuerReferent(Referent referent, Veranstaltung veranstaltung, Long ergebnisId) {
+    public List<ReferentVortragDto> getPlanFuerReferent(Nutzer referent, Veranstaltung veranstaltung, Long ergebnisId) {
         if (null == referent) {
             return Collections.emptyList();
         }

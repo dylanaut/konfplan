@@ -17,6 +17,7 @@ import kreyj.konfplan.persistence.Planungsergebnis;
 import kreyj.konfplan.persistence.Prioritaet;
 import kreyj.konfplan.persistence.Raum;
 import kreyj.konfplan.persistence.RaumVerfuegbarkeit;
+import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Referent;
 import kreyj.konfplan.persistence.Slot;
 import kreyj.konfplan.persistence.Teilnehmer;
@@ -335,7 +336,7 @@ public class UmplanungService {
 
         ergebnis.setJsonErgebnis(result.toJson());
 
-        Referent referent = vortrag.getReferent();
+        Nutzer referent = vortrag.getReferent();
         if (null != referent) {
             String inhalt = "Dein Wahlvortrag '" + vortrag.getTitel() + "' wurde vom Raum '"
                 + (null == alterRaum ? "-" : alterRaum.getName()) + "' in den Raum '" + neuerRaum.getName() + "' verlegt.";
@@ -588,7 +589,7 @@ public class UmplanungService {
                     LOG.infof("Sitzplatz für Teilnehmer %d in Wahlvortrag '%s' (Instanz %d) freigegeben - "
                             + "in Veranstaltung '%s' nicht mehr verfügbar.",
                         teilnehmer.getId(), vortrag.getTitel(), iIdx, veranstaltung.getName());
-                    Referent referent = vortrag.getReferent();
+                    Nutzer referent = vortrag.getReferent();
                     if (null != referent) {
                         String inhalt = "Teilnehmer " + teilnehmer.getFullName() + " wurde als nicht verfügbar markiert "
                             + "und aus deinem Wahlvortrag '" + vortrag.getTitel() + "' ausgetragen.";
@@ -947,7 +948,7 @@ public class UmplanungService {
                 NachrichtKategorie.VORTRAG_AUSGEFALLEN, veranstaltung.getId(), absender);
         }
 
-        Referent referent = ausgefallenerVortrag.getReferent();
+        Nutzer referent = ausgefallenerVortrag.getReferent();
         if (null != referent) {
             String inhalt = "Dein Wahlvortrag '" + ausgefallenerVortrag.getTitel()
                 + "' wurde im Plan als ausgefallen markiert. " + umverteilteTeilnehmer.size()

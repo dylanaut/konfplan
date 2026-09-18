@@ -29,6 +29,7 @@ import kreyj.konfplan.adapter.in.web.dto.PasswortrichtlinieDto;
 import kreyj.konfplan.adapter.in.web.dto.RaumVerfuegbarkeitDto;
 import kreyj.konfplan.adapter.in.web.dto.RoleChangeDto;
 import kreyj.konfplan.adapter.in.web.dto.TeilnehmerPasswortZipRequestDto;
+import kreyj.konfplan.adapter.in.web.dto.ZusatzrolleAnfrageDto;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.SecurityContext;
 import kreyj.konfplan.application.port.in.OrganisatorServiceInterface;
@@ -162,6 +163,25 @@ public class OrganisatorResource {
     @Operation(summary = "Rolle eines Organisators/Administrators ändern", description = "Stuft einen bestehenden Organisator zu Administrator um oder umgekehrt.")
     public NutzerDto changeRole(@PathParam("id") Long id, @RequestBody(description = "Die neue Rolle (ORGANISATOR oder ADMINISTRATOR)") RoleChangeDto dto) {
         return organisatorService.changeRole(id, dto.role);
+    }
+
+
+    @POST
+    @Path("/nutzer/{id}/zusatzrollen")
+    @Operation(summary = "Zusatzrolle vergeben", description = "Weist einem Nutzer eine zusätzliche Rolle zu (siehe #751) - wer wem welche Zusatzrolle geben darf, wird serverseitig geprüft.")
+    public NutzerDto grantZusatzrolle(@PathParam("id") Long id,
+                                       @RequestBody(description = "Die zu vergebende Zusatzrolle") ZusatzrolleAnfrageDto dto,
+                                       @Context SecurityContext securityContext) {
+        return organisatorService.grantZusatzrolle(id, dto.role, securityContext.getUserPrincipal().getName());
+    }
+
+
+    @DELETE
+    @Path("/nutzer/{id}/zusatzrollen/{role}")
+    @Operation(summary = "Zusatzrolle entziehen", description = "Entfernt eine zusätzliche Rolle von einem Nutzer (siehe #751).")
+    public NutzerDto revokeZusatzrolle(@PathParam("id") Long id, @PathParam("role") String role,
+                                        @Context SecurityContext securityContext) {
+        return organisatorService.revokeZusatzrolle(id, role, securityContext.getUserPrincipal().getName());
     }
 
 
@@ -543,11 +563,11 @@ public class OrganisatorResource {
     @Path("/teilnehmer/{tid}/gruppenwerte")
     @Operation(summary = "Die aktuell zugeordneten Gruppenwerte eines Teilnehmers abrufen")
     public List<GruppenkategorieWertDto> getTeilnehmerGruppenwerte(@PathParam("tid") Long tid) {
-        Teilnehmer teilnehmer = Teilnehmer.findById(tid);
-        if (null == teilnehmer) {
+        Nutzer teilnehmer = Nutzer.findById(tid);
+        if (null == teilnehmer || !teilnehmer.hatRolle("TEILNEHMER")) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
-        return teilnehmer.getGruppenwerte().stream().map(GruppenkategorieWertDto::from).toList();
+        return teilnehmer.getTeilnehmerGruppenwerte().stream().map(GruppenkategorieWertDto::from).toList();
     }
 
 

@@ -32,7 +32,7 @@ import java.time.LocalDateTime;
 public class Anwesenheit extends VersionedEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    private Teilnehmer teilnehmer;
+    private Nutzer teilnehmer; // Nutzer statt Teilnehmer-Subtyp seit #751, siehe Vortrag.referent
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private Veranstaltung veranstaltung;
@@ -47,7 +47,7 @@ public class Anwesenheit extends VersionedEntity {
     private LocalDateTime eingechecktAm;
 
 
-    public Anwesenheit(Teilnehmer teilnehmer, Veranstaltung veranstaltung, Slot slot, Raum raum, LocalDateTime eingechecktAm) {
+    public Anwesenheit(Nutzer teilnehmer, Veranstaltung veranstaltung, Slot slot, Raum raum, LocalDateTime eingechecktAm) {
         this.teilnehmer = teilnehmer;
         this.veranstaltung = veranstaltung;
         this.slot = slot;
@@ -56,7 +56,7 @@ public class Anwesenheit extends VersionedEntity {
     }
 
 
-    public static Anwesenheit findByTeilnehmerUndSlot(Teilnehmer teilnehmer, Slot slot) {
+    public static Anwesenheit findByTeilnehmerUndSlot(Nutzer teilnehmer, Slot slot) {
         return find("teilnehmer = ?1 and slot = ?2", teilnehmer, slot).firstResult();
     }
 }

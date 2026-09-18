@@ -149,7 +149,7 @@ class CsvFileImportTest extends DatabaseCleaner {
 
         Teilnehmer t = (Teilnehmer) Nutzer.findByEmail("hayal.yaldir@rks-linz.de");
         assertThat(t).isNotNull();
-        assertThat(t.getGruppenwerte())
+        assertThat(t.getTeilnehmerGruppenwerte())
             .anyMatch(wert -> "9.1".equals(wert.getWert()) && "Klasse".equals(wert.getGruppenkategorie().getName()));
     }
 

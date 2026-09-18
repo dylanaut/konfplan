@@ -145,7 +145,7 @@ class OrganisatorResourceTest extends DatabaseCleaner {
 
         Nutzer user = Nutzer.findById(updated.id);
         assertThat(user.getEmail()).isEqualTo(newEmail);
-        assertThat(((Teilnehmer) user).getGruppenwerte()).extracting(GruppenkategorieWert::getWert).contains("New Group");
+        assertThat(((Teilnehmer) user).getTeilnehmerGruppenwerte()).extracting(GruppenkategorieWert::getWert).contains("New Group");
         verify(keycloakUserProvisioningService).updateUser(user);
     }
 

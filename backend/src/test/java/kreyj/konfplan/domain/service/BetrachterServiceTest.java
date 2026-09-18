@@ -67,7 +67,7 @@ class BetrachterServiceTest extends DatabaseCleaner {
         tn.persist();
         tn.addVeranstaltung(Veranstaltung.findById(veranstaltung.getId()));
         for (GruppenkategorieWert wert : werte) {
-            tn.addGruppenwert(wert);
+            tn.addTeilnehmerGruppenwert(wert);
         }
         return tn;
     }
@@ -80,7 +80,7 @@ class BetrachterServiceTest extends DatabaseCleaner {
         b.persist();
         b.addVeranstaltung(Veranstaltung.findById(veranstaltung.getId()));
         for (GruppenkategorieWert wert : werte) {
-            b.addGruppenwert(wert);
+            b.addBetrachterGruppenwert(wert);
         }
         return b;
     }
@@ -135,7 +135,7 @@ class BetrachterServiceTest extends DatabaseCleaner {
         tnAndereVeranstaltung.setEmail("tn-andere@test.de");
         tnAndereVeranstaltung.persist();
         tnAndereVeranstaltung.addVeranstaltung(Veranstaltung.findById(andereVeranstaltung.getId()));
-        tnAndereVeranstaltung.addGruppenwert(gruppeA);
+        tnAndereVeranstaltung.addTeilnehmerGruppenwert(gruppeA);
 
         assertThat(betrachterService.getSichtbareTeilnehmer(betrachter, veranstaltung)).isEmpty();
     }

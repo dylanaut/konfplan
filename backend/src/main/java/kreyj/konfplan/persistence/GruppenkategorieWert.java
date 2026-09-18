@@ -37,15 +37,19 @@ public class GruppenkategorieWert extends VersionedEntity {
 
     private String wert;
 
+    // Set<Nutzer> statt Set<Teilnehmer>/Set<Betrachter> seit #751: die Besitzerseite
+    // (Nutzer.teilnehmerGruppenwerte/betrachterGruppenwerte) kann von JEDEM Nutzer befüllt sein,
+    // dessen Primär- ODER Zusatzrolle TEILNEHMER/BETRACHTER ist - ein enger Set<Teilnehmer>-Typ
+    // würde bei einem z.B. per Zusatzrolle berechtigten Organisator zur ClassCastException führen.
     @JsonIgnore
-    @ManyToMany(mappedBy = "gruppenwerte")
+    @ManyToMany(mappedBy = "teilnehmerGruppenwerte")
     @Setter(AccessLevel.NONE)
-    private Set<Teilnehmer> teilnehmer = new HashSet<>();
+    private Set<Nutzer> teilnehmer = new HashSet<>();
 
     @JsonIgnore
-    @ManyToMany(mappedBy = "gruppenwerte")
+    @ManyToMany(mappedBy = "betrachterGruppenwerte")
     @Setter(AccessLevel.NONE)
-    private Set<Betrachter> betrachter = new HashSet<>();
+    private Set<Nutzer> betrachter = new HashSet<>();
 
 
     public GruppenkategorieWert(Gruppenkategorie gruppenkategorie, String wert) {
@@ -55,12 +59,12 @@ public class GruppenkategorieWert extends VersionedEntity {
     }
 
 
-    public Set<Teilnehmer> getTeilnehmer() {
+    public Set<Nutzer> getTeilnehmer() {
         return Collections.unmodifiableSet(teilnehmer);
     }
 
 
-    public Set<Betrachter> getBetrachter() {
+    public Set<Nutzer> getBetrachter() {
         return Collections.unmodifiableSet(betrachter);
     }
 
@@ -88,31 +92,31 @@ public class GruppenkategorieWert extends VersionedEntity {
 
 
     /**
-     * Hält die inverse Seite der {@code Teilnehmer.gruppenwerte}-Assoziation synchron - von
-     * {@link Teilnehmer#addGruppenwert} aufgerufen (siehe {@link Gruppenkategorie#nimmWertAuf}
+     * Hält die inverse Seite der {@code Nutzer.teilnehmerGruppenwerte}-Assoziation synchron - von
+     * {@link Nutzer#addTeilnehmerGruppenwert} aufgerufen (siehe {@link Gruppenkategorie#nimmWertAuf}
      * für dieselbe Notwendigkeit bei der anderen Assoziation dieser Klasse).
      */
-    void nimmTeilnehmerAuf(Teilnehmer teilnehmer) {
+    void nimmTeilnehmerAuf(Nutzer teilnehmer) {
         this.teilnehmer.add(teilnehmer);
     }
 
 
-    void entferneTeilnehmer(Teilnehmer teilnehmer) {
+    void entferneTeilnehmer(Nutzer teilnehmer) {
         this.teilnehmer.remove(teilnehmer);
     }
 
 
     /**
-     * Hält die inverse Seite der {@code Betrachter.gruppenwerte}-Assoziation synchron - von
-     * {@link Betrachter#addGruppenwert} aufgerufen (siehe {@link #nimmTeilnehmerAuf} für dieselbe
-     * Notwendigkeit bei der analogen Teilnehmer-Assoziation).
+     * Hält die inverse Seite der {@code Nutzer.betrachterGruppenwerte}-Assoziation synchron - von
+     * {@link Nutzer#addBetrachterGruppenwert} aufgerufen (siehe {@link #nimmTeilnehmerAuf} für
+     * dieselbe Notwendigkeit bei der analogen Teilnehmer-Assoziation).
      */
-    void nimmBetrachterAuf(Betrachter betrachter) {
+    void nimmBetrachterAuf(Nutzer betrachter) {
         this.betrachter.add(betrachter);
     }
 
 
-    void entferneBetrachter(Betrachter betrachter) {
+    void entferneBetrachter(Nutzer betrachter) {
         this.betrachter.remove(betrachter);
     }
 }

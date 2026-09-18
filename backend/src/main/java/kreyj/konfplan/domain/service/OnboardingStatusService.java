@@ -34,10 +34,10 @@ public class OnboardingStatusService {
     }
 
     private Map<String, List<String>> gruppenwerteByKategorieVon(Nutzer nutzer) {
-        if (!(nutzer instanceof Teilnehmer teilnehmer)) {
+        if (!nutzer.hatRolle("TEILNEHMER")) {
             return Map.of();
         }
-        return teilnehmer.getGruppenwerte().stream()
+        return nutzer.getTeilnehmerGruppenwerte().stream()
             .collect(Collectors.groupingBy(w -> w.getGruppenkategorie().getName(),
                 Collectors.mapping(GruppenkategorieWert::getWert, Collectors.toList())));
     }

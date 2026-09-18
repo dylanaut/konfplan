@@ -4,8 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import kreyj.konfplan.adapter.in.web.dto.ReferentVortragDto;
 import kreyj.konfplan.adapter.in.web.dto.ZuweisungDto;
-import kreyj.konfplan.persistence.Referent;
-import kreyj.konfplan.persistence.Teilnehmer;
+import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.persistence.Veranstaltung;
 import net.fortuna.ical4j.model.Calendar;
 import net.fortuna.ical4j.model.component.VEvent;
@@ -29,13 +28,13 @@ public class KalenderService {
     }
 
 
-    public Calendar generateTeilnehmerCalendar(Veranstaltung veranstaltung, Teilnehmer teilnehmer) {
+    public Calendar generateTeilnehmerCalendar(Veranstaltung veranstaltung, Nutzer teilnehmer) {
         List<ZuweisungDto> zuweisungen = planService.getPlanFuerTeilnehmer(teilnehmer, veranstaltung);
         return createCalendarFromZuweisungen(zuweisungen);
     }
 
 
-    public Calendar generateReferentCalendar(Veranstaltung veranstaltung, Referent referent) {
+    public Calendar generateReferentCalendar(Veranstaltung veranstaltung, Nutzer referent) {
         List<ReferentVortragDto> planFuerReferent = planService.getPlanFuerReferent(referent, veranstaltung);
         List<ZuweisungDto> zuweisungen = planFuerReferent.stream().map(KalenderService::maptoZuweisungDto).collect(Collectors.toList());
         return createCalendarFromZuweisungen(zuweisungen);
