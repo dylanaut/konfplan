@@ -185,7 +185,14 @@ const router = createRouter({
 
 // ORGANISATOR-Routen sollen auch fuer ADMINISTRATOR zugaenglich sein (Administrator hat
 // dieselben Rechte, siehe stores/auth.js isOrganisator) - daher hier ueber die semantischen
-// Store-Getter statt per strikter String-Gleichheit auf authStore.userRole pruefen.
+// Store-Getter statt per strikter String-Gleichheit auf authStore.userRoles pruefen.
+//
+// Mehrfachrollen (siehe #751): diese Checks pruefen bewusst "haelt der Nutzer die Rolle
+// UEBERHAUPT" (Primaer- ODER Zusatzrolle), NICHT "ist sie gerade im Header-Dropdown aktiv"
+// (authStore.activeRole). Das Backend kennt keinen "aktive Rolle"-Begriff - wer eine Rolle
+// haelt, darf die zugehoerige Route jederzeit direkt ansteuern, auch ohne vorher im Dropdown
+// umgeschaltet zu haben. activeRole ist rein eine Standardziel-/Anzeige-Bequemlichkeit im
+// Frontend, KEINE zusaetzliche Zugriffsschranke.
 const ROLE_CHECKS = {
     ORGANISATOR: (authStore) => authStore.isOrganisator,
     ADMINISTRATOR: (authStore) => authStore.isAdministrator,

@@ -8,20 +8,57 @@ import keycloak from '../keycloak';
 
 const KNOWN_ROLES = ['ORGANISATOR', 'ADMINISTRATOR', 'REFERENT', 'TEILNEHMER', 'BETRACHTER'];
 
+// Bestimmt die Standard-Landing-Rolle beim ersten Login (siehe Redirecting.vue) - ADMINISTRATOR
+// vor ORGANISATOR ist rein kosmetisch (ein Nutzer haelt als Primaerrolle nie beide gleichzeitig,
+// siehe Backend: Administrator extends Organisator), die Reihenfolge sonst analog zur bisherigen
+// Prioritaetskette.
+export const ROLE_PRIORITY = ['ADMINISTRATOR', 'ORGANISATOR', 'REFERENT', 'TEILNEHMER', 'BETRACHTER'];
+
+// Ziel-Route je Rolle (siehe #751) - ORGANISATOR/ADMINISTRATOR teilen sich dasselbe Dashboard.
+export const ROLE_PATHS = {
+    ADMINISTRATOR: '/organisator',
+    ORGANISATOR: '/organisator',
+    REFERENT: '/referent',
+    TEILNEHMER: '/teilnehmer',
+    BETRACHTER: '/betrachter'
+};
+
+function parseRolesFromStorage() {
+    const stored = localStorage.getItem('roles');
+    if (stored) {
+        try {
+            return JSON.parse(stored);
+        } catch {
+            // Fällt durch auf den Legacy-Fallback unten.
+        }
+    }
+    // Legacy-Fallback (siehe #751): vor der Mehrfachrollen-Funktion stand hier ein einzelner
+    // 'role'-String in localStorage - u.a. von Playwright-Tests genutzt, um einen Login
+    // vorzutäuschen (siehe z.B. TeilnehmerDashboard.spec.js), ohne echten Keycloak-Token-Flow.
+    const legacyRole = localStorage.getItem('role');
+    return legacyRole ? [legacyRole] : [];
+}
+
 export const useAuthStore = defineStore('auth', () => {
     const token = ref(localStorage.getItem('token') || null);
-    const userRole = ref(localStorage.getItem('role') || null);
+    const userRoles = ref(parseRolesFromStorage());
+    // Welches Dashboard aktuell aktiv ist (siehe #751) - bewusst in sessionStorage statt
+    // localStorage/eventContext.js-Muster: die Rollenwahl ist ein Pro-Sitzung/Tab-Konzept, kein
+    // geräteweites "letzte Veranstaltung merken".
+    const activeRole = ref(sessionStorage.getItem('activeRole') || null);
     const toast = useToast();
 
     const isAuthenticated = computed(() => !!token.value);
     // Administrator hat dieselben Rechte wie Organisator (siehe Backend: Administrator extends
-    // Organisator) - das Frontend liest aber nur eine primaere Rolle aus dem Token, daher hier
-    // explizit beide Rollenwerte prüfen.
-    const isOrganisator = computed(() => userRole.value === 'ORGANISATOR' || userRole.value === 'ADMINISTRATOR');
-    const isAdministrator = computed(() => userRole.value === 'ADMINISTRATOR');
-    const isSpeaker = computed(() => userRole.value === 'REFERENT');
-    const isParticipant = computed(() => userRole.value === 'TEILNEHMER');
-    const isViewer = computed(() => userRole.value === 'BETRACHTER');
+    // Organisator) - ORGANISATOR/ADMINISTRATOR sind dabei stets die Primärrolle, nie eine
+    // Zusatzrolle des jeweils anderen (siehe Backend Nutzer.hatRolle), daher hier weiterhin
+    // explizit beide Rollenwerte prüfen. Diese Getter drücken aus, ob der Nutzer die Rolle
+    // ÜBERHAUPT hält (Primär- oder Zusatzrolle) - NICHT, ob sie gerade aktiv ist (siehe activeRole).
+    const isOrganisator = computed(() => userRoles.value.includes('ORGANISATOR') || userRoles.value.includes('ADMINISTRATOR'));
+    const isAdministrator = computed(() => userRoles.value.includes('ADMINISTRATOR'));
+    const isSpeaker = computed(() => userRoles.value.includes('REFERENT'));
+    const isParticipant = computed(() => userRoles.value.includes('TEILNEHMER'));
+    const isViewer = computed(() => userRoles.value.includes('BETRACHTER'));
 
     // Wird nach erfolgreicher Keycloak-Anmeldung (main.js, keycloak.js-Token-Refresh) mit dem
     // rohen Access-Token und dem von keycloak-js bereits dekodierten Payload aufgerufen.
@@ -29,14 +66,33 @@ export const useAuthStore = defineStore('auth', () => {
         token.value = newToken;
         localStorage.setItem('token', newToken);
 
-        const roles = parsed?.realm_access?.roles ?? [];
-        const role = roles.find((r) => KNOWN_ROLES.includes(r)) ?? null;
-        userRole.value = role;
-        if (role) {
-            localStorage.setItem('role', role);
+        const roles = parsed?.realm_access?.roles?.filter((r) => KNOWN_ROLES.includes(r)) ?? [];
+        userRoles.value = roles;
+        if (roles.length) {
+            localStorage.setItem('roles', JSON.stringify(roles));
         } else {
-            localStorage.removeItem('role');
+            localStorage.removeItem('roles');
         }
+    }
+
+
+    /**
+     * Wechselt das aktuell angezeigte Dashboard (siehe #751) - reine Frontend-Routing-Auswahl,
+     * KEINE zusätzliche Zugriffsschranke (das Backend kennt keinen "aktive Rolle"-Begriff; wer
+     * eine Rolle hält, darf die zugehörige Route jederzeit direkt ansteuern, siehe router/index.js).
+     * Räumt wie logout() laufende Requests und den Veranstaltungskontext auf, damit beim
+     * Dashboard-Wechsel keine Daten der vorherigen Rolle/Veranstaltung durchscheinen.
+     */
+    function setActiveRole(role) {
+        if (!userRoles.value.includes(role)) {
+            return;
+        }
+        cancelAllRequests();
+        const eventContext = useEventContextStore();
+        eventContext.clearEvent();
+
+        activeRole.value = role;
+        sessionStorage.setItem('activeRole', role);
     }
 
     function login(options) {
@@ -67,9 +123,12 @@ export const useAuthStore = defineStore('auth', () => {
         cancelAllRequests();
 
         token.value = null;
-        userRole.value = null;
+        userRoles.value = [];
+        activeRole.value = null;
         localStorage.removeItem('token');
         localStorage.removeItem('role');
+        localStorage.removeItem('roles');
+        sessionStorage.removeItem('activeRole');
 
         const eventContext = useEventContextStore();
         eventContext.clearEvent();
@@ -94,7 +153,8 @@ export const useAuthStore = defineStore('auth', () => {
 
     return {
         token,
-        userRole,
+        userRoles,
+        activeRole,
         isAuthenticated,
         isOrganisator,
         isAdministrator,
@@ -104,6 +164,7 @@ export const useAuthStore = defineStore('auth', () => {
         login,
         requireLogin,
         logout,
-        setToken
+        setToken,
+        setActiveRole
     };
 });
