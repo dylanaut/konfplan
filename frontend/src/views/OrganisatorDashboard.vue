@@ -115,6 +115,7 @@
                           @openUserModal="openUserModal"
                           @deleteUser="deleteUser"
                           @openPasswordResetModal="openPasswordResetModal"
+                          @openZusatzrollenModal="openZusatzrollenModal"
       />
 
       <TeilnehmerTab v-if="activeTab === 'teilnehmer' && selectedVid"
@@ -139,6 +140,7 @@
                      @saveParticipantPriorities="saveParticipantPriorities"
                      @saveAllParticipantPriorities="saveAllParticipantPriorities"
                      @openPasswordResetModal="openPasswordResetModal"
+                     @openZusatzrollenModal="openZusatzrollenModal"
       />
 
       <ReferentenTab v-if="activeTab === 'referenten' && selectedVid"
@@ -239,6 +241,8 @@
                      @close="showInviteModal = false" @invite="handleInviteUser"/>
     <PasswordResetModal :isVisible="showPasswordResetModal" :nutzer="selectedUserForPasswordReset" :vid="selectedVid"
                      @close="showPasswordResetModal = false" @reset="handleResetPassword"/>
+    <ZusatzrollenModal :isVisible="showZusatzrollenModal" :nutzer="selectedUserForZusatzrollen"
+                     @close="showZusatzrollenModal = false" @save="handleSaveZusatzrollen"/>
     <GeneratePasswordsZipModal :isVisible="showGeneratePasswordsZipModal" :count="selectedIdsForZip.length"
                      @close="showGeneratePasswordsZipModal = false" @generate="handleGeneratePasswordsZip"/>
     <MaintenanceAnnouncementModal :isVisible="showMaintenanceModal" @close="showMaintenanceModal = false"/>
@@ -320,6 +324,7 @@ import EventSlotEditorModal from '../components/EventSlotEditorModal.vue';
 import GebaeudeEditorModal from '../components/GebaeudeEditorModal.vue';
 import InviteUserModal from '../components/InviteUserModal.vue';
 import PasswordResetModal from '../components/PasswordResetModal.vue';
+import ZusatzrollenModal from '../components/ZusatzrollenModal.vue';
 import GeneratePasswordsZipModal from '../components/GeneratePasswordsZipModal.vue';
 import MaintenanceAnnouncementModal from '../components/MaintenanceAnnouncementModal.vue';
 
@@ -389,6 +394,8 @@ const showInviteModal = ref(false);
 const selectedUserForInvite = ref(null);
 const showPasswordResetModal = ref(false);
 const selectedUserForPasswordReset = ref(null);
+const showZusatzrollenModal = ref(false);
+const selectedUserForZusatzrollen = ref(null);
 const showGeneratePasswordsZipModal = ref(false);
 const showMaintenanceModal = ref(false);
 const selectedIdsForZip = ref([]);
@@ -532,7 +539,7 @@ onMounted(async () => {
   unsavedChanges.registerDirtyCheck(() => availabilityStore.hasDirtyAvailabilities()
       || changedPriorities.value.size > 0
       || [showVeranstaltungModal, showGebaeudeModal, showRaumModal, showUserModal, showVortragModal,
-          showSlotModal, showInviteModal, showPasswordResetModal, showMaintenanceModal].some(m => m.value));
+          showSlotModal, showInviteModal, showPasswordResetModal, showZusatzrollenModal, showMaintenanceModal].some(m => m.value));
 });
 
 onUnmounted(() => {
@@ -941,6 +948,28 @@ const handleResetPassword = async ({userId, newPassword}) => {
     showPasswordResetModal.value = false;
   } catch (e) {
     alert("Fehler beim Zurücksetzen des Passworts: " + extractErrorMessage(e));
+  }
+};
+
+const openZusatzrollenModal = (u) => {
+  selectedUserForZusatzrollen.value = u;
+  showZusatzrollenModal.value = true;
+};
+const handleSaveZusatzrollen = async ({userId, toGrant, toRevoke}) => {
+  try {
+    for (const role of toGrant) {
+      await api.post(`/api/organisator/nutzer/${userId}/zusatzrollen`, {role});
+    }
+    for (const role of toRevoke) {
+      await api.delete(`/api/organisator/nutzer/${userId}/zusatzrollen/${role}`);
+    }
+    showZusatzrollenModal.value = false;
+    // Siehe Kommentar in handleSaveUser: loadData() liefert bei ausgewählter Veranstaltung
+    // bereits die korrekt zusammengeführte Nutzerliste (inkl. aktualisierter zusatzRollen).
+    if (selectedVid.value) await loadData();
+    else await refreshAdmins();
+  } catch (e) {
+    alert("Fehler beim Aktualisieren der Zusatzrollen: " + extractErrorMessage(e));
   }
 };
 

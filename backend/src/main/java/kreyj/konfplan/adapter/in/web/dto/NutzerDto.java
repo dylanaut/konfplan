@@ -29,6 +29,7 @@ public class NutzerDto extends AbstractVersionedDto {
     public String firstName;
     public String lastName;
     public String role;
+    public Set<String> zusatzRollen;
     public boolean isActive;
     public List<Long> veranstaltungIds;
 
@@ -95,6 +96,7 @@ public class NutzerDto extends AbstractVersionedDto {
         dto.firstName = u.getFirstName();
         dto.lastName = u.getLastName();
         dto.role = u.getRole();
+        dto.zusatzRollen = u.getZusatzRollen();
         dto.isActive = u.isActive();
         Set<Veranstaltung> veranstaltungen = u.getVeranstaltungen();
         dto.veranstaltungIds = null != veranstaltungen ? veranstaltungen.stream().map(IdEntity::getId).toList() : emptyList();
@@ -104,7 +106,7 @@ public class NutzerDto extends AbstractVersionedDto {
             dto.organisation = r.getOrganisation();
         } else if (u instanceof Teilnehmer tn) {
             dto.gruppen = tn.getGruppen().stream().sorted(StringHelper.NUM_OR_ALPHA_COMPARATOR).toList();
-            dto.gruppenwerteByKategorie = tn.getGruppenwerte().stream()
+            dto.gruppenwerteByKategorie = tn.getTeilnehmerGruppenwerte().stream()
                 .collect(Collectors.groupingBy(w -> w.getGruppenkategorie().getName(),
                     Collectors.mapping(GruppenkategorieWert::getWert, Collectors.toList())));
             dto.gruppenwerteByKategorie.values().forEach(werte -> werte.sort(StringHelper.NUM_OR_ALPHA_COMPARATOR));
@@ -118,7 +120,7 @@ public class NutzerDto extends AbstractVersionedDto {
                 dto.prioritaeten = mappedPrios;
             }
         } else if (u instanceof Betrachter b) {
-            dto.gruppenwerteByKategorie = b.getGruppenwerte().stream()
+            dto.gruppenwerteByKategorie = b.getBetrachterGruppenwerte().stream()
                 .collect(Collectors.groupingBy(w -> w.getGruppenkategorie().getName(),
                     Collectors.mapping(GruppenkategorieWert::getWert, Collectors.toList())));
             dto.gruppenwerteByKategorie.values().forEach(werte -> werte.sort(StringHelper.NUM_OR_ALPHA_COMPARATOR));

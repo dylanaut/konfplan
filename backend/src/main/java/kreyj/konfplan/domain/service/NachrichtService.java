@@ -124,7 +124,7 @@ public class NachrichtService {
      */
     @Transactional
     public void benachrichtigeUeberZurueckgezogenenVortrag(Wahlvortrag vortrag, Veranstaltung veranstaltung) {
-        List<Teilnehmer> betroffeneTeilnehmer = Prioritaet.<Prioritaet>list("vortrag = ?1 and prioWert > 0", vortrag)
+        List<Nutzer> betroffeneTeilnehmer = Prioritaet.<Prioritaet>list("vortrag = ?1 and prioWert > 0", vortrag)
             .stream()
             .map(Prioritaet::getTeilnehmer)
             .toList();
@@ -157,7 +157,7 @@ public class NachrichtService {
         String teilnehmerInhalt = "Der von dir priorisierte Wahlvortrag '" + vortrag.getTitel()
             + "' wurde zurückgezogen. Bitte vergib bis " + deadlineText
             + " eine neue Priorität für einen anderen Wahlvortrag.";
-        for (Teilnehmer teilnehmer : betroffeneTeilnehmer) {
+        for (Nutzer teilnehmer : betroffeneTeilnehmer) {
             sendeNachricht(teilnehmer, "Dein priorisierter Vortrag wurde zurückgezogen", teilnehmerInhalt,
                 NachrichtKategorie.VORTRAG_ZURUECKGEZOGEN, veranstaltung.getId(), null);
         }

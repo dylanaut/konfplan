@@ -274,7 +274,7 @@ class CsvImportTest extends DatabaseCleaner {
 
         Teilnehmer t = (Teilnehmer) Nutzer.findByEmail(tnEmail);
         assertThat(t).isNotNull();
-        assertThat(t.getGruppenwerte()).extracting(GruppenkategorieWert::getWert).contains("10b");
+        assertThat(t.getTeilnehmerGruppenwerte()).extracting(GruppenkategorieWert::getWert).contains("10b");
     }
 
 

@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { useAuthStore } from '../stores/auth';
+import { useAuthStore, ROLE_PRIORITY, ROLE_PATHS } from '../stores/auth';
 
 const Redirecting = () => import('../views/Redirecting.vue');
 const CheckinView = () => import('../views/CheckinView.vue');
@@ -185,7 +185,14 @@ const router = createRouter({
 
 // ORGANISATOR-Routen sollen auch fuer ADMINISTRATOR zugaenglich sein (Administrator hat
 // dieselben Rechte, siehe stores/auth.js isOrganisator) - daher hier ueber die semantischen
-// Store-Getter statt per strikter String-Gleichheit auf authStore.userRole pruefen.
+// Store-Getter statt per strikter String-Gleichheit auf authStore.userRoles pruefen.
+//
+// Mehrfachrollen (siehe #751): diese Checks pruefen bewusst "haelt der Nutzer die Rolle
+// UEBERHAUPT" (Primaer- ODER Zusatzrolle), NICHT "ist sie gerade im Header-Dropdown aktiv"
+// (authStore.activeRole). Das Backend kennt keinen "aktive Rolle"-Begriff - wer eine Rolle
+// haelt, darf die zugehoerige Route jederzeit direkt ansteuern, auch ohne vorher im Dropdown
+// umgeschaltet zu haben. activeRole ist rein eine Standardziel-/Anzeige-Bequemlichkeit im
+// Frontend, KEINE zusaetzliche Zugriffsschranke.
 const ROLE_CHECKS = {
     ORGANISATOR: (authStore) => authStore.isOrganisator,
     ADMINISTRATOR: (authStore) => authStore.isAdministrator,
@@ -213,6 +220,20 @@ router.beforeEach((to, from, next) => {
     if (requiresAuth && requiredRole && !(ROLE_CHECKS[requiredRole]?.(authStore) ?? false)) {
         console.warn(`Zugriff verweigert: Rolle ${requiredRole} erforderlich.`);
         return next('/');
+    }
+
+    // Direkter Deep-Link auf eine Rollen-Route ohne vorherigen Redirecting.vue-Durchlauf (siehe
+    // #751 - z.B. Lesezeichen, neuer Tab, oder ein Login-Redirect zurueck auf eine tiefe URL,
+    // bei dem noch kein activeRole in sessionStorage steht): activeRole hier nachtraeglich
+    // synchronisieren, sonst bliebe der Rollen-Dropdown im Header leer. Nur bei einem
+    // tatsaechlichen Wechsel aufrufen (setActiveRole raeumt Requests/Veranstaltungskontext auf),
+    // nicht bei jeder Navigation innerhalb derselben Rolle.
+    if (requiresAuth && authStore.isAuthenticated) {
+        const matchingRole = ROLE_PRIORITY.find((role) =>
+            authStore.userRoles.includes(role) && to.path.startsWith(ROLE_PATHS[role]));
+        if (matchingRole && matchingRole !== authStore.activeRole) {
+            authStore.setActiveRole(matchingRole);
+        }
     }
 
     next();

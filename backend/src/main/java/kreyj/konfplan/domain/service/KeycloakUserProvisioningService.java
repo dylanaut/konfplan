@@ -202,6 +202,34 @@ public class KeycloakUserProvisioningService {
 
 
     /**
+     * Weist einem bereits provisionierten Nutzer additiv eine Zusatzrolle zu (siehe #751) - anders
+     * als {@link #changeRealmRole} (exklusiver Tausch für die Primärrollen-Umstufung) bleiben dabei
+     * alle bisherigen Rollen des Nutzers erhalten.
+     */
+    public void grantRealmRole(Nutzer nutzer, String roleName) {
+        if (null == nutzer.getKeycloakId()) {
+            LOG.warn("grantRealmRole ohne keycloakId für '" + nutzer.getLoginName() + "' - überspringe Keycloak-Sync.");
+            return;
+        }
+        assignRealmRole(nutzer.getKeycloakId(), roleName);
+    }
+
+
+    /**
+     * Entzieht eine additiv zugewiesene Zusatzrolle wieder (siehe #751) - Gegenstück zu
+     * {@link #grantRealmRole}, ohne die übrigen Rollen des Nutzers anzutasten.
+     */
+    public void revokeRealmRole(Nutzer nutzer, String roleName) {
+        if (null == nutzer.getKeycloakId()) {
+            LOG.warn("revokeRealmRole ohne keycloakId für '" + nutzer.getLoginName() + "' - überspringe Keycloak-Sync.");
+            return;
+        }
+        RoleRepresentation role = keycloak.realm(realm).roles().get(roleName).toRepresentation();
+        keycloak.realm(realm).users().get(nutzer.getKeycloakId()).roles().realmLevel().remove(List.of(role));
+    }
+
+
+    /**
      * Wechselt die Keycloak-Realm-Rolle eines Nutzers (entfernt die alte, weist die neue zu) -
      * fuer die Organisator&lt;-&gt;Administrator-Umstufung im Organisatoren-Tab. Anders als
      * {@link #assignRealmRole} (nur additiv, fuer die Erstanlage) muss hier zwingend auch die

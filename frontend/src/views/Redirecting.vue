@@ -17,21 +17,30 @@
 <script setup>
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/auth';
+import { useAuthStore, ROLE_PRIORITY, ROLE_PATHS } from '../stores/auth';
 import NewsLaufband from '../components/NewsLaufband.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
 
 onMounted(() => {
-  if (authStore.isOrganisator) {
-    router.replace('/organisator');
-  } else if (authStore.isSpeaker) {
-    router.replace('/referent');
-  } else if (authStore.isParticipant) {
-    router.replace('/teilnehmer');
-  } else if (authStore.isViewer) {
-    router.replace('/betrachter');
+  if (!authStore.isAuthenticated) {
+    return;
+  }
+
+  // Bei einem Reload im selben Tab (activeRole steht noch in sessionStorage, siehe auth.js)
+  // direkt dorthin weiterleiten, statt die Prioritätskette erneut anzuwenden - sonst würde ein
+  // Administrator, der gerade als Teilnehmer unterwegs ist, bei jedem Reload ungefragt zurück
+  // ins Organisator-Dashboard springen.
+  if (authStore.activeRole && authStore.userRoles.includes(authStore.activeRole)) {
+    router.replace(ROLE_PATHS[authStore.activeRole]);
+    return;
+  }
+
+  const defaultRole = ROLE_PRIORITY.find((role) => authStore.userRoles.includes(role));
+  if (defaultRole) {
+    authStore.setActiveRole(defaultRole);
+    router.replace(ROLE_PATHS[defaultRole]);
   }
 });
 </script>

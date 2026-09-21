@@ -156,7 +156,7 @@ public class TeilnehmerResource {
     @Operation(summary = "Eigenes Teilnehmerprofil abrufen")
     @Transactional
     public Response getTeilnehmerProfile() {
-        Teilnehmer teilnehmer = teilnehmerService.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
+        Nutzer teilnehmer = teilnehmerService.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
         if (null == teilnehmer) {
             throw new WebApplicationException("Teilnehmer not found", Response.Status.NOT_FOUND);
         }
@@ -174,9 +174,9 @@ public class TeilnehmerResource {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
         String loginName = JwtHelper.getUserPrincipalName(jwt);
-        Teilnehmer teilnehmer = teilnehmerService.findByLoginName(loginName);
+        Nutzer teilnehmer = teilnehmerService.findByLoginName(loginName);
         try {
-            Teilnehmer updated = teilnehmerService.updateTeilnehmerProfile(teilnehmer, teilnehmerDto);
+            Nutzer updated = teilnehmerService.updateTeilnehmerProfile(teilnehmer, teilnehmerDto);
             if (null == updated) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
@@ -216,7 +216,7 @@ public class TeilnehmerResource {
         if (null == veranstaltung) {
             throw new WebApplicationException("Veranstaltung not found", Response.Status.NOT_FOUND);
         }
-        Teilnehmer teilnehmer = teilnehmerService.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
+        Nutzer teilnehmer = teilnehmerService.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
         if (null == teilnehmer) {
             throw new WebApplicationException("Teilnehmer not found", Response.Status.NOT_FOUND);
         }
@@ -231,7 +231,7 @@ public class TeilnehmerResource {
     @Operation(summary = "Meine Verfügbarkeiten abrufen")
     public NutzerVerfuegbarkeitDto getVerfuegbarkeiten(@PathParam("vid") Long vid) {
         Nutzer nutzer = Nutzer.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
-        if (!(nutzer instanceof Teilnehmer)) {
+        if (null == nutzer || !nutzer.hatRolle("TEILNEHMER")) {
             throw new WebApplicationException("Nutzer ist kein Teilnehmer", FORBIDDEN.getStatusCode());
         }
         NutzerVerfuegbarkeit nv = NutzerVerfuegbarkeit.findById(nvIdL(nutzer.getId(), vid));
@@ -264,7 +264,7 @@ public class TeilnehmerResource {
     @Operation(summary = "Anwesenheit per QR-Code-Scan registrieren")
     public Response checkIn(@PathParam("vid") Long vid, @QueryParam("raumId") Long raumId) {
         Nutzer nutzer = Nutzer.findByLoginName(JwtHelper.getUserPrincipalName(jwt));
-        if (!(nutzer instanceof Teilnehmer teilnehmer)) {
+        if (null == nutzer || !nutzer.hatRolle("TEILNEHMER")) {
             throw new WebApplicationException("Nutzer ist kein Teilnehmer", FORBIDDEN.getStatusCode());
         }
         Veranstaltung veranstaltung = Veranstaltung.findById(vid);
@@ -272,10 +272,10 @@ public class TeilnehmerResource {
         if (null == veranstaltung || null == raum || !veranstaltung.getRaeume().contains(raum)) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        if (!teilnehmer.getVeranstaltungen().contains(veranstaltung)) {
+        if (!nutzer.getVeranstaltungen().contains(veranstaltung)) {
             return Response.status(FORBIDDEN.getStatusCode()).build();
         }
 
-        return Response.ok(anwesenheitService.checkIn(teilnehmer, veranstaltung, raum)).build();
+        return Response.ok(anwesenheitService.checkIn(nutzer, veranstaltung, raum)).build();
     }
 }

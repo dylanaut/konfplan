@@ -116,7 +116,7 @@ class GruppenkategorieServiceTest extends DatabaseCleaner {
         gruppenkategorieService.setGruppenwert(tn.getId(), mgl.getId());
 
         Teilnehmer aktualisiert = Teilnehmer.findById(tn.getId());
-        assertThat(aktualisiert.getGruppenwerte()).containsExactly(mgl);
+        assertThat(aktualisiert.getTeilnehmerGruppenwerte()).containsExactly(mgl);
     }
 
 
@@ -149,7 +149,7 @@ class GruppenkategorieServiceTest extends DatabaseCleaner {
         gruppenkategorieService.removeGruppenwert(tn.getId(), zehnA.getId());
 
         Teilnehmer aktualisiert = Teilnehmer.findById(tn.getId());
-        assertThat(aktualisiert.getGruppenwerte()).isEmpty();
+        assertThat(aktualisiert.getTeilnehmerGruppenwerte()).isEmpty();
     }
 
 
@@ -184,7 +184,7 @@ class GruppenkategorieServiceTest extends DatabaseCleaner {
         assertThat(geloeschteKategorie).isNull();
         assertThat(geloeschterWert).isNull();
         Teilnehmer aktualisiert = Teilnehmer.findById(tn.getId());
-        assertThat(aktualisiert.getGruppenwerte()).isEmpty();
+        assertThat(aktualisiert.getTeilnehmerGruppenwerte()).isEmpty();
     }
 
 
@@ -194,7 +194,7 @@ class GruppenkategorieServiceTest extends DatabaseCleaner {
         Gruppenkategorie klasse = gruppenkategorieService.createGruppenkategorie(veranstaltungId, "Klasse", false, true);
         GruppenkategorieWert zehnA = gruppenkategorieService.addWert(klasse.getId(), "10a");
         Betrachter betrachter = neuerBetrachter("b-service-delete@test.com");
-        betrachter.addGruppenwert(zehnA);
+        betrachter.addBetrachterGruppenwert(zehnA);
 
         gruppenkategorieService.deleteGruppenkategorie(klasse.getId());
 
@@ -203,7 +203,7 @@ class GruppenkategorieServiceTest extends DatabaseCleaner {
         assertThat(geloeschteKategorie).isNull();
         assertThat(geloeschterWert).isNull();
         Betrachter aktualisiert = Betrachter.findById(betrachter.getId());
-        assertThat(aktualisiert.getGruppenwerte()).isEmpty();
+        assertThat(aktualisiert.getBetrachterGruppenwerte()).isEmpty();
     }
 
 

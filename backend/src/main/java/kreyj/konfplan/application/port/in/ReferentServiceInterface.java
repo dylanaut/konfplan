@@ -1,6 +1,6 @@
 package kreyj.konfplan.application.port.in;
 
-import kreyj.konfplan.persistence.Referent;
+import kreyj.konfplan.persistence.Nutzer;
 import kreyj.konfplan.adapter.in.web.dto.NutzerDto;
 import kreyj.konfplan.adapter.in.web.dto.ReferentVeranstaltungDto;
 import kreyj.konfplan.adapter.in.web.dto.VortragDto;
@@ -10,13 +10,13 @@ import java.util.List;
 
 public interface ReferentServiceInterface {
 
-    Referent findByLoginName(String loginName);
+    Nutzer findByLoginName(String loginName);
 
     void updateProfile(String loginName, NutzerDto dto);
 
     List<VortragDto> getReferentVortraege(String loginName);
 
-    List<ReferentVeranstaltungDto> getReferentVeranstaltungen(Referent referent);
+    List<ReferentVeranstaltungDto> getReferentVeranstaltungen(Nutzer referent);
 
     VortragDto createVortrag(String loginName, VortragDto dto);
 

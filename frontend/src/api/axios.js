@@ -62,6 +62,7 @@ api.interceptors.response.use(
         if (error.response?.status === 401) {
             localStorage.removeItem('token');
             localStorage.removeItem('role');
+            localStorage.removeItem('roles');
             toast().info('Sitzung abgelaufen oder abgemeldet. Bitte erneut anmelden.',
               { timeout: 5000, closeOnClick: true });
             keycloak.login();

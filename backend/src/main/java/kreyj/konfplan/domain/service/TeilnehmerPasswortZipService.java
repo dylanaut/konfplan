@@ -76,7 +76,7 @@ public class TeilnehmerPasswortZipService {
 
         List<Kandidat> ergebnis = new ArrayList<>();
         for (Teilnehmer t : teilnehmerListe) {
-            Map<String, List<String>> gruppenwerteByKategorie = t.getGruppenwerte().stream()
+            Map<String, List<String>> gruppenwerteByKategorie = t.getTeilnehmerGruppenwerte().stream()
                 .collect(Collectors.groupingBy(w -> w.getGruppenkategorie().getName(),
                     Collectors.mapping(GruppenkategorieWert::getWert, Collectors.toList())));
             ergebnis.add(new Kandidat(t.getLoginName(), t.getLastName() + ", " + t.getFirstName(),

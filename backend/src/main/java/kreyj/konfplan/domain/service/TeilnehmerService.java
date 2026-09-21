@@ -81,18 +81,19 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
 
     @Transactional
     @Override
-    public Teilnehmer findByLoginName(String loginName) {
+    public Nutzer findByLoginName(String loginName) {
         if (null == loginName) {
             return null;
         }
-        return Teilnehmer.find("loginName", loginName.trim().toLowerCase()).firstResult();
+        Nutzer nutzer = Nutzer.find("loginName", loginName.trim().toLowerCase()).firstResult();
+        return (null != nutzer && nutzer.hatRolle("TEILNEHMER")) ? nutzer : null;
     }
 
 
     @Transactional
     @Override
     public List<TeilnehmerVeranstaltungDto> getTeilnehmerVeranstaltungen(String loginName) {
-        Teilnehmer teilnehmer = findByLoginName(loginName);
+        Nutzer teilnehmer = findByLoginName(loginName);
         if (null == teilnehmer) {
             return Collections.emptyList();
         }
@@ -122,7 +123,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
     @Transactional
     @Override
     public List<VortragDto> getVortraegeFuerTeilnehmerInVeranstaltung(Long veranstaltungId, String loginName) {
-        Teilnehmer teilnehmer = findByLoginName(loginName);
+        Nutzer teilnehmer = findByLoginName(loginName);
         if (null == teilnehmer) {
             throw new NotFoundException("Teilnehmer nicht gefunden.");
         }
@@ -158,7 +159,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
         // analog zur CSV-Import-Konvention.
         String loginName = user.getEmail().trim().toLowerCase().split("@")[0];
 
-        Teilnehmer existing = findByLoginName(loginName);
+        Nutzer existing = findByLoginName(loginName);
         if (existing != null) {
             LOG.warn("Teilnehmer konnte nicht erstellt werden: loginName " + loginName + " bereits vergeben.");
             protokollService.log(ProtokollKategorie.NUTZER, "Teilnehmer-Erstellung fehlgeschlagen", "loginName bereits vergeben: " + loginName);
@@ -262,7 +263,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
                             }
                             GruppenkategorieWert wert = GruppenkategorieWert.findByWertUndKategorie(wertName, kategorie);
                             if (null != wert) {
-                                tn.addGruppenwert(wert);
+                                tn.addTeilnehmerGruppenwert(wert);
                             } else {
                                 LOG.warn("Unbekannter Gruppenkategorie-Wert '" + wertName + "' für Kategorie '"
                                     + kategorie.getName() + "' beim Import übersprungen.");
@@ -324,7 +325,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
 
     @Transactional
     @Override
-    public Teilnehmer updateTeilnehmerProfile(Teilnehmer teilnehmer, NutzerDto dto) {
+    public Nutzer updateTeilnehmerProfile(Nutzer teilnehmer, NutzerDto dto) {
         if (null == teilnehmer) {
             throw new WebApplicationException("Teilnehmer nicht gefunden", Response.Status.NOT_FOUND);
         }
@@ -393,7 +394,7 @@ public class TeilnehmerService implements TeilnehmerServiceInterface {
     @Override
     public void updateVerfuegbarkeit(Long veranstaltungId, NutzerVerfuegbarkeitDto dto, String loginName) {
         Nutzer nutzer = Nutzer.findByLoginName(loginName);
-        if (!(nutzer instanceof Teilnehmer) || !nutzer.getId().equals(dto.nutzerId)) {
+        if (null == nutzer || !nutzer.hatRolle("TEILNEHMER") || !nutzer.getId().equals(dto.nutzerId)) {
             throw new ForbiddenException("Keine Berechtigung.");
         }
         Veranstaltung veranstaltung = Veranstaltung.findById(veranstaltungId);

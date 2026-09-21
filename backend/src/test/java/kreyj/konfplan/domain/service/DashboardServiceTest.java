@@ -280,8 +280,8 @@ class DashboardServiceTest extends DatabaseCleaner {
         zehnA.persist();
         GruppenkategorieWert zehnB = new GruppenkategorieWert(klasse, "10b");
         zehnB.persist();
-        tn1.addGruppenwert(zehnA);
-        tn2.addGruppenwert(zehnB);
+        tn1.addTeilnehmerGruppenwert(zehnA);
+        tn2.addTeilnehmerGruppenwert(zehnB);
 
         persistiereVeroeffentlichtesErgebnis(veranstaltung, ergebnis(
             new long[]{tn1.getId(), tn2.getId()},

@@ -32,6 +32,9 @@
             <button @click="emit('openPasswordResetModal', a)" class="text-indigo-600" title="Passwort zurücksetzen" aria-label="Passwort zurücksetzen">
               <KeyIcon class="w-3.5 h-3.5 inline"/>
             </button>
+            <button v-if="auth.isAdministrator" @click="emit('openZusatzrollenModal', a)" class="text-indigo-600" title="Zusatzrollen verwalten" aria-label="Zusatzrollen verwalten">
+              <UserCogIcon class="w-3.5 h-3.5 inline"/>
+            </button>
             <button @click="emit('deleteUser', a.id)" class="text-red-600" title="Löschen" aria-label="Löschen">
               <Trash2Icon class="w-3.5 h-3.5 inline"/>
             </button>
@@ -51,16 +54,20 @@ import {
   KeyRound as KeyIcon,
   Pencil as PencilIcon,
   Trash2 as Trash2Icon,
-  Upload as UploadIcon
+  Upload as UploadIcon,
+  UserCog as UserCogIcon
 } from '@lucide/vue';
 import PaginationControls from '../../PaginationControls.vue';
+import { useAuthStore } from '../../../stores/auth';
 
 const props = defineProps({
   admins: Array,
   pageSize: Number
 });
 
-const emit = defineEmits(['triggerUpload', 'openUserModal', 'deleteUser', 'openPasswordResetModal']);
+const emit = defineEmits(['triggerUpload', 'openUserModal', 'deleteUser', 'openPasswordResetModal', 'openZusatzrollenModal']);
+
+const auth = useAuthStore();
 
 const pages = reactive({
   admins: 1
