@@ -23,6 +23,16 @@ export const ROLE_PATHS = {
     BETRACHTER: '/betrachter'
 };
 
+// Anzeigename je Rolle (siehe #751) - fuer den Rollen-Dropdown im Seitenkopf (App.vue) und die
+// Zusatzrollen-Verwaltung, analog zu UserEditorModal.vue's ROLLEN_NAMEN.
+export const ROLE_LABELS = {
+    ORGANISATOR: 'Organisator',
+    ADMINISTRATOR: 'Administrator',
+    REFERENT: 'Referent',
+    TEILNEHMER: 'Teilnehmer',
+    BETRACHTER: 'Betrachter'
+};
+
 function parseRolesFromStorage() {
     const stored = localStorage.getItem('roles');
     if (stored) {

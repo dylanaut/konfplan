@@ -30,6 +30,11 @@
 
         <!-- Desktop Menu -->
         <div class="hidden md:flex gap-6 items-center relative">
+          <select v-if="roleOptions.length > 1" :value="auth.activeRole" @change="handleRoleChange($event.target.value)"
+                  class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-black uppercase rounded px-2 py-1.5 border border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-300 cursor-pointer"
+                  aria-label="Aktive Rolle wechseln">
+            <option v-for="opt in roleOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+          </select>
           <button @click="toggleInfoPanel" class="hover:underline text-sm font-bold">Info</button>
           <button @click="toggleMessageBoxPanel" class="relative hover:opacity-80" title="Nachrichten" aria-label="Nachrichten">
             <BellIcon class="w-5 h-5"/>
@@ -43,6 +48,11 @@
 
       <!-- Mobile Menu Content -->
       <div v-if="mobileMenuOpen" class="md:hidden mt-4 flex flex-col gap-2 pb-2 relative">
+        <select v-if="roleOptions.length > 1" :value="auth.activeRole" @change="handleRoleChange($event.target.value)"
+                class="bg-indigo-700 text-white text-xs font-black uppercase rounded px-2 py-1.5 border border-indigo-500 focus:outline-none"
+                aria-label="Aktive Rolle wechseln">
+          <option v-for="opt in roleOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+        </select>
         <button @click="toggleInfoPanel" class="text-left">Info</button>
         <button @click="toggleMessageBoxPanel" class="text-left flex items-center gap-2">
           Nachrichten
@@ -64,8 +74,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
-import { useAuthStore } from './stores/auth';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore, ROLE_PRIORITY, ROLE_PATHS, ROLE_LABELS } from './stores/auth';
 import { useEventContextStore } from './stores/eventContext';
 import { useUnsavedChangesStore } from './stores/unsavedChanges';
 import { useMessageBoxStore } from './stores/messageBox';
@@ -81,6 +92,7 @@ import VersionUpdateBanner from './components/VersionUpdateBanner.vue';
 
 const POLL_INTERVAL_MS = 60000;
 
+const router = useRouter();
 const auth = useAuthStore();
 const eventContext = useEventContextStore();
 const unsavedChanges = useUnsavedChangesStore();
@@ -90,6 +102,19 @@ const infoPanelOpen = ref(false);
 const messageBoxPanelOpen = ref(false);
 const showFeedbackModal = ref(false);
 let unreadPollInterval = null;
+
+// Rollen-Dropdown im Seitenkopf (siehe #751): nur die Rollen, die der Nutzer tatsächlich hält,
+// in stabiler Reihenfolge (ROLE_PRIORITY) statt in der u.U. wechselnden Reihenfolge des
+// Token-Arrays.
+const roleOptions = computed(() =>
+  ROLE_PRIORITY.filter((role) => auth.userRoles.includes(role)).map((role) => ({ value: role, label: ROLE_LABELS[role] }))
+);
+
+const handleRoleChange = (role) => {
+  auth.setActiveRole(role);
+  router.push(ROLE_PATHS[role]);
+  mobileMenuOpen.value = false;
+};
 
 const toggleInfoPanel = () => {
   infoPanelOpen.value = !infoPanelOpen.value;
