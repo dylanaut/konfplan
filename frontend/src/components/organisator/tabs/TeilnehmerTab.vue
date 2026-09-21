@@ -257,6 +257,9 @@
                 <button @click="emit('openPasswordResetModal', u)" class="text-indigo-600 ml-3" title="Passwort zurücksetzen" aria-label="Passwort zurücksetzen">
                   <KeyIcon class="w-3.5 h-3.5 inline"/>
                 </button>
+                <button @click="emit('openZusatzrollenModal', u)" class="text-indigo-600 ml-3" title="Zusatzrollen verwalten" aria-label="Zusatzrollen verwalten">
+                  <UserCogIcon class="w-3.5 h-3.5 inline"/>
+                </button>
                 <button @click="emit('openUserModal', u)" class="text-indigo-600 ml-3" title="Bearbeiten" aria-label="Bearbeiten">
                   <PencilIcon class="w-3.5 h-3.5 inline"/>
                 </button>
@@ -304,6 +307,7 @@ import {
   Star as StarIcon,
   Trash2 as Trash2Icon,
   Upload as UploadIcon,
+  UserCog as UserCogIcon,
   UsersIcon as UsersIcon,
   X as XIcon
 } from '@lucide/vue';
@@ -336,7 +340,7 @@ const emit = defineEmits([
   'batchDeactivateParticipants', 'batchDeleteParticipants', 'batchEmailParticipants',
   'batchGeneratePasswordsZip',
   'openInviteModal', 'saveParticipantPriorities',
-  'saveAllParticipantPriorities', 'openPasswordResetModal'
+  'saveAllParticipantPriorities', 'openPasswordResetModal', 'openZusatzrollenModal'
 ]);
 
 const availabilityStore = useAvailabilityStore();
