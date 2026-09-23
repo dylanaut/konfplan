@@ -155,6 +155,21 @@ class GruppenkategorieServiceTest extends DatabaseCleaner {
 
     @Test
     @Transactional
+    void removeWert_loeschtDenWertDauerhaft() {
+        Gruppenkategorie klasse = gruppenkategorieService.createGruppenkategorie(veranstaltungId, "Klasse", false, true);
+        GruppenkategorieWert zehnA = gruppenkategorieService.addWert(klasse.getId(), "10a");
+
+        gruppenkategorieService.removeWert(zehnA.getId());
+
+        GruppenkategorieWert geloeschterWert = GruppenkategorieWert.findById(zehnA.getId());
+        assertThat(geloeschterWert).isNull();
+        Gruppenkategorie aktualisiert = Gruppenkategorie.findById(klasse.getId());
+        assertThat(aktualisiert.getWerte()).isEmpty();
+    }
+
+
+    @Test
+    @Transactional
     void updateGruppenkategorie_vonMehrwertigAufEinwertig_beiTeilnehmerMitMehrerenWerten_wirftBusinessException() {
         Gruppenkategorie messe = gruppenkategorieService.createGruppenkategorie(veranstaltungId, "Messe", true, false);
         GruppenkategorieWert m1 = gruppenkategorieService.addWert(messe.getId(), "M_1");
