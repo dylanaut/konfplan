@@ -1,0 +1,41 @@
+<svg viewBox="0 0 450 450" width="450" height="450" xmlns="http://www.w3.org/2000/svg">
+    <!-- Hintergrund (Dark Mode) -->
+    <rect width="100%" height="100%" fill="#f0f0e4" rx="16"/>
+
+    <!-- BILDMARKE: Das gestapelte Code-Zelt (msg-Lila-Verlauf) -->
+    <g id="code-tent" transform="translate(0, -10)">
+        <defs>
+            <linearGradient id="msg-purple-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                <stop offset="0%" stop-color="#6A1A7D" />
+                <stop offset="100%" stop-color="#A246B9" />
+            </linearGradient>
+        </defs>
+
+        <!-- Stufe 1: Basis (Konzept) -->
+        <path d="M 145 230 L 305 230 L 285 200 L 165 200 Z" fill="url(#msg-purple-gradient)" />
+        <!-- Stufe 2: Architektur (Backend) -->
+        <path d="M 170 194 L 280 194 L 260 164 L 190 164 Z" fill="url(#msg-purple-gradient)" opacity="0.9" />
+        <!-- Stufe 3: Interface (Frontend) -->
+        <path d="M 195 158 L 255 158 L 240 128 L 210 128 Z" fill="url(#msg-purple-gradient)" opacity="0.8" />
+        <!-- Stufe 4: Spitze (Deployment) -->
+        <path d="M 215 122 L 235 122 L 225 92 Z" fill="url(#msg-purple-gradient)" opacity="0.7" />
+
+        <!-- Progressiver Aufwärtspfeil (Negativraum / Weiß) -->
+        <path d="M 219 240 L 231 240 L 231 140 L 239 140 L 225 115 L 211 140 L 219 140 Z" fill="#808073" />
+        <path d="M 219 240 L 231 240 L 231 140 L 239 140 L 225 115 L 211 140 L 219 140 Z" fill="#FFFFFF" opacity="0.15" />
+    </g>
+
+    <!-- TYPOGRAFIE: Name & Slogan -->
+    <g id="branding" text-anchor="middle">
+        <!-- Hauptname: SE CAMP -->
+        <text x="228" y="280" fill="#808073" font-family="'JetBrains Mono', 'Fira Code', monospace" font-size="42"
+              font-weight="800" letter-spacing="4">SE Camp</text>
+
+        <!-- Dekorationslinie -->
+        <line x1="175" y1="315" x2="275" y2="315" stroke="#6A1A7D" stroke-width="3" stroke-linecap="round" />
+
+        <!-- Slogan: Gemeinsam. Besser. Entwickeln. -->
+        <text x="225" y="345" fill="#808073" font-family="'Inter', 'Helvetica Neue', sans-serif" font-size="18"
+              font-weight="500" letter-spacing="1">Gemeinsam. Besser. Entwickeln.</text>
+    </g>
+</svg>
