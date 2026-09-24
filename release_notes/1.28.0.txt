@@ -1,0 +1,138 @@
+Release Notes 1.28.0
+Released: 2026-09-23
+
+Changes:
+
+- Release-Notes fuer 1.27.5 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.27.6-SNAPSHOT)
+
+- Statistik als eigener Bericht, Anmeldungen-Bericht in Planung-Navigation
+  Die bisher inline im Ergebnisse-Tab gezeigte Planqualität (Güte, Zuweisungen,
+  Raumwechsel, Status) wird in einen eigenen Bericht "Statistik" ausgelagert - neuer
+  Endpunkt GET /api/reports/{vid}/statistik-data (wrappt PlanService.getPlanQualitaet in
+  ReportDto.StatistikDto, gleiches Muster wie die übrigen Berichte), neue View
+  Statistik.vue, Route registriert, im Berichte-Auswahl-Dialog und im "Berichte"-Kasten des
+  Ergebnisse-Tabs verlinkt. Die "veraltet"-Warnung bleibt weiterhin inline im Ergebnisse-Tab,
+  da sie ein aktionables Signal ist, keine reine Kennzahl.
+  Der bestehende Anmeldungen-Bericht (Wahlvorträge-Anmeldungen-Übersicht, bisher nur über den
+  Vorträge-Tab erreichbar) ist jetzt zusätzlich als zweiter Eintrag in der
+  Navigationsleisten-Rubrik "Planung" abrufbar - öffnet den Bericht direkt in einem neuen Tab
+  (wie der gleichnamige Button im Vorträge-Tab), ohne den aktiven Dashboard-Tab zu wechseln.
+  Refs #749
+
+- Mehrfachrollen: Zusätzliche Rollen zuweisen und Rollenwechsel per Dropdown
+  * Mehrfachrollen: Datenmodell-Umbau für Zusatzrollen (Refs #751)
+  Composition-over-inheritance-Umbau der Nutzer-Hierarchie: Felder/Methoden von
+  Referent/Teilnehmer/Betrachter werden auf Nutzer gehoben (Referent bleibt
+  über die Discriminator-Subklasse nur noch die Primärrolle), ein neues
+  zusatzRollen-Set plus hatRolle(String) bildet zusätzlich gehaltene Rollen ab.
+  Vortrag.referent, Prioritaet.teilnehmer, Anwesenheit.teilnehmer sowie
+  GruppenkategorieWerts inverse Sammlungen werden von den Subklassen auf Nutzer
+  verbreitert, damit eine Person unabhängig von ihrer Primärrolle als Referent/
+  Teilnehmer agieren kann. Selbstbedienungs-Stellen (aktueller Nutzer per JWT)
+  prüfen jetzt hatRolle(...) statt instanceof; Bulk-/Report-/Solver-Stellen
+  bleiben bewusst auf die Primärrolle beschränkt (Stufe 1, siehe Ticket).
+  Teilnehmer.gruppenwerte und Betrachter.gruppenwerte sind auf Nutzer als
+  teilnehmerGruppenwerte/betrachterGruppenwerte umbenannt, da es sich um zwei
+  fachlich unterschiedliche Relationen handelt, die nur zufällig denselben
+  Namen trugen.
+  Verhaltenserhaltender Refactor - bestehende Testsuite bleibt grün (407 Tests).
+  * Mehrfachrollen: Vergeben/Entziehen von Zusatzrollen (Refs #751)
+  OrganisatorService.grantZusatzrolle/revokeZusatzrolle mit Autorisierungsmatrix
+  (validateGrantMatrix): ein Administrator darf TEILNEHMER/REFERENT/BETRACHTER
+  an sich selbst oder einen Organisator/Administrator vergeben, ein Organisator
+  nur REFERENT an sich selbst oder einen Teilnehmer. Bereits gehaltene Rollen
+  sind ein No-op (analog changeRole); Entzug von REFERENT/TEILNEHMER wird
+  blockiert, solange noch Vorträge bzw. Prioritäten zugeordnet sind, BETRACHTER
+  ist als reine Leserolle immer entziehbar.
+  Neue Endpunkte POST/DELETE /api/organisator/nutzer/{id}/zusatzrollen(/{role})
+  auf dem bestehenden OrganisatorResource; NutzerDto trägt jetzt zusatzRollen.
+  KeycloakUserProvisioningService.grantRealmRole/revokeRealmRole ergänzen die
+  bestehende exklusive changeRealmRole um einen rein additiven Rollen-Sync, der
+  alle anderen Rollen des Nutzers unangetastet lässt.
+  Als Nebeneffekt: Nutzer.vortraege war beim Hochziehen von Referent versehentlich
+  private statt package-private geworden - wieder auf package-private korrigiert
+  (Inverse-Mapping-Konvention).
+  Neue Autorisierungsmatrix- und Integrationstests (Vortrag.referent persistiert
+  korrekt für einen per Zusatzrolle zum Referenten gewordenen Teilnehmer) sowie
+  Tests für die additiven Keycloak-Methoden - insgesamt 427 Tests grün.
+  * Mehrfachrollen: Frontend-Grundlage für Rollenwechsel (Refs #751)
+  stores/auth.js: userRole (Skalar) wird zu userRoles (volles, aus
+  realm_access.roles gefiltertes Array) + neuem activeRole (welches Dashboard
+  aktuell angezeigt wird, in sessionStorage statt localStorage - Rollenwahl ist
+  ein Pro-Sitzung/Tab-Konzept). isOrganisator/isSpeaker/isParticipant/isViewer/
+  isAdministrator drücken weiterhin nur "hält die Rolle" aus, nicht "ist gerade
+  aktiv". Neue Aktion setActiveRole(role) validiert Mitgliedschaft und räumt wie
+  logout() Requests/Veranstaltungskontext auf. Bleibt abwärtskompatibel zum
+  bisherigen einzelnen 'role'-localStorage-Eintrag, den u.a. mehrere
+  Playwright-Specs zum Vortäuschen eines Logins ohne echten Keycloak-Flow
+  nutzen (TeilnehmerDashboard/ReferentDashboard/OrganisatorDashboardModals -
+  alle 102 zugehörigen Tests bleiben grün).
+  Redirecting.vue: bestehende Prioritätskette (Administrator/Organisator >
+  Referent > Teilnehmer > Betrachter) bleibt der Standard für die erste
+  Weiterleitung nach dem Login, setzt dabei jetzt aber activeRole. Ein bereits
+  gesetzter, noch gültiger activeRole (Reload im selben Tab) wird direkt
+  angesteuert, ohne die Kette erneut anzuwenden.
+  router/index.js: keine strukturelle Änderung - Doku-Kommentar ergänzt, dass
+  ROLE_CHECKS weiterhin "hält die Rolle überhaupt" prüft, activeRole aber
+  bewusst keine zusätzliche Zugriffsschranke ist (das Backend kennt kein
+  "aktive Rolle"-Konzept).
+  * Mehrfachrollen: Rollen-Dropdown im Seitenkopf (Refs #751)
+  App.vue: neuer <select>-Dropdown im Desktop-Nav und im mobilen Menü (beide
+  Blöcke sind schon heute dupliziert, gleiches Muster beibehalten), sichtbar
+  sobald ein Nutzer mehr als eine Rolle hält. Zeigt die gehaltenen Rollen in
+  stabiler Reihenfolge (ROLE_PRIORITY statt Token-Array-Reihenfolge) mit
+  Klartext-Labels (ROLE_LABELS); @change ruft auth.setActiveRole(role) und
+  navigiert per router.push zur passenden Dashboard-Route (ROLE_PATHS).
+  stores/auth.js: ROLE_PATHS/ROLE_LABELS als benannte Exports ergänzt (ROLE_
+  PRIORITY/ROLE_PATHS gab es schon aus Commit 3) - eine einzige Quelle für
+  Rolle->Route/Label-Zuordnung statt separater lokaler Maps je Verbraucher.
+  router/index.js: activeRole wird jetzt auch bei einem direkten Deep-Link auf
+  eine Rollen-Route nachträglich synchronisiert (z.B. Lesezeichen, neuer Tab,
+  oder ein Login-Redirect zurück auf eine tiefe URL, ohne vorherigen
+  Redirecting.vue-Durchlauf) - sonst bliebe der neue Dropdown dort leer. Der
+  Sync läuft nur bei einem tatsächlichen Rollenwechsel (setActiveRole räumt
+  Requests/Veranstaltungskontext auf), nicht bei jeder Navigation innerhalb
+  derselben Rolle.
+  Verifiziert in einer laufenden Vite-Dev-Instanz per Playwright (Dropdown
+  erscheint bei Mehrfachrollen, wechselt Route+sessionStorage korrekt) sowie
+  den bestehenden TeilnehmerDashboard-/ReferentDashboard-/InactivityLogout-
+  Specs (alle grün). PlanungsWorkflow.spec.js, reports.spec.js (1 Test) und
+  OrganisatorDashboardModals.spec.js (19 Tests) schlagen unabhängig von diesen
+  Änderungen bereits auf dem unveränderten Branch-Stand fehl (per Vergleich
+  verifiziert) - vorbestehende Flakiness, die frontend/nicht Teil dieses
+  Tickets ist; ci.yml führt ohnehin keine Playwright-Suite aus.
+  * Mehrfachrollen: Verwaltungs-UI für Zusatzrollen (Refs #751)
+  Neues ZusatzrollenModal.vue (strukturell an PasswordResetModal.vue angelehnt):
+  Checkboxen statt Passwortfeld, welche davon angezeigt werden hängt vom
+  aufrufenden Nutzer ab (Administrator sieht TEILNEHMER/REFERENT/BETRACHTER,
+  ein einfacher Organisator nur REFERENT - identisch zur serverseitigen
+  Autorisierungsmatrix in OrganisatorService#validateGrantMatrix). Beim
+  Speichern werden nur tatsächlich geänderte Checkboxen als Grant/Revoke an den
+  Parent emittiert, nie Zusatzrollen, die der Dialog dem Aufrufer gar nicht
+  zur Bearbeitung angeboten hat.
+  Neuer Zeilen-Aktions-Button "Zusatzrollen verwalten" in OrganisatorenTab.vue
+  (nur für Administrator-Aufrufer, da nur diese laut Matrix Organisator-/
+  Administrator-Zielnutzer bearbeiten dürfen) und TeilnehmerTab.vue (für jeden
+  Organisator/Administrator, da beide Teilnehmern die Zusatzrolle REFERENT
+  geben dürfen).
+  OrganisatorDashboard.vue verdrahtet beide Tabs mit dem neuen Modal, ruft
+  sequenziell POST/DELETE gegen die in Commit 2 geschaffenen Endpunkte auf und
+  lädt anschließend wie bei den übrigen Nutzer-Mutationen per loadData()/
+  refreshAdmins() neu.
+  Verifiziert per Playwright gegen eine laufende Vite-Dev-Instanz: Administrator-
+  Aufrufer sieht und nutzt alle drei Checkboxen über OrganisatorenTab,
+  Organisator-Aufrufer sieht nur Referent über TeilnehmerTab, beide senden den
+  korrekten Grant-Request. Bestehende TeilnehmerDashboard-/ReferentDashboard-/
+  InactivityLogout-Specs bleiben grün.
+  ---------
+
+- Release 1.28.0
+  * Add SE Camp logo assets
+  Provides light/dark SVG and PNG variants of the SE Camp branding
+  for future use across the frontend.
+  * Release 1.28.0
+  Bump version from 1.27.6-SNAPSHOT to 1.28.0 in all four pom.xml files.
+  ---------
+
