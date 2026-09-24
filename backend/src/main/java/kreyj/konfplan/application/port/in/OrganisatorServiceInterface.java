@@ -23,11 +23,11 @@ public interface OrganisatorServiceInterface {
 
     Nutzer findNutzer(Long id);
 
-    NutzerDto createUser(NutzerDto dto, List<Long> veranstaltungsIds);
+    NutzerDto createUser(NutzerDto dto, List<Long> veranstaltungsIds, String callerLoginName);
 
     NutzerDto updateUser(Long id, NutzerDto dto, List<Long> vUpdateIds);
 
-    NutzerDto changeRole(Long id, String newRole);
+    NutzerDto changeRole(Long id, String newRole, String callerLoginName);
 
     NutzerDto grantZusatzrolle(Long targetId, String role, String callerLoginName);
 

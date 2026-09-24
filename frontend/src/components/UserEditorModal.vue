@@ -43,10 +43,13 @@
 
         <div v-if="canToggleOrganisatorRole" class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-1">Rolle</label>
-          <select v-model="form.role" class="input-field" required>
+          <select v-model="form.role" class="input-field" required :disabled="!auth.isAdministrator">
             <option value="ORGANISATOR">Organisator</option>
             <option value="ADMINISTRATOR">Administrator</option>
           </select>
+          <p v-if="!auth.isAdministrator" class="text-xs text-gray-500 mt-1">
+            Nur ein Administrator darf die Rolle Administrator vergeben oder entziehen.
+          </p>
         </div>
         <div v-else-if="!roleLocked" class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-1">Rolle</label>
@@ -142,6 +145,7 @@
 import { reactive, computed, watch } from 'vue';
 import { useGruppenkategorieStore } from '../stores/gruppenkategorie';
 import { useNeigungStore } from '../stores/neigung';
+import { useAuthStore } from '../stores/auth';
 
 const ROLLEN_NAMEN = { TEILNEHMER: 'Teilnehmer', REFERENT: 'Referent', ORGANISATOR: 'Organisator', ADMINISTRATOR: 'Administrator', BETRACHTER: 'Betrachter' };
 
@@ -158,6 +162,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'save']);
 const gruppenkategorieStore = useGruppenkategorieStore();
 const neigungStore = useNeigungStore();
+const auth = useAuthStore();
 neigungStore.fetchNeigungen();
 
 const isEditing = computed(() => !!props.nutzer?.id);

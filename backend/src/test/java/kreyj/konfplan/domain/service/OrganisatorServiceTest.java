@@ -186,7 +186,7 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         dto.loginName = "ohne.email";
 
         assertThatExceptionOfType(BusinessException.class)
-            .isThrownBy(() -> organisatorService.createUser(dto, null));
+            .isThrownBy(() -> organisatorService.createUser(dto, null, null));
 
         assertThat(Nutzer.findByLoginName("ohne.email")).isNull();
     }
@@ -197,7 +197,7 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         NutzerDto dto = new NutzerDto("ORGANISATOR", "mit.email@test.de", "Mit", "Email", true);
         dto.loginName = "mit.email";
 
-        NutzerDto created = organisatorService.createUser(dto, null);
+        NutzerDto created = organisatorService.createUser(dto, null, null);
 
         assertThat(created.email).isEqualTo("mit.email@test.de");
     }
@@ -249,8 +249,8 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         NutzerDto zweiterDto = new NutzerDto("TEILNEHMER", "", "Zweiter", "Teilnehmer", true);
         zweiterDto.loginName = "zweiter.ohne.email";
 
-        NutzerDto ersterCreated = organisatorService.createUser(ersterDto, null);
-        NutzerDto zweiterCreated = organisatorService.createUser(zweiterDto, null);
+        NutzerDto ersterCreated = organisatorService.createUser(ersterDto, null, null);
+        NutzerDto zweiterCreated = organisatorService.createUser(zweiterDto, null, null);
 
         assertThat(ersterCreated.email).isNull();
         assertThat(zweiterCreated.email).isNull();
@@ -265,7 +265,7 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         dto.loginName = "neue.person";
         dto.neigungen = Set.of(Neigung.SOZIAL, Neigung.WISSENSCHAFTLICH);
 
-        NutzerDto created = organisatorService.createUser(dto, null);
+        NutzerDto created = organisatorService.createUser(dto, null, null);
 
         assertThat(created.neigungen).containsExactlyInAnyOrder(Neigung.SOZIAL, Neigung.WISSENSCHAFTLICH);
         Teilnehmer persisted = Teilnehmer.findById(created.id);
@@ -345,7 +345,7 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         // uebernommen; ein Betrachter darf beide gleichzeitig sehen (siehe #718).
         dto.gruppenwerteByKategorie = Map.of("Klasse", List.of("Gruppe A", "Gruppe B"));
 
-        NutzerDto created = organisatorService.createUser(dto, List.of(veranstaltung.getId()));
+        NutzerDto created = organisatorService.createUser(dto, List.of(veranstaltung.getId()), null);
 
         Betrachter persisted = Betrachter.findById(created.id);
         assertThat(persisted.getBetrachterGruppenwerte()).containsExactlyInAnyOrder(gruppeA, gruppeB);
@@ -428,11 +428,26 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
 
     @Test
     @Transactional
-    public void changeRole_organisatorZuAdministrator_succeeds() {
-        NutzerDto updated = organisatorService.changeRole(testUserId, "ADMINISTRATOR");
+    public void changeRole_organisatorZuAdministrator_durchAdministrator_succeeds() {
+        Administrator caller = persistedAdministrator("aufsteigender.admin");
+
+        NutzerDto updated = organisatorService.changeRole(testUserId, "ADMINISTRATOR", caller.getLoginName());
 
         assertThat(updated.role).isEqualTo("ADMINISTRATOR");
         assertThat(Nutzer.<Nutzer>findById(testUserId)).isInstanceOf(Administrator.class);
+    }
+
+
+    // Regression: nur ein Administrator darf einen Nutzer zum Administrator hochstufen - sonst
+    // koennte sich ein einfacher Organisator selbst zum Administrator machen.
+    @Test
+    @Transactional
+    public void changeRole_organisatorZuAdministrator_durchOrganisator_wirdAbgelehnt() {
+        assertThatExceptionOfType(WebApplicationException.class)
+            .isThrownBy(() -> organisatorService.changeRole(testUserId, "ADMINISTRATOR", "testexample"))
+            .satisfies(e -> assertThat(e.getResponse().getStatus()).isEqualTo(403));
+
+        assertThat(Nutzer.<Nutzer>findById(testUserId)).isNotInstanceOf(Administrator.class);
     }
 
 
@@ -442,7 +457,7 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         Administrator admin = persistedAdministrator("einziger.admin");
 
         assertThatExceptionOfType(UpdateNutzerException.class)
-            .isThrownBy(() -> organisatorService.changeRole(admin.getId(), "ORGANISATOR"));
+            .isThrownBy(() -> organisatorService.changeRole(admin.getId(), "ORGANISATOR", null));
 
         assertThat(Nutzer.<Nutzer>findById(admin.getId())).isInstanceOf(Administrator.class);
     }
@@ -454,12 +469,40 @@ public class OrganisatorServiceTest extends DatabaseCleaner {
         Administrator admin1 = persistedAdministrator("admin.eins");
         persistedAdministrator("admin.zwei");
 
-        NutzerDto updated = organisatorService.changeRole(admin1.getId(), "ORGANISATOR");
+        NutzerDto updated = organisatorService.changeRole(admin1.getId(), "ORGANISATOR", null);
 
         assertThat(updated.role).isEqualTo("ORGANISATOR");
         Nutzer reloaded = Nutzer.findById(admin1.getId());
         assertThat(reloaded).isNotInstanceOf(Administrator.class);
         assertThat(reloaded).isInstanceOf(Organisator.class);
+    }
+
+
+    // Regression: analog zu changeRole - nur ein Administrator darf einen neuen Administrator anlegen.
+    @Test
+    @Transactional
+    public void createUser_administratorDurchOrganisator_wirdAbgelehnt() {
+        NutzerDto dto = new NutzerDto("ADMINISTRATOR", "neuer.admin@example.com", "Neuer", "Admin", true);
+        dto.loginName = "neuer.admin";
+
+        assertThatExceptionOfType(WebApplicationException.class)
+            .isThrownBy(() -> organisatorService.createUser(dto, null, "testexample"))
+            .satisfies(e -> assertThat(e.getResponse().getStatus()).isEqualTo(403));
+
+        assertThat(Nutzer.findByLoginName("neuer.admin")).isNull();
+    }
+
+
+    @Test
+    @Transactional
+    public void createUser_administratorDurchAdministrator_succeeds() {
+        Administrator caller = persistedAdministrator("bestehender.admin");
+        NutzerDto dto = new NutzerDto("ADMINISTRATOR", "neuer.admin2@example.com", "Neuer", "Admin", true);
+        dto.loginName = "neuer.admin2";
+
+        NutzerDto created = organisatorService.createUser(dto, null, caller.getLoginName());
+
+        assertThat(Nutzer.<Nutzer>findById(created.id)).isInstanceOf(Administrator.class);
     }
 
 

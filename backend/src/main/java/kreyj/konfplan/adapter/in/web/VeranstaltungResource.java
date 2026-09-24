@@ -164,8 +164,9 @@ public class VeranstaltungResource {
     @POST
     @Path("/{vid}/nutzer")
     @Operation(summary = "Neuen Nutzer zu Veranstaltung hinzufügen", description = "Erstellt einen neuen Nutzer und fügt ihn direkt zu einer Veranstaltung hinzu.")
-    public Response createNutzer(@PathParam("vid") Long vid, @RequestBody(description = "Die Daten des neuen Nutzers") NutzerDto nutzerDto) {
-        NutzerDto created = adminService.createUser(nutzerDto, List.of(vid));
+    public Response createNutzer(@PathParam("vid") Long vid, @RequestBody(description = "Die Daten des neuen Nutzers") NutzerDto nutzerDto,
+                                  @Context SecurityContext securityContext) {
+        NutzerDto created = adminService.createUser(nutzerDto, List.of(vid), securityContext.getUserPrincipal().getName());
         return Response.status(Response.Status.CREATED).entity(created).build();
     }
 

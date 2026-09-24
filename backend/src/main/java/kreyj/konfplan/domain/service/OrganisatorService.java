@@ -151,7 +151,7 @@ public class OrganisatorService implements OrganisatorServiceInterface {
 
     @Transactional
     @Override
-    public NutzerDto createUser(NutzerDto dto, List<Long> veranstaltungsIds) {
+    public NutzerDto createUser(NutzerDto dto, List<Long> veranstaltungsIds, String callerLoginName) {
         Nutzer nutzer;
         if ("REFERENT".equals(dto.role)) {
             nutzer = new Referent();
@@ -160,6 +160,7 @@ public class OrganisatorService implements OrganisatorServiceInterface {
         } else if ("BETRACHTER".equals(dto.role)) {
             nutzer = new Betrachter();
         } else if ("ADMINISTRATOR".equals(dto.role)) {
+            requireAdministratorCaller(callerLoginName, "einen neuen Administrator anlegen");
             nutzer = new Administrator();
         } else {
             nutzer = new Organisator();
@@ -359,7 +360,7 @@ public class OrganisatorService implements OrganisatorServiceInterface {
      */
     @Transactional
     @Override
-    public NutzerDto changeRole(Long id, String newRole) {
+    public NutzerDto changeRole(Long id, String newRole, String callerLoginName) {
         Nutzer nutzer = Nutzer.findById(id);
         if (null == nutzer) {
             throw new EntityNotFoundException(Nutzer.class, "Nutzer nicht gefunden.");
@@ -369,6 +370,9 @@ public class OrganisatorService implements OrganisatorServiceInterface {
         }
         if (!"ORGANISATOR".equals(newRole) && !"ADMINISTRATOR".equals(newRole)) {
             throw new UpdateNutzerException("Ungültige Zielrolle: " + newRole);
+        }
+        if ("ADMINISTRATOR".equals(newRole)) {
+            requireAdministratorCaller(callerLoginName, "einem Nutzer die Rolle Administrator zuweisen");
         }
 
         String oldRole = nutzer.getRole();
@@ -392,6 +396,25 @@ public class OrganisatorService implements OrganisatorServiceInterface {
         protokollService.log(ProtokollKategorie.NUTZER, "Rolle geändert",
             "Nutzer '" + updated.getLoginName() + "' von '" + oldRole + "' zu '" + newRole + "' umgestuft.", id);
         return NutzerDto.from(updated);
+    }
+
+
+    /**
+     * Nur ein Administrator darf einen neuen Administrator anlegen oder einen bestehenden Nutzer
+     * zum Administrator hochstufen - sonst könnte sich jeder Organisator selbst zum Administrator
+     * machen. {@code callerLoginName} ist {@code null} bei rein internen/Bootstrap-Aufrufen (z.B.
+     * {@code DevDataInitService}), die keinem authentifizierten Request entstammen und daher
+     * grundsätzlich vertraut werden - jeder von einer REST-Ressource kommende Aufruf liefert wegen
+     * des jeweiligen {@code @RolesAllowed} immer einen echten Principal-Namen.
+     */
+    private void requireAdministratorCaller(String callerLoginName, String aktion) {
+        if (null == callerLoginName) {
+            return;
+        }
+        Nutzer caller = Nutzer.findByLoginName(callerLoginName);
+        if (!(caller instanceof Administrator)) {
+            throw new WebApplicationException("Nur ein Administrator darf " + aktion + ".", Response.Status.FORBIDDEN);
+        }
     }
 
 

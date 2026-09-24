@@ -107,8 +107,9 @@ public class OrganisatorResource {
     @POST
     @Path("/nutzer")
     @Operation(summary = "Neuen Nutzer erstellen", description = "Erstellt einen neuen Nutzer und sendet eine Bestätigungs-E-Mail.")
-    public NutzerDto createUser(@RequestBody(description = "Die Daten des neuen Nutzers") NutzerDto dto) {
-        NutzerDto createdNutzerDto = organisatorService.createUser(dto, dto.veranstaltungIds);
+    public NutzerDto createUser(@RequestBody(description = "Die Daten des neuen Nutzers") NutzerDto dto,
+                                 @Context SecurityContext securityContext) {
+        NutzerDto createdNutzerDto = organisatorService.createUser(dto, dto.veranstaltungIds, securityContext.getUserPrincipal().getName());
         // E-Mail nach erfolgreicher Erstellung senden
         Nutzer createdNutzer = Nutzer.findById(createdNutzerDto.id);
         if (null != createdNutzer) {
@@ -161,8 +162,9 @@ public class OrganisatorResource {
     @PUT
     @Path("/nutzer/{id}/rolle")
     @Operation(summary = "Rolle eines Organisators/Administrators ändern", description = "Stuft einen bestehenden Organisator zu Administrator um oder umgekehrt.")
-    public NutzerDto changeRole(@PathParam("id") Long id, @RequestBody(description = "Die neue Rolle (ORGANISATOR oder ADMINISTRATOR)") RoleChangeDto dto) {
-        return organisatorService.changeRole(id, dto.role);
+    public NutzerDto changeRole(@PathParam("id") Long id, @RequestBody(description = "Die neue Rolle (ORGANISATOR oder ADMINISTRATOR)") RoleChangeDto dto,
+                                 @Context SecurityContext securityContext) {
+        return organisatorService.changeRole(id, dto.role, securityContext.getUserPrincipal().getName());
     }
 
 
