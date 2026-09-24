@@ -175,6 +175,7 @@ public class GruppenkategorieService {
 
         entferneVonAllenTeilnehmern(wert);
         entferneVonAllenBetrachtern(wert);
+        kategorie.entferneWert(wert);
         wert.delete();
 
         protokollService.log(ProtokollKategorie.STAMMDATEN, "Gruppenkategorie-Wert gelöscht",

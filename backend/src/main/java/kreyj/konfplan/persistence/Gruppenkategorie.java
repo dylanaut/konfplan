@@ -68,4 +68,20 @@ public class Gruppenkategorie extends VersionedEntity {
     void nimmWertAuf(GruppenkategorieWert wert) {
         werte.add(wert);
     }
+
+
+    /**
+     * Hält die inverse Seite der {@link #werte}-Assoziation synchron, wenn ein einzelner Wert
+     * gelöscht wird, während die Kategorie (und damit diese Kollektion) bereits geladen ist - ohne
+     * diesen Sync würde Hibernates {@code CascadeType.ALL} den gerade per {@code wert.delete()}
+     * gelöschten Wert beim nächsten Flush über die weiterhin vorhandene Collection-Mitgliedschaft
+     * erneut persistieren (siehe #719). {@code removeIf} statt {@code Set.remove}, weil
+     * {@link IdEntity#hashCode()} sich ändert, sobald der bei {@link #nimmWertAuf} noch
+     * unpersistierte (ID {@code null}) Wert seine generierte ID erhält - eine hashcode-basierte
+     * {@code HashSet}-Suche würde ihn dann im falschen Bucket suchen und ihn fälschlich als nicht
+     * vorhanden ansehen; {@code removeIf} durchläuft dagegen alle Buckets linear.
+     */
+    public void entferneWert(GruppenkategorieWert wert) {
+        werte.removeIf(wert::equals);
+    }
 }
