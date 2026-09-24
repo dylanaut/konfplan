@@ -1,0 +1,28 @@
+Release Notes 1.28.1
+Released: 2026-09-24
+
+Changes:
+
+- Fix: removeWert() löscht Gruppenkategorie-Wert nicht dauerhaft
+  Gruppenkategorie.entferneWert(wert) synct jetzt die inverse Seite der
+  werte-Assoziation, bevor GruppenkategorieService#removeWert wert.delete()
+  aufruft - ohne diesen Sync kaskadiert Hibernates CascadeType.ALL beim
+  nächsten Flush eine PERSIST-Operation über die weiterhin vorhandene
+  Collection-Mitgliedschaft und macht die Löschung rückgängig.
+  Ein naives Set.remove(wert) reicht dafür allerdings nicht: nimmWertAuf()
+  fügt den Wert bereits im Konstruktor, also mit noch null-ID, zum HashSet
+  hinzu. IdEntity.hashCode() hasht ab der Persistierung nach der dann
+  vergebenen ID - der Wert liegt danach also im falschen HashSet-Bucket für
+  seinen neuen Hashcode, wodurch eine hashcode-basierte Suche ihn nicht mehr
+  findet. entferneWert() nutzt daher removeIf() (lineare Suche über alle
+  Buckets) statt remove().
+  Neuer Regressionstest removeWert_loeschtDenWertDauerhaft reproduziert
+  exakt das Repro aus #719 und schlägt ohne den Fix fehl (Wert blieb in der
+  DB bestehen).
+  Fixes #719
+
+- Release-Notes fuer 1.28.0 ergaenzen [skip ci]
+
+- Release 1.28.1
+  Bump version from 1.28.0 to 1.28.1 in all four pom.xml files.
+
