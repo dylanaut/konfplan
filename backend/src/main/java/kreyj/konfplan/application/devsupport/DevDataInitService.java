@@ -85,7 +85,7 @@ public class DevDataInitService {
         if (null == Nutzer.findByLoginName("admin")) {
             NutzerDto admin = new NutzerDto("ADMINISTRATOR", "kontakt@konfplan.de", "Jürgen", "Krey", true);
             admin.loginName = "admin";
-            adminService.createUser(admin, List.of());
+            adminService.createUser(admin, List.of(), null);
         }
 
         // Dev-only: ein fester Betrachter-Account (siehe #718), analog zum Administrator-Account
@@ -96,7 +96,7 @@ public class DevDataInitService {
         if (null == Nutzer.findByLoginName("betrachter")) {
             NutzerDto betrachter = new NutzerDto("BETRACHTER", "betrachter@konfplan.de", "Lisa", "Lehrer", true);
             betrachter.loginName = "betrachter";
-            adminService.createUser(betrachter, List.of());
+            adminService.createUser(betrachter, List.of(), null);
         }
 
         Set<Long> importierteVeranstaltungen = new HashSet<>();
