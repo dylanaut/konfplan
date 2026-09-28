@@ -1,0 +1,40 @@
+Release Notes 1.28.2
+Released: 2026-09-28
+
+Changes:
+
+- Release-Notes fuer 1.28.1 ergaenzen [skip ci]
+
+- Prepare next development iteration (1.28.2-SNAPSHOT)
+
+- deploy/.env.example: Beispiel-IMAGE_TAG auf 1.28.1 aktualisieren
+
+- Nur Administratoren dürfen Administratoren anlegen oder hochstufen
+  OrganisatorService.createUser/changeRole prüften bislang nicht, ob der
+  Aufrufer selbst Administrator ist, bevor sie einen neuen Nutzer mit
+  Rolle ADMINISTRATOR anlegen bzw. einen Organisator zu ADMINISTRATOR
+  hochstufen. Da die betroffenen Endpunkte klassenweit nur auf
+  @RolesAllowed({"ORGANISATOR","ADMINISTRATOR"}) geprüft sind, konnte
+  bislang jeder einfache Organisator sich selbst oder andere zum
+  Administrator machen.
+  Beide Methoden bekommen dafür einen callerLoginName-Parameter (analog
+  zu grantZusatzrolle/revokeZusatzrolle, #751) und prüfen bei Zielrolle
+  ADMINISTRATOR per neuem requireAdministratorCaller(), ob der Aufrufer
+  selbst Administrator ist - sonst WebApplicationException (403). Ein
+  null callerLoginName gilt als interner/Bootstrap-Aufruf (z.B.
+  DevDataInitService) und bleibt uneingeschränkt vertraut, da jeder
+  REST-Aufruf wegen des jeweiligen @RolesAllowed immer einen echten
+  Principal-Namen liefert.
+  Betroffene REST-Ressourcen (OrganisatorResource.createUser/changeRole,
+  VeranstaltungResource.createNutzer) reichen dafür jetzt den
+  authentifizierten Principal-Namen aus dem SecurityContext durch.
+  Frontend (UserEditorModal.vue): das Rolle-Dropdown beim Bearbeiten eines
+  bestehenden Organisators/Administrators ist für Nicht-Administratoren
+  deaktiviert, damit der 403 gar nicht erst provoziert wird.
+  Neue Regressionstests in OrganisatorServiceTest decken sowohl die
+  Ablehnung (Organisator als Aufrufer) als auch den Erfolgsfall
+  (Administrator als Aufrufer) für createUser und changeRole ab.
+  Fixes #767
+
+- Release 1.28.2
+
