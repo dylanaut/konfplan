@@ -84,6 +84,10 @@ if [ "$CURRENT_IP" != "$LAST_IP" ]; then
         echo
         echo "=== update-ip.mjs ==="
         docker run --rm \
+            -e BREVO_CODE_IMAP_HOST="${BREVO_CODE_IMAP_HOST:-}" \
+            -e BREVO_CODE_IMAP_PORT="${BREVO_CODE_IMAP_PORT:-}" \
+            -e BREVO_CODE_IMAP_USER="${BREVO_CODE_IMAP_USER:-}" \
+            -e BREVO_CODE_IMAP_PASSWORD="$BREVO_CODE_IMAP_PASSWORD_VALUE" \
           -v "$SCRIPT_DIR/brevo-ip-updater:/work" -w /work \
           mcr.microsoft.com/playwright:v1.62.1-noble \
           node update-ip.mjs "$CURRENT_IP"
