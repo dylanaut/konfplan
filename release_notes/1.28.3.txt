@@ -1,0 +1,20 @@
+Release Notes 1.28.3
+Released: 2026-10-24
+
+Changes:
+
+- Release-Notes fuer 1.28.2 ergaenzen [skip ci]
+
+- Brevo-IP-Updater: Step-up-Code per IMAP abrufen
+  Der Code-Abruf per IMAP liegt jetzt im gemeinsamen Modul imap-code.mjs und
+  wird von setup-session.mjs (Geraeteverifizierung) und update-ip.mjs
+  (Step-up bei der IP-Eintragung) genutzt.
+  Brevo schickt keinen neuen Code, solange der vom Login noch gueltig ist.
+  update-ip.mjs fordert den Step-up-Code daher nach einem Poll-Timeout einmal
+  erneut an. Die IMAP-Suche "uid N:*" liefert immer mindestens die hoechste
+  UID; Treffer unter sinceUid werden jetzt herausgefiltert, damit kein alter,
+  verbrauchter Code verwendet wird. check-outbound-ip.sh reicht die
+  BREVO_CODE_IMAP_*-Variablen auch an update-ip.mjs durch.
+
+- Release 1.28.3
+
