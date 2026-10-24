@@ -44,8 +44,7 @@
 // jedem Fehler automatisch gespeichert) gemeinsam nachjustieren.
 
 import { chromium } from 'playwright';
-import { ImapFlow } from 'imapflow';
-import { simpleParser } from 'mailparser';
+import { IMAP_CONFIGURED, getStartingUid, pollForVerificationCodeViaImap } from './imap-code.mjs';
 import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import fs from 'node:fs';
@@ -59,78 +58,7 @@ if (!EMAIL || !PASSWORD) {
   process.exit(1);
 }
 
-// Optional: Postfach-Zugang, um den 6-stelligen Geraeteverifizierungs-Code automatisch aus der
-// zugestellten E-Mail auszulesen, statt einen Menschen am Terminal zu fragen - noetig, weil sich
-// per Live-Test herausgestellt hat, dass Brevo den Code fuer DIESEN Login-Flow IMMER verlangt
-// (auch von einem zuvor "vertrauenswuerdigen" Geraet/derselben IP/denselben Cookies - siehe
-// Kommentar unten). Ohne echte IMAP-Zugangsdaten faellt dieses Skript auf den bisherigen
-// interaktiven readline-Prompt zurueck (oder scheitert klar, wenn nicht-interaktiv - TTY-Pruefung
-// weiter unten).
-const IMAP_HOST = process.env.BREVO_CODE_IMAP_HOST;
-const IMAP_PORT = process.env.BREVO_CODE_IMAP_PORT ? Number(process.env.BREVO_CODE_IMAP_PORT) : 993;
-const IMAP_USER = process.env.BREVO_CODE_IMAP_USER;
-const IMAP_PASSWORD = process.env.BREVO_CODE_IMAP_PASSWORD;
-const IMAP_CONFIGURED = Boolean(IMAP_HOST && IMAP_USER && IMAP_PASSWORD);
-
-// Nutzer-Beobachtung (per Live-Test): ein bereits zugestellter Code bleibt ca. 90s gueltig,
-// danach schickt Brevo einen NEUEN Code per E-Mail. Das Zeitfenster hier deckt das grosszuegig ab.
-const CODE_POLL_INTERVAL_MS = 3000;
-const CODE_POLL_TIMEOUT_MS = 90000;
-
-function createImapClient() {
-  return new ImapFlow({
-    host: IMAP_HOST,
-    port: IMAP_PORT,
-    secure: true,
-    auth: { user: IMAP_USER, pass: IMAP_PASSWORD },
-    logger: false,
-  });
-}
-
-// Muss VOR dem Login-Versuch aufgerufen werden (der erst die Code-Mail auslöst) - liefert die
-// UID, ab der neu ankommende Mails als "waehrend dieses Versuchs zugestellt" gelten. Verhindert,
-// dass eine bereits im Postfach liegende (evtl. laengst verbrauchte/abgelaufene) Code-Mail aus
-// einem fruehreren Lauf faelschlich wiederverwendet wird.
-async function getStartingUid() {
-  const client = createImapClient();
-  await client.connect();
-  try {
-    const status = await client.status('INBOX', { uidNext: true });
-    return status.uidNext;
-  } finally {
-    await client.logout().catch(() => {});
-  }
-}
-
-async function pollForVerificationCodeViaImap(sinceUid) {
-  const client = createImapClient();
-  await client.connect();
-  try {
-    const lock = await client.getMailboxLock('INBOX');
-    try {
-      const deadline = Date.now() + CODE_POLL_TIMEOUT_MS;
-      while (Date.now() < deadline) {
-        const uids = await client.search({ uid: `${sinceUid}:*` }, { uid: true });
-        if (uids && uids.length > 0) {
-          const newestUid = Math.max(...uids);
-          const { content } = await client.download(newestUid, undefined, { uid: true });
-          const parsed = await simpleParser(content);
-          const text = `${parsed.text ?? ''}\n${parsed.html ?? ''}`;
-          const match = text.match(/\b(\d{6})\b/);
-          if (match) {
-            return match[1];
-          }
-        }
-        await new Promise(resolve => setTimeout(resolve, CODE_POLL_INTERVAL_MS));
-      }
-      throw new Error(`Kein Bestätigungscode innerhalb von ${CODE_POLL_TIMEOUT_MS / 1000}s per E-Mail erhalten (IMAP).`);
-    } finally {
-      lock.release();
-    }
-  } finally {
-    await client.logout().catch(() => {});
-  }
-}
+// Die IMAP-Konfiguration (BREVO_CODE_IMAP_*) und der Code-Abruf liegen in imap-code.mjs.
 
 async function saveErrorScreenshot(page, label) {
   if (!page) {
