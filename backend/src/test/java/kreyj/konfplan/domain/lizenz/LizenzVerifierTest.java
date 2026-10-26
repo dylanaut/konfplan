@@ -218,6 +218,21 @@ class LizenzVerifierTest {
     }
 
     @Test
+    void mitgelieferteProduktionsSchluesselSindGueltigUndGeladen() {
+        LizenzVerifier produktiv = LizenzVerifier.ausClasspath("license/public-keys.properties", clock);
+
+        // Mit dem Test-Schluessel unter der Produktions-kid signiert: die kid ist bekannt (kein
+        // UNBEKANNTER_SCHLUESSEL), die Signatur stimmt aber nicht - die Datei ist also lesbar und der Key geladen.
+        Map<String, Object> h = header();
+        h.put("kid", "2026-1");
+
+        assertThatThrownBy(() -> produktiv.verifiziere(token(PRIVATE_1, h, claims(jkt, JETZT)), jkt))
+                .isInstanceOf(LizenzFehler.class)
+                .extracting(e -> ((LizenzFehler) e).getGrund())
+                .isEqualTo(Grund.SIGNATUR);
+    }
+
+    @Test
     void fehlendeSchluesselResourceLehntAlleLizenzenAb() {
         LizenzVerifier leer = LizenzVerifier.ausClasspath("license/gibt-es-nicht.properties", clock);
 
