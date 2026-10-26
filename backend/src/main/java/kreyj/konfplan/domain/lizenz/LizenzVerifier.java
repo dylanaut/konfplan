@@ -60,7 +60,7 @@ public class LizenzVerifier {
                 props.load(in);
             }
         } catch (IOException e) {
-            throw new IllegalStateException("Lizenz-Schluessel nicht lesbar: " + resource, e);
+            throw new IllegalStateException("Lizenz-Schlüssel nicht lesbar: " + resource, e);
         }
         Map<String, PublicKey> keys = new HashMap<>();
         Set<String> gesperrt = new HashSet<>();
@@ -82,30 +82,30 @@ public class LizenzVerifier {
      */
     public LizenzClaims verifiziere(String token, String instanzJkt) {
         if (null == token) {
-            throw new LizenzFehler(Grund.FORMAT, "Keine Lizenz uebergeben.");
+            throw new LizenzFehler(Grund.FORMAT, "Keine Lizenz übergeben.");
         }
         String[] teile = token.trim().split("\\.", -1);
         if (3 != teile.length) {
-            throw new LizenzFehler(Grund.FORMAT, "Die Lizenz hat kein gueltiges JWS-Format.");
+            throw new LizenzFehler(Grund.FORMAT, "Die Lizenz hat kein gültiges JWS-Format.");
         }
 
         JsonNode header = parse(teile[0]);
         if (header.has("crit")) {
-            throw new LizenzFehler(Grund.FORMAT, "Kritische Header-Parameter werden nicht unterstuetzt.");
+            throw new LizenzFehler(Grund.FORMAT, "Kritische Header-Parameter werden nicht unterstützt.");
         }
         if (!ALGORITHMUS.equals(header.path("alg").asText(null))) {
             throw new LizenzFehler(Grund.ALGORITHMUS, "Nur der Signaturalgorithmus " + ALGORITHMUS + " wird akzeptiert.");
         }
         String kid = header.path("kid").asText(null);
         if (null == kid || kid.isEmpty()) {
-            throw new LizenzFehler(Grund.UNVOLLSTAENDIG, "Der Lizenz-Header enthaelt keine kid.");
+            throw new LizenzFehler(Grund.UNVOLLSTAENDIG, "Der Lizenz-Header enthält keine kid.");
         }
         if (gesperrteKids.contains(kid)) {
-            throw new LizenzFehler(Grund.GESPERRTER_SCHLUESSEL, "Der Signaturschluessel " + kid + " ist gesperrt.");
+            throw new LizenzFehler(Grund.GESPERRTER_SCHLUESSEL, "Der Signaturschlüssel " + kid + " ist gesperrt.");
         }
         PublicKey key = schluessel.get(kid);
         if (null == key) {
-            throw new LizenzFehler(Grund.UNBEKANNTER_SCHLUESSEL, "Der Signaturschluessel " + kid + " ist unbekannt.");
+            throw new LizenzFehler(Grund.UNBEKANNTER_SCHLUESSEL, "Der Signaturschlüssel " + kid + " ist unbekannt.");
         }
 
         pruefeSignatur(key, teile[0] + "." + teile[1], teile[2]);
@@ -118,14 +118,14 @@ public class LizenzVerifier {
             throw new LizenzFehler(Grund.AUSSTELLER, "Die Lizenz stammt nicht vom erwarteten Aussteller.");
         }
         if (!hatZielgruppe(c.path("aud"))) {
-            throw new LizenzFehler(Grund.ZIELGRUPPE, "Die Lizenz ist nicht fuer KonfPlan ausgestellt.");
+            throw new LizenzFehler(Grund.ZIELGRUPPE, "Die Lizenz ist nicht für KonfPlan ausgestellt.");
         }
 
         String lizenzId = text(c, "sub");
         String kundenId = text(c, "customerId");
         String jkt = text(c.path("cnf"), "jkt");
         if (!c.path("maxInstances").isInt() || 1 > c.path("maxInstances").asInt()) {
-            throw new LizenzFehler(Grund.UNVOLLSTAENDIG, "Claim maxInstances fehlt oder ist ungueltig.");
+            throw new LizenzFehler(Grund.UNVOLLSTAENDIG, "Claim maxInstances fehlt oder ist ungültig.");
         }
         LizenzClaims.Typ typ = switch (c.path("type").asText("")) {
             case "online" -> LizenzClaims.Typ.ONLINE;
@@ -152,7 +152,7 @@ public class LizenzVerifier {
             throw new LizenzFehler(Grund.ABGELAUFEN, "Die Lizenz ist abgelaufen.");
         }
         if (null != gueltigAb && jetzt.isBefore(gueltigAb.minus(TOLERANZ))) {
-            throw new LizenzFehler(Grund.NOCH_NICHT_GUELTIG, "Die Lizenz ist noch nicht gueltig.");
+            throw new LizenzFehler(Grund.NOCH_NICHT_GUELTIG, "Die Lizenz ist noch nicht gültig.");
         }
 
         return new LizenzClaims(lizenzId, kundenId, c.path("maxInstances").asInt(), Set.copyOf(features), typ, kid, ausgestelltAm, gueltigAb, gueltigBis);
@@ -164,10 +164,10 @@ public class LizenzVerifier {
             sig.initVerify(key);
             sig.update(signiert.getBytes(StandardCharsets.US_ASCII));
             if (!sig.verify(Base64.getUrlDecoder().decode(signatur))) {
-                throw new LizenzFehler(Grund.SIGNATUR, "Die Lizenzsignatur ist ungueltig.");
+                throw new LizenzFehler(Grund.SIGNATUR, "Die Lizenzsignatur ist ungültig.");
             }
         } catch (GeneralSecurityException | IllegalArgumentException e) {
-            throw new LizenzFehler(Grund.SIGNATUR, "Die Lizenzsignatur ist ungueltig.");
+            throw new LizenzFehler(Grund.SIGNATUR, "Die Lizenzsignatur ist ungültig.");
         }
     }
 
@@ -189,11 +189,11 @@ public class LizenzVerifier {
         try {
             JsonNode node = MAPPER.readTree(Base64.getUrlDecoder().decode(base64url));
             if (null == node || !node.isObject()) {
-                throw new LizenzFehler(Grund.FORMAT, "Die Lizenz hat kein gueltiges JWS-Format.");
+                throw new LizenzFehler(Grund.FORMAT, "Die Lizenz hat kein gültiges JWS-Format.");
             }
             return node;
         } catch (IllegalArgumentException | IOException e) {
-            throw new LizenzFehler(Grund.FORMAT, "Die Lizenz hat kein gueltiges JWS-Format.");
+            throw new LizenzFehler(Grund.FORMAT, "Die Lizenz hat kein gültiges JWS-Format.");
         }
     }
 

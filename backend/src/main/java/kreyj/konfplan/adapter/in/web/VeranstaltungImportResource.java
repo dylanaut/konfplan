@@ -41,6 +41,7 @@ public class VeranstaltungImportResource {
     }
 
 
+    @LizenzPflichtig
     @POST
     @Path("/datasets/{name}/import")
     @Operation(summary = "CSV-Satz aus Verzeichnis importieren",
@@ -57,6 +58,7 @@ public class VeranstaltungImportResource {
     }
 
 
+    @LizenzPflichtig
     @POST
     @Path("/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)

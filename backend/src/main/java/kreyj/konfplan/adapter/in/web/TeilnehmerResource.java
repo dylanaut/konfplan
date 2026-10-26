@@ -89,6 +89,7 @@ public class TeilnehmerResource {
     }
 
 
+    @LizenzPflichtig
     @POST
     @Transactional
     @RolesAllowed({"ORGANISATOR", "ADMINISTRATOR"})

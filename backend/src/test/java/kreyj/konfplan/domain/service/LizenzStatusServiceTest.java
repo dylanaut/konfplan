@@ -172,6 +172,38 @@ class LizenzStatusServiceTest {
     }
 
     @Test
+    void gecachterStatusWirdBeiInstallationVerworfenUndLaeuftAb() {
+        assertThat(QuarkusTransaction.requiringNew().call(service::statusGecacht).zustand()).isEqualTo(LizenzZustand.UNLIZENZIERT);
+
+        // Innerhalb der Cache-Dauer sichtbar bleibt der alte Stand, auch wenn die Lizenz direkt in der DB steht ...
+        String token = lizenz();
+        QuarkusTransaction.requiringNew().run(() -> Lizenzzustand.<Lizenzzustand>findAll().firstResult().setLizenzToken(token));
+        assertThat(QuarkusTransaction.requiringNew().call(service::statusGecacht).zustand()).isEqualTo(LizenzZustand.UNLIZENZIERT);
+
+        // ... nach Ablauf wird neu berechnet.
+        clock.vor(LizenzStatusService.STATUS_CACHE_DAUER.plusSeconds(1));
+        assertThat(QuarkusTransaction.requiringNew().call(service::statusGecacht).zustand()).isEqualTo(LizenzZustand.LIZENZIERT);
+    }
+
+    @Test
+    void installationVerwirftDenGecachtenStatusSofort() {
+        assertThat(QuarkusTransaction.requiringNew().call(service::statusGecacht).zustand()).isEqualTo(LizenzZustand.UNLIZENZIERT);
+
+        QuarkusTransaction.requiringNew().run(() -> service.installiere(lizenz()));
+
+        assertThat(QuarkusTransaction.requiringNew().call(service::statusGecacht).zustand()).isEqualTo(LizenzZustand.LIZENZIERT);
+    }
+
+    @Test
+    void anforderungLiefertIdentitaetUndThumbprint() {
+        var a = QuarkusTransaction.requiringNew().call(service::anforderung);
+
+        assertThat(a.instanzId()).hasSize(36);
+        assertThat(a.thumbprint()).isEqualTo(jkt());
+        assertThat(a.publicKey()).isNotBlank();
+    }
+
+    @Test
     void injizierterServiceNutztDieKonfigurierteTestSchluesselDatei() {
         QuarkusTransaction.requiringNew().run(() -> Lizenzzustand.deleteAll());
 

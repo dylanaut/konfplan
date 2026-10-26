@@ -158,7 +158,9 @@ Ein Token ohne Instanzbezug lässt sich auf beliebig viele Instanzen kopieren. D
 *   Zustände: `LIZENZIERT`, `GRACE`, `EINGESCHRAENKT`, `UNLIZENZIERT`.
 *   Im Zustand `EINGESCHRAENKT` und `UNLIZENZIERT` greift die Schreibsperre. Teilnehmer- und Referentenansichten sowie der vorhandene Plan bleiben lesbar. Ein harter Stopp mitten in einer Veranstaltung wäre für ehrliche Kunden schädlicher als für Piraten.
 *   Die Durchsetzung erfolgt über einen `ContainerRequestFilter` an den betroffenen Endpunkten (Antwort 402/403 mit klarer Meldung). Das Frontend zeigt Administratoren ein Warnbanner und eine Lizenzseite (Status, Lizenzdatei hochladen, Anforderungsdatei erzeugen).
-*   Das Dev- und Test-Profil umgeht die Prüfung.
+*   *Schalter:* Die Schreibsperre ist standardmäßig aus (`konfplan.lizenz.durchsetzung=false`, Umgebungsvariable `KONFPLAN_LIZENZ_DURCHSETZUNG`). Erst wenn für alle Bestandskunden eine Lizenz ausgestellt ist, wird sie mit `true` scharf geschaltet. Sonst würde ein Release mit der Prüfung sie aussperren.
+*   *Gesperrte Endpunkte* (Annotation `@LizenzPflichtig`, Antwort 402): Planerstellung und Plan-Import, Verzeichnis- und Veranstaltungs-Import, CSV-Importe von Referenten, Teilnehmern, Vorträgen und Slots, Anlegen von Veranstaltungen und Nutzern. Lesen bleibt immer möglich.
+*   Die Lizenzseite selbst (`/api/lizenz`, nur Administratoren) ist nie gesperrt: Status, Anforderungsdatei und Installation einer Offline-Lizenz.
 
 [[offline]]
 == Offline-Lizenz mit Challenge-Response
@@ -200,7 +202,7 @@ Die wirksamste Schutzmaßnahme liegt vor jeder Client-Prüfung:
 == Umsetzungsplan
 
 . *Spezifikation:* Format, Zustandsautomat und Bedrohungsmodell festschreiben.
-. *Verifier und Zustand im Backend:* Out-Port `LizenzPruefung`, `LizenzStatusService`, Flyway-Tabelle (Instanz-ID, Instanzschlüssel verschlüsselt, Token, Zeit-Wasserstand, letzte Validierung), mehrere Public Keys mit `kid`.
+. *Verifier und Zustand im Backend:* Out-Port `LizenzPruefung`, `LizenzStatusService`, Flyway-Tabelle (Instanz-ID, Instanzschlüssel im Klartext, da wer die Datenbank besitzt auch die Instanz betreibt, Token, Zeit-Wasserstand, letzte Validierung), mehrere Public Keys mit `kid`.
 . *Durchsetzung:* `ContainerRequestFilter`, Administrator-Seite im Frontend, Warnbanner.
 . *Offline-Pfad:* Anforderungsdatei, Lizenzdatei hochladen, Verifikation. Ohne Lizenzserver-Dienst testbar.
 . *Lizenzserver:* Entitäten, Aktivieren/Refresh/Deaktivieren, KMS-Signierung, Admin-Zugang mit MFA, Audit-Log.
