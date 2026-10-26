@@ -89,3 +89,8 @@ build/
 ### enthalten echte personenbezogene Daten, duerfen nie ins Repo gelangen.
 *.dump
 konfplan-backup_*.zip
+
+### Lizenz-Werkzeug: Signaturschluessel und Audit-Log nie einchecken ###
+signing*.key
+*.key
+lizenz-audit.log

@@ -177,6 +177,31 @@ Viele Kunden erreichen den Lizenzserver nicht. Eine unspezifische Offline-Datei 
 
 Maschinen-ID aus MAC, CPU, Festplatte und BIOS wird nicht verwendet. KonfPlan läuft in Docker. Container sehen diese Hardware nicht stabil, MAC-Adressen ändern sich pro Container, VMs haben generische IDs, und Toleranzen (z.B. 80 %) sind Heuristik und kein Schutz. Die Instanzbindung über Schlüsselpaar ist stabiler und zudem nicht personenbezogen.
 
+[[werkzeug]]
+== Signier-Werkzeug (ohne KMS)
+
+Für Tests und eine erste Übergangslizenz gibt es `tools/lizenz/LizenzTool.java`, eine einzelne Java-Quelldatei ohne Abhängigkeiten (JDK 21).
+
+[source,bash]
+----
+# 1. Einmalig: Signaturschlüssel erzeugen (Datei mit Rechten 600, wird nie überschrieben)
+java tools/lizenz/LizenzTool.java keygen --key signing.key --kid 2026-1
+
+# 2. Die ausgegebene Zeile "<kid>=<Public Key>" in
+#    backend/src/main/resources/license/public-keys.properties eintragen und mit einem Release ausliefern.
+
+# 3. Lizenz aus der Anforderungsdatei der Instanz ausstellen (Lizenz-Modal -> "Anforderungsdatei")
+java tools/lizenz/LizenzTool.java ausstellen --key signing.key --kid 2026-1 \
+    --anforderung anforderung.json --kunde "Schule X" --lizenz-id LIC-2026-001 \
+    --tage 365 --max-instanzen 1 --features planung --out license.lic
+----
+
+*   Das Werkzeug berechnet den Thumbprint aus dem Public Key der Anforderungsdatei neu und lehnt veränderte oder beschädigte Dateien ab. Es verweigert Schlüsseldateien, die für andere Nutzer lesbar sind.
+*   Jede Ausstellung wird in `lizenz-audit.log` protokolliert (Zeit, Lizenz-ID, Kunde, Instanz, `kid`, Laufzeit).
+*   Ein Test (`LizenzToolTest`) ruft das Werkzeug auf und prüft die Lizenz mit dem echten `LizenzVerifier`; so laufen Werkzeug und Verifier nicht auseinander.
+*   *Nicht für den Produktivbetrieb:* Der Signaturschlüssel liegt in einer Datei. Wird sie geleakt, kann jeder unbegrenzt Lizenzen fälschen. Für Produktion gehört der Schlüssel in ein KMS/HSM (siehe <<schluessel>>). Der Schlüssel und das Audit-Log werden nie eingecheckt (`.gitignore`).
+*   Der Public Key im Repository bleibt auch nach dem Wechsel auf KMS bestehen, bis die Schlüsselrotation den alten `kid` sperrt.
+
 [[zeit]]
 == Zeitmanipulation
 
