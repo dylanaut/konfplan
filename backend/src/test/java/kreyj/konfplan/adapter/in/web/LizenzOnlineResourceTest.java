@@ -46,7 +46,8 @@ class LizenzOnlineResourceTest {
     void aktivierungRevalidierungGraceUndDeaktivierung() {
         given().when().get(PATH).then()
             .body("zustand", equalTo("UNLIZENZIERT"))
-            .body("onlineMoeglich", equalTo(true));
+            .body("onlineMoeglich", equalTo(true))
+            .body("onlineAktiviert", equalTo(false));
 
         // Falscher Schlüssel: 400 mit Meldung des Servers, Zustand unverändert.
         given().contentType(ContentType.JSON).body("{\"lizenzschluessel\":\"FALSCH\"}")
@@ -62,6 +63,7 @@ class LizenzOnlineResourceTest {
             .then().statusCode(200)
             .body("zustand", equalTo("LIZENZIERT"))
             .body("typ", equalTo("ONLINE"))
+            .body("onlineAktiviert", equalTo(true))
             .body("lizenzId", equalTo("LIC-ONLINE"))
             .body("naechsteRevalidierung", notNullValue())
             .body("revalidierungFehler", nullValue());
@@ -76,7 +78,9 @@ class LizenzOnlineResourceTest {
             .isNotEqualTo(402);
 
         // Abmelden gibt den Platz frei; danach ist wieder alles gesperrt.
-        given().when().delete(PATH + "/aktivierung").then().statusCode(200).body("zustand", equalTo("UNLIZENZIERT"));
+        given().when().delete(PATH + "/aktivierung").then().statusCode(200)
+            .body("zustand", equalTo("UNLIZENZIERT"))
+            .body("onlineAktiviert", equalTo(false));
         given().contentType(ContentType.JSON).body("{}").when().post("/api/planungen/1").then().statusCode(402);
 
         // Nicht erreichbarer Server: 502 mit Code statt 400.
