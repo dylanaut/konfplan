@@ -41,6 +41,7 @@ public class PlanungResource {
     @Inject
     ManagedExecutor managedExecutor;
 
+    @LizenzPflichtig
     @POST
     @Path("/{vid}")
     @Operation(summary = "Planerstellung starten", description = "Startet den MiniZinc-Optimierungsprozess für eine Veranstaltung.")
@@ -106,6 +107,7 @@ public class PlanungResource {
             .build();
     }
 
+    @LizenzPflichtig
     @POST
     @Path("/{vid}/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)

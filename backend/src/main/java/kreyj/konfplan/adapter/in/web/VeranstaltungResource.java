@@ -91,6 +91,7 @@ public class VeranstaltungResource {
     }
 
 
+    @LizenzPflichtig
     @POST
     @Operation(summary = "Neue Veranstaltung erstellen", description = "Erstellt eine neue Veranstaltung.")
     public Response create(@RequestBody(description = "Die zu erstellende Veranstaltung") VeranstaltungDto vDto) {
@@ -136,6 +137,7 @@ public class VeranstaltungResource {
     }
 
 
+    @LizenzPflichtig
     @POST
     @Path("/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -161,6 +163,7 @@ public class VeranstaltungResource {
     }
 
 
+    @LizenzPflichtig
     @POST
     @Path("/{vid}/nutzer")
     @Operation(summary = "Neuen Nutzer zu Veranstaltung hinzufügen", description = "Erstellt einen neuen Nutzer und fügt ihn direkt zu einer Veranstaltung hinzu.")
@@ -201,6 +204,7 @@ public class VeranstaltungResource {
     }
 
 
+    @LizenzPflichtig
     @POST
     @Path("/{vid}/referenten/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -216,6 +220,7 @@ public class VeranstaltungResource {
     }
 
 
+    @LizenzPflichtig
     @POST
     @Path("/{vid}/teilnehmer/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -299,6 +304,7 @@ public class VeranstaltungResource {
     }
 
 
+    @LizenzPflichtig
     @POST
     @Path("/{vid}/vortraege/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -381,6 +387,7 @@ public class VeranstaltungResource {
     }
 
 
+    @LizenzPflichtig
     @POST
     @Path("/{vid}/slots/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)

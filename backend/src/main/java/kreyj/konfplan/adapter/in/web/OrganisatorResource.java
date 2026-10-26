@@ -104,6 +104,7 @@ public class OrganisatorResource {
     }
 
 
+    @LizenzPflichtig
     @POST
     @Path("/nutzer")
     @Operation(summary = "Neuen Nutzer erstellen", description = "Erstellt einen neuen Nutzer und sendet eine Bestätigungs-E-Mail.")
@@ -235,6 +236,7 @@ public class OrganisatorResource {
     }
 
 
+    @LizenzPflichtig
     @POST
     @Path("/organisatoren/import")
     @Consumes(MediaType.MULTIPART_FORM_DATA)

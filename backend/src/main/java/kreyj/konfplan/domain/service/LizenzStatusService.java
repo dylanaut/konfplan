@@ -4,6 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import kreyj.konfplan.domain.lizenz.InstanzSchluessel;
+import kreyj.konfplan.domain.lizenz.LizenzAnforderung;
 import kreyj.konfplan.domain.lizenz.LizenzClaims;
 import kreyj.konfplan.domain.lizenz.LizenzFehler;
 import kreyj.konfplan.domain.lizenz.LizenzStatus;
@@ -28,9 +29,15 @@ public class LizenzStatusService {
     /** Der Zeit-Wasserstand wird nur in diesem Abstand fortgeschrieben, um Schreibzugriffe zu sparen. */
     static final Duration WASSERSTAND_SCHRITT = Duration.ofHours(1);
     private static final Duration ZEIT_TOLERANZ = Duration.ofMinutes(5);
+    /** Die Schreibsperre fragt den Status bei jeder gesperrten Anfrage ab - nicht jedes Mal die Datenbank belasten. */
+    static final Duration STATUS_CACHE_DAUER = Duration.ofSeconds(30);
+
+    private record GecachterStatus(LizenzStatus status, Instant bis) {
+    }
 
     private final LizenzVerifier verifier;
     private final Clock clock;
+    private volatile GecachterStatus cache;
 
     @Inject
     public LizenzStatusService(@ConfigProperty(name = "konfplan.lizenz.schluessel-resource", defaultValue = "license/public-keys.properties") String schluesselResource) {
@@ -68,13 +75,33 @@ public class LizenzStatusService {
         Lizenzzustand z = instanz();
         LizenzClaims claims = verifier.verifiziere(token, jkt(z));
         if (LizenzClaims.Typ.OFFLINE != claims.typ()) {
-            throw new LizenzFehler(LizenzFehler.Grund.TYP, "Nur Offline-Lizenzen koennen hochgeladen werden.");
+            throw new LizenzFehler(LizenzFehler.Grund.TYP, "Nur Offline-Lizenzen können hochgeladen werden.");
         }
         Instant jetzt = clock.instant();
         z.setLizenzToken(token.trim());
         z.setLetzteValidierung(jetzt);
         z.setZeitWasserstand(spaeter(spaeter(z.getZeitWasserstand(), jetzt), claims.ausgestelltAm()));
+        cache = null;
         return claims;
+    }
+
+    /** Wie {@link #status()}, aber hoechstens alle {@link #STATUS_CACHE_DAUER} neu berechnet. */
+    @Transactional
+    public LizenzStatus statusGecacht() {
+        GecachterStatus c = cache;
+        Instant jetzt = clock.instant();
+        if (null != c && jetzt.isBefore(c.bis())) {
+            return c.status();
+        }
+        LizenzStatus status = status();
+        cache = new GecachterStatus(status, jetzt.plus(STATUS_CACHE_DAUER));
+        return status;
+    }
+
+    @Transactional
+    public LizenzAnforderung anforderung() {
+        Lizenzzustand z = instanz();
+        return new LizenzAnforderung(z.getInstanzId(), z.getInstanzPublicKey(), jkt(z));
     }
 
     @Transactional

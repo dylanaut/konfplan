@@ -28,7 +28,7 @@ public final class InstanzSchluessel {
         try {
             return KeyPairGenerator.getInstance(ALGORITHMUS).generateKeyPair();
         } catch (GeneralSecurityException e) {
-            throw new IllegalStateException("Ed25519 nicht verfuegbar", e);
+            throw new IllegalStateException("Ed25519 nicht verfügbar", e);
         }
     }
 
@@ -36,7 +36,7 @@ public final class InstanzSchluessel {
         try {
             return KeyFactory.getInstance(ALGORITHMUS).generatePublic(new X509EncodedKeySpec(Base64.getDecoder().decode(base64Spki)));
         } catch (GeneralSecurityException | IllegalArgumentException e) {
-            throw new IllegalArgumentException("Ungueltiger Ed25519-Public-Key", e);
+            throw new IllegalArgumentException("Ungültiger Ed25519-Public-Key", e);
         }
     }
 
@@ -55,7 +55,7 @@ public final class InstanzSchluessel {
             byte[] hash = MessageDigest.getInstance("SHA-256").digest(jwk.getBytes(StandardCharsets.UTF_8));
             return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
         } catch (GeneralSecurityException e) {
-            throw new IllegalStateException("SHA-256 nicht verfuegbar", e);
+            throw new IllegalStateException("SHA-256 nicht verfügbar", e);
         }
     }
 }
