@@ -1,0 +1,167 @@
+Release Notes 1.29.0
+Released: 2026-10-26
+
+Changes:
+
+- Release-Notes fuer 1.28.3 ergaenzen [skip ci]
+
+- Serverlizensierung: Konzept mit Bedrohungsmodell überarbeiten
+  Das Konzept ist auf die getroffenen Entscheidungen ausgerichtet (Lizenz
+  pro Instanz, Schreibsperre bei Ablauf, online und offline, Cloud-KMS) und
+  um ein Bedrohungsmodell ergänzt.
+  Neu: Instanzbindung per Ed25519-Schlüsselpaar und cnf-Claim mit
+  serverseitigem Aktivierungs-Limit, Klon-Erkennung per Zähler,
+  Schlüsselhierarchie mit kid und Sperrliste, Ausstellungsprozess mit MFA und
+  Vier-Augen-Prinzip, Offline-Lizenz per Challenge-Response, Zeit-Wasserstand
+  gegen Uhr-Rollback sowie Absicherung der Image-Verteilung.
+  Korrigiert: Verifikation ohne quarkus-smallrye-jwt (Konflikt mit
+  quarkus-oidc), Public Keys unter src/main/resources statt
+  META-INF/resources (wird statisch ausgeliefert), kein
+  Hardware-Fingerprinting in Docker, kein mTLS und keine Obfuskation.
+  Refs #781
+
+- Lizenzierung: Verifier, Instanzidentität und Lizenzzustand
+  Erster Umsetzungsschritt zu Serverlizensierung.adoc (#781). Es wird noch
+  nichts durchgesetzt; die Schreibsperre folgt separat.
+  LizenzVerifier prüft eine Lizenz im JWS-Compact-Format ohne
+  JWT-Bibliothek und ohne Auth-Mechanismus (kein Konflikt mit quarkus-oidc):
+  fester Algorithmus EdDSA (kein "none", keine symmetrischen Verfahren),
+  kid-Auswahl mit Sperrliste, Signaturprüfung vor dem Lesen der Claims, dann
+  iss, aud, Typ, Pflichtclaims, Gültigkeitszeitraum und Instanzbindung über
+  cnf.jkt (RFC 7638 Thumbprint des Instanz-Public-Keys).
+  Lizenzzustand (Flyway V34) hält als Singleton die Instanz-ID, das
+  Ed25519-Schlüsselpaar der Instanz, die installierte Offline-Lizenz und
+  einen Zeit-Wasserstand. LizenzStatusService legt die Identität beim ersten
+  Aufruf an, installiert Offline-Lizenzen (ungültige ersetzen keine
+  bestehende, Online-Tokens werden abgelehnt) und liefert den Zustand
+  LIZENZIERT, EINGESCHRAENKT oder UNLIZENZIERT. Eine zurückgestellte
+  Systemuhr wird über den Wasserstand erkannt.
+  Die Public Keys liegen unter license/public-keys.properties; es gibt noch
+  keinen Produktionsschlüssel (KMS-Anbieter offen), bis dahin wird jede
+  Lizenz abgelehnt. Die Tests nutzen eigene Test-Schlüssel.
+  Refs #781
+
+- Lizenzierung: Schreibsperre und Lizenz-API
+  Zweiter Umsetzungsschritt zu Serverlizensierung.adoc (#781).
+  LizenzFilter sperrt per Annotation @LizenzPflichtig markierte Endpunkte
+  mit 402 und JSON-Meldung (error/code/zustand), solange die Instanz nicht
+  LIZENZIERT ist: Planerstellung und Plan-Import, Verzeichnis- und
+  Veranstaltungs-Import, CSV-Importe von Referenten, Teilnehmern, Vorträgen
+  und Slots sowie das Anlegen von Veranstaltungen und Nutzern. Lesen bleibt
+  möglich, nicht angemeldete Anfragen scheitern weiter mit 401 und geben den
+  Lizenzstatus nicht preis.
+  Die Sperre ist standardmäßig aus (konfplan.lizenz.durchsetzung=false), damit
+  ein Release mit der Prüfung Bestandskunden nicht aussperrt, bevor deren
+  Lizenz ausgestellt ist. Der Status wird für 30 s gecacht, eine
+  Installation verwirft den Cache sofort.
+  LizenzResource (/api/lizenz, nur Administratoren, nie gesperrt) liefert
+  Status, Anforderungsdatei (Instanz-ID, Public Key, Thumbprint) und
+  installiert eine Offline-Lizenz; ungültige Lizenzen werden mit 400
+  abgelehnt. Fehlermeldungen des Verifiers verwenden jetzt Umlaute. Die
+  Konzeptdoku nennt Schalter und gesperrte Endpunkte und beschreibt den
+  Instanzschlüssel korrekt als unverschlüsselt.
+  Refs #781
+
+- Lizenzierung: Lizenzverwaltung im Frontend
+  Dritter Umsetzungsschritt zu Serverlizensierung.adoc (#781), baut auf
+  /api/lizenz auf.
+  Administratoren erhalten im Organisator-Dashboard den Button "Lizenz" mit
+  einem Modal: Lizenzstatus samt Ablehnungsgrund und Eckdaten (Kunde,
+  Lizenz-ID, Instanzen, Laufzeit, Funktionen), die Anforderungsdatei zum
+  Herunterladen (Instanz-ID, Public Key, Thumbprint) und die Installation
+  einer Offline-Lizenz per Datei oder Einfügen. Fehler des Backends werden
+  angezeigt, eine ungültige Lizenz ändert den Status nicht.
+  Das Lizenz-Banner (nur Administratoren) erscheint, wenn die Schreibsperre
+  scharf ist und keine gültige Lizenz vorliegt, sowie 30 Tage vor Ablauf der
+  Lizenz auch ohne scharfe Sperre. Sein Link öffnet die Lizenzverwaltung;
+  das Dashboard reagiert darauf auch, wenn es schon angezeigt wird.
+  Playwright-Tests gegen gemockte APIs decken Banner, Modal, Installation,
+  Fehlerfall und die Rollen-Sichtbarkeit ab (21 Läufe über 3 Browser).
+  Refs #781
+
+- Lizenzierung: Signier-Werkzeug ohne KMS
+  Vierter Umsetzungsschritt zu Serverlizensierung.adoc (#781): ein Werkzeug,
+  das aus der Anforderungsdatei einer Instanz eine Offline-Lizenz ausstellt.
+  tools/lizenz/LizenzTool.java ist eine einzelne Java-Quelldatei ohne
+  Abhängigkeiten (kein neues Maven-Modul, der Release-Prozess bleibt
+  unverändert). "keygen" erzeugt einen Ed25519-Signaturschlüssel in einer
+  Datei mit Rechten 600 und gibt die Zeile für public-keys.properties aus;
+  ein bestehender Schlüssel wird nie überschrieben. "ausstellen" berechnet
+  den Thumbprint aus dem Public Key der Anforderungsdatei neu und lehnt
+  veränderte Dateien ab, verweigert für andere Nutzer lesbare
+  Schlüsseldateien, prüft Laufzeit und Instanzzahl und protokolliert jede
+  Ausstellung in lizenz-audit.log.
+  LizenzToolTest ruft das Werkzeug wirklich auf und prüft die Lizenz mit dem
+  echten LizenzVerifier (Claims, Instanzbindung, Protokoll, Fehlerfälle), so
+  laufen Werkzeug und Verifier nicht auseinander. Die Doku beschreibt den
+  Ablauf und warnt, dass der Dateischlüssel nur für Tests und eine erste
+  Übergangslizenz taugt; Produktion gehört in ein KMS/HSM. Schlüssel und
+  Audit-Log stehen in der .gitignore.
+  Refs #781
+
+- Lizenzierung: Public Key 2026-1 eintragen
+  Trägt den mit LizenzTool keygen erzeugten Public Key 2026-1 in
+  license/public-keys.properties ein. Damit akzeptiert KonfPlan Lizenzen,
+  die mit dem zugehörigen Dateischlüssel ausgestellt wurden (Übergangslizenzen,
+  z.B. für bestehende Kunden). Der private Schlüssel liegt nicht im
+  Repository. Die Schreibsperre bleibt standardmäßig aus.
+  Ein Test lädt die ausgelieferte Datei und stellt sicher, dass der Eintrag
+  gültig und geladen ist, damit ein Tippfehler im Key nicht erst bei der
+  ersten Lizenz auffällt.
+  Refs #781
+
+- Lizenzierung: Online-Aktivierung und Revalidierung
+  Fünfter Umsetzungsschritt zu Serverlizensierung.adoc (#781): die
+  Client-Seite der Online-Lizenz. Der Lizenzserver selbst ist ein eigenes
+  Projekt; das Protokoll ist in der Doku festgehalten.
+  Protokoll: signierte POST-Anfragen (Header X-Instanz-Id, X-Signatur mit dem
+  Instanzschlüssel) für Aktivierung, Revalidierung und Deaktivierung. Bei der
+  Aktivierung weist die Instanz den Besitz des Private Keys nach, der Server
+  prüft maxInstances. Online-Lizenzen tragen einen Revalidierungszähler (seq)
+  und den Fälligkeitszeitpunkt (rev); exp ist das Ende der Grace-Period.
+  Neuer Zustand GRACE: Revalidierung fällig, aber noch innerhalb der Frist -
+  voll nutzbar, die Schreibsperre greift nicht. Danach EINGESCHRAENKT. Eine
+  Revalidierung wird nur übernommen, wenn der Zähler steigt (kein
+  Zurücksetzen durch eingespielte alte Antworten). Der Server erkennt Klone
+  an veralteten Zählern und beantwortet Wiederholungen nach verlorener
+  Antwort idempotent. LizenzRevalidierungJob versucht die Erneuerung alle
+  6 Stunden ab 2 Tagen vor der Fälligkeit; Ergebnis und Fehler des letzten
+  Versuchs werden festgehalten (Flyway V35).
+  HttpLizenzServerClient nutzt den JDK-HttpClient und akzeptiert nur
+  https:// (http:// nur für localhost), weil der Lizenzschlüssel
+  übertragen wird. LizenzResource erhält Endpunkte für Aktivierung,
+  Revalidierung und Entfernen der Lizenz; ein nicht erreichbarer Server
+  liefert 502, eine Ablehnung 400.
+  Der app-Dienst in docker-compose.yml reicht KONFPLAN_LIZENZ_DURCHSETZUNG und
+  KONFPLAN_LIZENZ_SERVER_URL aus der .env durch - die Umgebungsvariablen dieses
+  Dienstes sind explizit aufgelistet, eine Variable nur in der .env hätte den
+  Container nicht erreicht. .env.example und Deployment-DockerCompose.adoc
+  beschreiben beide.
+  Die Tests laufen gegen einen Fake-Lizenzserver (JDK-HttpServer) mit
+  Signaturprüfung, Instanz-Limit, Widerruf und Klon-Erkennung, der zugleich
+  als ausführbare Referenz des Protokolls dient.
+  Refs #781
+
+- Lizenzierung: Online-Aktivierung im Frontend
+  Sechster Umsetzungsschritt zu Serverlizensierung.adoc (#781), baut auf der
+  Online-API auf.
+  Das Lizenz-Modal zeigt, wenn ein Lizenzserver konfiguriert ist, einen
+  Online-Bereich: Aktivierung mit Lizenzschlüssel; bei aktivierter
+  Online-Lizenz Zeitpunkt der letzten Prüfung, deren Fehler, "Jetzt prüfen"
+  und "Lizenz entfernen" (mit Bestätigung; ist der Lizenzserver nicht
+  erreichbar, wird "Nur lokal entfernen" angeboten und auf den dann
+  belegten Aktivierungsplatz hingewiesen). Der Zustand GRACE ("Prüfung
+  fällig") erscheint im Modal und als Banner - die Anwendung bleibt dabei voll
+  nutzbar. Der Status liefert dafür das Feld onlineAktiviert, damit auch eine
+  abgelaufene Online-Lizenz ohne Eckdaten als solche erkannt wird.
+  Zwei Fehler im Banner behoben: bei scharfer Schreibsperre wurde GRACE als
+  gesperrt gemeldet, und Online-Lizenzen lösten dauerhaft die
+  "läuft in N Tagen ab"-Warnung aus, weil ihr gueltigBis nur das Ende der
+  Grace-Period ist und sich die Lizenz selbst erneuert.
+  Playwright-Tests gegen gemockte APIs decken Aktivierung, Fehlerfälle,
+  GRACE, Prüfen, Entfernen (inkl. nur lokal und Abbrechen) und den
+  fehlenden Lizenzserver ab.
+  Refs #781
+
+- Release 1.29.0
+
