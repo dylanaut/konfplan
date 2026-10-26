@@ -1,6 +1,7 @@
 <template>
   <div class="min-h-screen bg-gray-50" id="app">
     <MaintenanceBanner v-if="auth.isAuthenticated" />
+    <LizenzBanner v-if="auth.isAuthenticated && auth.isAdministrator" />
     <VersionUpdateBanner v-if="auth.isAuthenticated" />
     <!-- Navigation -->
     <nav v-if="auth.isAuthenticated" class="bg-indigo-600 text-white p-4 shadow-lg sticky top-0 z-50 no-print">
@@ -88,6 +89,7 @@ import MessageBoxPanel from './components/MessageBoxPanel.vue';
 import EventLogo from './components/EventLogo.vue';
 import FeedbackModal from './components/FeedbackModal.vue';
 import MaintenanceBanner from './components/MaintenanceBanner.vue';
+import LizenzBanner from './components/LizenzBanner.vue';
 import VersionUpdateBanner from './components/VersionUpdateBanner.vue';
 
 const POLL_INTERVAL_MS = 60000;
