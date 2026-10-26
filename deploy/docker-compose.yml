@@ -165,6 +165,10 @@ services:
       QUARKUS_HTTP_PROXY_ENABLE_FORWARDED_HOST: "true"
       # News-Laufband auf der Login-Seite: optional, siehe ./data/laufband.txt weiter unten.
       LAUFBAND_PATH: /var/lib/konfplan/laufband.txt
+      # Lizenzierung (siehe Serverlizensierung.adoc, Deployment-DockerCompose.adoc): Schreibsperre ohne
+      # gueltige Lizenz (standardmaessig aus) und optionaler Lizenzserver fuer die Online-Aktivierung.
+      KONFPLAN_LIZENZ_DURCHSETZUNG: ${LIZENZ_DURCHSETZUNG:-false}
+      KONFPLAN_LIZENZ_SERVER_URL: ${LIZENZ_SERVER_URL:-}
     secrets:
       - db_password
       - keycloak_admin_cli_secret

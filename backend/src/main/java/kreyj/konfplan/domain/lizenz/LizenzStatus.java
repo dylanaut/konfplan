@@ -1,7 +1,7 @@
 package kreyj.konfplan.domain.lizenz;
 
 /**
- * @param claims nur bei {@link LizenzZustand#LIZENZIERT} gesetzt
+ * @param claims nur bei {@link LizenzZustand#LIZENZIERT} und {@link LizenzZustand#GRACE} gesetzt
  * @param grund  nur bei {@link LizenzZustand#EINGESCHRAENKT} gesetzt
  */
 public record LizenzStatus(LizenzZustand zustand, LizenzClaims claims, LizenzFehler.Grund grund) {
@@ -12,6 +12,10 @@ public record LizenzStatus(LizenzZustand zustand, LizenzClaims claims, LizenzFeh
 
     public static LizenzStatus lizenziert(LizenzClaims claims) {
         return new LizenzStatus(LizenzZustand.LIZENZIERT, claims, null);
+    }
+
+    public static LizenzStatus grace(LizenzClaims claims) {
+        return new LizenzStatus(LizenzZustand.GRACE, claims, null);
     }
 
     public static LizenzStatus eingeschraenkt(LizenzFehler.Grund grund) {

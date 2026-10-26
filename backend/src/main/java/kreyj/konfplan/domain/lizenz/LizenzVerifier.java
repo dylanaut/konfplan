@@ -136,6 +136,22 @@ public class LizenzVerifier {
         Instant gueltigAb = zeitpunkt(c, "nbf", false);
         Instant ausgestelltAm = zeitpunkt(c, "iat", true);
 
+        // Online-Lizenzen tragen zusaetzlich den Revalidierungszaehler und den Zeitpunkt der
+        // naechsten faelligen Revalidierung; exp ist dann das Ende der Grace-Period.
+        boolean online = LizenzClaims.Typ.ONLINE == typ;
+        Long zaehler = null;
+        Instant naechsteRevalidierung = null;
+        if (online) {
+            if (!c.path("seq").isIntegralNumber() || 0 > c.path("seq").asLong()) {
+                throw new LizenzFehler(Grund.UNVOLLSTAENDIG, "Claim seq fehlt oder ist ungültig.");
+            }
+            zaehler = c.path("seq").asLong();
+            naechsteRevalidierung = zeitpunkt(c, "rev", true);
+            if (naechsteRevalidierung.isAfter(gueltigBis)) {
+                throw new LizenzFehler(Grund.UNVOLLSTAENDIG, "Claim rev liegt nach exp.");
+            }
+        }
+
         Set<String> features = new HashSet<>();
         JsonNode featuresNode = c.path("features");
         if (featuresNode.isArray()) {
@@ -155,7 +171,7 @@ public class LizenzVerifier {
             throw new LizenzFehler(Grund.NOCH_NICHT_GUELTIG, "Die Lizenz ist noch nicht gültig.");
         }
 
-        return new LizenzClaims(lizenzId, kundenId, c.path("maxInstances").asInt(), Set.copyOf(features), typ, kid, ausgestelltAm, gueltigAb, gueltigBis);
+        return new LizenzClaims(lizenzId, kundenId, c.path("maxInstances").asInt(), Set.copyOf(features), typ, kid, ausgestelltAm, gueltigAb, gueltigBis, zaehler, naechsteRevalidierung);
     }
 
     private static void pruefeSignatur(PublicKey key, String signiert, String signatur) {

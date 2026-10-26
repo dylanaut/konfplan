@@ -152,10 +152,42 @@ Ein Token ohne Instanzbezug lässt sich auf beliebig viele Instanzen kopieren. D
 *   Der Server prüft Signatur, Status der Lizenz (nicht widerrufen, nicht abgelaufen) und die Aktivierung und liefert ein neues Token mit erhöhtem Zähler.
 *   *Klon-Erkennung:* Wird ein veralteter Zähler eingereicht, wurden zwei Instanzen mit demselben Zustand betrieben. Die Aktivierung wird markiert oder gesperrt.
 
+[[protokoll]]
+== Protokoll Instanz - Lizenzserver
+
+Alle Aufrufe sind `POST` mit JSON-Body über HTTPS. Jede Anfrage trägt die Header `X-Instanz-Id` und `X-Signatur` (Ed25519-Signatur des Body mit dem Instanzschlüssel, base64url ohne Padding). Der Server prüft sie gegen den bei der Aktivierung registrierten Public Key.
+
+[cols="2,3,3",options="header"]
+|===
+| Aufruf | Body | Antwort
+
+| `/api/v1/aktivierung`
+| `lizenzschluessel`, `instanzId`, `publicKey`, `version`
+| `200 {"token": "<JWS>"}` oder Fehler
+
+| `/api/v1/revalidierung`
+| `instanzId`, `token` (aktuelle Lizenz), `version`
+| `200 {"token": "<JWS>"}` mit erhöhtem Zähler oder Fehler
+
+| `/api/v1/deaktivierung`
+| `instanzId`, `token`
+| `204`, gibt den Aktivierungsplatz frei
+|===
+
+Fehler sind `4xx` mit `{"error": "<Meldung>", "code": "<CODE>"}`, z.B. `UNBEKANNT` (404), `SIGNATUR` (401), `LIMIT_ERREICHT` (403), `WIDERRUFEN` (410), `KLON_ERKANNT` (409). `5xx` und Verbindungsfehler gelten als "Server nicht erreichbar".
+
+*   *Besitznachweis:* Bei der Aktivierung muss die Anfrage mit dem Private Key zum mitgesendeten Public Key signiert sein. Der Server registriert Public Key und Instanz-ID erst dann und prüft `maxInstances`.
+*   *Online-Lizenz:* `type: online` mit zusätzlich `seq` (Revalidierungszähler) und `rev` (Zeitpunkt, ab dem die Revalidierung fällig ist). `exp` ist das Ende der Grace-Period, `rev <= exp`. Empfohlene Werte des Servers: Revalidierung nach 7 Tagen, Grace-Period 14 Tage.
+*   *Zähler und Klonerkennung:* Der Server erhöht `seq` bei jeder Revalidierung. Er akzeptiert den gespeicherten Zähler und, nach einer verlorenen Antwort, den vorherigen (er liefert dann dieselbe Lizenz erneut aus). Jeder andere Zähler bedeutet eine Kopie mit veraltetem Stand: `409 KLON_ERKANNT`.
+*   *Schutz vor Wiedereinspielen:* Die Instanz übernimmt eine Revalidierung nur, wenn der Zähler größer ist als der zuletzt gespeicherte.
+*   *Zeitverlauf einer Online-Lizenz:* bis `rev` ist die Instanz `LIZENZIERT`, danach bis `exp` in `GRACE` (voll nutzbar, die Anwendung warnt), danach `EINGESCHRAENKT`. Ein Hintergrundjob (alle 6 Stunden) versucht die Revalidierung ab 2 Tagen vor `rev`. Auch eine abgelaufene Lizenz darf erneuert werden, der Server entscheidet.
+
+Eine ausführbare Referenz des Protokolls ist der Fake-Lizenzserver in den Tests (`FakeLizenzServer`).
+
 == Grace Period und eingeschränkter Modus
 
 *   Schlägt eine Revalidierung fehl (z.B. Netzwerk oder Firewall), startet die Grace Period. Die Dauer ist konfigurierbar (z.B. 7 Tage).
-*   Zustände: `LIZENZIERT`, `GRACE`, `EINGESCHRAENKT`, `UNLIZENZIERT`.
+*   Zustände: `LIZENZIERT`, `GRACE` (Online-Lizenz, Revalidierung fällig; voll nutzbar), `EINGESCHRAENKT`, `UNLIZENZIERT`.
 *   Im Zustand `EINGESCHRAENKT` und `UNLIZENZIERT` greift die Schreibsperre. Teilnehmer- und Referentenansichten sowie der vorhandene Plan bleiben lesbar. Ein harter Stopp mitten in einer Veranstaltung wäre für ehrliche Kunden schädlicher als für Piraten.
 *   Die Durchsetzung erfolgt über einen `ContainerRequestFilter` an den betroffenen Endpunkten (Antwort 402/403 mit klarer Meldung). Das Frontend zeigt Administratoren ein Warnbanner und eine Lizenzseite (Status, Lizenzdatei hochladen, Anforderungsdatei erzeugen).
 *   *Schalter:* Die Schreibsperre ist standardmäßig aus (`konfplan.lizenz.durchsetzung=false`, Umgebungsvariable `KONFPLAN_LIZENZ_DURCHSETZUNG`). Erst wenn für alle Bestandskunden eine Lizenz ausgestellt ist, wird sie mit `true` scharf geschaltet. Sonst würde ein Release mit der Prüfung sie aussperren.

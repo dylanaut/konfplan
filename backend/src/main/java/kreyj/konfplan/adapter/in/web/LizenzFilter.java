@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * Schreibsperre ohne gueltige Lizenz: Endpunkte mit {@link LizenzPflichtig} antworten mit 402,
- * solange die Instanz nicht LIZENZIERT ist. Lesen bleibt immer moeglich. Standardmaessig
+ * solange die Instanz weder LIZENZIERT noch in der Grace-Period ist. Lesen bleibt immer moeglich. Standardmaessig
  * ausgeschaltet (konfplan.lizenz.durchsetzung), damit ein Release mit der Pruefung keine
  * Bestandskunden aussperrt, bevor deren Lizenz ausgestellt ist.
  */
@@ -40,7 +40,8 @@ public class LizenzFilter implements ContainerRequestFilter {
             return;
         }
         LizenzStatus status = lizenzStatusService.statusGecacht();
-        if (LizenzZustand.LIZENZIERT == status.zustand()) {
+        // GRACE: Online-Lizenz mit faelliger Revalidierung (z.B. Lizenzserver voruebergehend nicht erreichbar) - noch voll nutzbar.
+        if (LizenzZustand.LIZENZIERT == status.zustand() || LizenzZustand.GRACE == status.zustand()) {
             return;
         }
         String grund = LizenzZustand.UNLIZENZIERT == status.zustand()

@@ -405,6 +405,32 @@ Schlägt der `setup-session.mjs`-Lauf fehl (z.B. IMAP-Zugangsdaten falsch, kein 
 
 Die vollständige Konsolen-Ausgabe beider Skripte (`setup-session.mjs` + `update-ip.mjs`, per `===`-Markierung im Log unterscheidbar) landet bei jedem Lauf - Erfolg wie Fehlschlag - zusätzlich in `deploy/brevo-ip-updater/last-run.log`, unabhängig davon, wohin der äußere Cron-Aufruf selbst umgeleitet ist. Bei einem Fehlschlag hängt die ntfy-Meldung zusätzlich die letzten 2000 Byte dieses Logs direkt an den Push an (kein Server-Login nötig, um die Ursache zu sehen); ergänzend kann bei einem fehlgeschlagenen API-Call ein `error-api-*.json` oder bei einem fehlgeschlagenen Login ein `error-*.png`-Screenshot im selben Verzeichnis liegen.
 
+== Lizenzierung
+
+KonfPlan prüft, ob für die Instanz eine gültige Lizenz installiert ist (Konzept: `Serverlizensierung.adoc`). Zwei `.env`-Variablen steuern das Verhalten; beide werden von `docker-compose.yml` an den App-Container durchgereicht:
+
+[cols="2,1,4",options="header"]
+|===
+| Variable | Standard | Bedeutung
+
+| `LIZENZ_DURCHSETZUNG`
+| `false`
+| `true` schaltet die Schreibsperre scharf: Ohne gültige Lizenz sind Planerstellung, Importe sowie das Anlegen neuer Veranstaltungen und Nutzer gesperrt (Antwort 402). Lesen bleibt möglich.
+
+| `LIZENZ_SERVER_URL`
+| leer
+| Adresse des Lizenzservers für die Online-Aktivierung (`https://`, `http://` nur für `localhost`). Leer: nur Offline-Lizenz.
+|===
+
+Reihenfolge beim Einführen:
+
+. Lizenz installieren: als Administrator im Organisator-Bereich den Button *Lizenz* öffnen, die Anforderungsdatei herunterladen und dem Hersteller schicken, die ausgestellte Lizenz dort einfügen oder hochladen (Offline), oder mit einem Lizenzschlüssel online aktivieren.
+. Erst danach `LIZENZ_DURCHSETZUNG=true` in `.env` setzen und `docker compose up -d app` ausführen. Eine Änderung in `.env` wirkt erst nach dem Neustart des Containers.
+
+WARNING: `LIZENZ_DURCHSETZUNG=true` ohne installierte Lizenz sperrt die genannten Funktionen sofort. Das Lizenz-Modal selbst bleibt immer erreichbar.
+
+Für die Online-Aktivierung muss der Server den Lizenzserver per HTTPS erreichen (ausgehend, Port 443). Hinter einer Firewall (z.B. Schulträger) ist die Adresse freizuschalten. Ist sie nicht erreichbar, läuft eine bereits aktivierte Lizenz bis zum Ende der Grace-Period weiter (siehe `Serverlizensierung.adoc`); die Anwendung zeigt dann einen Hinweis an.
+
 == App-Log auf ERROR überwachen
 
 Der Stack hat keinen Alertmanager (siehe `Monitoring-Grafana.adoc`) - Prometheus/Grafana zeigen Fehler nur an, melden sie aber nicht aktiv. `deploy/error-log-notifier.sh` schließt diese Lücke für einen einzelnen, aber wichtigen Fall: Es läuft als Sidecar-Container, tailt live `docker logs -f` des `app`-Containers und schickt jede Zeile, die `ERROR` enthält, sofort per https://ntfy.sh[ntfy.sh] als Push-Benachrichtigung raus.
