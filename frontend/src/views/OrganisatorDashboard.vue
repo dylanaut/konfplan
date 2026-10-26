@@ -22,6 +22,10 @@
         <AlertTriangleIcon class="w-3.5 h-3.5" />
         Wartung ankündigen
       </button>
+      <button v-if="auth.isAdministrator" @click="showLizenzModal = true" class="btn-secondary flex items-center gap-2 text-xs py-1.5 shrink-0" data-testid="lizenz-button">
+        <KeyRoundIcon class="w-3.5 h-3.5" />
+        Lizenz
+      </button>
     </div>
 
     <div class="flex gap-4 items-start">
@@ -246,6 +250,7 @@
     <GeneratePasswordsZipModal :isVisible="showGeneratePasswordsZipModal" :count="selectedIdsForZip.length"
                      @close="showGeneratePasswordsZipModal = false" @generate="handleGeneratePasswordsZip"/>
     <MaintenanceAnnouncementModal :isVisible="showMaintenanceModal" @close="showMaintenanceModal = false"/>
+    <LizenzModal :isVisible="showLizenzModal" @close="showLizenzModal = false"/>
 
     <!-- CSV Import Feedback Modal -->
     <div v-if="showCsvFeedbackModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -279,8 +284,8 @@
 </template>
 
 <script setup>
-import {computed, onMounted, onUnmounted, reactive, ref, nextTick} from 'vue';
-import { useRouter } from 'vue-router';
+import {computed, onMounted, onUnmounted, reactive, ref, nextTick, watch} from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import api from '../api/axios';
 import { extractErrorMessage } from '../utils/errorMessage';
 import {useEventContextStore} from '../stores/eventContext';
@@ -290,6 +295,7 @@ import { useAuthStore } from '../stores/auth';
 import { useUnsavedChangesStore } from '../stores/unsavedChanges';
 import {
   AlertTriangle as AlertTriangleIcon,
+  KeyRound as KeyRoundIcon,
   Calendar as CalendarIcon,
   FileText as FileTextIcon,
   Loader as LoaderIcon,
@@ -327,8 +333,10 @@ import PasswordResetModal from '../components/PasswordResetModal.vue';
 import ZusatzrollenModal from '../components/ZusatzrollenModal.vue';
 import GeneratePasswordsZipModal from '../components/GeneratePasswordsZipModal.vue';
 import MaintenanceAnnouncementModal from '../components/MaintenanceAnnouncementModal.vue';
+import LizenzModal from '../components/LizenzModal.vue';
 
 const router = useRouter();
+const route = useRoute();
 const eventContext = useEventContextStore();
 const availabilityStore = useAvailabilityStore();
 const unsavedChanges = useUnsavedChangesStore();
@@ -398,6 +406,7 @@ const showZusatzrollenModal = ref(false);
 const selectedUserForZusatzrollen = ref(null);
 const showGeneratePasswordsZipModal = ref(false);
 const showMaintenanceModal = ref(false);
+const showLizenzModal = ref(false);
 const selectedIdsForZip = ref([]);
 
 const isOptimizing = ref(false);
@@ -525,6 +534,14 @@ const teilnehmerMitPrioritaetenCount = computed(() => {
   return Object.values(participantPriorities.value).filter(prios => Object.values(prios).some(p => p.prioWert > 0)).length;
 });
 
+// Der Link im Lizenz-Banner (App.vue) öffnet die Lizenzverwaltung - auch wenn das Dashboard schon
+// angezeigt wird (gleiche Route, daher kein neues Mounten), deshalb ein Watcher statt onMounted.
+watch(() => route.query.lizenz, (lizenz) => {
+  if (!lizenz) return;
+  if (auth.isAdministrator) showLizenzModal.value = true;
+  router.replace({ query: {} });
+}, { immediate: true });
+
 onMounted(async () => {
   await refreshVeranstaltungen();
   await refreshGebaeude();
@@ -539,7 +556,7 @@ onMounted(async () => {
   unsavedChanges.registerDirtyCheck(() => availabilityStore.hasDirtyAvailabilities()
       || changedPriorities.value.size > 0
       || [showVeranstaltungModal, showGebaeudeModal, showRaumModal, showUserModal, showVortragModal,
-          showSlotModal, showInviteModal, showPasswordResetModal, showZusatzrollenModal, showMaintenanceModal].some(m => m.value));
+          showSlotModal, showInviteModal, showPasswordResetModal, showZusatzrollenModal, showMaintenanceModal, showLizenzModal].some(m => m.value));
 });
 
 onUnmounted(() => {
