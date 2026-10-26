@@ -25,7 +25,8 @@ const fetchStatus = async () => {
   }
 };
 
-const sperre = computed(() => !!status.value?.durchsetzung && status.value.zustand !== 'LIZENZIERT');
+// GRACE (Online-Lizenz mit faelliger Revalidierung) ist noch voll nutzbar - keine Sperre.
+const sperre = computed(() => !!status.value?.durchsetzung && !['LIZENZIERT', 'GRACE'].includes(status.value.zustand));
 
 const meldungstext = computed(() => {
   const s = status.value;
@@ -35,7 +36,11 @@ const meldungstext = computed(() => {
       ? 'Für diese Instanz ist keine Lizenz installiert - Planerstellung, Importe und das Anlegen neuer Veranstaltungen und Nutzer sind gesperrt.'
       : 'Die Lizenz dieser Instanz ist nicht gültig - Planerstellung, Importe und das Anlegen neuer Veranstaltungen und Nutzer sind gesperrt.';
   }
-  if (s.zustand === 'LIZENZIERT' && s.gueltigBis) {
+  if (s.zustand === 'GRACE') {
+    return `Die Lizenz dieser Instanz muss beim Lizenzserver erneuert werden (Lizenzserver nicht erreichbar?) - die Anwendung bleibt bis ${new Date(s.gueltigBis).toLocaleDateString('de-DE')} voll nutzbar.`;
+  }
+  // Online-Lizenzen erneuern sich selbst: ihr gueltigBis ist nur das Ende der Grace-Period, kein Ablauf.
+  if (s.zustand === 'LIZENZIERT' && s.typ !== 'ONLINE' && s.gueltigBis) {
     const tage = Math.ceil((new Date(s.gueltigBis) - Date.now()) / TAG_MS);
     if (tage <= WARNUNG_TAGE) {
       return `Die Lizenz dieser Instanz läuft in ${Math.max(tage, 0)} Tagen ab.`;

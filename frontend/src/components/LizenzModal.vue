@@ -15,11 +15,16 @@
           <span class="px-2 py-0.5 rounded-full text-xs font-bold" :class="zustandKlasse" data-testid="lizenz-zustand">{{ zustandText }}</span>
         </div>
         <p v-if="status.grund" class="text-sm text-red-700 mb-2">{{ GRUND_TEXTE[status.grund] || status.grund }}</p>
+        <p v-if="status.zustand === 'GRACE'" class="text-sm text-amber-800 mb-2" data-testid="lizenz-grace">
+          Die Lizenz muss beim Lizenzserver erneuert werden. Bis {{ formatDatum(status.gueltigBis) }} bleibt die Anwendung voll nutzbar.
+        </p>
         <dl v-if="status.lizenzId" class="grid grid-cols-3 gap-y-1 text-sm">
           <dt class="text-gray-500">Kunde</dt><dd class="col-span-2 text-gray-900">{{ status.kundenId }}</dd>
           <dt class="text-gray-500">Lizenz-ID</dt><dd class="col-span-2 text-gray-900">{{ status.lizenzId }}</dd>
           <dt class="text-gray-500">Instanzen</dt><dd class="col-span-2 text-gray-900">bis zu {{ status.maxInstanzen }}</dd>
-          <dt class="text-gray-500">Gültig bis</dt><dd class="col-span-2 text-gray-900">{{ formatDatum(status.gueltigBis) }}</dd>
+          <dt class="text-gray-500">{{ status.typ === 'ONLINE' ? 'Ohne Prüfung bis' : 'Gültig bis' }}</dt><dd class="col-span-2 text-gray-900">{{ formatDatum(status.gueltigBis) }}</dd>
+          <dt v-if="status.naechsteRevalidierung" class="text-gray-500">Nächste Prüfung</dt>
+          <dd v-if="status.naechsteRevalidierung" class="col-span-2 text-gray-900">{{ formatDatum(status.naechsteRevalidierung) }}</dd>
           <dt v-if="status.features?.length" class="text-gray-500">Funktionen</dt>
           <dd v-if="status.features?.length" class="col-span-2 text-gray-900">{{ status.features.join(', ') }}</dd>
         </dl>
@@ -28,6 +33,27 @@
           <strong>{{ status.durchsetzung ? 'aktiv' : 'nicht aktiv' }}</strong>.
           Sie sperrt Planerstellung, Importe sowie das Anlegen neuer Veranstaltungen und Nutzer, solange keine gültige Lizenz installiert ist.
         </p>
+      </section>
+
+      <section v-if="status?.onlineMoeglich" class="mb-6 border-t border-gray-100 pt-4" data-testid="lizenz-online">
+        <h3 class="text-sm font-bold text-gray-700 mb-1">Online-Lizenz</h3>
+        <template v-if="!status.onlineAktiviert">
+          <p class="text-xs text-gray-500 mb-2">Aktiviert diese Instanz mit einem Lizenzschlüssel beim Lizenzserver.</p>
+          <input v-model="lizenzschluessel" type="text" placeholder="Lizenzschlüssel" class="input-field w-full mb-2" autocomplete="off" data-testid="lizenz-schluessel" />
+          <button @click="aktivieren" :disabled="!lizenzschluessel.trim() || isSubmitting" class="btn-primary text-xs py-1.5" data-testid="lizenz-aktivieren">Online aktivieren</button>
+        </template>
+        <template v-else>
+          <p v-if="status.revalidierungVersuch" class="text-xs text-gray-600 mb-1">Letzte Prüfung: {{ formatZeit(status.revalidierungVersuch) }}</p>
+          <p v-if="status.revalidierungFehler" class="text-xs text-red-600 mb-2" data-testid="lizenz-revalidierungsfehler">{{ status.revalidierungFehler }}</p>
+          <div class="flex flex-wrap gap-2">
+            <button @click="revalidieren" :disabled="isSubmitting" class="btn-secondary text-xs py-1.5" data-testid="lizenz-revalidieren">Jetzt prüfen</button>
+            <button @click="entfernen(false)" :disabled="isSubmitting" class="btn-secondary text-xs py-1.5" data-testid="lizenz-entfernen">Lizenz entfernen</button>
+            <button v-if="nurLokalAngebot" @click="entfernen(true)" :disabled="isSubmitting" class="btn-danger text-xs py-1.5" data-testid="lizenz-nur-lokal">Nur lokal entfernen</button>
+          </div>
+          <p v-if="nurLokalAngebot" class="text-[11px] text-gray-500 mt-1">
+            Der Lizenzserver war nicht erreichbar. Lokales Entfernen gibt den Aktivierungsplatz beim Lizenzserver nicht frei - das muss dann der Hersteller tun.
+          </p>
+        </template>
       </section>
 
       <section v-if="anforderung" class="mb-6 border-t border-gray-100 pt-4">
@@ -96,18 +122,24 @@ const ladefehler = ref('');
 const fehler = ref('');
 const erfolg = ref('');
 const isSubmitting = ref(false);
+const lizenzschluessel = ref('');
+const nurLokalAngebot = ref(false);
 
 const zustandText = computed(() => ({
   LIZENZIERT: 'Lizenziert',
   EINGESCHRAENKT: 'Eingeschränkt',
-  UNLIZENZIERT: 'Keine Lizenz'
+  UNLIZENZIERT: 'Keine Lizenz',
+  GRACE: 'Prüfung fällig'
 }[status.value?.zustand] || status.value?.zustand));
 
 const zustandKlasse = computed(() => ({
   LIZENZIERT: 'bg-green-100 text-green-800',
   EINGESCHRAENKT: 'bg-red-100 text-red-800',
-  UNLIZENZIERT: 'bg-amber-100 text-amber-900'
+  UNLIZENZIERT: 'bg-amber-100 text-amber-900',
+  GRACE: 'bg-amber-100 text-amber-900'
 }[status.value?.zustand] || 'bg-gray-100 text-gray-800'));
+
+const formatZeit = (iso) => iso ? new Date(iso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
 
 const formatDatum = (iso) => iso ? new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 
@@ -126,6 +158,8 @@ const laden = async () => {
 watch(() => props.isVisible, (visible) => {
   if (!visible) return;
   lizenzText.value = '';
+  lizenzschluessel.value = '';
+  nurLokalAngebot.value = false;
   fehler.value = '';
   erfolg.value = '';
   laden();
@@ -144,6 +178,42 @@ const anforderungHerunterladen = () => {
   link.download = `konfplan-lizenzanforderung-${anforderung.value.instanzId}.json`;
   link.click();
   URL.revokeObjectURL(url);
+};
+
+// Führt einen Lizenzaufruf aus und übernimmt den gelieferten Status; liefert, ob er gelang.
+const aufrufen = async (aufruf, erfolgsText) => {
+  isSubmitting.value = true;
+  fehler.value = '';
+  erfolg.value = '';
+  try {
+    const res = await aufruf();
+    status.value = res.data;
+    erfolg.value = erfolgsText;
+    emit('installed');
+    return true;
+  } catch (e) {
+    fehler.value = extractErrorMessage(e);
+    return false;
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+const aktivieren = async () => {
+  if (await aufrufen(() => api.post('/api/lizenz/aktivierung', { lizenzschluessel: lizenzschluessel.value.trim() }), 'Die Instanz wurde online aktiviert.')) {
+    lizenzschluessel.value = '';
+  }
+};
+
+const revalidieren = () => aufrufen(() => api.post('/api/lizenz/revalidierung'), 'Die Lizenz wurde beim Lizenzserver erneuert.');
+
+const entfernen = async (nurLokal) => {
+  const frage = nurLokal
+    ? 'Die Lizenz nur lokal entfernen? Der Aktivierungsplatz beim Lizenzserver bleibt belegt.'
+    : 'Die Lizenz von dieser Instanz entfernen und den Aktivierungsplatz freigeben?';
+  if (!window.confirm(frage)) return;
+  const ok = await aufrufen(() => api.delete('/api/lizenz/aktivierung', { params: nurLokal ? { nurLokal: true } : {} }), 'Die Lizenz wurde entfernt.');
+  nurLokalAngebot.value = !ok && !nurLokal;
 };
 
 const installieren = async () => {

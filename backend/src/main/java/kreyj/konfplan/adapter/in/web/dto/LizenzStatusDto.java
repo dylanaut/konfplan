@@ -23,6 +23,8 @@ public class LizenzStatusDto {
     public Instant gueltigBis;
     /** Ob ein Lizenzserver konfiguriert ist (Online-Aktivierung moeglich). */
     public boolean onlineMoeglich;
+    /** Ob die installierte Lizenz per Online-Aktivierung stammt (auch wenn sie inzwischen abgelaufen ist und keine Eckdaten mehr liefert). */
+    public boolean onlineAktiviert;
     /** Nur Online-Lizenzen: ab hier ist die Revalidierung faellig, danach laeuft die Grace-Period bis gueltigBis. */
     public Instant naechsteRevalidierung;
     public Instant revalidierungVersuch;
@@ -34,6 +36,7 @@ public class LizenzStatusDto {
         dto.grund = null == status.grund() ? null : status.grund().name();
         dto.durchsetzung = durchsetzung;
         dto.onlineMoeglich = onlineMoeglich;
+        dto.onlineAktiviert = null != z.getLetzterZaehler();
         dto.revalidierungVersuch = z.getRevalidierungVersuch();
         dto.revalidierungFehler = z.getRevalidierungFehler();
         LizenzClaims c = status.claims();
