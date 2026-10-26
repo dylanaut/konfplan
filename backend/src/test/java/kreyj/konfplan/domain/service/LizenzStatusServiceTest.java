@@ -9,14 +9,13 @@ import kreyj.konfplan.domain.lizenz.LizenzStatus;
 import kreyj.konfplan.domain.lizenz.LizenzTestSupport;
 import kreyj.konfplan.domain.lizenz.LizenzVerifier;
 import kreyj.konfplan.domain.lizenz.LizenzZustand;
+import kreyj.konfplan.infrastructure.HttpLizenzServerClient;
 import kreyj.konfplan.persistence.Lizenzzustand;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Set;
 
@@ -43,7 +42,8 @@ class LizenzStatusServiceTest {
     void setup() {
         QuarkusTransaction.requiringNew().run(() -> Lizenzzustand.deleteAll());
         clock = new MutableClock(Instant.ofEpochSecond(JETZT));
-        service = new LizenzStatusService(new LizenzVerifier(Map.of(KID, LizenzTestSupport.public1()), Set.of(), clock), clock);
+        service = new LizenzStatusService(new LizenzVerifier(Map.of(KID, LizenzTestSupport.public1()), Set.of(), clock), clock,
+            new HttpLizenzServerClient((String) null, Duration.ofSeconds(1)), "test");
     }
 
     private String jkt() {
@@ -111,6 +111,8 @@ class LizenzStatusServiceTest {
     void onlineTokenWirdAlsOfflineLizenzAbgelehnt() {
         Map<String, Object> c = claims(jkt(), JETZT);
         c.put("type", "online");
+        c.put("seq", 1);
+        c.put("rev", JETZT + 86400);
 
         assertThatThrownBy(() -> QuarkusTransaction.requiringNew().run(() -> service.installiere(token(PRIVATE_1, header(), c))))
                 .isInstanceOf(LizenzFehler.class)
@@ -214,32 +216,5 @@ class LizenzStatusServiceTest {
         QuarkusTransaction.requiringNew().run(() -> echterService.installiere(token(PRIVATE_1, header(), claims(jkt, jetzt))));
 
         assertThat(QuarkusTransaction.requiringNew().call(echterService::status).zustand()).isEqualTo(LizenzZustand.LIZENZIERT);
-    }
-
-    private static final class MutableClock extends Clock {
-        private Instant jetzt;
-
-        MutableClock(Instant start) {
-            this.jetzt = start;
-        }
-
-        void vor(Duration d) {
-            jetzt = jetzt.plus(d);
-        }
-
-        @Override
-        public ZoneOffset getZone() {
-            return ZoneOffset.UTC;
-        }
-
-        @Override
-        public Clock withZone(java.time.ZoneId zone) {
-            return this;
-        }
-
-        @Override
-        public Instant instant() {
-            return jetzt;
-        }
     }
 }

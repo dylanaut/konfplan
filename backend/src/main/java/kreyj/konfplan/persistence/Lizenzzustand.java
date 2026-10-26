@@ -41,6 +41,16 @@ public class Lizenzzustand extends VersionedEntity {
     @Column
     private Instant letzteValidierung;
 
+    /** Zaehler der zuletzt installierten Online-Lizenz; null bei Offline-Lizenz oder ohne Lizenz. */
+    @Column
+    private Long letzterZaehler;
+
+    @Column
+    private Instant revalidierungVersuch;
+
+    @Column(length = 1000)
+    private String revalidierungFehler;
+
     public static Lizenzzustand aktuell() {
         return findAll().firstResult();
     }

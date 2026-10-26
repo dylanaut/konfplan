@@ -6,7 +6,10 @@ import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
+import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.Signature;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.Base64;
@@ -37,6 +40,26 @@ public final class InstanzSchluessel {
             return KeyFactory.getInstance(ALGORITHMUS).generatePublic(new X509EncodedKeySpec(Base64.getDecoder().decode(base64Spki)));
         } catch (GeneralSecurityException | IllegalArgumentException e) {
             throw new IllegalArgumentException("Ungültiger Ed25519-Public-Key", e);
+        }
+    }
+
+    public static PrivateKey privateKeyAusBase64(String base64Pkcs8) {
+        try {
+            return KeyFactory.getInstance(ALGORITHMUS).generatePrivate(new PKCS8EncodedKeySpec(Base64.getDecoder().decode(base64Pkcs8)));
+        } catch (GeneralSecurityException | IllegalArgumentException e) {
+            throw new IllegalArgumentException("Ungültiger Ed25519-Private-Key", e);
+        }
+    }
+
+    /** Ed25519-Signatur ueber die Bytes, base64url ohne Padding (Header X-Signatur bei Lizenzserver-Anfragen). */
+    public static String signiere(PrivateKey privateKey, byte[] daten) {
+        try {
+            Signature sig = Signature.getInstance(ALGORITHMUS);
+            sig.initSign(privateKey);
+            sig.update(daten);
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(sig.sign());
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("Signieren fehlgeschlagen", e);
         }
     }
 

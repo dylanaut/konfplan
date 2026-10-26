@@ -21,7 +21,8 @@ public class LizenzFehler extends BusinessException {
         INSTANZ,
         ABGELAUFEN,
         NOCH_NICHT_GUELTIG,
-        ZEIT
+        ZEIT,
+        VERALTET
     }
 
     private final Grund grund;

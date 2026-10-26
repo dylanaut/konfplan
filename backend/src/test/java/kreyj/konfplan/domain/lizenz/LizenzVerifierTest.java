@@ -193,6 +193,51 @@ class LizenzVerifierTest {
     }
 
     @Test
+    void onlineLizenzTraegtZaehlerUndRevalidierungsfrist() {
+        Map<String, Object> c = claims(jkt, JETZT);
+        c.put("type", "online");
+        c.put("seq", 7);
+        c.put("rev", JETZT + 3600);
+
+        LizenzClaims geprueft = verifier.verifiziere(token(PRIVATE_1, header(), c), jkt);
+
+        assertThat(geprueft.typ()).isEqualTo(LizenzClaims.Typ.ONLINE);
+        assertThat(geprueft.zaehler()).isEqualTo(7L);
+        assertThat(geprueft.naechsteRevalidierung()).isEqualTo(Instant.ofEpochSecond(JETZT + 3600));
+    }
+
+    @Test
+    void offlineLizenzHatKeinenZaehler() {
+        LizenzClaims c = verifier.verifiziere(token(PRIVATE_1, header(), claims(jkt, JETZT)), jkt);
+
+        assertThat(c.zaehler()).isNull();
+        assertThat(c.naechsteRevalidierung()).isNull();
+    }
+
+    @Test
+    void onlineLizenzOhneZaehlerOderFristOderMitFristNachAblaufWirdAbgelehnt() {
+        Map<String, Object> ohneSeq = claims(jkt, JETZT);
+        ohneSeq.put("type", "online");
+        ohneSeq.put("rev", JETZT + 3600);
+        Map<String, Object> ohneRev = claims(jkt, JETZT);
+        ohneRev.put("type", "online");
+        ohneRev.put("seq", 1);
+        Map<String, Object> negativ = claims(jkt, JETZT);
+        negativ.put("type", "online");
+        negativ.put("seq", -1);
+        negativ.put("rev", JETZT + 3600);
+        Map<String, Object> revNachExp = claims(jkt, JETZT);
+        revNachExp.put("type", "online");
+        revNachExp.put("seq", 1);
+        revNachExp.put("rev", JETZT + 2 * 86400);
+
+        assertAbgelehnt(token(PRIVATE_1, header(), ohneSeq), Grund.UNVOLLSTAENDIG);
+        assertAbgelehnt(token(PRIVATE_1, header(), ohneRev), Grund.UNVOLLSTAENDIG);
+        assertAbgelehnt(token(PRIVATE_1, header(), negativ), Grund.UNVOLLSTAENDIG);
+        assertAbgelehnt(token(PRIVATE_1, header(), revNachExp), Grund.UNVOLLSTAENDIG);
+    }
+
+    @Test
     void kaputtesFormatWirdAbgelehnt() {
         assertAbgelehnt(null, Grund.FORMAT);
         assertAbgelehnt("", Grund.FORMAT);
